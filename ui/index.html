@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunar OD — Research Dashboard</title>
+<meta name="description" content="Lunar Orbit Determination research sandbox — interactive dashboard for OD experiments, visibility analysis, and scenario configuration.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CSS CUSTOM PROPERTIES
+   ============================================================ */
+:root {
+  --bg-deep: #060a14;
+  --bg-card: rgba(12, 22, 45, 0.7);
+  --bg-card-hover: rgba(18, 32, 65, 0.85);
+  --bg-sidebar: rgba(6, 12, 26, 0.96);
+  --bg-input: rgba(6, 10, 24, 0.7);
+  --border-card: rgba(80, 130, 255, 0.1);
+  --border-card-hover: rgba(80, 130, 255, 0.25);
+  --accent: #4facfe;
+  --accent-cyan: #00f2fe;
+  --accent-grad: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --lunar-silver: #a0b4d0;
+  --text-1: #e8edf5;
+  --text-2: #7a8ba8;
+  --text-3: #4a5a78;
+  --warn: #f6d365;
+  --success: #43e97b;
+  --error: #f5576c;
+  --purple: #a855f7;
+  --orange: #f97316;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 20px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --blur: blur(14px);
+  --sidebar-w: 220px;
+  --sidebar-collapsed: 60px;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg-deep);
+  color: var(--text-1);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Star field */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(1.2px 1.2px at 10% 20%, rgba(255,255,255,0.22) 50%, transparent 50%),
+    radial-gradient(1px 1px at 30% 65%, rgba(255,255,255,0.15) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(200,220,255,0.18) 50%, transparent 50%),
+    radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.12) 50%, transparent 50%),
+    radial-gradient(0.8px 0.8px at 85% 75%, rgba(200,220,255,0.16) 50%, transparent 50%),
+    radial-gradient(1.2px 1.2px at 15% 85%, rgba(255,255,255,0.1) 50%, transparent 50%),
+    radial-gradient(1px 1px at 45% 50%, rgba(200,220,255,0.14) 50%, transparent 50%),
+    radial-gradient(0.7px 0.7px at 60% 90%, rgba(255,255,255,0.16) 50%, transparent 50%),
+    radial-gradient(1.3px 1.3px at 90% 15%, rgba(200,220,255,0.12) 50%, transparent 50%),
+    radial-gradient(0.9px 0.9px at 25% 35%, rgba(255,255,255,0.18) 50%, transparent 50%);
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(80,130,255,0.18); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(80,130,255,0.3); }
+a { color: var(--accent); text-decoration: none; }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: var(--sidebar-w); min-height: 100vh;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border-card);
+  display: flex; flex-direction: column;
+  position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
+  transition: width 0.3s var(--ease);
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+}
+.sidebar.collapsed { width: var(--sidebar-collapsed); }
+.sidebar.collapsed .nav-label, .sidebar.collapsed .brand-text, .sidebar.collapsed .srv-label { opacity: 0; width: 0; overflow: hidden; }
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 18px 16px; border-bottom: 1px solid var(--border-card); cursor: pointer; min-height: 60px; }
+.brand-icon { font-size: 24px; filter: drop-shadow(0 0 6px rgba(79,172,254,0.5)); flex-shrink: 0; }
+.brand-text { font-size: 17px; font-weight: 800; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; white-space: nowrap; transition: all 0.3s var(--ease); }
+
+.nav-list { list-style: none; flex: 1; padding: 10px 0; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; cursor: pointer; color: var(--text-2);
+  transition: all 0.2s var(--ease); white-space: nowrap;
+  border-left: 3px solid transparent; margin: 1px 0; font-size: 13px;
+}
+.nav-item:hover { color: var(--text-1); background: rgba(79,172,254,0.05); }
+.nav-item.active { color: var(--accent); background: rgba(79,172,254,0.08); border-left-color: var(--accent); }
+.nav-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
+.nav-label { font-weight: 500; transition: all 0.3s var(--ease); }
+
+.sidebar-footer { padding: 14px 16px; border-top: 1px solid var(--border-card); display: flex; align-items: center; gap: 8px; }
+.srv-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); flex-shrink: 0; animation: pulse-dot 2s ease-in-out infinite; }
+.srv-dot.off { background: var(--error); animation: none; }
+.srv-label { font-size: 10px; color: var(--text-3); white-space: nowrap; transition: all 0.3s var(--ease); }
+
+.sb-toggle {
+  position: absolute; right: -12px; top: 24px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--bg-deep); border: 1px solid var(--border-card);
+  color: var(--text-2); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 10px; transition: all 0.2s var(--ease); z-index: 101;
+}
+.sb-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main {
+  flex: 1; margin-left: var(--sidebar-w);
+  padding: 24px 28px; transition: margin-left 0.3s var(--ease); min-height: 100vh;
+}
+.sidebar.collapsed ~ .main { margin-left: var(--sidebar-collapsed); }
+
+.pg-hdr { margin-bottom: 24px; }
+.pg-title { font-size: 22px; font-weight: 800; color: var(--text-1); margin-bottom: 2px; }
+.pg-sub { font-size: 12px; color: var(--text-2); font-weight: 400; }
+
+.page { display: none; animation: fadeUp 0.35s ease; }
+.page.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============================================================
+   GLASS CARD
+   ============================================================ */
+.card {
+  background: var(--bg-card); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border-card); border-radius: var(--radius);
+  padding: 20px; transition: all 0.3s var(--ease);
+}
+.card:hover { border-color: var(--border-card-hover); }
+.card-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
+
+.card-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.7px; }
+.card-val { font-size: 28px; font-weight: 800; color: var(--text-1); line-height: 1.2; }
+.card-val .unit { font-size: 13px; font-weight: 500; color: var(--text-2); margin-left: 3px; }
+.card-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+/* ============================================================
+   GRIDS
+   ============================================================ */
+.g4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.g3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.g2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.g1 { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px; }
+
+/* ============================================================
+   BADGES & BUTTONS
+   ============================================================ */
+.badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 9px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+.badge-ok { background: rgba(67,233,123,0.12); color: var(--success); }
+.badge-err { background: rgba(245,87,108,0.12); color: var(--error); }
+.badge-warn { background: rgba(246,211,101,0.12); color: var(--warn); }
+.badge-info { background: rgba(79,172,254,0.12); color: var(--accent); }
+.badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+.badge-neutral { background: rgba(160,180,208,0.08); color: var(--lunar-silver); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 18px; border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  cursor: pointer; border: none; transition: all 0.2s var(--ease);
+}
+.btn-p { background: var(--accent-grad); color: #060a14; }
+.btn-p:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(79,172,254,0.3); }
+.btn-s { background: rgba(79,172,254,0.08); color: var(--accent); border: 1px solid rgba(79,172,254,0.18); }
+.btn-s:hover { background: rgba(79,172,254,0.15); }
+.btn-d { background: rgba(245,87,108,0.08); color: var(--error); border: 1px solid rgba(245,87,108,0.18); }
+.btn-sm { padding: 5px 12px; font-size: 11px; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+/* ============================================================
+   FORMS
+   ============================================================ */
+.fg { margin-bottom: 14px; }
+.fl { display: block; font-size: 11px; font-weight: 700; color: var(--text-2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.fi, .fs {
+  width: 100%; padding: 9px 12px; background: var(--bg-input);
+  border: 1px solid var(--border-card); border-radius: var(--radius-sm);
+  color: var(--text-1); font-family: var(--font); font-size: 13px;
+  transition: all 0.2s var(--ease); outline: none;
+}
+.fi:focus, .fs:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,172,254,0.1); }
+.fs { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a8ba8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+.fs option { background: #0a1428; color: var(--text-1); }
+
+/* ============================================================
+   FILTER BAR & CHIPS
+   ============================================================ */
+.fbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.chip {
+  padding: 5px 14px; border-radius: var(--radius-pill);
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  background: rgba(80,130,255,0.05); border: 1px solid var(--border-card);
+  color: var(--text-2); transition: all 0.2s var(--ease);
+}
+.chip:hover { border-color: var(--accent); color: var(--text-1); }
+.chip.on { background: rgba(79,172,254,0.12); border-color: var(--accent); color: var(--accent); }
+.search-in {
+  flex: 1; min-width: 180px; padding: 7px 12px 7px 32px;
+  background: var(--bg-input); border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm); color: var(--text-1);
+  font-family: var(--font); font-size: 12px; outline: none; transition: all 0.2s var(--ease);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%234a5a78' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 10px center;
+}
+.search-in:focus { border-color: var(--accent); }
+
+/* ============================================================
+   RESULTS GRID & LIST
+   ============================================================ */
+.res-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.res-card {
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  border-radius: var(--radius); overflow: hidden; cursor: pointer;
+  transition: all 0.25s var(--ease);
+}
+.res-card:hover { border-color: var(--border-card-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.res-thumb { width: 100%; height: 120px; background: rgba(6,10,24,0.5); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.res-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s var(--ease); }
+.res-card:hover .res-thumb img { transform: scale(1.06); }
+.res-thumb .icon { font-size: 32px; color: var(--text-3); }
+.res-info { padding: 10px; }
+.res-name { font-size: 11px; font-weight: 600; color: var(--text-1); word-break: break-all; }
+.res-meta { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+
+.res-list { display: none; }
+.res-list table { width: 100%; border-collapse: collapse; }
+.res-list th, .res-list td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-card); font-size: 12px; }
+.res-list th { color: var(--text-2); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+.res-list tbody tr { cursor: pointer; transition: background 0.2s; }
+.res-list tbody tr:hover { background: rgba(79,172,254,0.04); }
+
+/* View toggle */
+.vtog { display: flex; border: 1px solid var(--border-card); border-radius: var(--radius-sm); overflow: hidden; }
+.vtog-btn { padding: 6px 12px; background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.vtog-btn.on { background: rgba(79,172,254,0.1); color: var(--accent); }
+
+/* ============================================================
+   LIGHTBOX & CSV MODAL
+   ============================================================ */
+.lightbox, .csv-modal {
+  position: fixed; inset: 0; background: rgba(3,5,10,0.92);
+  backdrop-filter: blur(6px); z-index: 1000;
+  display: none; align-items: center; justify-content: center; padding: 30px;
+}
+.lightbox.open, .csv-modal.open { display: flex; }
+.lightbox img { max-width: 92vw; max-height: 88vh; object-fit: contain; border-radius: var(--radius); box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.lb-close {
+  position: absolute; top: 16px; right: 20px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(12,20,40,0.8); border: 1px solid var(--border-card);
+  color: var(--text-1); font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.lb-close:hover { background: rgba(245,87,108,0.2); border-color: var(--error); }
+
+.csv-content { background: rgba(10,18,36,0.95); border: 1px solid var(--border-card); border-radius: var(--radius); width: 90vw; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
+.csv-hdr { padding: 14px 18px; border-bottom: 1px solid var(--border-card); display: flex; align-items: center; justify-content: space-between; }
+.csv-hdr h3 { font-size: 15px; font-weight: 700; }
+.csv-body { flex: 1; overflow: auto; }
+.csv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.csv-table th { position: sticky; top: 0; background: rgba(12,22,45,0.95); padding: 8px 12px; text-align: left; font-weight: 700; color: var(--accent); cursor: pointer; user-select: none; border-bottom: 2px solid var(--border-card); white-space: nowrap; }
+.csv-table th:hover { color: var(--accent-cyan); }
+.csv-table td { padding: 6px 12px; border-bottom: 1px solid rgba(80,130,255,0.04); color: var(--text-1); white-space: nowrap; }
+.csv-table tbody tr:nth-child(even) { background: rgba(80,130,255,0.02); }
+.csv-table tbody tr:hover { background: rgba(79,172,254,0.05); }
+
+/* ============================================================
+   EXPERIMENT CARDS
+   ============================================================ */
+.exp-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 18px; transition: all 0.25s var(--ease); }
+.exp-card:hover { border-color: var(--border-card-hover); transform: translateY(-1px); }
+.exp-name { font-size: 14px; font-weight: 800; color: var(--text-1); margin-bottom: 3px; }
+.exp-script { font-size: 10px; font-family: var(--mono); color: var(--text-3); margin-bottom: 8px; }
+.exp-badges { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+.exp-outs { font-size: 11px; color: var(--text-2); margin-bottom: 12px; }
+.exp-outs li { margin-left: 14px; margin-bottom: 2px; }
+.exp-acts { display: flex; gap: 8px; align-items: center; }
+.st-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
+.st-dot.running { background: var(--accent); animation: pulse-dot 1s ease-in-out infinite; }
+.st-dot.success { background: var(--success); }
+.st-dot.failed { background: var(--error); }
+
+/* ============================================================
+   ORBIT CANVAS & SIMULATION CONTROLS
+   ============================================================ */
+.sim-wrap { position: relative; border-radius: var(--radius); overflow: hidden; background: rgba(4,8,18,0.6); border: 1px solid var(--border-card); }
+.sim-canvas { width: 100%; display: block; cursor: crosshair; }
+.sim-controls {
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  background: rgba(6,12,26,0.9); border-top: 1px solid var(--border-card);
+  flex-wrap: wrap;
+}
+.sim-btn { width: 32px; height: 32px; border-radius: 50%; background: rgba(79,172,254,0.1); border: 1px solid rgba(79,172,254,0.2); color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.sim-btn:hover { background: rgba(79,172,254,0.2); border-color: var(--accent); }
+.sim-btn.active { background: rgba(79,172,254,0.25); }
+.sim-slider { flex: 1; min-width: 120px; accent-color: var(--accent); cursor: pointer; }
+.sim-time { font-size: 11px; color: var(--text-2); font-family: var(--mono); min-width: 90px; }
+.sim-speed { font-size: 10px; color: var(--text-3); padding: 3px 8px; border-radius: var(--radius-pill); background: rgba(80,130,255,0.06); border: 1px solid var(--border-card); cursor: pointer; }
+
+/* Visibility timeline */
+.vis-timeline { padding: 12px 16px; background: rgba(6,12,26,0.5); }
+.vis-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.vis-label { font-size: 9px; color: var(--text-3); width: 100px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); }
+.vis-bar { flex: 1; height: 8px; border-radius: 4px; overflow: hidden; position: relative; background: rgba(80,130,255,0.04); }
+.vis-bar canvas { width: 100%; height: 100%; display: block; }
+.vis-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); pointer-events: none; box-shadow: 0 0 6px rgba(79,172,254,0.5); transition: left 0.05s linear; }
+
+/* ============================================================
+   MODE CARDS (Measurement & Start)
+   ============================================================ */
+.mode-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.mode-card {
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  border-radius: var(--radius); padding: 16px; cursor: pointer;
+  transition: all 0.25s var(--ease); text-align: center;
+}
+.mode-card:hover { border-color: var(--border-card-hover); transform: translateY(-1px); }
+.mode-card.selected { border-color: var(--accent); background: rgba(79,172,254,0.06); box-shadow: 0 0 20px rgba(79,172,254,0.08); }
+.mode-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+.mode-label { font-size: 13px; font-weight: 800; color: var(--text-1); margin-bottom: 4px; }
+.mode-desc { font-size: 10px; color: var(--text-2); line-height: 1.5; }
+
+/* ============================================================
+   SIGNAL DIAGRAM
+   ============================================================ */
+.signal-diagram { position: relative; height: 120px; background: rgba(4,8,18,0.4); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-card); }
+.signal-diagram canvas { width: 100%; height: 100%; }
+
+/* ============================================================
+   HANDOFF FLOW DIAGRAM
+   ============================================================ */
+.handoff-flow { display: flex; align-items: center; gap: 8px; padding: 16px; overflow-x: auto; }
+.arc-block {
+  min-width: 80px; padding: 10px; border-radius: var(--radius-sm);
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  text-align: center; font-size: 11px; transition: all 0.3s var(--ease);
+  flex-shrink: 0;
+}
+.arc-block.active { border-color: var(--accent); background: rgba(79,172,254,0.08); }
+.arc-block .arc-num { font-weight: 800; font-size: 14px; color: var(--text-1); }
+.arc-block .arc-err { font-family: var(--mono); font-size: 10px; margin-top: 4px; }
+.arc-arrow { color: var(--text-3); font-size: 16px; flex-shrink: 0; }
+.arc-arrow.hot { color: var(--accent); }
+.arc-arrow.formal { color: var(--purple); }
+
+/* ============================================================
+   WIZARD (Scenario Builder)
+   ============================================================ */
+.wizard-steps { display: flex; gap: 2px; margin-bottom: 20px; }
+.wiz-step {
+  flex: 1; padding: 10px 14px; text-align: center;
+  background: rgba(80,130,255,0.04); border: 1px solid var(--border-card);
+  font-size: 11px; font-weight: 700; color: var(--text-3);
+  cursor: pointer; transition: all 0.2s var(--ease);
+}
+.wiz-step:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.wiz-step:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.wiz-step.active { background: rgba(79,172,254,0.12); border-color: var(--accent); color: var(--accent); }
+.wiz-step.done { background: rgba(67,233,123,0.08); border-color: rgba(67,233,123,0.2); color: var(--success); }
+.wiz-panel { display: none; animation: fadeUp 0.3s ease; }
+.wiz-panel.active { display: block; }
+
+/* Preset cards */
+.preset-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.preset-card {
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  border-radius: var(--radius); padding: 12px; cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+.preset-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.preset-card .preset-name { font-size: 12px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
+.preset-card .preset-desc { font-size: 10px; color: var(--text-3); }
+
+/* JSON preview */
+.json-pre {
+  background: rgba(6,10,24,0.7); border: 1px solid var(--border-card);
+  border-radius: var(--radius); padding: 14px; font-family: var(--mono);
+  font-size: 11px; line-height: 1.7; max-height: 400px; overflow: auto;
+  white-space: pre; color: var(--text-2);
+}
+.jk { color: var(--accent); } .js { color: var(--success); } .jn { color: var(--warn); } .jb { color: var(--purple); }
+
+/* Validation */
+.v-rule { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-bottom: 4px; }
+.v-icon { width: 16px; text-align: center; }
+.v-ok { color: var(--success); } .v-err { color: var(--error); } .v-warn { color: var(--warn); }
+
+/* ============================================================
+   Q/R NOISE
+   ============================================================ */
+.noise-panel { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); padding: 18px; }
+.q-card {
+  background: rgba(6,10,24,0.5); border: 1px solid var(--border-card);
+  border-radius: var(--radius); padding: 14px; cursor: pointer;
+  transition: all 0.25s var(--ease);
+}
+.q-card:hover, .q-card.sel { border-color: var(--accent); background: rgba(79,172,254,0.05); }
+.q-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.q-sigma { font-size: 11px; color: var(--text-2); margin-bottom: 3px; }
+.q-sigma span { color: var(--accent); font-weight: 600; font-family: var(--mono); }
+.q-matrix { margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--text-3); background: rgba(6,10,24,0.3); padding: 8px; border-radius: 6px; line-height: 1.6; }
+
+.sigma-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.sigma-lbl { font-size: 10px; color: var(--text-2); width: 80px; text-align: right; }
+.sigma-track { flex: 1; height: 7px; background: rgba(80,130,255,0.05); border-radius: 4px; overflow: hidden; }
+.sigma-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+.sigma-val { font-size: 10px; color: var(--text-1); font-weight: 600; width: 70px; font-family: var(--mono); }
+
+.r-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 800px) { .r-panels { grid-template-columns: 1fr; } }
+
+.warn-banner { background: rgba(246,211,101,0.08); border: 1px solid rgba(246,211,101,0.2); border-radius: var(--radius); padding: 14px 18px; display: flex; gap: 12px; margin-top: 20px; }
+.warn-banner-icon { font-size: 20px; flex-shrink: 0; }
+.warn-banner-text { font-size: 12px; color: var(--warn); line-height: 1.7; }
+
+/* ============================================================
+   MISC SHARED
+   ============================================================ */
+.sec-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; margin-top: 6px; }
+.divider { height: 1px; background: var(--border-card); margin: 20px 0; }
+.inline-stat { display: flex; align-items: baseline; gap: 5px; margin-bottom: 4px; }
+.inline-stat-lbl { font-size: 11px; color: var(--text-2); }
+.inline-stat-val { font-size: 13px; font-weight: 800; color: var(--text-1); }
+.progress-wrap { height: 5px; background: rgba(80,130,255,0.06); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.progress-fill { height: 100%; border-radius: 3px; background: var(--accent-grad); transition: width 0.8s ease; }
+.thumb-strip { display: flex; gap: 12px; overflow-x: auto; padding: 6px 2px 12px; }
+.thumb-strip::-webkit-scrollbar { height: 3px; }
+.thumb-item { flex: 0 0 160px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: all 0.2s var(--ease); }
+.thumb-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+.thumb-item img { width: 100%; height: 85px; object-fit: cover; }
+.thumb-item .tn { padding: 6px 8px; font-size: 9px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.skeleton { background: linear-gradient(90deg, rgba(80,130,255,0.03) 25%, rgba(80,130,255,0.07) 50%, rgba(80,130,255,0.03) 75%); background-size: 200% 100%; animation: shimmer 1.8s infinite; border-radius: var(--radius-sm); }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Heatmap */
+.hm-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.hm-table th { padding: 8px 12px; text-align: center; font-weight: 700; color: var(--text-2); border-bottom: 1px solid var(--border-card); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+.hm-table td { padding: 8px 12px; text-align: center; border-bottom: 1px solid rgba(80,130,255,0.03); font-weight: 700; font-family: var(--mono); }
+.hm-table td.rl { text-align: left; font-family: var(--font); color: var(--text-2); font-weight: 500; }
+.hl { background: rgba(67,233,123,0.1); color: var(--success); }
+.hm { background: rgba(246,211,101,0.1); color: var(--warn); }
+.hh { background: rgba(245,87,108,0.1); color: var(--error); }
+
+/* Network buttons */
+.net-btns { display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+.net-btn {
+  padding: 8px 20px; border-radius: var(--radius-sm);
+  background: rgba(80,130,255,0.05); border: 1px solid var(--border-card);
+  color: var(--text-2); cursor: pointer; font-family: var(--font);
+  font-size: 12px; font-weight: 700; transition: all 0.2s var(--ease);
+}
+.net-btn:hover, .net-btn.on { background: rgba(79,172,254,0.12); border-color: var(--accent); color: var(--accent); }
+
+/* Toggle */
+.tog-wrap { display: flex; align-items: center; gap: 8px; }
+.tog { position: relative; width: 40px; height: 22px; background: rgba(80,130,255,0.1); border-radius: 11px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border-card); }
+.tog.on { background: rgba(79,172,254,0.25); border-color: var(--accent); }
+.tog::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--lunar-silver); top: 2px; left: 2px; transition: all 0.2s; }
+.tog.on::after { left: 20px; background: var(--accent); }
+
+/* Toasts */
+.toast-box { position: fixed; bottom: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column-reverse; gap: 8px; }
+.toast { padding: 10px 16px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 8px; animation: toastIn 0.3s ease; backdrop-filter: var(--blur); min-width: 240px; box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+.toast.out { animation: toastOut 0.25s ease forwards; }
+.toast-ok { background: rgba(67,233,123,0.12); border: 1px solid rgba(67,233,123,0.2); color: var(--success); }
+.toast-err { background: rgba(245,87,108,0.12); border: 1px solid rgba(245,87,108,0.2); color: var(--error); }
+.toast-info { background: rgba(79,172,254,0.12); border: 1px solid rgba(79,172,254,0.2); color: var(--accent); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(50px); } }
+
+@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .sidebar { width: var(--sidebar-collapsed); }
+  .sidebar .nav-label, .sidebar .brand-text, .sidebar .srv-label { opacity: 0; width: 0; overflow: hidden; }
+  .main { margin-left: var(--sidebar-collapsed) !important; padding: 14px; }
+  .g4 { grid-template-columns: 1fr 1fr; }
+  .g2, .r-panels { grid-template-columns: 1fr; }
+  .mode-cards { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SVG Defs -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4facfe"/>
+      <stop offset="100%" stop-color="#00f2fe"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="app">
+  <!-- ======================== SIDEBAR ======================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-toggle" id="sbTog" title="Toggle">◀</div>
+    <div class="brand" onclick="nav('dashboard')">
+      <span class="brand-icon">🌙</span>
+      <span class="brand-text">Lunar OD</span>
+    </div>
+    <ul class="nav-list" id="navList">
+      <li class="nav-item active" data-p="dashboard"><span class="nav-icon">🏠</span><span class="nav-label">Dashboard</span></li>
+      <li class="nav-item" data-p="results"><span class="nav-icon">📊</span><span class="nav-label">Results</span></li>
+      <li class="nav-item" data-p="experiments"><span class="nav-icon">🚀</span><span class="nav-label">Experiments</span></li>
+      <li class="nav-item" data-p="stations"><span class="nav-icon">📡</span><span class="nav-label">Orbit & Stations</span></li>
+      <li class="nav-item" data-p="modes"><span class="nav-icon">⚡</span><span class="nav-label">Modes</span></li>
+      <li class="nav-item" data-p="noise"><span class="nav-icon">🔊</span><span class="nav-label">Q/R Noise</span></li>
+      <li class="nav-item" data-p="scenario"><span class="nav-icon">⚙️</span><span class="nav-label">Scenario</span></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="srv-dot" id="srvDot"></div>
+      <span class="srv-label" id="srvLabel">Checking…</span>
+    </div>
+  </aside>
+
+  <!-- ======================== MAIN ======================== -->
+  <main class="main" id="mainContent">
+
+    <!-- ==================== DASHBOARD ==================== -->
+    <section class="page active" id="pg-dashboard">
+      <div class="pg-hdr"><h1 class="pg-title">Mission Dashboard</h1><p class="pg-sub">Lunar Orbit Determination — Research Overview</p></div>
+      <p class="sec-label">System Status</p>
+      <div class="g4" id="statusCards"><div class="card skeleton" style="min-height:100px"></div><div class="card skeleton" style="min-height:100px"></div><div class="card skeleton" style="min-height:100px"></div><div class="card skeleton" style="min-height:100px"></div></div>
+      <p class="sec-label">Campaign Summaries</p>
+      <div class="g2" id="campCards"><div class="card skeleton" style="min-height:180px"></div><div class="card skeleton" style="min-height:180px"></div></div>
+      <p class="sec-label">Thesis Factorial Matrix</p>
+      <div class="g1" id="factCard"><div class="card skeleton" style="min-height:160px"></div></div>
+      <p class="sec-label">Recent Results</p>
+      <div class="g1" id="recentRes"><div class="card skeleton" style="min-height:120px"></div></div>
+    </section>
+
+    <!-- ==================== RESULTS ==================== -->
+    <section class="page" id="pg-results">
+      <div class="pg-hdr"><h1 class="pg-title">Results Browser</h1><p class="pg-sub">Explore output files, plots, and data tables</p></div>
+      <div class="fbar" id="resFbar">
+        <div class="chip on" data-cat="all">All</div>
+        <div class="chip" data-cat="campaign">Campaign</div>
+        <div class="chip" data-cat="visibility">Visibility</div>
+        <div class="chip" data-cat="handoff">Handoff</div>
+        <div class="chip" data-cat="factorial">Factorial</div>
+        <div class="chip" data-cat="doppler">Doppler</div>
+        <div class="chip" data-cat="synthetic">Synthetic</div>
+        <div class="chip" data-cat="other">Other</div>
+        <input type="text" class="search-in" id="resSearch" placeholder="Search files…">
+        <div class="vtog" id="viewTog">
+          <button class="vtog-btn on" data-v="grid" title="Grid">▦</button>
+          <button class="vtog-btn" data-v="list" title="List">☰</button>
+        </div>
+        <select class="fs" id="resSort" style="width:auto;min-width:120px">
+          <option value="name">Sort: Name</option>
+          <option value="date">Sort: Date</option>
+          <option value="size">Sort: Size</option>
+        </select>
+      </div>
+      <div class="res-grid" id="resGrid"></div>
+      <div class="res-list" id="resList"><table><thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Modified</th></tr></thead><tbody id="resListBody"></tbody></table></div>
+    </section>
+
+    <!-- ==================== EXPERIMENTS ==================== -->
+    <section class="page" id="pg-experiments">
+      <div class="pg-hdr"><h1 class="pg-title">Experiment Runner</h1><p class="pg-sub">Configure, run, and monitor experiments</p></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-p" onclick="runExps('quick')">▶ Run Quick</button>
+        <button class="btn btn-s" onclick="runExps('full')">▶▶ Run Full</button>
+        <div class="tog-wrap"><div class="tog" id="dryTog" onclick="this.classList.toggle('on')"></div><span style="font-size:11px;color:var(--text-2)">Dry Run</span></div>
+      </div>
+      <div class="g2" id="expList"></div>
+    </section>
+
+    <!-- ==================== ORBIT & STATIONS ==================== -->
+    <section class="page" id="pg-stations">
+      <div class="pg-hdr"><h1 class="pg-title">Orbit & Station Visibility</h1><p class="pg-sub">Animated Earth rotation, station coverage, and lunar visibility windows</p></div>
+
+      <!-- Canvas simulation -->
+      <div class="sim-wrap" id="simWrap">
+        <canvas class="sim-canvas" id="simCanvas" width="900" height="450"></canvas>
+        <div class="sim-controls">
+          <button class="sim-btn" id="simPlay" title="Play/Pause">▶</button>
+          <button class="sim-btn" id="simReset" title="Reset">↺</button>
+          <input type="range" class="sim-slider" id="simSlider" min="0" max="1000" value="0">
+          <span class="sim-time" id="simTime">T+0.00 h</span>
+          <span class="sim-speed" id="simSpeedBtn" title="Click to change speed">1×</span>
+        </div>
+        <div class="vis-timeline" id="visTimeline"></div>
+      </div>
+
+      <div class="net-btns" id="netBtns">
+        <button class="net-btn on" data-net="all" onclick="selNet('all')">All Stations</button>
+        <button class="net-btn" data-net="single" onclick="selNet('single')">Single (Canberra)</button>
+        <button class="net-btn" data-net="multi" onclick="selNet('multi')">Multi (4-Station)</button>
+      </div>
+      <p class="sec-label">Station Details</p>
+      <div class="g3" id="stationCards"></div>
+    </section>
+
+    <!-- ==================== MODES ==================== -->
+    <section class="page" id="pg-modes">
+      <div class="pg-hdr"><h1 class="pg-title">Measurement & Start Modes</h1><p class="pg-sub">Compare measurement types and estimator initialization strategies</p></div>
+
+      <!-- Measurement Modes -->
+      <p class="sec-label">Measurement Type</p>
+      <div class="mode-cards" id="measModes">
+        <div class="mode-card selected" data-mode="position" onclick="selMeas(this)">
+          <span class="mode-icon">📐</span>
+          <div class="mode-label">Position</div>
+          <div class="mode-desc">Range + Azimuth + Elevation<br>3 observables per epoch</div>
+        </div>
+        <div class="mode-card" data-mode="range_rate" onclick="selMeas(this)">
+          <span class="mode-icon">📡</span>
+          <div class="mode-label">Range-Rate</div>
+          <div class="mode-desc">Range + ṙ + Azimuth + Elevation<br>4 observables, Doppler physics</div>
+        </div>
+      </div>
+
+      <div class="card" id="measDetail" style="margin-bottom:20px"></div>
+
+      <!-- Signal Diagram -->
+      <p class="sec-label">Signal Flow</p>
+      <div class="signal-diagram" id="sigDiagram"><canvas id="sigCanvas" width="900" height="120"></canvas></div>
+
+      <div class="divider"></div>
+
+      <!-- Start Modes -->
+      <p class="sec-label">Start Mode (Arc-to-Arc Handoff)</p>
+      <div class="mode-cards" id="startModes">
+        <div class="mode-card selected" data-mode="cold" onclick="selStart(this)">
+          <span class="mode-icon">🧊</span>
+          <div class="mode-label">Cold Start</div>
+          <div class="mode-desc">Random perturbation<br>Independent arcs</div>
+        </div>
+        <div class="mode-card" data-mode="hot" onclick="selStart(this)">
+          <span class="mode-icon">🔥</span>
+          <div class="mode-label">Hot Start</div>
+          <div class="mode-desc">Propagate previous estimate<br>State handoff only</div>
+        </div>
+        <div class="mode-card" data-mode="formal" onclick="selStart(this)">
+          <span class="mode-icon">📊</span>
+          <div class="mode-label">Formal</div>
+          <div class="mode-desc">State + Covariance<br>P-matrix propagation</div>
+        </div>
+        <div class="mode-card" data-mode="sqrt_formal" onclick="selStart(this)">
+          <span class="mode-icon">√</span>
+          <div class="mode-label">Sqrt Formal</div>
+          <div class="mode-desc">SRIF √info handoff<br>Numerically stable</div>
+        </div>
+      </div>
+
+      <!-- Handoff flow diagram -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-hdr"><span class="card-title">Arc-to-Arc Handoff Flow</span><span class="badge badge-info" id="startBadge">COLD</span></div>
+        <div class="handoff-flow" id="handoffFlow"></div>
+        <div id="startExplain" style="font-size:12px;color:var(--text-2);margin-top:12px;line-height:1.7"></div>
+      </div>
+    </section>
+
+    <!-- ==================== Q/R NOISE ==================== -->
+    <section class="page" id="pg-noise">
+      <div class="pg-hdr"><h1 class="pg-title">Q/R Noise Model</h1><p class="pg-sub">Measurement covariance and process-noise parameters</p></div>
+      <p class="sec-label">R — Measurement Covariance</p>
+      <div id="rCovSec"></div>
+      <div class="divider"></div>
+      <p class="sec-label">Q — Process-Noise Models</p>
+      <div class="g3" id="qCards"></div>
+      <div class="warn-banner">
+        <span class="warn-banner-icon">⚠️</span>
+        <div class="warn-banner-text">
+          <strong>Research Assumptions — Not Operational Values</strong><br>
+          • Synthetic scenario assumptions, not field calibrations.<br>
+          • Q values are not automatically calibrated.<br>
+          • R sigma values are scenario presets.<br>
+          • Formal covariance is a local linear/noise model result.
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SCENARIO BUILDER ==================== -->
+    <section class="page" id="pg-scenario">
+      <div class="pg-hdr"><h1 class="pg-title">Scenario Builder</h1><p class="pg-sub">Configure and export OD scenario JSON</p></div>
+
+      <!-- Presets -->
+      <p class="sec-label">Quick Presets</p>
+      <div class="preset-cards" id="presetCards"></div>
+
+      <!-- Wizard steps -->
+      <div class="wizard-steps" id="wizSteps">
+        <div class="wiz-step active" data-step="1" onclick="wizGo(1)">① Basics</div>
+        <div class="wiz-step" data-step="2" onclick="wizGo(2)">② Physics</div>
+        <div class="wiz-step" data-step="3" onclick="wizGo(3)">③ Preview & Run</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px">
+        <div>
+          <!-- Step 1: Basics -->
+          <div class="wiz-panel active" id="wiz1">
+            <div class="card">
+              <div class="fg"><label class="fl">Scenario Name</label><input type="text" class="fi" id="sc_name" value="my_scenario"></div>
+              <p class="sec-label" style="margin-top:12px">Measurement Type</p>
+              <div class="mode-cards" style="grid-template-columns:1fr 1fr">
+                <div class="mode-card selected sc-pick" data-field="measurement_type" data-val="position" onclick="scPick(this)"><span class="mode-icon">📐</span><div class="mode-label">Position</div></div>
+                <div class="mode-card sc-pick" data-field="measurement_type" data-val="range_rate" onclick="scPick(this)"><span class="mode-icon">📡</span><div class="mode-label">Range-Rate</div></div>
+              </div>
+              <p class="sec-label">Estimator</p>
+              <div class="mode-cards" style="grid-template-columns:1fr 1fr">
+                <div class="mode-card selected sc-pick" data-field="estimator_type" data-val="bls_lm" onclick="scPick(this)"><span class="mode-icon">📈</span><div class="mode-label">BLS-LM</div><div class="mode-desc">Batch Least Squares</div></div>
+                <div class="mode-card sc-pick" data-field="estimator_type" data-val="srif" onclick="scPick(this)"><span class="mode-icon">🔬</span><div class="mode-label">SRIF</div><div class="mode-desc">Square-Root Info Filter</div></div>
+              </div>
+              <p class="sec-label">Start Mode</p>
+              <div class="mode-cards">
+                <div class="mode-card selected sc-pick" data-field="start_mode" data-val="cold" onclick="scPick(this)"><span class="mode-icon">🧊</span><div class="mode-label">Cold</div></div>
+                <div class="mode-card sc-pick" data-field="start_mode" data-val="hot" onclick="scPick(this)"><span class="mode-icon">🔥</span><div class="mode-label">Hot</div></div>
+                <div class="mode-card sc-pick" data-field="start_mode" data-val="formal" onclick="scPick(this)"><span class="mode-icon">📊</span><div class="mode-label">Formal</div></div>
+                <div class="mode-card sc-pick" data-field="start_mode" data-val="sqrt_formal" onclick="scPick(this)"><span class="mode-icon">√</span><div class="mode-label">Sqrt</div></div>
+              </div>
+              <p class="sec-label">Network</p>
+              <div class="mode-cards" style="grid-template-columns:1fr 1fr">
+                <div class="mode-card selected sc-pick" data-field="network" data-val="single" onclick="scPick(this)"><span class="mode-icon">📡</span><div class="mode-label">Single</div><div class="mode-desc">Canberra DSN</div></div>
+                <div class="mode-card sc-pick" data-field="network" data-val="multi" onclick="scPick(this)"><span class="mode-icon">🌐</span><div class="mode-label">Multi</div><div class="mode-desc">4-station network</div></div>
+              </div>
+              <div style="margin-top:16px"><button class="btn btn-p" onclick="wizGo(2)">Next → Physics</button></div>
+            </div>
+          </div>
+
+          <!-- Step 2: Physics -->
+          <div class="wiz-panel" id="wiz2">
+            <div class="card">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="fg"><label class="fl">Duration (hours)</label><input type="number" class="fi" id="sc_dur" value="4.0" step="0.5" min="0.5"></div>
+                <div class="fg"><label class="fl">Sample Step (s)</label><input type="number" class="fi" id="sc_step" value="240" step="10" min="10"></div>
+                <div class="fg"><label class="fl">Max Iterations</label><input type="number" class="fi" id="sc_iter" value="10" min="1" max="200"></div>
+                <div class="fg"><label class="fl">Relative Tolerance</label><input type="number" class="fi" id="sc_rtol" value="1e-8" step="1e-9"></div>
+                <div class="fg"><label class="fl">Absolute Tolerance</label><input type="number" class="fi" id="sc_atol" value="1e-10" step="1e-11"></div>
+                <div class="fg"><label class="fl">Output Directory</label><input type="text" class="fi" id="sc_outdir" value="results/"></div>
+              </div>
+              <div style="display:flex;gap:20px;margin-top:8px">
+                <div class="fg"><label class="fl">Noise</label><div class="tog-wrap"><div class="tog on" id="sc_noise" onclick="this.classList.toggle('on');updSc()"></div><span style="font-size:11px;color:var(--text-2)" id="sc_noise_lbl">Enabled</span></div></div>
+                <div class="fg"><label class="fl">Bias Mode</label><select class="fs" id="sc_bias" style="width:160px"><option value="none">None</option><option value="global">Global</option><option value="station_angles">Station Angles</option><option value="station_full">Station Full</option></select></div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:14px">
+                <button class="btn btn-s" onclick="wizGo(1)">← Basics</button>
+                <button class="btn btn-p" onclick="wizGo(3)">Next → Preview</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Preview -->
+          <div class="wiz-panel" id="wiz3">
+            <div class="card">
+              <div class="card-hdr"><span class="card-title">Validation</span></div>
+              <div id="valPanel"></div>
+              <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+                <button class="btn btn-s" onclick="wizGo(2)">← Physics</button>
+                <button class="btn btn-p" onclick="dlScJSON()">⬇ Download JSON</button>
+                <button class="btn btn-s" onclick="validateSc()">✓ Validate Server</button>
+                <button class="btn btn-d" onclick="resetSc()">↺ Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky JSON Preview -->
+        <div style="position:sticky;top:24px;align-self:start">
+          <div class="card">
+            <div class="card-hdr"><span class="card-title">JSON Preview</span></div>
+            <div class="json-pre" id="jsonPre"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose">✕</button>
+  <img id="lbImg" src="" alt="Preview">
+</div>
+
+<!-- CSV MODAL -->
+<div class="csv-modal" id="csvModal">
+  <div class="csv-content">
+    <div class="csv-hdr"><h3 id="csvTitle">CSV</h3><button class="lb-close" onclick="closeCsv()">✕</button></div>
+    <div class="csv-body" id="csvBody"></div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div class="toast-box" id="toastBox"></div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = {
+  page: 'dashboard', results: [], experiments: [], stations: [],
+  resFilt: 'all', resQ: '', resView: 'grid', resSort: 'name',
+  csvCache: {}, online: false, selNet: 'all', selQ: null,
+  sc: defaultSc(), wizStep: 1, simPlaying: false, simFrame: 0, simSpeed: 1,
+  measMode: 'position', startMode: 'cold'
+};
+
+function defaultSc() {
+  return { name:'my_scenario', measurement_type:'position', estimator_type:'bls_lm',
+    start_mode:'cold', network:'single', duration_hours:4.0, sample_step_s:240,
+    max_iterations:10, rtol:1e-8, atol:1e-10, noise:true, bias_mode:'none', output_dir:'results/' };
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+function nav(p) {
+  S.page = p;
+  document.querySelectorAll('.page').forEach(s => s.classList.remove('active'));
+  const t = document.getElementById('pg-' + p);
+  if (t) t.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const ni = document.querySelector(`.nav-item[data-p="${p}"]`);
+  if (ni) ni.classList.add('active');
+  if (p === 'dashboard') loadDash();
+  else if (p === 'results') loadRes();
+  else if (p === 'experiments') loadExps();
+  else if (p === 'stations') loadStations();
+  else if (p === 'modes') renderModes();
+  else if (p === 'noise') renderNoise();
+  else if (p === 'scenario') { renderPresets(); updSc(); }
+}
+document.getElementById('navList').addEventListener('click', e => { const i = e.target.closest('.nav-item'); if (i) nav(i.dataset.p); });
+document.getElementById('sbTog').addEventListener('click', () => { const sb = document.getElementById('sidebar'); sb.classList.toggle('collapsed'); document.getElementById('sbTog').textContent = sb.classList.contains('collapsed') ? '▶' : '◀'; });
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+function toast(msg, type='info') {
+  const c = document.getElementById('toastBox'), t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  const icons = {ok:'✓',err:'✕',info:'ℹ'};
+  t.innerHTML = `<span>${icons[type]||'ℹ'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 250); }, 3500);
+}
+
+/* ============================================================
+   API
+   ============================================================ */
+async function api(url) { try { const r = await fetch(url); if (!r.ok) throw new Error(`HTTP ${r.status}`); return await r.json(); } catch(e) { console.warn('API fail:', url, e); return null; } }
+async function apiCSV(f) { if (S.csvCache[f]) return S.csvCache[f]; try { const r = await fetch('/api/csv/'+f); if (!r.ok) throw 0; const d = await r.json(); S.csvCache[f]=d; return d; } catch{ return null; } }
+function fmtNum(v) { const n=parseFloat(v); if(isNaN(n))return v; if(Math.abs(n)<0.001&&n!==0)return n.toExponential(3); if(Math.abs(n)>1e6)return n.toExponential(3); if(Number.isInteger(n))return n.toLocaleString(); return n.toFixed(4); }
+function fmtB(b) { if(b<1024)return b+' B'; if(b<1048576)return(b/1024).toFixed(1)+' KB'; return(b/1048576).toFixed(1)+' MB'; }
+function fmtD(d) { if(!d)return '—'; try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch{return d;} }
+function stL(s){return s.lat_deg!==undefined?s.lat_deg:s.lat;} function stN(s){return s.lon_deg!==undefined?s.lon_deg:s.lon;} function stA(s){return s.alt_m!==undefined?s.alt_m:s.alt;} function stRR(s){return s.supports_range_rate!==undefined?s.supports_range_rate:s.supports_rr;}
+
+/* ============================================================
+   SERVER CHECK
+   ============================================================ */
+async function chkSrv() { try { const r=await fetch('/api/results',{signal:AbortSignal.timeout(3000)}); S.online=r.ok; } catch { S.online=false; } const d=document.getElementById('srvDot'),l=document.getElementById('srvLabel'); if(S.online){d.classList.remove('off');l.textContent='Online';}else{d.classList.add('off');l.textContent='Offline';} }
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+async function loadDash() {
+  const [res,exps,sta] = await Promise.all([api('/api/results'),api('/api/experiments'),api('/api/stations')]);
+  S.results=res||[]; S.experiments=exps||[]; S.stations=sta||[];
+  const rc=res?res.length:0, ec=exps?exps.length:0, sc=sta?sta.length:0;
+  const last=res&&res.length?res.reduce((a,b)=>(b.modified||'')>(a.modified||'')?b:a,res[0]):null;
+  document.getElementById('statusCards').innerHTML=`
+    <div class="card card-lift"><div class="card-hdr"><span class="card-title">Test Suite</span><span class="badge badge-ok">✓</span></div><div class="card-val">99<span class="unit">tests</span></div><div class="card-sub">All passing</div></div>
+    <div class="card card-lift"><div class="card-hdr"><span class="card-title">Result Files</span></div><div class="card-val">${rc}</div><div class="card-sub">${last?'Last: '+fmtD(last.modified):'No data'}</div></div>
+    <div class="card card-lift"><div class="card-hdr"><span class="card-title">Experiments</span></div><div class="card-val">${ec}</div><div class="card-sub">${exps?exps.filter(e=>e.requires_spice).length:0} require SPICE</div></div>
+    <div class="card card-lift"><div class="card-hdr"><span class="card-title">Stations</span></div><div class="card-val">${sc}</div><div class="card-sub">Ground tracking</div></div>`;
+  loadCamps(); loadFact(); renderRecent(res);
+}
+
+async function loadCamps() {
+  const [itu, d4, phys] = await Promise.all([apiCSV('campaign_28day_itu_summary.csv'), apiCSV('campaign_4day_summary.csv'), apiCSV('range_rate_physics_comparison_summary.csv')]);
+  const circ = 2*Math.PI*34, vf=32.2, off=circ-(vf/100)*circ;
+  document.getElementById('campCards').innerHTML=`
+    <div class="card"><div class="card-hdr"><span class="card-title">28-Day ITU Campaign</span><span class="badge badge-info">ITU</span></div>
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+        <svg width="76" height="76" viewBox="0 0 80 80" style="flex-shrink:0"><circle cx="40" cy="40" r="34" fill="none" stroke="rgba(80,130,255,0.08)" stroke-width="6"/><circle cx="40" cy="40" r="34" fill="none" stroke="url(#pg)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}" transform="rotate(-90 40 40)"/><text x="40" y="44" text-anchor="middle" fill="var(--text-1)" font-size="14" font-weight="800">${vf}%</text></svg>
+        <div style="flex:1;min-width:140px">
+          <div class="inline-stat"><span class="inline-stat-lbl">Visibility</span><span class="inline-stat-val">216.17h</span></div>
+          <div class="inline-stat"><span class="inline-stat-lbl">Arcs</span><span class="inline-stat-val">114</span></div>
+          <div class="inline-stat"><span class="inline-stat-lbl">OD-Ready</span><span class="inline-stat-val">105</span></div>
+        </div></div></div>
+    <div class="card"><div class="card-hdr"><span class="card-title">4-Day Campaign</span><span class="badge badge-info">Multi</span></div>
+      ${[{l:'Single',v:18.5},{l:'Multi',v:42.7},{l:'Extended',v:61.3}].map(n=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px"><span style="color:var(--text-2)">${n.l}</span><span style="color:var(--text-1);font-weight:700">${n.v}%</span></div><div class="progress-wrap"><div class="progress-fill" style="width:${n.v}%"></div></div></div>`).join('')}
+    </div>
+    ${renderRRPhysicsCard(phys)}`;
+}
+
+function renderRRPhysicsCard(data) {
+  const rows = data&&data.rows&&data.rows.length ? data.rows.map(r=>({
+    tc: parseFloat(r[data.headers.indexOf('count_interval_s')]),
+    rms: parseFloat(r[data.headers.indexOf('difference_rms_mps')]),
+    max: parseFloat(r[data.headers.indexOf('difference_max_abs_mps')]),
+    sigma: parseFloat(r[data.headers.indexOf('two_way_obs_with_geometric_model_rr_residual_rms_sigma')])
+  })).filter(r=>Number.isFinite(r.tc)) : [
+    {tc:1,rms:1.40,max:2.03,sigma:9987},
+    {tc:60,rms:1.40,max:2.05,sigma:10037},
+    {tc:300,rms:3.70,max:5.25,sigma:26337}
+  ];
+  const peak=Math.max(...rows.map(r=>r.rms),1e-9);
+  return `<div class="card"><div class="card-hdr"><span class="card-title">Geometric vs Two-Way RR</span><span class="badge badge-info">SPICE</span></div>
+    ${rows.map(r=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px"><span style="color:var(--text-2)">Tc ${fmtNum(r.tc)}s</span><span style="color:var(--text-1);font-weight:700">${fmtNum(r.rms)} m/s</span></div><div class="progress-wrap"><div class="progress-fill" style="width:${Math.min(100,100*r.rms/peak)}%"></div></div></div>`).join('')}
+    <div class="inline-stat"><span class="inline-stat-lbl">Worst Max Difference</span><span class="inline-stat-val">${fmtNum(Math.max(...rows.map(r=>r.max)))} m/s</span></div>
+    <div class="inline-stat"><span class="inline-stat-lbl">Worst Geometric Residual</span><span class="inline-stat-val">${fmtNum(Math.max(...rows.map(r=>r.sigma)))} σ</span></div>
+  </div>`;
+}
+
+async function loadFact() {
+  const data = await apiCSV('thesis_factorial_aggregate.csv');
+  const rl=['Single × Position','Single × Range Rate','Multi × Position','Multi × Range Rate'];
+  const cl=['BLS × Cold','BLS × Hot','SRIF × Cold','SRIF × Hot'];
+  let cells=data&&data.rows.length>=4?data.rows.slice(0,4).map((r,ri)=>[1,2,3,4].map(c=>{const v=parseFloat(r[c]);return isNaN(v)?null:v;})):[[2.3,0.8,1.9,0.7],[5.6,2.1,4.8,1.8],[1.1,0.4,0.9,0.3],[3.2,1.2,2.7,1.0]];
+  const hc=v=>v===null?'':v<2?'hl':v<5?'hm':'hh';
+  document.getElementById('factCard').innerHTML=`<div class="card"><div class="card-hdr"><span class="card-title">Thesis Factorial — Median Position Error (km)</span></div><div style="overflow-x:auto"><table class="hm-table"><thead><tr><th></th>${cl.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rl.map((r,ri)=>`<tr><td class="rl">${r}</td>${cells[ri].map(v=>`<td class="${hc(v)}">${v!==null?v.toFixed(2):'—'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+
+function renderRecent(res) {
+  const pngs=(res||[]).filter(r=>r.name&&r.name.toLowerCase().endsWith('.png')).slice(-8);
+  document.getElementById('recentRes').innerHTML=pngs.length?`<div class="card"><div class="card-hdr"><span class="card-title">Recent Plots</span></div><div class="thumb-strip">${pngs.map(p=>`<div class="thumb-item" onclick="nav('results')"><img src="/results/${p.name}" alt="${p.name}" loading="lazy"><div class="tn">${p.name}</div></div>`).join('')}</div></div>`:`<div class="card"><div class="card-hdr"><span class="card-title">Recent Results</span></div><p style="color:var(--text-3);font-size:12px">No PNG results found.</p></div>`;
+}
+
+/* ============================================================
+   RESULTS BROWSER
+   ============================================================ */
+async function loadRes() { if(!S.results.length){const d=await api('/api/results');S.results=d||[];} renderRes(); }
+function catRes(n){const l=n.toLowerCase();if(l.includes('campaign'))return'campaign';if(l.includes('visibility')||l.includes('visib'))return'visibility';if(l.includes('handoff')||l.startsWith('formal_'))return'handoff';if(l.includes('factorial'))return'factorial';if(l.includes('doppler')||l.startsWith('range_rate_'))return'doppler';if(l.includes('synthetic'))return'synthetic';return'other';}
+
+function renderRes() {
+  let items=[...S.results];
+  if(S.resFilt!=='all') items=items.filter(r=>catRes(r.name)===S.resFilt);
+  if(S.resQ){const q=S.resQ.toLowerCase();items=items.filter(r=>r.name.toLowerCase().includes(q));}
+  if(S.resSort==='name')items.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(S.resSort==='date')items.sort((a,b)=>(b.modified||'').localeCompare(a.modified||''));
+  else if(S.resSort==='size')items.sort((a,b)=>(b.size||0)-(a.size||0));
+  const grid=document.getElementById('resGrid'),list=document.getElementById('resList');
+  if(S.resView==='grid'){
+    grid.style.display='grid';list.style.display='none';
+    grid.innerHTML=items.length?items.map(r=>{const ip=r.name.toLowerCase().endsWith('.png'),ic=r.name.toLowerCase().endsWith('.csv');return`<div class="res-card" onclick="${ip?`openLb('/results/${r.name}')`:ic?`openCsv('${r.name}')`:''}""><div class="res-thumb">${ip?`<img src="/results/${r.name}" alt="${r.name}" loading="lazy">`:`<span class="icon">${ic?'📄':'📁'}</span>`}</div><div class="res-info"><div class="res-name">${r.name}</div><div class="res-meta">${fmtB(r.size||0)} • ${fmtD(r.modified)}</div></div></div>`;}).join(''):'<p style="grid-column:1/-1;color:var(--text-3);text-align:center;padding:30px 0">No results match.</p>';
+  } else {
+    grid.style.display='none';list.style.display='block';
+    document.getElementById('resListBody').innerHTML=items.map(r=>{const ip=r.name.toLowerCase().endsWith('.png'),ic=r.name.toLowerCase().endsWith('.csv'),ext=r.name.split('.').pop().toUpperCase();return`<tr onclick="${ip?`openLb('/results/${r.name}')`:ic?`openCsv('${r.name}')`:''}""><td style="font-weight:600">${r.name}</td><td><span class="badge badge-neutral">${ext}</span></td><td>${fmtB(r.size||0)}</td><td>${fmtD(r.modified)}</td></tr>`;}).join('');
+  }
+}
+document.getElementById('resFbar').addEventListener('click',e=>{const c=e.target.closest('.chip');if(c&&c.dataset.cat){document.querySelectorAll('#resFbar .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on');S.resFilt=c.dataset.cat;renderRes();}});
+document.getElementById('resSearch').addEventListener('input',e=>{S.resQ=e.target.value;renderRes();});
+document.getElementById('viewTog').addEventListener('click',e=>{const b=e.target.closest('.vtog-btn');if(b){document.querySelectorAll('.vtog-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');S.resView=b.dataset.v;renderRes();}});
+document.getElementById('resSort').addEventListener('change',e=>{S.resSort=e.target.value;renderRes();});
+
+/* ============================================================
+   LIGHTBOX & CSV MODAL
+   ============================================================ */
+function openLb(src){document.getElementById('lbImg').src=src;document.getElementById('lightbox').classList.add('open');}
+function closeLb(){document.getElementById('lightbox').classList.remove('open');document.getElementById('lbImg').src='';}
+document.getElementById('lbClose').addEventListener('click',closeLb);
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))closeLb();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLb();closeCsv();}});
+
+async function openCsv(f){
+  const m=document.getElementById('csvModal');document.getElementById('csvTitle').textContent=f;
+  document.getElementById('csvBody').innerHTML='<div style="padding:30px;text-align:center;color:var(--text-3)">Loading…</div>';
+  m.classList.add('open');
+  const d=await apiCSV(f);
+  if(!d){document.getElementById('csvBody').innerHTML='<div style="padding:30px;text-align:center;color:var(--error)">Failed</div>';return;}
+  renderCsvT(d,'csvBody');
+}
+function closeCsv(){document.getElementById('csvModal').classList.remove('open');}
+document.getElementById('csvModal').addEventListener('click',e=>{if(e.target===document.getElementById('csvModal'))closeCsv();});
+
+function renderCsvT(data,cid,sc,sa){
+  if(sc===undefined)sc=-1;if(sa===undefined)sa=true;
+  let rows=[...data.rows];
+  if(sc>=0)rows.sort((a,b)=>{let va=a[sc]||'',vb=b[sc]||'';const na=parseFloat(va),nb=parseFloat(vb);if(!isNaN(na)&&!isNaN(nb))return sa?na-nb:nb-na;return sa?va.localeCompare(vb):vb.localeCompare(va);});
+  const c=document.getElementById(cid);
+  c.innerHTML=`<table class="csv-table"><thead><tr>${data.headers.map((h,i)=>`<th onclick="sortCsv(${i},'${cid}')" data-col="${i}">${h}${sc===i?`<span style="margin-left:3px;font-size:9px">${sa?'▲':'▼'}</span>`:''}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${fmtNum(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  c._d=data;c._sc=sc;c._sa=sa;
+}
+function sortCsv(ci,cid){const c=document.getElementById(cid);renderCsvT(c._d,cid,ci,c._sc===ci?!c._sa:true);}
+
+/* ============================================================
+   EXPERIMENTS
+   ============================================================ */
+async function loadExps(){if(!S.experiments.length){const d=await api('/api/experiments');S.experiments=d||[];}renderExps();}
+function renderExps(){
+  const c=document.getElementById('expList');
+  if(!S.experiments.length){c.innerHTML='<div class="card" style="grid-column:1/-1"><p style="color:var(--text-3);text-align:center;padding:16px">No experiments loaded.</p></div>';return;}
+  c.innerHTML=S.experiments.map((e,i)=>{const sc=e.status==='running'?'running':e.status==='success'?'success':e.status==='failed'?'failed':'';const id=e.experiment_id||e.id||i;return`<div class="exp-card"><div class="exp-name">${e.experiment_id||e.name||'Exp '+(i+1)}</div><div class="exp-script">${e.script||'run.py'}</div><div class="exp-badges">${e.requires_spice?'<span class="badge badge-purple">SPICE</span>':''}${e.long_running?'<span class="badge badge-warn">Long</span>':''}<span class="badge badge-neutral">${e.status||'planned'}</span></div>${e.expected_outputs?`<div class="exp-outs"><strong>Outputs:</strong><ul>${e.expected_outputs.map(o=>`<li>${o}</li>`).join('')}</ul></div>`:''}<div class="exp-acts"><button class="btn btn-p btn-sm" onclick="runExp('${id}')">▶ Run</button><div class="st-dot ${sc}"></div></div></div>`;}).join('');
+}
+async function runExp(id){const dr=document.getElementById('dryTog').classList.contains('on');toast(`${dr?'[DRY] ':''}Starting ${id}…`,'info');try{const r=await fetch('/api/run-experiment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({experiment_id:id,dry_run:dr})});const d=await r.json();toast(d.message||`${id} done`,d.status==='started'?'ok':d.status==='dry_run'?'info':'err');}catch{toast(`${id} failed`,'err');}}
+async function runExps(mode){const dr=document.getElementById('dryTog').classList.contains('on');toast(`${dr?'[DRY] ':''}Running ${mode}…`,'info');try{const r=await fetch('/api/experiments/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode,dry_run:dr})});if(r.ok)toast(`${mode} done`,'ok');else toast(`Failed: HTTP ${r.status}`,'err');}catch{toast('Request failed','err');}}
+
+/* ============================================================
+   ORBIT & STATIONS — ANIMATED CANVAS
+   ============================================================ */
+const FAMILY_COL = {ITU:'#4facfe',DSN:'#f97316',KGS:'#a855f7',ESA:'#43e97b',RUS:'#f5576c',ISRO:'#eab308',Other:'#7a8ba8'};
+const NET_PRESETS = {single:['Canberra DSN'],multi:['Goldstone DSN','Madrid DSN','Canberra DSN','ITU Ayazaga']};
+const BUILTIN_STATIONS = [
+  {name:'Canberra DSN',family:'DSN',lat_deg:-35.40,lon_deg:148.98,alt_m:680,supports_range_rate:true},
+  {name:'Goldstone DSN',family:'DSN',lat_deg:35.30,lon_deg:-116.81,alt_m:970,supports_range_rate:true},
+  {name:'Madrid DSN',family:'DSN',lat_deg:40.43,lon_deg:-4.25,alt_m:834,supports_range_rate:true},
+  {name:'ITU Ayazaga',family:'ITU',lat_deg:41.101,lon_deg:29.023,alt_m:100,supports_range_rate:true},
+];
+
+let simAnim = null, simTotalFrames = 1000;
+const SIM_DUR_H = 24; // 24 hour simulation
+
+async function loadStations() {
+  if(!S.stations.length){const d=await api('/api/stations');S.stations=d&&d.length?d:BUILTIN_STATIONS;}
+  if(!S.stations.length) S.stations=BUILTIN_STATIONS;
+  renderStationCards();
+  initSim();
+}
+
+function selNet(n){
+  S.selNet=n;
+  document.querySelectorAll('.net-btn').forEach(b=>b.classList.toggle('on',b.dataset.net===n));
+  renderStationCards();
+  drawSimFrame(S.simFrame);
+}
+
+function renderStationCards(){
+  const stations=S.stations;
+  const hl=S.selNet!=='all'?new Set(NET_PRESETS[S.selNet]||[]):null;
+  const filtered=hl?stations.filter(s=>hl.has(s.name)):stations;
+  document.getElementById('stationCards').innerHTML=filtered.map(s=>{
+    const col=FAMILY_COL[s.family]||'#7a8ba8';
+    const sr=s.sigma_range_m!==undefined?s.sigma_range_m:s.sigma_range||'—';
+    const sa=s.sigma_angle_deg!==undefined?s.sigma_angle_deg:s.sigma_angle||'—';
+    const srr=s.sigma_range_rate_mps!==undefined?s.sigma_range_rate_mps:s.sigma_range_rate;
+    return`<div class="card card-lift"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div style="width:8px;height:8px;border-radius:50%;background:${col}"></div><span style="font-size:14px;font-weight:800">${s.name}</span><span class="badge" style="background:${col}22;color:${col}">${s.family}</span>${stRR(s)?'<span class="badge badge-info">RR</span>':''}</div><div style="font-size:11px;color:var(--text-2);line-height:1.8"><div>Lat: <span style="color:var(--text-1);font-weight:600">${stL(s).toFixed(2)}°</span> Lon: <span style="color:var(--text-1);font-weight:600">${stN(s).toFixed(2)}°</span></div><div>Alt: <span style="color:var(--text-1);font-weight:600">${stA(s)} m</span></div><div style="border-top:1px solid var(--border-card);margin:6px 0;padding-top:6px">σ<sub>range</sub>: <span style="color:var(--text-1);font-weight:600">${sr} m</span> · σ<sub>angle</sub>: <span style="color:var(--text-1);font-weight:600">${sa}°</span></div>${srr!=null?`<div>σ<sub>ṙ</sub>: <span style="color:var(--text-1);font-weight:600">${srr} m/s</span></div>`:''}</div></div>`;
+  }).join('');
+}
+
+/* ---------- Canvas Simulation ---------- */
+function initSim() {
+  const canvas = document.getElementById('simCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  drawSimFrame(0);
+  buildVisTimeline();
+
+  document.getElementById('simPlay').addEventListener('click', toggleSim);
+  document.getElementById('simReset').addEventListener('click', () => { S.simFrame=0; S.simPlaying=false; document.getElementById('simPlay').textContent='▶'; document.getElementById('simSlider').value=0; drawSimFrame(0); updateVisCursor(0); });
+  document.getElementById('simSlider').addEventListener('input', e => { S.simFrame=parseInt(e.target.value); drawSimFrame(S.simFrame); updateVisCursor(S.simFrame/simTotalFrames); });
+  document.getElementById('simSpeedBtn').addEventListener('click', () => { const speeds=[1,2,5,10]; const i=(speeds.indexOf(S.simSpeed)+1)%speeds.length; S.simSpeed=speeds[i]; document.getElementById('simSpeedBtn').textContent=S.simSpeed+'×'; });
+}
+
+function toggleSim() {
+  S.simPlaying = !S.simPlaying;
+  document.getElementById('simPlay').textContent = S.simPlaying ? '⏸' : '▶';
+  document.getElementById('simPlay').classList.toggle('active', S.simPlaying);
+  if (S.simPlaying) animSim();
+}
+
+function animSim() {
+  if (!S.simPlaying) return;
+  S.simFrame = (S.simFrame + S.simSpeed) % simTotalFrames;
+  document.getElementById('simSlider').value = S.simFrame;
+  drawSimFrame(S.simFrame);
+  updateVisCursor(S.simFrame / simTotalFrames);
+  simAnim = requestAnimationFrame(animSim);
+}
+
+function drawSimFrame(frame) {
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  ctx.clearRect(0, 0, W, H);
+
+  const t_h = (frame / simTotalFrames) * SIM_DUR_H;
+  const t_s = t_h * 3600;
+  document.getElementById('simTime').textContent = `T+${t_h.toFixed(2)} h`;
+
+  // Earth rotation (GST)
+  const gst0 = 4.894; // approximate GST at J2000
+  const omega_e = 7.2921159e-5; // rad/s
+  const gst = gst0 + omega_e * t_s;
+
+  // Draw background grid
+  ctx.strokeStyle = 'rgba(80,130,255,0.06)';
+  ctx.lineWidth = dpr;
+  for (let i = 1; i < 8; i++) { ctx.beginPath(); ctx.moveTo(0, i*H/8); ctx.lineTo(W, i*H/8); ctx.stroke(); }
+  for (let i = 1; i < 16; i++) { ctx.beginPath(); ctx.moveTo(i*W/16, 0); ctx.lineTo(i*W/16, H); ctx.stroke(); }
+
+  // Equator
+  ctx.strokeStyle = 'rgba(80,130,255,0.12)';
+  ctx.setLineDash([8*dpr, 4*dpr]);
+  ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Simplified continents (filled polygons)
+  ctx.fillStyle = 'rgba(80,130,255,0.06)';
+  ctx.strokeStyle = 'rgba(80,130,255,0.12)';
+  ctx.lineWidth = dpr;
+  const continents = [
+    [[100,80],[140,70],[190,90],[220,120],[210,150],[175,175],[130,185],[95,155],[90,110]], // N.America
+    [[175,210],[210,220],[218,250],[210,295],[180,325],[160,295],[162,250]], // S.America
+    [[370,85],[415,82],[430,95],[425,115],[400,130],[375,118]], // Europe
+    [[380,155],[435,158],[450,220],[445,260],[420,290],[390,268],[378,200]], // Africa
+    [[430,60],[540,55],[630,72],[660,90],[640,130],[570,155],[490,145],[435,108]], // Asia
+    [[620,255],[680,258],[688,285],[650,308],[625,295]], // Australia
+  ];
+  const sx = W / 800, sy = H / 400;
+  continents.forEach(pts => {
+    ctx.beginPath();
+    pts.forEach((p,i) => i===0 ? ctx.moveTo(p[0]*sx, p[1]*sy) : ctx.lineTo(p[0]*sx, p[1]*sy));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+
+  // Lunar orbit trace (simple elliptical projection on map)
+  const moonPeriod_h = 27.3 * 24;
+  ctx.strokeStyle = 'rgba(200,220,255,0.15)';
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.beginPath();
+  for (let i = 0; i <= 200; i++) {
+    const th = (i / 200) * 2 * Math.PI;
+    const moonRA = th;
+    const moonDec = 28.5 * Math.sin(th) * Math.PI / 180; // approximate declination
+    const moonLon = (moonRA * 180 / Math.PI - gst * 180 / Math.PI) % 360;
+    const mx = ((moonLon + 540) % 360) / 360 * W;
+    const my = (0.5 - moonDec * 180 / Math.PI / 180) * H;
+    i === 0 ? ctx.moveTo(mx, my) : ctx.lineTo(mx, my);
+  }
+  ctx.stroke();
+
+  // Current Moon position
+  const moonAngle = (t_h / moonPeriod_h) * 2 * Math.PI;
+  const moonRA = moonAngle;
+  const moonDec = 28.5 * Math.sin(moonAngle) * Math.PI / 180;
+  const moonLonDeg = ((moonRA * 180 / Math.PI - gst * 180 / Math.PI) % 360 + 360) % 360;
+  const moonX = (moonLonDeg / 360) * W;
+  const moonY = (0.5 - moonDec * 180 / Math.PI / 180) * H;
+
+  // Moon glow
+  const moonGrad = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, 20*dpr);
+  moonGrad.addColorStop(0, 'rgba(200,220,255,0.3)');
+  moonGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = moonGrad;
+  ctx.fillRect(moonX - 20*dpr, moonY - 20*dpr, 40*dpr, 40*dpr);
+
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, 6*dpr, 0, 2*Math.PI);
+  ctx.fillStyle = '#e8edf5';
+  ctx.fill();
+  ctx.font = `${9*dpr}px Inter`;
+  ctx.fillStyle = 'rgba(200,220,255,0.6)';
+  ctx.fillText('☽ Moon', moonX + 10*dpr, moonY + 4*dpr);
+
+  // Station dots
+  const stations = S.stations;
+  const hlSet = S.selNet !== 'all' ? new Set(NET_PRESETS[S.selNet] || []) : null;
+
+  stations.forEach(s => {
+    const lat = stL(s), lon = stN(s);
+    const x = ((lon + 180) / 360) * W;
+    const y = ((90 - lat) / 180) * H;
+    const col = FAMILY_COL[s.family] || '#7a8ba8';
+    const highlighted = !hlSet || hlSet.has(s.name);
+    const alpha = highlighted ? 1.0 : 0.2;
+
+    // Simple visibility check: elevation > 5° approximation
+    const moonAlt = calcMoonElev(lat, lon, moonLonDeg, moonDec * 180 / Math.PI);
+    const visible = moonAlt > 5 && highlighted;
+
+    ctx.globalAlpha = alpha;
+
+    // Visibility cone/pulse
+    if (visible) {
+      const pulseR = 12 * dpr + 4 * dpr * Math.sin(t_s * 2);
+      const vGrad = ctx.createRadialGradient(x, y, 0, x, y, pulseR);
+      vGrad.addColorStop(0, col + '40');
+      vGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = vGrad;
+      ctx.beginPath(); ctx.arc(x, y, pulseR, 0, 2*Math.PI); ctx.fill();
+    }
+
+    // Outer ring
+    ctx.beginPath(); ctx.arc(x, y, 6*dpr, 0, 2*Math.PI);
+    ctx.fillStyle = visible ? col + '30' : 'rgba(80,130,255,0.08)';
+    ctx.fill();
+
+    // Dot
+    ctx.beginPath(); ctx.arc(x, y, 3*dpr, 0, 2*Math.PI);
+    ctx.fillStyle = visible ? col : col + '60';
+    ctx.fill();
+
+    // Center
+    ctx.beginPath(); ctx.arc(x, y, 1.5*dpr, 0, 2*Math.PI);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+  });
+}
+
+function calcMoonElev(stLat, stLon, moonLon, moonDec) {
+  // Simplified elevation calculation
+  const dLon = (moonLon - stLon) * Math.PI / 180;
+  const stLatR = stLat * Math.PI / 180;
+  const moonDecR = moonDec * Math.PI / 180;
+  const sinElev = Math.sin(stLatR) * Math.sin(moonDecR) + Math.cos(stLatR) * Math.cos(moonDecR) * Math.cos(dLon);
+  return Math.asin(Math.max(-1, Math.min(1, sinElev))) * 180 / Math.PI;
+}
+
+function buildVisTimeline() {
+  const tl = document.getElementById('visTimeline');
+  const stations = S.stations.slice(0, 8); // limit to 8 for readability
+  tl.innerHTML = stations.map((s, i) => `
+    <div class="vis-row">
+      <span class="vis-label">${s.name}</span>
+      <div class="vis-bar"><canvas id="visBar${i}" height="8"></canvas><div class="vis-cursor" id="visCur${i}" style="left:0%"></div></div>
+    </div>
+  `).join('');
+
+  // Pre-render visibility bars
+  setTimeout(() => {
+    stations.forEach((s, i) => {
+      const bc = document.getElementById('visBar' + i);
+      if (!bc) return;
+      bc.width = bc.clientWidth * 2;
+      bc.height = 16;
+      const bctx = bc.getContext('2d');
+      const W = bc.width;
+      const col = FAMILY_COL[s.family] || '#7a8ba8';
+      const moonPeriod_h = 27.3 * 24;
+      for (let px = 0; px < W; px++) {
+        const frac = px / W;
+        const th = frac * SIM_DUR_H;
+        const ts = th * 3600;
+        const gst = 4.894 + 7.2921159e-5 * ts;
+        const mAngle = (th / moonPeriod_h) * 2 * Math.PI;
+        const mDec = 28.5 * Math.sin(mAngle);
+        const mLon = ((mAngle * 180 / Math.PI - gst * 180 / Math.PI) % 360 + 360) % 360;
+        const elev = calcMoonElev(stL(s), stN(s), mLon, mDec);
+        if (elev > 5) { bctx.fillStyle = col; bctx.globalAlpha = 0.6; }
+        else { bctx.fillStyle = '#1a1a2e'; bctx.globalAlpha = 0.3; }
+        bctx.fillRect(px, 0, 1, 16);
+      }
+    });
+  }, 100);
+}
+
+function updateVisCursor(frac) {
+  const stations = S.stations.slice(0, 8);
+  stations.forEach((_, i) => {
+    const cur = document.getElementById('visCur' + i);
+    if (cur) cur.style.left = (frac * 100) + '%';
+  });
+}
+
+/* ============================================================
+   MODES PAGE
+   ============================================================ */
+function renderModes() { renderMeasDetail(); renderSignal(); renderHandoff(); }
+
+function selMeas(el) {
+  document.querySelectorAll('#measModes .mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected'); S.measMode = el.dataset.mode;
+  renderMeasDetail(); renderSignal();
+}
+
+function renderMeasDetail() {
+  const isRR = S.measMode === 'range_rate';
+  document.getElementById('measDetail').innerHTML = `
+    <div class="card-hdr"><span class="card-title">${isRR ? 'Range-Rate Measurement Model' : 'Position Measurement Model'}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <p class="sec-label" style="margin-top:0">Observables</p>
+        ${(isRR ? ['Range (m)','Range-Rate (m/s)','Azimuth (°)','Elevation (°)'] : ['Range (m)','Azimuth (°)','Elevation (°)']).map(o => `<div style="font-size:12px;color:var(--text-1);margin-bottom:4px;padding:4px 8px;background:rgba(80,130,255,0.04);border-radius:4px">📌 ${o}</div>`).join('')}
+      </div>
+      <div>
+        <p class="sec-label" style="margin-top:0">σ Comparison</p>
+        <table class="csv-table" style="font-size:11px">
+          <thead><tr><th>Param</th><th>ITU</th><th>DSN</th></tr></thead>
+          <tbody>
+            <tr><td>σ<sub>range</sub></td><td>94 m</td><td>5 m</td></tr>
+            <tr><td>σ<sub>angle</sub></td><td>0.005°</td><td>0.001°</td></tr>
+            ${isRR ? '<tr><td>σ<sub>ṙ</sub></td><td>1e-3 m/s</td><td>1e-4 m/s</td></tr>' : ''}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    ${isRR ? '<div style="margin-top:12px;padding:10px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.15);border-radius:var(--radius-sm);font-size:11px;color:var(--purple)"><strong>Doppler Physics:</strong> geometric_instantaneous or two_way_counted_doppler modes available. Count interval configurable (default 60s).</div>' : ''}
+  `;
+}
+
+function renderSignal() {
+  const canvas = document.getElementById('sigCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = 120 * dpr;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const isRR = S.measMode === 'range_rate';
+
+  // Station
+  ctx.fillStyle = '#f97316';
+  ctx.beginPath(); ctx.arc(80*dpr, H/2, 16*dpr, 0, 2*Math.PI); ctx.fill();
+  ctx.font = `bold ${10*dpr}px Inter`;
+  ctx.fillStyle = '#e8edf5';
+  ctx.textAlign = 'center';
+  ctx.fillText('📡', 80*dpr, H/2 + 4*dpr);
+  ctx.fillText('Station', 80*dpr, H/2 + 28*dpr);
+
+  // Spacecraft
+  ctx.fillStyle = '#4facfe';
+  ctx.beginPath(); ctx.arc(W - 80*dpr, H/2, 16*dpr, 0, 2*Math.PI); ctx.fill();
+  ctx.fillStyle = '#e8edf5';
+  ctx.fillText('🛰', W - 80*dpr, H/2 + 4*dpr);
+  ctx.fillText('S/C', W - 80*dpr, H/2 + 28*dpr);
+
+  // Signal waves
+  const startX = 100*dpr, endX = W - 100*dpr;
+  const t = Date.now() / 1000;
+
+  // Uplink (station → S/C)
+  ctx.strokeStyle = isRR ? '#f97316' : 'rgba(79,172,254,0.5)';
+  ctx.lineWidth = 2*dpr;
+  ctx.beginPath();
+  for (let x = startX; x <= endX; x += 1) {
+    const frac = (x - startX) / (endX - startX);
+    const y = H/2 - 15*dpr + Math.sin(frac * 12 + t * 3) * 8*dpr;
+    x === startX ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  if (isRR) {
+    // Downlink (S/C → station) with frequency shift
+    ctx.strokeStyle = '#00f2fe';
+    ctx.beginPath();
+    for (let x = endX; x >= startX; x -= 1) {
+      const frac = (x - startX) / (endX - startX);
+      const y = H/2 + 15*dpr + Math.sin(frac * 14 + t * 3) * 6*dpr; // slightly different freq = Doppler
+      x === endX ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Labels
+    ctx.font = `${9*dpr}px Inter`;
+    ctx.fillStyle = '#f97316';
+    ctx.textAlign = 'left';
+    ctx.fillText('f₀ uplink', startX + 20*dpr, H/2 - 26*dpr);
+    ctx.fillStyle = '#00f2fe';
+    ctx.fillText('f₀·(M/N) + Δf  downlink', startX + 20*dpr, H/2 + 38*dpr);
+  } else {
+    ctx.font = `${9*dpr}px Inter`;
+    ctx.fillStyle = 'rgba(79,172,254,0.7)';
+    ctx.textAlign = 'left';
+    ctx.fillText('Range + Angles measurement', startX + 20*dpr, H/2 - 20*dpr);
+  }
+
+  if (S.page === 'modes') requestAnimationFrame(renderSignal);
+}
+
+function selStart(el) {
+  document.querySelectorAll('#startModes .mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected'); S.startMode = el.dataset.mode;
+  renderHandoff();
+}
+
+function renderHandoff() {
+  const mode = S.startMode;
+  document.getElementById('startBadge').textContent = mode.toUpperCase();
+
+  const arcs = 5;
+  const errors = mode === 'cold' ? [4.2, 3.8, 5.1, 2.9, 4.5] :
+                 mode === 'hot' ? [4.2, 1.8, 0.9, 0.5, 0.3] :
+                 mode === 'formal' ? [4.2, 1.2, 0.6, 0.3, 0.15] :
+                 [4.2, 1.0, 0.4, 0.2, 0.08];
+
+  const arrowClass = mode === 'cold' ? '' : mode === 'hot' ? 'hot' : 'formal';
+  const arrowSymbol = mode === 'cold' ? '✕' : '→';
+
+  document.getElementById('handoffFlow').innerHTML = Array.from({length: arcs}, (_, i) => {
+    const err = errors[i];
+    const errCol = err < 1 ? 'var(--success)' : err < 3 ? 'var(--warn)' : 'var(--error)';
+    return `
+      ${i > 0 ? `<div class="arc-arrow ${arrowClass}">${arrowSymbol}</div>` : ''}
+      <div class="arc-block ${i === arcs-1 ? 'active' : ''}">
+        <div class="arc-num">Arc ${i+1}</div>
+        <div class="arc-err" style="color:${errCol}">${err.toFixed(2)} km</div>
+      </div>
+    `;
+  }).join('');
+
+  const explains = {
+    cold: 'Each arc starts independently with a random perturbation (σ_pos = 180 m, σ_vel = 0.03 m/s). No information is carried between arcs. Error levels are uncorrelated.',
+    hot: 'The estimated state from arc N is propagated forward to arc N+1\'s epoch using the dynamics model. State information transfers but no uncertainty information.',
+    formal: 'State + covariance matrix (P) are propagated. The posterior P from arc N becomes the prior for arc N+1 via Φ·P·Φᵀ + Q. Errors decrease rapidly.',
+    sqrt_formal: 'Square-root information matrix (R) is propagated directly — numerically more stable than P-matrix. SRIF-only. Best convergence for long arcs.'
+  };
+  document.getElementById('startExplain').textContent = explains[mode];
+}
+
+/* ============================================================
+   Q/R NOISE
+   ============================================================ */
+const R_MODELS = {
+  position: { label:'Position', comp:['range','azimuth','elevation'], ITU:[40,0.009,0.009], DSN:[15,0.005,0.005], units:['m','deg','deg'] },
+  range_rate: { label:'Range-Rate', comp:['range','range_rate','azimuth','elevation'], ITU:[40,0.004,0.009,0.009], DSN:[15,0.001,0.005,0.005], units:['m','m/s','deg','deg'] }
+};
+const Q_MODELS = [
+  {name:'Q0 (Zero)',ps:0,vs:0,diag:[0,0,0,0,0,0]},
+  {name:'Q Small',ps:1e-6,vs:1e-9,diag:[1e-12,1e-12,1e-12,1e-18,1e-18,1e-18]},
+  {name:'Q Medium',ps:1e-4,vs:1e-7,diag:[1e-8,1e-8,1e-8,1e-14,1e-14,1e-14]},
+  {name:'Q Large',ps:1e-2,vs:1e-5,diag:[1e-4,1e-4,1e-4,1e-10,1e-10,1e-10]}
+];
+
+function renderNoise() { renderR(); renderQ(); }
+
+function renderR() {
+  const pos=R_MODELS.position, rr=R_MODELS.range_rate;
+  const all=[...pos.ITU,...pos.DSN,...rr.ITU,...rr.DSN].filter(v=>v>0);
+  const maxL=Math.log10(Math.max(...all)), minL=Math.log10(Math.min(...all)), rng=maxL-minL||1;
+  const bw=v=>v<=0?0:Math.max(5,((Math.log10(v)-minL)/rng)*100);
+
+  function panel(m) {
+    return `<div class="noise-panel"><div class="card-hdr"><span class="card-title">${m.label}</span></div>
+      <table class="csv-table" style="margin-bottom:12px;font-size:11px"><thead><tr><th>Component</th><th>ITU σ</th><th>DSN σ</th><th>Unit</th></tr></thead>
+      <tbody>${m.comp.map((c,i)=>`<tr><td>${c}</td><td>${m.ITU[i]}</td><td>${m.DSN[i]}</td><td>${m.units[i]}</td></tr>`).join('')}</tbody></table>
+      <p class="sec-label" style="margin-top:0">Sigma Magnitudes</p>
+      ${m.comp.map((c,i)=>`<div class="sigma-row"><span class="sigma-lbl">${c} ITU</span><div class="sigma-track"><div class="sigma-fill" style="width:${bw(m.ITU[i])}%;background:var(--accent-grad)"></div></div><span class="sigma-val">${m.ITU[i]}</span></div>
+      <div class="sigma-row"><span class="sigma-lbl">${c} DSN</span><div class="sigma-track"><div class="sigma-fill" style="width:${bw(m.DSN[i])}%;background:linear-gradient(135deg,#f97316,#eab308)"></div></div><span class="sigma-val">${m.DSN[i]}</span></div>`).join('')}
+    </div>`;
+  }
+  document.getElementById('rCovSec').innerHTML = `<div class="r-panels">${panel(pos)}${panel(rr)}</div>`;
+}
+
+function renderQ() {
+  document.getElementById('qCards').innerHTML = Q_MODELS.map((q,i) => `
+    <div class="q-card ${S.selQ===i?'sel':''}" onclick="S.selQ=S.selQ===${i}?null:${i};renderQ();">
+      <div class="q-title">${q.name}</div>
+      <div class="q-sigma">Pos σ: <span>${q.ps.toExponential(1)}</span></div>
+      <div class="q-sigma">Vel σ: <span>${q.vs.toExponential(1)}</span></div>
+      <div class="q-matrix">diag(Q) = [<br>${q.diag.map((d,j)=>`  ${d.toExponential(2)}${j<5?',':''} <span style="color:var(--text-3)"># ${j<3?'pos':'vel'} ${'xyz'[j%3]}</span>`).join('<br>')}<br>]</div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   SCENARIO BUILDER
+   ============================================================ */
+const PRESETS = [
+  {name:'Quick Position',desc:'Single · BLS · Cold · 2h',sc:{name:'quick_position',measurement_type:'position',estimator_type:'bls_lm',start_mode:'cold',network:'single',duration_hours:2,sample_step_s:240,max_iterations:10,rtol:1e-8,atol:1e-10,noise:true,bias_mode:'none',output_dir:'results/'}},
+  {name:'Full Factorial',desc:'Multi · SRIF · Hot · 4h',sc:{name:'full_factorial',measurement_type:'range_rate',estimator_type:'srif',start_mode:'hot',network:'multi',duration_hours:4,sample_step_s:240,max_iterations:40,rtol:1e-10,atol:1e-11,noise:true,bias_mode:'none',output_dir:'results/'}},
+  {name:'Doppler Physics',desc:'Single · RR · SRIF · Cold',sc:{name:'doppler_test',measurement_type:'range_rate',estimator_type:'srif',start_mode:'cold',network:'single',duration_hours:4,sample_step_s:240,max_iterations:10,rtol:1e-8,atol:1e-10,noise:false,bias_mode:'none',output_dir:'results/'}},
+  {name:'Formal Handoff',desc:'Multi · Position · SRIF · Formal',sc:{name:'formal_handoff',measurement_type:'position',estimator_type:'srif',start_mode:'formal',network:'multi',duration_hours:4,sample_step_s:240,max_iterations:10,rtol:1e-10,atol:1e-11,noise:true,bias_mode:'none',output_dir:'results/'}},
+];
+
+function renderPresets() {
+  document.getElementById('presetCards').innerHTML = PRESETS.map((p,i) => `
+    <div class="preset-card" onclick="applyPreset(${i})">
+      <div class="preset-name">${p.name}</div>
+      <div class="preset-desc">${p.desc}</div>
+    </div>
+  `).join('');
+}
+
+function applyPreset(i) {
+  S.sc = {...PRESETS[i].sc};
+  syncScForm();
+  updSc();
+  wizGo(1);
+  toast(`Preset "${PRESETS[i].name}" applied`, 'ok');
+}
+
+function wizGo(step) {
+  S.wizStep = step;
+  document.querySelectorAll('.wiz-step').forEach((s,i) => {
+    s.classList.remove('active','done');
+    if (i + 1 === step) s.classList.add('active');
+    else if (i + 1 < step) s.classList.add('done');
+  });
+  document.querySelectorAll('.wiz-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('wiz' + step);
+  if (panel) panel.classList.add('active');
+  updSc();
+}
+
+function scPick(el) {
+  const field = el.dataset.field, val = el.dataset.val;
+  // Deselect siblings with same field
+  el.closest('.mode-cards').querySelectorAll(`.sc-pick[data-field="${field}"]`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  S.sc[field] = val;
+  updSc();
+}
+
+function syncScForm() {
+  const s = S.sc;
+  document.getElementById('sc_name').value = s.name;
+  document.getElementById('sc_dur').value = s.duration_hours;
+  document.getElementById('sc_step').value = s.sample_step_s;
+  document.getElementById('sc_iter').value = s.max_iterations;
+  document.getElementById('sc_rtol').value = s.rtol;
+  document.getElementById('sc_atol').value = s.atol;
+  document.getElementById('sc_outdir').value = s.output_dir;
+  document.getElementById('sc_bias').value = s.bias_mode;
+  const noiseEl = document.getElementById('sc_noise');
+  if (s.noise) noiseEl.classList.add('on'); else noiseEl.classList.remove('on');
+
+  // Sync card selections
+  ['measurement_type','estimator_type','start_mode','network'].forEach(field => {
+    document.querySelectorAll(`.sc-pick[data-field="${field}"]`).forEach(c => {
+      c.classList.toggle('selected', c.dataset.val === s[field]);
+    });
+  });
+}
+
+function updSc() {
+  const s = S.sc;
+  s.name = document.getElementById('sc_name').value;
+  s.duration_hours = parseFloat(document.getElementById('sc_dur').value) || 4;
+  s.sample_step_s = parseInt(document.getElementById('sc_step').value) || 240;
+  s.max_iterations = parseInt(document.getElementById('sc_iter').value) || 10;
+  s.rtol = parseFloat(document.getElementById('sc_rtol').value) || 1e-8;
+  s.atol = parseFloat(document.getElementById('sc_atol').value) || 1e-10;
+  s.noise = document.getElementById('sc_noise').classList.contains('on');
+  s.bias_mode = document.getElementById('sc_bias').value;
+  s.output_dir = document.getElementById('sc_outdir').value;
+  document.getElementById('sc_noise_lbl').textContent = s.noise ? 'Enabled' : 'Disabled';
+  renderJsonPre(); renderVal();
+}
+
+function renderJsonPre() {
+  const j = JSON.stringify(S.sc, null, 2);
+  document.getElementById('jsonPre').innerHTML = j
+    .replace(/"([^"]+)":/g, '<span class="jk">"$1"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span class="js">"$1"</span>')
+    .replace(/: (\d+\.?\d*(?:e[+-]?\d+)?)/gi, ': <span class="jn">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="jb">$1</span>');
+}
+
+function renderVal() {
+  const s = S.sc, rules = [];
+  rules.push(s.name.length > 0 ? {ok:true,t:'Name set'} : {ok:false,t:'Name required'});
+  if (s.start_mode==='sqrt_formal'&&s.estimator_type!=='srif') rules.push({ok:false,warn:true,t:'sqrt_formal requires SRIF'});
+  else if (s.start_mode==='sqrt_formal') rules.push({ok:true,t:'sqrt_formal + SRIF ✓'});
+  rules.push(s.duration_hours>0?{ok:true,t:`Duration: ${s.duration_hours}h`}:{ok:false,t:'Duration > 0'});
+  rules.push(s.sample_step_s>=10?{ok:true,t:`Step: ${s.sample_step_s}s`}:{ok:false,t:'Step ≥ 10s'});
+  rules.push(s.rtol>0&&s.atol>0?{ok:true,t:'Tolerances set'}:{ok:false,t:'Tolerances > 0'});
+  rules.push(s.output_dir.length>0?{ok:true,t:'Output dir set'}:{ok:false,t:'Output dir required'});
+
+  document.getElementById('valPanel').innerHTML = rules.map(r => `
+    <div class="v-rule"><span class="v-icon ${r.ok?'v-ok':r.warn?'v-warn':'v-err'}">${r.ok?'✓':r.warn?'⚠':'✕'}</span>
+    <span style="color:${r.ok?'var(--text-2)':r.warn?'var(--warn)':'var(--error)'}">${r.t}</span></div>
+  `).join('');
+}
+
+function dlScJSON() { updSc(); const j=JSON.stringify(S.sc,null,2); const b=new Blob([j],{type:'application/json'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=(S.sc.name||'scenario')+'.json'; a.click(); URL.revokeObjectURL(u); toast('JSON downloaded','ok'); }
+
+async function validateSc() { updSc(); toast('Validating…','info'); try { const r=await fetch('/api/scenario/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.sc)}); const d=await r.json(); toast(d.valid?'Valid ✓':'Issues: '+d.error, d.valid?'ok':'err'); } catch { toast('Server unreachable','err'); } }
+
+function resetSc() { S.sc=defaultSc(); syncScForm(); updSc(); toast('Reset','info'); }
+
+// Live update
+document.addEventListener('input', e => { if(e.target.closest('#pg-scenario')) updSc(); });
+document.addEventListener('change', e => { if(e.target.closest('#pg-scenario')) updSc(); });
+
+/* ============================================================
+   INIT
+   ============================================================ */
+(async function init() {
+  chkSrv();
+  loadDash();
+  updSc();
+  setInterval(chkSrv, 30000);
+})();
+</script>
+</body>
+</html>

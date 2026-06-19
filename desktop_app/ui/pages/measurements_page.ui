@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MeasurementsPage</class>
+ <widget class="QWidget" name="MeasurementsPage">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>1000</width><height>700</height></rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>24</number></property>
+   <property name="topMargin"><number>20</number></property>
+   <property name="rightMargin"><number>24</number></property>
+   <property name="bottomMargin"><number>20</number></property>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

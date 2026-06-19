@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c8d6e5"/>
+      <stop offset="100%" stop-color="#8395a7"/>
+    </linearGradient>
+    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4facfe"/>
+      <stop offset="100%" stop-color="#00f2fe"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Moon body -->
+  <circle cx="32" cy="32" r="14" fill="url(#moonGrad)"/>
+  <!-- Craters -->
+  <circle cx="27" cy="28" r="3" fill="#a0b4c8" opacity="0.5"/>
+  <circle cx="36" cy="35" r="2" fill="#a0b4c8" opacity="0.4"/>
+  <circle cx="30" cy="37" r="1.5" fill="#a0b4c8" opacity="0.3"/>
+  <!-- Orbit ring -->
+  <ellipse cx="32" cy="32" rx="26" ry="10" stroke="url(#orbitGrad)" stroke-width="1.5" fill="none" transform="rotate(-25,32,32)" filter="url(#glow)" opacity="0.8"/>
+  <!-- Satellite dot on orbit -->
+  <circle cx="54" cy="24" r="2.5" fill="#4facfe" filter="url(#glow)"/>
+  <!-- Second orbit ring (faint) -->
+  <ellipse cx="32" cy="32" rx="28" ry="16" stroke="#4facfe" stroke-width="0.5" fill="none" transform="rotate(15,32,32)" opacity="0.2" stroke-dasharray="4 6"/>
+</svg>

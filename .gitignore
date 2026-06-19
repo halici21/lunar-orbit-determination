@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated experiment outputs
+results/
+outputs/
+*.log
+
+# Large local data and kernels
+*.mat
+*.bsp
+*.tls
+*.bpc
+*.tf
+*.tpc
+
+# Local presentation/report artifacts
+*.pptx
+*.pdf
+
+# PyQt / build artifacts
+build/
+dist/
+*.spec
+
+# Temporary files
+tmp/
+temp/
+*.tmp

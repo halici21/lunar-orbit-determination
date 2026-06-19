@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ComparisonPage</class>
+ <widget class="QWidget" name="ComparisonPage">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>1000</width><height>700</height></rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>20</number></property>
+   <property name="topMargin"><number>16</number></property>
+   <property name="rightMargin"><number>20</number></property>
+   <property name="bottomMargin"><number>16</number></property>
+   <item>
+    <widget class="QGroupBox" name="controlsGroup">
+     <property name="title"><string>Comparison Controls</string></property>
+     <layout class="QHBoxLayout" name="controlsLayout">
+      <property name="spacing"><number>16</number></property>
+      <item>
+       <layout class="QVBoxLayout">
+        <item><widget class="QLabel" name="compareTypeLabel"><property name="text"><string>Comparison</string></property></widget></item>
+        <item>
+         <widget class="QComboBox" name="compareTypeCombo">
+          <item><property name="text"><string>BLS-LM vs SR-UKF</string></property></item>
+          <item><property name="text"><string>Cold vs Hot vs Formal</string></property></item>
+          <item><property name="text"><string>Position-only vs Range-rate</string></property></item>
+          <item><property name="text"><string>Geometric RR vs Two-way Doppler</string></property></item>
+          <item><property name="text"><string>Single vs Multi-station</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout">
+        <item><widget class="QLabel" name="resultFolderLabel2"><property name="text"><string>Result Folder</string></property></widget></item>
+        <item>
+         <widget class="QComboBox" name="resultFolderCombo">
+          <property name="minimumWidth"><number>260</number></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout">
+        <item><widget class="QLabel" name="plotTypeLabel"><property name="text"><string>Plot Type</string></property></widget></item>
+        <item>
+         <widget class="QComboBox" name="plotTypeCombo">
+          <item><property name="text"><string>Bar chart</string></property></item>
+          <item><property name="text"><string>Box plot</string></property></item>
+          <item><property name="text"><string>Time history</string></property></item>
+          <item><property name="text"><string>Error table</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item><spacer><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+      <item>
+       <layout class="QVBoxLayout">
+        <item><spacer><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeType"><enum>QSizePolicy::Minimum</enum></property></spacer></item>
+        <item>
+         <widget class="QPushButton" name="loadBtn">
+          <property name="text"><string>Load Data</string></property>
+          <property name="objectName"><string>primaryButton</string></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout">
+        <item><spacer><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeType"><enum>QSizePolicy::Minimum</enum></property></spacer></item>
+        <item>
+         <widget class="QPushButton" name="exportPlotBtn">
+          <property name="text"><string>Export PNG</string></property>
+          <property name="objectName"><string>flatButton</string></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item stretch="1">
+    <widget class="QTabWidget" name="compTabWidget">
+     <widget class="QWidget" name="plotTab">
+      <attribute name="title"><string>Plot</string></attribute>
+      <layout class="QVBoxLayout" name="plotTabLayout">
+       <property name="leftMargin"><number>8</number></property>
+       <property name="topMargin"><number>8</number></property>
+       <property name="rightMargin"><number>8</number></property>
+       <property name="bottomMargin"><number>8</number></property>
+       <item stretch="1">
+        <widget class="QWidget" name="plotCanvasHolder">
+         <property name="minimumHeight"><number>300</number></property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tableTab">
+      <attribute name="title"><string>Summary Table</string></attribute>
+      <layout class="QVBoxLayout" name="tableTabLayout">
+       <property name="leftMargin"><number>8</number></property>
+       <property name="topMargin"><number>8</number></property>
+       <property name="rightMargin"><number>8</number></property>
+       <property name="bottomMargin"><number>8</number></property>
+       <item stretch="1">
+        <widget class="QTableWidget" name="summaryTable">
+         <property name="alternatingRowColors"><bool>true</bool></property>
+         <property name="sortingEnabled"><bool>true</bool></property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="rawPngTab">
+      <attribute name="title"><string>Result PNG</string></attribute>
+      <layout class="QVBoxLayout" name="rawPngLayout">
+       <property name="leftMargin"><number>8</number></property>
+       <property name="topMargin"><number>8</number></property>
+       <property name="rightMargin"><number>8</number></property>
+       <property name="bottomMargin"><number>8</number></property>
+       <item>
+        <layout class="QHBoxLayout">
+         <item><widget class="QLabel" name="pngSelectLabel"><property name="text"><string>Select PNG:</string></property></widget></item>
+         <item stretch="1"><widget class="QComboBox" name="pngSelectCombo"></widget></item>
+        </layout>
+       </item>
+       <item stretch="1">
+        <widget class="QScrollArea" name="rawPngScroll">
+         <property name="widgetResizable"><bool>true</bool></property>
+         <property name="alignment"><set>Qt::AlignCenter</set></property>
+         <widget class="QWidget" name="rawPngScrollContents">
+          <layout class="QVBoxLayout">
+           <item>
+            <widget class="QLabel" name="rawPngLabel">
+             <property name="text"><string>Load data to view result PNG files</string></property>
+             <property name="alignment"><set>Qt::AlignCenter</set></property>
+             <property name="styleSheet"><string>QLabel { color: #8090aa; font-size: 13px; }</string></property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

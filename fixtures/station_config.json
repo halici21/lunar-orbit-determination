@@ -1,0 +1,506 @@
+{
+  "schema": "lunar_od_python_port_station_config_v1",
+  "generated_by": "tests/export_python_port_fixtures.m",
+  "position_only": {
+    "orbit": {
+      "epoch_utc": "2027-03-02 23:32:37",
+      "altitude_m": 100000,
+      "ecc": 0,
+      "inc_rad": 1.5707963267948966,
+      "raan_rad": 0,
+      "argp_rad": 0,
+      "nu_rad": 0
+    },
+    "sim": {
+      "duration_days": 3,
+      "dt_s": 10,
+      "maxGap_s": 120,
+      "ode_reltol": 1E-13,
+      "ode_abstol": 1E-14
+    },
+    "phys": {
+      "muMoon": 4.9028E+12,
+      "muEarth": 3.9860044E+14,
+      "muSun": 1.327124400419E+20,
+      "rMoonMean_m": 1.7374000000000002E+6,
+      "wEarth_rads": 7.292115E-5
+    },
+    "stations": [
+      {
+        "name": "ITU Ayazaga",
+        "lat_deg": 41.101,
+        "lon_deg": 29.023,
+        "alt_m": 100,
+        "lat_rad": 0.71734777586218934,
+        "lon_rad": 0.50654690880631426,
+        "r_ecef_m": [
+          4.2088701304738093E+6,
+          2.3352239784141579E+6,
+          4.1709476819044244E+6
+        ],
+        "sigma_range_m": 94,
+        "sigma_angle_rad": 8.7266462599716482E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Goldstone DSN",
+        "lat_deg": 35.3,
+        "lon_deg": -116.81,
+        "alt_m": 969.67,
+        "lat_rad": 0.6161012259539983,
+        "lon_rad": -2.0387190992545765,
+        "r_ecef_m": [
+          -2.3508111855669189E+6,
+          -4.65179757547905E+6,
+          3.6656409726719721E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Madrid DSN",
+        "lat_deg": 40.43,
+        "lon_deg": -4.25,
+        "alt_m": 833.73,
+        "lat_rad": 0.70563661658130739,
+        "lon_rad": -0.074176493209759012,
+        "r_ecef_m": [
+          4.8491432889427328E+6,
+          -360353.59356573946,
+          4.1149868221870661E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Canberra DSN",
+        "lat_deg": -35.4,
+        "lon_deg": 148.98,
+        "alt_m": 680,
+        "lat_rad": -0.61784655520599263,
+        "lon_rad": 2.600191519621152,
+        "r_ecef_m": [
+          -4.460962933085327E+6,
+          2.6825367543907668E+6,
+          -3.6745237548116697E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Dongara KGS",
+        "lat_deg": -29.04,
+        "lon_deg": 115.35,
+        "alt_m": 251.1,
+        "lat_rad": -0.5068436147791533,
+        "lon_rad": 2.0132372921754591,
+        "r_ecef_m": [
+          -2.3894467012959966E+6,
+          5.0435173683198076E+6,
+          -3.0778999162953189E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Chuuk KGS",
+        "lat_deg": 7.25,
+        "lon_deg": 151.47,
+        "alt_m": 50,
+        "lat_rad": 0.1265363707695889,
+        "lon_rad": 2.6436502179958108,
+        "r_ecef_m": [
+          -5.5591603551184237E+6,
+          3.02214773913557E+6,
+          799574.84657089831
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Svalbard KGS",
+        "lat_deg": 78.23,
+        "lon_deg": 15.39,
+        "alt_m": 498.52,
+        "lat_rad": 1.3653710738351641,
+        "lon_rad": 0.26860617188192731,
+        "r_ecef_m": [
+          1.2585232655806947E+6,
+          346418.75443224644,
+          6.222712992175797E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Malargue ESA",
+        "lat_deg": -35.78,
+        "lon_deg": -69.4,
+        "alt_m": 1550,
+        "lat_rad": -0.62447880636357112,
+        "lon_rad": -1.2112585008840648,
+        "r_ecef_m": [
+          1.8230908789990791E+6,
+          -4.85025468003415E+6,
+          -3.7093218884342257E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "New Norcia ESA",
+        "lat_deg": -31.05,
+        "lon_deg": 116.19,
+        "alt_m": 252.26,
+        "lat_rad": -0.54192473274423936,
+        "lon_rad": 2.0278980578922114,
+        "r_ecef_m": [
+          -2.4138935330608147E+6,
+          4.9078415246493742E+6,
+          -3.2707740848140651E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Evpatoria RUS",
+        "lat_deg": 45.19,
+        "lon_deg": 33.21,
+        "alt_m": 100,
+        "lat_rad": 0.78871428897623752,
+        "lon_rad": 0.57962384458731686,
+        "r_ecef_m": [
+          3.7672731478443565E+6,
+          2.4661736474981951E+6,
+          4.5023254056717539E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Ussuriisk RUS",
+        "lat_deg": 44.02,
+        "lon_deg": 131.76,
+        "alt_m": 100,
+        "lat_rad": 0.76829393672790391,
+        "lon_rad": 2.2996458224277285,
+        "r_ecef_m": [
+          -3.0596613713075672E+6,
+          3.4268568167046979E+6,
+          4.4097593858963083E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Bear Lakes RUS",
+        "lat_deg": 55.87,
+        "lon_deg": 37.95,
+        "alt_m": 100,
+        "lat_rad": 0.97511545308923187,
+        "lon_rad": 0.66235245113184815,
+        "r_ecef_m": [
+          2.828433234568249E+6,
+          2.2058420132524613E+6,
+          5.2564174896749575E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      },
+      {
+        "name": "Byalalu ISRO",
+        "lat_deg": 12.9,
+        "lon_deg": 77.37,
+        "alt_m": 25,
+        "lat_rad": 0.22514747350726852,
+        "lon_rad": 1.3503612422680129,
+        "r_ecef_m": [
+          1.3596404136460766E+6,
+          6.0677562504532887E+6,
+          1.4146291617410465E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": null
+      }
+    ]
+  },
+  "range_rate": {
+    "orbit": {
+      "epoch_utc": "2027-03-02 23:32:37",
+      "altitude_m": 100000,
+      "ecc": 0,
+      "inc_rad": 1.5707963267948966,
+      "raan_rad": 0,
+      "argp_rad": 0,
+      "nu_rad": 0
+    },
+    "sim": {
+      "duration_days": 2.73,
+      "dt_s": 10,
+      "maxGap_s": 120,
+      "ode_reltol": 1E-13,
+      "ode_abstol": 1E-14
+    },
+    "phys": {
+      "muMoon": 4.9028E+12,
+      "muEarth": 3.9860044E+14,
+      "muSun": 1.327124400419E+20,
+      "rMoonMean_m": 1.7374000000000002E+6,
+      "wEarth_rads": 7.292115E-5
+    },
+    "stations": [
+      {
+        "name": "ITU Ayazaga",
+        "lat_deg": 41.101,
+        "lon_deg": 29.023,
+        "alt_m": 100,
+        "lat_rad": 0.71734777586218934,
+        "lon_rad": 0.50654690880631426,
+        "r_ecef_m": [
+          4.2088701304738093E+6,
+          2.3352239784141579E+6,
+          4.1709476819044244E+6
+        ],
+        "sigma_range_m": 94,
+        "sigma_angle_rad": 8.7266462599716482E-5,
+        "sigma_range_rate_mps": 0.001
+      },
+      {
+        "name": "Goldstone DSN",
+        "lat_deg": 35.3,
+        "lon_deg": -116.81,
+        "alt_m": 969.67,
+        "lat_rad": 0.6161012259539983,
+        "lon_rad": -2.0387190992545765,
+        "r_ecef_m": [
+          -2.3508111855669189E+6,
+          -4.65179757547905E+6,
+          3.6656409726719721E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Madrid DSN",
+        "lat_deg": 40.43,
+        "lon_deg": -4.25,
+        "alt_m": 833.73,
+        "lat_rad": 0.70563661658130739,
+        "lon_rad": -0.074176493209759012,
+        "r_ecef_m": [
+          4.8491432889427328E+6,
+          -360353.59356573946,
+          4.1149868221870661E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Canberra DSN",
+        "lat_deg": -35.4,
+        "lon_deg": 148.98,
+        "alt_m": 680,
+        "lat_rad": -0.61784655520599263,
+        "lon_rad": 2.600191519621152,
+        "r_ecef_m": [
+          -4.460962933085327E+6,
+          2.6825367543907668E+6,
+          -3.6745237548116697E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Daejeon KGS",
+        "lat_deg": 36.38,
+        "lon_deg": 127.35,
+        "alt_m": 102,
+        "lat_rad": 0.63495078187553711,
+        "lon_rad": 2.2226768024147785,
+        "r_ecef_m": [
+          -3.1190653194594383E+6,
+          4.0869548281006766E+6,
+          3.76228255393718E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Dongara KGS",
+        "lat_deg": -29.04,
+        "lon_deg": 115.35,
+        "alt_m": 251.1,
+        "lat_rad": -0.5068436147791533,
+        "lon_rad": 2.0132372921754591,
+        "r_ecef_m": [
+          -2.3894467012959966E+6,
+          5.0435173683198076E+6,
+          -3.0778999162953189E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Chuuk KGS",
+        "lat_deg": 7.25,
+        "lon_deg": 151.47,
+        "alt_m": 50,
+        "lat_rad": 0.1265363707695889,
+        "lon_rad": 2.6436502179958108,
+        "r_ecef_m": [
+          -5.5591603551184237E+6,
+          3.02214773913557E+6,
+          799574.84657089831
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Svalbard KGS",
+        "lat_deg": 78.23,
+        "lon_deg": 15.39,
+        "alt_m": 498.52,
+        "lat_rad": 1.3653710738351641,
+        "lon_rad": 0.26860617188192731,
+        "r_ecef_m": [
+          1.2585232655806947E+6,
+          346418.75443224644,
+          6.222712992175797E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Malargue ESA",
+        "lat_deg": -35.78,
+        "lon_deg": -69.4,
+        "alt_m": 1550,
+        "lat_rad": -0.62447880636357112,
+        "lon_rad": -1.2112585008840648,
+        "r_ecef_m": [
+          1.8230908789990791E+6,
+          -4.85025468003415E+6,
+          -3.7093218884342257E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Cebreros ESA",
+        "lat_deg": 40.45,
+        "lon_deg": -4.37,
+        "alt_m": 794.1,
+        "lat_rad": 0.70598568243170634,
+        "lon_rad": -0.0762708883121522,
+        "r_ecef_m": [
+          4.8469112962483736E+6,
+          -370396.7387767667,
+          4.1166515985498196E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "New Norcia ESA",
+        "lat_deg": -31.05,
+        "lon_deg": 116.19,
+        "alt_m": 252.26,
+        "lat_rad": -0.54192473274423936,
+        "lon_rad": 2.0278980578922114,
+        "r_ecef_m": [
+          -2.4138935330608147E+6,
+          4.9078415246493742E+6,
+          -3.2707740848140651E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Evpatoria RUS",
+        "lat_deg": 45.19,
+        "lon_deg": 33.21,
+        "alt_m": 100,
+        "lat_rad": 0.78871428897623752,
+        "lon_rad": 0.57962384458731686,
+        "r_ecef_m": [
+          3.7672731478443565E+6,
+          2.4661736474981951E+6,
+          4.5023254056717539E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Ussuriisk RUS",
+        "lat_deg": 44.02,
+        "lon_deg": 131.76,
+        "alt_m": 100,
+        "lat_rad": 0.76829393672790391,
+        "lon_rad": 2.2996458224277285,
+        "r_ecef_m": [
+          -3.0596613713075672E+6,
+          3.4268568167046979E+6,
+          4.4097593858963083E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Bear Lakes RUS",
+        "lat_deg": 55.87,
+        "lon_deg": 37.95,
+        "alt_m": 100,
+        "lat_rad": 0.97511545308923187,
+        "lon_rad": 0.66235245113184815,
+        "r_ecef_m": [
+          2.828433234568249E+6,
+          2.2058420132524613E+6,
+          5.2564174896749575E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      },
+      {
+        "name": "Byalalu ISRO",
+        "lat_deg": 12.9,
+        "lon_deg": 77.37,
+        "alt_m": 25,
+        "lat_rad": 0.22514747350726852,
+        "lon_rad": 1.3503612422680129,
+        "r_ecef_m": [
+          1.3596404136460766E+6,
+          6.0677562504532887E+6,
+          1.4146291617410465E+6
+        ],
+        "sigma_range_m": 5,
+        "sigma_angle_rad": 1.7453292519943296E-5,
+        "sigma_range_rate_mps": 0.0001
+      }
+    ]
+  }
+}

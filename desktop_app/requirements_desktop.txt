@@ -1,0 +1,16 @@
+# Lunar OD Desktop App — additional requirements
+# (on top of python_port/requirements.txt)
+
+PyQt5>=5.15
+PyQt5-Qt5>=5.15
+PyQt5-sip>=12.11
+
+pandas>=1.5
+matplotlib>=3.6
+pyqtgraph>=0.13
+
+# Optional — install for enhanced 3D/interactive views
+# pyvista
+# pyvistaqt
+# vispy
+# qtawesome

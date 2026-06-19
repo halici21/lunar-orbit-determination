@@ -1,0 +1,5 @@
+-r requirements.txt
+
+# Optional acceleration backend. The code falls back to NumPy when Numba is not
+# installed, so this file is opt-in instead of part of the base requirements.
+numba>=0.61

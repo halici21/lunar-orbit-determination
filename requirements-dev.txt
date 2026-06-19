@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8
+
+# Optional for richer Qt-specific assertions. The current smoke tests do not
+# require it, but it is useful when expanding desktop UI tests.
+pytest-qt>=4.4
