@@ -30,6 +30,7 @@ class PassGeometry:
     measurement_type: str
     range_rate_physics: RangeRatePhysicsConfig | None = None
     apply_light_time: bool = False
+    apply_stellar_aberration: bool = False
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,53 @@ def solve_one_way_light_time(
     )
 
 
+def apply_stellar_aberration(
+    rho_vec_inertial: ArrayLike,
+    observer_velocity_inertial: ArrayLike,
+    *,
+    light_speed_mps: float = C_LIGHT_MPS,
+) -> np.ndarray:
+    """Reception-case Newtonian stellar aberration (SPICE ``+S`` model).
+
+    Rotate the light-time corrected inertial line-of-sight vector
+    ``rho_vec_inertial`` *toward* the observer's inertial velocity by the
+    aberration angle ``phi`` where ``sin(phi) = (v / c) * sin(w)`` and ``w`` is
+    the angle between the line of sight and the observer velocity. The rotation
+    axis is ``h = rho x v_obs`` and the rotation is evaluated with the Rodrigues
+    formula. The returned vector has the same magnitude as the input (a pure
+    rotation), so range derived from it is unchanged.
+
+    ``observer_velocity_inertial`` must be expressed in the same inertial frame
+    as ``rho_vec_inertial`` (here Moon-centred J2000); do not pass an ECEF
+    velocity. Note that the dominant SPICE CN+S correction uses the observer
+    velocity relative to the solar-system barycentre; this frame-relative
+    formulation omits the Moon's barycentric velocity and is intended as a
+    self-consistent synthetic-measurement model (the identical model is used in
+    generation and prediction, so no estimator bias is introduced).
+    """
+    r = np.asarray(rho_vec_inertial, dtype=float).reshape(3)
+    v = np.asarray(observer_velocity_inertial, dtype=float).reshape(3)
+    r_norm = float(np.linalg.norm(r))
+    v_norm = float(np.linalg.norm(v))
+    if r_norm == 0.0 or v_norm == 0.0:
+        return r.copy()
+    h = np.cross(r, v)
+    h_norm = float(np.linalg.norm(h))
+    if h_norm == 0.0:
+        return r.copy()  # line of sight parallel to velocity: sin(w) = 0
+    k_hat = h / h_norm
+    sin_w = h_norm / (r_norm * v_norm)
+    sin_phi = float(np.clip((v_norm / light_speed_mps) * sin_w, -1.0, 1.0))
+    phi = float(np.arcsin(sin_phi))
+    cos_phi = float(np.cos(phi))
+    # Rodrigues rotation of r about unit axis k_hat by +phi (toward v_obs).
+    return (
+        r * cos_phi
+        + np.cross(k_hat, r) * sin_phi
+        + k_hat * float(np.dot(k_hat, r)) * (1.0 - cos_phi)
+    )
+
+
 def _apparent_position_observable(
     receive_time_s: float,
     station,
@@ -97,6 +145,8 @@ def _apparent_position_observable(
     earth_pos_mci_rx: ArrayLike,
     x_j2k_itrf_rx: ArrayLike,
     *,
+    earth_vel_mci_rx: ArrayLike | None = None,
+    apply_stellar: bool = False,
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = 1e-12,
     max_iter: int = 10,
@@ -110,16 +160,24 @@ def _apparent_position_observable(
     spacecraft state is cubic-Hermite interpolated from ``state_history_mci``;
     linear extrapolation is used when ``t_t`` falls just before the grid start
     (e.g. at the first receive epoch).
+
+    When ``apply_stellar`` is set, the converged-light-time inertial line of
+    sight is additionally rotated by the reception-case stellar aberration
+    correction (:func:`apply_stellar_aberration`) before az/el/range are formed.
+    This requires ``earth_vel_mci_rx`` (Earth-centre velocity in the MCI frame at
+    the receive time) so the observer's inertial velocity can be assembled. The
+    light-time solution itself is unchanged.
     """
     earth_pos_mci_rx = np.asarray(earth_pos_mci_rx, dtype=float).reshape(3)
     x_rx = np.asarray(x_j2k_itrf_rx, dtype=float)
     r_rot_rx = x_rx[:3, :3]
     station_ecef = np.asarray(station.r_ecef_m, dtype=float).reshape(3)
-    # Station inertial (MCI) position at the receive time: Earth centre plus the
-    # ITRF93->J2000 rotation of the station ECEF position (position part of the
-    # 6x6 transform solve).
+    # Station inertial (MCI) state at the receive time: Earth centre plus the
+    # ITRF93->J2000 transform of the (fixed) station ECEF state (6x6 solve). The
+    # velocity part carries the inertial velocity due to Earth rotation.
     station_ecef_state = np.concatenate([station_ecef, np.zeros(3)])
-    station_rel_j2000 = np.linalg.solve(x_rx, station_ecef_state)[:3]
+    station_rel_state_j2000 = np.linalg.solve(x_rx, station_ecef_state)
+    station_rel_j2000 = station_rel_state_j2000[:3]
     station_mci_rx = earth_pos_mci_rx + station_rel_j2000
 
     solution = solve_one_way_light_time(
@@ -133,9 +191,25 @@ def _apparent_position_observable(
     transmit_time_s = solution.transmit_time_s
     r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
 
-    # Apparent line of sight: spacecraft at transmit time, Earth/frame/station at
-    # receive time. ||rho_ecef|| equals the converged light-time range.
-    rho_ecef = r_rot_rx @ (r_sc_tt - earth_pos_mci_rx) - station_ecef
+    if apply_stellar:
+        if earth_vel_mci_rx is None:
+            raise ValueError("apply_stellar=True requires earth_vel_mci_rx.")
+        earth_vel_mci_rx = np.asarray(earth_vel_mci_rx, dtype=float).reshape(3)
+        # Observer (station) inertial velocity = Earth-centre MCI velocity plus
+        # the inertial velocity from Earth rotation (velocity part of the solve).
+        observer_vel_inertial = earth_vel_mci_rx + station_rel_state_j2000[3:]
+        # CN-corrected inertial line of sight, then stellar aberration rotation.
+        rho_inertial = apply_stellar_aberration(
+            r_sc_tt - station_mci_rx,
+            observer_vel_inertial,
+            light_speed_mps=light_speed_mps,
+        )
+        rho_ecef = r_rot_rx @ rho_inertial
+    else:
+        # Apparent line of sight: spacecraft at transmit time, Earth/frame/station
+        # at receive time. ||rho_ecef|| equals the converged light-time range.
+        rho_ecef = r_rot_rx @ (r_sc_tt - earth_pos_mci_rx) - station_ecef
+
     az_rad, el_rad, range_m = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
     z = np.array([range_m, az_rad, el_rad], dtype=float)
     return z, transmit_time_s, solution.light_time_s, int(solution.iterations)
@@ -145,13 +219,26 @@ def _apparent_position_rowwise(
     state_history_mci: np.ndarray,
     obs_data: np.ndarray,
     pass_geo: "PassGeometry",
+    *,
+    apply_stellar_aberration: bool | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Row-by-row apparent observables for an obs_data block.
 
     Returns ``(h_meas, r_transmit_mci)`` where ``h_meas`` is (n_obs, 3) and
     ``r_transmit_mci`` is the (n_obs, 3) spacecraft position evaluated at each
     transmit time (used by the approximate light-time analytic Jacobian).
+
+    When stellar aberration is active (``pass_geo.apply_stellar_aberration`` or
+    the ``apply_stellar_aberration`` override), the apparent line of sight is
+    rotated by the reception-case stellar aberration correction; ``r_transmit``
+    is unaffected (it is the transmit-time spacecraft position).
     """
+    use_stellar = bool(
+        getattr(pass_geo, "apply_stellar_aberration", False)
+        if apply_stellar_aberration is None
+        else apply_stellar_aberration
+    )
+    earth_vel = getattr(pass_geo, "earth_vel_mci_mps", None)
     n_obs = obs_data.shape[0]
     h_meas = np.zeros((n_obs, 3), dtype=float)
     r_tx = np.zeros((n_obs, 3), dtype=float)
@@ -166,6 +253,10 @@ def _apparent_position_rowwise(
             state_history_mci,
             pass_geo.earth_pos_mci_m[time_idx],
             pass_geo.x_j2000_to_itrf93[time_idx],
+            earth_vel_mci_rx=(
+                earth_vel[time_idx] if (use_stellar and earth_vel is not None) else None
+            ),
+            apply_stellar=use_stellar,
         )
         h_meas[i] = z
         r_tx[i] = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]
@@ -185,6 +276,7 @@ def generate_position_measurements(
     rng: np.random.Generator | None = None,
     arc_id: int | None = None,
     apply_light_time: bool = False,
+    apply_stellar_aberration: bool = False,
 ) -> tuple[np.ndarray, PassGeometry, np.ndarray]:
     """Generate range/azimuth/elevation measurements.
 
@@ -205,6 +297,11 @@ def generate_position_measurements(
     if apply_light_time and state_history_mci.shape[1] < 6:
         raise ValueError(
             "apply_light_time=True requires a 6-state (position+velocity) history."
+        )
+    if apply_stellar_aberration and not apply_light_time:
+        raise ValueError(
+            "apply_stellar_aberration=True requires apply_light_time=True "
+            "(stellar aberration is applied on top of the light-time solution)."
         )
     if vis_mask_raw.shape != (n_steps, len(stations)):
         raise ValueError("vis_mask_raw must have shape (N, num_stations).")
@@ -239,6 +336,8 @@ def generate_position_measurements(
                 z_clean, _t_t, _lt, _it = _apparent_position_observable(
                     float(t_s), station, t_pass_s, state_history_mci,
                     r_earth_mci[k], x_j2k_itrf,
+                    earth_vel_mci_rx=v_earth_mci[k] if apply_stellar_aberration else None,
+                    apply_stellar=apply_stellar_aberration,
                 )
             else:
                 rho_vec_ecef = r_sat_ecef - station.r_ecef_m
@@ -280,6 +379,7 @@ def generate_position_measurements(
         stations=tuple(stations),
         measurement_type="position",
         apply_light_time=apply_light_time,
+        apply_stellar_aberration=apply_stellar_aberration,
     )
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
@@ -290,6 +390,7 @@ def compute_position_residuals(
     pass_geo: PassGeometry,
     *,
     apply_light_time: bool = False,
+    apply_stellar_aberration: bool | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute position-only observed-minus-computed residuals.
 
@@ -300,7 +401,14 @@ def compute_position_residuals(
     sign convention (observed - computed) and angle wrapping are unchanged."""
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     obs_data = np.asarray(obs_data, dtype=float)
-    use_light_time = bool(getattr(pass_geo, "apply_light_time", False) or apply_light_time)
+    use_stellar = bool(
+        getattr(pass_geo, "apply_stellar_aberration", False)
+        if apply_stellar_aberration is None
+        else apply_stellar_aberration
+    )
+    use_light_time = bool(
+        getattr(pass_geo, "apply_light_time", False) or apply_light_time or use_stellar
+    )
     if not use_light_time:
         h_meas = position_observables(
             state_history_mci,
@@ -310,7 +418,9 @@ def compute_position_residuals(
             pass_geo.stations,
         )
     else:
-        h_meas, _ = _apparent_position_rowwise(state_history_mci, obs_data, pass_geo)
+        h_meas, _ = _apparent_position_rowwise(
+            state_history_mci, obs_data, pass_geo, apply_stellar_aberration=use_stellar
+        )
 
     diff_raw = obs_data[:, 1:4] - h_meas
     diff_raw[:, 1] = wrap_to_pi(diff_raw[:, 1])
@@ -534,6 +644,7 @@ def compute_position_residuals_analytic(
     pass_geo: PassGeometry,
     *,
     apply_light_time: bool = False,
+    apply_stellar_aberration: bool | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Position-only residuals and local analytic 3x6 H_tilde blocks.
 
@@ -543,7 +654,9 @@ def compute_position_residuals_analytic(
     between STM(t_t) and STM(t_r)). This is intended as a first-stage
     implementation, not a finite-difference-exact light-time Jacobian."""
     residuals, h_meas = compute_position_residuals(
-        state_history_mci, obs_data, pass_geo, apply_light_time=apply_light_time
+        state_history_mci, obs_data, pass_geo,
+        apply_light_time=apply_light_time,
+        apply_stellar_aberration=apply_stellar_aberration,
     )
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     obs_data = np.asarray(obs_data, dtype=float)
@@ -561,12 +674,22 @@ def compute_position_residuals_analytic(
         [pass_geo.stations[i].r_ecef_m for i in range(n_stations)]
     )  # (n_stations, 3)
 
-    use_light_time = bool(getattr(pass_geo, "apply_light_time", False) or apply_light_time)
+    use_stellar = bool(
+        getattr(pass_geo, "apply_stellar_aberration", False)
+        if apply_stellar_aberration is None
+        else apply_stellar_aberration
+    )
+    use_light_time = bool(
+        getattr(pass_geo, "apply_light_time", False) or apply_light_time or use_stellar
+    )
     if use_light_time:
         # Apparent geometry: spacecraft evaluated at each transmit time. The H
         # block below reuses the instantaneous formula at this apparent LOS
-        # (first-order receive-epoch STM approximation).
-        _, r_sat = _apparent_position_rowwise(state_history_mci, obs_data, pass_geo)
+        # (first-order receive-epoch STM approximation; the stellar aberration
+        # rotation derivative is neglected per the first-stage design).
+        _, r_sat = _apparent_position_rowwise(
+            state_history_mci, obs_data, pass_geo, apply_stellar_aberration=use_stellar
+        )
     else:
         r_sat = state_history_mci[time_idxs, :3]                    # (n_obs, 3)
     dr_eci = r_sat - pass_geo.earth_pos_mci_m[time_idxs, :]         # (n_obs, 3)

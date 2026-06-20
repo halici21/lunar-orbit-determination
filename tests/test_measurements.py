@@ -315,7 +315,7 @@ class MeasurementTests(unittest.TestCase):
             "et0": fixture["et"],
         }
 
-    def _generate_position_clean(self, fx, *, apply_light_time):
+    def _generate_position_clean(self, fx, *, apply_light_time, apply_stellar_aberration=False):
         import spiceypy as spice
 
         try:
@@ -327,6 +327,7 @@ class MeasurementTests(unittest.TestCase):
                 fx["t_pass"], fx["state_history"], fx["stations"], fx["vis_mask"],
                 fx["earth_pos"], fx["earth_vel"], fx["et0"],
                 noise=False, apply_light_time=apply_light_time,
+                apply_stellar_aberration=apply_stellar_aberration,
             )
         finally:
             spice.kclear()
@@ -420,6 +421,83 @@ class MeasurementTests(unittest.TestCase):
             self.assertTrue(np.allclose(block[:, 3:6], 0.0))
             # ...and the fully-neglected d(range)/d(velocity) term equals the light time.
             self.assertAlmostEqual(float(np.linalg.norm(jac[0, 3:6])), float(light_time[i]), delta=1e-2)
+
+    def test_stellar_aberration_perpendicular_shift_matches_v_over_c(self):
+        """Test 3 (unit): for observer velocity perpendicular to the line of
+        sight, the apparent direction shifts by phi = arcsin(v/c) toward v, and
+        the vector magnitude (range) is preserved. No SPICE kernels required."""
+        from lunar_od.measurements import apply_stellar_aberration
+
+        c = 299792458.0
+        r = np.array([1.0e8, 0.0, 0.0])        # line of sight along +x
+        v = np.array([0.0, 3.0e4, 0.0])        # 30 km/s perpendicular, +y
+        r_app = apply_stellar_aberration(r, v, light_speed_mps=c)
+
+        # pure rotation: magnitude (range) preserved
+        np.testing.assert_allclose(np.linalg.norm(r_app), np.linalg.norm(r), rtol=1e-12)
+        # rotation angle equals arcsin(v/c) for the perpendicular case
+        cos_ang = float(np.dot(r, r_app) / (np.linalg.norm(r) * np.linalg.norm(r_app)))
+        ang = float(np.arccos(np.clip(cos_ang, -1.0, 1.0)))
+        expected = float(np.arcsin(np.linalg.norm(v) / c))
+        np.testing.assert_allclose(ang, expected, rtol=1e-6)  # arccos small-angle floor
+        # phi ~ v/c at this speed, and rotation is toward +v
+        self.assertAlmostEqual(ang, float(np.linalg.norm(v) / c), delta=1e-9)
+        self.assertGreater(float(r_app[1]), 0.0)
+
+    def test_position_stellar_aberration_off_matches_cn(self):
+        """Test 1: apply_stellar_aberration=False reproduces the CN result exactly."""
+        fx = self._position_light_time_fixture()
+        _, clean_cn = self._generate_position_clean(fx, apply_light_time=True)
+        _, clean_off = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=False
+        )
+        np.testing.assert_array_equal(clean_cn, clean_off)
+
+    def test_position_stellar_aberration_changes_angles_not_range(self):
+        """Test 2: stellar aberration leaves range essentially unchanged but
+        shifts az/el by a small (sub-arcminute) non-zero amount."""
+        from lunar_od.geometry import wrap_to_pi
+
+        fx = self._position_light_time_fixture()
+        _, clean_cn = self._generate_position_clean(fx, apply_light_time=True)
+        pass_geo, clean_sab = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True
+        )
+        self.assertTrue(pass_geo.apply_stellar_aberration)
+        self.assertEqual(clean_cn.shape, clean_sab.shape)
+
+        # range (col 1) unchanged to sub-millimetre (rotation preserves norm)
+        range_diff = np.abs(clean_sab[:, 1] - clean_cn[:, 1])
+        self.assertLess(float(np.max(range_diff)), 1e-3)
+
+        # az/el (cols 2, 3) shifted by a small but non-zero amount, well under the
+        # 30 km/s (~1e-4 rad) scale since the observer MCI speed is only ~1-2 km/s
+        az_diff = np.abs(wrap_to_pi(clean_sab[:, 2] - clean_cn[:, 2]))
+        el_diff = np.abs(clean_sab[:, 3] - clean_cn[:, 3])
+        ang_shift = np.maximum(az_diff, el_diff)
+        self.assertGreater(float(np.max(ang_shift)), 1e-7)
+        self.assertLess(float(np.max(ang_shift)), 1e-4)
+
+    def test_position_stellar_aberration_residual_closure(self):
+        """Test 4: noiseless measurements generated with stellar aberration
+        produce near-zero residuals when predicted with the same model."""
+        fx = self._position_light_time_fixture()
+        pass_geo, clean = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True
+        )
+        self.assertTrue(pass_geo.apply_stellar_aberration)
+
+        residuals, h_meas = compute_position_residuals(fx["state_history"], clean, pass_geo)
+        self.assertLess(float(np.max(np.abs(clean[:, 1] - h_meas[:, 0]))), 1e-6)      # range [m]
+        self.assertLess(float(np.max(np.abs(clean[:, 2:4] - h_meas[:, 1:3]))), 1e-9)  # az/el [rad]
+        self.assertLess(float(np.linalg.norm(residuals)), 1e-6)
+
+        residuals_an, h_an, h_tilde = compute_position_residuals_analytic(
+            fx["state_history"], clean, pass_geo
+        )
+        np.testing.assert_allclose(h_an, h_meas, rtol=0.0, atol=1e-9)
+        self.assertLess(float(np.linalg.norm(residuals_an)), 1e-6)
+        self.assertEqual(h_tilde.shape, (3 * clean.shape[0], 6))
 
     def test_range_rate_measurement_generation_and_clean_residual_closure(self):
         fixture_path = FIXTURES_DIR / "spice_snapshots.json"
