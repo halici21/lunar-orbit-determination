@@ -62,7 +62,7 @@ Important modules:
 | `ephemeris.py` | Earth/Sun ephemeris sampling and PCHIP interpolation |
 | `dynamics.py` | Moon-centered dynamics, Earth/Sun third-body perturbations, STM |
 | `visibility.py` | Elevation masks, lunar occultation, pass stitching, arc construction |
-| `measurements.py` | Range, azimuth, elevation, geometric range-rate measurements |
+| `measurements.py` | Range, azimuth, elevation, geometric range-rate; optional one-way light-time (CN) and stellar aberration (+S) for position observables |
 | `radiometrics.py` | Simplified two-way counted-Doppler and light-time logic |
 | `estimators.py` | BLS-LM / SRIF-style estimator logic |
 | `filters.py` | Sequential SR-UKF / square-root filtering logic |
@@ -252,6 +252,25 @@ The two-way Doppler model is simplified. It includes iterative geometric
 round-trip light time, fixed uplink frequency, and fixed turnaround ratio. It
 does not include full operational DSN effects such as media corrections,
 frequency ramps, hardware delays, or relativistic corrections.
+
+Aberration corrections (position observables, optional, default off):
+
+- **One-way light time (CN)** — converged Newtonian correction. The spacecraft
+  is evaluated at the transmit time `t_t = t_r - tau`; the station/frame at the
+  receive time. Accounts for target motion during light travel and shifts both
+  range and angles.
+- **Stellar aberration (+S)** — applied after CN as a pure rotation of the
+  inertial line of sight toward the observer velocity. Shifts azimuth/elevation
+  only (range is preserved by construction). Two observer-velocity frames:
+  - `spice_ssb` — velocity relative to the Solar System Barycentre (SPICE-like
+    CN+S; ~1e-4 rad for Earth–Moon).
+  - `local_mci` — velocity relative to the Moon (cheaper, ~20x smaller; not
+    identical to SPICE CN+S).
+
+These map to the `apply_light_time`, `apply_stellar_aberration`, and
+`stellar_aberration_model` options on position measurement generation, and are
+exposed in the Scenario Builder and System Settings → Measurements pages. See
+`docs/figures/aberration_corrections.png` for a worked example.
 
 UI visualization ideas:
 
@@ -699,6 +718,12 @@ Sections:
    - Doppler test
    - Monte Carlo
 
+6. Aberration corrections (position observables, optional)
+   - one-way light time (CN) on/off
+   - stellar aberration (+S) on/off  (requires light time)
+   - aberration frame: `local_mci` | `spice_ssb`
+   - controls are enabled only when the measurement type is `position`
+
 Important behavior:
 
 - Invalid settings should be highlighted immediately.
@@ -828,6 +853,11 @@ Controls:
 - turnaround ratio
 - noise values
 - bias mode
+- light-time / aberration (position observables; persisted to `QSettings` and
+  applied by the Analysis run):
+  - one-way light time (CN) on/off
+  - stellar aberration (+S) on/off
+  - aberration frame: `local_mci` | `spice_ssb`
 
 Visuals:
 
@@ -1295,6 +1325,9 @@ station_ids: list[int]
 measurement_type: str
 range_rate_physics: str
 count_interval_s: float
+apply_light_time: bool
+apply_stellar_aberration: bool
+stellar_aberration_model: str   # "local_mci" | "spice_ssb"
 noise_enabled: bool
 random_seed: int
 estimator_type: str
