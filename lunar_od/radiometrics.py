@@ -444,6 +444,12 @@ def _interp_state(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> 
     return result
 
 
+def interp_state_history(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> np.ndarray:
+    """Cubic-Hermite (position+velocity) interpolation of a 6-state history with
+    linear extrapolation outside the grid. Shared helper for light-time models."""
+    return _interp_state(t_grid_s, state_history, t_s)
+
+
 def _interp_state_transition_position(
     t_grid_s: ArrayLike,
     phi_history: ArrayLike,

@@ -14,6 +14,7 @@ from .radiometrics import (
     instantaneous_geometric_range_rate,
     range_rate_physics_config,
     two_way_counted_doppler_observable,
+    interp_state_history,
 )
 
 C_LIGHT_MPS = 299792458.0
@@ -28,6 +29,7 @@ class PassGeometry:
     stations: tuple
     measurement_type: str
     range_rate_physics: RangeRatePhysicsConfig | None = None
+    apply_light_time: bool = False
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,89 @@ def solve_one_way_light_time(
     )
 
 
+def _apparent_position_observable(
+    receive_time_s: float,
+    station,
+    t_grid_s: ArrayLike,
+    state_history_mci: ArrayLike,
+    earth_pos_mci_rx: ArrayLike,
+    x_j2k_itrf_rx: ArrayLike,
+    *,
+    light_speed_mps: float = C_LIGHT_MPS,
+    tolerance_s: float = 1e-12,
+    max_iter: int = 10,
+) -> tuple[np.ndarray, float, float, int]:
+    """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
+
+    The spacecraft position is evaluated at the transmit time ``t_t = t_r - tau``;
+    the Earth centre, station, and topocentric SEZ frame are evaluated at the
+    receive time ``t_r``. ``earth_pos_mci_rx`` and ``x_j2k_itrf_rx`` are the
+    receive-epoch values (already indexed, not interpolated). The transmit-time
+    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``;
+    linear extrapolation is used when ``t_t`` falls just before the grid start
+    (e.g. at the first receive epoch).
+    """
+    earth_pos_mci_rx = np.asarray(earth_pos_mci_rx, dtype=float).reshape(3)
+    x_rx = np.asarray(x_j2k_itrf_rx, dtype=float)
+    r_rot_rx = x_rx[:3, :3]
+    station_ecef = np.asarray(station.r_ecef_m, dtype=float).reshape(3)
+    # Station inertial (MCI) position at the receive time: Earth centre plus the
+    # ITRF93->J2000 rotation of the station ECEF position (position part of the
+    # 6x6 transform solve).
+    station_ecef_state = np.concatenate([station_ecef, np.zeros(3)])
+    station_rel_j2000 = np.linalg.solve(x_rx, station_ecef_state)[:3]
+    station_mci_rx = earth_pos_mci_rx + station_rel_j2000
+
+    solution = solve_one_way_light_time(
+        receive_time_s,
+        station_mci_rx,
+        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
+        light_speed_mps=light_speed_mps,
+        tolerance_s=tolerance_s,
+        max_iter=max_iter,
+    )
+    transmit_time_s = solution.transmit_time_s
+    r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
+
+    # Apparent line of sight: spacecraft at transmit time, Earth/frame/station at
+    # receive time. ||rho_ecef|| equals the converged light-time range.
+    rho_ecef = r_rot_rx @ (r_sc_tt - earth_pos_mci_rx) - station_ecef
+    az_rad, el_rad, range_m = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
+    z = np.array([range_m, az_rad, el_rad], dtype=float)
+    return z, transmit_time_s, solution.light_time_s, int(solution.iterations)
+
+
+def _apparent_position_rowwise(
+    state_history_mci: np.ndarray,
+    obs_data: np.ndarray,
+    pass_geo: "PassGeometry",
+) -> tuple[np.ndarray, np.ndarray]:
+    """Row-by-row apparent observables for an obs_data block.
+
+    Returns ``(h_meas, r_transmit_mci)`` where ``h_meas`` is (n_obs, 3) and
+    ``r_transmit_mci`` is the (n_obs, 3) spacecraft position evaluated at each
+    transmit time (used by the approximate light-time analytic Jacobian).
+    """
+    n_obs = obs_data.shape[0]
+    h_meas = np.zeros((n_obs, 3), dtype=float)
+    r_tx = np.zeros((n_obs, 3), dtype=float)
+    for i in range(n_obs):
+        station_id = int(obs_data[i, 4]) - 1
+        time_idx = int(obs_data[i, 5]) - 1
+        receive_time_s = float(obs_data[i, 0])
+        z, transmit_time_s, _lt, _it = _apparent_position_observable(
+            receive_time_s,
+            pass_geo.stations[station_id],
+            pass_geo.t_s,
+            state_history_mci,
+            pass_geo.earth_pos_mci_m[time_idx],
+            pass_geo.x_j2000_to_itrf93[time_idx],
+        )
+        h_meas[i] = z
+        r_tx[i] = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]
+    return h_meas, r_tx
+
+
 def generate_position_measurements(
     t_pass_s: ArrayLike,
     state_history_mci: ArrayLike,
@@ -99,6 +184,7 @@ def generate_position_measurements(
     noise: bool = True,
     rng: np.random.Generator | None = None,
     arc_id: int | None = None,
+    apply_light_time: bool = False,
 ) -> tuple[np.ndarray, PassGeometry, np.ndarray]:
     """Generate range/azimuth/elevation measurements.
 
@@ -116,6 +202,10 @@ def generate_position_measurements(
     n_steps = t_pass_s.size
     if state_history_mci.shape[0] != n_steps or state_history_mci.shape[1] < 3:
         raise ValueError("state_history_mci must have shape (N, >=3).")
+    if apply_light_time and state_history_mci.shape[1] < 6:
+        raise ValueError(
+            "apply_light_time=True requires a 6-state (position+velocity) history."
+        )
     if vis_mask_raw.shape != (n_steps, len(stations)):
         raise ValueError("vis_mask_raw must have shape (N, num_stations).")
 
@@ -145,9 +235,15 @@ def generate_position_measurements(
 
         for station_col in active_station_cols:
             station = stations[station_col]
-            rho_vec_ecef = r_sat_ecef - station.r_ecef_m
-            az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
-            z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
+            if apply_light_time:
+                z_clean, _t_t, _lt, _it = _apparent_position_observable(
+                    float(t_s), station, t_pass_s, state_history_mci,
+                    r_earth_mci[k], x_j2k_itrf,
+                )
+            else:
+                rho_vec_ecef = r_sat_ecef - station.r_ecef_m
+                az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+                z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
 
             bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
             if bias_vec.size != 3:
@@ -183,6 +279,7 @@ def generate_position_measurements(
         x_j2000_to_itrf93=xforms,
         stations=tuple(stations),
         measurement_type="position",
+        apply_light_time=apply_light_time,
     )
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
@@ -191,17 +288,29 @@ def compute_position_residuals(
     state_history_mci: ArrayLike,
     obs_data: ArrayLike,
     pass_geo: PassGeometry,
+    *,
+    apply_light_time: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Compute position-only observed-minus-computed residuals."""
+    """Compute position-only observed-minus-computed residuals.
+
+    When ``pass_geo.apply_light_time`` (or the ``apply_light_time`` override) is
+    set, the computed measurements use the one-way light-time corrected apparent
+    geometry, row by row, matching :func:`generate_position_measurements`.
+    Otherwise the Numba instantaneous fast path is used unchanged. The residual
+    sign convention (observed - computed) and angle wrapping are unchanged."""
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     obs_data = np.asarray(obs_data, dtype=float)
-    h_meas = position_observables(
-        state_history_mci,
-        obs_data,
-        pass_geo.earth_pos_mci_m,
-        pass_geo.x_j2000_to_itrf93,
-        pass_geo.stations,
-    )
+    use_light_time = bool(getattr(pass_geo, "apply_light_time", False) or apply_light_time)
+    if not use_light_time:
+        h_meas = position_observables(
+            state_history_mci,
+            obs_data,
+            pass_geo.earth_pos_mci_m,
+            pass_geo.x_j2000_to_itrf93,
+            pass_geo.stations,
+        )
+    else:
+        h_meas, _ = _apparent_position_rowwise(state_history_mci, obs_data, pass_geo)
 
     diff_raw = obs_data[:, 1:4] - h_meas
     diff_raw[:, 1] = wrap_to_pi(diff_raw[:, 1])
@@ -423,9 +532,19 @@ def compute_position_residuals_analytic(
     state_history_mci: ArrayLike,
     obs_data: ArrayLike,
     pass_geo: PassGeometry,
+    *,
+    apply_light_time: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Position-only residuals and local analytic 3x6 H_tilde blocks."""
-    residuals, h_meas = compute_position_residuals(state_history_mci, obs_data, pass_geo)
+    """Position-only residuals and local analytic 3x6 H_tilde blocks.
+
+    Light-time corrected residuals are exact for the implemented model, but the
+    analytic Jacobian uses a first-order receive-epoch STM approximation and
+    neglects implicit light-time derivatives (d(tau)/dx and the difference
+    between STM(t_t) and STM(t_r)). This is intended as a first-stage
+    implementation, not a finite-difference-exact light-time Jacobian."""
+    residuals, h_meas = compute_position_residuals(
+        state_history_mci, obs_data, pass_geo, apply_light_time=apply_light_time
+    )
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     obs_data = np.asarray(obs_data, dtype=float)
     n_obs = obs_data.shape[0]
@@ -442,7 +561,14 @@ def compute_position_residuals_analytic(
         [pass_geo.stations[i].r_ecef_m for i in range(n_stations)]
     )  # (n_stations, 3)
 
-    r_sat  = state_history_mci[time_idxs, :3]                        # (n_obs, 3)
+    use_light_time = bool(getattr(pass_geo, "apply_light_time", False) or apply_light_time)
+    if use_light_time:
+        # Apparent geometry: spacecraft evaluated at each transmit time. The H
+        # block below reuses the instantaneous formula at this apparent LOS
+        # (first-order receive-epoch STM approximation).
+        _, r_sat = _apparent_position_rowwise(state_history_mci, obs_data, pass_geo)
+    else:
+        r_sat = state_history_mci[time_idxs, :3]                    # (n_obs, 3)
     dr_eci = r_sat - pass_geo.earth_pos_mci_m[time_idxs, :]         # (n_obs, 3)
     R_j2k  = pass_geo.x_j2000_to_itrf93[time_idxs, :3, :3]          # (n_obs, 3, 3)
 

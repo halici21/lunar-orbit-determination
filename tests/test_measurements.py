@@ -290,6 +290,137 @@ class MeasurementTests(unittest.TestCase):
         np.testing.assert_allclose(residuals_an, meas["residuals_analytic"], rtol=0.0, atol=2e-9)
         np.testing.assert_allclose(h_tilde, meas["h_tilde_analytic"], rtol=0.0, atol=1e-12)
 
+    def _position_light_time_fixture(self):
+        fixture_path = FIXTURES_DIR / "spice_snapshots.json"
+        if not fixture_path.is_file():
+            self.skipTest("spice_snapshots.json fixture has not been exported yet.")
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        truth = fixture["truth_propagation"]
+        meas = fixture["position_measurements"]
+        ephemeris = MoonCenteredEphemeris(
+            t_ephem_s=truth["t_ephem_s"],
+            earth_pos_m=truth["earth_pos_grid_m"],
+            sun_pos_m=truth["sun_pos_grid_m"],
+            earth_vel_mps=truth["earth_vel_grid_mps"],
+        )
+        stations_by_name = {station.name: station for station in range_rate_stations()}
+        stations = [stations_by_name[name] for name in meas["station_names"]]
+        return {
+            "state_history": np.asarray(truth["state_history_mci_m_mps"], dtype=float),
+            "t_pass": np.asarray(meas["t_pass_s"], dtype=float),
+            "vis_mask": meas["vis_mask_raw"],
+            "stations": stations,
+            "earth_pos": ephemeris.earth_position,
+            "earth_vel": ephemeris.earth_velocity,
+            "et0": fixture["et"],
+        }
+
+    def _generate_position_clean(self, fx, *, apply_light_time):
+        import spiceypy as spice
+
+        try:
+            load_spice_kernels()
+        except FileNotFoundError:
+            self.skipTest("SPICE kernels not available.")
+        try:
+            _, pass_geo, clean_obs = generate_position_measurements(
+                fx["t_pass"], fx["state_history"], fx["stations"], fx["vis_mask"],
+                fx["earth_pos"], fx["earth_vel"], fx["et0"],
+                noise=False, apply_light_time=apply_light_time,
+            )
+        finally:
+            spice.kclear()
+        return pass_geo, clean_obs
+
+    def test_position_light_time_residual_closure(self):
+        fx = self._position_light_time_fixture()
+        pass_geo, clean_obs = self._generate_position_clean(fx, apply_light_time=True)
+        self.assertTrue(pass_geo.apply_light_time)
+
+        residuals, h_meas = compute_position_residuals(fx["state_history"], clean_obs, pass_geo)
+        self.assertLess(float(np.max(np.abs(clean_obs[:, 1] - h_meas[:, 0]))), 1e-6)      # range [m]
+        self.assertLess(float(np.max(np.abs(clean_obs[:, 2:4] - h_meas[:, 1:3]))), 1e-9)  # az/el [rad]
+        self.assertLess(float(np.linalg.norm(residuals)), 1e-6)
+
+        residuals_an, h_an, h_tilde = compute_position_residuals_analytic(
+            fx["state_history"], clean_obs, pass_geo
+        )
+        np.testing.assert_allclose(h_an, h_meas, rtol=0.0, atol=1e-9)
+        self.assertLess(float(np.linalg.norm(residuals_an)), 1e-6)
+        self.assertEqual(h_tilde.shape, (3 * clean_obs.shape[0], 6))
+
+    def test_position_light_time_creates_physical_correction(self):
+        fx = self._position_light_time_fixture()
+        _, clean_inst = self._generate_position_clean(fx, apply_light_time=False)
+        _, clean_lt = self._generate_position_clean(fx, apply_light_time=True)
+        self.assertEqual(clean_inst.shape, clean_lt.shape)
+        range_diff = np.abs(clean_lt[:, 1] - clean_inst[:, 1])
+        self.assertGreater(float(np.max(range_diff)), 100.0)
+
+    def test_position_light_time_model_mismatch_is_biased(self):
+        import dataclasses
+
+        fx = self._position_light_time_fixture()
+        pass_geo_lt, clean_lt = self._generate_position_clean(fx, apply_light_time=True)
+        pass_geo_inst = dataclasses.replace(pass_geo_lt, apply_light_time=False)
+        _residuals, h_inst = compute_position_residuals(
+            fx["state_history"], clean_lt, pass_geo_inst
+        )
+        range_residual = clean_lt[:, 1] - h_inst[:, 0]
+        self.assertGreater(float(np.max(np.abs(range_residual))), 100.0)
+
+    def test_position_light_time_analytic_jacobian_matches_finite_difference(self):
+        from lunar_od.measurements import _apparent_position_observable
+        from lunar_od.geometry import wrap_to_pi
+
+        fx = self._position_light_time_fixture()
+        pass_geo, clean = self._generate_position_clean(fx, apply_light_time=True)
+        state = fx["state_history"]
+        tp = fx["t_pass"]
+        _, _, h_tilde = compute_position_residuals_analytic(state, clean, pass_geo)
+
+        def lt_h(perturbed_state, i):
+            k = int(clean[i, 5]) - 1
+            sid = int(clean[i, 4]) - 1
+            z, _t, _lt, _it = _apparent_position_observable(
+                float(clean[i, 0]), pass_geo.stations[sid], tp, perturbed_state,
+                pass_geo.earth_pos_mci_m[k], pass_geo.x_j2000_to_itrf93[k],
+            )
+            return z
+
+        def rigid_local_perturb(k, delta):
+            sp = state.copy()
+            dr = delta[:3]
+            dv = delta[3:6]
+            dt = (tp - tp[k])[:, None]
+            sp[:, :3] = sp[:, :3] + dr[None, :] + dt * dv[None, :]
+            sp[:, 3:6] = sp[:, 3:6] + dv[None, :]
+            return sp
+
+        eps = np.array([10.0, 10.0, 10.0, 0.01, 0.01, 0.01])
+        light_time = clean[:, 1] / 299792458.0
+        for i in range(clean.shape[0]):
+            k = int(clean[i, 5]) - 1
+            jac = np.zeros((3, 6))
+            for m in range(6):
+                d = np.zeros(6)
+                d[m] = eps[m]
+                dz = lt_h(rigid_local_perturb(k, d), i) - lt_h(rigid_local_perturb(k, -d), i)
+                dz[1] = wrap_to_pi(dz[1])
+                dz[2] = wrap_to_pi(dz[2])
+                jac[:, m] = dz / (2.0 * eps[m])
+            block = h_tilde[3 * i:3 * i + 3, :]
+            # Captured position block matches the finite difference: the neglected
+            # d(tau)/dx coupling is only ~parts-per-million.
+            rel = np.linalg.norm(jac[:, :3] - block[:, :3]) / max(
+                np.linalg.norm(block[:, :3]), 1e-30
+            )
+            self.assertLess(rel, 1e-3)
+            # The analytic velocity block is zero by construction (first-stage approx)...
+            self.assertTrue(np.allclose(block[:, 3:6], 0.0))
+            # ...and the fully-neglected d(range)/d(velocity) term equals the light time.
+            self.assertAlmostEqual(float(np.linalg.norm(jac[0, 3:6])), float(light_time[i]), delta=1e-2)
+
     def test_range_rate_measurement_generation_and_clean_residual_closure(self):
         fixture_path = FIXTURES_DIR / "spice_snapshots.json"
         if not fixture_path.is_file():
