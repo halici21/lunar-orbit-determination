@@ -315,19 +315,24 @@ class MeasurementTests(unittest.TestCase):
             "et0": fixture["et"],
         }
 
-    def _generate_position_clean(self, fx, *, apply_light_time, apply_stellar_aberration=False):
+    def _generate_position_clean(self, fx, *, apply_light_time, apply_stellar_aberration=False,
+                                 stellar_aberration_model=None):
         import spiceypy as spice
 
         try:
             load_spice_kernels()
         except FileNotFoundError:
             self.skipTest("SPICE kernels not available.")
+        extra = {}
+        if stellar_aberration_model is not None:
+            extra["stellar_aberration_model"] = stellar_aberration_model
         try:
             _, pass_geo, clean_obs = generate_position_measurements(
                 fx["t_pass"], fx["state_history"], fx["stations"], fx["vis_mask"],
                 fx["earth_pos"], fx["earth_vel"], fx["et0"],
                 noise=False, apply_light_time=apply_light_time,
                 apply_stellar_aberration=apply_stellar_aberration,
+                **extra,
             )
         finally:
             spice.kclear()
@@ -486,6 +491,78 @@ class MeasurementTests(unittest.TestCase):
             fx, apply_light_time=True, apply_stellar_aberration=True
         )
         self.assertTrue(pass_geo.apply_stellar_aberration)
+
+        residuals, h_meas = compute_position_residuals(fx["state_history"], clean, pass_geo)
+        self.assertLess(float(np.max(np.abs(clean[:, 1] - h_meas[:, 0]))), 1e-6)      # range [m]
+        self.assertLess(float(np.max(np.abs(clean[:, 2:4] - h_meas[:, 1:3]))), 1e-9)  # az/el [rad]
+        self.assertLess(float(np.linalg.norm(residuals)), 1e-6)
+
+        residuals_an, h_an, h_tilde = compute_position_residuals_analytic(
+            fx["state_history"], clean, pass_geo
+        )
+        np.testing.assert_allclose(h_an, h_meas, rtol=0.0, atol=1e-9)
+        self.assertLess(float(np.linalg.norm(residuals_an)), 1e-6)
+        self.assertEqual(h_tilde.shape, (3 * clean.shape[0], 6))
+
+    def test_position_stellar_local_mci_matches_default(self):
+        """Model parity: stellar_aberration_model='local_mci' reproduces the
+        default (backward-compatible) local-MCI behaviour exactly."""
+        fx = self._position_light_time_fixture()
+        _, clean_default = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True
+        )
+        _, clean_local = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True,
+            stellar_aberration_model="local_mci",
+        )
+        np.testing.assert_array_equal(clean_default, clean_local)
+
+    def test_position_stellar_ssb_larger_and_range_preserved(self):
+        """SPICE-like +S: the SSB observer velocity yields an angular correction
+        of order |v_earth_ssb|/c (~1e-4 rad) -- much larger than local-MCI -- while
+        range is preserved (the correction is a pure rotation)."""
+        from lunar_od.geometry import wrap_to_pi
+
+        fx = self._position_light_time_fixture()
+        _, clean_cn = self._generate_position_clean(fx, apply_light_time=True)
+        _, clean_loc = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True,
+            stellar_aberration_model="local_mci",
+        )
+        pass_geo, clean_ssb = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True,
+            stellar_aberration_model="spice_ssb",
+        )
+        self.assertEqual(pass_geo.stellar_aberration_model, "spice_ssb")
+        self.assertIsNotNone(pass_geo.earth_vel_ssb_j2000_mps)
+
+        def ang_shift(a, b):
+            az = np.abs(wrap_to_pi(a[:, 2] - b[:, 2]))
+            el = np.abs(a[:, 3] - b[:, 3])
+            return np.maximum(az, el)
+
+        loc_max = float(np.max(ang_shift(clean_loc, clean_cn)))
+        ssb_max = float(np.max(ang_shift(clean_ssb, clean_cn)))
+
+        # SSB correction is substantially larger (|v_ssb| ~ 30 km/s vs ~1 km/s MCI)
+        self.assertGreater(ssb_max, 5.0 * loc_max)
+        # ...and of order |v_earth_ssb|/c ~ 1e-4 rad, below the sin_phi <= v/c ceiling
+        self.assertGreater(ssb_max, 1e-5)
+        self.assertLess(ssb_max, 1.2e-4)
+
+        # range preserved by the pure rotation (both models)
+        self.assertLess(float(np.max(np.abs(clean_ssb[:, 1] - clean_cn[:, 1]))), 1e-3)
+
+    def test_position_stellar_ssb_residual_closure(self):
+        """SSB closure: noiseless spice_ssb measurements produce near-zero
+        residuals when predicted with the same model (no estimator bias)."""
+        fx = self._position_light_time_fixture()
+        pass_geo, clean = self._generate_position_clean(
+            fx, apply_light_time=True, apply_stellar_aberration=True,
+            stellar_aberration_model="spice_ssb",
+        )
+        self.assertTrue(pass_geo.apply_stellar_aberration)
+        self.assertEqual(pass_geo.stellar_aberration_model, "spice_ssb")
 
         residuals, h_meas = compute_position_residuals(fx["state_history"], clean, pass_geo)
         self.assertLess(float(np.max(np.abs(clean[:, 1] - h_meas[:, 0]))), 1e-6)      # range [m]

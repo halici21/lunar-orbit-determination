@@ -284,6 +284,36 @@ The measurement layer supports:
 Measurements are generated only when the spacecraft satisfies station
 visibility constraints and is not occulted by the Moon.
 
+#### Aberration corrections (optional)
+
+Range/azimuth/elevation generation and residuals accept two opt-in corrections
+(both default **off**, so the geometric instantaneous model is unchanged):
+
+- **`apply_light_time=True`** — converged Newtonian one-way light time (CN). The
+  spacecraft is evaluated at the transmit time `t_t = t_r − τ` (τ from a
+  contraction-mapping iteration) while the station, Earth, and topocentric frame
+  are evaluated at the receive time `t_r`. This accounts for **target motion
+  during the light travel time**.
+- **`apply_stellar_aberration=True`** (requires light time) — reception-case
+  Newtonian stellar aberration, applied *after* the CN solution as a pure
+  Rodrigues rotation of the inertial line of sight toward the observer velocity
+  (`sin φ = (v/c) sin w`). It accounts for the **observer's velocity aberration**
+  and shifts azimuth/elevation while leaving range unchanged (rotation preserves
+  the vector norm). Two frames are selectable via `stellar_aberration_model`:
+  - `"spice_ssb"` — observer velocity relative to the **Solar System Barycentre**
+    (J2000 axes; MCI is J2000-aligned so no extra rotation is needed). This is the
+    SPICE-like `CN+S` choice; the correction is of order `|v_⊕,SSB|/c ≈ 1e-4 rad`.
+  - `"local_mci"` *(default)* — observer velocity relative to the Moon-centred
+    frame. Internally consistent but **not** identical to SPICE `CN+S` (it omits
+    the Moon's barycentric velocity, giving a correction ~20× smaller).
+
+The same correction settings are carried on `PassGeometry` and reused in
+generation, prediction, and residual computation, so no estimator bias is
+introduced. The analytic Jacobian keeps a first-stage approximation: it neglects
+the implicit `dτ/dx` light-time coupling and the stellar-aberration rotation
+derivative (acceptable because both are far below the measurement noise floor for
+Earth–Moon geometry).
+
 ### Estimators
 
 **BLS-LM** processes all measurements in a completed tracking arc and solves a

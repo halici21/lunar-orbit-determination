@@ -31,6 +31,8 @@ class PassGeometry:
     range_rate_physics: RangeRatePhysicsConfig | None = None
     apply_light_time: bool = False
     apply_stellar_aberration: bool = False
+    stellar_aberration_model: str = "local_mci"
+    earth_vel_ssb_j2000_mps: np.ndarray | None = None
 
 
 @dataclass(frozen=True)
@@ -106,13 +108,13 @@ def apply_stellar_aberration(
     formula. The returned vector has the same magnitude as the input (a pure
     rotation), so range derived from it is unchanged.
 
-    ``observer_velocity_inertial`` must be expressed in the same inertial frame
-    as ``rho_vec_inertial`` (here Moon-centred J2000); do not pass an ECEF
-    velocity. Note that the dominant SPICE CN+S correction uses the observer
-    velocity relative to the solar-system barycentre; this frame-relative
-    formulation omits the Moon's barycentric velocity and is intended as a
-    self-consistent synthetic-measurement model (the identical model is used in
-    generation and prediction, so no estimator bias is introduced).
+    ``observer_velocity_inertial`` must be expressed in the same axes as
+    ``rho_vec_inertial`` (here J2000); do not pass an ECEF velocity. The helper
+    itself is frame-agnostic -- the caller selects the inertial reference: the
+    SPICE-like ``+S`` correction uses the observer velocity relative to the
+    solar-system barycentre, while the cheaper local-MCI model uses the velocity
+    relative to the Moon. Both are self-consistent when the identical model is
+    used in generation and prediction, so neither introduces an estimator bias.
     """
     r = np.asarray(rho_vec_inertial, dtype=float).reshape(3)
     v = np.asarray(observer_velocity_inertial, dtype=float).reshape(3)
@@ -145,7 +147,7 @@ def _apparent_position_observable(
     earth_pos_mci_rx: ArrayLike,
     x_j2k_itrf_rx: ArrayLike,
     *,
-    earth_vel_mci_rx: ArrayLike | None = None,
+    observer_earth_vel_rx: ArrayLike | None = None,
     apply_stellar: bool = False,
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = 1e-12,
@@ -164,9 +166,11 @@ def _apparent_position_observable(
     When ``apply_stellar`` is set, the converged-light-time inertial line of
     sight is additionally rotated by the reception-case stellar aberration
     correction (:func:`apply_stellar_aberration`) before az/el/range are formed.
-    This requires ``earth_vel_mci_rx`` (Earth-centre velocity in the MCI frame at
-    the receive time) so the observer's inertial velocity can be assembled. The
-    light-time solution itself is unchanged.
+    This requires ``observer_earth_vel_rx``: the Earth-centre velocity (in J2000
+    axes) appropriate for the chosen aberration frame -- velocity relative to the
+    Moon for the local-MCI model, or relative to the SSB for the SPICE-like model.
+    The station's Earth-rotation velocity (from the 6x6 transform) is added to it.
+    The light-time solution itself is unchanged.
     """
     earth_pos_mci_rx = np.asarray(earth_pos_mci_rx, dtype=float).reshape(3)
     x_rx = np.asarray(x_j2k_itrf_rx, dtype=float)
@@ -192,12 +196,14 @@ def _apparent_position_observable(
     r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
 
     if apply_stellar:
-        if earth_vel_mci_rx is None:
-            raise ValueError("apply_stellar=True requires earth_vel_mci_rx.")
-        earth_vel_mci_rx = np.asarray(earth_vel_mci_rx, dtype=float).reshape(3)
-        # Observer (station) inertial velocity = Earth-centre MCI velocity plus
-        # the inertial velocity from Earth rotation (velocity part of the solve).
-        observer_vel_inertial = earth_vel_mci_rx + station_rel_state_j2000[3:]
+        if observer_earth_vel_rx is None:
+            raise ValueError("apply_stellar=True requires observer_earth_vel_rx.")
+        observer_earth_vel_rx = np.asarray(observer_earth_vel_rx, dtype=float).reshape(3)
+        # Observer (station) inertial velocity = Earth-centre velocity (J2000 axes,
+        # relative to the Moon or the SSB per the chosen frame) plus the inertial
+        # velocity from Earth rotation (velocity part of the 6x6 solve). MCI axes
+        # are J2000-aligned, so the velocity needs no extra rotation.
+        observer_vel_inertial = observer_earth_vel_rx + station_rel_state_j2000[3:]
         # CN-corrected inertial line of sight, then stellar aberration rotation.
         rho_inertial = apply_stellar_aberration(
             r_sc_tt - station_mci_rx,
@@ -238,7 +244,16 @@ def _apparent_position_rowwise(
         if apply_stellar_aberration is None
         else apply_stellar_aberration
     )
-    earth_vel = getattr(pass_geo, "earth_vel_mci_mps", None)
+    model = getattr(pass_geo, "stellar_aberration_model", "local_mci")
+    if use_stellar and model == "spice_ssb":
+        earth_vel = getattr(pass_geo, "earth_vel_ssb_j2000_mps", None)
+        if earth_vel is None:
+            raise ValueError(
+                "stellar_aberration_model='spice_ssb' requires "
+                "pass_geo.earth_vel_ssb_j2000_mps (regenerate with the SSB model)."
+            )
+    else:
+        earth_vel = getattr(pass_geo, "earth_vel_mci_mps", None)
     n_obs = obs_data.shape[0]
     h_meas = np.zeros((n_obs, 3), dtype=float)
     r_tx = np.zeros((n_obs, 3), dtype=float)
@@ -253,7 +268,7 @@ def _apparent_position_rowwise(
             state_history_mci,
             pass_geo.earth_pos_mci_m[time_idx],
             pass_geo.x_j2000_to_itrf93[time_idx],
-            earth_vel_mci_rx=(
+            observer_earth_vel_rx=(
                 earth_vel[time_idx] if (use_stellar and earth_vel is not None) else None
             ),
             apply_stellar=use_stellar,
@@ -277,6 +292,7 @@ def generate_position_measurements(
     arc_id: int | None = None,
     apply_light_time: bool = False,
     apply_stellar_aberration: bool = False,
+    stellar_aberration_model: str = "local_mci",
 ) -> tuple[np.ndarray, PassGeometry, np.ndarray]:
     """Generate range/azimuth/elevation measurements.
 
@@ -303,12 +319,19 @@ def generate_position_measurements(
             "apply_stellar_aberration=True requires apply_light_time=True "
             "(stellar aberration is applied on top of the light-time solution)."
         )
+    if stellar_aberration_model not in ("local_mci", "spice_ssb"):
+        raise ValueError(
+            "stellar_aberration_model must be 'local_mci' or 'spice_ssb'."
+        )
     if vis_mask_raw.shape != (n_steps, len(stations)):
         raise ValueError("vis_mask_raw must have shape (N, num_stations).")
 
     r_earth_mci = _ensure_n_by_3(get_earth_pos(t_pass_s), n_steps, "r_earth_mci")
     v_earth_mci = _ensure_n_by_3(get_earth_vel(t_pass_s), n_steps, "v_earth_mci")
     xforms = np.zeros((n_steps, 6, 6), dtype=float)
+    # SPICE-like CN+S uses the observer velocity relative to the SSB (J2000 axes).
+    need_ssb = apply_stellar_aberration and stellar_aberration_model == "spice_ssb"
+    v_earth_ssb_j2000 = np.zeros((n_steps, 3), dtype=float) if need_ssb else None
 
     include_arc_id = arc_id is not None
     num_cols = 7 if include_arc_id else 6
@@ -321,6 +344,12 @@ def generate_position_measurements(
     for k, t_s in enumerate(t_pass_s):
         x_j2k_itrf = np.asarray(spice.sxform("J2000", "ITRF93", float(et0 + t_s)), dtype=float)
         xforms[k, :, :] = x_j2k_itrf
+        if need_ssb:
+            # Earth-centre state w.r.t. the SSB in J2000 axes; spkezr returns
+            # km / (km/s), so scale velocity to m/s. MCI axes are J2000-aligned,
+            # hence this velocity is already in the LOS vector basis.
+            state_e, _lt_e = spice.spkezr("EARTH", float(et0 + t_s), "J2000", "NONE", "SSB")
+            v_earth_ssb_j2000[k, :] = np.asarray(state_e[3:6], dtype=float) * 1000.0
 
         active_station_cols = np.where(vis_mask_raw[k, :])[0]
         if active_station_cols.size == 0:
@@ -333,10 +362,18 @@ def generate_position_measurements(
         for station_col in active_station_cols:
             station = stations[station_col]
             if apply_light_time:
+                if apply_stellar_aberration:
+                    obs_earth_vel = (
+                        v_earth_ssb_j2000[k]
+                        if stellar_aberration_model == "spice_ssb"
+                        else v_earth_mci[k]
+                    )
+                else:
+                    obs_earth_vel = None
                 z_clean, _t_t, _lt, _it = _apparent_position_observable(
                     float(t_s), station, t_pass_s, state_history_mci,
                     r_earth_mci[k], x_j2k_itrf,
-                    earth_vel_mci_rx=v_earth_mci[k] if apply_stellar_aberration else None,
+                    observer_earth_vel_rx=obs_earth_vel,
                     apply_stellar=apply_stellar_aberration,
                 )
             else:
@@ -380,6 +417,8 @@ def generate_position_measurements(
         measurement_type="position",
         apply_light_time=apply_light_time,
         apply_stellar_aberration=apply_stellar_aberration,
+        stellar_aberration_model=stellar_aberration_model,
+        earth_vel_ssb_j2000_mps=v_earth_ssb_j2000,
     )
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
