@@ -73,6 +73,37 @@ class ScenarioBuilderController(QWidget):
             self.runScenarioBtn.parentWidget().layout().addWidget(self.openAnalysisBtn)
         self.openAnalysisBtn.clicked.connect(self._open_in_analysis)
 
+        # --- Aberration corrections (position measurements only) -------------
+        # Added programmatically (like the buttons above) to avoid editing the
+        # .ui; wired into the same JSON/model round-trip as the other fields.
+        from PyQt5.QtWidgets import QCheckBox, QComboBox
+        self.lightTimeCheck = QCheckBox("One-way light time (CN)")
+        self.lightTimeCheck.setToolTip(
+            "Converged Newtonian one-way light-time correction for range/az/el.\n"
+            "Position measurements only."
+        )
+        self.stellarCheck = QCheckBox("Stellar aberration (+S)")
+        self.stellarCheck.setToolTip(
+            "Apply stellar aberration on top of the light-time solution.\n"
+            "Requires light time."
+        )
+        self.stellarModelCombo = QComboBox()
+        self.stellarModelCombo.addItems(["local_mci", "spice_ssb"])
+        self.stellarModelCombo.setToolTip(
+            "Observer-velocity frame for +S:\n"
+            "  spice_ssb  - SPICE-like CN+S (SSB velocity, ~1e-4 rad)\n"
+            "  local_mci  - Moon-centred velocity (cheaper, ~20x smaller)"
+        )
+        meas_layout = self.measGroup.layout()
+        meas_layout.addRow("Light time:", self.lightTimeCheck)
+        meas_layout.addRow("Aberration:", self.stellarCheck)
+        meas_layout.addRow("Aberration frame:", self.stellarModelCombo)
+        for _w in (self.lightTimeCheck, self.stellarCheck):
+            _w.stateChanged.connect(self._update_json)
+            _w.stateChanged.connect(self._on_aberration_changed)
+        self.stellarModelCombo.currentTextChanged.connect(self._update_json)
+        self.measTypeCombo.currentTextChanged.connect(self._on_aberration_changed)
+
         # Initial render
         self._model_to_widgets(self._current_model)
         self._update_json()
@@ -110,6 +141,15 @@ class ScenarioBuilderController(QWidget):
                   self.gapThreshLabel, self.gapThreshSpin):
             w.setVisible(not is_prescribed)
         self._update_arc_count()
+
+    def _on_aberration_changed(self, _v=None) -> None:
+        """Enable aberration controls only for position measurements; stellar
+        aberration requires light time, and the frame combo requires stellar."""
+        is_position = self.measTypeCombo.currentText() == "position"
+        self.lightTimeCheck.setEnabled(is_position)
+        lt_on = is_position and self.lightTimeCheck.isChecked()
+        self.stellarCheck.setEnabled(lt_on)
+        self.stellarModelCombo.setEnabled(lt_on and self.stellarCheck.isChecked())
 
     def _update_arc_count(self) -> None:
         mode = self.arcModeCombo.currentText()
@@ -158,11 +198,18 @@ class ScenarioBuilderController(QWidget):
             self.noiseCheck.setChecked(model.noise_enabled)
             _set_combo(self.estimatorCombo, model.estimator_type)
             _set_combo(self.startModeCombo, model.start_mode)
+            self.lightTimeCheck.setChecked(bool(getattr(model, "apply_light_time", False)))
+            self.stellarCheck.setChecked(bool(getattr(model, "apply_stellar_aberration", False)))
+            _set_combo(self.stellarModelCombo, getattr(model, "stellar_aberration_model", "local_mci"))
         finally:
             self._updating_from_model = False
         self._on_arc_mode_changed()
+        self._on_aberration_changed()
 
     def _widgets_to_model(self) -> ScenarioModel:
+        is_position = self.measTypeCombo.currentText() == "position"
+        light_time = is_position and self.lightTimeCheck.isChecked()
+        stellar = light_time and self.stellarCheck.isChecked()
         return ScenarioModel(
             name=self.nameEdit.text().strip() or "unnamed",
             description=self.descEdit.text().strip(),
@@ -181,6 +228,9 @@ class ScenarioBuilderController(QWidget):
             noise_enabled=self.noiseCheck.isChecked(),
             estimator_type=self.estimatorCombo.currentText(),
             start_mode=self.startModeCombo.currentText(),
+            apply_light_time=light_time,
+            apply_stellar_aberration=stellar,
+            stellar_aberration_model=self.stellarModelCombo.currentText(),
         )
 
     def _update_json(self) -> None:

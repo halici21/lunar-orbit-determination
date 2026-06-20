@@ -26,6 +26,9 @@ class ScenarioModel:
     count_interval_s: float = 60.0
     uplink_frequency_hz: float = 7.2e9
     turnaround_ratio: float = 880.0 / 749.0
+    apply_light_time: bool = False
+    apply_stellar_aberration: bool = False
+    stellar_aberration_model: str = "local_mci"
     noise_enabled: bool = True
     random_seed: int = 42
     estimator_type: str = "bls_lm"        # bls_lm | srif | ukf

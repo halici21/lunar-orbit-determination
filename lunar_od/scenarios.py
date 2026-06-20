@@ -212,6 +212,9 @@ def build_measurement_arcs(
     min_samples: int = 2,
     range_rate_physics: RangeRatePhysicsConfig | str | None = None,
     count_interval_s: float | None = None,
+    apply_light_time: bool = False,
+    apply_stellar_aberration: bool = False,
+    stellar_aberration_model: str = "local_mci",
 ) -> tuple[PreparedArc, ...]:
     """Build per-arc observation packages from visibility segmentation."""
     t_sim_s = np.asarray(t_sim_s, dtype=float).reshape(-1)
@@ -254,6 +257,9 @@ def build_measurement_arcs(
                 noise=noise,
                 rng=rng,
                 arc_id=arc_number,
+                apply_light_time=apply_light_time,
+                apply_stellar_aberration=apply_stellar_aberration,
+                stellar_aberration_model=stellar_aberration_model,
             )
         elif measurement_type == "range_rate":
             obs_data, pass_geo = generate_range_rate_measurements(

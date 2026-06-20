@@ -128,6 +128,9 @@ def _base_from_settings(estimator: str = "bls_lm") -> dict:
         range_rate_physics=_s("measurements/range_rate_physics", "geometric_instantaneous"),
         count_interval_s=_f("measurements/count_interval_s", 1.0),
         bias_mode=None if _bias_raw == "none" else _bias_raw,
+        apply_light_time=_b("measurements/apply_light_time", False),
+        apply_stellar_aberration=_b("measurements/apply_stellar_aberration", False),
+        stellar_aberration_model=_s("measurements/stellar_aberration_model", "local_mci"),
         output_dir="python_port/results",
     )
     if estimator == "ukf":
@@ -419,6 +422,13 @@ class _AnalysisWorker(QThread):
                 params = {**self._base, **variant.overrides}
                 params["name"]           = f"analysis_{self._spec.title}_{variant.label}"
                 params["estimator_type"] = self._spec.estimator
+                # light-time / stellar aberration apply only to position observables,
+                # and stellar requires light time — sanitize so variant overrides that
+                # switch the observable type cannot trip the config cross-field rules.
+                if params.get("measurement_type") != "position":
+                    params["apply_light_time"] = False
+                if not params.get("apply_light_time", False):
+                    params["apply_stellar_aberration"] = False
 
                 try:
                     config = scenario_config_from_mapping(params)
@@ -433,6 +443,9 @@ class _AnalysisWorker(QThread):
                     selected_station_names,
                     config.noise,
                     config.range_rate_physics,
+                    config.apply_light_time,
+                    config.apply_stellar_aberration,
+                    config.stellar_aberration_model,
                 )
                 if arc_key not in arc_cache:
                     self.log_line.emit(f"  Building visibility arcs ({config.measurement_type})…")
@@ -447,6 +460,9 @@ class _AnalysisWorker(QThread):
                         ephemeris.earth_position, ephemeris.earth_velocity, et0,
                         noise=config.noise, rng=None, min_samples=4,
                         range_rate_physics=scenario_range_rate_physics_config(config),
+                        apply_light_time=config.apply_light_time,
+                        apply_stellar_aberration=config.apply_stellar_aberration,
+                        stellar_aberration_model=config.stellar_aberration_model,
                     )
                     arc_cache[arc_key] = arcs
                 else:

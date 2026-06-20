@@ -328,6 +328,19 @@ class MeasurementsController(QWidget):
         form.addRow("Doppler count interval:", self._count_interval)
         lay.addWidget(box)
 
+        # --- Light time & stellar aberration (position observables only) ---
+        box_ab, form_ab = _group("Light-Time & Aberration (position observables)")
+        self._light_time = _check(self._getb("apply_light_time", False))
+        form_ab.addRow("One-way light time (CN):", self._light_time)
+        self._stellar = _check(self._getb("apply_stellar_aberration", False))
+        form_ab.addRow("Stellar aberration (+S):", self._stellar)
+        self._stellar_model = _combo(
+            ["local_mci", "spice_ssb"],
+            self._gets("stellar_aberration_model", "local_mci"),
+        )
+        form_ab.addRow("Aberration frame:", self._stellar_model)
+        lay.addWidget(box_ab)
+
         # --- Noise ---
         box2, form2 = _group("Measurement Noise")
         self._noise_enabled = _check(self._getb("noise_enabled", True))
@@ -370,6 +383,9 @@ class MeasurementsController(QWidget):
         self._settings.setValue(f"{self._SECTION}/rr_sigma_m_s", self._rr_sigma.value())
         self._settings.setValue(f"{self._SECTION}/bias_mode", self._bias_mode.currentText())
         self._settings.setValue(f"{self._SECTION}/bias_sigma_m", self._bias_sigma.value())
+        self._settings.setValue(f"{self._SECTION}/apply_light_time", self._light_time.isChecked())
+        self._settings.setValue(f"{self._SECTION}/apply_stellar_aberration", self._stellar.isChecked())
+        self._settings.setValue(f"{self._SECTION}/stellar_aberration_model", self._stellar_model.currentText())
         self._saved.setText("Saved")
 
     def _get(self, key: str, default: float) -> float:

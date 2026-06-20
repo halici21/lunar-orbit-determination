@@ -192,6 +192,61 @@ class ScenarioConfigTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             scenario_config_from_mapping(base)
 
+    def test_aberration_corrections_default_off_and_roundtrip(self):
+        base = {
+            "name": "aberr",
+            "measurement_type": "position",
+            "estimator_type": "bls_lm",
+            "start_mode": "cold",
+            "network": "multi",
+        }
+        # defaults: corrections off, frame local_mci (backward compatible)
+        config = scenario_config_from_mapping(base)
+        self.assertFalse(config.apply_light_time)
+        self.assertFalse(config.apply_stellar_aberration)
+        self.assertEqual(config.stellar_aberration_model, "local_mci")
+
+        # full SPICE-like CN+S round-trips through the mapping
+        config = scenario_config_from_mapping(
+            {
+                **base,
+                "apply_light_time": True,
+                "apply_stellar_aberration": True,
+                "stellar_aberration_model": "spice_ssb",
+            }
+        )
+        self.assertTrue(config.apply_light_time)
+        self.assertTrue(config.apply_stellar_aberration)
+        self.assertEqual(config.stellar_aberration_model, "spice_ssb")
+
+        # schema advertises the new keys
+        props = scenario_config_schema()["properties"]
+        self.assertIn("apply_light_time", props)
+        self.assertEqual(props["stellar_aberration_model"]["enum"], ["local_mci", "spice_ssb"])
+
+    def test_aberration_corrections_cross_field_rules(self):
+        base = {
+            "name": "aberr_bad",
+            "measurement_type": "position",
+            "estimator_type": "bls_lm",
+            "start_mode": "cold",
+            "network": "multi",
+        }
+        # stellar aberration requires light time
+        with self.assertRaises(ValueError):
+            scenario_config_from_mapping({**base, "apply_stellar_aberration": True})
+
+        # corrections apply only to position measurements
+        with self.assertRaises(ValueError):
+            scenario_config_from_mapping(
+                {**base, "measurement_type": "range_rate", "apply_light_time": True}
+            )
+
+        # valid: light time alone on position measurements
+        config = scenario_config_from_mapping({**base, "apply_light_time": True})
+        self.assertTrue(config.apply_light_time)
+        self.assertFalse(config.apply_stellar_aberration)
+
     def test_json_load_and_normalized_write_roundtrip(self):
         payload = {
             "name": "json_demo",

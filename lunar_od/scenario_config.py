@@ -54,6 +54,9 @@ class ScenarioConfig:
     station_clock_drift: float = 0.0
     clock_reference_time_s: float = 0.0
     transponder_delay_s: float = 0.0
+    apply_light_time: bool = False
+    apply_stellar_aberration: bool = False
+    stellar_aberration_model: str = "local_mci"
     ukf_alpha: float = 0.35
     ukf_beta: float = 2.0
     ukf_kappa: float = 0.0
@@ -115,6 +118,9 @@ def scenario_config_schema() -> dict[str, Any]:
             "station_clock_drift": {"type": "number", "default": 0.0},
             "clock_reference_time_s": {"type": "number", "default": 0.0},
             "transponder_delay_s": {"type": "number", "default": 0.0},
+            "apply_light_time": {"type": "boolean", "default": False},
+            "apply_stellar_aberration": {"type": "boolean", "default": False},
+            "stellar_aberration_model": {"enum": ["local_mci", "spice_ssb"], "default": "local_mci"},
             "ukf_alpha": {"type": "number", "default": 0.35},
             "ukf_beta": {"type": "number", "default": 2.0},
             "ukf_kappa": {"type": "number", "default": 0.0},
@@ -209,6 +215,15 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         transponder_delay_s=_nonnegative_float(
             payload.get("transponder_delay_s", 0.0),
             "transponder_delay_s",
+        ),
+        apply_light_time=_boolean(payload.get("apply_light_time", False), "apply_light_time"),
+        apply_stellar_aberration=_boolean(
+            payload.get("apply_stellar_aberration", False), "apply_stellar_aberration"
+        ),
+        stellar_aberration_model=_enum_value(
+            payload.get("stellar_aberration_model", "local_mci"),
+            ("local_mci", "spice_ssb"),
+            "stellar_aberration_model",
         ),
         ukf_alpha=_positive_float(payload.get("ukf_alpha", 0.35), "ukf_alpha"),
         ukf_beta=_nonnegative_float(payload.get("ukf_beta", 2.0), "ukf_beta"),
@@ -383,6 +398,12 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError("bias solve-for modes are supported here only for estimator_type='srif' or 'ukf'.")
     if config.range_rate_physics != "geometric_instantaneous" and config.measurement_type != "range_rate":
         raise ValueError("non-geometric range_rate_physics requires measurement_type='range_rate'.")
+    if config.apply_stellar_aberration and not config.apply_light_time:
+        raise ValueError("apply_stellar_aberration requires apply_light_time.")
+    if (config.apply_light_time or config.apply_stellar_aberration) and config.measurement_type != "position":
+        raise ValueError(
+            "apply_light_time / apply_stellar_aberration apply only to measurement_type='position'."
+        )
     scenario_range_rate_physics_config(config)
     if config.ukf_min_process_noise_scale > config.ukf_max_process_noise_scale:
         raise ValueError("ukf_min_process_noise_scale must not exceed ukf_max_process_noise_scale.")

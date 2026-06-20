@@ -152,6 +152,9 @@ def run_configured_scenario(
             rng=None if measurement_seed is None else np.random.default_rng(int(measurement_seed)),
             min_samples=4,
             range_rate_physics=scenario_range_rate_physics_config(config),
+            apply_light_time=config.apply_light_time,
+            apply_stellar_aberration=config.apply_stellar_aberration,
+            stellar_aberration_model=config.stellar_aberration_model,
         )
         arcs = tuple(_with_estimator_ephemeris(arc, estimator_ephemeris) for arc in arcs)
         cold_bank = make_cold_start_bank(
