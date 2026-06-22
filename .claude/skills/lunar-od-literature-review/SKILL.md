@@ -1,51 +1,57 @@
 ---
 name: lunar-od-literature-review
 description: >-
-  Literature-backed review for lunar orbit determination topics: light-time and
-  stellar-aberration corrections, two-way / counted Doppler and DSN radiometrics,
-  SPICE/NAIF conventions, batch (BLS) and unscented (UKF) estimation theory,
-  covariance / NIS consistency, and thesis references. Use when the user asks
-  what the literature says, wants primary sources, wants to ground a modeling
-  choice, or to compare this implementation against Moyer, Thornton & Border,
-  Tapley-Schutz-Born, Montenbruck & Gill, Vallado, DSN 810-005, or SPICE docs.
+  Literature-backed review for lunar orbit determination: tracking measurement
+  models, SPICE/NAIF conventions, DSN-style radiometrics (range, two-way /
+  counted Doppler), light-time and apparent geometry, batch (BLS/SRIF) and
+  unscented (UKF) estimation theory, covariance / NIS-NEES consistency, and
+  thesis references. Use when the user asks what the literature says, wants
+  primary sources, wants to justify a measurement-realism upgrade, or to compare
+  this implementation against Moyer, Thornton & Border, Tapley-Schutz-Born,
+  Montenbruck & Gill, Vallado, DSN 810-005, or SPICE docs.
+metadata:
+  version: "2.0"
+  adapted-from: K-Dense literature-review, paper-lookup, citation-management
 ---
 
 # Lunar OD Literature Review
 
-Produce concise, primary-source-grounded reviews for this lunar orbit
-determination project, and connect each finding to a concrete implementation
-implication under `python_port/`.
+Produce concise, primary-source-grounded reviews and tie each finding to a
+concrete implementation implication under `python_port/`.
+
+## Workflow (phased)
+1. **Define** the precise question (e.g. "is one-iteration light time adequate
+   for Earth-Moon?") and its scope.
+2. **Search / recall** primary sources in the priority order below.
+3. **Screen** for relevance and authority; use the most authoritative source for
+   each claim.
+4. **Extract** what the source actually says — the equation, bound, or definition.
+5. **Synthesize thematically** (by concept, not source-by-source).
+6. **Verify** every citation you assert; if unsure of a page / equation / DOI,
+   say so and ask the user to confirm before it enters the thesis.
 
 ## Source priority
 1. Books & peer-reviewed papers — Moyer (JPL DESCANSO Mon. 2); Thornton & Border
-   (DESCANSO Mon. 1); Tapley/Schutz/Born *Statistical Orbit Determination*;
-   Montenbruck & Gill *Satellite Orbits*; Vallado *Fundamentals of Astrodynamics*.
-2. Agency / standards docs — NASA/JPL/ESA, DSN 810-005, NAIF/SPICE Required
-   Reading (e.g. the aberration-corrections module).
+   (DESCANSO Mon. 1); Tapley/Schutz/Born; Montenbruck & Gill; Vallado.
+2. Agency / standards — NASA/JPL/ESA, DSN 810-005, NAIF/SPICE Required Reading.
 3. Tool docs — SPICE Toolkit; GMAT / MONTE measurement-type definitions.
 
-Rely on training-data knowledge of these only when confident; otherwise say so
-and ask the user to confirm the exact page/section/equation before it is quoted.
-
-## How to operate
-- Restate the question precisely (e.g. "is one-iteration light time adequate for
-  Earth–Moon?").
-- Give the source-based answer first, then a clearly separate **Engineering
-  inference** line for anything not directly from a source.
-- Tie it to the code that implements or omits the concept, e.g.
-  `lunar_od/radiometrics.py`, `lunar_od/measurements.py`, and the validation
-  notes (`docs/spice_cross_validation.md`, `SPICE_CN_CNPLUS_VALIDATION.md`,
-  `DOPPLER_RANGE_RATE_MODEL_REVIEW.md`).
-- For the canonical reference list and what each source is authoritative for, see
-  `references/key_sources.md`.
+See `references/key_sources.md` for what each source is authoritative for.
 
 ## Output
-- Short prose answer (no filler), optionally followed by:
-  - a comparison table — concept / literature source / status in this repo, and
-  - an "Implementation implications" bullet list.
-- Always keep **confirmed (source)** separate from **inferred (engineering)**.
+- Short prose answer (no filler), optionally a concept / source / repo-status
+  table and an "Implementation implications" list.
+- Always keep **confirmed (source)** separate from **engineering inference**, on
+  their own lines.
+- Tie to code / validation docs: `lunar_od/radiometrics.py`,
+  `lunar_od/measurements.py`, `docs/spice_cross_validation.md`,
+  `SPICE_CN_CNPLUS_VALIDATION.md`, `DOPPLER_RANGE_RATE_MODEL_REVIEW.md`.
+
+## Removed from the K-Dense base
+PubMed / MeSH / bioRxiv strategies, Cochrane / AMSTAR / PRISMA tooling, clinical
+journal prioritization, and the mandatory AI-schematic / PRISMA-diagram step.
 
 ## Do not
-- Invent citations, page numbers, or equation numbers you are unsure of.
-- Pad with generic academic background unrelated to the question.
+- Invent citations, page numbers, or equations you are unsure of, or pad with
+  generic academic background.
 - Claim operational / flight validity from this synthetic framework.

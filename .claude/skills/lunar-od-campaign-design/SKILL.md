@@ -1,55 +1,66 @@
 ---
 name: lunar-od-campaign-design
 description: >-
-  Design controlled lunar OD experiments and scenario matrices for a fair
-  BLS-LM vs SR-UKF comparison: shared truth trajectory, measurement realization,
-  noise seed, station network, arc duration, visibility constraints, and initial
-  uncertainty. Covers baseline, 28-day arc-by-arc, fragmented-visibility,
-  two-way-Doppler, and covariance-handoff campaigns. Use when the user wants to
-  plan an experiment, set up a scenario config, or choose metrics before running.
+  Design fair, reproducible lunar OD experiments and scenario matrices for
+  BLS-LM vs SR-UKF: shared truth trajectory, shared measurement realization and
+  noise seed, same station visibility / occultation, matched initial uncertainty,
+  a clear scenario matrix, and predefined success metrics. Covers baseline,
+  28-day arc-by-arc, fragmented-visibility, two-way-Doppler, and
+  covariance-handoff campaigns. Use when planning an experiment or a scenario
+  config before running.
+metadata:
+  version: "2.0"
+  adapted-from: K-Dense experimental-design
 ---
 
 # Lunar OD Campaign Design
 
-Design reproducible, controlled experiments before anything is run.
+Design before you run; frame each campaign like a designed experiment.
 
-## Fair-comparison controls
-Hold these IDENTICAL across the estimators being compared, unless the variable
-under study is exactly one of them:
-- truth trajectory and dynamics model,
-- measurement realization and **noise seed**,
-- station network and visibility / elevation-mask / occultation settings,
-- arc segmentation (duration, stride, minimum samples, gap stitching),
-- initial uncertainty / start mode (cold / hot / formal / sqrt_formal),
-- measurement type and range-rate physics (geometric vs two-way Doppler).
+## Frame it
+- **Research question** and the single **controlled variable** (estimator, start
+  mode, measurement type, network, arc length, noise level, ...).
+- **Experimental unit**: the arc (or the seeded trial) — define independence at
+  that level; do not treat measurements within one arc as independent trials.
+- **Response variable(s)** chosen up front: final position / velocity error, NIS,
+  success fraction, runtime.
 
-Changing more than one of these at once invalidates attribution — say so
-explicitly whenever you do.
+## Fair-comparison controls (hold IDENTICAL unless under study)
+Truth trajectory and dynamics; measurement realization and **noise seed**;
+station network and visibility / elevation / occultation; arc segmentation
+(duration, stride, min samples, gap stitching); initial uncertainty / start mode;
+measurement type and range-rate physics. Changing more than one at once
+invalidates attribution — say so explicitly.
 
-## Where this lives in the repo
-- Scenario schema: `lunar_od/scenario_config.py` (`ScenarioConfig`).
-- Runner: `examples/run_scenario_config.py`.
-- Arc builder: `lunar_od/scenarios.py` (`build_measurement_arcs`).
-- Frozen thesis cases: `lunar_od/thesis_matrix.py`.
-- Desktop presets: `desktop_app/models/scenario_model.py`.
+## Design patterns (engineering transfer)
+- **Factorial** screening of estimator parameters (start mode x measurement type
+  x network).
+- **Response-surface** for tuning continuous knobs (UKF Q/R scales, LM damping).
+- **Blocking** on known numerical-noise sources (integrator tolerance, grid step).
+- **Seeded** allocation; record every seed for auditability and reproducibility.
+- **Match the analysis to the design** — pair estimators on the same arcs / seeds.
+
+## Where it lives
+Scenario schema `lunar_od/scenario_config.py` (`ScenarioConfig`); runner
+`examples/run_scenario_config.py`; arc builder `lunar_od/scenarios.py`
+(`build_measurement_arcs`); frozen cases `lunar_od/thesis_matrix.py`; desktop
+presets `desktop_app/models/scenario_model.py`.
 
 ## Campaign templates
-- **1-day Gaussian baseline** — prescribed arcs, cold start, multi-station.
-- **28-day arc-by-arc** — long-duration stability, formal handoff.
-- **Fragmented visibility** — real SPICE visibility, gap stitching, UKF history
-  vs BLS arc-end estimates.
-- **Two-way Doppler** — `range_rate_physics="two_way_counted_doppler"`; cost vs
-  accuracy.
-- **Covariance handoff** — formal / sqrt_formal start; verify prior propagation.
-- **Measurement realism** — toggle light-time / stellar aberration (position).
+1-day Gaussian baseline · 28-day arc-by-arc (formal handoff) · fragmented SPICE
+visibility (UKF history vs BLS arc-ends) · two-way Doppler (cost vs accuracy) ·
+covariance handoff (formal / sqrt_formal) · measurement realism (light-time /
+stellar aberration).
 
 ## Procedure
-1. State the hypothesis and the single controlled variable.
-2. Fix the shared controls; record the seed(s).
-3. **Choose metrics up front** (median / p95 / max error, success fraction,
-   NIS/NEES, runtime) — hand off to lunar-od-statistical-diagnostics.
-4. Define the scenario config and dry-run validate it before the full run.
+State the hypothesis -> fix shared controls and record seeds -> **predefine
+metrics** (hand off to lunar-od-statistical-diagnostics) -> define the scenario
+config and dry-run validate it before the full run.
+
+## Removed from the K-Dense base
+Wet-lab / clinical framing: plate layouts, biosample batches, cluster / patient
+randomization, blinding / vehicle controls, pseudoreplication.
 
 ## Do not
-- Compare estimators under different physical or statistical conditions silently.
-- Run unseeded Monte Carlo, or report results without recording the seed.
+- Compare estimators under different physical / statistical conditions silently,
+  or run unseeded Monte Carlo. Do not launch long campaigns without being asked.
