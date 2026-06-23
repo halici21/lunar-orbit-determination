@@ -56,3 +56,16 @@ handling of the EDA skill — not relevant; here the inputs are this project's C
 ## Do not
 - Overclaim from few seeds or arcs, or treat synthetic success as operational /
   flight performance.
+
+## Scope Boundary
+Primary for interpreting result CSVs and estimator statistics.
+
+## Do Not Use For
+- producing figures (lunar-od-figures)
+- accepting a code change (lunar-od-validation-gates)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

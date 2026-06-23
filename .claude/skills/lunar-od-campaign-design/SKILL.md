@@ -64,3 +64,16 @@ randomization, blinding / vehicle controls, pseudoreplication.
 ## Do not
 - Compare estimators under different physical / statistical conditions silently,
   or run unseeded Monte Carlo. Do not launch long campaigns without being asked.
+
+## Scope Boundary
+Primary for planning experiments and scenario matrices before running.
+
+## Do Not Use For
+- running long campaigns (do not)
+- interpreting results (lunar-od-statistical-diagnostics / result-validator)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

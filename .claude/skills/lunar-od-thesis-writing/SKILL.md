@@ -55,3 +55,16 @@ spoken-register sentences of speaker notes per slide.
 Mandatory graphical abstract, CONSORT / STROBE / PRISMA / ARRIVE reporting
 guidelines, IUPAC / HGVS / clinical terminology, and bio / ecology figure
 conventions.
+
+## Scope Boundary
+Primary for thesis/report/presentation text and speaker notes.
+
+## Do Not Use For
+- inventing numbers (never)
+- producing figures (lunar-od-figures)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

@@ -67,3 +67,16 @@ GRADE, and journal-venue expectations.
 - Speculate without locating the code; recommend a rewrite where a small,
   verifiable change suffices; modify source as part of the review (review only,
   unless asked to fix); or weaken test tolerances without justification.
+
+## Scope Boundary
+Primary for code-correctness review of OD models and estimator consistency.
+
+## Do Not Use For
+- interpreting a finished result (lunar-od-result-validator)
+- designing tests (lunar-od-test-strategist)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

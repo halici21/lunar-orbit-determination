@@ -55,3 +55,16 @@ journal prioritization, and the mandatory AI-schematic / PRISMA-diagram step.
 - Invent citations, page numbers, or equations you are unsure of, or pad with
   generic academic background.
 - Claim operational / flight validity from this synthetic framework.
+
+## Scope Boundary
+Primary for literature-backed answers and primary sources.
+
+## Do Not Use For
+- code changes (domain skills)
+- interpreting this project's results (lunar-od-result-validator / statistical-diagnostics)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

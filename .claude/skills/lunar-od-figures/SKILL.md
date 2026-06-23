@@ -53,3 +53,17 @@ Journal-specific templates (Nature/Science/Cell), biological figure conventions
 ## Do not
 - Fabricate or relabel results, or overwrite committed result files without
   saying so; do not modify project source code.
+
+## Scope Boundary
+Primary for producing matplotlib figures from real result data.
+
+## Do Not Use For
+- inventing data (never)
+- statistical interpretation (lunar-od-statistical-diagnostics)
+- prose/captions (lunar-od-thesis-writing)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

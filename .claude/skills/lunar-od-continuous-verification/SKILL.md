@@ -141,3 +141,16 @@ When used, report:
 8. Baseline/artifact needs
 9. What failure means
 10. Whether it belongs in CI, nightly, manual, release, or thesis-freeze
+
+## Scope Boundary
+Primary when scheduling recurring tests / CI / nightly / release / thesis-freeze tiers.
+
+## Do Not Use For
+- designing individual tests (lunar-od-test-strategist)
+- one-off validation of a single change (lunar-od-validation-gates)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

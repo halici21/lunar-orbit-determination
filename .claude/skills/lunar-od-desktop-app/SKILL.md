@@ -46,3 +46,16 @@ preserve non-blocking execution, and integrate `.ui` files with backend services
 ## Critical rules
 - Long-running scientific tasks must never block the UI thread.
 - Desktop workflows must remain testable without full manual UI interaction.
+
+## Scope Boundary
+Primary for PyQt5 implementation: controllers, services, workers, .ui integration, non-blocking execution.
+
+## Do Not Use For
+- layout / visual design / screenshot review (lunar-od-interface-designer)
+- scientific model changes (domain skills)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

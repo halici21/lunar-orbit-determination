@@ -44,3 +44,16 @@ environments; cache folders; large binary files; secrets / tokens.
 - AIDA-style structure may be used cautiously for public README / profile /
   landing-page material only — never as the organizing model for the internal
   mission-analysis desktop app.
+
+## Scope Boundary
+Primary for publish/release readiness and repository hygiene.
+
+## Do Not Use For
+- deleting files automatically (identify risks only)
+- scientific validation (lunar-od-validation-gates)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

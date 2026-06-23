@@ -37,3 +37,17 @@ Estimator implementation integrity and comparison validity.
 Do not compare estimators unless truth trajectory, measurement schedule, station
 network, visibility windows, noise, random seed, initial state error, and
 covariance assumptions are explicitly aligned (or are the controlled variable).
+
+## Scope Boundary
+Primary for estimator/filter internals and estimator-comparison validity.
+
+## Do Not Use For
+- measurement physics (lunar-od-measurement-physics)
+- interpreting a finished result (lunar-od-result-validator)
+- designing tests (lunar-od-test-strategist)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

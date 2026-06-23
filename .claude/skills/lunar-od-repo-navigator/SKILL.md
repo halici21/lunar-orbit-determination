@@ -35,3 +35,17 @@ Repository awareness and architecture navigation for the Lunar OD project.
 ## Critical rule
 Do not suggest edits before locating the relevant module, function, test, and (if
 applicable) result artifact.
+
+## Scope Boundary
+Primary for locating code, tracing data flow, mapping a result to its script, and impact-scoping before an edit.
+
+## Do Not Use For
+- making the actual change (use the relevant domain skill)
+- validating a change (lunar-od-validation-gates)
+- interpreting numbers/plots (lunar-od-result-validator)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

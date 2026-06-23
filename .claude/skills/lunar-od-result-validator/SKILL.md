@@ -32,3 +32,17 @@ credible? Is the claimed improvement real and statistically defensible? Would it
 survive Monte Carlo? What truth-model level supports the accuracy claim? Is the
 tail behavior explained by geometry, conditioning, measurement count, visibility,
 or estimator design? Conclude with a `science-review-checklist.md` label.
+
+## Scope Boundary
+Primary when interpreting or accepting numerical results, residuals, NIS/NEES, or a comparison claim.
+
+## Do Not Use For
+- tasks with no numerical result to interpret
+- tracing provenance (lunar-od-result-reproducer)
+- choosing/designing tests (lunar-od-validation-gates / test-strategist)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

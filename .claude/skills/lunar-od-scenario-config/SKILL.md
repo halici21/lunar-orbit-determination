@@ -34,3 +34,16 @@ Scenario reproducibility and the JSON / config workflow.
 ## Critical rule
 Scenarios must be serializable, reproducible, and explicit about physical and
 statistical assumptions.
+
+## Scope Boundary
+Primary for scenario / config definition, serialization, and reproducibility.
+
+## Do Not Use For
+- estimator internals (lunar-od-estimator-engineering)
+- result interpretation (lunar-od-result-validator)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

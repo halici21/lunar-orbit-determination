@@ -39,3 +39,17 @@ Dynamics, propagation, SPICE, reference frames, force models, STM.
 ## Critical rule
 Do not modify force-model behavior without identifying the regression tests and
 the numerical comparison metrics that protect it.
+
+## Scope Boundary
+Primary when the task concerns dynamics, propagation, STM, reference frames, or SPICE.
+
+## Do Not Use For
+- measurement models (lunar-od-measurement-physics)
+- estimator internals (lunar-od-estimator-engineering)
+- plain file lookup (lunar-od-repo-navigator)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

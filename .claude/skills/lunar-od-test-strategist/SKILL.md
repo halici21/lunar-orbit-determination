@@ -104,3 +104,17 @@ When used, report:
 10. Commands to run
 11. What not to test
 12. Remaining risk
+
+## Scope Boundary
+Primary when designing, reviewing, or repairing tests (type, oracle, tolerance, fixture).
+
+## Do Not Use For
+- scheduling/tiering tests (lunar-od-continuous-verification)
+- post-change validation gating (lunar-od-validation-gates)
+- software-quality-only checks (lunar-od-software-quality-gates)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

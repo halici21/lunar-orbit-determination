@@ -35,3 +35,17 @@ Measurement-model correctness.
 ## Critical rule
 Measurement generation, prediction h(x), residual computation, and Jacobian logic
 must use consistent physical assumptions.
+
+## Scope Boundary
+Primary for measurement / observable / residual / Jacobian models.
+
+## Do Not Use For
+- dynamics or frames (lunar-od-dynamics-spice)
+- estimator internals (lunar-od-estimator-engineering)
+- interpreting a finished result (lunar-od-result-validator)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

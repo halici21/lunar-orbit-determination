@@ -34,3 +34,16 @@ Trace every result back to its source.
 Every result should be traceable `claim -> figure/table -> artifact -> config ->
 script -> seed -> commit` whenever possible. State explicitly any link that is
 unknown; do not invent it.
+
+## Scope Boundary
+Primary for tracing a number/figure/table back to script -> config -> artifact -> seed -> commit.
+
+## Do Not Use For
+- judging whether the result is correct (lunar-od-result-validator)
+- running new experiments (lunar-od-campaign-design / scenario-config)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

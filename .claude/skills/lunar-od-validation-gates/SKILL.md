@@ -36,3 +36,18 @@ validation summaries, numerical-drift analysis, baseline comparisons.
 ## Critical rule
 Never recommend a scientific code change without identifying the required
 regression tests, and never weaken a tolerance without documented justification.
+
+## Scope Boundary
+Primary when accepting a code/science change and selecting the required tests and baseline checks.
+
+## Do Not Use For
+- small explanations or lookups (answer directly)
+- software-engineering quality (lunar-od-software-quality-gates)
+- designing the tests themselves (lunar-od-test-strategist)
+- interpreting results (lunar-od-result-validator)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

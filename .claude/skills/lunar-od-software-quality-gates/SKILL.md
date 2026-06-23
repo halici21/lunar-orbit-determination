@@ -39,3 +39,17 @@ hygiene. (For scientific/numerical validation, use lunar-od-validation-gates.)
 ## Must report
 software-quality issue · impacted files · suggested fix · required tests ·
 optional quality tools · risk of numerical behavior change · whether safe to merge.
+
+## Scope Boundary
+Primary for lint, format, type checking, dependency hygiene, CI, maintainability, and packaging.
+
+## Do Not Use For
+- scientific/numerical validation (lunar-od-validation-gates)
+- test design (lunar-od-test-strategist)
+- small explanations or lookups
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.

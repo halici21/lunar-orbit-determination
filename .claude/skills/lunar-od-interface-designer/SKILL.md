@@ -49,3 +49,16 @@ and `python_port/results/`.
   state, assumptions, execution status, diagnostics, and provenance easier to grasp.
 - Propose structure/layouts/workflows/review comments only; do not modify PyQt5
   implementation files unless the user explicitly asks for implementation.
+
+## Scope Boundary
+Primary for UI/UX design, layout, visual hierarchy, and screenshot review.
+
+## Do Not Use For
+- PyQt5 implementation wiring (lunar-od-desktop-app)
+- backend scientific logic (domain skills)
+
+## Context control
+Default to this one skill; add another only if the task clearly needs it. Load at
+most 1-2 shared/reference files by default (only those the task needs); read the
+rest only when required. For narrow questions or lookups, inspect the relevant
+file and answer concisely. See `../_shared/skill-routing-policy.md`.
