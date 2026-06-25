@@ -26,6 +26,7 @@ ALLOWED_START_MODES = ("cold", "hot", "formal", "sqrt_formal")
 ALLOWED_NETWORKS = tuple(network.name for network in THESIS_NETWORKS)
 ALLOWED_BIAS_MODES = (None, "global", "station_angles", "station_full")
 ALLOWED_RANGE_RATE_PHYSICS = ("geometric_instantaneous", "two_way_counted_doppler")
+ALLOWED_EARTH_J2_MODES = ("indirect", "direct")
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,8 @@ class ScenarioConfig:
     rtol: float = THESIS_RTOL
     atol: float = THESIS_ATOL
     j2_moon: float = 0.0
+    enable_earth_j2: bool = False
+    earth_j2_mode: str = "indirect"
     noise: bool = False
     bias_mode: str | None = None
     range_rate_physics: str = "geometric_instantaneous"
@@ -105,6 +108,8 @@ def scenario_config_schema() -> dict[str, Any]:
             "rtol": {"type": "number", "default": THESIS_RTOL},
             "atol": {"type": "number", "default": THESIS_ATOL},
             "noise": {"type": "boolean", "default": False},
+            "enable_earth_j2": {"type": "boolean", "default": False},
+            "earth_j2_mode": {"enum": list(ALLOWED_EARTH_J2_MODES), "default": "indirect"},
             "bias_mode": {"enum": [None, "global", "station_angles", "station_full"], "default": None},
             "range_rate_physics": {
                 "enum": list(ALLOWED_RANGE_RATE_PHYSICS),
@@ -186,6 +191,12 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         rtol=_positive_float(payload.get("rtol", THESIS_RTOL), "rtol"),
         atol=_positive_float(payload.get("atol", THESIS_ATOL), "atol"),
         j2_moon=_nonnegative_float(payload.get("j2_moon", 0.0), "j2_moon"),
+        enable_earth_j2=_boolean(payload.get("enable_earth_j2", False), "enable_earth_j2"),
+        earth_j2_mode=_enum_value(
+            payload.get("earth_j2_mode", "indirect"),
+            ALLOWED_EARTH_J2_MODES,
+            "earth_j2_mode",
+        ),
         noise=_boolean(payload.get("noise", False), "noise"),
         bias_mode=_bias_mode(payload.get("bias_mode", None)),
         range_rate_physics=_range_rate_physics(payload.get("range_rate_physics", "geometric_instantaneous")),

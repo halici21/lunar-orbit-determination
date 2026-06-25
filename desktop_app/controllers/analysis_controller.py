@@ -110,6 +110,8 @@ def _base_from_settings(estimator: str = "bls_lm") -> dict:
     def _b(key, default):
         return str(s.value(key, default)).lower() not in ("false", "0", "")
 
+    from lunar_od.constants import J2_MOON_UNNORMALIZED
+
     dur_days = _f("dynamics/duration_days", 3.0)
     _bias_raw = _s("measurements/bias_mode", "none")
     base = dict(
@@ -120,7 +122,7 @@ def _base_from_settings(estimator: str = "bls_lm") -> dict:
         bls_lambda0=_f("estimators/bls_damping", 1e-4),
         rtol=float(_s("dynamics/rtol", "1e-11")),
         atol=float(_s("dynamics/atol", "1e-12")),
-        j2_moon=2.0346e-4 if _b("dynamics/use_j2", False) else 0.0,
+        j2_moon=J2_MOON_UNNORMALIZED if _b("dynamics/use_j2", False) else 0.0,
         noise=_b("measurements/noise_enabled", True),
         network="multi",
         start_mode=_s("estimators/start_mode", "cold"),

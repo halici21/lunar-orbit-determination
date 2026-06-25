@@ -470,6 +470,70 @@ def apply_stm_to_jacobian(
 # Inlined dynamics ODE kernels (zero Python overhead in hot loop)
 # ---------------------------------------------------------------------------
 
+# Generic Body-J2 scalar cores (Phase 4).  These hold the single Numba copy of
+# the J2 acceleration / gravity-gradient math.  They return plain scalars (no
+# heap allocation) and are marked ``inline="always"`` so they splice into the
+# hot RHS kernels — producing the same codegen as the previous inline blocks
+# while keeping one physics source for the Numba path.  The arithmetic grouping
+# (e.g. r5bf = r2bf*r2bf*sqrt(r2bf)) is preserved exactly for parity.
+@_optional_njit(fastmath=True, inline="always")
+def _body_j2_accel_terms(rx, ry, rz, mu, radius_ref, j2, c_bf):
+    rbfx = c_bf[0, 0]*rx + c_bf[0, 1]*ry + c_bf[0, 2]*rz
+    rbfy = c_bf[1, 0]*rx + c_bf[1, 1]*ry + c_bf[1, 2]*rz
+    rbfz = c_bf[2, 0]*rx + c_bf[2, 1]*ry + c_bf[2, 2]*rz
+    r2bf = rbfx*rbfx + rbfy*rbfy + rbfz*rbfz
+    r5bf = r2bf * r2bf * np.sqrt(r2bf)
+    z2r2 = rbfz * rbfz / r2bf
+    scl = -1.5 * j2 * mu * radius_ref * radius_ref / r5bf
+    abfx = scl * rbfx * (1.0 - 5.0 * z2r2)
+    abfy = scl * rbfy * (1.0 - 5.0 * z2r2)
+    abfz = scl * rbfz * (3.0 - 5.0 * z2r2)
+    ax = c_bf[0, 0]*abfx + c_bf[1, 0]*abfy + c_bf[2, 0]*abfz
+    ay = c_bf[0, 1]*abfx + c_bf[1, 1]*abfy + c_bf[2, 1]*abfz
+    az = c_bf[0, 2]*abfx + c_bf[1, 2]*abfy + c_bf[2, 2]*abfz
+    return ax, ay, az
+
+
+@_optional_njit(fastmath=True, inline="always")
+def _body_j2_gradient_terms(rx, ry, rz, mu, radius_ref, j2, c_bf):
+    rbfx = c_bf[0, 0]*rx + c_bf[0, 1]*ry + c_bf[0, 2]*rz
+    rbfy = c_bf[1, 0]*rx + c_bf[1, 1]*ry + c_bf[1, 2]*rz
+    rbfz = c_bf[2, 0]*rx + c_bf[2, 1]*ry + c_bf[2, 2]*rz
+    r2bf = rbfx*rbfx + rbfy*rbfy + rbfz*rbfz
+    rbf = np.sqrt(r2bf)
+    r4bf = r2bf * r2bf
+    r5bf = r4bf * rbf
+    z2r2 = rbfz * rbfz / r2bf
+    z2r4 = rbfz * rbfz / r4bf
+    scl = -1.5 * j2 * mu * radius_ref * radius_ref / r5bf
+    base_bf = 1.0 - 5.0 * z2r2
+    gj00 = scl * (base_bf - 5.0*rbfx*rbfx/r2bf + 35.0*rbfx*rbfx*z2r4)
+    gj11 = scl * (base_bf - 5.0*rbfy*rbfy/r2bf + 35.0*rbfy*rbfy*z2r4)
+    gj22 = scl * (3.0 - 30.0*z2r2 + 35.0*rbfz*rbfz*z2r4)
+    gj01 = scl * rbfx*rbfy * (-5.0/r2bf + 35.0*z2r4)
+    gj02 = scl * rbfx*rbfz * (-15.0/r2bf + 35.0*z2r4)
+    gj12 = scl * rbfy*rbfz * (-15.0/r2bf + 35.0*z2r4)
+    t00 = gj00*c_bf[0, 0] + gj01*c_bf[1, 0] + gj02*c_bf[2, 0]
+    t01 = gj00*c_bf[0, 1] + gj01*c_bf[1, 1] + gj02*c_bf[2, 1]
+    t02 = gj00*c_bf[0, 2] + gj01*c_bf[1, 2] + gj02*c_bf[2, 2]
+    t10 = gj01*c_bf[0, 0] + gj11*c_bf[1, 0] + gj12*c_bf[2, 0]
+    t11 = gj01*c_bf[0, 1] + gj11*c_bf[1, 1] + gj12*c_bf[2, 1]
+    t12 = gj01*c_bf[0, 2] + gj11*c_bf[1, 2] + gj12*c_bf[2, 2]
+    t20 = gj02*c_bf[0, 0] + gj12*c_bf[1, 0] + gj22*c_bf[2, 0]
+    t21 = gj02*c_bf[0, 1] + gj12*c_bf[1, 1] + gj22*c_bf[2, 1]
+    t22 = gj02*c_bf[0, 2] + gj12*c_bf[1, 2] + gj22*c_bf[2, 2]
+    g00 = c_bf[0, 0]*t00 + c_bf[1, 0]*t10 + c_bf[2, 0]*t20
+    g01 = c_bf[0, 0]*t01 + c_bf[1, 0]*t11 + c_bf[2, 0]*t21
+    g02 = c_bf[0, 0]*t02 + c_bf[1, 0]*t12 + c_bf[2, 0]*t22
+    g10 = c_bf[0, 1]*t00 + c_bf[1, 1]*t10 + c_bf[2, 1]*t20
+    g11 = c_bf[0, 1]*t01 + c_bf[1, 1]*t11 + c_bf[2, 1]*t21
+    g12 = c_bf[0, 1]*t02 + c_bf[1, 1]*t12 + c_bf[2, 1]*t22
+    g20 = c_bf[0, 2]*t00 + c_bf[1, 2]*t10 + c_bf[2, 2]*t20
+    g21 = c_bf[0, 2]*t01 + c_bf[1, 2]*t11 + c_bf[2, 2]*t21
+    g22 = c_bf[0, 2]*t02 + c_bf[1, 2]*t12 + c_bf[2, 2]*t22
+    return g00, g01, g02, g10, g11, g12, g20, g21, g22
+
+
 @_optional_njit(cache=True, fastmath=True)
 def _f3body_rhs_numba(
     x6: np.ndarray,
@@ -481,6 +545,10 @@ def _f3body_rhs_numba(
     j2_moon: float,
     moon_r: float,
     c_bf: np.ndarray,
+    j2_earth: float,
+    earth_r: float,
+    earth_mode: int,
+    c_bf_earth: np.ndarray,
 ) -> np.ndarray:
     """6-state f3body_moon derivative — all arithmetic inlined, no Python calls."""
     rx = x6[0]; ry = x6[1]; rz = x6[2]
@@ -515,21 +583,22 @@ def _f3body_rhs_numba(
     ay += mu_sun * (dsy/ds3 - sy/rs3)
     az += mu_sun * (dsz/ds3 - sz/rs3)
 
-    # J2 lunar oblateness (no-op when j2_moon == 0)
+    # J2 lunar oblateness (no-op when j2_moon == 0) — shared generic core
     if j2_moon != 0.0:
-        rbfx = c_bf[0,0]*rx + c_bf[0,1]*ry + c_bf[0,2]*rz
-        rbfy = c_bf[1,0]*rx + c_bf[1,1]*ry + c_bf[1,2]*rz
-        rbfz = c_bf[2,0]*rx + c_bf[2,1]*ry + c_bf[2,2]*rz
-        r2bf = rbfx*rbfx + rbfy*rbfy + rbfz*rbfz
-        rbf5 = r2bf * r2bf * np.sqrt(r2bf)
-        z2r2 = rbfz * rbfz / r2bf
-        scl  = -1.5 * j2_moon * mu_moon * moon_r * moon_r / rbf5
-        abfx = scl * rbfx * (1.0 - 5.0 * z2r2)
-        abfy = scl * rbfy * (1.0 - 5.0 * z2r2)
-        abfz = scl * rbfz * (3.0 - 5.0 * z2r2)
-        ax += c_bf[0,0]*abfx + c_bf[1,0]*abfy + c_bf[2,0]*abfz
-        ay += c_bf[0,1]*abfx + c_bf[1,1]*abfy + c_bf[2,1]*abfz
-        az += c_bf[0,2]*abfx + c_bf[1,2]*abfy + c_bf[2,2]*abfz
+        ajx, ajy, ajz = _body_j2_accel_terms(rx, ry, rz, mu_moon, moon_r, j2_moon, c_bf)
+        ax += ajx;  ay += ajy;  az += ajz
+
+    # Earth J2 in the Moon-centered frame (no-op when earth_mode == 0)
+    # earth_mode: 0=off, 1=indirect (default), 2=direct.  Earth->SC = r_sc - r_earth.
+    if earth_mode != 0:
+        sex = rx - r_earth[0];  sey = ry - r_earth[1];  sez = rz - r_earth[2]
+        aex, aey, aez = _body_j2_accel_terms(sex, sey, sez, mu_earth, earth_r, j2_earth, c_bf_earth)
+        ax += aex;  ay += aey;  az += aez
+        if earth_mode == 1:  # indirect: subtract J2 at Moon (rel Earth = -r_earth)
+            amx, amy, amz = _body_j2_accel_terms(
+                -r_earth[0], -r_earth[1], -r_earth[2], mu_earth, earth_r, j2_earth, c_bf_earth
+            )
+            ax -= amx;  ay -= amy;  az -= amz
 
     out = np.empty(6)
     out[0] = vx;  out[1] = vy;  out[2] = vz
@@ -548,6 +617,10 @@ def _ode42_rhs_numba(
     j2_moon: float,
     moon_r: float,
     c_bf: np.ndarray,
+    j2_earth: float,
+    earth_r: float,
+    earth_mode: int,
+    c_bf_earth: np.ndarray,
 ) -> np.ndarray:
     """42-state augmented ODE derivative [xdot(6) | phi_dot(36)] — fully inlined.
 
@@ -607,53 +680,31 @@ def _ode42_rhs_numba(
     g21 =        f3*rz*ry + fe3*dez*dey + fs3*dsz*dsy
     g22 = diag + f3*rz*rz + fe3*dez*dez + fs3*dsz*dsz
 
-    # J2 lunar oblateness — acceleration + analytic gravity gradient (no-op when j2_moon == 0)
+    # J2 lunar oblateness — acceleration + gravity gradient (no-op when 0) — shared cores
     if j2_moon != 0.0:
-        rbfx = c_bf[0,0]*rx + c_bf[0,1]*ry + c_bf[0,2]*rz
-        rbfy = c_bf[1,0]*rx + c_bf[1,1]*ry + c_bf[1,2]*rz
-        rbfz = c_bf[2,0]*rx + c_bf[2,1]*ry + c_bf[2,2]*rz
-        r2bf = rbfx*rbfx + rbfy*rbfy + rbfz*rbfz
-        rbf  = np.sqrt(r2bf)
-        r4bf = r2bf * r2bf
-        r5bf = r4bf * rbf
-        z2r2 = rbfz * rbfz / r2bf
-        z2r4 = rbfz * rbfz / r4bf
-        scl  = -1.5 * j2_moon * mu_moon * moon_r * moon_r / r5bf
-        # J2 acceleration in body-fixed, rotated back to MCI
-        abfx = scl * rbfx * (1.0 - 5.0 * z2r2)
-        abfy = scl * rbfy * (1.0 - 5.0 * z2r2)
-        abfz = scl * rbfz * (3.0 - 5.0 * z2r2)
-        ax += c_bf[0,0]*abfx + c_bf[1,0]*abfy + c_bf[2,0]*abfz
-        ay += c_bf[0,1]*abfx + c_bf[1,1]*abfy + c_bf[2,1]*abfz
-        az += c_bf[0,2]*abfx + c_bf[1,2]*abfy + c_bf[2,2]*abfz
-        # Analytic J2 gravity gradient in body-fixed (G_bf), then G_mci = C_bf^T @ G_bf @ C_bf
-        base_bf = 1.0 - 5.0 * z2r2
-        gj00 = scl * (base_bf - 5.0*rbfx*rbfx/r2bf + 35.0*rbfx*rbfx*z2r4)
-        gj11 = scl * (base_bf - 5.0*rbfy*rbfy/r2bf + 35.0*rbfy*rbfy*z2r4)
-        gj22 = scl * (3.0 - 30.0*z2r2 + 35.0*rbfz*rbfz*z2r4)
-        gj01 = scl * rbfx*rbfy * (-5.0/r2bf + 35.0*z2r4)
-        gj02 = scl * rbfx*rbfz * (-15.0/r2bf + 35.0*z2r4)
-        gj12 = scl * rbfy*rbfz * (-15.0/r2bf + 35.0*z2r4)
-        # tmp = G_bf @ C_bf  (G_bf symmetric: gj10=gj01, gj20=gj02, gj21=gj12)
-        t00 = gj00*c_bf[0,0] + gj01*c_bf[1,0] + gj02*c_bf[2,0]
-        t01 = gj00*c_bf[0,1] + gj01*c_bf[1,1] + gj02*c_bf[2,1]
-        t02 = gj00*c_bf[0,2] + gj01*c_bf[1,2] + gj02*c_bf[2,2]
-        t10 = gj01*c_bf[0,0] + gj11*c_bf[1,0] + gj12*c_bf[2,0]
-        t11 = gj01*c_bf[0,1] + gj11*c_bf[1,1] + gj12*c_bf[2,1]
-        t12 = gj01*c_bf[0,2] + gj11*c_bf[1,2] + gj12*c_bf[2,2]
-        t20 = gj02*c_bf[0,0] + gj12*c_bf[1,0] + gj22*c_bf[2,0]
-        t21 = gj02*c_bf[0,1] + gj12*c_bf[1,1] + gj22*c_bf[2,1]
-        t22 = gj02*c_bf[0,2] + gj12*c_bf[1,2] + gj22*c_bf[2,2]
-        # G_mci += C_bf^T @ tmp  (C_bf^T[i,k] = C_bf[k,i])
-        g00 += c_bf[0,0]*t00 + c_bf[1,0]*t10 + c_bf[2,0]*t20
-        g01 += c_bf[0,0]*t01 + c_bf[1,0]*t11 + c_bf[2,0]*t21
-        g02 += c_bf[0,0]*t02 + c_bf[1,0]*t12 + c_bf[2,0]*t22
-        g10 += c_bf[0,1]*t00 + c_bf[1,1]*t10 + c_bf[2,1]*t20
-        g11 += c_bf[0,1]*t01 + c_bf[1,1]*t11 + c_bf[2,1]*t21
-        g12 += c_bf[0,1]*t02 + c_bf[1,1]*t12 + c_bf[2,1]*t22
-        g20 += c_bf[0,2]*t00 + c_bf[1,2]*t10 + c_bf[2,2]*t20
-        g21 += c_bf[0,2]*t01 + c_bf[1,2]*t11 + c_bf[2,2]*t21
-        g22 += c_bf[0,2]*t02 + c_bf[1,2]*t12 + c_bf[2,2]*t22
+        ajx, ajy, ajz = _body_j2_accel_terms(rx, ry, rz, mu_moon, moon_r, j2_moon, c_bf)
+        ax += ajx;  ay += ajy;  az += ajz
+        gj00, gj01, gj02, gj10, gj11, gj12, gj20, gj21, gj22 = \
+            _body_j2_gradient_terms(rx, ry, rz, mu_moon, moon_r, j2_moon, c_bf)
+        g00 += gj00;  g01 += gj01;  g02 += gj02
+        g10 += gj10;  g11 += gj11;  g12 += gj12
+        g20 += gj20;  g21 += gj21;  g22 += gj22
+
+    # Earth J2 in the Moon-centered frame — accel (indirect/direct) + gradient (SC term only)
+    if earth_mode != 0:
+        sex = rx - r_earth[0];  sey = ry - r_earth[1];  sez = rz - r_earth[2]
+        aex, aey, aez = _body_j2_accel_terms(sex, sey, sez, mu_earth, earth_r, j2_earth, c_bf_earth)
+        ax += aex;  ay += aey;  az += aez
+        if earth_mode == 1:  # indirect: subtract J2 at Moon (state-independent -> no gradient term)
+            amx, amy, amz = _body_j2_accel_terms(
+                -r_earth[0], -r_earth[1], -r_earth[2], mu_earth, earth_r, j2_earth, c_bf_earth
+            )
+            ax -= amx;  ay -= amy;  az -= amz
+        ge00, ge01, ge02, ge10, ge11, ge12, ge20, ge21, ge22 = \
+            _body_j2_gradient_terms(sex, sey, sez, mu_earth, earth_r, j2_earth, c_bf_earth)
+        g00 += ge00;  g01 += ge01;  g02 += ge02
+        g10 += ge10;  g11 += ge11;  g12 += ge12
+        g20 += ge20;  g21 += ge21;  g22 += ge22
 
     out = np.empty(42)
     out[0] = vx;  out[1] = vy;  out[2] = vz
@@ -684,15 +735,21 @@ def f3body_rhs(
     j2_moon: float = 0.0,
     moon_r: float = 0.0,
     c_bf: np.ndarray | None = None,
+    j2_earth: float = 0.0,
+    earth_r: float = 0.0,
+    earth_mode: int = 0,
+    c_bf_earth: np.ndarray | None = None,
 ) -> np.ndarray:
     """6-state ODE RHS — numba-accelerated when available, numpy fallback otherwise."""
     c_bf_arr = np.eye(3, dtype=np.float64) if c_bf is None else np.asarray(c_bf, dtype=np.float64)
+    c_bf_e_arr = np.eye(3, dtype=np.float64) if c_bf_earth is None else np.asarray(c_bf_earth, dtype=np.float64)
     return _f3body_rhs_numba(
         np.asarray(x6, dtype=np.float64),
         float(mu_moon), float(mu_earth), float(mu_sun),
         np.asarray(r_earth, dtype=np.float64).reshape(3),
         np.asarray(r_sun, dtype=np.float64).reshape(3),
         float(j2_moon), float(moon_r), c_bf_arr,
+        float(j2_earth), float(earth_r), int(earth_mode), c_bf_e_arr,
     )
 
 
@@ -706,15 +763,21 @@ def ode42_rhs(
     j2_moon: float = 0.0,
     moon_r: float = 0.0,
     c_bf: np.ndarray | None = None,
+    j2_earth: float = 0.0,
+    earth_r: float = 0.0,
+    earth_mode: int = 0,
+    c_bf_earth: np.ndarray | None = None,
 ) -> np.ndarray:
     """42-state augmented ODE RHS — numba-accelerated when available, numpy fallback otherwise."""
     c_bf_arr = np.eye(3, dtype=np.float64) if c_bf is None else np.asarray(c_bf, dtype=np.float64)
+    c_bf_e_arr = np.eye(3, dtype=np.float64) if c_bf_earth is None else np.asarray(c_bf_earth, dtype=np.float64)
     return _ode42_rhs_numba(
         np.asarray(x42, dtype=np.float64),
         float(mu_moon), float(mu_earth), float(mu_sun),
         np.asarray(r_earth, dtype=np.float64).reshape(3),
         np.asarray(r_sun, dtype=np.float64).reshape(3),
         float(j2_moon), float(moon_r), c_bf_arr,
+        float(j2_earth), float(earth_r), int(earth_mode), c_bf_e_arr,
     )
 
 
@@ -757,6 +820,10 @@ def _rk4_6state_numba(
     j2_moon: float,
     moon_r: float,
     c_bf: np.ndarray,
+    j2_earth: float,
+    earth_r: float,
+    earth_mode: int,
+    c_bf_earth: np.ndarray,
 ) -> np.ndarray:
     """Fixed-step RK4 for 6-state f3body_moon dynamics — pure numba, no Python overhead.
 
@@ -770,14 +837,14 @@ def _rk4_6state_numba(
     for _ in range(n):
         re = _lerp_vec3_numba(t,           t_grid, earth_grid)
         rs = _lerp_vec3_numba(t,           t_grid, sun_grid)
-        k1 = _f3body_rhs_numba(y,               mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf)
+        k1 = _f3body_rhs_numba(y,               mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf, j2_earth, earth_r, earth_mode, c_bf_earth)
         re = _lerp_vec3_numba(t + 0.5 * h, t_grid, earth_grid)
         rs = _lerp_vec3_numba(t + 0.5 * h, t_grid, sun_grid)
-        k2 = _f3body_rhs_numba(y + 0.5*h*k1, mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf)
-        k3 = _f3body_rhs_numba(y + 0.5*h*k2, mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf)
+        k2 = _f3body_rhs_numba(y + 0.5*h*k1, mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf, j2_earth, earth_r, earth_mode, c_bf_earth)
+        k3 = _f3body_rhs_numba(y + 0.5*h*k2, mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf, j2_earth, earth_r, earth_mode, c_bf_earth)
         re = _lerp_vec3_numba(t + h,        t_grid, earth_grid)
         rs = _lerp_vec3_numba(t + h,        t_grid, sun_grid)
-        k4 = _f3body_rhs_numba(y + h * k3,  mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf)
+        k4 = _f3body_rhs_numba(y + h * k3,  mu_moon, mu_earth, mu_sun, re, rs, j2_moon, moon_r, c_bf, j2_earth, earth_r, earth_mode, c_bf_earth)
         y = y + (h / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4)
         t = t + h
     return y
@@ -798,6 +865,10 @@ def rk4_6state(
     j2_moon: float = 0.0,
     moon_r: float = 0.0,
     c_bf: np.ndarray | None = None,
+    j2_earth: float = 0.0,
+    earth_r: float = 0.0,
+    earth_mode: int = 0,
+    c_bf_earth: np.ndarray | None = None,
 ) -> np.ndarray:
     """Fixed-step RK4 for 6-state dynamics — numba-accelerated.
 
@@ -808,6 +879,7 @@ def rk4_6state(
     vs PCHIP).  Use for UKF sigma propagation, not for BLS arc integration.
     """
     c_bf_arr = np.eye(3, dtype=np.float64) if c_bf is None else np.asarray(c_bf, dtype=np.float64)
+    c_bf_e_arr = np.eye(3, dtype=np.float64) if c_bf_earth is None else np.asarray(c_bf_earth, dtype=np.float64)
     return _rk4_6state_numba(
         np.asarray(y0, dtype=np.float64),
         float(t0), float(tf), float(dt),
@@ -816,6 +888,7 @@ def rk4_6state(
         np.asarray(earth_grid, dtype=np.float64),
         np.asarray(sun_grid,   dtype=np.float64),
         float(j2_moon), float(moon_r), c_bf_arr,
+        float(j2_earth), float(earth_r), int(earth_mode), c_bf_e_arr,
     )
 
 
@@ -841,3 +914,74 @@ def make_lerp_vec3(t_grid: ArrayLike, data_grid: ArrayLike):
         def interp(t: float) -> np.ndarray:
             return _f(float(t))
     return interp
+
+
+# ---------------------------------------------------------------------------
+# Generic Body-J2 helpers (Phase 3) — standalone njit kernels.
+#
+# These reproduce, bit-for-machine-precision, the inline J2 arithmetic already
+# present in _f3body_rhs_numba / _ode42_rhs_numba (same operation grouping,
+# e.g. r5bf = r2bf*r2bf*sqrt(r2bf)).  They are NOT yet wired into the production
+# RHS kernels — that migration is Phase 4.  Kept here so the Numba code path can
+# share one J2 implementation with the production inline blocks once swapped.
+# ---------------------------------------------------------------------------
+@_optional_njit(cache=True, fastmath=True)
+def _body_j2_accel_numba(
+    r_rel: np.ndarray,
+    mu: float,
+    radius_ref: float,
+    j2: float,
+    c_bf: np.ndarray,
+) -> np.ndarray:
+    """J2 acceleration (inertial axes) for a body with body-fixed z = pole.
+
+    r_rel : spacecraft position relative to the J2 body's centre, in inertial
+            (propagation) axes.  c_bf : 3x3 inertial -> body-fixed rotation.
+    """
+    out = np.zeros(3)
+    if j2 == 0.0:
+        return out
+    ax, ay, az = _body_j2_accel_terms(
+        r_rel[0], r_rel[1], r_rel[2], mu, radius_ref, j2, c_bf
+    )
+    out[0] = ax;  out[1] = ay;  out[2] = az
+    return out
+
+
+@_optional_njit(cache=True, fastmath=True)
+def _body_j2_gradient_numba(
+    r_rel: np.ndarray,
+    mu: float,
+    radius_ref: float,
+    j2: float,
+    c_bf: np.ndarray,
+) -> np.ndarray:
+    """J2 gravity-gradient 3x3 tensor (inertial axes): C_bf^T @ G_bf @ C_bf."""
+    G = np.zeros((3, 3))
+    if j2 == 0.0:
+        return G
+    g00, g01, g02, g10, g11, g12, g20, g21, g22 = _body_j2_gradient_terms(
+        r_rel[0], r_rel[1], r_rel[2], mu, radius_ref, j2, c_bf
+    )
+    G[0, 0] = g00;  G[0, 1] = g01;  G[0, 2] = g02
+    G[1, 0] = g10;  G[1, 1] = g11;  G[1, 2] = g12
+    G[2, 0] = g20;  G[2, 1] = g21;  G[2, 2] = g22
+    return G
+
+
+def body_j2_accel_fast(r_rel, mu, radius_ref, j2, c_bf) -> np.ndarray:
+    """Input-casting wrapper around the njit J2 acceleration helper."""
+    return _body_j2_accel_numba(
+        np.asarray(r_rel, dtype=np.float64).reshape(3),
+        float(mu), float(radius_ref), float(j2),
+        np.asarray(c_bf, dtype=np.float64).reshape(3, 3),
+    )
+
+
+def body_j2_gradient_fast(r_rel, mu, radius_ref, j2, c_bf) -> np.ndarray:
+    """Input-casting wrapper around the njit J2 gravity-gradient helper."""
+    return _body_j2_gradient_numba(
+        np.asarray(r_rel, dtype=np.float64).reshape(3),
+        float(mu), float(radius_ref), float(j2),
+        np.asarray(c_bf, dtype=np.float64).reshape(3, 3),
+    )

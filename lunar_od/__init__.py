@@ -31,6 +31,7 @@ from .dynamics import (
     zonal_j2_acceleration,
     zonal_j2_gravity_gradient,
 )
+from .force_models import body_j2_acceleration, body_j2_gravity_gradient
 from .ephemeris import MoonCenteredEphemeris, perturb_moon_centered_ephemeris, sample_moon_centered_ephemeris
 from .visibility import (
     VisibilityConfig,
@@ -418,6 +419,8 @@ __all__ = [
     "unscented_mean_and_covariance",
     "zonal_j2_acceleration",
     "zonal_j2_gravity_gradient",
+    "body_j2_acceleration",
+    "body_j2_gravity_gradient",
     "write_monte_carlo_summary_csv",
     "write_monte_carlo_trials_csv",
     "write_normalized_scenario_config",

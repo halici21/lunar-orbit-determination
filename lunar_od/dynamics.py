@@ -23,8 +23,13 @@ except Exception:
 # IAU 2006 mean pole: RA₀ = 269.9949°, Dec₀ = 66.5392°.  Since J2 is axially
 # symmetric a fixed (mean) pole rotation suffices; libration (~0.04°) produces
 # < 0.1 % error in the J2 acceleration for low lunar orbits.
-MOON_J2:  float = 2.0346e-4   # IAU/GRAIL J2 coefficient
-MOON_R_M: float = 1_737_400.0  # Moon mean radius (m)
+# MOON_J2 / MOON_R_M are sourced from the centralized constants module and
+# re-exported here under their legacy names for backward compatibility.
+from .constants import (
+    J2_MOON_UNNORMALIZED as MOON_J2,   # IAU/GRAIL J2 coefficient
+    R_MOON_M as MOON_R_M,              # Moon mean radius (m)
+    R_EARTH_J2_REF_M,                  # EGM96 Earth J2 reference radius (m)
+)
 
 
 def _build_moon_j2_rotation() -> np.ndarray:
@@ -41,6 +46,29 @@ def _build_moon_j2_rotation() -> np.ndarray:
 
 
 _MCI_TO_MOON_BF: np.ndarray = _build_moon_j2_rotation()
+
+# ---------------------------------------------------------------------------
+# Earth J2 frame (Phase 5).  First-phase constant approximation:
+#   - constant J2000 mean-equator pole (identity rotation): the J2000 z-axis is
+#     Earth's mean pole at J2000.0;
+#   - precession / nutation / diurnal Earth orientation are neglected;
+#   - this is NOT a high-fidelity Earth-orientation model.  It is sufficient to
+#     validate the magnitude of the Earth-J2 effect and the architecture; a
+#     SPICE epoch-dependent Earth orientation can be added as a separate phase.
+# ---------------------------------------------------------------------------
+_J2000_TO_EARTH_BF: np.ndarray = np.eye(3)
+_ALLOWED_EARTH_J2_MODES = ("indirect", "direct")
+
+
+def _earth_mode_int(j2_earth: float, earth_j2_mode: str) -> int:
+    """Map (j2_earth, mode) to the Numba ``earth_mode`` int: 0=off/1=indirect/2=direct."""
+    if not j2_earth:
+        return 0
+    if earth_j2_mode == "indirect":
+        return 1
+    if earth_j2_mode == "direct":
+        return 2
+    raise ValueError("earth_j2_mode must be 'indirect' or 'direct'.")
 
 
 def _vec3(value: ArrayLike, name: str) -> np.ndarray:
@@ -160,11 +188,19 @@ def f3body_moon(
     r_moon_sun_m: ArrayLike,
     *,
     j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ) -> np.ndarray:
     """6-state derivative matching MATLAB `f3body_moon.m`.
 
     Pass ``j2_moon=MOON_J2`` to include the lunar J2 oblateness perturbation
     (transforms to/from the Moon mean-pole body-fixed frame via ``_MCI_TO_MOON_BF``).
+
+    Pass ``j2_earth=J2_EARTH_UNNORMALIZED`` to include Earth's J2 perturbation in
+    the Moon-centered frame.  ``earth_j2_mode='indirect'`` (default) uses the
+    physically correct relative form
+    ``a_J2(sc rel Earth) - a_J2(Moon rel Earth)``; ``'direct'`` keeps only the
+    spacecraft term and is for debug / sensitivity studies only.
     """
     state_mci = _state6(state_mci)
     r_sc_m = state_mci[:3]
@@ -175,10 +211,22 @@ def f3body_moon(
         + third_body_acceleration(r_sc_m, r_moon_earth_m, mu_earth_m3_s2)
         + third_body_acceleration(r_sc_m, r_moon_sun_m, mu_sun_m3_s2)
     )
+    if j2_earth:
+        r_moon_earth_m = _vec3(r_moon_earth_m, "r_moon_earth_m")
+        r_sc_earth_m = r_sc_m - r_moon_earth_m            # Earth -> spacecraft
+        a_total_mps2 = a_total_mps2 + body_j2_acceleration(
+            r_sc_earth_m, mu_earth_m3_s2, R_EARTH_J2_REF_M, j2_earth, _J2000_TO_EARTH_BF
+        )
+        if earth_j2_mode == "indirect":
+            a_total_mps2 = a_total_mps2 - body_j2_acceleration(
+                -r_moon_earth_m, mu_earth_m3_s2, R_EARTH_J2_REF_M, j2_earth, _J2000_TO_EARTH_BF
+            )
+        elif earth_j2_mode != "direct":
+            raise ValueError("earth_j2_mode must be 'indirect' or 'direct'.")
     if j2_moon:
-        r_bf = _MCI_TO_MOON_BF @ r_sc_m
-        a_j2_bf = zonal_j2_acceleration(r_bf, mu_moon_m3_s2, MOON_R_M, j2_moon)
-        a_total_mps2 = a_total_mps2 + _MCI_TO_MOON_BF.T @ a_j2_bf
+        a_total_mps2 = a_total_mps2 + body_j2_acceleration(
+            r_sc_m, mu_moon_m3_s2, MOON_R_M, j2_moon, _MCI_TO_MOON_BF
+        )
     return np.concatenate([v_sc_mps, a_total_mps2])
 
 
@@ -225,8 +273,15 @@ def dynamics_jacobian_a_matrix(
     r_moon_sun_m: ArrayLike,
     *,
     j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ) -> np.ndarray:
-    """Build the 6x6 variational A matrix used by `odeFun_v3.m`."""
+    """Build the 6x6 variational A matrix used by `odeFun_v3.m`.
+
+    The Earth-J2 indirect term ``-a_J2(Moon rel Earth)`` is state-independent, so
+    only the spacecraft term contributes to the gravity gradient (the same
+    gradient applies for ``'indirect'`` and ``'direct'`` modes).
+    """
     state_mci = _state6(state_mci)
     r_sc_m = state_mci[:3]
 
@@ -235,10 +290,15 @@ def dynamics_jacobian_a_matrix(
         + third_body_gravity_gradient(r_sc_m, r_moon_earth_m, mu_earth_m3_s2)
         + third_body_gravity_gradient(r_sc_m, r_moon_sun_m, mu_sun_m3_s2)
     )
+    if j2_earth:
+        r_sc_earth_m = r_sc_m - _vec3(r_moon_earth_m, "r_moon_earth_m")
+        g_total = g_total + body_j2_gravity_gradient(
+            r_sc_earth_m, mu_earth_m3_s2, R_EARTH_J2_REF_M, j2_earth, _J2000_TO_EARTH_BF
+        )
     if j2_moon:
-        r_bf = _MCI_TO_MOON_BF @ r_sc_m
-        g_j2_bf = zonal_j2_gravity_gradient(r_bf, mu_moon_m3_s2, MOON_R_M, j2_moon)
-        g_total = g_total + _MCI_TO_MOON_BF.T @ g_j2_bf @ _MCI_TO_MOON_BF
+        g_total = g_total + body_j2_gravity_gradient(
+            r_sc_m, mu_moon_m3_s2, MOON_R_M, j2_moon, _MCI_TO_MOON_BF
+        )
 
     return np.block(
         [
@@ -257,6 +317,8 @@ def ode_fun_v3(
     get_earth_pos: Callable[[float], ArrayLike],
     get_sun_pos: Callable[[float], ArrayLike],
     j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ) -> np.ndarray:
     """42-state derivative matching MATLAB `odeFun_v3.m`.
 
@@ -280,6 +342,8 @@ def ode_fun_v3(
         r_moon_earth_m,
         r_moon_sun_m,
         j2_moon=j2_moon,
+        j2_earth=j2_earth,
+        earth_j2_mode=earth_j2_mode,
     )
     a_matrix = dynamics_jacobian_a_matrix(
         x_mci,
@@ -289,6 +353,8 @@ def ode_fun_v3(
         r_moon_earth_m,
         r_moon_sun_m,
         j2_moon=j2_moon,
+        j2_earth=j2_earth,
+        earth_j2_mode=earth_j2_mode,
     )
     phi_dot = a_matrix @ phi
     return np.concatenate([x_dot, phi_dot.reshape(-1, order="F")])
@@ -334,6 +400,8 @@ def propagate_state(
     atol: float = 1e-12,
     method: str = "ADAMS",
     j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ) -> np.ndarray:
     """Propagate the 6-state dynamics at requested epochs.
 
@@ -341,8 +409,9 @@ def propagate_state(
 
     ``method`` may be ``"ADAMS"`` (VODE Adams-12, default, faster for smooth
     orbits), ``"DOP853"``, or any other ``solve_ivp``-compatible method name.
-    Pass ``j2_moon=MOON_J2`` to include the lunar oblateness perturbation (forces
-    the Python code path; the Numba kernel does not support J2).
+    Pass ``j2_moon=MOON_J2`` to include the lunar oblateness perturbation, and
+    ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'`` by default)
+    to include Earth's J2 in the Moon-centered frame.
     """
     from scipy.integrate import solve_ivp
 
@@ -351,23 +420,27 @@ def propagate_state(
         raise ValueError("t_eval_s must contain at least one epoch.")
 
     state0_mci = _state6(state0_mci)
+    _emode = _earth_mode_int(j2_earth, earth_j2_mode)
 
     if _FAST_DYNAMICS:
         _j2 = float(j2_moon)
         _mr = MOON_R_M if j2_moon else 0.0
         _cbf = _MCI_TO_MOON_BF
+        _j2e = float(j2_earth)
+        _er = R_EARTH_J2_REF_M if j2_earth else 0.0
+        _cbfe = _J2000_TO_EARTH_BF
         def rhs(t_s: float, state: np.ndarray) -> np.ndarray:
             return _f3body_rhs_fast(
                 state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
-                _j2, _mr, _cbf,
+                _j2, _mr, _cbf, _j2e, _er, _emode, _cbfe,
             )
     else:
         def rhs(t_s: float, state: np.ndarray) -> np.ndarray:
             return f3body_moon(
                 state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
-                j2_moon=j2_moon,
+                j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             )
 
     if method.upper() == "ADAMS":
@@ -401,6 +474,8 @@ def propagate_augmented_state(
     atol: float = 1e-12,
     method: str = "ADAMS",
     j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -408,8 +483,9 @@ def propagate_augmented_state(
 
     Defaults to ``"ADAMS"`` (VODE Adams-12) which is ~2.3× faster than DOP853
     for smooth lunar orbits.  Pass ``method="DOP853"`` for the classical path.
-    Pass ``j2_moon=MOON_J2`` to include the lunar oblateness perturbation (forces
-    the Python code path).
+    Pass ``j2_moon=MOON_J2`` for the lunar oblateness perturbation, and
+    ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'``) for Earth's
+    J2 in the Moon-centered frame.
     """
     from scipy.integrate import solve_ivp
 
@@ -421,21 +497,26 @@ def propagate_augmented_state(
     if state_aug0_mci.size != 42:
         raise ValueError("Initial augmented state must have 42 elements.")
 
+    _emode = _earth_mode_int(j2_earth, earth_j2_mode)
+
     if _FAST_DYNAMICS:
         _j2 = float(j2_moon)
         _mr = MOON_R_M if j2_moon else 0.0
         _cbf = _MCI_TO_MOON_BF
+        _j2e = float(j2_earth)
+        _er = R_EARTH_J2_REF_M if j2_earth else 0.0
+        _cbfe = _J2000_TO_EARTH_BF
         def rhs(t_s: float, state_aug: np.ndarray) -> np.ndarray:
             return _ode42_rhs_fast(
                 state_aug, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
-                _j2, _mr, _cbf,
+                _j2, _mr, _cbf, _j2e, _er, _emode, _cbfe,
             )
     else:
         def rhs(t_s: float, state_aug: np.ndarray) -> np.ndarray:
             return ode_fun_v3(
                 t_s, state_aug, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-                get_earth_pos, get_sun_pos, j2_moon,
+                get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
             )
 
     if method.upper() == "ADAMS":
@@ -463,13 +544,17 @@ def make_fast_sigma_propagator(
     mu_sun_m3_s2: float,
     *,
     rk4_dt_s: float = 10.0,
+    j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ):
     """Return a fast (t0, t1, state6) → state6 callable using numba RK4.
 
     Uses pre-sampled ephemeris grids + binary-search linear interpolation.
     ~250× faster than scipy DOP853 for short intervals (UKF sigma steps).
     Position accuracy ~3 mm over 60 s — sufficient when measurement noise
-    is ≥ 10 m.
+    is ≥ 10 m.  Pass ``j2_moon`` / ``j2_earth`` to include the J2 perturbations
+    in the sigma propagation as well.
 
     Returns ``None`` when numba is unavailable.
     """
@@ -482,6 +567,13 @@ def make_fast_sigma_propagator(
     mu_e = float(mu_earth_m3_s2)
     mu_s = float(mu_sun_m3_s2)
     dt   = float(rk4_dt_s)
+    _j2 = float(j2_moon)
+    _mr = MOON_R_M if j2_moon else 0.0
+    _cbf = _MCI_TO_MOON_BF
+    _j2e = float(j2_earth)
+    _er = R_EARTH_J2_REF_M if j2_earth else 0.0
+    _emode = _earth_mode_int(j2_earth, earth_j2_mode)
+    _cbfe = _J2000_TO_EARTH_BF
 
     def _propagate(t0: float, t1: float, state6: np.ndarray) -> np.ndarray:
         if np.isclose(t0, t1):
@@ -490,6 +582,8 @@ def make_fast_sigma_propagator(
             np.asarray(state6, dtype=np.float64),
             float(t0), float(t1), mu_m, mu_e, mu_s,
             t_grid, earth_grid, sun_grid, dt=dt,
+            j2_moon=_j2, moon_r=_mr, c_bf=_cbf,
+            j2_earth=_j2e, earth_r=_er, earth_mode=_emode, c_bf_earth=_cbfe,
         )
 
     return _propagate
@@ -507,6 +601,8 @@ def propagate_truth_with_ephemeris(
     atol: float = 1e-12,
     method: str = "DOP853",
     j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
 ) -> np.ndarray:
     """Propagate truth dynamics using Moon-centered ephemeris interpolants."""
     return propagate_state(
@@ -521,4 +617,18 @@ def propagate_truth_with_ephemeris(
         atol=atol,
         method=method,
         j2_moon=j2_moon,
+        j2_earth=j2_earth,
+        earth_j2_mode=earth_j2_mode,
     )
+
+
+# ---------------------------------------------------------------------------
+# Generic Body-J2 helpers (Phase 4).  Imported at module bottom so force_models
+# can resolve zonal_j2_* (defined above) without an import cycle; f3body_moon /
+# dynamics_jacobian_a_matrix reference these at call time, by which point the
+# module is fully loaded.
+# ---------------------------------------------------------------------------
+from .force_models import (  # noqa: E402
+    body_j2_acceleration,
+    body_j2_gravity_gradient,
+)
