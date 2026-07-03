@@ -985,3 +985,124 @@ def body_j2_gradient_fast(r_rel, mu, radius_ref, j2, c_bf) -> np.ndarray:
         float(mu), float(radius_ref), float(j2),
         np.asarray(c_bf, dtype=np.float64).reshape(3, 3),
     )
+
+
+# ---------------------------------------------------------------------------
+# Pines spherical-harmonic acceleration — Numba twin (Phase 11C).
+#
+# Body-fixed numerical twin of the pure-Python reference engine in
+# ``lunar_od.gravity_harmonics._pines_acceleration_bf``.  It reproduces that
+# routine's math and *operation grouping* term-by-term so the two agree to
+# machine precision (the parity gate lives in tests/test_gravity_harmonics_numba.py).
+#
+# Contract mirrors the reference: SI units; fully-normalized Cbar/Sbar indexed
+# [n, m]; body-fixed position in, body-fixed perturbing acceleration out; only
+# degrees n >= 2 (n=0 point mass and n=1 CoM rows are ignored); no potential, no
+# gradient, no rotation (the inertial<->body rotation stays on the Python side).
+#
+# fastmath note: kept at fastmath=True to match this module's other kernels.  If
+# the C20/J2 bridge (< 1e-14 m/s^2) or the Python<->Numba parity tolerances ever
+# fail under fastmath, drop *this* kernel to fastmath=False — it is not yet in
+# the hot RHS, so accuracy/parity outrank the last bit of speed here.
+# ---------------------------------------------------------------------------
+_HARMONIC_MIN_RADIUS_M = 1.0  # matches gravity_harmonics._MIN_RADIUS_M
+
+
+@_optional_njit(cache=True, fastmath=True)
+def _pines_accel_bf_numba(
+    r_bf: np.ndarray,
+    mu: float,
+    r_ref: float,
+    cbar: np.ndarray,
+    sbar: np.ndarray,
+    nmax: int,
+    mmax: int,
+) -> np.ndarray:
+    x = r_bf[0]
+    y = r_bf[1]
+    z = r_bf[2]
+    r = np.sqrt(x * x + y * y + z * z)
+    s = x / r
+    t = y / r
+    u = z / r
+
+    # Normalized derived Legendre Abar[n, m] with one spare column so
+    # Abar_n,m+1 = 0 is available for the derivative relation.
+    ab = np.zeros((nmax + 1, nmax + 2))
+    ab[0, 0] = 1.0
+    ab[1, 0] = np.sqrt(3.0) * u
+    ab[1, 1] = np.sqrt(3.0)
+    for n in range(2, nmax + 1):
+        ab[n, n] = np.sqrt((2.0 * n + 1.0) / (2.0 * n)) * ab[n - 1, n - 1]
+        ab[n, n - 1] = u * np.sqrt(2.0 * n) * ab[n, n]
+    for m in range(0, nmax - 1):
+        for n in range(m + 2, nmax + 1):
+            alpha = np.sqrt((2.0 * n - 1.0) * (2.0 * n + 1.0) / ((n - m) * (n + m)))
+            beta = np.sqrt(
+                (2.0 * n + 1.0) * (n + m - 1.0) * (n - m - 1.0)
+                / ((2.0 * n - 3.0) * (n + m) * (n - m))
+            )
+            ab[n, m] = alpha * u * ab[n - 1, m] - beta * ab[n - 2, m]
+
+    # Rm/Im = Re/Im[(s + i t)^m]
+    rm = np.zeros(nmax + 1)
+    im = np.zeros(nmax + 1)
+    rm[0] = 1.0
+    for m in range(1, nmax + 1):
+        rm[m] = s * rm[m - 1] - t * im[m - 1]
+        im[m] = s * im[m - 1] + t * rm[m - 1]
+
+    gx = 0.0
+    gy = 0.0
+    gz = 0.0
+    rho = r_ref / r
+    kn = (mu / (r * r)) * rho * rho          # (mu/r^2)(R/r)^n starting at n = 2
+    for n in range(2, nmax + 1):
+        m_top = mmax if mmax < n else n
+        for m in range(0, m_top + 1):
+            cnm = cbar[n, m]
+            snm = sbar[n, m]
+            if cnm == 0.0 and snm == 0.0:
+                continue
+            d = cnm * rm[m] + snm * im[m]
+            if m == 0:
+                e = 0.0
+                f = 0.0
+            else:
+                e = cnm * rm[m - 1] + snm * im[m - 1]
+                f = snm * rm[m - 1] - cnm * im[m - 1]
+            if m == 0:
+                dfac = np.sqrt(n * (n + 1) / 2.0)
+            else:
+                dfac = np.sqrt((n - m) * (n + m + 1.0))
+            abp = dfac * ab[n, m + 1]                 # dAbar_nm/du
+            lam = ((n + m + 1.0) * ab[n, m] + u * abp) * d
+            gx += kn * (m * ab[n, m] * e - s * lam)
+            gy += kn * (m * ab[n, m] * f - t * lam)
+            gz += kn * (abp * d - u * lam)
+        kn *= rho
+
+    out = np.zeros(3)
+    out[0] = gx
+    out[1] = gy
+    out[2] = gz
+    return out
+
+
+def pines_accel_bf_fast(r_bf, mu, r_ref, cbar, sbar, nmax, mmax) -> np.ndarray:
+    """Input-casting wrapper around the njit Pines body-fixed kernel.
+
+    Body-fixed perturbing acceleration (n >= 2), m/s^2.  ``cbar``/``sbar`` are
+    fully-normalized [n, m] arrays; the caller supplies plain floats/ints
+    (never the dataclass).  Guards the near-centre singularity like the
+    reference before dispatching to Numba.
+    """
+    r = np.asarray(r_bf, dtype=np.float64).reshape(3)
+    if float(np.sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2])) < _HARMONIC_MIN_RADIUS_M:
+        raise ValueError("position radius is too small for a harmonic field evaluation.")
+    return _pines_accel_bf_numba(
+        r, float(mu), float(r_ref),
+        np.ascontiguousarray(cbar, dtype=np.float64),
+        np.ascontiguousarray(sbar, dtype=np.float64),
+        int(nmax), int(mmax),
+    )
