@@ -39,6 +39,12 @@ outputs/
 *.tf
 *.tpc
 
+# Large gravity model files (GRAIL GRGM/GL etc.) live outside the repo or in
+# this ignored directory; tests use tiny committed fixtures under
+# tests/fixtures/gravity/ (directory-based ignore on purpose: extension-based
+# ignore would hide those fixtures too).
+data/gravity/
+
 # Local presentation/report artifacts
 *.pptx
 *.pdf
