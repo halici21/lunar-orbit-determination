@@ -1106,3 +1106,95 @@ def pines_accel_bf_fast(r_bf, mu, r_ref, cbar, sbar, nmax, mmax) -> np.ndarray:
         np.ascontiguousarray(sbar, dtype=np.float64),
         int(nmax), int(mmax),
     )
+
+
+# ---------------------------------------------------------------------------
+# 6-state RHS with lunar spherical harmonics (Phase 13B) — additive kernel.
+#
+# Wraps the UNTOUCHED production RHS kernel (_f3body_rhs_numba) and adds the
+# Pines harmonic perturbation rotated through the caller-supplied epoch
+# rotation ``c_bf_h`` (inertial -> harmonic body-fixed, r_bf = C @ r).  The
+# rotation lookup itself stays on the Python side (shared with the pure-Python
+# path for exact parity); no SPICE and no interpolation happen in here.
+# The harmonics-off production path never enters this kernel.
+# ---------------------------------------------------------------------------
+@_optional_njit(cache=True, fastmath=True)
+def _f3body_harmonics_rhs_numba(
+    x6: np.ndarray,
+    mu_moon: float,
+    mu_earth: float,
+    mu_sun: float,
+    r_earth: np.ndarray,
+    r_sun: np.ndarray,
+    j2_moon: float,
+    moon_r: float,
+    c_bf: np.ndarray,
+    j2_earth: float,
+    earth_r: float,
+    earth_mode: int,
+    c_bf_earth: np.ndarray,
+    h_cbar: np.ndarray,
+    h_sbar: np.ndarray,
+    h_mu: float,
+    h_r_ref: float,
+    h_nmax: int,
+    h_mmax: int,
+    c_bf_h: np.ndarray,
+) -> np.ndarray:
+    out = _f3body_rhs_numba(
+        x6, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
+        j2_moon, moon_r, c_bf, j2_earth, earth_r, earth_mode, c_bf_earth,
+    )
+    rx = x6[0]; ry = x6[1]; rz = x6[2]
+    r_bf = np.zeros(3)
+    r_bf[0] = c_bf_h[0, 0] * rx + c_bf_h[0, 1] * ry + c_bf_h[0, 2] * rz
+    r_bf[1] = c_bf_h[1, 0] * rx + c_bf_h[1, 1] * ry + c_bf_h[1, 2] * rz
+    r_bf[2] = c_bf_h[2, 0] * rx + c_bf_h[2, 1] * ry + c_bf_h[2, 2] * rz
+    a_bf = _pines_accel_bf_numba(r_bf, h_mu, h_r_ref, h_cbar, h_sbar, h_nmax, h_mmax)
+    out[3] += c_bf_h[0, 0] * a_bf[0] + c_bf_h[1, 0] * a_bf[1] + c_bf_h[2, 0] * a_bf[2]
+    out[4] += c_bf_h[0, 1] * a_bf[0] + c_bf_h[1, 1] * a_bf[1] + c_bf_h[2, 1] * a_bf[2]
+    out[5] += c_bf_h[0, 2] * a_bf[0] + c_bf_h[1, 2] * a_bf[1] + c_bf_h[2, 2] * a_bf[2]
+    return out
+
+
+def f3body_harmonics_rhs(
+    x6: np.ndarray,
+    mu_moon: float,
+    mu_earth: float,
+    mu_sun: float,
+    r_earth: np.ndarray,
+    r_sun: np.ndarray,
+    j2_moon: float,
+    moon_r: float,
+    c_bf: np.ndarray | None,
+    j2_earth: float,
+    earth_r: float,
+    earth_mode: int,
+    c_bf_earth: np.ndarray | None,
+    h_cbar: np.ndarray,
+    h_sbar: np.ndarray,
+    h_mu: float,
+    h_r_ref: float,
+    h_nmax: int,
+    h_mmax: int,
+    c_bf_h: np.ndarray,
+) -> np.ndarray:
+    """Casting wrapper for the harmonics RHS kernel (mirrors ``f3body_rhs``).
+
+    The caller supplies raw arrays/scalars extracted ONCE at propagation setup
+    (never the model dataclass) plus the per-call rotation ``c_bf_h``.
+    """
+    c_bf_arr = np.eye(3, dtype=np.float64) if c_bf is None else np.asarray(c_bf, dtype=np.float64)
+    c_bf_e_arr = np.eye(3, dtype=np.float64) if c_bf_earth is None else np.asarray(c_bf_earth, dtype=np.float64)
+    return _f3body_harmonics_rhs_numba(
+        np.asarray(x6, dtype=np.float64),
+        float(mu_moon), float(mu_earth), float(mu_sun),
+        np.asarray(r_earth, dtype=np.float64).reshape(3),
+        np.asarray(r_sun, dtype=np.float64).reshape(3),
+        float(j2_moon), float(moon_r), c_bf_arr,
+        float(j2_earth), float(earth_r), int(earth_mode), c_bf_e_arr,
+        np.ascontiguousarray(h_cbar, dtype=np.float64),
+        np.ascontiguousarray(h_sbar, dtype=np.float64),
+        float(h_mu), float(h_r_ref), int(h_nmax), int(h_mmax),
+        np.asarray(c_bf_h, dtype=np.float64).reshape(3, 3),
+    )

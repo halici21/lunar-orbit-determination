@@ -17,6 +17,18 @@ try:
 except Exception:
     _FAST_DYNAMICS = False
 
+# Lunar spherical harmonics (Phase 13B splice) — default-off, additive.
+try:
+    from .accelerated import f3body_harmonics_rhs as _f3body_harmonics_rhs_fast
+    _FAST_HARMONICS = True
+except Exception:
+    _FAST_HARMONICS = False
+from .gravity_harmonics import (
+    SphericalHarmonicGravityModel,
+    spherical_harmonic_acceleration,
+)
+from .lunar_frames import nearest_rotation_at_time
+
 # ---------------------------------------------------------------------------
 # J2 support — Moon's mean-pole rotation frame
 # ---------------------------------------------------------------------------
@@ -190,6 +202,8 @@ def f3body_moon(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    harmonic_model: SphericalHarmonicGravityModel | None = None,
+    c_inertial_to_bf_harmonic: ArrayLike | None = None,
 ) -> np.ndarray:
     """6-state derivative matching MATLAB `f3body_moon.m`.
 
@@ -201,6 +215,14 @@ def f3body_moon(
     physically correct relative form
     ``a_J2(sc rel Earth) - a_J2(Moon rel Earth)``; ``'direct'`` keeps only the
     spacecraft term and is for debug / sensitivity studies only.
+
+    Pass ``harmonic_model`` (with ``c_inertial_to_bf_harmonic``, the epoch's
+    inertial -> body-fixed rotation resolved by the CALLER, exactly like the
+    third-body positions) to add the lunar spherical-harmonic perturbation
+    (n >= 2, acceleration-only).  This function is time-agnostic and applies no
+    guards: composition rules (J2 double-count ban, the m > 0 epoch-rotation
+    requirement, the STM refusal) are enforced at the propagation entry points.
+    A model containing C20 must NOT be combined with ``j2_moon != 0``.
     """
     state_mci = _state6(state_mci)
     r_sc_m = state_mci[:3]
@@ -226,6 +248,10 @@ def f3body_moon(
     if j2_moon:
         a_total_mps2 = a_total_mps2 + body_j2_acceleration(
             r_sc_m, mu_moon_m3_s2, MOON_R_M, j2_moon, _MCI_TO_MOON_BF
+        )
+    if harmonic_model is not None:
+        a_total_mps2 = a_total_mps2 + spherical_harmonic_acceleration(
+            r_sc_m, harmonic_model, c_inertial_to_bf_harmonic
         )
     return np.concatenate([v_sc_mps, a_total_mps2])
 
@@ -387,6 +413,100 @@ def _propagate_vode(
     return result
 
 
+def _harmonic_tesseral_active(model: SphericalHarmonicGravityModel) -> bool:
+    """True when the model evaluates any nonzero m > 0 coefficient.
+
+    Respects the model's own nmax/mmax truncation: coefficients outside it are
+    never evaluated, so they do not trigger the epoch-rotation requirement.
+    """
+    if model.mmax < 1:
+        return False
+    cb = model.cbar[: model.nmax + 1, 1 : model.mmax + 1]
+    sb = model.sbar[: model.nmax + 1, 1 : model.mmax + 1]
+    return bool(np.any(cb != 0.0) or np.any(sb != 0.0))
+
+
+def _prepare_harmonic_context(
+    harmonic_model: SphericalHarmonicGravityModel,
+    harmonic_rotation,
+    j2_moon: float,
+    t_eval_s: np.ndarray,
+):
+    """Validate the harmonics composition ONCE at propagation setup.
+
+    Enforced rules (hard ``ValueError``, no silent fixes):
+    - J2 double-count ban: a model whose (2, 0) coefficient is nonzero already
+      contains J2, so ``j2_moon`` must be 0 (neither is silently altered).
+      Earth J2 is a different body and stays freely composable.
+    - m > 0 frame rule: models with nonzero tesseral/sectoral coefficients need
+      an epoch-dependent rotation grid ``(t_grid_s, rotation_grid)`` (sampled
+      from MOON_PA); a constant matrix is physical only for zonal-only models.
+    - Rotation-grid coverage: the grid must span the whole propagation window
+      (recommendation: sample ``[t0 - margin, T + margin]`` with
+      ``margin = max(2 * cadence, 120 s)``); out-of-range lookups stay hard
+      errors, never silent clamps.
+
+    Returns ``(rot_const, rot_t, rot_grid, cbar, sbar, mu, r_ref, nmax, mmax)``
+    with either ``rot_const`` or the grid pair set.  Raw arrays/scalars are
+    extracted here exactly once (the dataclass never crosses into Numba).
+    """
+    if float(harmonic_model.cbar[2, 0]) != 0.0 and j2_moon:
+        raise ValueError(
+            "lunar harmonics model includes a nonzero C20 (J2) term; combining it "
+            "with j2_moon != 0 would count J2 twice. Set j2_moon=0 or use a model "
+            "without C20 (neither is altered silently)."
+        )
+    tesseral = _harmonic_tesseral_active(harmonic_model)
+    if harmonic_rotation is None:
+        raise ValueError(
+            "harmonic_rotation is required with harmonic_model: pass a constant "
+            "(3, 3) inertial->body matrix for a zonal-only model, or an "
+            "epoch-dependent (t_grid_s, rotation_grid) pair sampled from MOON_PA "
+            "(mandatory for m > 0 coefficients)."
+        )
+    if isinstance(harmonic_rotation, (tuple, list)) and len(harmonic_rotation) == 2:
+        rot_t = np.asarray(harmonic_rotation[0], dtype=float)
+        rot_grid = np.asarray(harmonic_rotation[1], dtype=float)
+        if rot_t.ndim != 1 or rot_t.size == 0:
+            raise ValueError("harmonic rotation t_grid_s must be a non-empty 1-D array.")
+        if rot_grid.shape != (rot_t.size, 3, 3):
+            raise ValueError(
+                "harmonic rotation grid must have shape (N, 3, 3) matching t_grid_s."
+            )
+        if rot_t.size > 1 and not np.all(np.diff(rot_t) > 0.0):
+            raise ValueError("harmonic rotation t_grid_s must be strictly increasing.")
+        t_lo, t_hi = float(t_eval_s[0]), float(t_eval_s[-1])
+        if rot_t[0] > t_lo or rot_t[-1] < t_hi:
+            raise ValueError(
+                f"harmonic rotation grid [{rot_t[0]:.1f}, {rot_t[-1]:.1f}] s does not "
+                f"cover the propagation window [{t_lo:.1f}, {t_hi:.1f}] s; sample it "
+                "with a margin, e.g. [t0 - m, T + m] with m = max(2*cadence, 120 s)."
+            )
+        rot_const = None
+    else:
+        rot_const = np.asarray(harmonic_rotation, dtype=float)
+        if rot_const.shape != (3, 3):
+            raise ValueError(
+                "harmonic_rotation must be a (3, 3) matrix or a "
+                "(t_grid_s, rotation_grid) pair."
+            )
+        if tesseral:
+            raise ValueError(
+                "harmonic model has nonzero m > 0 (tesseral/sectoral) coefficients; "
+                "a constant rotation freezes the Moon's longitude and is not "
+                "physical. Provide an epoch-dependent (t_grid_s, rotation_grid) "
+                "sampled from MOON_PA (lunar_frames.sample_moon_pa_rotations)."
+            )
+        rot_t = None
+        rot_grid = None
+    return (
+        rot_const, rot_t, rot_grid,
+        harmonic_model.cbar, harmonic_model.sbar,
+        float(harmonic_model.mu_m3_s2), float(harmonic_model.r_ref_m),
+        int(harmonic_model.nmax), int(harmonic_model.mmax),
+    )
+
+
 def propagate_state(
     t_eval_s: ArrayLike,
     state0_mci: ArrayLike,
@@ -402,6 +522,8 @@ def propagate_state(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    harmonic_model: SphericalHarmonicGravityModel | None = None,
+    harmonic_rotation=None,
 ) -> np.ndarray:
     """Propagate the 6-state dynamics at requested epochs.
 
@@ -412,6 +534,16 @@ def propagate_state(
     Pass ``j2_moon=MOON_J2`` to include the lunar oblateness perturbation, and
     ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'`` by default)
     to include Earth's J2 in the Moon-centered frame.
+
+    Lunar spherical harmonics (Phase 13B, acceleration-only, default-off): pass
+    ``harmonic_model`` plus ``harmonic_rotation`` — either a constant (3, 3)
+    inertial->body matrix (zonal-only models) or an epoch-dependent
+    ``(t_grid_s, rotation_grid)`` pair from
+    ``lunar_frames.sample_moon_pa_rotations`` (mandatory for m > 0 terms).  The
+    grid must cover the propagation window with a margin (suggested
+    ``max(2 * cadence, 120 s)``).  A model containing C20 must be used with
+    ``j2_moon=0`` (enforced here with ``ValueError`` — J2 is never counted
+    twice and nothing is silently altered); Earth J2 remains composable.
     """
     from scipy.integrate import solve_ivp
 
@@ -421,6 +553,11 @@ def propagate_state(
 
     state0_mci = _state6(state0_mci)
     _emode = _earth_mode_int(j2_earth, earth_j2_mode)
+    _h_ctx = None
+    if harmonic_model is not None:
+        _h_ctx = _prepare_harmonic_context(
+            harmonic_model, harmonic_rotation, j2_moon, t_eval_s
+        )
 
     if _FAST_DYNAMICS:
         _j2 = float(j2_moon)
@@ -442,6 +579,42 @@ def propagate_state(
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
                 j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             )
+
+    if _h_ctx is not None:
+        # Harmonics-on RHS overrides the closures above; the harmonics-off
+        # production paths above stay byte-identical and are never entered
+        # with a model.  The rotation lookup is the SAME Python function for
+        # both paths (exact parity); only the force evaluation dispatches.
+        (_rc, _rt, _rg, _hcb, _hsb, _hmu, _hrr, _hn, _hm) = _h_ctx
+
+        def _rotation_at(t_s: float) -> np.ndarray:
+            if _rc is not None:
+                return _rc
+            return nearest_rotation_at_time(_rg, _rt, float(t_s))
+
+        if _FAST_DYNAMICS and _FAST_HARMONICS:
+            _j2h = float(j2_moon)
+            _mrh = MOON_R_M if j2_moon else 0.0
+            _j2eh = float(j2_earth)
+            _erh = R_EARTH_J2_REF_M if j2_earth else 0.0
+
+            def rhs(t_s: float, state: np.ndarray) -> np.ndarray:
+                return _f3body_harmonics_rhs_fast(
+                    state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                    get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
+                    _j2h, _mrh, _MCI_TO_MOON_BF, _j2eh, _erh, _emode,
+                    _J2000_TO_EARTH_BF,
+                    _hcb, _hsb, _hmu, _hrr, _hn, _hm, _rotation_at(t_s),
+                )
+        else:
+            def rhs(t_s: float, state: np.ndarray) -> np.ndarray:
+                return f3body_moon(
+                    state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                    get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
+                    j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+                    harmonic_model=harmonic_model,
+                    c_inertial_to_bf_harmonic=_rotation_at(t_s),
+                )
 
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state0_mci, rhs, rtol, atol)
@@ -476,6 +649,7 @@ def propagate_augmented_state(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    harmonic_model: SphericalHarmonicGravityModel | None = None,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -486,8 +660,19 @@ def propagate_augmented_state(
     Pass ``j2_moon=MOON_J2`` for the lunar oblateness perturbation, and
     ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'``) for Earth's
     J2 in the Moon-centered frame.
+
+    Lunar spherical harmonics are acceleration-only and have NO gravity
+    gradient, so they cannot participate in STM propagation: requesting
+    ``harmonic_model`` here raises immediately (a silent acceleration/gradient
+    mismatch is forbidden).
     """
     from scipy.integrate import solve_ivp
+
+    if harmonic_model is not None:
+        raise ValueError(
+            "lunar harmonics gradient not implemented; use 6-state propagation "
+            "or disable lunar harmonics for STM"
+        )
 
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
     if t_eval_s.size == 0:
