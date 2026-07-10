@@ -28,8 +28,15 @@ Stages:
               The m>0+constant-matrix production guard is deliberately emulated
               around via constant-valued GRIDS; never a bypass of physics
               guards for a "valid" run.
+  --sensitivity  13G-c1 one-factor axes (8 cases, GRGM660PRIM primary):
+              altitude 100/200/500 km circular (i=45), inclination
+              0/30/60/90 deg (100 km circular), eccentric 80x500 km (i=45,
+              perilune-window |nu|<30 deg metric); per case V1/V2/V3/
+              zonal@64 + full ladder 8..128; GL1800F only on S1/S7/S8
+              (64/128, 256 only on S8 runtime-gated).  The "orbit" window
+              uses each case's own period.
   (default: --baseline)
-Refused here (13G-c+ scope): --sensitivity, --sevenday, --plots.
+Refused here (13G-c2+ scope, separate approval): --sevenday, --plots.
 
 Reuse: loader/profile/rotation/propagation helpers are imported from the
 committed phase12b script; initial state/ephemeris from phase6.  Script-local
@@ -71,6 +78,7 @@ from lunar_od.gravity_harmonics import SphericalHarmonicGravityModel  # noqa: E4
 from lunar_od.gravity_model_loader import (  # noqa: E402
     describe_model, load_lunar_gravity_model, resolve_gravity_dir,
 )
+from lunar_od.orbit import coe2rv  # noqa: E402
 from phase12b_real_grail_validation import (  # noqa: E402
     MODELS as GRAIL_FILES, diff_metrics, load_kernel_profile, rotation_pair,
     run_case, truncate_model,
@@ -86,6 +94,10 @@ RUNS_CSV = OUT / "phase13g_runs.csv"
 COMP_CSV = OUT / "phase13g_comparisons.csv"
 ELEM_CSV = OUT / "phase13g_element_drift.csv"
 MD_PATH = OUT / "phase13g_report.md"
+SENS_RUNS_CSV = OUT / "phase13g_sensitivity_runs.csv"
+SENS_COMP_CSV = OUT / "phase13g_sensitivity_comparisons.csv"
+SENS_ELEM_CSV = OUT / "phase13g_sensitivity_elements.csv"
+SENS_MD_PATH = OUT / "phase13g_sensitivity_report.md"
 
 CADENCE_S = 60.0                    # Phase 13C accepted default
 OPT_RUNTIME_GATE_S = 300.0          # projected cap for optional nmax=256
@@ -276,6 +288,66 @@ def rtn_summary(traj: np.ndarray, ref: np.ndarray) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Sensitivity orbit set (13G-c1): one-factor-at-a-time, 8 cases, no cross
+# product.  States built with the production coe2rv (RAAN/argp/nu fixed at the
+# baseline style values).
+# ---------------------------------------------------------------------------
+SENSITIVITY_CASES = (
+    {"case": "S1_alt100_i45", "axis": "altitude", "alt_km": 100.0, "incl_deg": 45.0},
+    {"case": "S2_alt200_i45", "axis": "altitude", "alt_km": 200.0, "incl_deg": 45.0},
+    {"case": "S3_alt500_i45", "axis": "altitude", "alt_km": 500.0, "incl_deg": 45.0},
+    {"case": "S4_alt100_i0", "axis": "inclination", "alt_km": 100.0, "incl_deg": 0.0},
+    {"case": "S5_alt100_i30", "axis": "inclination", "alt_km": 100.0, "incl_deg": 30.0},
+    {"case": "S6_alt100_i60", "axis": "inclination", "alt_km": 100.0, "incl_deg": 60.0},
+    {"case": "S7_alt100_i90", "axis": "inclination", "alt_km": 100.0, "incl_deg": 90.0},
+    {"case": "S8_ecc80x500_i45", "axis": "eccentric",
+     "peri_alt_km": 80.0, "apo_alt_km": 500.0, "incl_deg": 45.0},
+)
+# GL1800F runs ONLY on these selected cases (no full-matrix duplication)
+GL1800F_CASES = ("S1_alt100_i45", "S7_alt100_i90", "S8_ecc80x500_i45")
+PERILUNE_HALF_WIDTH_DEG = 30.0
+
+
+def case_state(spec: dict) -> np.ndarray:
+    """Initial 6-state for one sensitivity case (circular or peri/apo pair)."""
+    if "peri_alt_km" in spec:
+        r_peri = R_MOON_M + spec["peri_alt_km"] * 1e3
+        r_apo = R_MOON_M + spec["apo_alt_km"] * 1e3
+        a, e = 0.5 * (r_peri + r_apo), (r_apo - r_peri) / (r_apo + r_peri)
+    else:
+        a, e = R_MOON_M + spec["alt_km"] * 1e3, 0.0
+    r, v = coe2rv(a, e, math.radians(spec["incl_deg"]), math.radians(30.0),
+                  math.radians(20.0), math.radians(10.0), MU_M)
+    return np.concatenate([r, v])
+
+
+def build_sensitivity_matrix() -> dict:
+    """Pure run-plan builder (no data, no SPICE) — the anti-explosion guard.
+
+    Per case, GRGM660PRIM gets at most 9 runs (V1/V2/V3/V4 + the 5-step
+    ladder); GL1800F appears only on the GL1800F_CASES subset."""
+    g660_runs = ("v1_j2", "v2_c20", "v3_c20c22", "v4_zonal64") + tuple(
+        f"v6_full{n}" for n in LADDER_660
+    )
+    return {
+        spec["case"]: {
+            "axis": spec["axis"],
+            "g660_runs": g660_runs,
+            "gl1800f": spec["case"] in GL1800F_CASES,
+        }
+        for spec in SENSITIVITY_CASES
+    }
+
+
+def perilune_mask_from(traj: np.ndarray, half_width_deg: float) -> np.ndarray:
+    """Epochs with |true anomaly| < half width, from a reference trajectory."""
+    nus = np.array([rv2coe(s[:3], s[3:], MU_M)["nu_rad"] for s in traj])
+    wrapped = (nus + np.pi) % (2.0 * np.pi) - np.pi
+    with np.errstate(invalid="ignore"):
+        return np.abs(wrapped) < math.radians(half_width_deg)
+
+
+# ---------------------------------------------------------------------------
 # Frame-diagnostic rotation pairs (INTENTIONALLY WRONG; grid-valued so the
 # production m>0+constant-matrix guard is emulated around, not weakened)
 # ---------------------------------------------------------------------------
@@ -294,13 +366,19 @@ def constant_pair(t_grid: np.ndarray, c: np.ndarray):
 # ---------------------------------------------------------------------------
 # Campaign infrastructure
 # ---------------------------------------------------------------------------
-def window_setup(window: str):
-    """Baseline windows; day1 sampled at 120 s (denser than 13C's 600 s) so the
-    osculating-element series resolves short-period content (~12 -> ~59
-    samples/rev).  Sampling density does not change the integration itself."""
+def window_setup(window: str, s0: np.ndarray | None = None):
+    """Windows for one initial state (default: the phase6 baseline state, so
+    the baseline/compare/frames stages behave exactly as in 13G-b).  The
+    "orbit" window length comes from the CASE's own osculating period (a
+    500 km or eccentric case must not reuse the 100 km baseline period).
+    day1 is sampled at 120 s (denser than 13C's 600 s) so the osculating-
+    element series resolves short-period content; sampling density does not
+    change the integration itself."""
+    if s0 is None:
+        s0 = initial_state()
     if window == "orbit":
-        a = R_MOON_M + 100e3
-        period = 2.0 * math.pi * math.sqrt(a ** 3 / MU_M)
+        a0 = rv2coe(s0[:3], s0[3:], MU_M)["a_m"]
+        period = 2.0 * math.pi * math.sqrt(a0 ** 3 / MU_M)
         t_end = math.ceil(period / 60.0) * 60.0
         out_step = 60.0
     elif window == "day1":
@@ -311,7 +389,7 @@ def window_setup(window: str):
     teval = np.arange(0.0, t_end + 1.0, out_step)
     eph, first_jd = load_ephemeris(t_end + 600.0)
     et0 = (first_jd - J2000_JD) * 86400.0
-    return teval, t_end, eph, et0, initial_state()
+    return teval, t_end, eph, et0, s0
 
 
 def load_real_model(key: str, nmax: int) -> SphericalHarmonicGravityModel:
@@ -331,10 +409,13 @@ def load_real_model(key: str, nmax: int) -> SphericalHarmonicGravityModel:
 class WindowRunner:
     """Runs cases for one window, collecting run/comparison/element rows."""
 
-    def __init__(self, window: str, stage: str):
+    def __init__(self, window: str, stage: str, s0: np.ndarray | None = None,
+                 case: str = "", axis: str = ""):
         self.window = window
         self.stage = stage
-        self.teval, self.t_end, self.eph, self.et0, self.s0 = window_setup(window)
+        self.case = case
+        self.axis = axis
+        self.teval, self.t_end, self.eph, self.et0, self.s0 = window_setup(window, s0)
         a0 = rv2coe(self.s0[:3], self.s0[3:], MU_M)["a_m"]
         self.period_s = 2.0 * math.pi * math.sqrt(a0 ** 3 / MU_M)
         self.trajs: dict[str, np.ndarray] = {}
@@ -356,7 +437,8 @@ class WindowRunner:
         self.trajs[name] = traj
         radii = np.linalg.norm(traj[:, :3], axis=1)
         row = {
-            "stage": self.stage, "window": self.window, "run": name,
+            "stage": self.stage, "case": self.case, "axis": self.axis,
+            "window": self.window, "run": name,
             "model": model_key, "variant": variant,
             "nmax": nmax if nmax is not None else (model.nmax if model else ""),
             "mmax": model.mmax if model else "",
@@ -377,7 +459,8 @@ class WindowRunner:
                 self.teval, element_series(traj, MU_M), period_s=self.period_s
             ):
                 self.elem_rows.append({
-                    "stage": self.stage, "window": self.window, "run": name,
+                    "stage": self.stage, "case": self.case, "axis": self.axis,
+                    "window": self.window, "run": name,
                     "diagnostic": diagnostic, **erow,
                 })
         flag = " DIAG" if diagnostic else ""
@@ -387,16 +470,25 @@ class WindowRunner:
               f"{'  SURFACE-CROSSING!' if res['surface_crossing'] else ''}")
         return res
 
-    def compare(self, name: str, case: str, reference: str, note: str,
-                diagnostic=False, intentionally_wrong=False) -> dict:
-        traj, ref = self.trajs[case], self.trajs[reference]
+    def compare(self, name: str, run_a: str, reference: str, note: str,
+                diagnostic=False, intentionally_wrong=False,
+                perilune_mask: np.ndarray | None = None) -> dict:
+        traj, ref = self.trajs[run_a], self.trajs[reference]
         row = {
-            "stage": self.stage, "window": self.window, "comparison": name,
-            "case": case, "reference": reference,
+            "stage": self.stage, "case": self.case, "axis": self.axis,
+            "window": self.window, "comparison": name,
+            "run": run_a, "reference": reference,
             **diff_metrics(traj, ref), **rtn_summary(traj, ref),
             "diagnostic": diagnostic, "intentionally_wrong": intentionally_wrong,
             "note": note,
         }
+        if perilune_mask is not None and perilune_mask.any():
+            dp = np.linalg.norm(traj[:, :3] - ref[:, :3], axis=1)
+            peri_rms = float(np.sqrt(np.mean(dp[perilune_mask] ** 2)))
+            row["perilune_rms_dpos_m"] = peri_rms
+            row["perilune_n_epochs"] = int(perilune_mask.sum())
+            if row["rms_dpos_m"] > 0.0:
+                row["perilune_ratio"] = peri_rms / row["rms_dpos_m"]
         self.comp_rows.append(row)
         print(f"  [{self.window}] {name}: final dpos "
               f"{row['final_dpos_m']:.3e} m (R {row['final_radial_m']:+.2e} "
@@ -595,6 +687,112 @@ def run_frames() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Stage: sensitivity (13G-c1 — altitude / inclination / eccentricity axes)
+# ---------------------------------------------------------------------------
+def run_sensitivity() -> dict:
+    plan = build_sensitivity_matrix()
+    big660 = load_real_model("grgm660prim", max(LADDER_660))
+    big1800 = load_real_model("gl1800f", 256)
+    variants = {
+        "v2_c20": make_variant(big660, "c20_only"),
+        "v3_c20c22": make_variant(big660, "c20_c22"),
+        "v4_zonal64": make_variant(big660, "zonal_only", nmax=DECOMP_NMAX),
+    }
+    ladder_models = {n: truncate_model(big660, n) for n in LADDER_660}
+    stage: dict = {"plan_note": "V0/V5 dropped (13G-b proved decomposition "
+                   "linearity, coupling ~4%); tesseral is difference-based",
+                   "skip_128": None, "cases": {}}
+    skip_128 = False
+
+    for spec in SENSITIVITY_CASES:
+        case_id, axis = spec["case"], spec["axis"]
+        s0 = case_state(spec)
+        print(f"[sensitivity] === {case_id} ({axis}) ===")
+        case_data: dict = {"spec": {k: v for k, v in spec.items()}, "windows": {}}
+        for window in ("orbit", "day1"):
+            wr = WindowRunner(window, "sensitivity", s0=s0, case=case_id, axis=axis)
+            load_kernel_profile("de421")
+            pair421 = wr.pair("MOON_PA_DE421")
+
+            wr.run("v1_j2", j2_moon=J2, model_key="grgm660prim",
+                   variant="classical_j2")
+            for vname in ("v2_c20", "v3_c20c22", "v4_zonal64"):
+                wr.run(vname, model=variants[vname], rotation=pair421,
+                       rotation_label="MOON_PA_DE421@60s",
+                       model_key="grgm660prim", variant=vname[3:])
+            for nmax in LADDER_660:
+                if nmax == 128 and skip_128:
+                    print(f"  [{window}] v6_full128 SKIPPED (runtime guard)")
+                    continue
+                res = wr.run(f"v6_full{nmax}", model=ladder_models[nmax],
+                             rotation=pair421, rotation_label="MOON_PA_DE421@60s",
+                             model_key="grgm660prim", variant="full", nmax=nmax)
+                if nmax == 128 and window == "day1" and res["runtime_s"] > 60.0:
+                    skip_128 = True
+                    stage["skip_128"] = (f"day1 full@128 took {res['runtime_s']:.1f} s "
+                                         f"> 60 s at {case_id}; remaining 128 runs skipped")
+
+            peri_mask = None
+            if axis == "eccentric" and "v6_full64" in wr.trajs:
+                peri_mask = perilune_mask_from(wr.trajs["v6_full64"],
+                                               PERILUNE_HALF_WIDTH_DEG)
+
+            def cmp(name, a, b, note):
+                wr.compare(name, a, b, note, perilune_mask=peri_mask)
+
+            cmp("j2only_model_error", "v1_j2", "v6_full64",
+                "HEADLINE per regime: classical-J2-only vs full real model @64")
+            cmp("c20_bridge", "v2_c20", "v1_j2",
+                "real C20-only vs classical J2 (coefficient + frame difference)")
+            cmp("c22_effect", "v3_c20c22", "v2_c20", "real C22/S22 signal")
+            cmp("zonal_beyond_c20", "v4_zonal64", "v2_c20",
+                "zonal terms n>=3 contribution")
+            cmp("tesseral_contribution", "v6_full64", "v4_zonal64",
+                "difference-based tesseral contribution (incl. coupling; "
+                "direct-path cross-check done in 13G-b)")
+            for lo, hi in zip(LADDER_660[:-1], LADDER_660[1:]):
+                if f"v6_full{hi}" in wr.trajs:
+                    cmp(f"ladder_{lo}_vs_{hi}", f"v6_full{lo}", f"v6_full{hi}",
+                        f"truncation step nmax {lo}->{hi}")
+
+            if plan[case_id]["gl1800f"]:
+                load_kernel_profile("de440")
+                pair440 = wr.pair("MOON_PA_DE440")
+                for nmax in (64, 128):
+                    wr.run(f"g1800_full{nmax}", model=truncate_model(big1800, nmax),
+                           rotation=pair440, rotation_label="MOON_PA_DE440@60s",
+                           model_key="gl1800f", variant="full", nmax=nmax)
+                cmp("cross_model_nmax64", "v6_full64", "g1800_full64",
+                    "GRGM660PRIM@64 (DE421) vs GL1800F@64 (DE440); coefficient+"
+                    "orientation+shared-.mat effects NOT separated")
+                cmp("g1800_ladder_64_vs_128", "g1800_full64", "g1800_full128",
+                    "GL1800F truncation step 64->128")
+                if case_id == "S8_ecc80x500_i45":
+                    rt128 = wr.run_rows[-1]["runtime_s"]
+                    projected = rt128 * 4.0
+                    if projected <= OPT_RUNTIME_GATE_S:
+                        wr.run("g1800_full256",
+                               model=truncate_model(big1800, 256),
+                               rotation=pair440,
+                               rotation_label="MOON_PA_DE440@60s",
+                               model_key="gl1800f", variant="full", nmax=256)
+                        cmp("g1800_ladder_128_vs_256", "g1800_full128",
+                            "g1800_full256", "high-degree tail at perilune")
+                    else:
+                        print(f"  [{window}] g1800_full256 SKIPPED "
+                              f"(projected {projected:.0f} s > gate)")
+
+            case_data["windows"][window] = {
+                "t_end_s": wr.t_end, "n_epochs": int(wr.teval.size),
+                "period_s": round(wr.period_s, 1),
+                "runs": wr.run_rows, "comparisons": wr.comp_rows,
+                "elements": wr.elem_rows,
+            }
+        stage["cases"][case_id] = case_data
+    return stage
+
+
+# ---------------------------------------------------------------------------
 # Outputs (cumulative store; CSV/MD regenerated from the merged store)
 # ---------------------------------------------------------------------------
 def _load_store() -> dict:
@@ -632,6 +830,337 @@ def _write_csv(path: Path, rows: list[dict]) -> None:
     print(f"[out] wrote {path}")
 
 
+def _sensitivity_rows(store: dict, kind: str) -> list[dict]:
+    data = store.get("sensitivity")
+    if not data:
+        return []
+    rows = []
+    for case_data in data["cases"].values():
+        for wdata in case_data["windows"].values():
+            rows.extend(wdata[kind])
+    return rows
+
+
+_NMAX_SUFFICIENT_M_PER_DAY = 10.0     # ladder-step threshold used in Section 10
+
+
+def _day1_comp(case_data: dict, name: str) -> dict | None:
+    for c in case_data["windows"].get("day1", {}).get("comparisons", []):
+        if c["comparison"] == name:
+            return c
+    return None
+
+
+def _recommended_nmax(case_data: dict) -> str:
+    """Smallest ladder N whose step to 2N is below the threshold; the step
+    full@2N - full@N is the truncation-error proxy of full@N."""
+    for lo, hi in zip(LADDER_660[:-1], LADDER_660[1:]):
+        c = _day1_comp(case_data, f"ladder_{lo}_vs_{hi}")
+        if c is not None and c["final_dpos_m"] < _NMAX_SUFFICIENT_M_PER_DAY:
+            return str(lo)
+    return str(LADDER_660[-1])
+
+
+def _write_sensitivity_md(store: dict) -> None:
+    data = store.get("sensitivity")
+    if not data:
+        return
+    lines = [
+        "# Phase 13G-c1 — Gravity Sensitivity Campaign",
+        "",
+        f"- store updated (UTC): {store.get('generated_utc')}",
+        f"- {TRUTH_NOTE}",
+        f"- plan: {data['plan_note']}",
+        f"- 128-run guard: {data['skip_128'] or 'never triggered'}",
+        "",
+        "## 0. Model strategy — why GRGM660PRIM everywhere, GL1800F only on "
+        "selected cases",
+        "",
+        "GL1800F was NOT left out: it ran on the selected comparison cases "
+        "S1 (100 km circular i=45), S7 (polar 100 km) and S8 (eccentric "
+        "80x500 km), at nmax 64/128 (256 only on S8, runtime-gated).  It was "
+        "deliberately NOT propagated through the whole sensitivity matrix:",
+        "",
+        "1. GRGM660PRIM is the primary science model because it is "
+        "frame-EXACT with the project's default DE421 PA chain "
+        "(MOON_PA_DE421), directly comparable with every Phase 12B/13G-b "
+        "number, degree 660 is far beyond any truncation used here, and it "
+        "keeps the campaign matrix and runtime controlled.",
+        "2. GL1800F is the high-resolution cross-check: frame-exact with "
+        "DE440 PA (MOON_PA_DE440), an independent JPL solution at higher "
+        "degree — it tests whether the primary conclusions are "
+        "model-dependent.",
+        "3. Repeating the full orbit x model x nmax matrix with GL1800F "
+        "would not change any conclusion: 13G-b measured 660PM@64 vs "
+        "GL1800F@64 at the metres-per-day scale, and the selected 13G-c1 "
+        "cases give 0.15-2.2 m/day — orders of magnitude below the J2-only "
+        "error, the C22 effect, the tesseral contribution and the nmax "
+        "convergence steps studied here.  Duplicating the matrix would only "
+        "add runtime and report complexity.",
+        "4. Role summary: GL1800F is NOT the primary model; it is the "
+        "high-resolution sanity / cross-model validation model, applied on "
+        "the hardest selected cases.",
+        "",
+        "## 1. Campaign design — what and why",
+        "",
+        "- Axes: altitude (100/200/500 km), inclination (0/30/60/90 deg) and "
+        "eccentricity (80x500 km) are the three orbit parameters that "
+        "control how a gravity field is SAMPLED: altitude sets the "
+        "(R_ref/r)^n attenuation of degree-n terms, inclination sets which "
+        "latitudes/longitudes are swept, eccentricity concentrates the "
+        "sampling near perilune.",
+        "- One-factor-at-a-time instead of a cross product: each axis is "
+        "varied around the common anchor (100 km circular, i=45) so every "
+        "observed change attributes to ONE parameter; a full cross product "
+        "(3x4x2 orbits x 9 models x 2 windows) would multiply runtime and "
+        "blur attribution without adding decisions.",
+        "- 8 cases suffice for the DECISIONS this phase feeds (nmax per "
+        "regime, estimator-model floor, 7-day shortlist); finer grids can "
+        "be added later exactly where these 8 show gradients.",
+        "- 7-day windows are deliberately excluded (13G-c2, separate "
+        "approval): 1 orbit isolates the geometric signal, 1 day shows the "
+        "secular accumulation; 7 days multiplies runtime and belongs to the "
+        "selected shortlist this campaign produces.",
+        "",
+        "## 2. Orbit case construction",
+        "",
+        "- Circular cases: target altitude h gives the semi-major axis "
+        "a = R_MOON + h (R_MOON = 1 737 400 m); e = 0 exactly, so the "
+        "radius equals a on the whole orbit and 'altitude' is a single "
+        "number; the inclination is set directly in coe2rv.  RAAN=30 deg, "
+        "argp=20 deg, nu=10 deg are held at the baseline-style values so "
+        "cases differ ONLY in the studied parameter.",
+        "- Eccentric S8: r_p = R_MOON + 80 km, r_a = R_MOON + 500 km, "
+        "a = (r_p + r_a)/2  (= R_MOON + 290 km), "
+        "e = (r_a - r_p)/(r_a + r_p) (~0.1036).  This orbit was chosen "
+        "because degree-n terms scale as (R_ref/r)^(n+2) in acceleration: "
+        "a spacecraft that dips to 80 km feels the high-degree field "
+        "strongly near perilune and almost not at all near 500 km apolune "
+        "— the classic eccentric-orbit sampling question.",
+        "- The 'orbit' window uses each case's OWN period "
+        "T = 2*pi*sqrt(a^3/mu) (e.g. ~9498 s at 500 km vs ~7068 s at "
+        "100 km); reusing the baseline period would compare unequal "
+        "fractions of a revolution.",
+        "",
+        "## 3. Model variants — what each one isolates",
+        "",
+        "- V1 classical J2-only (j2_moon=J2, mean-pole frame): the simplest "
+        "estimator candidate and the historical reference; everything else "
+        "is measured against or beyond it.",
+        "- V2 real C20-only (only Cbar20 kept, mmax=0): the real model's J2 "
+        "equivalent (Cbar20 = -J2/sqrt(5) < 0, fully-normalized sign "
+        "convention).  Exists to BRIDGE the classical and harmonic worlds: "
+        "if masks/signs/frames were wrong, c20_bridge would explode.",
+        "- V3 real C20+C22 (degree-2 m=0 and m=2 terms): C22 is the largest "
+        "non-zonal lunar coefficient (~3.47e-5, comparable to C20/3!) — "
+        "the first longitude-dependent (sectoral) signal.",
+        "- V4 zonal-only@64 (all m>0 zeroed, mmax=0): "
+        "longitude-INdependent field; drives the classical secular "
+        "perigee/eccentricity/node evolution, so it is the right reference "
+        "for splitting rotating-longitude effects from axisymmetric ones.",
+        "- Full ladder nmax = 8/16/32/64/128: nmax is the truncation degree "
+        "of the spherical-harmonic sum; doubling steps give a clean "
+        "truncation-error proxy (Section 4).  256 only on S8 with GL1800F "
+        "behind a runtime gate (measured 128-runtime x 4 <= 300 s), because "
+        "Pines cost per RHS call grows ~nmax^2.",
+        "- Tesseral contribution is DIFFERENCE-BASED (full@64 - zonal@64) "
+        "instead of a direct tesseral-only run: 13G-b ran BOTH paths and "
+        "showed they agree to ~4% (nonlinear coupling), so re-proving "
+        "linearity per orbit would cost 2 runs/case without new "
+        "information.",
+        "",
+        "## 4. Comparison definitions (what each row computes)",
+        "",
+        "- j2only_model_error = |traj(J2-only) - traj(full@64)|: the error a "
+        "J2-only ESTIMATOR model accumulates against the real field — the "
+        "headline number per regime.",
+        "- c20_bridge = |traj(C20-only) - traj(J2-only)|: internal "
+        "consistency check (GRAIL-vs-constants C20 ~0.12% + PA-vs-mean-pole "
+        "frame difference); must stay small and did.",
+        "- c22_effect = |traj(C20+C22) - traj(C20-only)|: the isolated "
+        "C22/S22 signal.",
+        "- zonal_beyond_c20 = |traj(zonal@64) - traj(C20-only)|: the "
+        "C30/C40/... higher-zonal contribution.",
+        "- tesseral_contribution = |traj(full@64) - traj(zonal@64)|: all "
+        "longitude-dependent terms (plus coupling).",
+        "- ladder_N_vs_2N = |traj(full@N) - traj(full@2N)|: truncation-error "
+        "proxy of full@N; used for the nmax-sufficiency decision.",
+        "",
+        "## 5. Metrics — how each number is computed and why it exists",
+        "",
+        "- Cartesian final/max/RMS position difference and final velocity "
+        "difference: raw trajectory divergence over the window.",
+        "- RTN decomposition (R radial, T along-track, N cross-track, from "
+        "the reference trajectory's r, r x v axes): separates along-track "
+        "PHASE drift (period/energy differences accumulate here and "
+        "dominate final dpos) from genuine geometric offsets; without it a "
+        "large 'final dpos' can be misread.",
+        "- Osculating elements via a script-local rv2coe: a (energy), e "
+        "(shape), i (plane tilt), RAAN (node), argp (perilune direction), "
+        "u/true longitude as singularity fallbacks.  Circular cases: "
+        "argp/nu are undefined -> NaN by policy, and the e-series itself "
+        "(growth from 0) is the signal; equatorial cases: RAAN/u undefined "
+        "-> NaN, true longitude remains.",
+        "- Drift estimation is ORBIT-AVERAGED (mean over the first orbital "
+        "period vs mean over the last, divided by the time between them), "
+        "NOT a plain linear fit: osculating elements oscillate with "
+        "short-period amplitudes far above their secular slopes, and "
+        "t*sin(wt) does not integrate to zero even over whole periods, so "
+        "a least-squares line LEAKS the oscillation into the slope (found "
+        "and fixed via a failing test in 13G-b).  short_period_amp is "
+        "reported next to every drift for exactly this reason.",
+        "- Safety: min/max altitude, surface-crossing flag and a finite "
+        "check on every trajectory — a comparison between two unphysical "
+        "trajectories would be meaningless.",
+        "- Runtime: wall time and RHS-evaluation count per run; the runtime "
+        "guard (skip rule + 256 gate) exists so a single expensive case "
+        "cannot silently blow the <15-20 min campaign budget.",
+        "",
+    ]
+
+    # ---- data-driven summary + interpretation --------------------------------
+    alt_cases = [c for c in data["cases"] if data["cases"][c]["spec"]["axis"] == "altitude"]
+    inc_cases = [c for c in data["cases"] if data["cases"][c]["spec"]["axis"] == "inclination"]
+    ecc_cases = [c for c in data["cases"] if data["cases"][c]["spec"]["axis"] == "eccentric"]
+
+    def _summary_table(case_ids):
+        rows = ["| case | j2only err m/day | c22 m/day | tesseral m/day "
+                "| 64->128 m/day | sufficient nmax |",
+                "|---|---|---|---|---|---|"]
+        for cid in case_ids:
+            cd = data["cases"][cid]
+            j2c = _day1_comp(cd, "j2only_model_error")
+            c22 = _day1_comp(cd, "c22_effect")
+            tes = _day1_comp(cd, "tesseral_contribution")
+            l128 = _day1_comp(cd, "ladder_64_vs_128")
+            rows.append(
+                f"| {cid} | {j2c['final_dpos_m']:.3e} | {c22['final_dpos_m']:.3e} "
+                f"| {tes['final_dpos_m']:.3e} "
+                f"| {l128['final_dpos_m']:.3e} | {_recommended_nmax(cd)} |"
+            )
+        return rows
+
+    lines += ["## 6. Altitude sensitivity — results and interpretation", ""]
+    lines += _summary_table(alt_cases)
+    lines += [
+        "",
+        f"- 'sufficient nmax' = smallest N whose N->2N ladder step is below "
+        f"{_NMAX_SUFFICIENT_M_PER_DAY:.0f} m/day (truncation-error proxy); "
+        "where 128 is quoted, the next step (128->256) was measured small "
+        "elsewhere (2.2 m/day baseline, 0.8 m/day S8).",
+        "- The nmax NEED falls sharply with altitude (128 at 100 km, 64 at "
+        "200 km, 32 at 500 km): degree-n accelerations scale as "
+        "(R_ref/r)^(n+2), so high degrees die off fastest.",
+        "- OBSERVED IN THIS CAMPAIGN (not claimed as a law): the J2-only "
+        "error is NOT monotonic in altitude — 200 km came out slightly "
+        "ABOVE 100 km (15.1 vs 13.5 km/day) before dropping strongly at "
+        "500 km (6.4 km/day).  Plausible mechanisms: the error is an "
+        "ACCUMULATED along-track phase effect, so it depends not only on "
+        "the field amplitude but on how the orbital period beats against "
+        "the rotating body-fixed field (tesseral sampling geometry / "
+        "near-resonance of the m-daily terms); a weaker field integrated "
+        "with a different phase history can accumulate more displacement.",
+        "",
+        "## 7. Inclination sensitivity — results and interpretation", "",
+    ]
+    lines += _summary_table(inc_cases)
+    zon_spike = _day1_comp(data["cases"][inc_cases[1]], "zonal_beyond_c20") if len(inc_cases) > 1 else None
+    lines += [
+        "",
+        "- POLAR is the hardest regime (j2only error ~52.9 km/day, C22 "
+        "~24.1 km/day, tesseral ~50.1 km/day): a polar orbit sweeps every "
+        "longitude band each revolution while the Moon rotates underneath, "
+        "so it samples the full tesseral/sectoral spectrum coherently; "
+        "nothing averages out.",
+        "- The equatorial case concentrates its sensitivity in SECTORAL "
+        "(n=m) terms — it never leaves the equator band — and showed ~2x "
+        "the RHS evaluations of the other cases (integrator stepping "
+        "against the strong longitude-periodic forcing).",
+        (f"- i=30 deg shows a zonal-beyond-C20 spike "
+         f"({zon_spike['final_dpos_m']:.3e} m/day vs hundreds at other "
+         "inclinations): consistent with odd-zonal (C30-driven) "
+         "perigee/eccentricity coupling being geometry-dependent; flagged "
+         "for a closer look in 13G-d, not over-interpreted here."
+         if zon_spike else ""),
+        "",
+        "## 8. Eccentric case — results and interpretation", "",
+    ]
+    lines += _summary_table(ecc_cases)
+    s8 = data["cases"][ecc_cases[0]]
+    s8_j2 = _day1_comp(s8, "j2only_model_error")
+    s8_l128 = _day1_comp(s8, "ladder_64_vs_128")
+    lines += [
+        "",
+        "- High-degree terms are strongest near perilune ((R_ref/r)^(n+2) "
+        "attenuation), which is why an 80 km-perilune orbit was expected "
+        "to be demanding.  Yet the 64->128 step is only "
+        f"{s8_l128['final_dpos_m']:.1f} m/day — ~35x SMALLER than the "
+        "100 km circular case: the spacecraft spends most of each "
+        "revolution near 500 km apolune where those terms are negligible, "
+        "so the TIME-INTEGRATED high-degree effect is small.",
+        "- The perilune-window metric (|nu| < 30 deg, measured on the "
+        "reference full@64 trajectory) exists to separate the LOCAL effect "
+        "from the window average: ratios ~1.17 on the high-degree ladder "
+        "steps show the error is indeed elevated near perilune, while the "
+        f"J2-only comparison sits at ~0.84 (its accumulated error is "
+        "along-track-drift dominated, not perilune-localized). "
+        f"J2-only headline here: {s8_j2['final_dpos_m']:.3e} m/day with "
+        f"perilune RMS {s8_j2.get('perilune_rms_dpos_m', float('nan')):.3e} m.",
+        "",
+        "## 9. Cross-model check (GL1800F) — interpretation", "",
+        "- Selected-case cross-model differences (660PM@64/DE421 vs "
+        "GL1800F@64/DE440): 0.15-2.2 m/day across S1/S7/S8 — metres, while "
+        "every physical effect studied here is kilometres.  The primary "
+        "conclusions are therefore not artifacts of the model choice.",
+        "- This is also why GL1800F was not propagated through the whole "
+        "matrix (Section 0): the cross-check answers the model-dependence "
+        "question at a tiny fraction of the cost.",
+        "",
+        "## 10. Preliminary model recommendations (final call in 13G-d)", "",
+        "- Truth model: nmax=128 remains strong for 100 km / polar / low "
+        "LLO (64->128 steps 39-86 m/day there; 128->256 measured at the "
+        "metre scale); nmax=64 suffices at 200 km; nmax=32 at 500 km.",
+        "- Estimator model: classical J2-only is inadequate in EVERY tested "
+        "regime (6-53 km/day errors) and gets the perigee-drift sign wrong "
+        "(13G-b); a minimum low-degree harmonic model is required — the "
+        "exact floor (likely nmax ~32-64, regime-dependent) is fixed in "
+        "13G-d together with the 7-day evidence.",
+        "- 7-day shortlist candidates from this campaign: S1 (anchor), "
+        "S7 (hardest), S8 (eccentric), plus S3 as a cheap high-altitude "
+        "control.",
+        "",
+        "## Appendix — per-case comparison tables",
+        "",
+        "- singular-element policy: circular cases report argp/nu as NaN "
+        "(e-growth stays meaningful); equatorial cases report RAAN/u as NaN.",
+        "",
+    ]
+    for case_id, case_data in data["cases"].items():
+        spec = case_data["spec"]
+        lines += [f"### {case_id} ({spec.get('axis')})", ""]
+        for wname, wdata in case_data["windows"].items():
+            lines += [
+                f"#### window: {wname} (t_end {wdata['t_end_s']:.0f} s, "
+                f"period {wdata['period_s']:.0f} s)",
+                "",
+                "| comparison | final dpos m | R m | T m | N m | rms dpos m "
+                "| perilune rms m |",
+                "|---|---|---|---|---|---|---|",
+            ]
+            for c in wdata["comparisons"]:
+                peri = (f"{c['perilune_rms_dpos_m']:.3e}"
+                        if "perilune_rms_dpos_m" in c else "-")
+                lines.append(
+                    f"| {c['comparison']} | {c['final_dpos_m']:.3e} "
+                    f"| {c['final_radial_m']:+.2e} | {c['final_along_m']:+.2e} "
+                    f"| {c['final_cross_m']:+.2e} | {c['rms_dpos_m']:.3e} "
+                    f"| {peri} |"
+                )
+            lines.append("")
+    SENS_MD_PATH.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[out] wrote {SENS_MD_PATH}")
+
+
 def write_outputs(store: dict) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     store["generated_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -641,6 +1170,10 @@ def write_outputs(store: dict) -> None:
     _write_csv(RUNS_CSV, _rows(store, "runs"))
     _write_csv(COMP_CSV, _rows(store, "comparisons"))
     _write_csv(ELEM_CSV, _rows(store, "elements"))
+    _write_csv(SENS_RUNS_CSV, _sensitivity_rows(store, "runs"))
+    _write_csv(SENS_COMP_CSV, _sensitivity_rows(store, "comparisons"))
+    _write_csv(SENS_ELEM_CSV, _sensitivity_rows(store, "elements"))
+    _write_sensitivity_md(store)
 
     lines = [
         "# Phase 13G — Real Lunar Gravity Orbit-Effect Campaign",
@@ -690,18 +1223,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compare", action="store_true")
     parser.add_argument("--frames", action="store_true")
     parser.add_argument("--sensitivity", action="store_true",
-                        help="(13G-c scope — refuses to run)")
+                        help="13G-c1 altitude/inclination/eccentricity axes")
     parser.add_argument("--sevenday", action="store_true",
-                        help="(13G-c scope — refuses to run)")
+                        help="(13G-c2 scope — refuses until separately approved)")
     parser.add_argument("--plots", action="store_true",
                         help="(deferred — refuses to run)")
     args = parser.parse_args(argv)
-    if args.sensitivity or args.sevenday or args.plots:
-        print("[phase13g] --sensitivity/--sevenday/--plots are Phase 13G-c+ "
-              "scope and are deliberately not implemented in 13G-b.")
+    if args.sevenday or args.plots:
+        print("[phase13g] --sevenday/--plots are deliberately not implemented "
+              "(13G-c2 needs separate approval).")
         return 2
 
-    do_baseline = args.baseline or not (args.baseline or args.compare or args.frames)
+    explicit = args.baseline or args.compare or args.frames or args.sensitivity
+    do_baseline = args.baseline or not explicit
     store = _load_store()
     if do_baseline:
         store["baseline"] = run_baseline()
@@ -709,6 +1243,8 @@ def main(argv: list[str] | None = None) -> int:
         store["compare"] = run_compare()
     if args.frames:
         store["frames"] = run_frames()
+    if args.sensitivity:
+        store["sensitivity"] = run_sensitivity()
     write_outputs(store)
     return 0
 

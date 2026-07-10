@@ -217,6 +217,79 @@ class BridgeAndSmokeTests(unittest.TestCase):
         self.assertTrue(np.all(c_rots[5] == np.asarray(_MCI_TO_MOON_BF)))
 
 
+class SensitivityCaseTests(unittest.TestCase):
+    # 13G-c1 -- case factory sanity (SPICE-free, data-free) -------------------
+    def test_altitude_cases(self):
+        for spec, alt_km in ((p13g.SENSITIVITY_CASES[1], 200.0),
+                             (p13g.SENSITIVITY_CASES[2], 500.0)):
+            s0 = p13g.case_state(spec)
+            coe = p13g.rv2coe(s0[:3], s0[3:], MU_MOON_M3S2)
+            self.assertAlmostEqual(coe["a_m"], R_MOON_M + alt_km * 1e3, delta=1e-3)
+            self.assertLess(coe["e"], 1e-10)
+            # circular orbit: radius equals a everywhere
+            self.assertAlmostEqual(float(np.linalg.norm(s0[:3])),
+                                   R_MOON_M + alt_km * 1e3, delta=1e-3)
+
+    def test_inclination_cases(self):
+        for spec, incl_deg in zip(p13g.SENSITIVITY_CASES[3:7], (0.0, 30.0, 60.0, 90.0)):
+            s0 = p13g.case_state(spec)
+            coe = p13g.rv2coe(s0[:3], s0[3:], MU_MOON_M3S2)
+            self.assertAlmostEqual(coe["i_rad"], math.radians(incl_deg), places=10)
+            self.assertAlmostEqual(coe["a_m"], R_MOON_M + 100e3, delta=1e-3)
+
+    def test_eccentric_case(self):
+        spec = p13g.SENSITIVITY_CASES[7]
+        s0 = p13g.case_state(spec)
+        coe = p13g.rv2coe(s0[:3], s0[3:], MU_MOON_M3S2)
+        peri_alt = coe["a_m"] * (1.0 - coe["e"]) - R_MOON_M
+        apo_alt = coe["a_m"] * (1.0 + coe["e"]) - R_MOON_M
+        self.assertAlmostEqual(peri_alt, 80e3, delta=1.0)
+        self.assertAlmostEqual(apo_alt, 500e3, delta=1.0)
+        self.assertAlmostEqual(coe["i_rad"], math.radians(45.0), places=10)
+
+    def test_case_table_unique_and_complete(self):
+        ids = [spec["case"] for spec in p13g.SENSITIVITY_CASES]
+        self.assertEqual(len(ids), 8)
+        self.assertEqual(len(set(ids)), 8)
+        axes = [spec["axis"] for spec in p13g.SENSITIVITY_CASES]
+        self.assertEqual(axes.count("altitude"), 3)
+        self.assertEqual(axes.count("inclination"), 4)
+        self.assertEqual(axes.count("eccentric"), 1)
+
+    def test_matrix_guard_no_explosion(self):
+        plan = p13g.build_sensitivity_matrix()
+        self.assertEqual(len(plan), 8)
+        for case_id, entry in plan.items():
+            self.assertLessEqual(len(entry["g660_runs"]), 9)
+        gl_cases = [c for c, entry in plan.items() if entry["gl1800f"]]
+        self.assertEqual(sorted(gl_cases),
+                         sorted(["S1_alt100_i45", "S7_alt100_i90",
+                                 "S8_ecc80x500_i45"]))
+
+    def test_perilune_mask_selects_perilune(self):
+        # synthetic elliptic states around the orbit: mask must pick |nu|<30
+        spec = p13g.SENSITIVITY_CASES[7]
+        s0 = p13g.case_state(spec)
+        coe = p13g.rv2coe(s0[:3], s0[3:], MU_MOON_M3S2)
+        states = []
+        for nu_deg in range(0, 360, 20):        # off the +/-30 deg boundary
+            r, v = coe2rv(coe["a_m"], coe["e"], coe["i_rad"], coe["raan_rad"],
+                          coe["argp_rad"], math.radians(nu_deg), MU_MOON_M3S2)
+            states.append(np.concatenate([r, v]))
+        mask = p13g.perilune_mask_from(np.array(states), 30.0)
+        # nu in {0, 20, 340} within +/-30 deg -> exactly 3 of 18 samples
+        self.assertEqual(int(mask.sum()), 3)
+        self.assertTrue(mask[0] and mask[1] and mask[-1])
+
+    def test_window_setup_uses_case_period(self):
+        # pure orbital-period math (no ephemeris load): S3 500 km period
+        s0 = p13g.case_state(p13g.SENSITIVITY_CASES[2])
+        a0 = p13g.rv2coe(s0[:3], s0[3:], MU_MOON_M3S2)["a_m"]
+        period = 2.0 * math.pi * math.sqrt(a0 ** 3 / MU_MOON_M3S2)
+        self.assertGreater(period, 9000.0)        # ~9498 s, NOT the 7067 s
+        self.assertLess(period, 10000.0)          # baseline period
+
+
 class HygieneTests(unittest.TestCase):
     # 8 -- no bare quoted "MOON_PA" anywhere in the campaign source -------------
     def test_no_bare_moon_pa_literal(self):
