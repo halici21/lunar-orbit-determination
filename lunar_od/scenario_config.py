@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from .filters import UKFAdaptiveConfig, UnscentedTransformConfig
+from .gravity_harmonics import SphericalHarmonicGravityModel
+from .gravity_model_loader import load_lunar_gravity_model, resolve_gravity_dir
 from .radiometrics import RangeRatePhysicsConfig
 from .scenarios import EstimatorType, MeasurementType, StartMode
 from .thesis_matrix import (
@@ -27,6 +29,12 @@ ALLOWED_NETWORKS = tuple(network.name for network in THESIS_NETWORKS)
 ALLOWED_BIAS_MODES = (None, "global", "station_angles", "station_full")
 ALLOWED_RANGE_RATE_PHYSICS = ("geometric_instantaneous", "two_way_counted_doppler")
 ALLOWED_EARTH_J2_MODES = ("indirect", "direct")
+# Bare "MOON_PA" is deliberately NOT allowed: the DE421 and DE440 frame
+# kernels both define the FRAME_MOON_PA alias, so a bare name silently follows
+# whichever kernel pool was furnished last.  Explicit versioned names only.
+ALLOWED_LUNAR_GRAVITY_FRAMES = ("MOON_PA_DE421", "MOON_PA_DE440")
+ALLOWED_LUNAR_KERNEL_PROFILES = (None, "DE421", "DE440")
+_LUNAR_FRAME_TO_PROFILE = {"MOON_PA_DE421": "DE421", "MOON_PA_DE440": "DE440"}
 
 
 @dataclass(frozen=True)
@@ -87,6 +95,14 @@ class ScenarioConfig:
     ukf_bias_regularize_relative_information: float = 1e-5
     ukf_bias_regularization_std: float = 1.0
     output_dir: str = "python_port/results"
+    enable_lunar_harmonics: bool = False
+    lunar_gravity_model_path: str | None = None
+    lunar_gravity_nmax: int | None = None
+    lunar_gravity_mmax: int | None = None
+    lunar_gravity_frame: str = "MOON_PA_DE421"
+    lunar_gravity_rotation_cadence_s: float = 60.0
+    lunar_gravity_rotation_margin_s: float | None = None
+    lunar_gravity_kernel_profile: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -156,6 +172,20 @@ def scenario_config_schema() -> dict[str, Any]:
             "ukf_bias_regularize_relative_information": {"type": "number", "default": 1e-5},
             "ukf_bias_regularization_std": {"type": "number", "default": 1.0},
             "output_dir": {"type": "string", "default": "python_port/results"},
+            "enable_lunar_harmonics": {"type": "boolean", "default": False},
+            "lunar_gravity_model_path": {"type": ["string", "null"], "default": None},
+            "lunar_gravity_nmax": {"type": ["integer", "null"], "default": None},
+            "lunar_gravity_mmax": {"type": ["integer", "null"], "default": None},
+            "lunar_gravity_frame": {
+                "enum": list(ALLOWED_LUNAR_GRAVITY_FRAMES),
+                "default": "MOON_PA_DE421",
+            },
+            "lunar_gravity_rotation_cadence_s": {"type": "number", "default": 60.0},
+            "lunar_gravity_rotation_margin_s": {"type": ["number", "null"], "default": None},
+            "lunar_gravity_kernel_profile": {
+                "enum": list(ALLOWED_LUNAR_KERNEL_PROFILES),
+                "default": None,
+            },
         },
     }
 
@@ -333,6 +363,40 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             "ukf_bias_regularization_std",
         ),
         output_dir=_as_nonempty_string(payload.get("output_dir", "python_port/results"), "output_dir"),
+        enable_lunar_harmonics=_boolean(
+            payload.get("enable_lunar_harmonics", False),
+            "enable_lunar_harmonics",
+        ),
+        lunar_gravity_model_path=_optional_nonempty_string(
+            payload.get("lunar_gravity_model_path", None),
+            "lunar_gravity_model_path",
+        ),
+        lunar_gravity_nmax=_optional_bounded_int(
+            payload.get("lunar_gravity_nmax", None),
+            "lunar_gravity_nmax",
+            minimum=2,
+        ),
+        lunar_gravity_mmax=_optional_bounded_int(
+            payload.get("lunar_gravity_mmax", None),
+            "lunar_gravity_mmax",
+            minimum=0,
+        ),
+        lunar_gravity_frame=_enum_value(
+            payload.get("lunar_gravity_frame", "MOON_PA_DE421"),
+            ALLOWED_LUNAR_GRAVITY_FRAMES,
+            "lunar_gravity_frame",
+        ),
+        lunar_gravity_rotation_cadence_s=_positive_float(
+            payload.get("lunar_gravity_rotation_cadence_s", 60.0),
+            "lunar_gravity_rotation_cadence_s",
+        ),
+        lunar_gravity_rotation_margin_s=_optional_positive_float(
+            payload.get("lunar_gravity_rotation_margin_s", None),
+            "lunar_gravity_rotation_margin_s",
+        ),
+        lunar_gravity_kernel_profile=_lunar_kernel_profile(
+            payload.get("lunar_gravity_kernel_profile", None)
+        ),
     )
     _validate_cross_field_rules(config)
     return config
@@ -402,6 +466,57 @@ def scenario_range_rate_physics_config(config: ScenarioConfig) -> RangeRatePhysi
     )
 
 
+def scenario_lunar_kernel_profile(config: ScenarioConfig) -> str:
+    """Effective SPICE kernel profile: explicit value, or derived from the frame."""
+    if config.lunar_gravity_kernel_profile is not None:
+        return config.lunar_gravity_kernel_profile
+    return _LUNAR_FRAME_TO_PROFILE[config.lunar_gravity_frame]
+
+
+def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGravityModel | None:
+    """Load the configured lunar gravity model once, at setup time.
+
+    Returns ``None`` (touching no file) when ``enable_lunar_harmonics`` is
+    False.  Otherwise the model path is mandatory (no automatic model
+    selection): an absolute path is used as-is; a relative path is resolved
+    against ``resolve_gravity_dir()`` (env ``LUNAR_OD_GRAVITY_DIR`` ->
+    ``~/Documents/mice/gravity`` -> ``<python_port>/data/gravity``).  The
+    production loader is called exactly once; nothing here runs per-RHS.
+    """
+    if not config.enable_lunar_harmonics:
+        return None
+    if config.lunar_gravity_model_path is None:
+        raise ValueError(
+            "enable_lunar_harmonics=True requires lunar_gravity_model_path "
+            "(no automatic model selection)."
+        )
+    if config.lunar_gravity_nmax is None:
+        raise ValueError(
+            "enable_lunar_harmonics=True requires an explicit lunar_gravity_nmax truncation."
+        )
+    path = Path(config.lunar_gravity_model_path)
+    if not path.is_absolute():
+        path = resolve_gravity_dir() / path
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"lunar gravity model file not found: {path} "
+            f"(from lunar_gravity_model_path={config.lunar_gravity_model_path!r})."
+        )
+    model = load_lunar_gravity_model(
+        path,
+        nmax=config.lunar_gravity_nmax,
+        mmax=config.lunar_gravity_mmax,
+    )
+    # Mirror of the propagation-time double-count guard for callers that
+    # construct ScenarioConfig directly (bypassing scenario_config_from_mapping).
+    if float(model.cbar[2, 0]) != 0.0 and config.j2_moon != 0.0:
+        raise ValueError(
+            "lunar harmonics model includes a nonzero C20 (J2) term; combining it "
+            "with j2_moon != 0 would count J2 twice. Set j2_moon=0."
+        )
+    return model
+
+
 def _validate_cross_field_rules(config: ScenarioConfig) -> None:
     if config.start_mode == "sqrt_formal" and config.estimator_type != "srif":
         raise ValueError("sqrt_formal start_mode requires estimator_type='srif'.")
@@ -444,6 +559,50 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
     ):
         raise ValueError(
             "ukf_acceleration_psd_m2_s3 requires ukf_process_noise_model='continuous_white_acceleration'."
+        )
+    # Lunar harmonics rules run ONLY when enabled: with harmonics off the
+    # legacy parse path must stay byte-identical and touch no file system.
+    if config.enable_lunar_harmonics:
+        if config.lunar_gravity_model_path is None:
+            raise ValueError(
+                "enable_lunar_harmonics=True requires lunar_gravity_model_path "
+                "(no automatic model selection)."
+            )
+        if config.lunar_gravity_nmax is None:
+            raise ValueError(
+                "enable_lunar_harmonics=True requires an explicit lunar_gravity_nmax truncation."
+            )
+        if (
+            config.lunar_gravity_mmax is not None
+            and config.lunar_gravity_mmax > config.lunar_gravity_nmax
+        ):
+            raise ValueError("lunar_gravity_mmax must satisfy 0 <= mmax <= nmax.")
+        expected_profile = _LUNAR_FRAME_TO_PROFILE[config.lunar_gravity_frame]
+        if (
+            config.lunar_gravity_kernel_profile is not None
+            and config.lunar_gravity_kernel_profile != expected_profile
+        ):
+            raise ValueError(
+                f"lunar_gravity_frame {config.lunar_gravity_frame!r} requires "
+                f"lunar_gravity_kernel_profile {expected_profile!r} (or None to derive it); "
+                f"got {config.lunar_gravity_kernel_profile!r}."
+            )
+        if config.j2_moon != 0.0:
+            raise ValueError(
+                "enable_lunar_harmonics=True with j2_moon != 0 would count lunar J2 "
+                "twice; set j2_moon=0 (the model's C20 term already contains it)."
+            )
+        if config.estimator_type in ("bls_lm", "srif"):
+            raise ValueError(
+                "lunar harmonics gradient not implemented; STM-based estimators "
+                "cannot use harmonics — use estimator_type='ukf' or disable lunar harmonics."
+            )
+        # TEMPORARY Phase 13B2a guard (removed in Phase 13B2b): the scenario
+        # runner does not consume these fields yet; accepting the config would
+        # silently propagate WITHOUT harmonics, which is worse than refusing.
+        raise ValueError(
+            "enable_lunar_harmonics is not yet consumed by the scenario runner "
+            "(Phase 13B2b); use the direct propagate_state API"
         )
 
 
@@ -506,6 +665,35 @@ def _optional_positive_float(value: Any, field_name: str) -> float | None:
     if value is None or value == "":
         return None
     return _positive_float(value, field_name)
+
+
+def _optional_nonempty_string(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _as_nonempty_string(value, field_name)
+
+
+def _optional_bounded_int(value: Any, field_name: str, *, minimum: int) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    try:
+        result = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be an integer.") from exc
+    if result < minimum:
+        raise ValueError(f"{field_name} must be >= {minimum}.")
+    return result
+
+
+def _lunar_kernel_profile(value: Any) -> str | None:
+    if value not in ALLOWED_LUNAR_KERNEL_PROFILES:
+        raise ValueError(
+            f"lunar_gravity_kernel_profile must be one of "
+            f"{ALLOWED_LUNAR_KERNEL_PROFILES}; got {value!r}."
+        )
+    return value
 
 
 def _unit_interval_float(value: Any, field_name: str) -> float:
