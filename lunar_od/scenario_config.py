@@ -22,7 +22,11 @@ from .thesis_matrix import (
     THESIS_SAMPLE_STEP_S,
 )
 
-ALLOWED_MEASUREMENT_TYPES = ("position", "range_rate")
+ALLOWED_MEASUREMENT_TYPES = ("position", "range_rate", "two_way_range")
+ALLOWED_TWO_WAY_RANGE_CONVENTIONS = (
+    "raw_half_round_trip",
+    "delay_calibrated_half_round_trip",
+)
 ALLOWED_ESTIMATOR_TYPES = ("bls_lm", "srif", "ukf")
 ALLOWED_START_MODES = ("cold", "hot", "formal", "sqrt_formal")
 ALLOWED_NETWORKS = tuple(network.name for network in THESIS_NETWORKS)
@@ -77,7 +81,11 @@ class ScenarioConfig:
     station_clock_offset_s: float = 0.0
     station_clock_drift: float = 0.0
     clock_reference_time_s: float = 0.0
+    # transponder_delay_s is shared by two measurement types: it enters the
+    # counted-Doppler RangeRatePhysicsConfig (measurement_type='range_rate')
+    # and the M3 TwoWayRangeConfig (measurement_type='two_way_range').
     transponder_delay_s: float = 0.0
+    two_way_range_convention: str = "delay_calibrated_half_round_trip"
     apply_light_time: bool = False
     apply_stellar_aberration: bool = False
     stellar_aberration_model: str = "local_mci"
@@ -155,6 +163,10 @@ def scenario_config_schema() -> dict[str, Any]:
             "station_clock_drift": {"type": "number", "default": 0.0},
             "clock_reference_time_s": {"type": "number", "default": 0.0},
             "transponder_delay_s": {"type": "number", "default": 0.0},
+            "two_way_range_convention": {
+                "enum": list(ALLOWED_TWO_WAY_RANGE_CONVENTIONS),
+                "default": "delay_calibrated_half_round_trip",
+            },
             "apply_light_time": {"type": "boolean", "default": False},
             "apply_stellar_aberration": {"type": "boolean", "default": False},
             "stellar_aberration_model": {"enum": ["local_mci", "spice_ssb"], "default": "local_mci"},
@@ -284,6 +296,11 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         transponder_delay_s=_nonnegative_float(
             payload.get("transponder_delay_s", 0.0),
             "transponder_delay_s",
+        ),
+        two_way_range_convention=_enum_value(
+            payload.get("two_way_range_convention", "delay_calibrated_half_round_trip"),
+            ALLOWED_TWO_WAY_RANGE_CONVENTIONS,
+            "two_way_range_convention",
         ),
         apply_light_time=_boolean(payload.get("apply_light_time", False), "apply_light_time"),
         apply_stellar_aberration=_boolean(
@@ -519,6 +536,21 @@ def scenario_range_rate_physics_config(config: ScenarioConfig) -> RangeRatePhysi
     )
 
 
+def scenario_two_way_range_config(config: ScenarioConfig) -> "TwoWayRangeConfig":
+    """Build the normalized M3 two-way range model for a scenario.
+
+    The shared ``transponder_delay_s`` scenario field feeds this config for
+    measurement_type='two_way_range' (and the counted-Doppler config for
+    measurement_type='range_rate').
+    """
+    from .two_way_range import TwoWayRangeConfig
+
+    return TwoWayRangeConfig(
+        transponder_delay_s=config.transponder_delay_s,
+        convention=config.two_way_range_convention,
+    )
+
+
 def scenario_lunar_kernel_profile(config: ScenarioConfig) -> str:
     """Effective SPICE kernel profile: explicit value, or derived from the frame."""
     if config.lunar_gravity_kernel_profile is not None:
@@ -577,6 +609,22 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError("bias solve-for modes are supported here only for estimator_type='srif' or 'ukf'.")
     if config.range_rate_physics != "geometric_instantaneous" and config.measurement_type != "range_rate":
         raise ValueError("non-geometric range_rate_physics requires measurement_type='range_rate'.")
+    if config.measurement_type == "two_way_range":
+        if config.estimator_type == "ukf":
+            raise ValueError(
+                "measurement_type='two_way_range' is not supported by the UKF in M3; "
+                "use estimator_type='bls_lm' or 'srif'."
+            )
+        if config.bias_mode is not None:
+            raise ValueError(
+                "measurement_type='two_way_range' does not support bias solve-for "
+                "modes in M3."
+            )
+        scenario_two_way_range_config(config)
+    elif config.two_way_range_convention != "delay_calibrated_half_round_trip":
+        raise ValueError(
+            "two_way_range_convention applies only to measurement_type='two_way_range'."
+        )
     profile_controls_position = config.measurement_model_profile != "geometric_instantaneous"
     if profile_controls_position and config.measurement_type != "position":
         raise ValueError(

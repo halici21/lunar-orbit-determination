@@ -760,6 +760,11 @@ def run_lunar_ukf(
     """
     start_time = perf_counter()
     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
+    if measurement_type == "two_way_range":
+        raise ValueError(
+            "measurement_type='two_way_range' is not supported by the UKF in M3; "
+            "use the BLS-LM or SRIF two-way range estimators."
+        )
     if measurement_type not in {"position", "range_rate"}:
         raise ValueError("measurement_type must be 'position' or 'range_rate'.")
     adaptive = adaptive_config or UKFAdaptiveConfig()

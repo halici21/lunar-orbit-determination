@@ -252,6 +252,17 @@ report. Production interpolation behavior is intentionally unchanged; if
 the measured observable-level effect matters for a future campaign, fix it
 in a separate phase.
 
+**M3 two-way range exception (2026-07-11):** the converged two-way range
+observable (`lunar_od/two_way_range.py`, `docs/two_way_range.md`) does NOT
+inherit this interpolation. Its production policy is exact event-epoch
+`spice.sxform` at the station uplink (`t1`) and downlink (`t3`) events; the
+Earth-center translation keeps a separately reported cubic-Hermite ephemeris
+interpolation (measured 1.2e-7 m at 60 s grid midpoints versus 1.1 m for
+linear). Measured two-way range effect of linear transform grids versus
+exact: 0.086 m (10 s), 0.32 m (30 s), 0.67 m (60 s) — the 60 s grid exceeds
+0.1 sigma for a 5 m range noise, which is why interpolation was rejected for
+this observable. The counted-Doppler path above is unchanged.
+
 ## 12. Known limitations
 
 - No EOP (Earth-orientation) solve-for sensitivity; no station-coordinate

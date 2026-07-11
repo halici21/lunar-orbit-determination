@@ -56,6 +56,11 @@ class PassGeometry:
     companion_geometry: str = "instantaneous"
     jacobian_model: str = "analytic_exact_geometric"
     measurement_metadata: dict | None = None
+    # Two-way range (M3) transport: SPICE ET of scenario t=0 for exact
+    # event-epoch sxform evaluation, and the TwoWayRangeConfig in use.
+    # Both stay None for all other measurement types.
+    et0_s: float | None = None
+    two_way_range: object | None = None
 
 
 @dataclass(frozen=True)
@@ -197,6 +202,15 @@ def measurement_model_metadata(
     noise_seed: int | None = None,
 ) -> dict:
     """Build traceable measurement-physics metadata from a pass geometry."""
+    if pass_geo.measurement_type == "two_way_range":
+        # Two-way range metadata is built by the generation path in
+        # lunar_od.two_way_range; this helper only transports it.
+        if pass_geo.measurement_metadata is not None:
+            return dict(pass_geo.measurement_metadata)
+        raise ValueError(
+            "two_way_range pass geometry carries its metadata from generation; "
+            "none was attached."
+        )
     rr = range_rate_physics_config(pass_geo.range_rate_physics)
     profile_light_time = False
     profile_stellar = False
@@ -1951,8 +1965,17 @@ def measurement_sigma_vector(
                 station.sigma_angle_rad,
                 station.sigma_angle_rad,
             ]
+    elif measurement_type == "two_way_range":
+        # M3 policy: the scalar two-way range reuses station.sigma_range_m;
+        # metadata records two_way_range_noise_source accordingly.
+        sigma = np.zeros(obs_data.shape[0], dtype=float)
+        for obs_idx in range(obs_data.shape[0]):
+            station = pass_geo.stations[int(obs_data[obs_idx, 2]) - 1]
+            sigma[obs_idx] = station.sigma_range_m
     else:
-        raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+        raise ValueError(
+            "measurement_type must be 'position', 'range_rate', or 'two_way_range'."
+        )
 
     if np.any(~np.isfinite(sigma)) or np.any(sigma <= 0.0):
         raise ValueError("Measurement sigmas must be finite and positive.")

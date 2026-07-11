@@ -49,12 +49,22 @@ same assumptions as the observable:
 
 ```text
 no media correction
-no station clock error
-no transponder delay
+optional station clock offset/drift (default off)
+optional fixed transponder delay (default 0; see the single-bounce note below)
 no relativistic correction
 constant uplink frequency and turnaround ratio
 linear interpolation over the propagated state history
 ```
+
+Single-bounce note: for a nonzero configured `transponder_delay_s` this
+solver keeps **one** spacecraft bounce state — `r_sc(t2)` is used for both
+the downlink and the uplink leg, and the delay enters only the epoch
+bookkeeping (`t1 = t2 - delay - uplink_lt`).  The M3 two-way range model
+(`docs/two_way_range.md`, `lunar_od/two_way_range.py`) evaluates separate
+`t2u`/`t2d` spacecraft states instead; the counted-Doppler behavior here is
+intentionally unchanged.  At zero delay the two solvers agree to the
+measured transform-interpolation bound (4.9e-10 s round-trip light time on a
+10 s pass grid).
 
 The state transition matrix stored in the augmented propagation history maps the
 spacecraft state at the reflection epoch back to the arc initial state.
