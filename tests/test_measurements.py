@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import unittest
 from pathlib import Path
@@ -5,7 +6,9 @@ from pathlib import Path
 import numpy as np
 
 from lunar_od import (
+    ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
     C_LIGHT_MPS,
+    MeasurementJacobianError,
     MoonCenteredEphemeris,
     PassGeometry,
     RangeRatePhysicsConfig,
@@ -13,8 +16,15 @@ from lunar_od import (
     compute_position_residuals_analytic,
     compute_range_rate_residuals,
     compute_range_rate_residuals_analytic,
+    ecef2sez_dcm,
     generate_position_measurements,
     generate_range_rate_measurements,
+    measurement_model_metadata,
+    one_way_light_time_initial_state_sensitivity,
+    one_way_light_time_position_initial_state_jacobian,
+    one_way_light_time_position_local_state_jacobian,
+    one_way_light_time_range_initial_state_jacobian,
+    one_way_light_time_range_sensitivity,
     instantaneous_geometric_range_rate,
     load_spice_kernels,
     range_rate_stations,
@@ -181,6 +191,41 @@ class MeasurementTests(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             compute_range_rate_residuals_analytic(states, obs_data, pass_geo)
 
+    def test_range_rate_apparent_companion_geometry_residual_closure(self):
+        t_grid, states, earth_pos, earth_vel, xforms, station = _linear_two_way_fixture(speed_mps=150.0)
+        pass_geo = PassGeometry(
+            t_s=t_grid,
+            earth_pos_mci_m=earth_pos,
+            earth_vel_mci_mps=earth_vel,
+            x_j2000_to_itrf93=xforms,
+            stations=(station,),
+            measurement_type="range_rate",
+            range_rate_physics=RangeRatePhysicsConfig(mode="geometric_instantaneous"),
+            measurement_model_profile="one_way_light_time",
+            companion_geometry="apparent_one_way",
+            jacobian_model="analytic_first_order_light_time",
+        )
+        time_index_1based = float(t_grid.size // 2 + 1)
+        obs_data = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, time_index_1based]], dtype=float)
+        _, h_apparent = compute_range_rate_residuals(states, obs_data, pass_geo)
+        obs_data[0, 1:5] = h_apparent[0, :]
+
+        residuals, h_closed = compute_range_rate_residuals(states, obs_data, pass_geo)
+        instant_geo = dataclasses.replace(
+            pass_geo,
+            measurement_model_profile="geometric_instantaneous",
+            companion_geometry="instantaneous",
+            jacobian_model="analytic_exact_geometric",
+        )
+        _, h_instant = compute_range_rate_residuals(states, obs_data, instant_geo)
+
+        np.testing.assert_allclose(h_closed, h_apparent, rtol=0.0, atol=1e-12)
+        np.testing.assert_allclose(residuals, np.zeros(4), rtol=0.0, atol=1e-10)
+        self.assertGreater(abs(float(h_apparent[0, 0] - h_instant[0, 0])), 10.0)
+        meta = measurement_model_metadata(pass_geo)
+        self.assertEqual(meta["companion_geometry"], "apparent_one_way")
+        self.assertEqual(meta["measurement_model_profile"], "one_way_light_time")
+
     def test_two_way_counted_doppler_rr_bias_is_mps_equivalent_residual(self):
         t_grid, states, earth_pos, earth_vel, xforms, station = _linear_two_way_fixture(speed_mps=150.0)
         pass_geo = PassGeometry(
@@ -316,7 +361,7 @@ class MeasurementTests(unittest.TestCase):
         }
 
     def _generate_position_clean(self, fx, *, apply_light_time, apply_stellar_aberration=False,
-                                 stellar_aberration_model=None):
+                                 stellar_aberration_model=None, measurement_model_profile=None):
         import spiceypy as spice
 
         try:
@@ -326,6 +371,8 @@ class MeasurementTests(unittest.TestCase):
         extra = {}
         if stellar_aberration_model is not None:
             extra["stellar_aberration_model"] = stellar_aberration_model
+        if measurement_model_profile is not None:
+            extra["measurement_model_profile"] = measurement_model_profile
         try:
             _, pass_geo, clean_obs = generate_position_measurements(
                 fx["t_pass"], fx["state_history"], fx["stations"], fx["vis_mask"],
@@ -355,6 +402,585 @@ class MeasurementTests(unittest.TestCase):
         self.assertLess(float(np.linalg.norm(residuals_an)), 1e-6)
         self.assertEqual(h_tilde.shape, (3 * clean_obs.shape[0], 6))
 
+    def test_position_profile_drives_light_time_metadata_and_residuals(self):
+        fx = self._position_light_time_fixture()
+        pass_geo, clean_obs = self._generate_position_clean(
+            fx,
+            apply_light_time=False,
+            measurement_model_profile="one_way_light_time",
+        )
+
+        self.assertEqual(pass_geo.measurement_model_profile, "one_way_light_time")
+        self.assertTrue(pass_geo.apply_light_time)
+        self.assertFalse(pass_geo.apply_stellar_aberration)
+        self.assertEqual(pass_geo.jacobian_model, "analytic_first_order_light_time")
+        residuals, _h = compute_position_residuals(fx["state_history"], clean_obs, pass_geo)
+        self.assertLess(float(np.linalg.norm(residuals)), 1e-6)
+        meta = measurement_model_metadata(pass_geo)
+        self.assertEqual(meta["measurement_model_profile"], "one_way_light_time")
+        self.assertTrue(meta["apply_light_time"])
+
+    def test_one_way_light_time_static_range_sensitivity(self):
+        t_grid, states, earth_pos, _earth_vel, xforms, station = _linear_two_way_fixture(
+            speed_mps=0.0
+        )
+        k = t_grid.size // 2
+
+        _solution, sensitivity = one_way_light_time_range_sensitivity(
+            0.0,
+            station,
+            t_grid,
+            states,
+            earth_pos[k],
+            xforms[k],
+        )
+
+        np.testing.assert_allclose(
+            sensitivity.d_range_d_state,
+            [1.0, 0.0, 0.0, -100.0e6 / C_LIGHT_MPS, 0.0, 0.0],
+            rtol=0.0,
+            atol=1e-12,
+        )
+        np.testing.assert_allclose(
+            sensitivity.d_light_time_d_state,
+            sensitivity.d_range_d_state / C_LIGHT_MPS,
+            rtol=0.0,
+            atol=1e-20,
+        )
+        self.assertAlmostEqual(sensitivity.condition_metric, 1.0, places=15)
+
+    def test_one_way_light_time_range_sensitivity_matches_central_difference(self):
+        t_grid, states, earth_pos, _earth_vel, xforms, station = _linear_two_way_fixture(
+            speed_mps=150.0
+        )
+        receive_time_s = 0.0
+        k = t_grid.size // 2
+        _solution, sensitivity = one_way_light_time_range_sensitivity(
+            receive_time_s,
+            station,
+            t_grid,
+            states,
+            earth_pos[k],
+            xforms[k],
+        )
+
+        def perturb_history(delta):
+            perturbed = states.copy()
+            dt = (t_grid - receive_time_s)[:, None]
+            perturbed[:, :3] += delta[None, :3] + dt * delta[None, 3:]
+            perturbed[:, 3:] += delta[None, 3:]
+            return perturbed
+
+        steps = np.array([0.1, 0.1, 0.1, 1e-2, 1e-2, 1e-2])
+        finite_difference = np.zeros(6)
+        for col, step in enumerate(steps):
+            delta = np.zeros(6)
+            delta[col] = step
+            plus, _ = one_way_light_time_range_sensitivity(
+                receive_time_s,
+                station,
+                t_grid,
+                perturb_history(delta),
+                earth_pos[k],
+                xforms[k],
+            )
+            minus, _ = one_way_light_time_range_sensitivity(
+                receive_time_s,
+                station,
+                t_grid,
+                perturb_history(-delta),
+                earth_pos[k],
+                xforms[k],
+            )
+            finite_difference[col] = (plus.range_m - minus.range_m) / (2.0 * step)
+
+        np.testing.assert_allclose(
+            sensitivity.d_range_d_state,
+            finite_difference,
+            rtol=0.0,
+            atol=2e-5,
+        )
+        self.assertGreater(abs(float(sensitivity.d_range_d_state[3])), 0.1)
+
+    def test_one_way_light_time_initial_jacobian_uses_transmit_epoch_stm(self):
+        t_grid, states, earth_pos, _earth_vel, xforms, station = _linear_two_way_fixture(
+            speed_mps=150.0
+        )
+        receive_time_s = 0.0
+        k = t_grid.size // 2
+        t0 = float(t_grid[0])
+        phi_history = np.zeros((t_grid.size, 6, 6), dtype=float)
+        for idx, epoch_s in enumerate(t_grid):
+            phi_history[idx] = np.eye(6)
+            phi_history[idx, :3, 3:] = (float(epoch_s) - t0) * np.eye(3)
+
+        _solution, _sensitivity, h_initial = one_way_light_time_range_initial_state_jacobian(
+            receive_time_s,
+            station,
+            t_grid,
+            states,
+            phi_history,
+            earth_pos[k],
+            xforms[k],
+        )
+
+        def perturb_from_initial(delta):
+            perturbed = states.copy()
+            dt = (t_grid - t0)[:, None]
+            perturbed[:, :3] += delta[None, :3] + dt * delta[None, 3:]
+            perturbed[:, 3:] += delta[None, 3:]
+            return perturbed
+
+        steps = np.array([0.1, 0.1, 0.1, 1e-2, 1e-2, 1e-2])
+        finite_difference = np.zeros(6)
+        for col, step in enumerate(steps):
+            delta = np.zeros(6)
+            delta[col] = step
+            plus, _ = one_way_light_time_range_sensitivity(
+                receive_time_s,
+                station,
+                t_grid,
+                perturb_from_initial(delta),
+                earth_pos[k],
+                xforms[k],
+            )
+            minus, _ = one_way_light_time_range_sensitivity(
+                receive_time_s,
+                station,
+                t_grid,
+                perturb_from_initial(-delta),
+                earth_pos[k],
+                xforms[k],
+            )
+            finite_difference[col] = (plus.range_m - minus.range_m) / (2.0 * step)
+
+        np.testing.assert_allclose(h_initial, finite_difference, rtol=0.0, atol=2e-5)
+        self.assertGreater(abs(float(h_initial[3])), 100.0)
+
+    def test_initial_los_sensitivity_reuses_m21_range_row(self):
+        t_grid, states, earth_pos, _earth_vel, xforms, station = _linear_two_way_fixture(
+            speed_mps=150.0
+        )
+        k = t_grid.size // 2
+        t0 = float(t_grid[0])
+        phi_history = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        phi_history[:, :3, 3:] = (
+            (t_grid - t0)[:, None, None] * np.eye(3)[None, :, :]
+        )
+
+        solution, _local, sensitivity = one_way_light_time_initial_state_sensitivity(
+            0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+        )
+        old_solution, _old_local, old_range_row = (
+            one_way_light_time_range_initial_state_jacobian(
+                0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+            )
+        )
+
+        self.assertEqual(solution.transmit_time_s, old_solution.transmit_time_s)
+        np.testing.assert_array_equal(sensitivity.d_range_dx0, old_range_row)
+        self.assertLess(
+            float(np.max(np.abs(sensitivity.unit_line_of_sight @ sensitivity.j_unit_los_dx0))),
+            1e-20,
+        )
+
+    def test_initial_unit_los_sensitivity_matches_step_sweep_finite_difference(self):
+        t_grid = np.arange(-240.0, 241.0, 20.0)
+        t0 = float(t_grid[0])
+        velocity = np.array([150.0, -20.0, 5.0])
+        states = np.zeros((t_grid.size, 6), dtype=float)
+        states[:, :3] = np.array([100.0e6, 40.0e6, 20.0e6]) + t_grid[:, None] * velocity
+        states[:, 3:] = velocity
+        earth_pos = np.zeros((t_grid.size, 3), dtype=float)
+        xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        station = _DummyStation()
+        k = t_grid.size // 2
+        phi_history = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        phi_history[:, :3, 3:] = (
+            (t_grid - t0)[:, None, None] * np.eye(3)[None, :, :]
+        )
+
+        _solution, _local, sensitivity = one_way_light_time_initial_state_sensitivity(
+            0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+        )
+
+        def perturb_from_initial(delta):
+            perturbed = states.copy()
+            dt = (t_grid - t0)[:, None]
+            perturbed[:, :3] += delta[None, :3] + dt * delta[None, 3:]
+            perturbed[:, 3:] += delta[None, 3:]
+            return perturbed
+
+        sweep = (
+            np.array([1.0, 1.0, 1.0, 1e-2, 1e-2, 1e-2]),
+            np.array([0.1, 0.1, 0.1, 1e-3, 1e-3, 1e-3]),
+            np.array([0.01, 0.01, 0.01, 1e-4, 1e-4, 1e-4]),
+        )
+        relative_errors = []
+        for steps in sweep:
+            finite_difference = np.zeros((3, 6))
+            for col, step in enumerate(steps):
+                delta = np.zeros(6)
+                delta[col] = step
+                _sp, _lp, plus = one_way_light_time_initial_state_sensitivity(
+                    0.0,
+                    station,
+                    t_grid,
+                    perturb_from_initial(delta),
+                    phi_history,
+                    earth_pos[k],
+                    xforms[k],
+                )
+                _sm, _lm, minus = one_way_light_time_initial_state_sensitivity(
+                    0.0,
+                    station,
+                    t_grid,
+                    perturb_from_initial(-delta),
+                    phi_history,
+                    earth_pos[k],
+                    xforms[k],
+                )
+                finite_difference[:, col] = (
+                    plus.unit_line_of_sight - minus.unit_line_of_sight
+                ) / (2.0 * step)
+            relative_errors.append(
+                np.linalg.norm(finite_difference - sensitivity.j_unit_los_dx0)
+                / max(np.linalg.norm(sensitivity.j_unit_los_dx0), 1e-30)
+            )
+
+        self.assertLess(min(relative_errors), 2e-5)
+        self.assertLess(relative_errors[1], 1e-4)
+
+    def test_three_row_initial_helper_preserves_m21_range_row(self):
+        t_grid, states, earth_pos, xforms, station, phi_history = (
+            _static_one_way_position_fixture(az_deg=35.0, el_deg=30.0)
+        )
+        k = t_grid.size // 2
+        position_solution, _position_sensitivity, block = (
+            one_way_light_time_position_initial_state_jacobian(
+                0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+            )
+        )
+        range_solution, _range_sensitivity, range_row = (
+            one_way_light_time_range_initial_state_jacobian(
+                0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+            )
+        )
+
+        self.assertEqual(position_solution.transmit_time_s, range_solution.transmit_time_s)
+        np.testing.assert_array_equal(block[0], range_row)
+
+    def test_three_row_initial_helper_matches_wrap_aware_finite_difference(self):
+        from lunar_od.measurements import _apparent_position_observable
+        from lunar_od.geometry import wrap_to_pi
+
+        t_grid = np.arange(-240.0, 241.0, 20.0)
+        t0 = float(t_grid[0])
+        velocity = np.array([150.0, -20.0, 5.0])
+        states = np.zeros((t_grid.size, 6), dtype=float)
+        states[:, :3] = np.array([100.0e6, 40.0e6, 20.0e6]) + t_grid[:, None] * velocity
+        states[:, 3:] = velocity
+        earth_pos = np.zeros((t_grid.size, 3), dtype=float)
+        xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        station = _DummyStation()
+        k = t_grid.size // 2
+        phi_history = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        phi_history[:, :3, 3:] = (
+            (t_grid - t0)[:, None, None] * np.eye(3)[None, :, :]
+        )
+        _solution, _sensitivity, block = one_way_light_time_position_initial_state_jacobian(
+            0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+        )
+
+        def perturb_from_initial(delta):
+            perturbed = states.copy()
+            dt = (t_grid - t0)[:, None]
+            perturbed[:, :3] += delta[None, :3] + dt * delta[None, 3:]
+            perturbed[:, 3:] += delta[None, 3:]
+            return perturbed
+
+        steps = np.array([0.1, 0.1, 0.1, 1e-2, 1e-2, 1e-2])
+        finite_difference = np.zeros((3, 6))
+        for col, step in enumerate(steps):
+            delta = np.zeros(6)
+            delta[col] = step
+            plus, *_ = _apparent_position_observable(
+                0.0,
+                station,
+                t_grid,
+                perturb_from_initial(delta),
+                earth_pos[k],
+                xforms[k],
+            )
+            minus, *_ = _apparent_position_observable(
+                0.0,
+                station,
+                t_grid,
+                perturb_from_initial(-delta),
+                earth_pos[k],
+                xforms[k],
+            )
+            difference = plus - minus
+            difference[1] = wrap_to_pi(difference[1])
+            difference[2] = wrap_to_pi(difference[2])
+            finite_difference[:, col] = difference / (2.0 * step)
+
+        np.testing.assert_allclose(block[0], finite_difference[0], rtol=0.0, atol=2e-5)
+        angle_relative_error = np.linalg.norm(block[1:] - finite_difference[1:]) / max(
+            np.linalg.norm(finite_difference[1:]), 1e-30
+        )
+        self.assertLess(angle_relative_error, 2e-5)
+
+    def test_cn_plus_s_initial_helper_matches_full_chain_fd_and_preserves_range(self):
+        from lunar_od.measurements import (
+            _apparent_position_observable,
+            _stellar_aberration_local_jacobian,
+        )
+        from lunar_od.geometry import wrap_to_pi
+
+        t_grid = np.arange(-240.0, 241.0, 20.0)
+        t0 = float(t_grid[0])
+        velocity = np.array([150.0, -20.0, 5.0])
+        states = np.zeros((t_grid.size, 6), dtype=float)
+        states[:, :3] = np.array([100.0e6, 40.0e6, 20.0e6]) + t_grid[:, None] * velocity
+        states[:, 3:] = velocity
+        earth_pos = np.zeros((t_grid.size, 3), dtype=float)
+        xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        station = _DummyStation()
+        k = t_grid.size // 2
+        phi_history = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        phi_history[:, :3, 3:] = (
+            (t_grid - t0)[:, None, None] * np.eye(3)[None, :, :]
+        )
+        observer_reference_velocity = np.array([29780.0, 4200.0, -1100.0])
+
+        _cn_solution, _cn_sensitivity, cn_block = (
+            one_way_light_time_position_initial_state_jacobian(
+                0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+            )
+        )
+        _app_solution, app_sensitivity, app_block = (
+            one_way_light_time_position_initial_state_jacobian(
+                0.0,
+                station,
+                t_grid,
+                states,
+                phi_history,
+                earth_pos[k],
+                xforms[k],
+                apply_stellar=True,
+                observer_reference_velocity_j2000_mps=observer_reference_velocity,
+            )
+        )
+        np.testing.assert_array_equal(app_block[0], cn_block[0])
+
+        local_aberration = _stellar_aberration_local_jacobian(
+            app_sensitivity.unit_line_of_sight, observer_reference_velocity
+        )
+        hybrid_apparent_los = (
+            local_aberration.local_jacobian @ app_sensitivity.j_unit_los_dx0
+        )
+
+        def perturb_from_initial(delta):
+            perturbed = states.copy()
+            dt = (t_grid - t0)[:, None]
+            perturbed[:, :3] += delta[None, :3] + dt * delta[None, 3:]
+            perturbed[:, 3:] += delta[None, 3:]
+            return perturbed
+
+        c_sez_mci = ecef2sez_dcm(station.lat_rad, station.lon_rad)
+
+        def apparent_measurement_and_unit_los(perturbed):
+            value, *_ = _apparent_position_observable(
+                0.0,
+                station,
+                t_grid,
+                perturbed,
+                earth_pos[k],
+                xforms[k],
+                observer_earth_vel_rx=observer_reference_velocity,
+                apply_stellar=True,
+            )
+            azimuth, elevation = value[1], value[2]
+            unit_sez = np.array(
+                [
+                    -np.cos(elevation) * np.cos(azimuth),
+                    np.cos(elevation) * np.sin(azimuth),
+                    np.sin(elevation),
+                ]
+            )
+            return value, c_sez_mci.T @ unit_sez
+
+        steps = np.array([0.1, 0.1, 0.1, 1e-3, 1e-3, 1e-3])
+        measurement_fd = np.zeros((3, 6))
+        apparent_los_fd = np.zeros((3, 6))
+        for col, step in enumerate(steps):
+            delta = np.zeros(6)
+            delta[col] = step
+            plus_value, plus_los = apparent_measurement_and_unit_los(
+                perturb_from_initial(delta)
+            )
+            minus_value, minus_los = apparent_measurement_and_unit_los(
+                perturb_from_initial(-delta)
+            )
+            difference = plus_value - minus_value
+            difference[1] = wrap_to_pi(difference[1])
+            difference[2] = wrap_to_pi(difference[2])
+            measurement_fd[:, col] = difference / (2.0 * step)
+            apparent_los_fd[:, col] = (plus_los - minus_los) / (2.0 * step)
+
+        los_relative_error = np.linalg.norm(
+            hybrid_apparent_los - apparent_los_fd
+        ) / max(np.linalg.norm(apparent_los_fd), 1e-30)
+        azimuth_relative_error = np.linalg.norm(
+            app_block[1] - measurement_fd[1]
+        ) / max(np.linalg.norm(measurement_fd[1]), 1e-30)
+        elevation_relative_error = np.linalg.norm(
+            app_block[2] - measurement_fd[2]
+        ) / max(np.linalg.norm(measurement_fd[2]), 1e-30)
+
+        self.assertLess(los_relative_error, 2e-5)
+        self.assertLess(azimuth_relative_error, 2e-5)
+        self.assertLess(elevation_relative_error, 2e-5)
+        np.testing.assert_allclose(app_block[0], measurement_fd[0], rtol=0.0, atol=2e-5)
+        self.assertLess(
+            float(np.max(np.abs(local_aberration.apparent_unit_los @ hybrid_apparent_los))),
+            2e-16,
+        )
+
+    def test_implicit_angle_chain_rule_matches_wrap_aware_fd_across_sez_geometry(self):
+        from lunar_od.measurements import _apparent_position_observable
+        from lunar_od.geometry import wrap_to_pi
+
+        azimuths_deg = (45.0, 135.0, 225.0, 315.0)
+        elevations_deg = (5.0, 15.0, 30.0, 60.0, 80.0)
+        worst_relative_error = 0.0
+        for azimuth_deg in azimuths_deg:
+            for elevation_deg in elevations_deg:
+                t_grid, states, earth_pos, xforms, station, _phi_history = (
+                    _static_one_way_position_fixture(azimuth_deg, elevation_deg)
+                )
+                k = t_grid.size // 2
+                _solution, _sensitivity, block = (
+                    one_way_light_time_position_local_state_jacobian(
+                        0.0, station, t_grid, states, earth_pos[k], xforms[k]
+                    )
+                )
+
+                finite_difference = np.zeros((3, 3))
+                steps = (1.0, 0.1, 0.01)
+                angle_relative_errors = []
+                for step in steps:
+                    fd_step = np.zeros((3, 3))
+                    for col in range(3):
+                        delta = np.zeros(3)
+                        delta[col] = step
+                        plus_states = states.copy()
+                        minus_states = states.copy()
+                        plus_states[:, :3] += delta
+                        minus_states[:, :3] -= delta
+                        plus, *_ = _apparent_position_observable(
+                            0.0, station, t_grid, plus_states, earth_pos[k], xforms[k]
+                        )
+                        minus, *_ = _apparent_position_observable(
+                            0.0, station, t_grid, minus_states, earth_pos[k], xforms[k]
+                        )
+                        difference = plus - minus
+                        difference[1] = wrap_to_pi(difference[1])
+                        difference[2] = wrap_to_pi(difference[2])
+                        fd_step[:, col] = difference / (2.0 * step)
+                    angle_relative_errors.append(
+                        np.linalg.norm(fd_step[1:] - block[1:, :3])
+                        / max(np.linalg.norm(block[1:, :3]), 1e-30)
+                    )
+                    if step == 0.1:
+                        finite_difference = fd_step
+                relative_error = np.linalg.norm(
+                    finite_difference[1:] - block[1:, :3]
+                ) / max(
+                    np.linalg.norm(block[1:, :3]), 1e-30
+                )
+                worst_relative_error = max(worst_relative_error, relative_error)
+                self.assertLess(min(angle_relative_errors), 2e-5)
+
+                # Angle rows are radians per state unit.  For a static geometry,
+                # elevation sensitivity has norm 1/range [rad/m].
+                range_m = float(np.linalg.norm(states[k, :3]))
+                self.assertAlmostEqual(
+                    float(np.linalg.norm(block[2, :3]) * range_m), 1.0, delta=2e-10
+                )
+        self.assertLess(worst_relative_error, 2e-5)
+
+    def test_implicit_angle_jacobian_near_zenith_policy_is_explicit(self):
+        threshold = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM
+        inside_el_deg = np.degrees(np.arccos(0.5 * threshold))
+        outside_el_deg = np.degrees(np.arccos(2.0 * threshold))
+
+        outside = _static_one_way_position_fixture(az_deg=30.0, el_deg=outside_el_deg)
+        t_grid, states, earth_pos, xforms, station, _phi = outside
+        k = t_grid.size // 2
+        _solution, _sensitivity, block = one_way_light_time_position_local_state_jacobian(
+            0.0, station, t_grid, states, earth_pos[k], xforms[k]
+        )
+        self.assertTrue(np.all(np.isfinite(block)))
+
+        inside = _static_one_way_position_fixture(az_deg=30.0, el_deg=inside_el_deg)
+        t_grid, states, earth_pos, xforms, station, _phi = inside
+        k = t_grid.size // 2
+        with self.assertRaisesRegex(MeasurementJacobianError, "near zenith"):
+            one_way_light_time_position_local_state_jacobian(
+                0.0, station, t_grid, states, earth_pos[k], xforms[k]
+            )
+
+    def test_cn_plus_s_zenith_policy_uses_apparent_los(self):
+        t_grid, states, earth_pos, xforms, station, phi_history = (
+            _static_one_way_position_fixture(az_deg=30.0, el_deg=90.0)
+        )
+        k = t_grid.size // 2
+        with self.assertRaisesRegex(MeasurementJacobianError, "near zenith"):
+            one_way_light_time_position_initial_state_jacobian(
+                0.0, station, t_grid, states, phi_history, earth_pos[k], xforms[k]
+            )
+
+        c_sez_mci = ecef2sez_dcm(station.lat_rad, station.lon_rad)
+        observer_reference_velocity = c_sez_mci.T @ np.array([0.0, 3.0e4, 0.0])
+        _solution, _sensitivity, apparent_block = (
+            one_way_light_time_position_initial_state_jacobian(
+                0.0,
+                station,
+                t_grid,
+                states,
+                phi_history,
+                earth_pos[k],
+                xforms[k],
+                apply_stellar=True,
+                observer_reference_velocity_j2000_mps=observer_reference_velocity,
+            )
+        )
+        self.assertTrue(np.all(np.isfinite(apparent_block)))
+
+    def test_position_azimuth_residual_wraps_across_zero_boundary(self):
+        t_grid, states, earth_pos, xforms, station, _phi = _static_one_way_position_fixture(
+            az_deg=359.999, el_deg=30.0
+        )
+        pass_geo = PassGeometry(
+            t_s=t_grid,
+            earth_pos_mci_m=earth_pos,
+            earth_vel_mci_mps=np.zeros_like(earth_pos),
+            x_j2000_to_itrf93=xforms,
+            stations=(station,),
+            measurement_type="position",
+        )
+        k = t_grid.size // 2
+        obs_data = np.array([[0.0, 0.0, 0.0, 0.0, 1.0, float(k + 1)]])
+        _residual, predicted = compute_position_residuals(states, obs_data, pass_geo)
+        obs_data[0, 1:4] = predicted[0]
+        obs_data[0, 2] = np.deg2rad(0.001)
+
+        residual, _predicted = compute_position_residuals(states, obs_data, pass_geo)
+
+        self.assertAlmostEqual(float(residual[1]), float(np.deg2rad(0.002)), delta=1e-14)
+
     def test_position_light_time_creates_physical_correction(self):
         fx = self._position_light_time_fixture()
         _, clean_inst = self._generate_position_clean(fx, apply_light_time=False)
@@ -368,7 +994,12 @@ class MeasurementTests(unittest.TestCase):
 
         fx = self._position_light_time_fixture()
         pass_geo_lt, clean_lt = self._generate_position_clean(fx, apply_light_time=True)
-        pass_geo_inst = dataclasses.replace(pass_geo_lt, apply_light_time=False)
+        pass_geo_inst = dataclasses.replace(
+            pass_geo_lt,
+            apply_light_time=False,
+            measurement_model_profile="geometric_instantaneous",
+            jacobian_model="analytic_exact_geometric",
+        )
         _residuals, h_inst = compute_position_residuals(
             fx["state_history"], clean_lt, pass_geo_inst
         )
@@ -426,6 +1057,83 @@ class MeasurementTests(unittest.TestCase):
             self.assertTrue(np.allclose(block[:, 3:6], 0.0))
             # ...and the fully-neglected d(range)/d(velocity) term equals the light time.
             self.assertAlmostEqual(float(np.linalg.norm(jac[0, 3:6])), float(light_time[i]), delta=1e-2)
+
+    def test_position_implicit_light_time_range_row_matches_finite_difference(self):
+        from lunar_od.measurements import _apparent_position_observable
+
+        fx = self._position_light_time_fixture()
+        pass_geo, clean = self._generate_position_clean(fx, apply_light_time=True)
+        pass_geo = dataclasses.replace(pass_geo, jacobian_model="implicit_light_time")
+        state = fx["state_history"]
+        tp = fx["t_pass"]
+        _, _, h_tilde = compute_position_residuals_analytic(state, clean, pass_geo)
+
+        obs_idx = clean.shape[0] // 2
+        k = int(clean[obs_idx, 5]) - 1
+        station = pass_geo.stations[int(clean[obs_idx, 4]) - 1]
+
+        def range_value(perturbed_state):
+            value, _tt, _lt, _iterations = _apparent_position_observable(
+                float(clean[obs_idx, 0]),
+                station,
+                tp,
+                perturbed_state,
+                pass_geo.earth_pos_mci_m[k],
+                pass_geo.x_j2000_to_itrf93[k],
+            )
+            return float(value[0])
+
+        def perturb_history(delta):
+            perturbed = state.copy()
+            dt = (tp - tp[k])[:, None]
+            perturbed[:, :3] += delta[None, :3] + dt * delta[None, 3:]
+            perturbed[:, 3:] += delta[None, 3:]
+            return perturbed
+
+        steps = np.array([1.0, 1.0, 1.0, 1e-3, 1e-3, 1e-3])
+        finite_difference = np.zeros(6)
+        for col, step in enumerate(steps):
+            delta = np.zeros(6)
+            delta[col] = step
+            finite_difference[col] = (
+                range_value(perturb_history(delta)) - range_value(perturb_history(-delta))
+            ) / (2.0 * step)
+
+        np.testing.assert_allclose(
+            h_tilde[3 * obs_idx, :], finite_difference, rtol=0.0, atol=5e-4
+        )
+        metadata = measurement_model_metadata(pass_geo)
+        self.assertEqual(metadata["light_time_sensitivity"], "enabled")
+        self.assertEqual(metadata["range_jacobian_model"], "implicit_light_time")
+        self.assertEqual(metadata["initial_state_sensitivity_epoch"], "transmit")
+        self.assertEqual(metadata["angle_jacobian_model"], "implicit_light_time_chain_rule")
+        self.assertTrue(metadata["angle_jacobian_matches_full_residual_physics"])
+
+    def test_implicit_cn_plus_s_metadata_reports_hybrid_apparent_chain(self):
+        fx = self._position_light_time_fixture()
+        pass_geo, _clean = self._generate_position_clean(
+            fx,
+            apply_light_time=True,
+            apply_stellar_aberration=True,
+            stellar_aberration_model="local_mci",
+        )
+        pass_geo = dataclasses.replace(pass_geo, jacobian_model="implicit_light_time")
+
+        metadata = measurement_model_metadata(pass_geo)
+
+        self.assertEqual(metadata["range_jacobian_model"], "implicit_light_time")
+        self.assertEqual(metadata["line_of_sight_jacobian_model"], "implicit_light_time_chain_rule")
+        self.assertEqual(metadata["angle_jacobian_model"], "hybrid_apparent_chain_rule")
+        self.assertEqual(
+            metadata["aberration_jacobian_model"], "local_central_finite_difference"
+        )
+        self.assertTrue(metadata["angle_jacobian_matches_full_residual_physics"])
+        self.assertEqual(metadata["observer_velocity_epoch"], "receive")
+        self.assertEqual(metadata["observer_velocity_frame"], "J2000")
+        self.assertEqual(metadata["observer_velocity_reference_center"], "MOON")
+        self.assertEqual(metadata["aberration_local_jacobian_input"], "unit_cn_los")
+        self.assertEqual(metadata["aberration_local_jacobian_space"], "tangent")
+        self.assertEqual(metadata["aberration_local_jacobian_step"], 1.0e-5)
 
     def test_stellar_aberration_perpendicular_shift_matches_v_over_c(self):
         """Test 3 (unit): for observer velocity perpendicular to the line of
@@ -685,6 +1393,32 @@ def _linear_two_way_fixture(speed_mps: float):
     earth_vel = np.zeros((t_grid.size, 3), dtype=float)
     xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
     return t_grid, states, earth_pos, earth_vel, xforms, _DummyStation()
+
+
+def _static_one_way_position_fixture(
+    az_deg: float,
+    el_deg: float,
+    range_m: float = 100.0e6,
+):
+    t_grid = np.arange(-20.0, 21.0, 10.0)
+    station = _DummyStation()
+    az_rad = np.deg2rad(az_deg)
+    el_rad = np.deg2rad(el_deg)
+    unit_sez = np.array(
+        [
+            -np.cos(el_rad) * np.cos(az_rad),
+            np.cos(el_rad) * np.sin(az_rad),
+            np.sin(el_rad),
+        ]
+    )
+    c_sez_ecef = ecef2sez_dcm(station.lat_rad, station.lon_rad)
+    position_mci = c_sez_ecef.T @ (range_m * unit_sez)
+    states = np.zeros((t_grid.size, 6), dtype=float)
+    states[:, :3] = position_mci
+    earth_pos = np.zeros((t_grid.size, 3), dtype=float)
+    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+    phi_history = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+    return t_grid, states, earth_pos, xforms, station, phi_history
 
 
 def _constant_acceleration_states(t_grid):

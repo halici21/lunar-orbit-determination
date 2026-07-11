@@ -1,5 +1,6 @@
 import math
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import lunar_od.estimators as estimator_helpers
@@ -19,6 +20,8 @@ from lunar_od import (
     load_spice_kernels,
     ode_fun_v3,
     propagate_augmented_state,
+    one_way_light_time_position_initial_state_jacobian,
+    position_initial_state_jacobian_from_augmented_history,
     range_rate_stations,
 )
 from pathlib import Path
@@ -29,6 +32,218 @@ FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 class EstimatorTests(unittest.TestCase):
+    def test_implicit_position_block_is_shared_and_stm_is_not_applied_twice(self):
+        t_grid = np.arange(-20.0, 21.0, 10.0)
+        states = np.zeros((t_grid.size, 6), dtype=float)
+        states[:, :3] = np.array([100.0e6, 40.0e6, 20.0e6])
+        earth_pos = np.zeros((t_grid.size, 3), dtype=float)
+        xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        station = _synthetic_station(0.0, 0.0, 0.0)
+        pass_geo = PassGeometry(
+            t_s=t_grid,
+            earth_pos_mci_m=earth_pos,
+            earth_vel_mci_mps=np.zeros_like(earth_pos),
+            x_j2000_to_itrf93=xforms,
+            stations=(station,),
+            measurement_type="position",
+            apply_light_time=True,
+            measurement_model_profile="one_way_light_time",
+            jacobian_model="implicit_light_time",
+        )
+        k = t_grid.size // 2
+        obs_data = np.array([[0.0, 0.0, 0.0, 0.0, 1.0, float(k + 1)]])
+        _, predicted, h_tilde = compute_position_residuals_analytic(
+            states, obs_data, pass_geo
+        )
+        obs_data[0, 1:4] = predicted[0]
+
+        phi_history = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        phi_mutation = np.eye(6)
+        phi_mutation[:3, :3] = np.diag([1.2, 0.8, 1.1])
+        phi_mutation[:3, 3:] = np.diag([12.0, 8.0, 10.0])
+        phi_history[:] = phi_mutation
+        x_aug_hist = np.hstack(
+            [states, np.stack([phi.reshape(-1, order="F") for phi in phi_history])]
+        )
+
+        _solution, _sensitivity, direct_block = (
+            one_way_light_time_position_initial_state_jacobian(
+                0.0,
+                station,
+                t_grid,
+                states,
+                phi_history,
+                earth_pos[k],
+                xforms[k],
+            )
+        )
+        shared_block = position_initial_state_jacobian_from_augmented_history(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
+        estimator_block = estimator_helpers._position_initial_state_jacobian(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
+
+        np.testing.assert_allclose(shared_block, direct_block, rtol=0.0, atol=1e-15)
+        np.testing.assert_array_equal(estimator_block, shared_block)
+        self.assertGreater(
+            float(np.linalg.norm(direct_block @ phi_mutation - shared_block)), 1.0
+        )
+
+        observer_reference_velocity = np.array([29780.0, 4200.0, -1100.0])
+        stellar_pass_geo = PassGeometry(
+            t_s=t_grid,
+            earth_pos_mci_m=earth_pos,
+            earth_vel_mci_mps=np.repeat(
+                observer_reference_velocity[None, :], t_grid.size, axis=0
+            ),
+            x_j2000_to_itrf93=xforms,
+            stations=(station,),
+            measurement_type="position",
+            apply_light_time=True,
+            apply_stellar_aberration=True,
+            stellar_aberration_model="local_mci",
+            measurement_model_profile="one_way_light_time_aberrated_local_mci",
+            jacobian_model="implicit_light_time",
+        )
+        _, _, stellar_h_tilde = compute_position_residuals_analytic(
+            states, obs_data, stellar_pass_geo
+        )
+        _solution, _sensitivity, stellar_direct_block = (
+            one_way_light_time_position_initial_state_jacobian(
+                0.0,
+                station,
+                t_grid,
+                states,
+                phi_history,
+                earth_pos[k],
+                xforms[k],
+                apply_stellar=True,
+                observer_reference_velocity_j2000_mps=observer_reference_velocity,
+            )
+        )
+        stellar_shared_block = position_initial_state_jacobian_from_augmented_history(
+            obs_data, x_aug_hist, stellar_h_tilde, stellar_pass_geo
+        )
+        np.testing.assert_allclose(
+            stellar_shared_block, stellar_direct_block, rtol=0.0, atol=1e-15
+        )
+        self.assertGreater(
+            float(
+                np.linalg.norm(
+                    stellar_direct_block @ phi_mutation - stellar_shared_block
+                )
+            ),
+            1.0,
+        )
+
+    def test_bls_lm_and_srif_consume_the_same_implicit_position_block(self):
+        mu_moon = 4902.800066e9
+        r0norm = 1737.4e3 + 100e3
+        x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
+        t_pass_s = np.arange(0.0, 241.0, 60.0)
+        get_earth_pos = lambda t: np.tile(
+            np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1)
+        )
+        get_sun_pos = lambda t: np.tile(
+            np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1)
+        )
+        x_aug0 = np.concatenate([x_true0, np.eye(6).reshape(-1, order="F")])
+        x_truth = propagate_augmented_state(
+            t_pass_s,
+            x_aug0,
+            mu_moon,
+            0.0,
+            0.0,
+            get_earth_pos,
+            get_sun_pos,
+            rtol=1e-12,
+            atol=1e-13,
+        )[:, :6]
+        stations = (
+            _synthetic_station(15.0, 20.0, 0.0),
+            _synthetic_station(-25.0, 110.0, 0.0),
+        )
+        x_guess = x_true0 + np.array([20.0, -15.0, 10.0, 0.01, -0.008, 0.005])
+        original = estimator_helpers._position_initial_state_jacobian
+        for use_stellar in (False, True):
+            with self.subTest(use_stellar=use_stellar):
+                earth_velocity = np.zeros((t_pass_s.size, 3))
+                if use_stellar:
+                    earth_velocity[:] = np.array([29780.0, 4200.0, -1100.0])
+                pass_geo = PassGeometry(
+                    t_s=t_pass_s,
+                    earth_pos_mci_m=np.zeros((t_pass_s.size, 3)),
+                    earth_vel_mci_mps=earth_velocity,
+                    x_j2000_to_itrf93=np.repeat(
+                        np.eye(6)[None, :, :], t_pass_s.size, axis=0
+                    ),
+                    stations=stations,
+                    measurement_type="position",
+                    apply_light_time=True,
+                    apply_stellar_aberration=use_stellar,
+                    stellar_aberration_model="local_mci",
+                    measurement_model_profile=(
+                        "one_way_light_time_aberrated_local_mci"
+                        if use_stellar
+                        else "one_way_light_time"
+                    ),
+                    jacobian_model="implicit_light_time",
+                )
+                obs_data = _build_clean_position_observations(
+                    t_pass_s, x_truth, pass_geo
+                )
+
+                srif_blocks = []
+                with patch.object(
+                    estimator_helpers,
+                    "_position_initial_state_jacobian",
+                    side_effect=lambda *args: srif_blocks.append(original(*args))
+                    or srif_blocks[-1],
+                ):
+                    estimate_position_srif(
+                        t_pass_s,
+                        obs_data,
+                        x_guess,
+                        pass_geo,
+                        mu_moon,
+                        0.0,
+                        0.0,
+                        get_earth_pos,
+                        get_sun_pos,
+                        max_iter=1,
+                        rtol=1e-12,
+                        atol=1e-13,
+                    )
+
+                bls_blocks = []
+                with patch.object(
+                    estimator_helpers,
+                    "_position_initial_state_jacobian",
+                    side_effect=lambda *args: bls_blocks.append(original(*args))
+                    or bls_blocks[-1],
+                ):
+                    estimate_position_bls_lm(
+                        t_pass_s,
+                        obs_data,
+                        x_guess,
+                        pass_geo,
+                        mu_moon,
+                        0.0,
+                        0.0,
+                        get_earth_pos,
+                        get_sun_pos,
+                        max_iter=1,
+                        rtol=1e-12,
+                        atol=1e-13,
+                    )
+
+                self.assertEqual(len(srif_blocks), 1)
+                self.assertEqual(len(bls_blocks), 1)
+                np.testing.assert_allclose(
+                    srif_blocks[0], bls_blocks[0], rtol=0.0, atol=1e-12
+                )
+
     def test_position_srif_noise_free_recovery_synthetic_arc(self):
         mu_moon = 4902.800066e9
         r0norm = 1737.4e3 + 100e3

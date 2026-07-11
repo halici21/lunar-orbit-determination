@@ -308,11 +308,18 @@ Range/azimuth/elevation generation and residuals accept two opt-in corrections
     the Moon's barycentric velocity, giving a correction ~20× smaller).
 
 The same correction settings are carried on `PassGeometry` and reused in
-generation, prediction, and residual computation, so no estimator bias is
-introduced. The analytic Jacobian keeps a first-stage approximation: it neglects
-the implicit `dτ/dx` light-time coupling and the stellar-aberration rotation
-derivative (acceptable because both are far below the measurement noise floor for
-Earth–Moon geometry).
+generation, prediction, and residual computation. Jacobian behavior is selected
+independently. The default light-time Jacobian remains the backward-compatible
+first-order approximation. With `jacobian_model="implicit_light_time"`, the CN
+range, azimuth, and elevation rows include implicit `dτ/dx`, transmit-epoch STM,
+LOS-normalization, and receive-epoch SEZ chain-rule terms. For CN+S, the range
+row remains the same implicit CN result while the angle rows additionally apply
+a local tangent-space central finite-difference Jacobian of the production
+stellar-aberration transform. The resulting method is hybrid, not fully
+analytic: analytic implicit CN sensitivity, local numerical aberration
+sensitivity, and analytic receive-frame/SEZ angle mapping. The legacy
+first-order mode remains unchanged.
+See `docs/one_way_light_time_jacobians.md` for equations and singularity policy.
 
 ### Estimators
 

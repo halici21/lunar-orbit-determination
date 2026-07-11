@@ -42,6 +42,13 @@ class ReportingTests(unittest.TestCase):
             measurement_type="range_rate",
             range_rate_physics="two_way_counted_doppler",
             count_interval_s=20.0,
+            measurement_model_profile="two_way_counted_doppler",
+            companion_geometry="instantaneous",
+            jacobian_model="analytic_first_order_light_time",
+            range_jacobian_model="implicit_light_time",
+            angle_jacobian_model="first_order_light_time",
+            aberration_jacobian_model="none",
+            angle_jacobian_matches_full_residual_physics=False,
             start_mode="formal",
             arc_results=(
                 _arc_result(1, 100.0, 1.0, posterior_covariance=posterior_covariance),
@@ -54,12 +61,57 @@ class ReportingTests(unittest.TestCase):
                 row = next(csv.DictReader(handle))
 
         self.assertEqual(row["range_rate_physics"], "two_way_counted_doppler")
+        self.assertEqual(row["measurement_model_profile"], "two_way_counted_doppler")
+        self.assertEqual(row["companion_geometry"], "instantaneous")
+        self.assertEqual(row["jacobian_model"], "analytic_first_order_light_time")
+        self.assertEqual(row["range_jacobian_model"], "implicit_light_time")
+        self.assertEqual(row["angle_jacobian_model"], "first_order_light_time")
+        self.assertEqual(row["aberration_jacobian_model"], "none")
+        self.assertEqual(row["angle_jacobian_matches_full_residual_physics"], "False")
         self.assertAlmostEqual(float(row["count_interval_s"]), 20.0)
         self.assertEqual(int(row["posterior_num_bias_states"]), 2)
         self.assertAlmostEqual(float(row["posterior_max_state_bias_corr"]), 0.5)
         self.assertAlmostEqual(float(row["posterior_state_rss_sigma"]), math.sqrt(6.0))
         self.assertAlmostEqual(float(row["posterior_bias_rss_sigma"]), math.sqrt(2.0))
         self.assertEqual(int(row["prior_num_bias_states"]), 0)
+
+    def test_scenario_csv_includes_hybrid_aberration_jacobian_metadata(self):
+        scenario = ScenarioResult(
+            label="cn_plus_s",
+            measurement_type="position",
+            measurement_model_profile="one_way_light_time_aberrated_spice_ssb",
+            jacobian_model="implicit_light_time",
+            range_jacobian_model="implicit_light_time",
+            line_of_sight_jacobian_model="implicit_light_time_chain_rule",
+            angle_jacobian_model="hybrid_apparent_chain_rule",
+            aberration_jacobian_model="local_central_finite_difference",
+            angle_jacobian_matches_full_residual_physics=True,
+            observer_velocity_epoch="receive",
+            observer_velocity_frame="J2000",
+            observer_velocity_reference_center="SSB",
+            aberration_local_jacobian_input="unit_cn_los",
+            aberration_local_jacobian_space="tangent",
+            aberration_local_jacobian_step=1.0e-5,
+            start_mode="cold",
+            arc_results=(_arc_result(1, 10.0, 0.1),),
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_path = write_scenario_summary_csv([scenario], Path(tmp_dir) / "summary.csv")
+            with csv_path.open(newline="", encoding="utf-8") as handle:
+                row = next(csv.DictReader(handle))
+
+        self.assertEqual(row["line_of_sight_jacobian_model"], "implicit_light_time_chain_rule")
+        self.assertEqual(row["angle_jacobian_model"], "hybrid_apparent_chain_rule")
+        self.assertEqual(
+            row["aberration_jacobian_model"], "local_central_finite_difference"
+        )
+        self.assertEqual(row["observer_velocity_epoch"], "receive")
+        self.assertEqual(row["observer_velocity_frame"], "J2000")
+        self.assertEqual(row["observer_velocity_reference_center"], "SSB")
+        self.assertEqual(row["aberration_local_jacobian_input"], "unit_cn_los")
+        self.assertEqual(row["aberration_local_jacobian_space"], "tangent")
+        self.assertEqual(float(row["aberration_local_jacobian_step"]), 1.0e-5)
         self.assertTrue(math.isnan(float(row["prior_max_state_bias_corr"])))
 
     def test_scenario_csv_includes_convergence_reason_columns(self):

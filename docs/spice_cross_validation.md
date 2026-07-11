@@ -12,26 +12,43 @@ Light-time (CN) for the synthetic spacecraft cannot be evaluated by SPICE `spkez
 
 LOS = +X (|r| = 1e8 m), |v| = 30 km/s. `apply_stellar_aberration` vs `spice.stelab` at the same observer velocity.
 
-| geometry | phi (mine) [arcsec] | mine vs SPICE [arcsec] | LOS diff [m] | range diff [m] |
-|---|---:|---:|---:|---:|
-| orthogonal (90 deg) | 20.641 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
-| 45 deg | 14.595 | 0.00e+00 | 0.00e+00 | 1.49e-08 |
-| near-parallel (5 deg) | 1.799 | 0.00e+00 | 2.27e-13 | 1.49e-08 |
-| parallel (0 deg) | 0.000 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
-| anti-parallel (180 deg) | 0.000 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
+| geometry | phi (mine) [arcsec] | mine vs SPICE [arcsec] | unit-LOS diff | LOS diff [m] | range diff [m] |
+|---|---:|---:|---:|---:|---:|
+| orthogonal (90 deg) | 20.641 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
+| 45 deg | 14.595 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 1.49e-08 |
+| near-parallel (5 deg) | 1.799 | 3.49e-16 | 1.69e-21 | 2.27e-13 | 1.49e-08 |
+| parallel (0 deg) | 0.000 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
+| anti-parallel (180 deg) | 0.000 | 0.00e+00 | 0.00e+00 | 0.00e+00 | 0.00e+00 |
 
-**Operator agreement (controlled): max 0.00e+00 arcsec** — far below 1 arcsec; orthogonal case gives phi = 20.6 arcsec as expected, (anti-)parallel cases give phi = 0.
+**Operator agreement (controlled): max 3.494e-16 arcsec, unit-LOS norm difference 1.694e-21, vector difference 2.274e-13 m.** These are direct algebraic `stelab` comparisons with identical inputs and are below 1 arcsec; orthogonal case gives phi = 20.6 arcsec as expected, (anti-)parallel cases give phi = 0.
 
-## 2. Operator + frame fidelity — SPICE fixture (real passes)
+## 2. Local tangent-Jacobian fidelity
+
+The M2.3 Jacobian differentiates only the three-dimensional aberration operator. Normalized unit-LOS perturbations are applied in two tangent directions with `h = 1e-5`; the independent reference perturbs `spice.stelab` directly and converts observer velocity from m/s to km/s.
+
+| geometry | absolute tangent-action error | relative tangent-action error |
+|---|---:|---:|
+| oblique | 1.759e-16 | 1.244e-16 |
+| perpendicular | 2.326e-16 | 1.645e-16 |
+| parallel | 1.110e-16 | 7.851e-17 |
+| anti-parallel | 1.003e-18 | 7.088e-19 |
+| near-parallel (5 deg) | 1.112e-16 | 7.867e-17 |
+| near-anti-parallel (5 deg) | 2.484e-16 | 1.756e-16 |
+
+Maximum action error: **2.484e-16 absolute**, **1.756e-16 relative**. The tested step sweep `3e-5, 1e-5, 3e-6` lies on the stable central-difference plateau; larger steps show truncation error and steps below about `1e-7` begin to amplify floating-point roundoff.
+
+## 3. Operator + frame fidelity — SPICE fixture (real passes)
 
 Realistic Earth-station -> lunar-orbiter geometry. `spice_ssb` uses the SSB observer velocity (≈30 km/s) — the same frame as `spice.stelab`; `local_mci` uses the Moon-relative velocity (≈1 km/s).
 
+This fixture validates the aberration operator and observer-velocity frame on realistic inputs. It reuses the internal CN light-time solution because the synthetic orbiter is not an SPK body; it is therefore a different validation level from the controlled direct-operator comparison and is not an independent end-to-end SPICE light-time solution.
+
 | # | station | elev [deg] | mine(ssb) vs SPICE [arcsec] | local_mci vs SPICE [arcsec] | range diff [m] |
 |---:|---|---:|---:|---:|---:|
-| 1 | ITU Ayazaga | -25.6 | 4.35e-03 | 10.233 | 0.00e+00 |
-| 2 | Goldstone DSN | -33.6 | 4.35e-03 | 9.818 | 5.96e-08 |
+| 1 | ITU Ayazaga | -25.6 | 0.00e+00 | 10.233 | 0.00e+00 |
+| 2 | Goldstone DSN | -33.6 | 0.00e+00 | 9.818 | 5.96e-08 |
 | 3 | ITU Ayazaga | -25.4 | 0.00e+00 | 10.235 | 5.96e-08 |
-| 4 | Goldstone DSN | -33.8 | 4.35e-03 | 9.820 | 0.00e+00 |
+| 4 | Goldstone DSN | -33.8 | 0.00e+00 | 9.820 | 0.00e+00 |
 | 5 | ITU Ayazaga | -25.2 | 0.00e+00 | 10.237 | 5.96e-08 |
 | 6 | Goldstone DSN | -34.0 | 0.00e+00 | 9.823 | 0.00e+00 |
 | 7 | ITU Ayazaga | -24.6 | 0.00e+00 | 10.243 | 5.96e-08 |
@@ -45,7 +62,7 @@ The fixture is a fixed geometry snapshot (station elevations -36.4…-22.8 deg, 
 
 ### Findings
 
-- **`spice_ssb` model vs SPICE CN+S: max 4.35e-03 arcsec** (machine-precision agreement). The SSB-frame model reproduces SPICE's reception-case CN+S.
+- **Realistic-input `spice_ssb` operator vs `stelab`: max 0.000e+00 arcsec, unit-LOS difference 0.000e+00, vector difference 0.000e+00 m.** The SSB-frame aberration operator agrees at floating-point scale.
 
 - **`local_mci` model vs SPICE CN+S: 9.82–10.26 arcsec systematic discrepancy.** This is the aberration from the Moon's barycentric velocity, which `local_mci` omits.
 
@@ -55,8 +72,9 @@ The fixture is a fixed geometry snapshot (station elevations -36.4…-22.8 deg, 
 
 | criterion | target | result |
 |---|---|---|
-| CN+S operator vs SPICE `stelab` | < 1 arcsec | 0.0e+00 arcsec ✅ |
-| `spice_ssb` model vs SPICE CN+S | < 1 arcsec | 4.3e-03 arcsec ✅ |
+| CN+S operator vs SPICE `stelab` | < 1 arcsec | 3.494e-16 arcsec; unit LOS 1.694e-21; vector 2.274e-13 m ✅ |
+| local tangent action vs direct SPICE perturbation | < 1e-9 absolute | 2.5e-16 ✅ |
+| realistic-input `spice_ssb` operator vs `stelab` | < 1 arcsec | 0.0e+00 arcsec ✅ |
 | range invariance (pure rotation) | ≈ 0 m | 6.0e-08 m ✅ |
 | `local_mci` vs SPICE CN+S | documented | 10.26 arcsec (frame approximation, see findings) |
 
@@ -64,7 +82,9 @@ The fixture is a fixed geometry snapshot (station elevations -36.4…-22.8 deg, 
 
 1. The stellar aberration **operator** matches SPICE `stelab` to machine precision for all geometries (orthogonal, oblique, (anti-)parallel), confirming the Rodrigues rotation implements the SPICE Newtonian reception-case formula.
 
-2. The **`spice_ssb` model is SPICE-faithful CN+S**: using the SSB observer velocity it agrees with `spice.stelab` to <1e-3 arcsec.
+2. With the same internal CN LOS and SSB observer velocity, the **`spice_ssb` aberration operator is SPICE-faithful** at floating-point scale. This does not independently validate the synthetic orbiter's light-time solution.
 
-3. The **`local_mci` model differs from SPICE CN+S by ~the Moon's barycentric-velocity aberration (several arcsec)** — a documented, intentional approximation, not a defect. Use `spice_ssb` when SPICE fidelity is required.
+3. The **`local_mci` operator differs from the SSB-reference `stelab` result by ~the Moon's barycentric-velocity aberration (several arcsec)** — a documented, intentional approximation, not a defect. Use `spice_ssb` when SPICE fidelity is required.
+
+4. The M2.3 local tangent Jacobian agrees with an independent direct `spice.stelab` finite difference, including exact and near parallel/anti-parallel geometries. The complete angle Jacobian remains hybrid: analytic implicit CN sensitivity, local finite-difference aberration, and analytic receive-frame/SEZ mapping.
 

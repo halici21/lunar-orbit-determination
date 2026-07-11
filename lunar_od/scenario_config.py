@@ -28,6 +28,19 @@ ALLOWED_START_MODES = ("cold", "hot", "formal", "sqrt_formal")
 ALLOWED_NETWORKS = tuple(network.name for network in THESIS_NETWORKS)
 ALLOWED_BIAS_MODES = (None, "global", "station_angles", "station_full")
 ALLOWED_RANGE_RATE_PHYSICS = ("geometric_instantaneous", "two_way_counted_doppler")
+ALLOWED_MEASUREMENT_MODEL_PROFILES = (
+    "geometric_instantaneous",
+    "one_way_light_time",
+    "one_way_light_time_aberrated_local_mci",
+    "one_way_light_time_aberrated_spice_ssb",
+)
+ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
+ALLOWED_JACOBIAN_MODELS = (
+    "analytic_exact_geometric",
+    "analytic_first_order_light_time",
+    "implicit_light_time",
+    "finite_difference_reference",
+)
 ALLOWED_EARTH_J2_MODES = ("indirect", "direct")
 # Bare "MOON_PA" is deliberately NOT allowed: the DE421 and DE440 frame
 # kernels both define the FRAME_MOON_PA alias, so a bare name silently follows
@@ -68,6 +81,9 @@ class ScenarioConfig:
     apply_light_time: bool = False
     apply_stellar_aberration: bool = False
     stellar_aberration_model: str = "local_mci"
+    measurement_model_profile: str = "geometric_instantaneous"
+    companion_geometry: str = "instantaneous"
+    jacobian_model: str = "analytic_exact_geometric"
     ukf_alpha: float = 0.35
     ukf_beta: float = 2.0
     ukf_kappa: float = 0.0
@@ -142,6 +158,18 @@ def scenario_config_schema() -> dict[str, Any]:
             "apply_light_time": {"type": "boolean", "default": False},
             "apply_stellar_aberration": {"type": "boolean", "default": False},
             "stellar_aberration_model": {"enum": ["local_mci", "spice_ssb"], "default": "local_mci"},
+            "measurement_model_profile": {
+                "enum": list(ALLOWED_MEASUREMENT_MODEL_PROFILES),
+                "default": "geometric_instantaneous",
+            },
+            "companion_geometry": {
+                "enum": list(ALLOWED_COMPANION_GEOMETRIES),
+                "default": "instantaneous",
+            },
+            "jacobian_model": {
+                "enum": list(ALLOWED_JACOBIAN_MODELS),
+                "default": "analytic_exact_geometric",
+            },
             "ukf_alpha": {"type": "number", "default": 0.35},
             "ukf_beta": {"type": "number", "default": 2.0},
             "ukf_kappa": {"type": "number", "default": 0.0},
@@ -265,6 +293,21 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             payload.get("stellar_aberration_model", "local_mci"),
             ("local_mci", "spice_ssb"),
             "stellar_aberration_model",
+        ),
+        measurement_model_profile=_enum_value(
+            payload.get("measurement_model_profile", "geometric_instantaneous"),
+            ALLOWED_MEASUREMENT_MODEL_PROFILES,
+            "measurement_model_profile",
+        ),
+        companion_geometry=_enum_value(
+            payload.get("companion_geometry", "instantaneous"),
+            ALLOWED_COMPANION_GEOMETRIES,
+            "companion_geometry",
+        ),
+        jacobian_model=_enum_value(
+            payload.get("jacobian_model", "analytic_exact_geometric"),
+            ALLOWED_JACOBIAN_MODELS,
+            "jacobian_model",
         ),
         ukf_alpha=_positive_float(payload.get("ukf_alpha", 0.35), "ukf_alpha"),
         ukf_beta=_nonnegative_float(payload.get("ukf_beta", 2.0), "ukf_beta"),
@@ -415,9 +458,19 @@ def scenario_config_summary(config: ScenarioConfig) -> str:
     bias = config.bias_mode or "none"
     noise = "noise" if config.noise else "clean"
     physics = f", physics={config.range_rate_physics}" if config.measurement_type == "range_rate" else ""
+    profile = (
+        f", profile={config.measurement_model_profile}"
+        if config.measurement_model_profile != "geometric_instantaneous"
+        else ""
+    )
+    companion = (
+        f", companion={config.companion_geometry}"
+        if config.measurement_type == "range_rate" and config.companion_geometry != "instantaneous"
+        else ""
+    )
     return (
         f"{config.name}: {config.network} {config.measurement_type} "
-        f"{config.estimator_type}/{config.start_mode}, {noise}, bias={bias}{physics}, "
+        f"{config.estimator_type}/{config.start_mode}, {noise}, bias={bias}{physics}{profile}{companion}, "
         f"duration={config.duration_h:g} h"
     )
 
@@ -524,11 +577,27 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError("bias solve-for modes are supported here only for estimator_type='srif' or 'ukf'.")
     if config.range_rate_physics != "geometric_instantaneous" and config.measurement_type != "range_rate":
         raise ValueError("non-geometric range_rate_physics requires measurement_type='range_rate'.")
-    if config.apply_stellar_aberration and not config.apply_light_time:
-        raise ValueError("apply_stellar_aberration requires apply_light_time.")
-    if (config.apply_light_time or config.apply_stellar_aberration) and config.measurement_type != "position":
+    profile_controls_position = config.measurement_model_profile != "geometric_instantaneous"
+    if profile_controls_position and config.measurement_type != "position":
         raise ValueError(
-            "apply_light_time / apply_stellar_aberration apply only to measurement_type='position'."
+            "non-geometric measurement_model_profile applies only to measurement_type='position'; "
+            "use companion_geometry for range_rate companion range/angles."
+        )
+    if not profile_controls_position:
+        if config.apply_stellar_aberration and not config.apply_light_time:
+            raise ValueError("apply_stellar_aberration requires apply_light_time.")
+        if (config.apply_light_time or config.apply_stellar_aberration) and config.measurement_type != "position":
+            raise ValueError(
+                "apply_light_time / apply_stellar_aberration apply only to measurement_type='position'."
+            )
+    if config.companion_geometry != "instantaneous" and config.measurement_type != "range_rate":
+        raise ValueError("companion_geometry applies only to measurement_type='range_rate'.")
+    if config.jacobian_model == "implicit_light_time" and not (
+        profile_controls_position or config.apply_light_time or config.companion_geometry == "apparent_one_way"
+    ):
+        raise ValueError(
+            "jacobian_model='implicit_light_time' requires a light-time corrected "
+            "measurement profile or apparent companion geometry."
         )
     scenario_range_rate_physics_config(config)
     if config.ukf_min_process_noise_scale > config.ukf_max_process_noise_scale:

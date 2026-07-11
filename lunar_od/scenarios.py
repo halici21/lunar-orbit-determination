@@ -23,6 +23,7 @@ from .measurements import (
     PassGeometry,
     generate_position_measurements,
     generate_range_rate_measurements,
+    measurement_model_metadata,
 )
 from .radiometrics import RangeRatePhysicsConfig, range_rate_physics_config
 
@@ -144,6 +145,20 @@ class ScenarioResult:
     estimator_type: EstimatorType = "srif"
     range_rate_physics: str = "geometric_instantaneous"
     count_interval_s: float = 60.0
+    measurement_model_profile: str = "geometric_instantaneous"
+    companion_geometry: str = "instantaneous"
+    jacobian_model: str = "analytic_exact_geometric"
+    range_jacobian_model: str = "analytic_exact_geometric"
+    line_of_sight_jacobian_model: str = "analytic_exact_geometric"
+    angle_jacobian_model: str = "analytic_exact_geometric"
+    aberration_jacobian_model: str = "not_applied"
+    angle_jacobian_matches_full_residual_physics: bool = True
+    observer_velocity_epoch: str = "not_applicable"
+    observer_velocity_frame: str = "not_applicable"
+    observer_velocity_reference_center: str = "not_applicable"
+    aberration_local_jacobian_input: str = "not_applicable"
+    aberration_local_jacobian_space: str = "not_applicable"
+    aberration_local_jacobian_step: float = float("nan")
 
     @property
     def algorithmic_success_fraction(self) -> float:
@@ -215,6 +230,9 @@ def build_measurement_arcs(
     apply_light_time: bool = False,
     apply_stellar_aberration: bool = False,
     stellar_aberration_model: str = "local_mci",
+    measurement_model_profile: str | None = None,
+    companion_geometry: str = "instantaneous",
+    jacobian_model: str | None = None,
 ) -> tuple[PreparedArc, ...]:
     """Build per-arc observation packages from visibility segmentation."""
     t_sim_s = np.asarray(t_sim_s, dtype=float).reshape(-1)
@@ -260,6 +278,8 @@ def build_measurement_arcs(
                 apply_light_time=apply_light_time,
                 apply_stellar_aberration=apply_stellar_aberration,
                 stellar_aberration_model=stellar_aberration_model,
+                measurement_model_profile=measurement_model_profile,
+                jacobian_model=jacobian_model,
             )
         elif measurement_type == "range_rate":
             obs_data, pass_geo = generate_range_rate_measurements(
@@ -274,6 +294,8 @@ def build_measurement_arcs(
                 rng=rng,
                 arc_id=arc_number,
                 range_rate_physics=rr_physics,
+                companion_geometry=companion_geometry,
+                jacobian_model=jacobian_model,
             )
         else:
             raise ValueError(f"Unsupported measurement_type: {measurement_type}")
@@ -509,6 +531,10 @@ def run_batch_arc_sequence(
         _rr_physics = RangeRatePhysicsConfig()
         if arcs and measurement_type == "range_rate":
             _rr_physics = range_rate_physics_config(arcs[0].pass_geo.range_rate_physics)
+        _pass_geo0 = arcs[0].pass_geo if arcs else None
+        _measurement_meta = (
+            {} if _pass_geo0 is None else measurement_model_metadata(_pass_geo0)
+        )
         return ScenarioResult(
             label=label,
             measurement_type=measurement_type,
@@ -517,6 +543,54 @@ def run_batch_arc_sequence(
             estimator_type=estimator_type,
             range_rate_physics=_rr_physics.mode,
             count_interval_s=_rr_physics.count_interval_s,
+            measurement_model_profile=(
+                "geometric_instantaneous"
+                if _pass_geo0 is None
+                else _pass_geo0.measurement_model_profile
+            ),
+            companion_geometry=(
+                "instantaneous"
+                if _pass_geo0 is None
+                else _pass_geo0.companion_geometry
+            ),
+            jacobian_model=(
+                "analytic_exact_geometric"
+                if _pass_geo0 is None
+                else _pass_geo0.jacobian_model
+            ),
+            range_jacobian_model=_measurement_meta.get(
+                "range_jacobian_model", "analytic_exact_geometric"
+            ),
+            line_of_sight_jacobian_model=_measurement_meta.get(
+                "line_of_sight_jacobian_model", "analytic_exact_geometric"
+            ),
+            angle_jacobian_model=_measurement_meta.get(
+                "angle_jacobian_model", "analytic_exact_geometric"
+            ),
+            aberration_jacobian_model=_measurement_meta.get(
+                "aberration_jacobian_model", "not_applied"
+            ),
+            angle_jacobian_matches_full_residual_physics=bool(
+                _measurement_meta.get("angle_jacobian_matches_full_residual_physics", True)
+            ),
+            observer_velocity_epoch=_measurement_meta.get(
+                "observer_velocity_epoch", "not_applicable"
+            ),
+            observer_velocity_frame=_measurement_meta.get(
+                "observer_velocity_frame", "not_applicable"
+            ),
+            observer_velocity_reference_center=_measurement_meta.get(
+                "observer_velocity_reference_center", "not_applicable"
+            ),
+            aberration_local_jacobian_input=_measurement_meta.get(
+                "aberration_local_jacobian_input", "not_applicable"
+            ),
+            aberration_local_jacobian_space=_measurement_meta.get(
+                "aberration_local_jacobian_space", "not_applicable"
+            ),
+            aberration_local_jacobian_step=float(
+                _measurement_meta.get("aberration_local_jacobian_step", float("nan"))
+            ),
         )
 
     for arc_index, arc in enumerate(arcs):
@@ -897,6 +971,8 @@ def run_batch_arc_sequence(
     result_rr_physics = RangeRatePhysicsConfig()
     if arcs and measurement_type == "range_rate":
         result_rr_physics = range_rate_physics_config(arcs[0].pass_geo.range_rate_physics)
+    pass_geo0 = arcs[0].pass_geo if arcs else None
+    measurement_meta = {} if pass_geo0 is None else measurement_model_metadata(pass_geo0)
 
     return ScenarioResult(
         label=label,
@@ -906,6 +982,54 @@ def run_batch_arc_sequence(
         estimator_type=estimator_type,
         range_rate_physics=result_rr_physics.mode,
         count_interval_s=result_rr_physics.count_interval_s,
+        measurement_model_profile=(
+            "geometric_instantaneous"
+            if pass_geo0 is None
+            else pass_geo0.measurement_model_profile
+        ),
+        companion_geometry=(
+            "instantaneous"
+            if pass_geo0 is None
+            else pass_geo0.companion_geometry
+        ),
+        jacobian_model=(
+            "analytic_exact_geometric"
+            if pass_geo0 is None
+            else pass_geo0.jacobian_model
+        ),
+        range_jacobian_model=measurement_meta.get(
+            "range_jacobian_model", "analytic_exact_geometric"
+        ),
+        line_of_sight_jacobian_model=measurement_meta.get(
+            "line_of_sight_jacobian_model", "analytic_exact_geometric"
+        ),
+        angle_jacobian_model=measurement_meta.get(
+            "angle_jacobian_model", "analytic_exact_geometric"
+        ),
+        aberration_jacobian_model=measurement_meta.get(
+            "aberration_jacobian_model", "not_applied"
+        ),
+        angle_jacobian_matches_full_residual_physics=bool(
+            measurement_meta.get("angle_jacobian_matches_full_residual_physics", True)
+        ),
+        observer_velocity_epoch=measurement_meta.get(
+            "observer_velocity_epoch", "not_applicable"
+        ),
+        observer_velocity_frame=measurement_meta.get(
+            "observer_velocity_frame", "not_applicable"
+        ),
+        observer_velocity_reference_center=measurement_meta.get(
+            "observer_velocity_reference_center", "not_applicable"
+        ),
+        aberration_local_jacobian_input=measurement_meta.get(
+            "aberration_local_jacobian_input", "not_applicable"
+        ),
+        aberration_local_jacobian_space=measurement_meta.get(
+            "aberration_local_jacobian_space", "not_applicable"
+        ),
+        aberration_local_jacobian_step=float(
+            measurement_meta.get("aberration_local_jacobian_step", float("nan"))
+        ),
     )
 
 

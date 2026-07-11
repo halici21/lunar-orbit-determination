@@ -15,7 +15,7 @@ from .dynamics import dynamics_jacobian_a_matrix, f3body_moon, propagate_augment
 
 _IDENTITY_6_COL: np.ndarray = np.eye(6).reshape(-1, order="F")
 from .geometry import ecef2razel_sez, wrap_to_pi
-from .measurements import PassGeometry
+from .measurements import PassGeometry, _range_rate_companion_observable, normalize_companion_geometry
 from .radiometrics import (
     instantaneous_geometric_range_rate,
     range_rate_physics_config,
@@ -1584,6 +1584,9 @@ def _range_rate_measurement_from_state(
     time_idx = int(obs_row[6]) - 1
     station = pass_geo.stations[station_id]
     rr_physics = range_rate_physics_config(pass_geo.range_rate_physics)
+    companion_geometry = normalize_companion_geometry(
+        getattr(pass_geo, "companion_geometry", "instantaneous")
+    )
     state_full = np.asarray(state_mci, dtype=float).reshape(-1)
     state = state_full[:6]
     earth_state = np.concatenate([pass_geo.earth_pos_mci_m[time_idx, :], pass_geo.earth_vel_mci_mps[time_idx, :]])
@@ -1592,15 +1595,19 @@ def _range_rate_measurement_from_state(
     rho_ecef = state_sat_ecef[:3] - station.r_ecef_m
     v_rel_ecef = state_sat_ecef[3:]
     range_m = float(np.linalg.norm(rho_ecef))
-    if rr_physics.mode == "geometric_instantaneous":
-        rr_mps = instantaneous_geometric_range_rate(rho_ecef, v_rel_ecef)
-    else:
-        local_t, local_state, local_earth_pos, local_earth_vel, local_xforms = _two_way_local_histories(
+    local_histories = None
+    if companion_geometry == "apparent_one_way" or rr_physics.mode != "geometric_instantaneous":
+        history_count_interval_s = (
+            rr_physics.count_interval_s
+            if rr_physics.mode != "geometric_instantaneous"
+            else max(1.0, 2.0 * range_m / rr_physics.light_speed_mps)
+        )
+        local_histories = _two_way_local_histories(
             float(obs_row[0]),
             state,
             range_m,
             pass_geo,
-            rr_physics.count_interval_s,
+            history_count_interval_s,
             rr_physics.light_speed_mps,
             mu_moon_m3_s2,
             mu_earth_m3_s2,
@@ -1611,6 +1618,25 @@ def _range_rate_measurement_from_state(
             atol,
             rr_physics.local_state_model,
         )
+    if companion_geometry == "instantaneous":
+        az_rad, el_rad, _ = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
+    else:
+        local_t, local_state, local_earth_pos, _local_earth_vel, local_xforms = local_histories
+        earth_rx = _interp_pass_values(local_t, local_earth_pos, np.array([float(obs_row[0])]))[0]
+        xform_rx = _interp_pass_values(local_t, local_xforms, np.array([float(obs_row[0])]))[0]
+        range_m, az_rad, el_rad = _range_rate_companion_observable(
+            float(obs_row[0]),
+            station,
+            local_t,
+            local_state,
+            earth_rx,
+            xform_rx,
+            companion_geometry=companion_geometry,
+        )
+    if rr_physics.mode == "geometric_instantaneous":
+        rr_mps = instantaneous_geometric_range_rate(rho_ecef, v_rel_ecef)
+    else:
+        local_t, local_state, local_earth_pos, local_earth_vel, local_xforms = local_histories
         rr_mps = two_way_counted_doppler_observable(
             float(obs_row[0]),
             station,
@@ -1621,7 +1647,6 @@ def _range_rate_measurement_from_state(
             local_xforms,
             rr_physics,
         )
-    az_rad, el_rad, _ = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
     measurement = np.array([range_m, rr_mps, az_rad, el_rad], dtype=float)
     if bias_cfg is None:
         bias_cfg = _resolve_ukf_bias_config("range_rate", state_full.size, len(pass_geo.stations), None)

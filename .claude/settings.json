@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest *)",
+      "PowerShell(python -m pytest *)",
+      "PowerShell(Set-Location *)"
+    ]
+  }
+}

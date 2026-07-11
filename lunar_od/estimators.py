@@ -12,7 +12,11 @@ from numpy.typing import ArrayLike
 from .accelerated import apply_stm_to_jacobian
 from .dynamics import propagate_augmented_state, propagate_state
 from .geometry import wrap_to_pi
-from .measurements import PassGeometry, compute_position_residuals_analytic
+from .measurements import (
+    PassGeometry,
+    compute_position_residuals_analytic,
+    position_initial_state_jacobian_from_augmented_history,
+)
 from .measurements import compute_range_rate_residuals
 from .measurements import compute_range_rate_residuals_analytic, measurement_sigma_vector
 from .radiometrics import RangeRatePhysicsConfig, range_rate_physics_config
@@ -137,7 +141,9 @@ def estimate_position_srif(
             best_cost = current_cost
             x_best = x_nominal.copy()
 
-        h_initial_state = apply_stm_to_jacobian(obs_data, x_aug_hist, h_tilde, 3, 5)
+        h_initial_state = _position_initial_state_jacobian(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
 
         if nb:
             h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
@@ -555,7 +561,9 @@ def estimate_position_bls_lm(
             best_cost = current_cost
             x_best = x_nominal.copy()
 
-        h_initial_state = apply_stm_to_jacobian(obs_data, x_aug_hist, h_tilde, 3, 5)
+        h_initial_state = _position_initial_state_jacobian(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
 
         if nb:
             h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
@@ -932,12 +940,9 @@ def _position_posterior_information(
         atol=atol,
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
-    h_initial = np.zeros((obs_data.shape[0] * 3, 6), dtype=float)
-    for obs_idx in range(obs_data.shape[0]):
-        row0 = obs_idx * 3
-        time_idx = int(obs_data[obs_idx, 5]) - 1
-        phi_k = x_aug_hist[time_idx, 6:].reshape((6, 6), order="F")
-        h_initial[row0 : row0 + 3, :] = h_tilde[row0 : row0 + 3, :] @ phi_k
+    h_initial = _position_initial_state_jacobian(
+        obs_data, x_aug_hist, h_tilde, pass_geo
+    )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _position_bias_jacobian(obs_data, bias_cfg)])
     return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
@@ -1014,6 +1019,18 @@ def _range_rate_initial_jacobian_from_local(
     h_tilde: np.ndarray,
 ) -> np.ndarray:
     return apply_stm_to_jacobian(obs_data, x_aug_hist, h_tilde, 4, 6)
+
+
+def _position_initial_state_jacobian(
+    obs_data: np.ndarray,
+    x_aug_hist: np.ndarray,
+    h_tilde: np.ndarray,
+    pass_geo: PassGeometry,
+) -> np.ndarray:
+    """Apply the shared position initial-state mapping contract."""
+    return position_initial_state_jacobian_from_augmented_history(
+        obs_data, x_aug_hist, h_tilde, pass_geo
+    )
 
 
 def _range_rate_numerical_initial_jacobian(
@@ -1252,7 +1269,9 @@ def _position_initial_jacobian(
         atol=atol,
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
-    h_initial = apply_stm_to_jacobian(obs_data, x_aug_hist, h_tilde, 3, 5)
+    h_initial = _position_initial_state_jacobian(
+        obs_data, x_aug_hist, h_tilde, pass_geo
+    )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _position_bias_jacobian(obs_data, bias_cfg)])
     return h_initial

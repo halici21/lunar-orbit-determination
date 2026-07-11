@@ -14,6 +14,7 @@ from .dynamics import propagate_augmented_state
 from .measurements import (
     PassGeometry,
     compute_position_residuals_analytic,
+    position_initial_state_jacobian_from_augmented_history,
     compute_range_rate_residuals_analytic,
     measurement_sigma_vector,
 )
@@ -339,8 +340,9 @@ def build_initial_state_jacobian(
 
     if measurement_type == "position":
         _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
-        block_size = 3
-        time_col = 5
+        return position_initial_state_jacobian_from_augmented_history(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
     elif range_rate_physics_config(pass_geo.range_rate_physics).mode == "geometric_instantaneous":
         _, _, h_tilde = compute_range_rate_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
         block_size = 4

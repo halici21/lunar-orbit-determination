@@ -1,5 +1,6 @@
 import math
 import unittest
+from dataclasses import replace
 
 import numpy as np
 
@@ -18,10 +19,96 @@ from lunar_od import (
     decide_bias_state_handling,
     measurement_sigma_vector,
     propagate_augmented_state,
+    position_initial_state_jacobian_from_augmented_history,
 )
 
 
 class ObservabilityTests(unittest.TestCase):
+    def test_implicit_position_observability_uses_shared_initial_state_block(self):
+        mu_moon = 4902.800066e9
+        t_all_s, x_truth, get_earth_pos, get_sun_pos = _truth_history(mu_moon)
+        stations = (
+            _synthetic_station(15.0, 20.0, 0.0),
+            _synthetic_station(-25.0, 110.0, 0.0),
+        )
+        arc = _build_position_arc(1, 0, 5, t_all_s, x_truth, stations)
+        pass_geo = replace(
+            arc.pass_geo,
+            apply_light_time=True,
+            measurement_model_profile="one_way_light_time",
+            jacobian_model="implicit_light_time",
+        )
+        x0 = np.asarray(arc.truth_state_history_mci[0, :6], dtype=float)
+        x_aug0 = np.concatenate([x0, np.eye(6).reshape(-1, order="F")])
+        x_aug_hist = propagate_augmented_state(
+            arc.t_pass_s,
+            x_aug0,
+            mu_moon,
+            0.0,
+            0.0,
+            get_earth_pos,
+            get_sun_pos,
+            rtol=1e-12,
+            atol=1e-13,
+        )
+        _, _, h_tilde = compute_position_residuals_analytic(
+            x_aug_hist[:, :6], arc.obs_data, pass_geo
+        )
+        expected = position_initial_state_jacobian_from_augmented_history(
+            arc.obs_data, x_aug_hist, h_tilde, pass_geo
+        )
+
+        actual = build_initial_state_jacobian(
+            "position",
+            arc.t_pass_s,
+            arc.obs_data,
+            pass_geo,
+            x0,
+            mu_moon,
+            0.0,
+            0.0,
+            get_earth_pos,
+            get_sun_pos,
+            rtol=1e-12,
+            atol=1e-13,
+        )
+
+        np.testing.assert_allclose(actual, expected, rtol=0.0, atol=1e-12)
+
+        observer_reference_velocity = np.array([29780.0, 4200.0, -1100.0])
+        stellar_pass_geo = replace(
+            pass_geo,
+            earth_vel_mci_mps=np.repeat(
+                observer_reference_velocity[None, :], arc.t_pass_s.size, axis=0
+            ),
+            apply_stellar_aberration=True,
+            stellar_aberration_model="local_mci",
+            measurement_model_profile="one_way_light_time_aberrated_local_mci",
+        )
+        _, _, stellar_h_tilde = compute_position_residuals_analytic(
+            x_aug_hist[:, :6], arc.obs_data, stellar_pass_geo
+        )
+        stellar_expected = position_initial_state_jacobian_from_augmented_history(
+            arc.obs_data, x_aug_hist, stellar_h_tilde, stellar_pass_geo
+        )
+        stellar_actual = build_initial_state_jacobian(
+            "position",
+            arc.t_pass_s,
+            arc.obs_data,
+            stellar_pass_geo,
+            x0,
+            mu_moon,
+            0.0,
+            0.0,
+            get_earth_pos,
+            get_sun_pos,
+            rtol=1e-12,
+            atol=1e-13,
+        )
+        np.testing.assert_allclose(
+            stellar_actual, stellar_expected, rtol=0.0, atol=1e-12
+        )
+
     def test_position_arc_observability_builds_full_rank_fisher_information(self):
         mu_moon = 4902.800066e9
         t_all_s, x_truth, get_earth_pos, get_sun_pos = _truth_history(mu_moon)

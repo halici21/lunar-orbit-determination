@@ -465,6 +465,9 @@ class _AnalysisWorker(QThread):
                         apply_light_time=config.apply_light_time,
                         apply_stellar_aberration=config.apply_stellar_aberration,
                         stellar_aberration_model=config.stellar_aberration_model,
+                        measurement_model_profile=config.measurement_model_profile,
+                        companion_geometry=config.companion_geometry,
+                        jacobian_model=config.jacobian_model,
                     )
                     arc_cache[arc_key] = arcs
                 else:

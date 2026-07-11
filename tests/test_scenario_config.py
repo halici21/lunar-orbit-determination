@@ -34,6 +34,9 @@ class ScenarioConfigTests(unittest.TestCase):
         self.assertEqual(config.output_dir, "python_port/results")
         self.assertEqual(config.range_rate_physics, "geometric_instantaneous")
         self.assertEqual(config.count_interval_s, 60.0)
+        self.assertEqual(config.measurement_model_profile, "geometric_instantaneous")
+        self.assertEqual(config.companion_geometry, "instantaneous")
+        self.assertEqual(config.jacobian_model, "analytic_exact_geometric")
         self.assertEqual(config.ukf_alpha, 0.35)
         self.assertEqual(config.ukf_covariance_form, "square_root")
         self.assertIsNone(config.ukf_nis_gate)
@@ -48,6 +51,19 @@ class ScenarioConfigTests(unittest.TestCase):
         self.assertEqual(
             schema["properties"]["range_rate_physics"]["enum"],
             ["geometric_instantaneous", "two_way_counted_doppler"],
+        )
+        self.assertEqual(
+            schema["properties"]["measurement_model_profile"]["enum"],
+            [
+                "geometric_instantaneous",
+                "one_way_light_time",
+                "one_way_light_time_aberrated_local_mci",
+                "one_way_light_time_aberrated_spice_ssb",
+            ],
+        )
+        self.assertEqual(
+            schema["properties"]["companion_geometry"]["enum"],
+            ["instantaneous", "apparent_one_way"],
         )
         self.assertIn("single", schema["properties"]["network"]["enum"])
         self.assertEqual(schema["properties"]["ukf_alpha"]["default"], 0.35)
@@ -246,6 +262,59 @@ class ScenarioConfigTests(unittest.TestCase):
         config = scenario_config_from_mapping({**base, "apply_light_time": True})
         self.assertTrue(config.apply_light_time)
         self.assertFalse(config.apply_stellar_aberration)
+
+    def test_measurement_model_profile_and_companion_geometry_rules(self):
+        position_base = {
+            "name": "profile_demo",
+            "measurement_type": "position",
+            "estimator_type": "srif",
+            "start_mode": "cold",
+            "network": "multi",
+        }
+        config = scenario_config_from_mapping(
+            {
+                **position_base,
+                "measurement_model_profile": "one_way_light_time_aberrated_local_mci",
+                "jacobian_model": "analytic_first_order_light_time",
+            }
+        )
+        self.assertEqual(config.measurement_model_profile, "one_way_light_time_aberrated_local_mci")
+        self.assertEqual(config.jacobian_model, "analytic_first_order_light_time")
+        self.assertIn("profile=one_way_light_time_aberrated_local_mci", scenario_config_summary(config))
+
+        implicit = scenario_config_from_mapping(
+            {
+                **position_base,
+                "measurement_model_profile": "one_way_light_time",
+                "jacobian_model": "implicit_light_time",
+            }
+        )
+        self.assertEqual(implicit.jacobian_model, "implicit_light_time")
+        with self.assertRaises(ValueError):
+            scenario_config_from_mapping(
+                {**position_base, "jacobian_model": "implicit_light_time"}
+            )
+
+        range_rate_base = {
+            **position_base,
+            "measurement_type": "range_rate",
+            "estimator_type": "ukf",
+            "start_mode": "hot",
+        }
+        config = scenario_config_from_mapping(
+            {**range_rate_base, "companion_geometry": "apparent_one_way"}
+        )
+        self.assertEqual(config.companion_geometry, "apparent_one_way")
+        self.assertIn("companion=apparent_one_way", scenario_config_summary(config))
+
+        with self.assertRaises(ValueError):
+            scenario_config_from_mapping(
+                {**range_rate_base, "measurement_model_profile": "one_way_light_time"}
+            )
+        with self.assertRaises(ValueError):
+            scenario_config_from_mapping(
+                {**position_base, "companion_geometry": "apparent_one_way"}
+            )
 
     def test_json_load_and_normalized_write_roundtrip(self):
         payload = {

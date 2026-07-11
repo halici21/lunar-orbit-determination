@@ -58,3 +58,6 @@ dist/
 tmp/
 temp/
 *.tmp
+
+# Generated campaign exports
+exports/
