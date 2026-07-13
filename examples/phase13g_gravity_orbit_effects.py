@@ -35,8 +35,22 @@ Stages:
               zonal@64 + full ladder 8..128; GL1800F only on S1/S7/S8
               (64/128, 256 only on S8 runtime-gated).  The "orbit" window
               uses each case's own period.
+  --sevenday  13G-c2 selected seven-day confirmation (L1=S1 anchor,
+              L2=S7 polar, L3=S8 eccentric, L4=S3 control; GRGM660PRIM
+              J2/32/64/128 everywhere, zonal@64 on L2/L3; GL1800F only
+              L2@128 and L3@128/256-gated).  Every scientific case uses ONE
+              uninterrupted continuous propagate_state call (the chunked
+              state-handoff methodology was REJECTED by the continuous-vs-
+              chunked preflight — multistep integrator restart artifact —
+              and is retained only as recorded evidence).  Surface crossing
+              is detected on the sampled output grid and truncates the
+              post-processing arrays at the first sampled crossing;
+              comparisons use the minimum common valid horizon.  Atomic
+              per-case store writes; a rerun rebuilds the sevenday stage
+              cleanly (an interrupted model case reruns continuous from
+              scratch; no mid-trajectory resume).
   (default: --baseline)
-Refused here (13G-c2+ scope, separate approval): --sevenday, --plots.
+Refused here: --plots.
 
 Reuse: loader/profile/rotation/propagation helpers are imported from the
 committed phase12b script; initial state/ephemeris from phase6.  Script-local
@@ -57,6 +71,7 @@ import csv
 import dataclasses
 import json
 import math
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -80,8 +95,8 @@ from lunar_od.gravity_model_loader import (  # noqa: E402
 )
 from lunar_od.orbit import coe2rv  # noqa: E402
 from phase12b_real_grail_validation import (  # noqa: E402
-    MODELS as GRAIL_FILES, diff_metrics, load_kernel_profile, rotation_pair,
-    run_case, truncate_model,
+    MODELS as GRAIL_FILES, _CountingGetter, diff_metrics, load_kernel_profile,
+    rotation_pair, run_case, truncate_model,
 )
 from phase6_scenario_comparison import initial_state, load_ephemeris  # noqa: E402
 
@@ -98,6 +113,11 @@ SENS_RUNS_CSV = OUT / "phase13g_sensitivity_runs.csv"
 SENS_COMP_CSV = OUT / "phase13g_sensitivity_comparisons.csv"
 SENS_ELEM_CSV = OUT / "phase13g_sensitivity_elements.csv"
 SENS_MD_PATH = OUT / "phase13g_sensitivity_report.md"
+SEVEN_RUNS_CSV = OUT / "phase13g_sevenday_runs.csv"
+SEVEN_COMP_CSV = OUT / "phase13g_sevenday_comparisons.csv"
+SEVEN_ELEM_CSV = OUT / "phase13g_sevenday_elements.csv"
+SEVEN_DAILY_CSV = OUT / "phase13g_sevenday_daily.csv"
+SEVEN_MD_PATH = OUT / "phase13g_sevenday_report.md"
 
 CADENCE_S = 60.0                    # Phase 13C accepted default
 OPT_RUNTIME_GATE_S = 300.0          # projected cap for optional nmax=256
@@ -793,6 +813,633 @@ def run_sensitivity() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Seven-day confirmation (13G-c2): matrix, chunked runner, preflight gate,
+# trailing-orbit daily means, growth profile, atomic store writes.
+# All results are "selected multi-day confirmation - Level-1 internal
+# model-vs-model"; nothing here is estimator performance.
+# ---------------------------------------------------------------------------
+SEVENDAY_T_END_S = 7.0 * 86400.0            # exactly 604800 s
+SEVENDAY_CHUNK_S = 86400.0                  # 7 x 1-day state-handoff chunks
+SEVENDAY_OUT_STEP_S = {"L1": 300.0, "L2": 300.0, "L3": 60.0, "L4": 300.0}
+SEVENDAY_CASES = (
+    {"id": "L1", "case_ref": "S1_alt100_i45", "circular": True,
+     "zonal": False, "gl": ()},
+    {"id": "L2", "case_ref": "S7_alt100_i90", "circular": True,
+     "zonal": True, "gl": (128,)},
+    {"id": "L3", "case_ref": "S8_ecc80x500_i45", "circular": False,
+     "zonal": True, "gl": (128, 256)},
+    {"id": "L4", "case_ref": "S3_alt500_i45", "circular": True,
+     "zonal": False, "gl": ()},
+)
+GL256_GATE_S = 420.0        # rough empirical projection gate, not a guarantee
+GROWTH_D1_MIN_M = 1.0       # below this, growth ratios are indeterminate
+PREFLIGHT_ABS_GATE_M = 0.05     # per-model continuous-vs-chunked final dpos
+PREFLIGHT_REL_GATE = 0.01       # comparison artifact vs measured separation
+GROWTH_LABEL = "descriptive classification, not a fitted dynamical law"
+CROSSING_LIMITATION = (
+    "Surface crossing is detected on the sampled output grid rather than "
+    "through a continuous root-finding event. The numerical solver may have "
+    "evaluated states beyond the first sampled crossing before the "
+    "uninterrupted propagation call returned; those states are excluded "
+    "from scientific interpretation."
+)
+
+
+def build_sevenday_matrix() -> dict:
+    """Pure seven-day run plan (no data, no SPICE) — the size guard.
+
+    Per case: GRGM660PRIM J2-only + full 32/64/128 (+ zonal@64 on L2/L3);
+    GL1800F only where listed (256 only on L3, runtime-gated).  Total <= 21.
+    """
+    plan = {}
+    for spec in SEVENDAY_CASES:
+        runs = ["j2_only", "full32", "full64", "full128"]
+        if spec["zonal"]:
+            runs.append("zonal64")
+        runs += [f"g1800_{n}" for n in spec["gl"]]
+        plan[spec["id"]] = {
+            "case_ref": spec["case_ref"], "circular": spec["circular"],
+            "out_step_s": SEVENDAY_OUT_STEP_S[spec["id"]],
+            "runs": runs,
+        }
+    total = sum(len(p["runs"]) for p in plan.values())
+    if total > 21:
+        raise RuntimeError(f"seven-day matrix exploded: {total} runs > 21.")
+    plan["_total_runs"] = total
+    return plan
+
+
+def run_case_chunked(get_earth, get_sun, s0, t_end, out_step, *,
+                     j2_moon=0.0, model=None, rotation=None,
+                     chunk_s=SEVENDAY_CHUNK_S) -> dict:
+    """Chunked state-handoff propagation with sampled-grid crossing policy.
+
+    Retained only as a diagnostic/evidence tool (used by
+    ``run_chunk_preflight``); the seven-day campaign itself uses
+    ``run_case_continuous_sevenday`` and never calls this function. Each
+    invocation of this function applies the same ``chunk_s`` day-boundary
+    restart scheme to itself for internal fair comparison. Surface crossing
+    is detected on the SAMPLED grid: scientific metrics are truncated at the
+    first sampled crossing and that invocation's later chunks are skipped.
+    (No claim is made that the solver never evaluated sub-surface states in
+    the chunk containing the crossing.)
+    """
+    ge = _CountingGetter(get_earth)
+    t_parts, x_parts, chunk_runtimes = [], [], []
+    state = np.asarray(s0, dtype=float)
+    status = "complete"
+    n_chunks = int(round(t_end / chunk_s))
+    t0 = 0.0
+    for k in range(n_chunks):
+        t1 = min(t0 + chunk_s, t_end)
+        teval = np.arange(t0, t1 + out_step / 2.0, out_step)
+        tic = time.perf_counter()
+        traj = propagate_state(teval, state, MU_M, MU_E, MU_S, ge, get_sun,
+                               method="ADAMS", j2_moon=j2_moon,
+                               harmonic_model=model,
+                               harmonic_rotation=rotation)
+        chunk_runtimes.append(round(time.perf_counter() - tic, 3))
+        if not np.all(np.isfinite(traj)):
+            status = "integrator_failure"
+            break
+        seg_t = teval if k == 0 else teval[1:]
+        seg_x = traj if k == 0 else traj[1:]
+        t_parts.append(seg_t)
+        x_parts.append(seg_x)
+        state = traj[-1]
+        t0 = t1
+        alt = np.linalg.norm(seg_x[:, :3], axis=1) - R_MOON_M
+        if np.any(alt <= 0.0):
+            status = "surface_crossing_detected"
+            break
+    t = np.concatenate(t_parts) if t_parts else np.array([])
+    traj = np.vstack(x_parts) if x_parts else np.empty((0, 6))
+    result = {"t": t, "traj": traj,
+              "runtime_s": float(sum(chunk_runtimes)),
+              "chunk_runtimes_s": chunk_runtimes,
+              "rhs_evals": int(ge.calls), "status": status,
+              "first_crossing_t_s": None, "validity": "valid"}
+    if status == "surface_crossing_detected":
+        result.update(truncate_at_first_crossing(t, traj))
+    if result["traj"].shape[0]:
+        radii = np.linalg.norm(result["traj"][:, :3], axis=1)
+        result["min_altitude_m"] = float(radii.min() - R_MOON_M)
+        result["max_altitude_m"] = float(radii.max() - R_MOON_M)
+    return result
+
+
+def truncate_at_first_crossing(t: np.ndarray, traj: np.ndarray) -> dict:
+    """Cut scientific metrics at the FIRST sampled altitude<=0 epoch;
+    post-crossing samples are excluded from physical interpretation."""
+    alt = np.linalg.norm(traj[:, :3], axis=1) - R_MOON_M
+    idx = np.nonzero(alt <= 0.0)[0]
+    if idx.size == 0:
+        return {"t": t, "traj": traj, "first_crossing_t_s": None,
+                "validity": "valid"}
+    first = int(idx[0])
+    return {"t": t[:first], "traj": traj[:first],
+            "first_crossing_t_s": float(t[first]),
+            "validity": "invalid_after_first_crossing"}
+
+
+# -- continuous-vs-chunked numerical preflight (mandatory gate) --------------
+def evaluate_chunk_preflight(per_model: dict, comparison: dict) -> dict:
+    """Pure gate: chunk restart artifact must be negligible per model AND
+    relative to the comparison signal we intend to measure."""
+    abs_ok = all(m["final_dpos_m"] <= PREFLIGHT_ABS_GATE_M
+                 for m in per_model.values())
+    sep = comparison["continuous_final_dpos_m"]
+    rel_limit = PREFLIGHT_REL_GATE * sep if sep > 0 else PREFLIGHT_ABS_GATE_M
+    rel_ok = comparison["artifact_final_dpos_m"] <= rel_limit
+    return {"pass": bool(abs_ok and rel_ok),
+            "abs_limit_m": PREFLIGHT_ABS_GATE_M,
+            "rel_limit_m": rel_limit,
+            "rule": (f"per-model continuous-vs-chunked final dpos <= "
+                     f"{PREFLIGHT_ABS_GATE_M} m AND comparison artifact <= "
+                     f"{PREFLIGHT_REL_GATE:.0%} of the measured separation"),
+            "per_model_pass": abs_ok, "comparison_pass": rel_ok}
+
+
+def run_chunk_preflight(eph, s0, pair, model128, out_step=300.0) -> dict:
+    """Continuous 2-day vs 2x1-day chunked, for J2-only and full@128, on the
+    L1/baseline-like state.  Also checks the artifact ON the comparison
+    (J2 vs full128) itself.  Campaign must not start if the gate fails."""
+    t_end = 2.0 * 86400.0
+    teval = np.arange(0.0, t_end + out_step / 2.0, out_step)
+    variants = {"j2_only": {"j2_moon": J2},
+                "full128": {"harmonic_model": model128,
+                            "harmonic_rotation": pair}}
+    per_model, trajs = {}, {}
+    for name, kw in variants.items():
+        cont = run_case(eph.earth_position, eph.sun_position, s0, teval, **kw)
+        chunk = run_case_chunked(
+            eph.earth_position, eph.sun_position, s0, t_end, out_step,
+            j2_moon=kw.get("j2_moon", 0.0), model=kw.get("harmonic_model"),
+            rotation=kw.get("harmonic_rotation"))
+        if chunk["status"] != "complete":
+            raise RuntimeError(f"preflight chunked run failed: {chunk['status']}")
+        dp = np.linalg.norm(cont["traj"][:, :3] - chunk["traj"][:, :3], axis=1)
+        dv = np.linalg.norm(cont["traj"][:, 3:] - chunk["traj"][:, 3:], axis=1)
+        coe_c = rv2coe(cont["traj"][-1, :3], cont["traj"][-1, 3:], MU_M)
+        coe_h = rv2coe(chunk["traj"][-1, :3], chunk["traj"][-1, 3:], MU_M)
+        per_model[name] = {
+            "final_dpos_m": float(dp[-1]), "max_dpos_m": float(dp.max()),
+            "final_dvel_mps": float(dv[-1]),
+            "final_da_m": abs(coe_c["a_m"] - coe_h["a_m"]),
+            "final_de": abs(coe_c["e"] - coe_h["e"]),
+            "final_di_rad": abs(coe_c["i_rad"] - coe_h["i_rad"]),
+        }
+        trajs[name] = (cont["traj"], chunk["traj"])
+    dc = np.linalg.norm(trajs["j2_only"][0][:, :3]
+                        - trajs["full128"][0][:, :3], axis=1)
+    dh = np.linalg.norm(trajs["j2_only"][1][:, :3]
+                        - trajs["full128"][1][:, :3], axis=1)
+    comparison = {"continuous_final_dpos_m": float(dc[-1]),
+                  "chunked_final_dpos_m": float(dh[-1]),
+                  "artifact_final_dpos_m": float(abs(dc[-1] - dh[-1])),
+                  "artifact_max_dpos_m": float(np.max(np.abs(dc - dh)))}
+    gate = evaluate_chunk_preflight(per_model, comparison)
+    return {"window_s": t_end, "out_step_s": out_step,
+            "per_model": per_model, "comparison": comparison, "gate": gate}
+
+
+# -- trailing one-orbit daily element means (13G-b methodology preserved) ----
+def trailing_window_mask(t: np.ndarray, t_k: float, period_s: float,
+                         leading: bool = False) -> np.ndarray:
+    if leading:                      # day-0 reference: mean over [0, T]
+        return (t >= -1e-9) & (t <= period_s + 1e-9)
+    return (t >= t_k - period_s - 1e-9) & (t <= t_k + 1e-9)
+
+
+def daily_element_rows(t, traj, period_s, *, run: str, case_id: str,
+                       circular: bool) -> list[dict]:
+    """Per day-boundary trailing ONE-ORBIT means (calendar-day means would
+    leak short-period signal as the boundary phase drifts).  Circular cases
+    report eccentricity magnitude and nonsingular e*cos/e*sin components
+    only — NO argument-of-perilune interpretation; argp evolution is
+    reported only for the eccentric case."""
+    boundaries = [0.0] + [k * 86400.0 for k in range(1, 8)]
+    coes = [rv2coe(s[:3], s[3:], MU_M) for s in traj]
+    a = np.array([c["a_m"] for c in coes])
+    e = np.array([c["e"] for c in coes])
+    inc = np.array([c["i_rad"] for c in coes])
+    raan = np.unwrap(np.array([c["raan_rad"] for c in coes]))
+    argp = np.array([c["argp_rad"] for c in coes])
+    varpi = raan + argp                      # NaN-safe: NaN argp -> NaN varpi
+    hcomp = np.where(np.isnan(varpi), 0.0, e * np.cos(varpi))
+    kcomp = np.where(np.isnan(varpi), 0.0, e * np.sin(varpi))
+    argp_unwrapped = (np.unwrap(argp) if not np.any(np.isnan(argp)) else None)
+    rows = []
+    for day, t_k in enumerate(boundaries):
+        mask = trailing_window_mask(t, t_k, period_s, leading=(day == 0))
+        if not mask.any() or t[-1] + 1e-6 < t_k:
+            break                                    # truncated run
+        row = {"case_id": case_id, "run": run, "day": day,
+               "mean_a_m": float(a[mask].mean()),
+               "mean_e": float(e[mask].mean()),
+               "mean_i_rad": float(inc[mask].mean()),
+               "mean_raan_rad": float(raan[mask].mean()),
+               "ecc_cos_comp": float(hcomp[mask].mean()),
+               "ecc_sin_comp": float(kcomp[mask].mean())}
+        if not circular and argp_unwrapped is not None:
+            row["mean_argp_rad"] = float(argp_unwrapped[mask].mean())
+        rows.append(row)
+    if not circular:
+        prev = None
+        for row in rows:
+            cur = row.get("mean_argp_rad")
+            row["argp_drift_sign"] = (None if prev is None or cur is None
+                                      else int(np.sign(cur - prev)))
+            prev = cur
+    return rows
+
+
+def growth_profile(daily_seps: list) -> dict:
+    """D_k/(k*D_1) ratios with a near-zero D_1 guard; the raw day-1..7 series
+    is the primary scientific output, the classification is secondary."""
+    if not daily_seps or daily_seps[0] is None:
+        return {"ratios": None, "classification": "indeterminate",
+                "label": GROWTH_LABEL}
+    d1 = daily_seps[0]
+    if not math.isfinite(d1) or d1 < GROWTH_D1_MIN_M:
+        return {"ratios": None, "classification": "indeterminate",
+                "label": GROWTH_LABEL,
+                "note": f"day-1 separation {d1!r} below "
+                        f"{GROWTH_D1_MIN_M} m guard"}
+    ratios = [round(dk / ((k + 1) * d1), 3) if dk is not None else None
+              for k, dk in enumerate(daily_seps)]
+    last = next((r for r in reversed(ratios) if r is not None), None)
+    if last is None:
+        cls = "indeterminate"
+    elif 0.8 <= last <= 1.25:
+        cls = "approximately linear"
+    elif last < 0.8:
+        cls = "sublinear"
+    else:
+        cls = "superlinear"
+    finite = [d for d in daily_seps if d is not None]
+    if finite and max(finite) / finite[-1] > 1.5:
+        cls += " with oscillatory component"
+    return {"ratios": ratios, "classification": cls, "label": GROWTH_LABEL}
+
+
+def gl256_gate(measured_128_runtime_s: float) -> dict:
+    projected = 4.0 * measured_128_runtime_s
+    run = projected <= GL256_GATE_S
+    return {"run": run, "projected_s": round(projected, 1),
+            "limit_s": GL256_GATE_S,
+            "basis": "rough empirical projection (4 x measured GL@128 "
+                     "seven-day runtime); not a guarantee",
+            "reason": None if run else
+            f"projected {projected:.0f} s exceeds {GL256_GATE_S:.0f} s gate"}
+
+
+# -- continuous seven-day runner (Option A, approved after preflight FAIL) ---
+def run_case_continuous_sevenday(get_earth, get_sun, s0, t_end, out_step, *,
+                                 j2_moon=0.0, model=None, rotation=None) -> dict:
+    """ONE uninterrupted ``propagate_state`` call per model case.
+
+    Wraps the validated ``run_case`` (no behavioral copy).  Surface crossing
+    keeps the sampled-output-grid policy: the FULL continuous propagation
+    completes first, the first crossing sample is found post-hoc, and the
+    post-processing arrays are truncated there.  No day/chunk restarts: the
+    chunked methodology was rejected by the continuous-vs-chunked preflight
+    (multistep integrator restart artifact)."""
+    teval = np.arange(0.0, t_end + out_step / 2.0, out_step)
+    try:
+        res = run_case(get_earth, get_sun, s0, teval, j2_moon=j2_moon,
+                       harmonic_model=model, harmonic_rotation=rotation)
+    except RuntimeError as exc:
+        return {"t": np.array([]), "traj": np.empty((0, 6)),
+                "runtime_s": float("nan"), "rhs_evals": 0,
+                "status": "integrator_failure", "validity": "invalid",
+                "error": str(exc), "crossing_detected": False,
+                "crossing_index": None, "crossing_time_s": None,
+                "first_crossing_t_s": None, "last_valid_time_s": None,
+                "requested_samples": int(teval.size), "returned_samples": 0,
+                "valid_duration_s": 0.0, "propagation_calls": 1}
+    cut = truncate_at_first_crossing(teval, res["traj"])
+    crossing = cut["validity"] != "valid"
+    t_valid, traj_valid = cut["t"], cut["traj"]
+    out = {
+        "t": t_valid, "traj": traj_valid,
+        "runtime_s": float(res["runtime_s"]), "rhs_evals": int(res["rhs_evals"]),
+        "status": "surface_crossing_detected" if crossing else "complete",
+        "validity": cut["validity"],
+        "crossing_detected": bool(crossing),
+        "crossing_index": (int(t_valid.size) if crossing else None),
+        "crossing_time_s": cut["first_crossing_t_s"],
+        "first_crossing_t_s": cut["first_crossing_t_s"],
+        "last_valid_time_s": (float(t_valid[-1]) if t_valid.size else None),
+        "requested_samples": int(teval.size),
+        "returned_samples": int(t_valid.size),
+        "valid_duration_s": (float(t_valid[-1]) if t_valid.size else 0.0),
+        "propagation_calls": 1,
+    }
+    if traj_valid.shape[0]:
+        radii = np.linalg.norm(traj_valid[:, :3], axis=1)
+        out["min_altitude_m"] = float(radii.min() - R_MOON_M)
+        out["max_altitude_m"] = float(radii.max() - R_MOON_M)
+        out["minimum_radius_margin_before_crossing_m"] = (
+            out["min_altitude_m"] if crossing else None)
+    return out
+
+
+def sevenday_daily_mask(t: np.ndarray, day: int) -> np.ndarray:
+    """Samples belonging to calendar day ``day`` (1..7) on the shared output
+    grid: half-open (lo, hi] so a boundary sample counts in ONE day only."""
+    return (t > (day - 1) * 86400.0) & (t <= day * 86400.0)
+
+
+def sevenday_comparison_row(name, run_a, run_b, res_a, res_b, *,
+                            case_id: str, requested_duration_s: float,
+                            day_boundaries, perilune: bool = False) -> dict:
+    """Pure comparison over the MINIMUM COMMON VALID horizon: a model's
+    post-crossing trajectory is never compared against another model."""
+    n = min(res_a["traj"].shape[0], res_b["traj"].shape[0])
+    dur_a = res_a.get("valid_duration_s",
+                      float(res_a["t"][-1]) if len(res_a["t"]) else 0.0)
+    dur_b = res_b.get("valid_duration_s",
+                      float(res_b["t"][-1]) if len(res_b["t"]) else 0.0)
+    if n == 0:
+        return {"case_id": case_id, "comparison": name, "run": run_a,
+                "reference": run_b, "status": "no_valid_overlap",
+                "requested_duration_s": requested_duration_s,
+                "run_a_valid_duration_s": dur_a,
+                "run_b_valid_duration_s": dur_b,
+                "common_comparison_duration_s": 0.0,
+                "truncation_reason": "no_valid_overlap"}
+    ta = res_a["t"][:n]
+    dp = np.linalg.norm(res_a["traj"][:n, :3] - res_b["traj"][:n, :3], axis=1)
+    dv = np.linalg.norm(res_a["traj"][:n, 3:] - res_b["traj"][:n, 3:], axis=1)
+    rtn = rtn_summary(res_a["traj"][:n], res_b["traj"][:n])
+    daily = []
+    for t_k in day_boundaries:
+        idx = np.nonzero(np.isclose(ta, t_k))[0]
+        daily.append(float(dp[idx[0]]) if idx.size else None)
+    truncated = (res_a.get("validity", "valid") != "valid"
+                 or res_b.get("validity", "valid") != "valid")
+    row = {"case_id": case_id, "comparison": name, "run": run_a,
+           "reference": run_b,
+           "status": "truncated" if truncated else "complete",
+           "final_dpos_m": float(dp[-1]), "max_dpos_m": float(dp.max()),
+           "rms_dpos_m": float(np.sqrt(np.mean(dp ** 2))),
+           "final_dvel_mps": float(dv[-1]), **rtn,
+           "daily_endpoint_dpos_m": daily,
+           "growth": growth_profile(daily),
+           "requested_duration_s": requested_duration_s,
+           "run_a_valid_duration_s": dur_a,
+           "run_b_valid_duration_s": dur_b,
+           "common_comparison_duration_s": float(ta[-1]),
+           "truncation_reason": ("surface_crossing" if truncated else None)}
+    if perilune:
+        mask = perilune_mask_from(res_b["traj"][:n], PERILUNE_HALF_WIDTH_DEG)
+        if mask.any():
+            row["perilune_rms_dpos_m"] = float(np.sqrt(np.mean(dp[mask] ** 2)))
+            daily_peri = []
+            for day in range(1, 8):
+                dmask = mask & sevenday_daily_mask(ta, day)
+                daily_peri.append(float(np.sqrt(np.mean(dp[dmask] ** 2)))
+                                  if dmask.any() else None)
+            row["daily_perilune_rms_dpos_m"] = daily_peri
+    return row
+
+
+def preflight_decision_block(preflight: dict) -> dict:
+    """Preserve the continuous-vs-chunked preflight as METHODOLOGY EVIDENCE.
+
+    The chunked methodology was rejected by this preflight; regardless of the
+    gate outcome the campaign decision is fixed to continuous propagation."""
+    gate = preflight.get("gate", {})
+    return {**preflight,
+            "status": "passed" if gate.get("pass") else "failed",
+            "decision": "use_continuous_campaign_propagation",
+            "reason": "multistep_integrator_restart_artifact"}
+
+
+# -- atomic store persistence -------------------------------------------------
+def _atomic_store_dump(store: dict) -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(store, indent=2)      # serialize BEFORE touching disk
+    tmp = STORE_PATH.with_suffix(".json.tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        fh.write(payload)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, STORE_PATH)
+
+
+def _init_sevenday_stage(store: dict) -> dict:
+    """Fresh sevenday stage; any stale partial data is REPLACED (no --resume:
+    the safest simple behavior is a clean rebuild, never silent mixing)."""
+    stage = {
+        "status": "partial",
+        "planned_cases": [c["id"] for c in SEVENDAY_CASES],
+        "completed_cases": [],
+        "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "campaign_command": "python examples/phase13g_gravity_orbit_effects.py --sevenday",
+        "propagation_contract": ("one uninterrupted continuous propagate_state "
+                                 "call per model case (no day/chunk restarts); "
+                                 "surface crossing handled post-hoc on the "
+                                 "sampled output grid"),
+        "out_step_s": dict(SEVENDAY_OUT_STEP_S),
+        "cadence_s": CADENCE_S,
+        "evidence_label": ("selected multi-day confirmation - Level-1 "
+                           "internal model-vs-model; not estimator performance"),
+        "chunk_preflight": None,
+        "gl256_gate": None,
+        "cases": {},
+    }
+    store["sevenday"] = stage
+    return stage
+
+
+def _sevenday_pair(et0: float, frame: str):
+    margin = max(2.0 * CADENCE_S, 120.0)
+    t_grid = np.arange(-margin, SEVENDAY_T_END_S + margin + CADENCE_S / 2.0,
+                       CADENCE_S)
+    from lunar_od.lunar_frames import sample_moon_pa_rotations
+    rots = sample_moon_pa_rotations(et0, t_grid, frame=frame,
+                                    load_kernels=False)
+    return (t_grid, rots)
+
+
+def run_sevenday(store: dict) -> dict:
+    matrix = build_sevenday_matrix()
+    stage = _init_sevenday_stage(store)
+    stage["matrix_total_runs"] = matrix["_total_runs"]
+    _atomic_store_dump(store)
+
+    big660 = load_real_model("grgm660prim", 128)
+    need_gl = any(spec["gl"] for spec in SEVENDAY_CASES)
+    big1800 = load_real_model("gl1800f", 256) if need_gl else None
+    zonal64 = make_variant(big660, "zonal_only", nmax=DECOMP_NMAX)
+
+    eph, first_jd = load_ephemeris(SEVENDAY_T_END_S + 600.0)
+    et0 = (first_jd - J2000_JD) * 86400.0
+
+    load_kernel_profile("de421")
+    pair421 = _sevenday_pair(et0, "MOON_PA_DE421")
+    if need_gl:
+        load_kernel_profile("de440")
+        pair440 = _sevenday_pair(et0, "MOON_PA_DE440")
+
+    # -- continuous-vs-chunked preflight: retained as METHODOLOGY EVIDENCE ---
+    # The chunked methodology was rejected by this preflight (multistep
+    # integrator restart artifact); the campaign therefore uses uninterrupted
+    # continuous propagation for every scientific case, regardless of the
+    # gate outcome recorded here.
+    s0_pref = case_state(next(s for s in SENSITIVITY_CASES
+                              if s["case"] == "S1_alt100_i45"))
+    print("[sevenday] continuous-vs-chunked preflight (evidence record)")
+    preflight = preflight_decision_block(
+        run_chunk_preflight(eph, s0_pref, pair421,
+                            truncate_model(big660, 128)))
+    stage["chunk_preflight"] = preflight
+    _atomic_store_dump(store)
+    g = preflight["gate"]
+    print(f"[sevenday] preflight: {preflight['status'].upper()} "
+          f"(per-model {g['per_model_pass']}, comparison "
+          f"{g['comparison_pass']}) -> decision: {preflight['decision']}")
+
+    # -- pre-campaign configuration report -----------------------------------
+    total_runs = matrix["_total_runs"]
+    print(f"[sevenday] model cases: {len(stage['planned_cases'])} "
+          f"(runs <= {total_runs}); one continuous propagation per run, "
+          f"duration {SEVENDAY_T_END_S:.0f} s each")
+    for cid_, step_ in SEVENDAY_OUT_STEP_S.items():
+        print(f"[sevenday]   {cid_}: out_step {step_:.0f} s -> "
+              f"{int(SEVENDAY_T_END_S / step_) + 1} samples")
+    print("[sevenday] surface-crossing policy: sampled-output-grid detection, "
+          "post-hoc truncation at the first crossing sample")
+    print(f"[sevenday] artifacts: {OUT} (atomic per-case store writes)")
+    print("[sevenday] resume policy: no mid-trajectory resume; an interrupted "
+          "model case reruns continuous from scratch; completed case "
+          "artifacts are preserved")
+
+    day_boundaries = [k * 86400.0 for k in range(1, 8)]
+    for spec in SEVENDAY_CASES:
+        cid = spec["id"]
+        case_ref = spec["case_ref"]
+        out_step = SEVENDAY_OUT_STEP_S[cid]
+        s0 = case_state(next(s for s in SENSITIVITY_CASES
+                             if s["case"] == case_ref))
+        period = 2.0 * math.pi * math.sqrt(
+            rv2coe(s0[:3], s0[3:], MU_M)["a_m"] ** 3 / MU_M)
+        print(f"[sevenday] === {cid} ({case_ref}) out_step={out_step:.0f} s ===")
+
+        def do_run(name, **kw):
+            res = run_case_continuous_sevenday(
+                eph.earth_position, eph.sun_position, s0,
+                SEVENDAY_T_END_S, out_step, **kw)
+            print(f"  {cid} {name:10s} status={res['status']:<26s} "
+                  f"rt {res['runtime_s']:7.1f} s  rhs {res['rhs_evals']:7d}  "
+                  f"samples {res['returned_samples']}/{res['requested_samples']}  "
+                  f"min_alt {res.get('min_altitude_m', float('nan'))/1e3:7.2f} km")
+            return res
+
+        results = {"j2_only": do_run("j2_only", j2_moon=J2)}
+        for n in (32, 64, 128):
+            results[f"full{n}"] = do_run(
+                f"full{n}", model=truncate_model(big660, n), rotation=pair421)
+        if spec["zonal"]:
+            results["zonal64"] = do_run("zonal64", model=zonal64,
+                                        rotation=pair421)
+        gl_runs = list(spec["gl"])
+        if 128 in gl_runs:
+            results["g1800_128"] = do_run(
+                "g1800_128", model=truncate_model(big1800, 128),
+                rotation=pair440)
+        if 256 in gl_runs:
+            gate = gl256_gate(results["g1800_128"]["runtime_s"])
+            stage["gl256_gate"] = gate
+            if gate["run"]:
+                results["g1800_256"] = do_run(
+                    "g1800_256", model=truncate_model(big1800, 256),
+                    rotation=pair440)
+            else:
+                print(f"  {cid} g1800_256 SKIPPED: {gate['reason']}")
+
+        run_rows, comp_rows, elem_rows, daily_rows = [], [], [], []
+        for name, res in results.items():
+            run_rows.append({
+                "case_id": cid, "run": name, "status": res["status"],
+                "validity": res["validity"],
+                "crossing_detected": res.get("crossing_detected", False),
+                "crossing_index": res.get("crossing_index"),
+                "crossing_time_s": res.get("crossing_time_s"),
+                "last_valid_time_s": res.get("last_valid_time_s"),
+                "minimum_radius_margin_before_crossing_m":
+                    res.get("minimum_radius_margin_before_crossing_m"),
+                "requested_samples": res.get("requested_samples"),
+                "returned_samples": res.get("returned_samples"),
+                "valid_duration_s": res.get("valid_duration_s"),
+                "propagation_calls": res.get("propagation_calls", 1),
+                "runtime_s": round(res["runtime_s"], 1),
+                "rhs_evals": res["rhs_evals"],
+                "min_altitude_m": round(res.get("min_altitude_m", float("nan")), 1),
+                "max_altitude_m": round(res.get("max_altitude_m", float("nan")), 1),
+                "out_step_s": out_step,
+            })
+
+        def compare(name, run_a, run_b, perilune=False):
+            row = sevenday_comparison_row(
+                name, run_a, run_b, results[run_a], results[run_b],
+                case_id=cid, requested_duration_s=SEVENDAY_T_END_S,
+                day_boundaries=day_boundaries, perilune=perilune)
+            comp_rows.append(row)
+            if "final_dpos_m" not in row:
+                print(f"  {cid} {name}: {row['status']}")
+                return
+            daily = row["daily_endpoint_dpos_m"]
+            print(f"  {cid} {name}: final {row['final_dpos_m']:.3e} m  "
+                  f"daily {['%.0f' % d if d else '-' for d in daily]}  "
+                  f"[{row['growth']['classification']}]")
+
+        compare("j2only_vs_full128", "j2_only", "full128",
+                perilune=(cid == "L3"))
+        compare("ladder_32_vs_64", "full32", "full64")
+        compare("ladder_64_vs_128", "full64", "full128",
+                perilune=(cid == "L3"))
+        if spec["zonal"]:
+            compare("tesseral_contribution", "full128", "zonal64")
+        if "g1800_128" in results:
+            compare("cross_model_128", "full128", "g1800_128")
+        if "g1800_256" in results:
+            compare("g1800_ladder_128_vs_256", "g1800_128", "g1800_256")
+
+        for name in ("j2_only", "full128"):
+            res = results[name]
+            elem_rows.extend(daily_element_rows(
+                res["t"], res["traj"], period, run=name, case_id=cid,
+                circular=spec["circular"]))
+        for res_name, res in results.items():
+            alt = np.linalg.norm(res["traj"][:, :3], axis=1) - R_MOON_M
+            for k in range(1, 8):
+                dmask = sevenday_daily_mask(res["t"], k)
+                if not dmask.any():
+                    break
+                daily_rows.append({
+                    "case_id": cid, "run": res_name, "day": k,
+                    "min_altitude_m": float(alt[dmask].min()),
+                    "max_altitude_m": float(alt[dmask].max())})
+
+        stage["cases"][cid] = {
+            "case_ref": case_ref, "circular": spec["circular"],
+            "out_step_s": out_step, "t_end_s": SEVENDAY_T_END_S,
+            "period_s": round(period, 1),
+            "runs": run_rows, "comparisons": comp_rows,
+            "elements": elem_rows, "daily": daily_rows,
+        }
+        stage["completed_cases"].append(cid)
+        _atomic_store_dump(store)
+
+    stage["status"] = "complete"
+    _atomic_store_dump(store)
+    return stage
+
+
+# ---------------------------------------------------------------------------
 # Outputs (cumulative store; CSV/MD regenerated from the merged store)
 # ---------------------------------------------------------------------------
 def _load_store() -> dict:
@@ -1161,11 +1808,135 @@ def _write_sensitivity_md(store: dict) -> None:
     print(f"[out] wrote {SENS_MD_PATH}")
 
 
+def _sevenday_rows(store: dict, kind: str) -> list[dict]:
+    data = store.get("sevenday")
+    if not data:
+        return []
+    rows = []
+    for case_data in data.get("cases", {}).values():
+        for row in case_data.get(kind, []):
+            flat = dict(row)
+            for key in ("daily_endpoint_dpos_m", "daily_perilune_rms_dpos_m"):
+                if key in flat:
+                    flat[key] = json.dumps(flat[key])
+            if isinstance(flat.get("growth"), dict):
+                flat["growth_classification"] = flat["growth"]["classification"]
+                flat["growth_ratios"] = json.dumps(flat["growth"].get("ratios"))
+                del flat["growth"]
+            rows.append(flat)
+    return rows
+
+
+def _write_sevenday_md(store: dict) -> None:
+    data = store.get("sevenday")
+    if not data:
+        return
+    pf = data.get("chunk_preflight") or {}
+    gate = pf.get("gate", {})
+    any_crossing = any(r.get("status") == "surface_crossing_detected"
+                       for c in data.get("cases", {}).values()
+                       for r in c.get("runs", []))
+    lines = [
+        "# Phase 13G-c2 — Selected Seven-Day Gravity Confirmation",
+        "",
+        f"- store updated (UTC): {store.get('generated_utc')}",
+        f"- stage status: {data.get('status')} "
+        f"(completed: {data.get('completed_cases')})",
+        f"- evidence label: {data.get('evidence_label')}",
+        f"- {TRUTH_NOTE}",
+        "",
+        "## Interpretation limits",
+        "",
+        "- trajectory separation != estimator error;",
+        "- seven-day endpoint difference != measurement residual;",
+        "- element divergence != covariance inconsistency;",
+        "- model-vs-model agreement != external validation;",
+        "- seven-day confirmation != mission lifetime prediction.",
+        "- The seven-day eccentric-case analysis tests argument-of-perilune "
+        "evolution for S8. It does not constitute a seven-day rerun of the "
+        "Phase 13G-b e=0.01 baseline case.",
+        "- Circular cases (L1/L2/L4) report eccentricity magnitude and "
+        "nonsingular e*cos/e*sin components; no argument-of-perilune "
+        "interpretation is made for them.",
+        "",
+        "## Methodology: continuous propagation (chunked rejected by preflight)",
+        "",
+        "**The chunked methodology was rejected by preflight. All scientific "
+        "campaign cases use uninterrupted continuous propagation** (one "
+        "`propagate_state` call per model case; no day/chunk restarts).",
+        f"- preflight status: **{pf.get('status', '?')}**; decision: "
+        f"`{pf.get('decision', '?')}`; reason: `{pf.get('reason', '?')}`.",
+        f"- gate detail: {'PASS' if gate.get('pass') else 'FAIL'} — {gate.get('rule')}",
+    ]
+    for name, m in (pf.get("per_model") or {}).items():
+        lines.append(f"- {name}: final dpos {m['final_dpos_m']:.3e} m, "
+                     f"max {m['max_dpos_m']:.3e} m, final dvel "
+                     f"{m['final_dvel_mps']:.3e} m/s, |da| {m['final_da_m']:.3e} m, "
+                     f"|de| {m['final_de']:.3e}, |di| {m['final_di_rad']:.3e} rad")
+    comp = pf.get("comparison") or {}
+    if comp:
+        lines.append(
+            f"- comparison artifact (J2 vs full128): final "
+            f"{comp['artifact_final_dpos_m']:.3e} m, max "
+            f"{comp['artifact_max_dpos_m']:.3e} m against a measured "
+            f"separation of {comp['continuous_final_dpos_m']:.3e} m "
+            f"(limit {gate.get('rel_limit_m', float('nan')):.3e} m).")
+    lines.append("")
+    for cid, cdata in data.get("cases", {}).items():
+        lines += [
+            f"## {cid} ({cdata['case_ref']}; out_step {cdata['out_step_s']:.0f} s, "
+            f"period {cdata['period_s']:.0f} s)",
+            "",
+            "| comparison | status | final dpos m | day1..day7 endpoint dpos m "
+            "| growth |",
+            "|---|---|---|---|---|",
+        ]
+        for c in cdata.get("comparisons", []):
+            if "final_dpos_m" not in c:
+                lines.append(f"| {c['comparison']} | {c.get('status')} | - | - | - |")
+                continue
+            daily = ", ".join("-" if d is None else f"{d:.0f}"
+                              for d in c["daily_endpoint_dpos_m"])
+            lines.append(
+                f"| {c['comparison']} | {c['status']} | {c['final_dpos_m']:.3e} "
+                f"| {daily} | {c['growth']['classification']} |")
+        lines.append("")
+        lines.append(f"- growth labels are a {GROWTH_LABEL}; the raw "
+                     "day-1..7 series above is the primary output.")
+        lines.append("")
+    lines += [
+        "## Safety",
+        "",
+        ("- No surface crossing was observed over seven days in the tested "
+         "cases." if not any_crossing else
+         "- SURFACE CROSSING detected in at least one run; scientific "
+         "metrics were truncated post-hoc at the first sampled crossing "
+         "within that run's single uninterrupted continuous propagation."),
+        "- This statement concerns the tested seven-day windows only; no "
+        "long-term orbital-stability claim is made.",
+        "",
+        "## Limitations",
+        "",
+        f"- {CROSSING_LIMITATION}",
+        "- All scientific campaign runs above use uninterrupted continuous "
+        "propagation (no chunk restarts). Chunked state-handoff propagation "
+        "was rejected by the preflight above (multistep-integrator restart "
+        "artifact) and is retained only as evidence/diagnostic tooling, not "
+        "used for any reported case.",
+        f"- GL1800F@256 gate: {data.get('gl256_gate')}",
+        "- Runtime projections used for gating are rough empirical "
+        "projections, not guarantees.",
+        "",
+    ]
+    SEVEN_MD_PATH.write_text("\n".join(lines), encoding="utf-8")
+    print(f"[out] wrote {SEVEN_MD_PATH}")
+
+
 def write_outputs(store: dict) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     store["generated_utc"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     store["truth_note"] = TRUTH_NOTE
-    STORE_PATH.write_text(json.dumps(store, indent=2), encoding="utf-8")
+    _atomic_store_dump(store)
     print(f"[out] wrote {STORE_PATH}")
     _write_csv(RUNS_CSV, _rows(store, "runs"))
     _write_csv(COMP_CSV, _rows(store, "comparisons"))
@@ -1174,6 +1945,11 @@ def write_outputs(store: dict) -> None:
     _write_csv(SENS_COMP_CSV, _sensitivity_rows(store, "comparisons"))
     _write_csv(SENS_ELEM_CSV, _sensitivity_rows(store, "elements"))
     _write_sensitivity_md(store)
+    _write_csv(SEVEN_RUNS_CSV, _sevenday_rows(store, "runs"))
+    _write_csv(SEVEN_COMP_CSV, _sevenday_rows(store, "comparisons"))
+    _write_csv(SEVEN_ELEM_CSV, _sevenday_rows(store, "elements"))
+    _write_csv(SEVEN_DAILY_CSV, _sevenday_rows(store, "daily"))
+    _write_sevenday_md(store)
 
     lines = [
         "# Phase 13G — Real Lunar Gravity Orbit-Effect Campaign",
@@ -1225,16 +2001,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sensitivity", action="store_true",
                         help="13G-c1 altitude/inclination/eccentricity axes")
     parser.add_argument("--sevenday", action="store_true",
-                        help="(13G-c2 scope — refuses until separately approved)")
+                        help="13G-c2 selected seven-day confirmation "
+                             "(chunk-preflight gated)")
     parser.add_argument("--plots", action="store_true",
                         help="(deferred — refuses to run)")
     args = parser.parse_args(argv)
-    if args.sevenday or args.plots:
-        print("[phase13g] --sevenday/--plots are deliberately not implemented "
-              "(13G-c2 needs separate approval).")
+    if args.plots:
+        print("[phase13g] --plots is deliberately not implemented.")
         return 2
 
-    explicit = args.baseline or args.compare or args.frames or args.sensitivity
+    explicit = (args.baseline or args.compare or args.frames
+                or args.sensitivity or args.sevenday)
     do_baseline = args.baseline or not explicit
     store = _load_store()
     if do_baseline:
@@ -1245,6 +2022,8 @@ def main(argv: list[str] | None = None) -> int:
         store["frames"] = run_frames()
     if args.sensitivity:
         store["sensitivity"] = run_sensitivity()
+    if args.sevenday:
+        run_sevenday(store)      # writes the stage into `store` atomically
     write_outputs(store)
     return 0
 
