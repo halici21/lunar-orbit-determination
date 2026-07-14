@@ -2,13 +2,20 @@
 name: lunar-od-dynamics-spice
 description: >-
   Use when working on lunar dynamics, propagation, SPICE, or reference frames:
-  Moon point-mass and Earth/Sun third-body gravity, J2/Jn, STM propagation, Numba
-  acceleration of dynamics, SPICE kernels and ephemerides, MCI / body-fixed /
-  ECEF / J2000 / ITRF93 frame logic, and external dynamics cross-validation. File
-  areas: python_port/lunar_od/dynamics.py, accelerated.py, ephemeris.py,
-  spice_loader.py and tests test_dynamics.py, test_ephemeris.py,
-  test_spice_loader.py. Trigger: editing force models, propagation, STM, frames,
-  or SPICE handling.
+  Moon point-mass and Earth/Sun third-body gravity, J2/Jn, STM propagation,
+  Numba acceleration of dynamics, SPICE kernels and ephemerides, MCI /
+  body-fixed / ECEF (ITRF93) / J2000 / SEZ frame logic, sxform/pxform contracts,
+  station inertial velocity, and external dynamics cross-validation. File areas:
+  python_port/lunar_od/dynamics.py, accelerated.py, ephemeris.py,
+  spice_loader.py, lunar_frames.py; docs frame_transformations.md and
+  frame_architecture_contracts_and_inconsistencies.md; tests test_dynamics.py,
+  test_ephemeris.py, test_spice_loader.py, test_lunar_frames.py,
+  test_frame_transformations.py, test_frame_spice_validation.py. Trigger:
+  editing force models, propagation, STM, frames, or SPICE handling. Not for
+  measurement-epoch or observable-Jacobian questions on their own
+  (lunar-od-measurement-physics) — invoke it alongside when a change spans
+  frames and measurements.
+
 ---
 
 # Lunar OD Dynamics & SPICE

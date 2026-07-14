@@ -5,8 +5,10 @@ description: >-
   consistency: median / p95 / max / RMS position and velocity error, runtime,
   operational success fraction, NIS, NEES, residual distributions, covariance
   conditioning, correlation between arc geometry and error, seeded Monte Carlo,
-  and long-duration / fragmented-visibility campaigns. Use when the user wants to
-  interpret result CSVs or compare BLS-LM vs SR-UKF statistically.
+  and long-duration / fragmented-visibility campaigns. Use when the user wants
+  to interpret result CSVs or compare BLS-LM vs SR-UKF statistically. This is
+  the metric-computation/interpretation layer; for the final scientific
+  pass/fail acceptance decision invoke lunar-od-result-validator alongside.
 metadata:
   version: "2.0"
   adapted-from: K-Dense statistical-analysis, exploratory-data-analysis

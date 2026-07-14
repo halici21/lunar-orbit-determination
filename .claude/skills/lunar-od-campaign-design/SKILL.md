@@ -3,11 +3,12 @@ name: lunar-od-campaign-design
 description: >-
   Design fair, reproducible lunar OD experiments and scenario matrices for
   BLS-LM vs SR-UKF: shared truth trajectory, shared measurement realization and
-  noise seed, same station visibility / occultation, matched initial uncertainty,
-  a clear scenario matrix, and predefined success metrics. Covers baseline,
-  28-day arc-by-arc, fragmented-visibility, two-way-Doppler, and
-  covariance-handoff campaigns. Use when planning an experiment or a scenario
-  config before running.
+  noise seed, same station visibility / occultation, matched initial
+  uncertainty, a clear scenario matrix, and predefined success metrics. Covers
+  baseline, 28-day arc-by-arc, fragmented-visibility, two-way-Doppler, and
+  covariance-handoff campaigns. Use when PLANNING an experiment or scenario
+  matrix before running; for encoding the plan into JSON/ScenarioConfig fields
+  use lunar-od-scenario-config.
 metadata:
   version: "2.0"
   adapted-from: K-Dense experimental-design

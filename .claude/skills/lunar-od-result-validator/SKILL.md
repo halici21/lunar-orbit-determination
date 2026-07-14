@@ -1,12 +1,15 @@
 ---
 name: lunar-od-result-validator
 description: >-
-  Use for scientific interpretation and acceptance review of Lunar OD results:
+  Use for scientific interpretation and ACCEPTANCE review of Lunar OD results:
   residual analysis (bias / trend / autocorrelation / whiteness), convergence,
   covariance credibility, NIS/NEES interpretation, estimator-comparison review,
   operational-success review, and the final science-review decision. Trigger:
-  judging whether a result is plausible, fair, statistically defensible, and what
-  truth-model level its accuracy claim uses.
+  judging whether a result is plausible, fair, statistically defensible, and
+  what truth-model level its accuracy claim uses. This is the
+  acceptance-decision layer; for computing/summarizing the statistics themselves
+  invoke lunar-od-statistical-diagnostics alongside.
+
 ---
 
 # Lunar OD Result Validator
