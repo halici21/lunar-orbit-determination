@@ -71,6 +71,22 @@ class RangeRatePhysicsConfig:
             raise ValueError("clock_reference_time_s must be finite.")
         if self.transponder_delay_s < 0.0 or not np.isfinite(self.transponder_delay_s):
             raise ValueError("transponder_delay_s must be finite and non-negative.")
+        if self.mode == "two_way_counted_doppler" and self.transponder_delay_s != 0.0:
+            # P0A safety gate: the legacy solver keeps a single spacecraft
+            # bounce state, so a nonzero delay would use physically
+            # inconsistent uplink geometry (r_sc at the downlink transmit
+            # epoch reused for the uplink leg). The fixed scalar delay term
+            # itself cancels in the endpoint RTLT difference, but nonzero
+            # delay still affects counted Doppler through the t2u/t2d
+            # separation, spacecraft motion during the delay, and the changed
+            # uplink/downlink event geometry — which this model cannot
+            # represent.
+            raise ValueError(
+                "Nonzero transponder delay is not supported by the legacy "
+                "single-bounce counted-Doppler model. Use zero delay or a "
+                "future four-event counted-Doppler model. M3 two-way range "
+                "(TwoWayRangeConfig) nonzero-delay support is unaffected."
+            )
 
 
 @dataclass(frozen=True)

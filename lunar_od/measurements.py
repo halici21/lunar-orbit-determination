@@ -38,6 +38,13 @@ JACOBIAN_MODELS = (
     "finite_difference_reference",
 )
 
+# One-way light-time solver policy (single source of truth, FA-02): every
+# one-way helper below defaults to these values, and position-pass metadata
+# must report them rather than the counted-Doppler RangeRatePhysicsConfig
+# defaults (1e-10 s / 20), which belong to the range-rate measurement family.
+ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12
+ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10
+
 
 @dataclass(frozen=True)
 class PassGeometry:
@@ -246,8 +253,18 @@ def measurement_model_metadata(
         "apply_light_time": bool(pass_geo.apply_light_time),
         "apply_stellar_aberration": bool(pass_geo.apply_stellar_aberration),
         "stellar_aberration_model": stellar_model,
-        "light_time_tolerance_s": float(rr.light_time_tolerance_s),
-        "light_time_max_iter": int(rr.light_time_max_iter),
+        # FA-02: position measurements use the one-way solver policy; only the
+        # range-rate family runs the RangeRatePhysicsConfig light-time solver.
+        "light_time_tolerance_s": (
+            float(ONE_WAY_LIGHT_TIME_TOLERANCE_S)
+            if pass_geo.measurement_type == "position"
+            else float(rr.light_time_tolerance_s)
+        ),
+        "light_time_max_iter": (
+            int(ONE_WAY_LIGHT_TIME_MAX_ITERATIONS)
+            if pass_geo.measurement_type == "position"
+            else int(rr.light_time_max_iter)
+        ),
         "count_interval_s": float(rr.count_interval_s),
         "uplink_frequency_hz": float(rr.uplink_frequency_hz),
         "turnaround_ratio": float(rr.turnaround_ratio),
@@ -333,8 +350,8 @@ def solve_one_way_light_time(
     get_target_position_m,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
 ) -> LightTimeSolution:
     """Iterate one-way geometric light-time from target transmit to receive time."""
     observer_position_m = np.asarray(observer_position_m, dtype=float).reshape(3)
@@ -383,8 +400,8 @@ def one_way_light_time_range_sensitivity(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity]:
     """Return one-way range and its implicit local-state sensitivity.
 
@@ -512,8 +529,8 @@ def one_way_light_time_initial_state_sensitivity(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, OneWayLightTimeInitialStateSensitivity]:
     """Build implicit one-way LOS sensitivities with respect to the arc initial state."""
     solution, local_range_sensitivity = one_way_light_time_range_sensitivity(
@@ -651,8 +668,8 @@ def one_way_light_time_position_initial_state_jacobian(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
     apply_stellar: bool = False,
     observer_reference_velocity_j2000_mps: ArrayLike | None = None,
@@ -718,8 +735,8 @@ def one_way_light_time_position_local_state_jacobian(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, np.ndarray]:
     """Return a local receive-state [range, azimuth, elevation] Jacobian."""
@@ -768,8 +785,8 @@ def one_way_light_time_range_initial_state_jacobian(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, np.ndarray]:
     """Map the implicit one-way range sensitivity to the initial state.
 
@@ -1018,8 +1035,8 @@ def _apparent_position_observable(
     observer_earth_vel_rx: ArrayLike | None = None,
     apply_stellar: bool = False,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
 ) -> tuple[np.ndarray, float, float, int]:
     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
 

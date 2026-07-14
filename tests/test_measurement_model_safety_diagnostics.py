@@ -1,13 +1,14 @@
-"""D1 executable evidence for known measurement-model safety defects.
+"""Measurement-model safety diagnostics (D1 evidence + P0A contracts).
 
-These tests document confirmed current defects and provide executable
-behavior-freeze evidence. They are not approval of that behavior and must be
-updated when the corresponding production safety fixes are implemented.
+FA-01 and FA-02 sections assert the P0A production safety contracts (hard
+rejection and corrected metadata); the retained operator-mismatch test
+documents the underlying physics rationale for the rejection. FA-03A/FA-03B
+sections still document confirmed OPEN defects as executable current-behavior
+evidence and must be updated by the P0B enforcement patch.
 """
 
 from __future__ import annotations
 
-import inspect
 import sys
 from pathlib import Path
 from unittest import mock
@@ -21,20 +22,36 @@ from lunar_od import (
     C_LIGHT_MPS,
     PassGeometry,
     RangeRatePhysicsConfig,
+    TwoWayRangeConfig,
     generate_position_measurements,
     measurement_model_metadata,
     one_way_light_time_range_sensitivity,
     solve_one_way_light_time,
 )
-from lunar_od.filters import _position_measurement_from_state, _two_way_local_histories
+from lunar_od.filters import (
+    _position_measurement_from_state,
+    _two_way_local_histories,
+    run_lunar_ukf,
+    validate_ukf_measurement_support,
+)
 from lunar_od.geometry import wrap_to_pi
+from lunar_od.measurements import (
+    ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+)
 from lunar_od.radiometrics import (
     interp_state_history,
     solve_two_way_light_time,
     two_way_counted_doppler_initial_state_jacobian,
     two_way_counted_doppler_observable,
 )
-from lunar_od.scenario_config import scenario_config_from_mapping
+from lunar_od.scenario_config import ScenarioConfig, scenario_config_from_mapping
+
+_CN_CNS_PROFILES = (
+    "one_way_light_time",
+    "one_way_light_time_aberrated_local_mci",
+    "one_way_light_time_aberrated_spice_ssb",
+)
 
 
 class _OriginStation:
@@ -152,8 +169,15 @@ def test_fa06_pytest_session_imports_isolated_repository(pytestconfig):
     assert pytestconfig.getini("pythonpath") == []
 
 
-def test_fa01_current_ukf_operator_is_geometric_for_cn_profiles(generated_profile_evidence):
-    """Current-defect evidence: UKF silently ignores selected CN/CN+S physics."""
+def test_fa01_operator_mismatch_rationale_for_rejection(generated_profile_evidence):
+    """Underlying operator mismatch motivating the P0A rejection.
+
+    The private UKF position operator is geometric-only; against CN/CN+S
+    generated observables it produces km-scale range and arcsec-scale angle
+    deltas at the truth state. This is the physics rationale for the hard
+    rejection asserted below, kept as executable evidence (the private
+    operator itself is intentionally unchanged by P0A).
+    """
     evidence = generated_profile_evidence
     geometric = evidence["geometric_instantaneous"]["generated"]
     arcsec_per_rad = 180.0 * 3600.0 / np.pi
@@ -186,57 +210,193 @@ def test_fa01_current_ukf_operator_is_geometric_for_cn_profiles(generated_profil
         assert abs(delta[0]) > 1.0 or np.linalg.norm(delta[1:]) > 1.0e-8
 
 
-def test_fa01_config_acceptance_and_m3_rejection_are_explicit():
-    """Current config accepts inconsistent UKF profiles while retaining M3 rejection."""
+def test_fa01_loader_rejects_ukf_with_cn_and_cns_profiles():
+    """P0A contract: scenario_config_from_mapping rejects UKF + CN/CN+S."""
     base = {
-        "name": "d1_ukf_profile_evidence",
+        "name": "p0a_ukf_profile_gate",
         "measurement_type": "position",
         "estimator_type": "ukf",
         "start_mode": "cold",
         "network": "multi",
         "jacobian_model": "implicit_light_time",
     }
-    profiles = (
-        "one_way_light_time",
-        "one_way_light_time_aberrated_local_mci",
-        "one_way_light_time_aberrated_spice_ssb",
-    )
-    for profile in profiles:
-        config = scenario_config_from_mapping({**base, "measurement_model_profile": profile})
-        assert config.estimator_type == "ukf"
-        assert config.measurement_model_profile == profile
-
-    with pytest.raises(ValueError, match="not supported by the UKF"):
+    for profile in _CN_CNS_PROFILES:
+        with pytest.raises(ValueError, match="only the geometric instantaneous"):
+            scenario_config_from_mapping({**base, "measurement_model_profile": profile})
+    # Legacy booleans are an equivalent non-geometric selection.
+    with pytest.raises(ValueError, match="only the geometric instantaneous"):
         scenario_config_from_mapping(
             {
-                **base,
-                "measurement_type": "two_way_range",
-                "measurement_model_profile": "geometric_instantaneous",
-                "jacobian_model": "analytic_exact_geometric",
+                "name": "p0a_ukf_legacy_boolean_gate",
+                "measurement_type": "position",
+                "estimator_type": "ukf",
+                "start_mode": "cold",
+                "network": "multi",
+                "apply_light_time": True,
             }
         )
 
 
-def test_fa02_generation_metadata_reports_range_rate_solver_defaults(generated_profile_evidence):
-    """Current-defect evidence: one-way metadata reports the wrong solver contract."""
+def test_fa01_runtime_rejects_direct_scenario_config_bypass(generated_profile_evidence):
+    """P0A defense-in-depth: direct ScenarioConfig construction bypasses the
+    loader, but every UKF position run funnels through run_lunar_ukf, which
+    applies the same shared helper once per arc before any sigma-point work."""
+    for profile in _CN_CNS_PROFILES:
+        # Direct dataclass construction does NOT run cross-field validation:
+        bypassed = ScenarioConfig(
+            name="p0a_direct_bypass",
+            measurement_type="position",
+            estimator_type="ukf",
+            start_mode="cold",
+            network="multi",
+            measurement_model_profile=profile,
+        )
+        assert bypassed.measurement_model_profile == profile
+
+        # ... and the runtime boundary still rejects the combination:
+        pass_geo = generated_profile_evidence[profile]["pass_geo"]
+        with pytest.raises(ValueError, match="only the geometric instantaneous"):
+            run_lunar_ukf(
+                np.array([0.0]),
+                np.zeros((1, 6)),
+                np.zeros(6),
+                np.eye(6),
+                pass_geo,
+                4.9028e12,
+                0.0,
+                0.0,
+                lambda t: np.zeros((np.size(np.atleast_1d(t)), 3)),
+                lambda t: np.zeros((np.size(np.atleast_1d(t)), 3)),
+            )
+
+
+def test_fa01_supported_combinations_remain_accepted(generated_profile_evidence):
+    """P0A contract: geometric UKF and CN/CN+S batch estimators stay valid;
+    the M3 two_way_range UKF rejection is preserved."""
+    geometric_ukf = scenario_config_from_mapping(
+        {
+            "name": "p0a_geometric_ukf",
+            "measurement_type": "position",
+            "estimator_type": "ukf",
+            "start_mode": "cold",
+            "network": "multi",
+        }
+    )
+    assert geometric_ukf.measurement_model_profile == "geometric_instantaneous"
+
+    for estimator in ("bls_lm", "srif"):
+        for profile in _CN_CNS_PROFILES:
+            config = scenario_config_from_mapping(
+                {
+                    "name": f"p0a_{estimator}_batch",
+                    "measurement_type": "position",
+                    "estimator_type": estimator,
+                    "start_mode": "cold",
+                    "network": "multi",
+                    "measurement_model_profile": profile,
+                    "jacobian_model": "implicit_light_time",
+                }
+            )
+            assert config.measurement_model_profile == profile
+
+    # Shared helper is a no-op for non-UKF and non-position combinations.
+    validate_ukf_measurement_support("srif", "position", "one_way_light_time")
+    validate_ukf_measurement_support("ukf", "range_rate", "geometric_instantaneous")
+
+    # Geometric UKF pass geometry still passes the runtime gate.
+    validate_ukf_measurement_support(
+        "ukf",
+        "position",
+        generated_profile_evidence["geometric_instantaneous"]["pass_geo"].measurement_model_profile,
+    )
+
+    with pytest.raises(ValueError, match="not supported by the UKF"):
+        scenario_config_from_mapping(
+            {
+                "name": "p0a_m3_ukf_preserved",
+                "measurement_type": "two_way_range",
+                "estimator_type": "ukf",
+                "start_mode": "cold",
+                "network": "multi",
+            }
+        )
+
+
+def test_fa02_generation_metadata_reports_one_way_solver_policy(generated_profile_evidence):
+    """P0A contract: position metadata reports the one-way solver constants."""
     pass_geo = generated_profile_evidence["one_way_light_time"]["pass_geo"]
     metadata = pass_geo.measurement_metadata
     regenerated_metadata = measurement_model_metadata(pass_geo, noise_enabled=False)
-    signature = inspect.signature(solve_one_way_light_time)
-    actual_tolerance = signature.parameters["tolerance_s"].default
-    actual_max_iter = signature.parameters["max_iter"].default
-    range_rate_defaults = RangeRatePhysicsConfig()
 
     print(
-        "[FA-02] actual one-way tolerance/max_iter="
-        f"{actual_tolerance:.3e}/{actual_max_iter}; reported="
+        "[FA-02] reported one-way tolerance/max_iter="
         f"{metadata['light_time_tolerance_s']:.3e}/{metadata['light_time_max_iter']}"
     )
     assert metadata == regenerated_metadata
-    assert metadata["light_time_tolerance_s"] == range_rate_defaults.light_time_tolerance_s
-    assert metadata["light_time_max_iter"] == range_rate_defaults.light_time_max_iter
-    assert metadata["light_time_tolerance_s"] != actual_tolerance
-    assert metadata["light_time_max_iter"] != actual_max_iter
+    assert metadata["light_time_tolerance_s"] == ONE_WAY_LIGHT_TIME_TOLERANCE_S
+    assert metadata["light_time_max_iter"] == ONE_WAY_LIGHT_TIME_MAX_ITERATIONS
+    # The constants must stay the actual defaults of the one-way solver.
+    solution = solve_one_way_light_time(
+        0.0,
+        np.zeros(3),
+        lambda t: np.array([3.0e8, 0.0, 0.0]),
+    )
+    assert solution.converged
+    assert solution.iterations <= ONE_WAY_LIGHT_TIME_MAX_ITERATIONS
+
+
+def test_fa02_counted_doppler_metadata_is_unchanged():
+    """P0A contract: range-rate metadata keeps RangeRatePhysicsConfig values."""
+    station = _OriginStation()
+    t_grid = np.array([0.0, 10.0])
+    counted = RangeRatePhysicsConfig(
+        mode="two_way_counted_doppler",
+        light_time_tolerance_s=5.0e-10,
+        light_time_max_iter=15,
+    )
+    pass_geo = PassGeometry(
+        t_s=t_grid,
+        earth_pos_mci_m=np.zeros((2, 3)),
+        earth_vel_mci_mps=np.zeros((2, 3)),
+        x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], 2, axis=0),
+        stations=(station,),
+        measurement_type="range_rate",
+        range_rate_physics=counted,
+        measurement_model_profile="two_way_counted_doppler",
+    )
+    metadata = measurement_model_metadata(pass_geo, noise_enabled=False)
+    assert metadata["light_time_tolerance_s"] == 5.0e-10
+    assert metadata["light_time_max_iter"] == 15
+
+
+def test_p0a_legacy_counted_delay_guard_matrix():
+    """P0A contract: legacy counted Doppler rejects any nonzero fixed delay.
+
+    The fixed scalar delay term cancels directly in the endpoint RTLT
+    difference, but nonzero delay still affects counted Doppler through the
+    t2u/t2d separation, spacecraft motion during the delay, and the changed
+    uplink/downlink event geometry — which the single-bounce model cannot
+    represent, hence the hard gate until the four-event model exists.
+    """
+    RangeRatePhysicsConfig(mode="two_way_counted_doppler", transponder_delay_s=0.0)
+    RangeRatePhysicsConfig(mode="two_way_counted_doppler", transponder_delay_s=-0.0)
+
+    for delay in (1.0e-15, 2.5e-6, 4.0e-6):
+        with pytest.raises(ValueError, match="single-bounce"):
+            RangeRatePhysicsConfig(
+                mode="two_way_counted_doppler", transponder_delay_s=delay
+            )
+    for delay in (-1.0e-6, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            RangeRatePhysicsConfig(
+                mode="two_way_counted_doppler", transponder_delay_s=delay
+            )
+
+    # Non-counted modes keep accepting a delay (direct solver-level studies),
+    # and the M3 four-event model's nonzero-delay support is unaffected.
+    RangeRatePhysicsConfig(transponder_delay_s=2.5e-6)
+    m3_config = TwoWayRangeConfig(transponder_delay_s=2.5e-6)
+    assert m3_config.transponder_delay_s == 2.5e-6
 
 
 def test_fa03a_one_way_nominal_consumes_nonconverged_last_iterate():

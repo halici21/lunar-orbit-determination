@@ -725,6 +725,43 @@ def ukf_predict_update(
     )
 
 
+def validate_ukf_measurement_support(
+    estimator_type: str,
+    measurement_type: str,
+    measurement_model_profile: str | None = "geometric_instantaneous",
+    *,
+    apply_light_time: bool = False,
+    apply_stellar_aberration: bool = False,
+) -> None:
+    """Reject estimator/measurement combinations the UKF cannot evaluate (FA-01).
+
+    Shared safety gate for both enforcement layers: the scenario-config loader
+    (``scenario_config._validate_cross_field_rules``) and the UKF runtime
+    entry (``run_lunar_ukf``), so directly constructed ``ScenarioConfig``
+    objects cannot bypass the rule. The legacy ``apply_light_time`` /
+    ``apply_stellar_aberration`` booleans are treated as non-geometric
+    physics selections for hand-built pass geometries whose profile field was
+    left at its default. No-op for non-UKF estimators and non-position
+    measurement types (the M3 two_way_range rejection is separate and
+    unchanged).
+    """
+    if str(estimator_type).lower() != "ukf":
+        return
+    if str(measurement_type).lower() != "position":
+        return
+    profile = measurement_model_profile or "geometric_instantaneous"
+    if profile != "geometric_instantaneous" or apply_light_time or apply_stellar_aberration:
+        raise ValueError(
+            f"measurement_model_profile={profile!r} (apply_light_time="
+            f"{bool(apply_light_time)}, apply_stellar_aberration="
+            f"{bool(apply_stellar_aberration)}): UKF position measurements "
+            "currently support only the geometric instantaneous profile. CN "
+            "and CN+S profiles require a profile-aware sigma-point observable "
+            "and are therefore rejected; use estimator_type='bls_lm' or "
+            "'srif' for light-time/aberration position physics."
+        )
+
+
 def run_lunar_ukf(
     t_pass_s: ArrayLike,
     obs_data: ArrayLike,
@@ -767,6 +804,15 @@ def run_lunar_ukf(
         )
     if measurement_type not in {"position", "range_rate"}:
         raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+    # FA-01 runtime defense-in-depth: one check per arc, before any sigma-point
+    # work, covering callers that bypass scenario-config validation.
+    validate_ukf_measurement_support(
+        "ukf",
+        measurement_type,
+        pass_geo.measurement_model_profile,
+        apply_light_time=pass_geo.apply_light_time,
+        apply_stellar_aberration=pass_geo.apply_stellar_aberration,
+    )
     adaptive = adaptive_config or UKFAdaptiveConfig()
 
     t_pass = np.asarray(t_pass_s, dtype=float).reshape(-1)

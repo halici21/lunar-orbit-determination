@@ -329,3 +329,27 @@ both isolated imports before pytest and completed successfully.
 
 During D1 diagnostic implementation, before this baseline finalization, no
 commit or push was made.
+
+## 14. P0A resolution status (post-D1 production patch)
+
+The P0A measurement-safety patch on this branch changed the status of the
+D1 findings as follows; the D1 sections above are preserved as the
+pre-patch evidence record.
+
+| Finding | Status after P0A |
+|---|---|
+| FA-01 | confirmed at eb92461/D1; **resolved by P0A hard rejection** — shared `filters.validate_ukf_measurement_support` enforced at `scenario_config._validate_cross_field_rules` (loader) and at `run_lunar_ukf` entry (runtime defense-in-depth for direct `ScenarioConfig` construction). UKF + geometric, and BLS-LM/SRIF + CN/CN+S, remain accepted; the M3 two_way_range UKF rejection is preserved. |
+| FA-02 | confirmed at eb92461/D1; **resolved by P0A metadata correction** — `ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12` / `ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10` are now the single source of truth for the seven one-way solver signatures, and `measurement_model_metadata` branches by measurement type (position -> one-way constants; range_rate -> `RangeRatePhysicsConfig` values). |
+| Legacy counted-Doppler nonzero delay | **short-term rejection implemented (P0A)** in `RangeRatePhysicsConfig.__post_init__` (`mode='two_way_counted_doppler'` + any nonzero delay -> `ValueError`; +/-0.0 accepted; negative/nonfinite rejected by the pre-existing general validation). The fixed scalar delay term cancels directly in the endpoint RTLT difference, but nonzero delay can still affect counted Doppler through the t2u/t2d separation, spacecraft motion during the delay, and the resulting uplink/downlink event geometry — the four-event counted-Doppler model (CD-4) remains future work. M3 `TwoWayRangeConfig` nonzero-delay support is unchanged. |
+| FA-03A | **open** — the D1 current-defect tests in Section 7 remain passing evidence until the P0B enforcement patch. |
+| FA-03B | **open** — the D1 history-domain matrix in Section 8 remains passing evidence until the P0B enforcement patch. |
+
+The FA-01/FA-02 D1 current-defect assertions were converted into P0A
+safety-contract assertions in
+`tests/test_measurement_model_safety_diagnostics.py`; the operator-mismatch
+measurement is retained as the rationale evidence motivating the rejection.
+One collateral fixture was adjusted:
+`tests/test_filters.py::test_two_way_long_arc_noise_clock_and_model_mismatch_with_station_biases`
+lost its now-rejected `transponder_delay_s=4e-6` truth-mismatch knob (clock
+offset/drift and mu mismatches remain); delay-mismatch campaigns return with
+the four-event model.

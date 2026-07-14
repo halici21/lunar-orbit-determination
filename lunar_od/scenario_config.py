@@ -8,7 +8,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from .filters import UKFAdaptiveConfig, UnscentedTransformConfig
+from .filters import (
+    UKFAdaptiveConfig,
+    UnscentedTransformConfig,
+    validate_ukf_measurement_support,
+)
 from .gravity_harmonics import SphericalHarmonicGravityModel
 from .gravity_model_loader import load_lunar_gravity_model, resolve_gravity_dir
 from .radiometrics import RangeRatePhysicsConfig
@@ -609,6 +613,15 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError("bias solve-for modes are supported here only for estimator_type='srif' or 'ukf'.")
     if config.range_rate_physics != "geometric_instantaneous" and config.measurement_type != "range_rate":
         raise ValueError("non-geometric range_rate_physics requires measurement_type='range_rate'.")
+    # FA-01 loader gate: UKF position measurements only support the geometric
+    # instantaneous profile (shared helper; also enforced at run_lunar_ukf).
+    validate_ukf_measurement_support(
+        config.estimator_type,
+        config.measurement_type,
+        config.measurement_model_profile,
+        apply_light_time=config.apply_light_time,
+        apply_stellar_aberration=config.apply_stellar_aberration,
+    )
     if config.measurement_type == "two_way_range":
         if config.estimator_type == "ukf":
             raise ValueError(

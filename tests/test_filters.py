@@ -1798,6 +1798,11 @@ class FilterTests(unittest.TestCase):
 
     @slow
     def test_two_way_long_arc_noise_clock_and_model_mismatch_with_station_biases(self):
+        # P0A: the transponder-delay mismatch knob was removed from the truth
+        # physics because the legacy single-bounce counted-Doppler model now
+        # rejects nonzero delay (see RangeRatePhysicsConfig); the campaign
+        # keeps its clock offset/drift and mu model mismatches. Delay-mismatch
+        # campaigns return with the four-event counted-Doppler model.
         mu_moon, x_true0, t_pass_s, x_truth, geometric_geo, _, get_earth_pos, get_sun_pos = (
             _synthetic_range_rate_case(duration_s=600.0)
         )
@@ -1806,7 +1811,6 @@ class FilterTests(unittest.TestCase):
             count_interval_s=30.0,
             station_clock_offset_s=2e-3,
             station_clock_drift=2e-6,
-            transponder_delay_s=4e-6,
         )
         truth_geo = replace(geometric_geo, range_rate_physics=truth_physics)
         clean_obs = _build_clean_two_way_range_rate_observations(

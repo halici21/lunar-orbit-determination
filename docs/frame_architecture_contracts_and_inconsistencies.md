@@ -15,6 +15,21 @@
 > new empirical evidence (below) — the existing 507/28/0 baseline
 > (Section 2.2) was **not** re-run for this revision, since no production,
 > test, or configuration file changed.
+> **P0A status update:** the P0A measurement-safety patch on this branch
+> resolves **FA-01** (confirmed at eb92461/D1; resolved by hard rejection of
+> UKF + CN/CN+S position profiles at both the scenario-config loader and the
+> `run_lunar_ukf` runtime boundary via the shared
+> `filters.validate_ukf_measurement_support` helper) and **FA-02** (confirmed
+> at eb92461/D1; resolved by the one-way solver constants
+> `ONE_WAY_LIGHT_TIME_TOLERANCE_S` / `ONE_WAY_LIGHT_TIME_MAX_ITERATIONS` and
+> the measurement-type metadata branch). P0A also implements the short-term
+> **legacy counted-Doppler nonzero-transponder-delay rejection**
+> (`RangeRatePhysicsConfig.__post_init__`); the four-event counted-Doppler
+> model remains future work (CD-4). The fixed scalar delay term cancels
+> directly in the endpoint RTLT difference, but nonzero delay can still
+> affect counted Doppler through the t2u/t2d separation, spacecraft motion
+> during the delay, and the resulting uplink/downlink event geometry.
+> **FA-03A and FA-03B remain OPEN** (P0B scope).
 
 ---
 
@@ -716,10 +731,11 @@ remediation phase.
 
 | ID | Title | Category | Severity | Difficulty | Status | Phase |
 |---|---|---|---|---|---|---|
-| FA-01 | UKF position path ignores configured measurement profile | LOCAL-FRAME / FRAME-EPOCH | CRITICAL | EASY (reject) / HARD (implement) | confirmed | F1 |
-| FA-03A | Nonconverged light-time solution can reach observable paths | NUMERICAL-SOLVER / VALIDATION | HIGH | MEDIUM | confirmed | F1 |
-| FA-03B | Event-state history silently extrapolated without bound | HISTORY-DOMAIN / INTERPOLATION | HIGH | MEDIUM | confirmed | F1 |
-| FA-02 | Position metadata reports wrong light-time solver parameters | DOCUMENTATION / metadata | MEDIUM | EASY | confirmed | F0 |
+| FA-01 | UKF position path ignores configured measurement profile | LOCAL-FRAME / FRAME-EPOCH | CRITICAL | EASY (reject) / HARD (implement) | confirmed at eb92461/D1; **resolved by P0A hard rejection** | F1 (done) |
+| FA-03A | Nonconverged light-time solution can reach observable paths | NUMERICAL-SOLVER / VALIDATION | HIGH | MEDIUM | confirmed; **open** (P0B) | F1 |
+| FA-03B | Event-state history silently extrapolated without bound | HISTORY-DOMAIN / INTERPOLATION | HIGH | MEDIUM | confirmed; **open** (P0B) | F1 |
+| FA-02 | Position metadata reports wrong light-time solver parameters | DOCUMENTATION / metadata | MEDIUM | EASY | confirmed at eb92461/D1; **resolved by P0A metadata correction** | F0 (done) |
+| P0A-CD0 | Legacy counted-Doppler nonzero transponder delay | NUMERICAL-SOLVER (safety gate) | MEDIUM | EASY | **short-term rejection implemented (P0A)**; four-event model remains future work (CD-4) | CD-0 (done) |
 | FA-06 | Isolated worktree tests can import code from the main worktree | TEST-PROVENANCE / TECHNICAL-DEBT | MEDIUM | EASY-MEDIUM | confirmed | F0 |
 | FA-07 | M3 event/convention metadata absent from result CSV | DOCUMENTATION / traceability | MEDIUM | EASY-MEDIUM | confirmed | F0 |
 | FA-04 | Bare `MOON_PA` sampler default / fixtures bypass versioned-frame rule | LUNAR-FIXED-FRAME (API/default bypass) | LOW-MEDIUM | EASY-MEDIUM (fixture decision) | confirmed | F6 |
