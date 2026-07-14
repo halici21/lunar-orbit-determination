@@ -1,10 +1,12 @@
 # D1 Measurement-Model Safety Diagnostics
 
-Status: D1-only executable validation report, 2026-07-13.
+Status: D1 baseline evidence with post-D1 P0A and P0B-1 resolution updates,
+2026-07-14.
 
-This report covers FA-01, FA-02, FA-03A, FA-03B, and FA-06 only. It does not
-contain a production fix, and it does not execute the D2 frame, PCHIP,
-visibility, or lunar-frame campaigns.
+This report covers FA-01, FA-02, FA-03A, FA-03B, and FA-06 only. Sections 1-13
+preserve the D1 baseline and its pre-fix measurements; the later status text
+documents the completed P0A/P0B-1 safety patches. It does not execute the D2
+frame, PCHIP, visibility, or lunar-frame campaigns.
 
 ## 1. Environment
 
@@ -92,8 +94,8 @@ visibility parity, lunar-frame cadence, and all production safety fixes.
 
 ## 4. Tests added or extended
 
-Added `tests/test_measurement_model_safety_diagnostics.py` with seven passing
-tests:
+At the D1 baseline, `tests/test_measurement_model_safety_diagnostics.py` was
+added with seven passing current-behavior tests:
 
 | Test | Evidence |
 |---|---|
@@ -165,7 +167,7 @@ the one-way solver used by the generated observable.
 **Recommended fix:** give the one-way profile an explicit solver-policy owner
 and emit metadata from that same object or shared constants.
 
-## 7. FA-03A evidence
+## 7. FA-03A evidence and P0B-1 resolution
 
 ### One-way CN
 
@@ -205,14 +207,57 @@ round-trip times within floating-point spacing:
 | equivalent range residual | 180809.439637 m |
 | counted initial-state Jacobian | finite; no convergence exception |
 
-**Classification:** FA-03A confirmed. The strictness split is narrower than a
-generic "all sensitivity helpers are strict" statement: the one-way Jacobian
-rejects nonconvergence, while the legacy counted Jacobian currently consumes
-the nonconverged solution too.
+**D1 classification:** FA-03A confirmed at the D1/P0A baseline. The strictness
+split was narrower than a generic "all sensitivity helpers are strict"
+statement: the one-way Jacobian rejected nonconvergence, while the one-way
+nominal and legacy counted nominal/Jacobian paths consumed invalid final
+iterates.
 
-**Recommended fix:** enforce convergence and a separately evaluated equation
+**D1 recommendation:** enforce convergence and a separately evaluated equation
 residual in both nominal and derivative paths; never publish the last iterate
 as an observable.
+
+### P0B-1 implemented contract
+
+P0B-1 resolves FA-03A. A one-way or round-trip light-time solution is valid
+only when both of these independently checked conditions pass:
+
+1. the fixed-point iteration update is within its update tolerance;
+2. the final light-time equation, freshly re-evaluated at the returned event
+   epochs, is within its equation-residual tolerance.
+
+The raw `solve_one_way_light_time` and `solve_two_way_light_time` APIs may
+still return diagnostic nonconverged solution objects. Those objects expose
+update status/residuals and final equation residuals; they are not valid
+observable values. Production consumers now enforce the boundary:
+
+- `_apparent_position_observable`, one-way sensitivities, and the local and
+  initial-state Jacobian chains reject invalid results with
+  `LightTimeConvergenceError`. One-way nominal and Jacobian paths therefore
+  use the same failure policy.
+- `two_way_counted_doppler_observable` validates `count-start` and `count-end`
+  separately. The counted initial-state Jacobian applies the same endpoint
+  checks and raises `RoundTripLightTimeConvergenceError` on failure.
+- Counted diagnostics distinguish uplink and downlink update/equation failures.
+  Equation residuals are reported in seconds and equivalent metres.
+
+Normal converged numerical behavior is intended to remain unchanged. The
+forced-failure tests retain the independent D1 residual calculations as the
+oracle and now assert controlled rejection:
+
+| P0B-1 test | Contract |
+|---|---|
+| `test_p0b1_one_way_nonconverged_last_iterate_is_rejected` | raw diagnostic result retained; nominal and sensitivity consumers reject |
+| `test_p0b1_counted_observable_and_jacobian_reject_nonconverged_endpoints` | count-start/count-end and counted Jacobian rejection |
+| `test_p0b1_dual_criterion_rejects_equation_residual_after_updates_converge` | equation closure remains mandatory after the update criterion passes |
+| `test_p0b1_equation_tolerances_must_be_finite_and_positive` | configuration validation |
+
+P0B-1 validation completed with `16 passed` in the focused safety file and
+`523 passed, 28 skipped, 1 warning, 8 subtests passed` in the full suite. The
+warning is the existing test-only numerical-Jacobian performance warning.
+FA-03B history-domain enforcement remains open. The legacy counted model is
+still single-bounce; a four-event counted-Doppler model remains future work.
+M3 two-way range behavior is unchanged.
 
 ## 8. FA-03B history-domain matrix
 
@@ -254,19 +299,21 @@ failure/drop metadata. Preserve exact-boundary acceptance explicitly.
 |---|---|
 | FA-01 | Confirmed: accepted UKF profiles use geometric position physics |
 | FA-02 | Confirmed: one-way metadata reports range-rate solver defaults |
-| FA-03A | Confirmed: nonconverged last iterates reach nominal observable paths |
+| FA-03A | Confirmed at D1/P0A baseline; **resolved by P0B-1 strict dual-criterion enforcement** |
 | FA-03B | Confirmed: legacy paths silently extrapolate outside history support |
 | FA-06 | Confirmed: parent pytest config requires explicit provenance override |
 
-All defect evidence is expressed as passing tests that assert current behavior.
-No test is intentionally failing or marked xfail.
+The D1 defect evidence was expressed as passing tests that asserted baseline
+behavior. P0A/P0B-1 converted resolved findings into passing safety-contract
+tests. No test is intentionally failing or marked xfail.
 
 ## 10. Findings reclassified
 
 No issue was dismissed. Two claims were refined:
 
-1. FA-03A derivative behavior is model-specific: one-way is strict; legacy
-   counted nominal and Jacobian paths are both permissive.
+1. At D1, FA-03A derivative behavior was model-specific: one-way sensitivity
+   was strict while one-way nominal and legacy counted nominal/Jacobian paths
+   were permissive. P0B-1 replaces that split with one strict consumer policy.
 2. FA-03B one-way exact-upper-event evaluation still performs an earlier
    out-of-domain receive-epoch probe, so its complete path is not boundary-only.
 
@@ -280,10 +327,11 @@ Apply in separate production patches, with these D1 tests converted from
 current-defect assertions to safety-contract assertions:
 
 1. **P0.1:** reject UKF with CN/CN+S position profiles.
-2. **P0.2:** enforce convergence plus equation-residual closure for one-way and
-   counted nominal/Jacobian paths.
-3. **P0.3:** prohibit silent event-history extrapolation and add explicit
-   pre-roll/domain metadata.
+2. **P0.2 (completed by P0B-1):** enforce convergence plus independently
+   evaluated equation-residual closure for one-way and counted
+   nominal/Jacobian paths.
+3. **P0.3 (open as FA-03B):** prohibit silent event-history extrapolation
+   and add explicit pre-roll/domain metadata.
 4. **P0.4:** source one-way metadata from the actual one-way solver policy.
 
 Separately, reject legacy counted Doppler when `transponder_delay_s != 0`
@@ -310,7 +358,8 @@ No conclusion about these D2 items is inferred from D1.
 
 ## 13. Regression results
 
-Every pytest command included `--override-ini=pythonpath=`.
+The following runs are the historical D1 baseline. Every command included
+`--override-ini=pythonpath=`.
 
 | Run | Result | Runtime |
 |---|---|---:|
@@ -330,19 +379,30 @@ both isolated imports before pytest and completed successfully.
 During D1 diagnostic implementation, before this baseline finalization, no
 commit or push was made.
 
-## 14. P0A resolution status (post-D1 production patch)
+P0B-1 was then verified on the P0A-based implementation worktree:
 
-The P0A measurement-safety patch on this branch changed the status of the
-D1 findings as follows; the D1 sections above are preserved as the
-pre-patch evidence record.
+| Run | Result | Runtime |
+|---|---|---:|
+| P0B-1 focused measurement-safety diagnostics | 16 passed | 1.15 s |
+| P0B-1 full suite | 523 passed, 28 skipped, 1 warning, 8 subtests passed | 23.13 s |
 
-| Finding | Status after P0A |
+The P0B-1 full regression also had **0 failed and 0 deselected**. These
+results validate the implementation consistency of the strict failure policy;
+they do not close FA-03B or change the M3 model.
+
+## 14. Post-D1 safety resolution status
+
+The P0A and P0B-1 measurement-safety patches changed the status of the D1
+findings as follows; the D1 sections above remain the pre-patch evidence
+record.
+
+| Finding | Current status |
 |---|---|
 | FA-01 | confirmed at eb92461/D1; **resolved by P0A hard rejection** — shared `filters.validate_ukf_measurement_support` enforced at `scenario_config._validate_cross_field_rules` (loader) and at `run_lunar_ukf` entry (runtime defense-in-depth for direct `ScenarioConfig` construction). UKF + geometric, and BLS-LM/SRIF + CN/CN+S, remain accepted; the M3 two_way_range UKF rejection is preserved. |
 | FA-02 | confirmed at eb92461/D1; **resolved by P0A metadata correction** — `ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12` / `ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10` are now the single source of truth for the seven one-way solver signatures, and `measurement_model_metadata` branches by measurement type (position -> one-way constants; range_rate -> `RangeRatePhysicsConfig` values). |
 | Legacy counted-Doppler nonzero delay | **short-term rejection implemented (P0A)** in `RangeRatePhysicsConfig.__post_init__` (`mode='two_way_counted_doppler'` + any nonzero delay -> `ValueError`; +/-0.0 accepted; negative/nonfinite rejected by the pre-existing general validation). The fixed scalar delay term cancels directly in the endpoint RTLT difference, but nonzero delay can still affect counted Doppler through the t2u/t2d separation, spacecraft motion during the delay, and the resulting uplink/downlink event geometry — the four-event counted-Doppler model (CD-4) remains future work. M3 `TwoWayRangeConfig` nonzero-delay support is unchanged. |
-| FA-03A | **open** — the D1 current-defect tests in Section 7 remain passing evidence until the P0B enforcement patch. |
-| FA-03B | **open** — the D1 history-domain matrix in Section 8 remains passing evidence until the P0B enforcement patch. |
+| FA-03A | confirmed at eb92461/D1 and the P0A baseline; **resolved by P0B-1**. Validity now requires update and independently evaluated final equation-residual tolerances; raw solvers may return diagnostic failures, while all nominal/sensitivity/Jacobian consumers reject them with controlled, unit-bearing diagnostics. |
+| FA-03B | **open** — the D1 history-domain matrix in Section 8 remains passing evidence until a separate history-domain enforcement patch. |
 
 The FA-01/FA-02 D1 current-defect assertions were converted into P0A
 safety-contract assertions in
@@ -353,3 +413,10 @@ One collateral fixture was adjusted:
 lost its now-rejected `transponder_delay_s=4e-6` truth-mismatch knob (clock
 offset/drift and mu mismatches remain); delay-mismatch campaigns return with
 the four-event model.
+
+P0B-1 converted the FA-03A D1 current-defect assertions into strict
+nonconvergence safety-contract tests. The focused coverage checks the dual
+update/equation-residual criterion, one-way nominal/Jacobian parity, separate
+count-start/count-end validation, uplink/downlink diagnostics, and seconds/metres
+unit reporting. FA-03B history-domain behavior and M3 tests were not changed by
+P0B-1.

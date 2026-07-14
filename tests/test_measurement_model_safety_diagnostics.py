@@ -1,15 +1,16 @@
-"""Measurement-model safety diagnostics (D1 evidence + P0A contracts).
+"""Measurement-model safety diagnostics (D1 evidence + safety contracts).
 
 FA-01 and FA-02 sections assert the P0A production safety contracts (hard
 rejection and corrected metadata); the retained operator-mismatch test
-documents the underlying physics rationale for the rejection. FA-03A/FA-03B
-sections still document confirmed OPEN defects as executable current-behavior
-evidence and must be updated by the P0B enforcement patch.
+documents the underlying physics rationale for the rejection. FA-03A asserts
+the P0B-1 strict convergence contract. FA-03B remains executable evidence for
+the separate history-domain task.
 """
 
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -18,10 +19,13 @@ import pytest
 
 import lunar_od
 import lunar_od.measurements as measurements_module
+import lunar_od.radiometrics as radiometrics_module
 from lunar_od import (
     C_LIGHT_MPS,
+    LightTimeConvergenceError,
     PassGeometry,
     RangeRatePhysicsConfig,
+    RoundTripLightTimeConvergenceError,
     TwoWayRangeConfig,
     generate_position_measurements,
     measurement_model_metadata,
@@ -36,6 +40,7 @@ from lunar_od.filters import (
 )
 from lunar_od.geometry import wrap_to_pi
 from lunar_od.measurements import (
+    ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
     ONE_WAY_LIGHT_TIME_TOLERANCE_S,
 )
@@ -46,6 +51,7 @@ from lunar_od.radiometrics import (
     two_way_counted_doppler_observable,
 )
 from lunar_od.scenario_config import ScenarioConfig, scenario_config_from_mapping
+from lunar_od.scenarios import _resolve_range_rate_physics
 
 _CN_CNS_PROFILES = (
     "one_way_light_time",
@@ -335,6 +341,10 @@ def test_fa02_generation_metadata_reports_one_way_solver_policy(generated_profil
     assert metadata == regenerated_metadata
     assert metadata["light_time_tolerance_s"] == ONE_WAY_LIGHT_TIME_TOLERANCE_S
     assert metadata["light_time_max_iter"] == ONE_WAY_LIGHT_TIME_MAX_ITERATIONS
+    assert (
+        metadata["light_time_equation_tolerance_s"]
+        == ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S
+    )
     # The constants must stay the actual defaults of the one-way solver.
     solution = solve_one_way_light_time(
         0.0,
@@ -342,6 +352,8 @@ def test_fa02_generation_metadata_reports_one_way_solver_policy(generated_profil
         lambda t: np.array([3.0e8, 0.0, 0.0]),
     )
     assert solution.converged
+    assert solution.update_converged
+    assert solution.equation_residual_s <= ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S
     assert solution.iterations <= ONE_WAY_LIGHT_TIME_MAX_ITERATIONS
 
 
@@ -353,6 +365,7 @@ def test_fa02_counted_doppler_metadata_is_unchanged():
         mode="two_way_counted_doppler",
         light_time_tolerance_s=5.0e-10,
         light_time_max_iter=15,
+        light_time_equation_tolerance_s=7.0e-12,
     )
     pass_geo = PassGeometry(
         t_s=t_grid,
@@ -367,6 +380,9 @@ def test_fa02_counted_doppler_metadata_is_unchanged():
     metadata = measurement_model_metadata(pass_geo, noise_enabled=False)
     assert metadata["light_time_tolerance_s"] == 5.0e-10
     assert metadata["light_time_max_iter"] == 15
+    assert metadata["light_time_equation_tolerance_s"] == 7.0e-12
+    overridden = _resolve_range_rate_physics(counted, count_interval_s=30.0)
+    assert overridden.light_time_equation_tolerance_s == 7.0e-12
 
 
 def test_p0a_legacy_counted_delay_guard_matrix():
@@ -399,8 +415,8 @@ def test_p0a_legacy_counted_delay_guard_matrix():
     assert m3_config.transponder_delay_s == 2.5e-6
 
 
-def test_fa03a_one_way_nominal_consumes_nonconverged_last_iterate():
-    """Current-defect evidence: nominal CN continues where its Jacobian refuses."""
+def test_p0b1_one_way_nonconverged_last_iterate_is_rejected():
+    """P0B-1: diagnostic result remains inspectable but consumers reject it."""
     t_grid = np.linspace(-5.0, 5.0, 41)
     states = _linear_state_history(
         t_grid,
@@ -417,33 +433,41 @@ def test_fa03a_one_way_nominal_consumes_nonconverged_last_iterate():
         tolerance_s=1.0e-15,
         max_iter=1,
     )
-    z, transmit_time_s, light_time_s, iterations = measurements_module._apparent_position_observable(
-        receive_time_s,
-        station,
-        t_grid,
-        states,
-        np.zeros(3),
-        np.eye(6),
-        tolerance_s=1.0e-15,
-        max_iter=1,
+    range_at_returned_epoch_m = float(
+        np.linalg.norm(target(solution.transmit_time_s) - station.r_ecef_m)
     )
-    range_at_returned_epoch_m = float(np.linalg.norm(target(transmit_time_s) - station.r_ecef_m))
-    equation_residual_s = light_time_s - range_at_returned_epoch_m / C_LIGHT_MPS
+    equation_residual_s = abs(
+        solution.light_time_s - range_at_returned_epoch_m / C_LIGHT_MPS
+    )
 
     print(
-        f"[FA-03A one-way] converged={solution.converged}, iterations={iterations}, "
-        f"t_tx={transmit_time_s:.12f} s, equation residual={equation_residual_s:.12e} s, "
+        f"[FA-03A one-way] converged={solution.converged}, iterations={solution.iterations}, "
+        f"t_tx={solution.transmit_time_s:.12f} s, equation residual={equation_residual_s:.12e} s, "
         f"equivalent range={equation_residual_s * C_LIGHT_MPS:.6f} m"
     )
     assert not solution.converged
-    assert iterations == 1
-    assert transmit_time_s == solution.transmit_time_s
-    assert light_time_s == solution.light_time_s
-    assert np.isfinite(z).all()
-    assert z[0] == pytest.approx(range_at_returned_epoch_m, abs=1.0e-6)
-    assert abs(equation_residual_s) > 1.0e-6
+    assert not solution.update_converged
+    assert solution.iterations == 1
+    assert solution.equation_residual_s == pytest.approx(
+        equation_residual_s, rel=0.0, abs=np.spacing(equation_residual_s)
+    )
+    assert equation_residual_s > 1.0e-6
 
-    with pytest.raises(RuntimeError, match="did not converge"):
+    with pytest.raises(LightTimeConvergenceError, match="observable solve") as nominal_error:
+        measurements_module._apparent_position_observable(
+            receive_time_s,
+            station,
+            t_grid,
+            states,
+            np.zeros(3),
+            np.eye(6),
+            tolerance_s=1.0e-15,
+            max_iter=1,
+        )
+    assert "equation residual" in str(nominal_error.value)
+    assert "refusing to use the last iterate" in str(nominal_error.value)
+
+    with pytest.raises(LightTimeConvergenceError, match="sensitivity solve"):
         one_way_light_time_range_sensitivity(
             receive_time_s,
             station,
@@ -469,8 +493,8 @@ def _round_trip_equation_residuals(solution, t_grid: np.ndarray, states: np.ndar
     return np.array([downlink, uplink], dtype=float)
 
 
-def test_fa03a_counted_observable_and_jacobian_consume_nonconverged_endpoints():
-    """Current-defect evidence: counted nominal and H ignore endpoint flags."""
+def test_p0b1_counted_observable_and_jacobian_reject_nonconverged_endpoints():
+    """P0B-1: counted nominal and H reject either failed endpoint."""
     t_grid = np.linspace(-5.0, 5.0, 41)
     states = _linear_state_history(
         t_grid,
@@ -491,22 +515,6 @@ def test_fa03a_counted_observable_and_jacobian_consume_nonconverged_endpoints():
         solve_two_way_light_time(t3, station, t_grid, states, earth, earth, xforms, config)
         for t3 in endpoints
     ]
-    observable = two_way_counted_doppler_observable(
-        0.0, station, t_grid, states, earth, earth, xforms, config
-    )
-    expected = C_LIGHT_MPS * (
-        solutions[1].round_trip_light_time_s - solutions[0].round_trip_light_time_s
-    ) / (2.0 * config.count_interval_s)
-    jacobian = two_way_counted_doppler_initial_state_jacobian(
-        0.0,
-        station,
-        t_grid,
-        _augmented_identity_history(states),
-        earth,
-        earth,
-        xforms,
-        config,
-    )
     equation_residuals = np.concatenate(
         [_round_trip_equation_residuals(solution, t_grid, states, config) for solution in solutions]
     )
@@ -514,18 +522,149 @@ def test_fa03a_counted_observable_and_jacobian_consume_nonconverged_endpoints():
 
     print(
         f"[FA-03A counted] endpoint converged={[s.converged for s in solutions]}, "
-        f"observable={observable:.9f} m/s, max equation residual={max_residual_s:.12e} s, "
+        f"max equation residual={max_residual_s:.12e} s, "
         f"equivalent range={max_residual_s * C_LIGHT_MPS:.6f} m"
     )
     assert not any(solution.converged for solution in solutions)
-    assert observable == pytest.approx(
-        expected,
-        rel=0.0,
-        abs=4.0 * np.spacing(abs(expected)),
-    )
-    assert np.isfinite(observable)
-    assert np.isfinite(jacobian).all()
+    for solution, residuals in zip(solutions, equation_residuals.reshape(2, 2)):
+        np.testing.assert_allclose(
+            [
+                solution.downlink_equation_residual_s,
+                solution.uplink_equation_residual_s,
+            ],
+            np.abs(residuals),
+            rtol=0.0,
+            atol=4.0 * np.spacing(max_residual_s),
+        )
     assert max_residual_s > 1.0e-6
+
+    with pytest.raises(
+        RoundTripLightTimeConvergenceError, match="count-start endpoint"
+    ) as nominal_error:
+        two_way_counted_doppler_observable(
+            0.0, station, t_grid, states, earth, earth, xforms, config
+        )
+    assert "equation residuals" in str(nominal_error.value)
+    assert "refusing to use the last iterate" in str(nominal_error.value)
+
+    converged_start = replace(solutions[0], converged=True)
+    with mock.patch.object(
+        radiometrics_module,
+        "solve_two_way_light_time",
+        side_effect=[converged_start, solutions[1]],
+    ):
+        with pytest.raises(
+            RoundTripLightTimeConvergenceError, match="count-end endpoint"
+        ):
+            two_way_counted_doppler_observable(
+                0.0, station, t_grid, states, earth, earth, xforms, config
+            )
+
+    with pytest.raises(
+        RoundTripLightTimeConvergenceError,
+        match="count-start Jacobian endpoint",
+    ):
+        two_way_counted_doppler_initial_state_jacobian(
+            0.0,
+            station,
+            t_grid,
+            _augmented_identity_history(states),
+            earth,
+            earth,
+            xforms,
+            config,
+        )
+
+
+def test_p0b1_dual_criterion_rejects_equation_residual_after_updates_converge():
+    """Equation closure remains mandatory even when loose update checks pass."""
+    t_grid = np.linspace(-5.0, 5.0, 41)
+    station = _OriginStation()
+    one_way_states = _linear_state_history(
+        t_grid,
+        np.array([3.0e8, 0.0, 0.0]),
+        np.array([0.05 * C_LIGHT_MPS, 0.0, 0.0]),
+    )
+    one_way_target = lambda t_s: interp_state_history(t_grid, one_way_states, t_s)[:3]
+    one_way = solve_one_way_light_time(
+        0.0,
+        station.r_ecef_m,
+        one_way_target,
+        tolerance_s=1.0,
+        equation_tolerance_s=1.0e-12,
+        max_iter=1,
+    )
+    assert one_way.update_converged
+    assert not one_way.converged
+    assert one_way.equation_residual_s > 1.0e-12
+    with pytest.raises(LightTimeConvergenceError, match="equation residual"):
+        measurements_module._apparent_position_observable(
+            0.0,
+            station,
+            t_grid,
+            one_way_states,
+            np.zeros(3),
+            np.eye(6),
+            tolerance_s=1.0,
+            equation_tolerance_s=1.0e-12,
+            max_iter=1,
+        )
+
+    counted_states = _linear_state_history(
+        t_grid,
+        np.array([2.0e8, 0.0, 0.0]),
+        np.array([0.03 * C_LIGHT_MPS, 0.0, 0.0]),
+    )
+    earth = np.zeros((t_grid.size, 3), dtype=float)
+    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+    counted_config = RangeRatePhysicsConfig(
+        mode="two_way_counted_doppler",
+        count_interval_s=0.2,
+        light_time_tolerance_s=1.0,
+        light_time_equation_tolerance_s=1.0e-12,
+        light_time_max_iter=1,
+    )
+    counted = solve_two_way_light_time(
+        -0.1,
+        station,
+        t_grid,
+        counted_states,
+        earth,
+        earth,
+        xforms,
+        counted_config,
+    )
+    assert counted.downlink_update_converged
+    assert counted.uplink_update_converged
+    assert not counted.converged
+    assert max(
+        counted.downlink_equation_residual_s,
+        counted.uplink_equation_residual_s,
+    ) > counted_config.light_time_equation_tolerance_s
+    with pytest.raises(RoundTripLightTimeConvergenceError, match="equation residuals"):
+        two_way_counted_doppler_observable(
+            0.0,
+            station,
+            t_grid,
+            counted_states,
+            earth,
+            earth,
+            xforms,
+            counted_config,
+        )
+
+
+@pytest.mark.parametrize("bad_tolerance", [0.0, -1.0, np.nan, np.inf])
+def test_p0b1_equation_tolerances_must_be_finite_and_positive(bad_tolerance):
+    with pytest.raises(ValueError, match="finite and positive"):
+        solve_one_way_light_time(
+            0.0,
+            np.zeros(3),
+            lambda _t: np.array([3.0e8, 0.0, 0.0]),
+            equation_tolerance_s=bad_tolerance,
+        )
+    with pytest.raises(ValueError, match="finite and positive"):
+        RangeRatePhysicsConfig(light_time_equation_tolerance_s=bad_tolerance)
 
 
 def test_fa03b_history_domain_matrix_documents_current_behavior():

@@ -29,7 +29,24 @@
 > directly in the endpoint RTLT difference, but nonzero delay can still
 > affect counted Doppler through the t2u/t2d separation, spacecraft motion
 > during the delay, and the resulting uplink/downlink event geometry.
-> **FA-03A and FA-03B remain OPEN** (P0B scope).
+> **P0B-1 status update (2026-07-14):** the uncommitted P0B-1 patch (branch
+> `fix/light-time-nonconvergence`, based at P0A HEAD `3265dbe9`)
+> resolves **FA-03A** (confirmed at eb92461/D1 baseline; resolved by a dual
+> convergence criterion — fixed-point update tolerance AND an independently
+> re-evaluated light-time equation residual, both required — enforced at the
+> nominal observable and Jacobian/sensitivity call sites for both the
+> one-way (`_apparent_position_observable`,
+> `one_way_light_time_range_sensitivity`) and legacy counted-Doppler
+> (`two_way_counted_doppler_observable`,
+> `round_trip_light_time_initial_state_jacobian`, validated separately per
+> count-start/count-end endpoint) paths). Raw solvers
+> (`solve_one_way_light_time`, `solve_two_way_light_time`) still return a
+> diagnostic non-raising `converged=False` result — only the
+> observable/sensitivity/Jacobian consumers now reject it, via the new
+> `LightTimeConvergenceError` / `RoundTripLightTimeConvergenceError`
+> exceptions, whose messages report both criteria's residuals in seconds and
+> metres. Nominal converged behavior is unchanged; M3 (`two_way_range.py`)
+> was not touched. **FA-03B (history-domain extrapolation) remains OPEN.**
 
 ---
 
@@ -55,10 +72,12 @@ Headline results:
   the receive-epoch geometric observable for configurations whose
   measurement generation used a one-way CN or CN+S profile (FA-01).
 - **Two HIGH confirmed defects** in solver safety policy, split per this
-  audit's acceptance instructions: a nonconverged light-time solution can
-  reach observable paths (FA-03A) and event-state histories can be silently
-  extrapolated without a domain guard (FA-03B). The M3 two-way range model
-  already implements the strict policy both defects lack.
+  audit's acceptance instructions: a nonconverged light-time solution could
+  reach observable paths (FA-03A — **resolved by P0B-1**, see the header note
+  above and Section 13) and event-state histories can be silently
+  extrapolated without a domain guard (FA-03B — still open). The M3 two-way
+  range model was the reference strict policy both defects were measured
+  against; FA-03A now matches it.
 - Five further confirmed items are metadata/documentation/API-hygiene level
   (FA-02, FA-04, FA-05, FA-06, FA-07).
 - Measured interpolation evidence exists for 10/30/60 s transform grids and
@@ -601,17 +620,19 @@ requirement, no silent kernel fallback) at `dynamics.py:429-501` and
 | Category | NUMERICAL-SOLVER / VALIDATION |
 | Severity | HIGH |
 | Difficulty | MEDIUM |
-| Status | confirmed |
-| Actual behavior | `solve_one_way_light_time` returns `converged=False` after `max_iter` without raising (`measurements.py:339-360`); `_apparent_position_observable` consumes `solution.transmit_time_s` without checking the flag (`measurements.py:1055-1064`); `solve_two_way_light_time` similarly returns, and `two_way_counted_doppler_observable` uses `round_trip_light_time_s` ignoring `converged` (`radiometrics.py:137-157`); convergence is update-tolerance only, no equation-residual criterion |
-| Affected symbols | `solve_one_way_light_time`, `_apparent_position_observable`, `solve_two_way_light_time`, `two_way_counted_doppler_observable`, `round_trip_light_time_initial_state_jacobian` |
-| Affected models | one-way CN/CN+S observables and residuals; counted Doppler (observable + Jacobian); UKF apparent-companion and counted paths |
-| Not affected | M3 (`solve_two_way_range_events` enforces update **and** equation-residual tolerances and raises `TwoWayEventConvergenceError`; last iterate never used); the one-way *Jacobian* helper (`one_way_light_time_range_sensitivity` raises on nonconvergence, `measurements.py:402-406`) — creating an observable/Jacobian policy asymmetry |
-| Scientific impact | a pathological geometry or too-small `max_iter` silently yields a slightly wrong light time -> biased residual, with no failure record |
-| Estimator impact | residual and Jacobian may disagree on convergence policy at the same observation; nonconvergence is invisible in results |
-| Recommended fix | unified strict policy modeled on M3: dual criterion (update + equation residual in s and m), controlled exception or persistent per-observation failure metadata; never use the last iterate silently |
-| Required tests | forced-nonconvergence tests per model (max_iter=1); assert controlled error or recorded flag; regression that nominal geometries are unaffected |
-| Backward-compatibility risk | low — nominal lunar geometries converge in ≤5 iterations; only pathological cases change behavior |
-| Recommended phase | F1 (policy), F2 (diagnostic evidence first) |
+| Status | confirmed at `eb92461` D1/P0A baseline; **resolved by P0B-1** |
+| Baseline behavior | Raw one-way and round-trip solvers could return `converged=False`; one-way nominal and both counted nominal/Jacobian paths consumed the final iterate. One-way sensitivity alone rejected nonconvergence, creating a nominal/Jacobian policy split. |
+| Implemented validity rule | A result is valid only when both the fixed-point iteration-update tolerance and an independently re-evaluated final light-time equation-residual tolerance pass. The final equation residual is not inferred from loop bookkeeping. |
+| Raw solver contract | `solve_one_way_light_time` and `solve_two_way_light_time` may still return diagnostic nonconverged solution objects. They expose update convergence/residual data and final equation residuals without publishing an observable. |
+| One-way consumer contract | `_apparent_position_observable`, one-way sensitivities, and the local/initial-state Jacobian chain share one strict policy. Invalid results raise `LightTimeConvergenceError`; nominal and Jacobian paths no longer diverge. |
+| Counted consumer contract | `two_way_counted_doppler_observable` validates `count-start` and `count-end` independently. `two_way_counted_doppler_initial_state_jacobian` and `round_trip_light_time_initial_state_jacobian` enforce the same endpoint policy and raise `RoundTripLightTimeConvergenceError`. |
+| Diagnostics | One-way errors report update and equation residuals. Counted errors distinguish uplink/downlink update and equation failures. Equation residuals are reported in seconds and equivalent metres. |
+| Affected symbols | `LightTimeSolution`, `RoundTripLightTimeSolution`, `solve_one_way_light_time`, `_apparent_position_observable`, one-way sensitivity/Jacobian helpers, `solve_two_way_light_time`, `two_way_counted_doppler_observable`, `two_way_counted_doppler_initial_state_jacobian`, `round_trip_light_time_initial_state_jacobian` |
+| Numerical compatibility | Normal converged numerical behavior is intended to remain unchanged; the full P0B-1 regression passed. Only invalid/pathological last-iterate consumption is rejected. |
+| Required tests implemented | forced `max_iter=1` update failures; update-passes/equation-fails cases; independent equation-residual recomputation; counted start/end and uplink/downlink diagnostics; positive finite tolerance validation; normal cross-layer regression |
+| Not affected | FA-03B history-domain behavior remains open; the legacy counted model remains single-bounce and the four-event counted model remains future work; M3 (`two_way_range.py`) behavior is unchanged. |
+| Backward-compatibility risk | low and intentional: callers that consumed invalid last iterates now receive a controlled exception; converged cases retain their numerical path |
+| Completed phase | P0B-1 / F1 |
 
 ### FA-03B — Event-state history can be silently extrapolated
 
@@ -706,7 +727,7 @@ a later architecture phase.
 | VG-05 | No import-provenance assertion in the test environment | FA-06 undetectable by the suite |
 | VG-06 | Geometric/no-uplink visibility assumption undocumented and untested | SR-04 invisible |
 | VG-07 | MOON_PA cadence budget not enforced/recorded at config level | SR-05 unbounded in config space |
-| VG-08 | One-way/counted solver convergence flags not persisted anywhere | FA-03A failures leave no trace in results |
+| VG-08 | One-way/counted nonconvergence was not surfaced by consumers | **Closed by P0B-1:** controlled exceptions carry update/equation diagnostics; raw diagnostic solution objects remain inspectable |
 
 ---
 
@@ -719,7 +740,7 @@ a later architecture phase.
 | M3 metadata completeness in results | `reporting.py` CSV columns | M2 fields only; no two-way convention/delay/event columns | traceability (FA-07) | MEDIUM | add M3 columns/manifest |
 | "ECEF" naming | production identifiers/docstrings | frame is ITRF93 | naming (FA-05) | LOW | docstring/comment clarification |
 | Nonzero-delay counted Doppler | metadata of a delayed run | a scalar delay cancels directly in the endpoint difference, but separate `t2u`/`t2d` event geometry is not represented by the single-bounce model | physics/API safety | HIGH | reject nonzero delay in the legacy profile; implement four-event counted Doppler separately |
-| "Frame audit: CLOSED — no correctness bug found" | `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` §Frame audit | true for the M2-era frame-direction scope; this audit adds FA-01/FA-03A/FA-03B in parity/policy scope | scope drift | LOW | re-scope statement after F1 |
+| "Frame audit: CLOSED — no correctness bug found" | `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` §Frame audit | true for the M2-era frame-direction scope; this audit added FA-01/FA-03A/FA-03B in parity/policy scope; FA-01 and FA-03A are now resolved, FA-03B remains open | scope drift | LOW | retain the narrower frame-direction claim and track remaining FA-03B separately |
 | CN pre-grid extrapolation "just before the grid start" | `_apparent_position_observable` docstring | no bound enforced in code (FA-03B) | docs vs behavior | MEDIUM | enforce or document bound |
 
 ---
@@ -732,7 +753,7 @@ remediation phase.
 | ID | Title | Category | Severity | Difficulty | Status | Phase |
 |---|---|---|---|---|---|---|
 | FA-01 | UKF position path ignores configured measurement profile | LOCAL-FRAME / FRAME-EPOCH | CRITICAL | EASY (reject) / HARD (implement) | confirmed at eb92461/D1; **resolved by P0A hard rejection** | F1 (done) |
-| FA-03A | Nonconverged light-time solution can reach observable paths | NUMERICAL-SOLVER / VALIDATION | HIGH | MEDIUM | confirmed; **open** (P0B) | F1 |
+| FA-03A | Nonconverged light-time solution can reach observable paths | NUMERICAL-SOLVER / VALIDATION | HIGH | MEDIUM | confirmed at eb92461/D1; **resolved by P0B-1 strict dual-criterion enforcement** | F1 (done) |
 | FA-03B | Event-state history silently extrapolated without bound | HISTORY-DOMAIN / INTERPOLATION | HIGH | MEDIUM | confirmed; **open** (P0B) | F1 |
 | FA-02 | Position metadata reports wrong light-time solver parameters | DOCUMENTATION / metadata | MEDIUM | EASY | confirmed at eb92461/D1; **resolved by P0A metadata correction** | F0 (done) |
 | P0A-CD0 | Legacy counted-Doppler nonzero transponder delay | NUMERICAL-SOLVER (safety gate) | MEDIUM | EASY | **short-term rejection implemented (P0A)**; four-event model remains future work (CD-4) | CD-0 (done) |
@@ -741,7 +762,7 @@ remediation phase.
 | FA-04 | Bare `MOON_PA` sampler default / fixtures bypass versioned-frame rule | LUNAR-FIXED-FRAME (API/default bypass) | LOW-MEDIUM | EASY-MEDIUM (fixture decision) | confirmed | F6 |
 | FA-05 | `ecef` identifiers denote ITRF93 (naming only; does not imply full IERS station-correction coverage) | DOCUMENTATION | LOW | EASY | confirmed | F0 |
 | SR-01…SR-06 | Section 15 | INTERPOLATION / VISIBILITY / LUNAR-FIXED-FRAME / TIME-SCALE | — | — | suspected (measurement required) | F2 |
-| VG-01…VG-08 | Section 16 | VALIDATION-GAP | — | — | validation gap | F2 |
+| VG-01…VG-08 | Section 16 | VALIDATION-GAP | — | — | VG-01…VG-07 open; VG-08 closed by P0B-1 | F2 / P0B-1 |
 
 ### FA-06 — Isolated worktree tests can import code from the main worktree
 
@@ -776,7 +797,7 @@ produce executable evidence before any production fix.**
 | Phase | Goal | Files / symbols | Why | Risk | Tests required | Numerical acceptance | Backward compat | Depends on |
 |---|---|---|---|---|---|---|---|---|
 | **F0 — Test provenance and documentation/metadata** | FA-06 verification + provenance assertion; FA-02 metadata fields; FA-05 naming notes; FA-07 M3 CSV columns; counted-doc wording | `pytest` env / F2 harness; `measurements.measurement_model_metadata`; `reporting.py`; docs | trustworthy evidence before anything else | minimal | provenance check; metadata unit tests | n/a | none | — |
-| **F1 — UKF hard rejection and solver/domain safety** | FA-01 hard rejection; FA-03A dual convergence criterion + failure policy; FA-03B bounded/pre-roll history policy | `scenario_config._validate_cross_field_rules`, `filters.run_lunar_ukf`; `measurements.solve_one_way_light_time` consumers; `radiometrics` interp guards | the three physics-safety defects | rejection breaks inconsistent configs (intended); boundary policy alters first-sample arcs | FA-01/03A/03B required-test lists (Section 13) | geometric paths bitwise unchanged; nominal convergence unaffected | explicit break for inconsistent UKF configs | F0, F2 evidence |
+| **F1 — UKF hard rejection and solver/domain safety** | FA-01 hard rejection (**done P0A**); FA-03A dual convergence criterion + failure policy (**done P0B-1**); FA-03B bounded/pre-roll history policy (**open**) | `scenario_config._validate_cross_field_rules`, `filters.run_lunar_ukf`; one-way/counted light-time consumers; future `radiometrics`/measurement history guards | the three physics-safety defects | completed rejection affects invalid configurations/solutions intentionally; future boundary policy may alter first-sample arcs | completed FA-01/03A contracts plus remaining FA-03B tests (Section 13) | geometric and normally converged paths unchanged; FA-03B acceptance not yet defined | explicit safety breaks only | F0, F2 evidence |
 | **F2 — Executable frame diagnostics (Codex)** | Section 20 | new `examples/`/`tests/` diagnostics only | convert SR/VG items into measurements | none (read-only w.r.t. production) | self-validating diagnostics | per Section 20 | none | F0 |
 | **F3 — Counted-Doppler exact event station provider** | reuse M3 provider in `_station_state_mci*` | `radiometrics.py` | removes measured interpolation error class | changes counted outputs at interp-error level | zero-delay bitwise fixture first, then budgeted diffs | ≤0.1σ observable shift justified by F2 numbers | counted baselines shift | F2 |
 | **F4 — Shared station/frame provider (HARD — Opus-level architecture decision)** | one provider, method labels, all five paths | `measurements`/`radiometrics`/`two_way_range`/`filters`/`visibility` | eliminate 5-way duplication | wide blast radius | behavior-freeze fixtures per path | bit-identical where policy unchanged | high if rushed | F3 |
@@ -802,8 +823,10 @@ provenance assertion.
    profile: `compute_position_residuals` vs `_position_measurement_from_state`;
    print range/az/el deltas for geometric (expected 0) and CN/CN+S (expected
    nonzero).
-4. **Nonconvergence surfacing (FA-03A/VG-08)** — max_iter=1 sweeps per solver;
-   record what each observable path currently returns.
+4. **Nonconvergence surfacing (FA-03A/VG-08, completed by P0B-1)** -
+   `max_iter=1` and update-passes/equation-fails tests now assert controlled
+   rejection in one-way nominal/sensitivity/Jacobian and counted start/end
+   endpoint paths; raw diagnostic solutions retain measured residuals.
 5. **History-boundary sweep (FA-03B)** — transmit-epoch offsets from
    −0.1 s to −60 s before grid start; measure extrapolated-state error vs a
    pre-rolled truth propagation.

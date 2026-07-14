@@ -38,6 +38,9 @@ class RangeRatePhysicsConfig:
     station_clock_drift: float = 0.0
     clock_reference_time_s: float = 0.0
     transponder_delay_s: float = 0.0
+    # FA-03A (P0B-1): equation-residual half of the dual convergence
+    # criterion (per leg, seconds). Kept last to preserve positional callers.
+    light_time_equation_tolerance_s: float = 1e-11
 
     def __post_init__(self) -> None:
         normalized = _normalize_range_rate_mode(self.mode)
@@ -56,6 +59,13 @@ class RangeRatePhysicsConfig:
             raise ValueError("light_time_tolerance_s must be positive.")
         if self.light_time_max_iter <= 0:
             raise ValueError("light_time_max_iter must be positive.")
+        if (
+            not np.isfinite(self.light_time_equation_tolerance_s)
+            or self.light_time_equation_tolerance_s <= 0.0
+        ):
+            raise ValueError(
+                "light_time_equation_tolerance_s must be finite and positive."
+            )
         if self.local_state_model not in {"ode", "taylor3"}:
             raise ValueError("local_state_model must be 'ode' or 'taylor3'.")
         if self.local_state_model == "taylor3" and self.count_interval_s > TAYLOR3_MAX_COUNT_INTERVAL_S:
@@ -101,6 +111,21 @@ class RoundTripLightTimeSolution:
     downlink_light_time_s: float
     iterations: int
     converged: bool
+    # FA-03A: independently evaluated per-leg equation residuals (seconds) at
+    # the returned events; `converged` is True only when the update tolerance
+    # AND both residual tolerances hold.
+    uplink_equation_residual_s: float = float("nan")
+    downlink_equation_residual_s: float = float("nan")
+    uplink_update_converged: bool = False
+    downlink_update_converged: bool = False
+    uplink_iterations: int = 0
+    downlink_iterations: int = 0
+    uplink_update_residual_s: float = float("nan")
+    downlink_update_residual_s: float = float("nan")
+
+
+class RoundTripLightTimeConvergenceError(RuntimeError):
+    """Raised when a round-trip light-time result fails its strict policy."""
 
 
 def range_rate_physics_config(config: RangeRatePhysicsConfig | str | None) -> RangeRatePhysicsConfig:
@@ -112,6 +137,34 @@ def range_rate_physics_config(config: RangeRatePhysicsConfig | str | None) -> Ra
     if isinstance(config, str):
         return RangeRatePhysicsConfig(mode=_normalize_range_rate_mode(config))
     raise TypeError("range_rate_physics must be None, a string, or RangeRatePhysicsConfig.")
+
+
+def _require_round_trip_light_time_convergence(
+    solution: RoundTripLightTimeSolution,
+    config: RangeRatePhysicsConfig,
+    *,
+    endpoint_label: str,
+) -> None:
+    if solution.converged:
+        return
+    c = float(config.light_speed_mps)
+    raise RoundTripLightTimeConvergenceError(
+        f"Two-way light-time {endpoint_label} did not converge at receive time "
+        f"{solution.receive_time_s:.16g} s: update convergence "
+        f"[uplink {solution.uplink_update_converged} "
+        f"({solution.uplink_iterations} iterations, residual "
+        f"{solution.uplink_update_residual_s:.3e} s), downlink "
+        f"{solution.downlink_update_converged} "
+        f"({solution.downlink_iterations} iterations, residual "
+        f"{solution.downlink_update_residual_s:.3e} s)] versus tolerance "
+        f"{config.light_time_tolerance_s:.3e} s; equation residuals "
+        f"[uplink {solution.uplink_equation_residual_s:.3e} s / "
+        f"{c * solution.uplink_equation_residual_s:.3e} m, downlink "
+        f"{solution.downlink_equation_residual_s:.3e} s / "
+        f"{c * solution.downlink_equation_residual_s:.3e} m] versus tolerance "
+        f"{config.light_time_equation_tolerance_s:.3e} s; refusing to use "
+        "the last iterate."
+    )
 
 
 def instantaneous_geometric_range_rate(r_rel_m: ArrayLike, v_rel_mps: ArrayLike) -> float:
@@ -150,7 +203,7 @@ def two_way_counted_doppler_observable(
     t_end = float(receive_mid_time_s) + half_tc
     receive_start = _clock_corrected_receive_time(t_start, cfg)
     receive_end = _clock_corrected_receive_time(t_end, cfg)
-    rho_start = solve_two_way_light_time(
+    start_solution = solve_two_way_light_time(
         receive_start,
         station,
         t_grid_s,
@@ -159,8 +212,11 @@ def two_way_counted_doppler_observable(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
-    ).round_trip_light_time_s
-    rho_end = solve_two_way_light_time(
+    )
+    _require_round_trip_light_time_convergence(
+        start_solution, cfg, endpoint_label="count-start endpoint"
+    )
+    end_solution = solve_two_way_light_time(
         receive_end,
         station,
         t_grid_s,
@@ -169,7 +225,12 @@ def two_way_counted_doppler_observable(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
-    ).round_trip_light_time_s
+    )
+    _require_round_trip_light_time_convergence(
+        end_solution, cfg, endpoint_label="count-end endpoint"
+    )
+    rho_start = start_solution.round_trip_light_time_s
+    rho_end = end_solution.round_trip_light_time_s
     rho_rate = (rho_end - rho_start) / cfg.count_interval_s
     doppler_hz = cfg.turnaround_ratio * cfg.uplink_frequency_hz * rho_rate
     if cfg.output_unit == "hz":
@@ -204,6 +265,7 @@ def two_way_counted_doppler_initial_state_jacobian(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
+        endpoint_label="count-start Jacobian endpoint",
     )
     d_tau_end = round_trip_light_time_initial_state_jacobian(
         receive_end,
@@ -214,6 +276,7 @@ def two_way_counted_doppler_initial_state_jacobian(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
+        endpoint_label="count-end Jacobian endpoint",
     )
     if cfg.output_unit == "hz":
         scale = cfg.turnaround_ratio * cfg.uplink_frequency_hz / cfg.count_interval_s
@@ -231,6 +294,8 @@ def round_trip_light_time_initial_state_jacobian(
     earth_vel_mci_mps: ArrayLike,
     x_j2000_to_itrf93: ArrayLike,
     config: RangeRatePhysicsConfig | str | None = None,
+    *,
+    endpoint_label: str = "Jacobian endpoint",
 ) -> np.ndarray:
     """Return d(round-trip light-time)/d(initial spacecraft state)."""
     cfg = range_rate_physics_config(config)
@@ -247,6 +312,9 @@ def round_trip_light_time_initial_state_jacobian(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
+    )
+    _require_round_trip_light_time_convergence(
+        solution, cfg, endpoint_label=endpoint_label
     )
     t1 = solution.transmit_time_s
     t2 = solution.transponder_time_s
@@ -324,18 +392,20 @@ def solve_two_way_light_time(
 
     sc_rx_state = _interp_state(t_grid_s, state_history_mci, receive_time_s)
     downlink_lt = float(np.linalg.norm(sc_rx_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
-    converged = False
+    downlink_converged = False
     iteration_count = 0
+    downlink_update_residual_s = float("inf")
     t2 = receive_time_s - downlink_lt
 
     for iteration_count in range(1, cfg.light_time_max_iter + 1):
         sc_t2_state = _interp_state(t_grid_s, state_history_mci, t2)
         new_downlink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
         new_t2 = receive_time_s - new_downlink_lt
-        if abs(new_t2 - t2) <= cfg.light_time_tolerance_s:
+        downlink_update_residual_s = abs(new_t2 - t2)
+        if downlink_update_residual_s <= cfg.light_time_tolerance_s:
             t2 = new_t2
             downlink_lt = new_downlink_lt
-            converged = True
+            downlink_converged = True
             break
         t2 = new_t2
         downlink_lt = new_downlink_lt
@@ -343,6 +413,7 @@ def solve_two_way_light_time(
     sc_t2_state = _interp_state(t_grid_s, state_history_mci, t2)
     t1 = t2 - cfg.transponder_delay_s - downlink_lt
     uplink_converged = False
+    uplink_update_residual_s = float("inf")
     for uplink_iter in range(1, cfg.light_time_max_iter + 1):
         station_tx_state = _station_state_mci(
             t1,
@@ -354,13 +425,45 @@ def solve_two_way_light_time(
         )
         uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
         new_t1 = t2 - cfg.transponder_delay_s - uplink_lt
-        if abs(new_t1 - t1) <= cfg.light_time_tolerance_s:
+        uplink_update_residual_s = abs(new_t1 - t1)
+        if uplink_update_residual_s <= cfg.light_time_tolerance_s:
             t1 = new_t1
             uplink_converged = True
             break
         t1 = new_t1
     else:
         uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
+
+    # FA-03A per-leg equation residuals, evaluated fresh at the returned
+    # events: the spacecraft state at the final t2 was re-interpolated above;
+    # the uplink station is re-queried at the final t1 (the loop's last
+    # station_tx_state can lag t1 by one update).
+    downlink_equation_residual_s = abs(
+        (receive_time_s - t2)
+        - float(
+            np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps
+        )
+    )
+    station_tx_final = _station_state_mci(
+        t1,
+        station,
+        t_grid_s,
+        earth_pos_mci_m,
+        earth_vel_mci_mps,
+        x_j2000_to_itrf93,
+    )
+    uplink_equation_residual_s = abs(
+        (t2 - cfg.transponder_delay_s - t1)
+        - float(
+            np.linalg.norm(sc_t2_state[:3] - station_tx_final[:3]) / cfg.light_speed_mps
+        )
+    )
+    converged_all = bool(
+        downlink_converged
+        and uplink_converged
+        and downlink_equation_residual_s <= cfg.light_time_equation_tolerance_s
+        and uplink_equation_residual_s <= cfg.light_time_equation_tolerance_s
+    )
 
     return RoundTripLightTimeSolution(
         receive_time_s=receive_time_s,
@@ -370,7 +473,15 @@ def solve_two_way_light_time(
         uplink_light_time_s=float(uplink_lt),
         downlink_light_time_s=float(downlink_lt),
         iterations=int(iteration_count + uplink_iter),
-        converged=bool(converged and uplink_converged),
+        converged=converged_all,
+        uplink_equation_residual_s=float(uplink_equation_residual_s),
+        downlink_equation_residual_s=float(downlink_equation_residual_s),
+        uplink_update_converged=uplink_converged,
+        downlink_update_converged=downlink_converged,
+        uplink_iterations=int(uplink_iter),
+        downlink_iterations=int(iteration_count),
+        uplink_update_residual_s=float(uplink_update_residual_s),
+        downlink_update_residual_s=float(downlink_update_residual_s),
     )
 
 

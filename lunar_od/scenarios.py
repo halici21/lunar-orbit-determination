@@ -351,6 +351,7 @@ def _resolve_range_rate_physics(
         light_speed_mps=cfg.light_speed_mps,
         light_time_tolerance_s=cfg.light_time_tolerance_s,
         light_time_max_iter=cfg.light_time_max_iter,
+        light_time_equation_tolerance_s=cfg.light_time_equation_tolerance_s,
         local_state_model=cfg.local_state_model,
         station_clock_offset_s=cfg.station_clock_offset_s,
         station_clock_drift=cfg.station_clock_drift,

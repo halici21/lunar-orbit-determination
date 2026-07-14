@@ -44,6 +44,14 @@ JACOBIAN_MODELS = (
 # defaults (1e-10 s / 20), which belong to the range-rate measurement family.
 ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12
 ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10
+# FA-03A dual convergence criterion: the fixed-point update tolerance alone
+# can be satisfied by a stalled or trivially-looping iterate, so the solver
+# additionally requires the light-time equation residual
+# |tau - rho(t_r - tau)/c| to close. 1e-11 s (~3 mm) is 10x the update
+# tolerance: a genuinely converged fixed point closes the equation to
+# O(update_tol * (1 + rho_dot/c)) << 1e-11, while any stalled iterate does
+# not. Same 1e-12/1e-11 pair as the validated M3 two-way event solver.
+ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S = 1e-11
 
 
 @dataclass(frozen=True)
@@ -78,6 +86,12 @@ class LightTimeSolution:
     iterations: int
     converged: bool
     target_position_m: np.ndarray
+    # FA-03A: independently evaluated light-time equation residual
+    # |tau - rho(t_r - tau)/c| at the returned solution; `converged` is True
+    # only when BOTH the update tolerance and this residual tolerance hold.
+    equation_residual_s: float = float("nan")
+    update_converged: bool = False
+    update_residual_s: float = float("nan")
 
 
 @dataclass(frozen=True)
@@ -119,6 +133,10 @@ class _StellarAberrationLocalJacobian:
 
 class MeasurementJacobianError(ValueError):
     """Raised when a requested measurement Jacobian is physically undefined."""
+
+
+class LightTimeConvergenceError(RuntimeError):
+    """Raised when a one-way light-time result fails its strict solve policy."""
 
 
 def normalize_measurement_model_profile(
@@ -265,6 +283,13 @@ def measurement_model_metadata(
             if pass_geo.measurement_type == "position"
             else int(rr.light_time_max_iter)
         ),
+        # FA-03A (P0B-1): the equation-residual half of the dual convergence
+        # criterion, reported per measurement family like the fields above.
+        "light_time_equation_tolerance_s": (
+            float(ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S)
+            if pass_geo.measurement_type == "position"
+            else float(rr.light_time_equation_tolerance_s)
+        ),
         "count_interval_s": float(rr.count_interval_s),
         "uplink_frequency_hz": float(rr.uplink_frequency_hz),
         "turnaround_ratio": float(rr.turnaround_ratio),
@@ -352,8 +377,15 @@ def solve_one_way_light_time(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> LightTimeSolution:
-    """Iterate one-way geometric light-time from target transmit to receive time."""
+    """Iterate one-way geometric light-time from target transmit to receive time.
+
+    Convergence requires BOTH the fixed-point update tolerance and an
+    independently evaluated light-time equation residual (FA-03A dual
+    criterion); the residual is computed with a fresh target evaluation at
+    the returned transmit epoch, never from loop bookkeeping alone.
+    """
     observer_position_m = np.asarray(observer_position_m, dtype=float).reshape(3)
     if light_speed_mps <= 0.0:
         raise ValueError("light_speed_mps must be positive.")
@@ -361,19 +393,23 @@ def solve_one_way_light_time(
         raise ValueError("tolerance_s must be positive.")
     if max_iter <= 0:
         raise ValueError("max_iter must be positive.")
+    if not np.isfinite(equation_tolerance_s) or equation_tolerance_s <= 0.0:
+        raise ValueError("equation_tolerance_s must be finite and positive.")
 
     receive_time_s = float(receive_time_s)
     target_position = np.asarray(get_target_position_m(receive_time_s), dtype=float).reshape(3)
     light_time_s = float(np.linalg.norm(target_position - observer_position_m) / light_speed_mps)
-    converged = False
+    update_converged = False
+    update_residual_s = float("inf")
 
     for iteration in range(1, max_iter + 1):
         transmit_time_s = receive_time_s - light_time_s
         target_position = np.asarray(get_target_position_m(transmit_time_s), dtype=float).reshape(3)
         new_light_time_s = float(np.linalg.norm(target_position - observer_position_m) / light_speed_mps)
-        if abs(new_light_time_s - light_time_s) <= tolerance_s:
+        update_residual_s = abs(new_light_time_s - light_time_s)
+        if update_residual_s <= tolerance_s:
             light_time_s = new_light_time_s
-            converged = True
+            update_converged = True
             break
         light_time_s = new_light_time_s
     else:
@@ -381,13 +417,51 @@ def solve_one_way_light_time(
 
     transmit_time_s = receive_time_s - light_time_s
     range_m = light_time_s * light_speed_mps
+    # FA-03A equation residual: fresh evaluation at the returned transmit
+    # epoch because the loop's target_position can lag the accepted light
+    # time by one update.
+    final_target_position = np.asarray(
+        get_target_position_m(transmit_time_s), dtype=float
+    ).reshape(3)
+    equation_residual_s = abs(
+        light_time_s
+        - float(np.linalg.norm(final_target_position - observer_position_m) / light_speed_mps)
+    )
+    converged = update_converged and equation_residual_s <= equation_tolerance_s
     return LightTimeSolution(
         range_m=range_m,
         light_time_s=light_time_s,
         transmit_time_s=transmit_time_s,
         iterations=iteration,
         converged=converged,
-        target_position_m=target_position,
+        target_position_m=final_target_position,
+        equation_residual_s=equation_residual_s,
+        update_converged=update_converged,
+        update_residual_s=float(update_residual_s),
+    )
+
+
+def _require_one_way_light_time_convergence(
+    solution: LightTimeSolution,
+    receive_time_s: float,
+    *,
+    light_speed_mps: float,
+    tolerance_s: float,
+    equation_tolerance_s: float,
+    context: str,
+) -> None:
+    if solution.converged:
+        return
+    raise LightTimeConvergenceError(
+        f"One-way light-time {context} did not converge at receive time "
+        f"{float(receive_time_s):.16g} s: update converged="
+        f"{solution.update_converged} after {solution.iterations} iterations "
+        f"(residual {solution.update_residual_s:.3e} s versus tolerance "
+        f"{float(tolerance_s):.3e} s), equation residual "
+        f"{solution.equation_residual_s:.3e} s / "
+        f"{solution.equation_residual_s * light_speed_mps:.3e} m versus "
+        f"tolerance {float(equation_tolerance_s):.3e} s; refusing to use "
+        "the last iterate."
     )
 
 
@@ -402,6 +476,7 @@ def one_way_light_time_range_sensitivity(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity]:
     """Return one-way range and its implicit local-state sensitivity.
 
@@ -429,12 +504,16 @@ def one_way_light_time_range_sensitivity(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
-    if not solution.converged:
-        raise RuntimeError(
-            f"One-way light-time did not converge in {max_iter} iterations at "
-            f"receive time {float(receive_time_s):.16g} s."
-        )
+    _require_one_way_light_time_convergence(
+        solution,
+        receive_time_s,
+        light_speed_mps=light_speed_mps,
+        tolerance_s=tolerance_s,
+        equation_tolerance_s=equation_tolerance_s,
+        context="sensitivity solve",
+    )
 
     state_tx = interp_state_history(t_grid_s, state_history_mci, solution.transmit_time_s)
     rho_vec = state_tx[:3] - station_mci_rx
@@ -531,6 +610,7 @@ def one_way_light_time_initial_state_sensitivity(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, OneWayLightTimeInitialStateSensitivity]:
     """Build implicit one-way LOS sensitivities with respect to the arc initial state."""
     solution, local_range_sensitivity = one_way_light_time_range_sensitivity(
@@ -543,6 +623,7 @@ def one_way_light_time_initial_state_sensitivity(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
     phi_r_tx = _interp_state_transition_position(
         t_grid_s, phi_history, solution.transmit_time_s
@@ -670,6 +751,7 @@ def one_way_light_time_position_initial_state_jacobian(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
     apply_stellar: bool = False,
     observer_reference_velocity_j2000_mps: ArrayLike | None = None,
@@ -693,6 +775,7 @@ def one_way_light_time_position_initial_state_jacobian(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
     direction_unit_los = sensitivity.unit_line_of_sight
     j_direction_dx0 = sensitivity.j_unit_los_dx0
@@ -737,6 +820,7 @@ def one_way_light_time_position_local_state_jacobian(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, np.ndarray]:
     """Return a local receive-state [range, azimuth, elevation] Jacobian."""
@@ -750,6 +834,7 @@ def one_way_light_time_position_local_state_jacobian(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
     spacecraft_state_tx = interp_state_history(
         t_grid_s, state_history_mci, solution.transmit_time_s
@@ -787,6 +872,7 @@ def one_way_light_time_range_initial_state_jacobian(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, np.ndarray]:
     """Map the implicit one-way range sensitivity to the initial state.
 
@@ -804,6 +890,7 @@ def one_way_light_time_range_initial_state_jacobian(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
     return solution, sensitivity, initial_sensitivity.d_range_dx0
 
@@ -1037,6 +1124,7 @@ def _apparent_position_observable(
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[np.ndarray, float, float, int]:
     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
 
@@ -1076,6 +1164,15 @@ def _apparent_position_observable(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
+    )
+    _require_one_way_light_time_convergence(
+        solution,
+        receive_time_s,
+        light_speed_mps=light_speed_mps,
+        tolerance_s=tolerance_s,
+        equation_tolerance_s=equation_tolerance_s,
+        context="observable solve",
     )
     transmit_time_s = solution.transmit_time_s
     r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
