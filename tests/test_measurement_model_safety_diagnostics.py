@@ -22,6 +22,7 @@ import lunar_od.measurements as measurements_module
 import lunar_od.radiometrics as radiometrics_module
 from lunar_od import (
     C_LIGHT_MPS,
+    HistoryDomainError,
     LightTimeConvergenceError,
     PassGeometry,
     RangeRatePhysicsConfig,
@@ -667,32 +668,26 @@ def test_p0b1_equation_tolerances_must_be_finite_and_positive(bad_tolerance):
         RangeRatePhysicsConfig(light_time_equation_tolerance_s=bad_tolerance)
 
 
-def test_fa03b_history_domain_matrix_documents_current_behavior():
-    """FA-03B matrix: legacy paths continue across unsupported history bounds."""
+def test_fa03b_one_way_boundary_matrix_enforces_domain():
+    """T006 (P0B-2B): one-way nominal and sensitivity enforce closed support.
+
+    Exact endpoints and at-most-two-ULP representation excursions are served
+    with endpoint samples; anything farther outside raises
+    ``HistoryDomainError`` from BOTH the apparent observable and the
+    sensitivity path, before any extrapolation. The solver's returned event
+    variable is never clipped by the guard.
+    """
+    from lunar_od.history_domain import HistoryDomainError
+
     t_grid = np.array([0.0, 10.0])
-    range_m = 0.25 * C_LIGHT_MPS
+    light_time_s = 0.25  # static target at exactly 0.25 s light time
+    range_m = light_time_s * C_LIGHT_MPS
     states = _linear_state_history(t_grid, np.array([range_m, 0.0, 0.0]), np.zeros(3))
-    augmented = _augmented_identity_history(states)
-    earth = np.zeros((t_grid.size, 3), dtype=float)
-    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
     station = _OriginStation()
+    ulp_one = np.nextafter(1.0, np.inf) - 1.0  # policy scale S = 1 here
 
-    matrix = {
-        "One-way observable": {},
-        "One-way Jacobian": {},
-        "Counted observable": {},
-        "Counted Jacobian": {},
-        "UKF counted local history": {},
-    }
-
-    one_way_cases = {
-        "Before start": 0.20,
-        "Exact start": 0.25,
-        "Exact end": 10.25,
-        "After end": 10.30,
-    }
-    for label, receive_time_s in one_way_cases.items():
-        z, transmit_time_s, _light_time, _iterations = measurements_module._apparent_position_observable(
+    def run_both(receive_time_s: float):
+        z, transmit_time_s, _lt, _it = measurements_module._apparent_position_observable(
             receive_time_s, station, t_grid, states, np.zeros(3), np.eye(6)
         )
         solution, sensitivity = one_way_light_time_range_sensitivity(
@@ -700,20 +695,182 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
         )
         assert np.isfinite(z).all()
         assert np.isfinite(sensitivity.d_range_d_state).all()
-        assert transmit_time_s == pytest.approx(solution.transmit_time_s, abs=1.0e-14)
-        if label == "Before start":
-            assert transmit_time_s < t_grid[0]
-        elif label == "Exact start":
-            assert transmit_time_s == pytest.approx(t_grid[0], abs=1.0e-14)
-        elif label == "Exact end":
-            assert transmit_time_s == pytest.approx(t_grid[-1], abs=1.0e-14)
-        else:
-            assert transmit_time_s > t_grid[-1]
-        classification = "silent extrapolation" if label in {"Before start", "After end"} else "interpolation"
-        if label == "Exact end":
-            classification = "silent extrapolation"
-        matrix["One-way observable"][label] = classification
-        matrix["One-way Jacobian"][label] = classification
+        return z, transmit_time_s, solution
+
+    # Accepted: transmit exactly at start; 1- and 2-ULP below start
+    # (endpoint sample; raw solver event stays outside and unclipped);
+    # interior; receive exactly at end; receive 2 ULP after end.
+    accepted_cases = {
+        "transmit exact start": 0.25,
+        "transmit 1 ULP below start": 0.25 - 1.0 * ulp_one,
+        "transmit 2 ULP below start": 0.25 - 2.0 * ulp_one,
+        "interior": 5.0,
+        "receive exact end": 10.0,
+        "receive 2 ULP after end": 10.0 + 2.0 * (np.nextafter(10.0, np.inf) - 10.0),
+    }
+    for label, receive_time_s in accepted_cases.items():
+        z, transmit_time_s, solution = run_both(receive_time_s)
+        if label == "transmit 2 ULP below start":
+            assert solution.transmit_time_s < t_grid[0]  # guard never clips events
+        print(f"[FA-03B one-way] accepted {label}: t_tx={transmit_time_s:.18f}")
+
+    # Rejected symmetrically: 3-ULP excursions and clearly unsupported
+    # epochs, from BOTH the nominal observable and the sensitivity path.
+    # (A receive tag beyond the history end fails on the solver's very first
+    # receive-epoch probe — the D1 refinement — so 'transmit at end' driven
+    # by an out-of-support receive tag is a rejection case by design.)
+    rejected_cases = {
+        "transmit before start": 0.20,
+        "transmit 3 ULP below start": 0.25 - 3.0 * ulp_one,
+        "receive 3 ULP after end": 10.0 + 3.0 * (np.nextafter(10.0, np.inf) - 10.0),
+        "receive after end (transmit would hit end)": 10.25,
+        "receive far after end": 10.30,
+    }
+    for label, receive_time_s in rejected_cases.items():
+        with pytest.raises(HistoryDomainError) as nominal_error:
+            measurements_module._apparent_position_observable(
+                receive_time_s, station, t_grid, states, np.zeros(3), np.eye(6)
+            )
+        with pytest.raises(HistoryDomainError) as sensitivity_error:
+            one_way_light_time_range_sensitivity(
+                receive_time_s, station, t_grid, states, np.zeros(3), np.eye(6)
+            )
+        for err in (nominal_error.value, sensitivity_error.value):
+            assert err.history_name == "spacecraft_state"
+            assert err.support_start_s == 0.0 and err.support_end_s == 10.0
+            assert err.outside_distance_s > 0.0
+        print(
+            f"[FA-03B one-way] rejected {label}: outside="
+            f"{nominal_error.value.outside_distance_s:.3e} s, pre-roll="
+            f"{nominal_error.value.required_pre_roll_s:.3e} s, post-roll="
+            f"{nominal_error.value.required_post_roll_s:.3e} s"
+        )
+
+
+def test_fa03b_counted_boundary_matrix_enforces_domain():
+    """T013 (P0B-2C1): counted nominal and Jacobian paths enforce support.
+
+    The lower boundary is driven by the count-start uplink event and the
+    upper boundary by the count-end receive event. Exact and one/two policy
+    ULP excursions are served with endpoint samples; three policy ULP and
+    larger excursions raise before an extrapolator is reached.
+    """
+    from lunar_od.history_domain import HistoryDomainError
+
+    t_grid = np.array([0.0, 10.0])
+    light_time_s = 0.25
+    range_m = light_time_s * C_LIGHT_MPS
+    states = _linear_state_history(
+        t_grid, np.array([range_m, 0.0, 0.0]), np.zeros(3)
+    )
+    augmented = _augmented_identity_history(states)
+    earth = np.zeros((t_grid.size, 3), dtype=float)
+    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+    station = _OriginStation()
+    config = RangeRatePhysicsConfig(
+        mode="two_way_counted_doppler",
+        count_interval_s=0.5,
+        light_time_tolerance_s=1.0e-13,
+    )
+    lower_policy_ulp = np.nextafter(1.0, np.inf) - 1.0
+    upper_policy_ulp = np.nextafter(10.0, np.inf) - 10.0
+
+    def run_both(midpoint_s: float):
+        value = two_way_counted_doppler_observable(
+            midpoint_s,
+            station,
+            t_grid,
+            states,
+            earth,
+            earth,
+            xforms,
+            config,
+        )
+        jacobian = two_way_counted_doppler_initial_state_jacobian(
+            midpoint_s,
+            station,
+            t_grid,
+            augmented,
+            earth,
+            earth,
+            xforms,
+            config,
+        )
+        assert np.isfinite(value)
+        assert np.isfinite(jacobian).all()
+
+    accepted_cases = {
+        "count-start uplink exact lower bound": 0.75,
+        "count-start uplink 1 policy ULP below": 0.75 - lower_policy_ulp,
+        "count-start uplink 2 policy ULP below": 0.75 - 2.0 * lower_policy_ulp,
+        "interior": 5.0,
+        "count-end receive exact upper bound": 9.75,
+        "count-end receive 1 policy ULP above": 9.75 + upper_policy_ulp,
+        "count-end receive 2 policy ULP above": 9.75 + 2.0 * upper_policy_ulp,
+    }
+    for label, midpoint_s in accepted_cases.items():
+        run_both(midpoint_s)
+        print(f"[FA-03B counted] accepted {label}: midpoint={midpoint_s:.18f}")
+
+    rejected_cases = {
+        "count-start uplink 3 policy ULP below": (
+            0.75 - 3.0 * lower_policy_ulp,
+            "count-start",
+            "uplink",
+        ),
+        "count-start uplink clearly before": (0.70, "count-start", "uplink"),
+        "count-end receive 3 policy ULP above": (
+            9.75 + 3.0 * upper_policy_ulp,
+            "count-end",
+            "downlink",
+        ),
+        "count-end receive clearly after": (9.80, "count-end", "downlink"),
+    }
+    for label, (midpoint_s, endpoint_fragment, event_label) in rejected_cases.items():
+        with pytest.raises(HistoryDomainError) as nominal_error:
+            two_way_counted_doppler_observable(
+                midpoint_s,
+                station,
+                t_grid,
+                states,
+                earth,
+                earth,
+                xforms,
+                config,
+            )
+        with pytest.raises(HistoryDomainError) as jacobian_error:
+            two_way_counted_doppler_initial_state_jacobian(
+                midpoint_s,
+                station,
+                t_grid,
+                augmented,
+                earth,
+                earth,
+                xforms,
+                config,
+            )
+        for error in (nominal_error.value, jacobian_error.value):
+            assert endpoint_fragment in error.endpoint_label
+            assert error.event_label == event_label
+            assert error.support_start_s == 0.0
+            assert error.support_end_s == 10.0
+            assert error.outside_distance_s > 0.0
+        print(
+            f"[FA-03B counted] rejected {label}: outside="
+            f"{nominal_error.value.outside_distance_s:.3e} s"
+        )
+
+
+def test_fa03b_history_domain_matrix_documents_current_behavior():
+    """FA-03B matrix: counted UKF source histories reject unsupported
+    local intervals after P0B-2C3, matching the strict counted paths."""
+    t_grid = np.array([0.0, 10.0])
+    range_m = 0.25 * C_LIGHT_MPS
+    states = _linear_state_history(t_grid, np.array([range_m, 0.0, 0.0]), np.zeros(3))
+    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+    station = _OriginStation()
+
+    matrix = {"UKF counted local history": {}}
 
     counted_config = RangeRatePhysicsConfig(
         mode="two_way_counted_doppler",
@@ -721,49 +878,6 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
         light_time_tolerance_s=1.0e-13,
         light_time_max_iter=20,
     )
-    counted_cases = {
-        "Before start": 0.50,
-        "Exact start": 0.60,
-        "Exact end": 9.90,
-        "After end": 10.00,
-    }
-    for label, midpoint_s in counted_cases.items():
-        value = two_way_counted_doppler_observable(
-            midpoint_s, station, t_grid, states, earth, earth, xforms, counted_config
-        )
-        jacobian = two_way_counted_doppler_initial_state_jacobian(
-            midpoint_s, station, t_grid, augmented, earth, earth, xforms, counted_config
-        )
-        half_count = 0.5 * counted_config.count_interval_s
-        endpoint_solutions = [
-            solve_two_way_light_time(
-                midpoint_s + sign * half_count,
-                station,
-                t_grid,
-                states,
-                earth,
-                earth,
-                xforms,
-                counted_config,
-            )
-            for sign in (-1.0, 1.0)
-        ]
-        event_min = min(solution.transmit_time_s for solution in endpoint_solutions)
-        event_max = max(solution.receive_time_s for solution in endpoint_solutions)
-        assert np.isfinite(value)
-        assert np.isfinite(jacobian).all()
-        if label == "Before start":
-            assert event_min < t_grid[0]
-        elif label == "Exact start":
-            assert event_min == pytest.approx(t_grid[0], abs=1.0e-13)
-        elif label == "Exact end":
-            assert event_max == pytest.approx(t_grid[-1], abs=1.0e-13)
-        else:
-            assert event_max > t_grid[-1]
-        classification = "silent extrapolation" if label in {"Before start", "After end"} else "interpolation"
-        matrix["Counted observable"][label] = classification
-        matrix["Counted Jacobian"][label] = classification
-
     pass_geo = PassGeometry(
         t_s=t_grid,
         earth_pos_mci_m=np.column_stack([t_grid, 2.0 * t_grid, 3.0 * t_grid]),
@@ -781,6 +895,31 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
     }
     far_body = _sample_constant(np.array([1.0e9, 2.0e9, 3.0e9]))
     for label, midpoint_s in ukf_cases.items():
+        if label in {"Before start", "After end"}:
+            with pytest.raises(HistoryDomainError) as caught:
+                _two_way_local_histories(
+                    midpoint_s,
+                    states[0],
+                    range_m,
+                    pass_geo,
+                    counted_config.count_interval_s,
+                    counted_config.light_speed_mps,
+                    0.0,
+                    0.0,
+                    0.0,
+                    far_body,
+                    far_body,
+                    1.0e-10,
+                    1.0e-12,
+                    "taylor3",
+                )
+            assert caught.value.history_name == "earth_position_mci"
+            assert caught.value.model_context == "two_way_counted_doppler_ukf_local"
+            assert caught.value.consumer == "_two_way_local_histories"
+            assert caught.value.event_label == "ukf-local-source-interval"
+            matrix["UKF counted local history"][label] = "controlled rejection"
+            continue
+
         local_t, local_state, local_earth_pos, local_earth_vel, local_xforms = _two_way_local_histories(
             midpoint_s,
             states[0],
@@ -801,17 +940,11 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
         assert np.isfinite(local_earth_vel).all()
         assert np.isfinite(local_xforms).all()
         np.testing.assert_allclose(local_earth_pos[:, 0], local_t, rtol=0.0, atol=1.0e-12)
-        if label == "Before start":
-            assert local_t[0] < t_grid[0]
-        elif label == "Exact start":
+        if label == "Exact start":
             assert local_t[0] == pytest.approx(t_grid[0], abs=1.0e-13)
-        elif label == "Exact end":
-            assert local_t[-1] == pytest.approx(t_grid[-1], abs=1.0e-13)
         else:
-            assert local_t[-1] > t_grid[-1]
-        matrix["UKF counted local history"][label] = (
-            "silent extrapolation" if label in {"Before start", "After end"} else "interpolation"
-        )
+            assert local_t[-1] == pytest.approx(t_grid[-1], abs=1.0e-13)
+        matrix["UKF counted local history"][label] = "interpolation"
 
     for path, cells in matrix.items():
         print(
@@ -820,34 +953,10 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
         )
 
     assert matrix == {
-        "One-way observable": {
-            "Before start": "silent extrapolation",
-            "Exact start": "interpolation",
-            "Exact end": "silent extrapolation",
-            "After end": "silent extrapolation",
-        },
-        "One-way Jacobian": {
-            "Before start": "silent extrapolation",
-            "Exact start": "interpolation",
-            "Exact end": "silent extrapolation",
-            "After end": "silent extrapolation",
-        },
-        "Counted observable": {
-            "Before start": "silent extrapolation",
-            "Exact start": "interpolation",
-            "Exact end": "interpolation",
-            "After end": "silent extrapolation",
-        },
-        "Counted Jacobian": {
-            "Before start": "silent extrapolation",
-            "Exact start": "interpolation",
-            "Exact end": "interpolation",
-            "After end": "silent extrapolation",
-        },
         "UKF counted local history": {
-            "Before start": "silent extrapolation",
+            "Before start": "controlled rejection",
             "Exact start": "interpolation",
             "Exact end": "interpolation",
-            "After end": "silent extrapolation",
+            "After end": "controlled rejection",
         },
     }

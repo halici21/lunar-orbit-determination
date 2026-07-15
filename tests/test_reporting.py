@@ -75,6 +75,46 @@ class ReportingTests(unittest.TestCase):
         self.assertAlmostEqual(float(row["posterior_bias_rss_sigma"]), math.sqrt(2.0))
         self.assertEqual(int(row["prior_num_bias_states"]), 0)
 
+    def test_scenario_csv_appends_history_domain_aggregates(self):
+        scenario = ScenarioResult(
+            label="history_domain",
+            measurement_type="range_rate",
+            start_mode="cold",
+            arc_results=(_arc_result(1, 10.0, 0.1),),
+            history_domain_dropped_measurements=3,
+            history_domain_position_drops=0,
+            history_domain_range_rate_drops=3,
+            history_domain_required_pre_roll_s=0.75,
+            history_domain_required_post_roll_s=0.25,
+            history_domain_all_measurement_arcs_empty=False,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_path = write_scenario_summary_csv(
+                [scenario],
+                Path(tmp_dir) / "summary.csv",
+            )
+            with csv_path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                row = next(reader)
+                fieldnames = reader.fieldnames
+
+        expected_tail = [
+            "history_domain_dropped_measurements",
+            "history_domain_position_drops",
+            "history_domain_range_rate_drops",
+            "history_domain_required_pre_roll_s",
+            "history_domain_required_post_roll_s",
+            "history_domain_all_measurement_arcs_empty",
+        ]
+        self.assertEqual(fieldnames[-len(expected_tail) :], expected_tail)
+        self.assertEqual(int(row["history_domain_dropped_measurements"]), 3)
+        self.assertEqual(int(row["history_domain_position_drops"]), 0)
+        self.assertEqual(int(row["history_domain_range_rate_drops"]), 3)
+        self.assertEqual(float(row["history_domain_required_pre_roll_s"]), 0.75)
+        self.assertEqual(float(row["history_domain_required_post_roll_s"]), 0.25)
+        self.assertEqual(row["history_domain_all_measurement_arcs_empty"], "False")
+
     def test_scenario_csv_includes_hybrid_aberration_jacobian_metadata(self):
         scenario = ScenarioResult(
             label="cn_plus_s",

@@ -1,12 +1,12 @@
 # D1 Measurement-Model Safety Diagnostics
 
-Status: D1 baseline evidence with post-D1 P0A and P0B-1 resolution updates,
-2026-07-14.
+Status: D1 baseline evidence with post-D1 P0A, P0B-1, and P0B-2 resolution
+updates, 2026-07-15.
 
 This report covers FA-01, FA-02, FA-03A, FA-03B, and FA-06 only. Sections 1-13
-preserve the D1 baseline and its pre-fix measurements; the later status text
-documents the completed P0A/P0B-1 safety patches. It does not execute the D2
-frame, PCHIP, visibility, or lunar-frame campaigns.
+preserve the D1 pre-fix measurements and explicitly label later safety-contract
+updates; Section 14 summarizes the completed P0A/P0B-1/P0B-2 status. It does
+not execute the D2 frame, PCHIP, visibility, or lunar-frame campaigns.
 
 ## 1. Environment
 
@@ -255,15 +255,18 @@ oracle and now assert controlled rejection:
 P0B-1 validation completed with `16 passed` in the focused safety file and
 `523 passed, 28 skipped, 1 warning, 8 subtests passed` in the full suite. The
 warning is the existing test-only numerical-Jacobian performance warning.
-FA-03B history-domain enforcement remains open. The legacy counted model is
-still single-bounce; a four-event counted-Doppler model remains future work.
-M3 two-way range behavior is unchanged.
+P0B-1 did not address FA-03B; P0B-2 resolves it as documented below. The legacy
+counted model is still single-bounce; a four-event counted-Doppler model remains
+future work. M3 two-way range behavior is unchanged.
 
-## 8. FA-03B history-domain matrix
+## 8. FA-03B history-domain matrix and P0B-2 resolution
 
 **Source symbols:** `radiometrics.interp_state_history`, `_interp_state`,
 `_interp_vector`, `_interp_matrix`; `measurements._apparent_position_observable`;
 `filters._two_way_local_histories`, `_interp_pass_values`.
+
+The following matrix is the preserved **D1 pre-fix baseline**, not current
+production behavior:
 
 | Path | Before start | Exact start | Exact end | After end |
 |---|---|---|---|---|
@@ -284,28 +287,79 @@ the latest receive endpoint was exactly at/after the upper bound. For the UKF
 path, local-history start/end were aligned with the source pass bounds and the
 linearly extrapolated Earth positions were verified numerically.
 
-No tested legacy path raised a controlled history-domain exception, recorded a
-drop, or persisted extrapolation metadata.
+At D1, no tested legacy path raised a controlled history-domain exception,
+recorded a drop, or persisted extrapolation metadata.
 
-**Classification:** FA-03B confirmed.
+**D1 classification:** FA-03B confirmed.
 
-**Recommended fix:** define required pre-roll/post-roll per observable, reject
+**D1 recommendation:** define required pre-roll/post-roll per observable, reject
 unsupported spacecraft/event epochs before solving, and persist structured
 failure/drop metadata. Preserve exact-boundary acceptance explicitly.
+
+### P0B-2 implemented contract
+
+P0B-2 resolves FA-03B without changing the low-level interpolation algorithms
+or extending source histories. For a requested epoch `q` and compared support
+bound `b`:
+
+```text
+S = max(1, abs(q), abs(b))
+policy_ulp = nextafter(S, +infinity) - S
+```
+
+Support is the closed interval `[t_start,t_end]`. Exact endpoints and requests
+at most two policy ULP outside support use the endpoint sample. Three or more
+policy ULP outside support raises `HistoryDomainError` before interpolation or
+extrapolation. The first unsupported intermediate solver probe stops the solve;
+the guard never clips a solver event variable.
+
+| Path | Current P0B-2 behavior |
+|---|---|
+| One-way observable and Jacobian | Every transmit-state probe, final state re-query, and transmit STM lookup is guarded; nominal/sensitivity/Jacobian failure policy is identical. |
+| Counted observable | `count-start` and `count-end` are separate; spacecraft state, Earth position/velocity, and transform lookups identify uplink/downlink context. |
+| Counted Jacobian | The nominal guards also apply, and the spacecraft STM at the reflection event is independently guarded. |
+| Counted UKF local history | Earth position, Earth velocity, and transform source intervals are preflighted before local spacecraft propagation or source re-sampling. The preflighted envelope is anchored at the clock-corrected count endpoints — min/max of the raw versus corrected count-start/count-end, computed with the observable's own clock correction — so nonzero station clock offset/drift of either sign is covered (P0B-2E2). Accepted representation-only offsets alter source lookup only; physical local times are unchanged. |
+| Direct estimator/observability consumers | Unsupported records raise the same controlled error; these layers do not silently skip rows. |
+
+Generation catches `HistoryDomainError` per visible candidate, emits one
+ordered `HistoryDomainDropRecord`, and omits the row. Candidate RNG draws happen
+before physics evaluation: three draws for position and four for range-rate,
+so later surviving seeded rows and the RNG tail match a fully supported
+pre-rolled run. Noise-disabled generation consumes no draws. Metadata retains
+ordered records, drop count, and maximum actual required pre/post-roll.
+
+Scenario handling is family-local because one `build_measurement_arcs` call and
+one `ScenarioResult` own one measurement family. Partial drops leave surviving
+arcs estimable. If all eligible arcs in the selected family are domain-empty,
+`build_measurement_arcs` raises an aggregate `HistoryDomainError` before any
+estimator call. Successful results carry total/position/range-rate drop counts,
+maximum pre/post-roll, an all-empty flag, and detailed records. The summary CSV
+appends the six scalar fields; detailed records remain in result metadata.
+
+No automatic pre-roll/post-roll is created. The legacy counted model remains
+single-bounce and rejects nonzero transponder delay; four-event counted Doppler
+remains future work. M3 retains its separate `TwoWayEventHistoryError`, event
+provider, generation behavior, and nonzero-delay model.
+
+Key safety tests now cover exact/1/2-policy-ULP acceptance, symmetric 3+-ULP
+rejection and mutation detection, first unsupported solver probes, all five
+counted history names, endpoint/leg diagnostics, UKF preflight ordering,
+generation drop/RNG determinism, estimator/observability propagation,
+family-local empty-arc handling, CSV aggregates, and unchanged M3 suites.
 
 ## 9. Findings confirmed
 
 | Issue | Result |
 |---|---|
-| FA-01 | Confirmed: accepted UKF profiles use geometric position physics |
-| FA-02 | Confirmed: one-way metadata reports range-rate solver defaults |
+| FA-01 | Confirmed at D1; **resolved by P0A hard rejection** |
+| FA-02 | Confirmed at D1; **resolved by P0A one-way metadata ownership** |
 | FA-03A | Confirmed at D1/P0A baseline; **resolved by P0B-1 strict dual-criterion enforcement** |
-| FA-03B | Confirmed: legacy paths silently extrapolate outside history support |
+| FA-03B | Confirmed at D1; **resolved by P0B-2 closed-support enforcement, deterministic drops, and scenario/report transport** |
 | FA-06 | Confirmed: parent pytest config requires explicit provenance override |
 
 The D1 defect evidence was expressed as passing tests that asserted baseline
-behavior. P0A/P0B-1 converted resolved findings into passing safety-contract
-tests. No test is intentionally failing or marked xfail.
+behavior. P0A/P0B-1/P0B-2 converted resolved findings into passing
+safety-contract tests. No test is intentionally failing or marked xfail.
 
 ## 10. Findings reclassified
 
@@ -314,8 +368,10 @@ No issue was dismissed. Two claims were refined:
 1. At D1, FA-03A derivative behavior was model-specific: one-way sensitivity
    was strict while one-way nominal and legacy counted nominal/Jacobian paths
    were permissive. P0B-1 replaces that split with one strict consumer policy.
-2. FA-03B one-way exact-upper-event evaluation still performs an earlier
-   out-of-domain receive-epoch probe, so its complete path is not boundary-only.
+2. The D1 FA-03B one-way exact-upper-event case included an earlier
+   out-of-domain receive-epoch probe, so exact support for the final physical
+   event alone was insufficient. P0B-2 intentionally guards every intermediate
+   probe; the same construction now raises before model evaluation.
 
 The full-suite `from app` collection failure is classified as an FA-06 test
 harness dependency exposed by clearing the parent config, not as a production
@@ -326,19 +382,21 @@ measurement defect.
 Apply in separate production patches, with these D1 tests converted from
 current-defect assertions to safety-contract assertions:
 
-1. **P0.1:** reject UKF with CN/CN+S position profiles.
+1. **P0.1 (completed by P0A):** reject UKF with CN/CN+S position profiles.
 2. **P0.2 (completed by P0B-1):** enforce convergence plus independently
    evaluated equation-residual closure for one-way and counted
    nominal/Jacobian paths.
-3. **P0.3 (open as FA-03B):** prohibit silent event-history extrapolation
-   and add explicit pre-roll/domain metadata.
-4. **P0.4:** source one-way metadata from the actual one-way solver policy.
+3. **P0.3 (completed by P0B-2):** prohibit silent event-history extrapolation,
+   preserve deterministic candidate/RNG behavior, and carry explicit
+   pre-roll/domain metadata through family-local scenario reporting.
+4. **P0.4 (completed by P0A):** source one-way metadata from the actual
+   one-way solver policy.
 
-Separately, reject legacy counted Doppler when `transponder_delay_s != 0`
-until a four-event model exists. A fixed scalar delay cancels directly in the
-endpoint round-trip-light-time difference, but nonzero delay can still change
-counted Doppler indirectly through separate `t2u`/`t2d` spacecraft states and
-uplink/downlink event geometry.
+P0A separately rejects legacy counted Doppler when `transponder_delay_s != 0`.
+A fixed scalar delay cancels directly in the endpoint round-trip-light-time
+difference, but nonzero delay can still change counted Doppler indirectly
+through separate `t2u`/`t2d` spacecraft states and uplink/downlink event
+geometry; support returns with a future four-event model.
 
 Do not combine these physics/safety changes with interpolation refactoring.
 
@@ -388,13 +446,29 @@ P0B-1 was then verified on the P0A-based implementation worktree:
 
 The P0B-1 full regression also had **0 failed and 0 deselected**. These
 results validate the implementation consistency of the strict failure policy;
-they do not close FA-03B or change the M3 model.
+P0B-1 alone did not close FA-03B or change the M3 model.
+
+The complete patch through P0B-2D1 was then exported and reconstructed on a
+detached checkout. The technically isolated acceptance runs were:
+
+| Run | Result | Runtime |
+|---|---|---:|
+| P0B-2D1 focused scenario/reporting | 19 passed, 9 skipped | 10.94 s |
+| P0B-2 related history-domain + M3 | 201 passed, 20 skipped, 1 warning, 26 subtests passed | 18.09 s |
+| P0B-2 full suite | 557 passed, 28 skipped, 1 warning, 29 subtests passed | 28.10 s |
+
+All three runs had **0 failed and 0 deselected**. The warning is the same
+existing test-only numerical-Jacobian performance warning. The related/full
+runs include unchanged M3 suites. The validation report records a governance
+caveat that the D1 writer and technically isolated validator were the same
+Codex session; detached patch reconstruction, fresh imports, and external-only
+artifacts provided technical rather than personnel independence.
 
 ## 14. Post-D1 safety resolution status
 
-The P0A and P0B-1 measurement-safety patches changed the status of the D1
-findings as follows; the D1 sections above remain the pre-patch evidence
-record.
+The P0A, P0B-1, and P0B-2 measurement-safety patches changed the status of the
+D1 findings as follows; historical tables above remain the pre-fix evidence
+record where explicitly labeled.
 
 | Finding | Current status |
 |---|---|
@@ -402,7 +476,7 @@ record.
 | FA-02 | confirmed at eb92461/D1; **resolved by P0A metadata correction** — `ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12` / `ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10` are now the single source of truth for the seven one-way solver signatures, and `measurement_model_metadata` branches by measurement type (position -> one-way constants; range_rate -> `RangeRatePhysicsConfig` values). |
 | Legacy counted-Doppler nonzero delay | **short-term rejection implemented (P0A)** in `RangeRatePhysicsConfig.__post_init__` (`mode='two_way_counted_doppler'` + any nonzero delay -> `ValueError`; +/-0.0 accepted; negative/nonfinite rejected by the pre-existing general validation). The fixed scalar delay term cancels directly in the endpoint RTLT difference, but nonzero delay can still affect counted Doppler through the t2u/t2d separation, spacecraft motion during the delay, and the resulting uplink/downlink event geometry — the four-event counted-Doppler model (CD-4) remains future work. M3 `TwoWayRangeConfig` nonzero-delay support is unchanged. |
 | FA-03A | confirmed at eb92461/D1 and the P0A baseline; **resolved by P0B-1**. Validity now requires update and independently evaluated final equation-residual tolerances; raw solvers may return diagnostic failures, while all nominal/sensitivity/Jacobian consumers reject them with controlled, unit-bearing diagnostics. |
-| FA-03B | **open** — the D1 history-domain matrix in Section 8 remains passing evidence until a separate history-domain enforcement patch. |
+| FA-03B | confirmed at eb92461/D1; **resolved by P0B-2**. Shared closed support accepts exact/<=2-policy-ULP endpoint cases and rejects 3+; one-way/counted/UKF production probes are guarded before interpolation; deterministic generation drops and family-local scenario/CSV aggregates report actual deficiencies without automatic history extension. P0B-2E2 additionally corrected the UKF local-envelope demand: the locally built grid now covers the clock-corrected count endpoints (both offset signs) instead of only the raw count window, so nonzero station clock offset/drift no longer produces a spurious guard rejection; the guard, ULP policy, and source-history ownership are unchanged. |
 
 The FA-01/FA-02 D1 current-defect assertions were converted into P0A
 safety-contract assertions in
@@ -418,5 +492,11 @@ P0B-1 converted the FA-03A D1 current-defect assertions into strict
 nonconvergence safety-contract tests. The focused coverage checks the dual
 update/equation-residual criterion, one-way nominal/Jacobian parity, separate
 count-start/count-end validation, uplink/downlink diagnostics, and seconds/metres
-unit reporting. FA-03B history-domain behavior and M3 tests were not changed by
-P0B-1.
+unit reporting. P0B-2 then converted the FA-03B D1 matrix into strict boundary,
+drop/RNG, estimator/observability, UKF preflight, family-local empty-arc, and
+reporting tests. P0B-2E2 added clock-corrected UKF local-envelope unit coverage
+(zero/positive/negative offsets, corrected-endpoint containment with outward
+corrected endpoints as exact anchor nodes, and
+source-boundary rejection with clock-sized post-roll), and the long-arc UKF
+campaign test's positive station-clock truth mismatch serves as its end-to-end
+regression. M3 production behavior remains unchanged.

@@ -8,6 +8,8 @@ from typing import Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
+from .history_domain import normalize_supported_epoch
+
 C_LIGHT_MPS = 299792458.0
 DEFAULT_X_BAND_UPLINK_HZ = 7.2e9
 DEFAULT_X_BAND_TURNAROUND_RATIO = 880.0 / 749.0
@@ -212,6 +214,7 @@ def two_way_counted_doppler_observable(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
+        endpoint_label="count-start endpoint",
     )
     _require_round_trip_light_time_convergence(
         start_solution, cfg, endpoint_label="count-start endpoint"
@@ -225,6 +228,7 @@ def two_way_counted_doppler_observable(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
+        endpoint_label="count-end endpoint",
     )
     _require_round_trip_light_time_convergence(
         end_solution, cfg, endpoint_label="count-end endpoint"
@@ -312,6 +316,7 @@ def round_trip_light_time_initial_state_jacobian(
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
         cfg,
+        endpoint_label=endpoint_label,
     )
     _require_round_trip_light_time_convergence(
         solution, cfg, endpoint_label=endpoint_label
@@ -327,6 +332,9 @@ def round_trip_light_time_initial_state_jacobian(
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        endpoint_label=endpoint_label,
+        event_label="downlink",
+        consumer="round_trip_light_time_initial_state_jacobian",
     )
     station_tx_state, station_tx_slope = _station_state_mci_with_time_slope(
         t1,
@@ -335,10 +343,27 @@ def round_trip_light_time_initial_state_jacobian(
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        endpoint_label=endpoint_label,
+        event_label="uplink",
+        consumer="round_trip_light_time_initial_state_jacobian",
     )
-    sc_t2_state = _interp_state(t_grid_s, x_aug[:, :6], t2)
+    sc_t2_state = _guarded_spacecraft_state(
+        t_grid_s,
+        x_aug[:, :6],
+        t2,
+        endpoint_label=endpoint_label,
+        event_label="downlink",
+        consumer="round_trip_light_time_initial_state_jacobian",
+    )
     phi_history = np.array([row.reshape((6, 6), order="F") for row in x_aug[:, 6:]], dtype=float)
-    phi_position_t2 = _interp_state_transition_position(t_grid_s, phi_history, t2)
+    phi_position_t2 = _guarded_spacecraft_stm_position(
+        t_grid_s,
+        phi_history,
+        t2,
+        endpoint_label=endpoint_label,
+        event_label="downlink",
+        consumer="round_trip_light_time_initial_state_jacobian",
+    )
 
     r2 = sc_t2_state[:3]
     v2 = sc_t2_state[3:6]
@@ -377,6 +402,8 @@ def solve_two_way_light_time(
     earth_vel_mci_mps: ArrayLike,
     x_j2000_to_itrf93: ArrayLike,
     config: RangeRatePhysicsConfig | str | None = None,
+    *,
+    endpoint_label: str = "round-trip endpoint",
 ) -> RoundTripLightTimeSolution:
     """Solve station-spacecraft-station geometric round-trip light-time."""
     cfg = range_rate_physics_config(config)
@@ -388,9 +415,19 @@ def solve_two_way_light_time(
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        endpoint_label=endpoint_label,
+        event_label="downlink",
+        consumer="solve_two_way_light_time",
     )
 
-    sc_rx_state = _interp_state(t_grid_s, state_history_mci, receive_time_s)
+    sc_rx_state = _guarded_spacecraft_state(
+        t_grid_s,
+        state_history_mci,
+        receive_time_s,
+        endpoint_label=endpoint_label,
+        event_label="downlink",
+        consumer="solve_two_way_light_time",
+    )
     downlink_lt = float(np.linalg.norm(sc_rx_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
     downlink_converged = False
     iteration_count = 0
@@ -398,7 +435,14 @@ def solve_two_way_light_time(
     t2 = receive_time_s - downlink_lt
 
     for iteration_count in range(1, cfg.light_time_max_iter + 1):
-        sc_t2_state = _interp_state(t_grid_s, state_history_mci, t2)
+        sc_t2_state = _guarded_spacecraft_state(
+            t_grid_s,
+            state_history_mci,
+            t2,
+            endpoint_label=endpoint_label,
+            event_label="downlink",
+            consumer="solve_two_way_light_time",
+        )
         new_downlink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
         new_t2 = receive_time_s - new_downlink_lt
         downlink_update_residual_s = abs(new_t2 - t2)
@@ -410,7 +454,14 @@ def solve_two_way_light_time(
         t2 = new_t2
         downlink_lt = new_downlink_lt
 
-    sc_t2_state = _interp_state(t_grid_s, state_history_mci, t2)
+    sc_t2_state = _guarded_spacecraft_state(
+        t_grid_s,
+        state_history_mci,
+        t2,
+        endpoint_label=endpoint_label,
+        event_label="downlink",
+        consumer="solve_two_way_light_time",
+    )
     t1 = t2 - cfg.transponder_delay_s - downlink_lt
     uplink_converged = False
     uplink_update_residual_s = float("inf")
@@ -422,6 +473,9 @@ def solve_two_way_light_time(
             earth_pos_mci_m,
             earth_vel_mci_mps,
             x_j2000_to_itrf93,
+            endpoint_label=endpoint_label,
+            event_label="uplink",
+            consumer="solve_two_way_light_time",
         )
         uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
         new_t1 = t2 - cfg.transponder_delay_s - uplink_lt
@@ -451,6 +505,9 @@ def solve_two_way_light_time(
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        endpoint_label=endpoint_label,
+        event_label="uplink",
+        consumer="solve_two_way_light_time",
     )
     uplink_equation_residual_s = abs(
         (t2 - cfg.transponder_delay_s - t1)
@@ -492,14 +549,42 @@ def _station_state_mci(
     earth_pos_mci_m: ArrayLike,
     earth_vel_mci_mps: ArrayLike,
     x_j2000_to_itrf93: ArrayLike,
+    *,
+    endpoint_label: str = "round-trip endpoint",
+    event_label: str,
+    consumer: str,
 ) -> np.ndarray:
+    earth_pos_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="earth_position_mci",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    earth_vel_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="earth_velocity_mci",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    transform_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="j2000_to_itrf93_state_transform",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
     earth_state = np.concatenate(
         [
-            _interp_vector(t_grid_s, earth_pos_mci_m, t_s),
-            _interp_vector(t_grid_s, earth_vel_mci_mps, t_s),
+            _interp_vector(t_grid_s, earth_pos_mci_m, earth_pos_epoch),
+            _interp_vector(t_grid_s, earth_vel_mci_mps, earth_vel_epoch),
         ]
     )
-    xform = _interp_matrix(t_grid_s, x_j2000_to_itrf93, t_s)
+    xform = _interp_matrix(t_grid_s, x_j2000_to_itrf93, transform_epoch)
     station_ecef_state = np.concatenate([np.asarray(station.r_ecef_m, dtype=float).reshape(3), np.zeros(3)])
     station_rel_j2000 = np.linalg.solve(xform, station_ecef_state)
     return earth_state + station_rel_j2000
@@ -520,10 +605,44 @@ def _station_state_mci_with_time_slope(
     earth_pos_mci_m: ArrayLike,
     earth_vel_mci_mps: ArrayLike,
     x_j2000_to_itrf93: ArrayLike,
+    *,
+    endpoint_label: str = "round-trip endpoint",
+    event_label: str,
+    consumer: str,
 ) -> tuple[np.ndarray, np.ndarray]:
-    earth_pos, earth_pos_slope = _interp_array_and_slope(t_grid_s, earth_pos_mci_m, t_s)
-    earth_vel, earth_vel_slope = _interp_array_and_slope(t_grid_s, earth_vel_mci_mps, t_s)
-    xform, xform_slope = _interp_array_and_slope(t_grid_s, x_j2000_to_itrf93, t_s)
+    earth_pos_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="earth_position_mci",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    earth_vel_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="earth_velocity_mci",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    transform_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="j2000_to_itrf93_state_transform",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    earth_pos, earth_pos_slope = _interp_array_and_slope(
+        t_grid_s, earth_pos_mci_m, earth_pos_epoch
+    )
+    earth_vel, earth_vel_slope = _interp_array_and_slope(
+        t_grid_s, earth_vel_mci_mps, earth_vel_epoch
+    )
+    xform, xform_slope = _interp_array_and_slope(
+        t_grid_s, x_j2000_to_itrf93, transform_epoch
+    )
     station_ecef_state = np.concatenate([np.asarray(station.r_ecef_m, dtype=float).reshape(3), np.zeros(3)])
     station_rel_j2000 = np.linalg.solve(xform, station_ecef_state)
     station_rel_slope = -np.linalg.solve(xform, xform_slope @ station_rel_j2000)
@@ -531,6 +650,71 @@ def _station_state_mci_with_time_slope(
         np.concatenate([earth_pos, earth_vel]) + station_rel_j2000,
         np.concatenate([earth_pos_slope, earth_vel_slope]) + station_rel_slope,
     )
+
+
+def _normalize_counted_history_epoch(
+    t_grid_s: ArrayLike,
+    requested_epoch_s: float,
+    *,
+    history_name: str,
+    endpoint_label: str,
+    event_label: str,
+    consumer: str,
+) -> float:
+    """Normalize one counted production lookup onto closed history support."""
+    t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
+    if t_grid.size == 0:
+        raise ValueError("t_grid_s must contain at least one history epoch.")
+    return normalize_supported_epoch(
+        requested_epoch_s,
+        float(t_grid[0]),
+        float(t_grid[-1]),
+        history_name=history_name,
+        model_context="two_way_counted_doppler",
+        consumer=consumer,
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+    )
+
+
+def _guarded_spacecraft_state(
+    t_grid_s: ArrayLike,
+    state_history_mci: ArrayLike,
+    requested_epoch_s: float,
+    *,
+    endpoint_label: str,
+    event_label: str,
+    consumer: str,
+) -> np.ndarray:
+    normalized = _normalize_counted_history_epoch(
+        t_grid_s,
+        requested_epoch_s,
+        history_name="spacecraft_state",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    return _interp_state(t_grid_s, state_history_mci, normalized)
+
+
+def _guarded_spacecraft_stm_position(
+    t_grid_s: ArrayLike,
+    phi_history: ArrayLike,
+    requested_epoch_s: float,
+    *,
+    endpoint_label: str,
+    event_label: str,
+    consumer: str,
+) -> np.ndarray:
+    normalized = _normalize_counted_history_epoch(
+        t_grid_s,
+        requested_epoch_s,
+        history_name="spacecraft_stm",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    return _interp_state_transition_position(t_grid_s, phi_history, normalized)
 
 
 def _interp_state(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> np.ndarray:

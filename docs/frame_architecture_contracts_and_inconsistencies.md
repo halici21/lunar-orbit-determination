@@ -46,7 +46,19 @@
 > `LightTimeConvergenceError` / `RoundTripLightTimeConvergenceError`
 > exceptions, whose messages report both criteria's residuals in seconds and
 > metres. Nominal converged behavior is unchanged; M3 (`two_way_range.py`)
-> was not touched. **FA-03B (history-domain extrapolation) remains OPEN.**
+> was not touched.
+> **P0B-2 status update (2026-07-15):** the uncommitted P0B-2 patch on branch
+> `fix/history-domain-enforcement` resolves **FA-03B**. Legacy production
+> one-way CN/CN+S, counted-Doppler nominal/Jacobian, and counted UKF source
+> histories now use one closed-support policy: exact endpoints are accepted,
+> at most two policy ULP of representation-only overshoot is normalized to an
+> endpoint sample, and anything farther outside raises `HistoryDomainError`
+> before interpolation/extrapolation. Generation records deterministic
+> candidate drops while preserving seeded RNG slots; scenario assembly carries
+> aggregate counts and pre/post-roll deficiencies, continues surviving arcs,
+> and raises before estimation when every eligible arc in the selected family
+> is domain-empty. No history is automatically extended. Low-level generic
+> interpolators and M3's separate four-event history contract are unchanged.
 
 ---
 
@@ -75,9 +87,10 @@ Headline results:
   audit's acceptance instructions: a nonconverged light-time solution could
   reach observable paths (FA-03A — **resolved by P0B-1**, see the header note
   above and Section 13) and event-state histories can be silently
-  extrapolated without a domain guard (FA-03B — still open). The M3 two-way
+  extrapolated without a domain guard (FA-03B — **resolved by P0B-2**). The M3 two-way
   range model was the reference strict policy both defects were measured
-  against; FA-03A now matches it.
+  against; the legacy production paths now reject unsupported history too,
+  while retaining their own event and interpolation models.
 - Five further confirmed items are metadata/documentation/API-hygiene level
   (FA-02, FA-04, FA-05, FA-06, FA-07).
 - Measured interpolation evidence exists for 10/30/60 s transform grids and
@@ -309,9 +322,9 @@ Five coexisting station-state paths:
 | # | Path | Symbol | Transform method | Earth translation | Velocity source | Epoch | Extrapolation policy | Consumers |
 |---|---|---|---|---|---|---|---|---|
 | 1 | Geometric / one-way CN(+S) | `_station_position_mci_at_receive_epoch`, `_station_relative_state_j2000_at_receive_epoch` (`measurements.py:442-462`) | exact node `sxform` (6x6 solve) | receive-node ephemeris value (generator getters; PCHIP-backed in campaigns) | 6x6 solve (observer velocity) | t_r | n/a (node-indexed) | position generators/residuals/Jacobians |
-| 2 | Counted Doppler | `_station_state_mci`, `_station_state_mci_with_time_slope` (`radiometrics.py:361-406`) | **linear `_interp_matrix`** over pass grid | **linear `_interp_vector`** | grid slope (`d(X^-1 x_F)/dt = -X^-1 Xdot X^-1 x_F`) | event t1, t3 | silent linear extrapolation (FA-03B) | legacy two-way solver + counted partials |
+| 2 | Counted Doppler | `_station_state_mci`, `_station_state_mci_with_time_slope` | **linear `_interp_matrix`** over pass grid | **linear `_interp_vector`** | grid slope (`d(X^-1 x_F)/dt = -X^-1 Xdot X^-1 x_F`) | event t1, t3 | P0B-2 closed support; <=2 policy ULP uses endpoint sample, farther outside raises | legacy two-way solver + counted partials |
 | 3 | M3 two-way range | `make_exact_sxform_station_state_provider` (`two_way_range.py`) | **exact event-epoch `sxform`** | **cubic Hermite** (pos+vel) | exact from 6x6 solve | t1, t3 | Earth pre-grid linear only, documented ~1 cm bound; spacecraft never | M3 solver/sensitivity/residuals |
-| 4 | UKF two-way local | `_two_way_local_histories` (`filters.py:1677-1746`) | `_interp_pass_values` — linear **re-sampling of the coarse pass grid** | linear from pass grid | implicit in re-sampled 6x6 | endpoints | inherits pass grid | UKF counted-Doppler updates |
+| 4 | UKF two-way local | `_two_way_local_histories` | `_interp_pass_values` — linear **re-sampling of the coarse pass grid** | linear from pass grid | implicit in re-sampled 6x6 | local interval | P0B-2 source-interval preflight before propagation/resampling; interval anchors cover the clock-corrected count endpoints (P0B-2E2) | UKF counted-Doppler updates |
 | 5 | Visibility (production) | `_station_arrays` + `visibility_mask_ecef` (`visibility.py:232-241`) | exact node rotation blocks | PCHIP getters at nodes | not needed | sample t | n/a | arc selection |
 
 ### 7.1 Per-path field comparison
@@ -329,8 +342,7 @@ receive-node ephemeris value (PCHIP-backed in campaigns); velocity method:
 full 6x6 solve (includes `Cdot @ r`); interpolation method: none (node-exact);
 extrapolation policy: n/a; consumers: position/RR generators, residuals,
 Jacobians; metadata: position-pass metadata carries light-time solver
-parameters, but they are misreported for the one-way solver (FA-02 — a
-metadata defect, not a station-state defect).
+parameters from the one-way policy constants (FA-02 was resolved by P0A).
 
 **Path 2 — Legacy counted-Doppler:** station representation: same ITRF93
 constants; origin: Earth center; axes: ITRF93 -> J2000; epoch: event t1, t3
@@ -338,10 +350,12 @@ per leg; transform method: linear `_interp_matrix` over the pass grid (not
 exact at the event epoch); Earth translation method: linear `_interp_vector`;
 velocity method: grid slope `d(X^-1 x_F)/dt = -X^-1 Xdot X^-1 x_F`;
 interpolation method: linear (both transform and Earth translation);
-extrapolation policy: silent linear extrapolation outside the grid (FA-03B);
+extrapolation policy: P0B-2 closed support with endpoint normalization through
+two policy ULP and `HistoryDomainError` beyond it (FA-03B resolved);
 consumers: legacy two-way solver, counted partials, and (transitively) UKF
-local histories; metadata: none recorded for the interpolation method or
-its error budget.
+local histories; diagnostics name Earth position, Earth velocity, transform,
+spacecraft state/STM, count endpoint, and leg. The interpolation error budget
+itself is still not carried in metadata.
 
 **Path 3 — M3 exact event provider:** station representation: same ITRF93
 constants; origin: Earth center; axes: ITRF93 -> J2000, exact at t1/t3;
@@ -360,15 +374,21 @@ result CSV (FA-07).
 **Path 4 — UKF counted-Doppler local path:** station representation: same
 ITRF93 constants, re-sampled; origin: Earth center; axes: ITRF93 -> J2000,
 linearly re-sampled from the pass grid; epoch: local 1-5 s grid endpoints
-within each count interval; transform method: `_interp_pass_values` — a
+spanning the clock-corrected count interval plus the light-time margin
+(P0B-2E2); transform method: `_interp_pass_values` — a
 linear re-sampling of the already-interpolated pass-grid transform (i.e., an
 interpolation of an interpolation); Earth translation method: linear,
 inherited from the pass grid; velocity method: implicit in the re-sampled
 6x6; interpolation method: linear re-sampling, fidelity capped by the
 coarser source (pass) grid, not by the local grid density (SR-02);
-extrapolation policy: inherits the pass grid's extrapolation policy
-(FA-03B, transitively); consumers: UKF counted-Doppler measurement updates;
-metadata: none (VG-04).
+extrapolation policy: Earth position, Earth velocity, and transform source
+intervals are independently preflighted before local propagation or
+re-sampling, over an envelope anchored at the clock-corrected count endpoints
+computed with the observable's own clock function (P0B-2E2);
+accepted <=2-policy-ULP offsets use endpoint source samples while
+the physical local grid remains unchanged; larger offsets raise
+`HistoryDomainError` (FA-03B resolved); consumers: UKF counted-Doppler
+measurement updates; interpolation-fidelity metadata remains absent (VG-04).
 
 **Path 5 — Visibility (production):** station representation: same ITRF93
 constants; origin: Earth center; axes: ITRF93, exact node rotation blocks;
@@ -400,11 +420,13 @@ Answers to the task's Section 10 questions:
    linear (counted-Doppler), cubic Hermite (M3) — three methods coexist;
    measured comparison in Section 11.
 5. Rotation and translation share the event epoch on every path — confirmed.
-6. Station-history extrapolation: paths 2 and (transitively) 4 extrapolate
-   silently outside the grid (FA-03B); paths 1/3/5 do not.
+6. Station-history extrapolation: P0B-2 guards paths 2 and 4 before their
+   unchanged in-support interpolators. Paths 1/3/5 retain their separate
+   node/exact-event contracts; no legacy production path silently extrapolates.
 7. Metadata: M2/M3 metadata reports methods correctly; the generic position
-   metadata mis-reports solver tolerances (FA-02); UKF local re-sampling has
-   no metadata (VG-04).
+   solver metadata was corrected by P0A; UKF local interpolation fidelity still
+   has no quantitative metadata (VG-04), while domain errors carry structured
+   support and pre/post-roll diagnostics.
 
 ---
 
@@ -515,13 +537,13 @@ Findings:
 
 | Path | Source grid | Method | Consumers | Extrapolation | Measured error (repository evidence) | Metadata |
 |---|---|---|---|---|---|---|
-| Transform grid, linear | pass grid (nodes exact) | `_interp_matrix` on 6x6 | counted-Doppler station states | silent linear (FA-03B) | 10/30/60 s midpoint: station 0.32/2.88/11.5 m; two-way range effect 0.036/0.34/1.40 m (`frame_transformations.md` §11/§14); event-offset form: 0.086/0.32/0.67 m range at t1 ≈ node−2.7 s (M3 integration diagnostics) | none |
-| Earth ephemeris, linear | pass grid | `_interp_vector` | counted-Doppler | silent linear | 1.1 m @ 60 s midpoint | none |
+| Transform grid, linear | pass grid (nodes exact) | `_interp_matrix` on 6x6 | counted-Doppler station states | P0B-2 closed-support guard; no production extrapolation | 10/30/60 s midpoint: station 0.32/2.88/11.5 m; two-way range effect 0.036/0.34/1.40 m (`frame_transformations.md` §11/§14); event-offset form: 0.086/0.32/0.67 m range at t1 ≈ node−2.7 s (M3 integration diagnostics) | domain policy/drop diagnostics; no interpolation-error budget |
+| Earth ephemeris, linear | pass grid | `_interp_vector` | counted-Doppler | P0B-2 closed-support guard; no production extrapolation | 1.1 m @ 60 s midpoint | domain policy/drop diagnostics |
 | Earth ephemeris, Hermite | pass grid | `interp_state_history` (pos+vel) | M3 provider | pre-grid linear, documented ~1 cm bound | 1.2e-7 m / 5.0e-9 m/s @ 60 s midpoint | `earth_center_ephemeris_interpolation` |
 | Ephemeris PCHIP | ephemeris grid | independent `PchipInterpolator` per pos/vel (`ephemeris.py:32-34`) | dynamics RHS, generators | PCHIP end behavior | **not separately measured**; velocity interpolant is not the derivative of the position interpolant (VG-03) | none |
-| Spacecraft state/STM Hermite | propagation grid | `_interp_state`, `_interp_state_transition_position` | all light-time paths | linear outside grid (FA-03B for CN/counted; M3 guards) | FD-validated ≲1e-6 relative (M2/M3 suites) | `spacecraft_state_interpolation` |
+| Spacecraft state/STM Hermite | propagation grid | `_interp_state`, `_interp_state_transition_position` | all light-time paths | P0B-2 guards CN/counted production boundaries; M3 retains its own guard | FD-validated ≲1e-6 relative (M2/M3 suites) | `spacecraft_state_interpolation`, domain policy/drop diagnostics |
 | MOON_PA nearest-neighbour | rotation grid (60 s default suggestion) | exact sampled matrix, time-quantized | harmonics RHS | hard error, no extrapolation | ≤1e-3 rad bound asserted at 180 s grid midpoint | config cadence field |
-| UKF local re-sampling | pass grid -> 1–5 s local grid | linear `_interp_pass_values` | UKF counted-Doppler | inherits pass grid | **unmeasured** (VG-04) | none |
+| UKF local re-sampling | pass grid -> 1–5 s local grid | linear `_interp_pass_values` | UKF counted-Doppler | P0B-2 preflights all three source histories; no production extrapolation | **unmeasured** (VG-04) | controlled domain diagnostics; no fidelity metric |
 
 Grid-policy assessment:
 
@@ -630,28 +652,31 @@ requirement, no silent kernel fallback) at `dynamics.py:429-501` and
 | Affected symbols | `LightTimeSolution`, `RoundTripLightTimeSolution`, `solve_one_way_light_time`, `_apparent_position_observable`, one-way sensitivity/Jacobian helpers, `solve_two_way_light_time`, `two_way_counted_doppler_observable`, `two_way_counted_doppler_initial_state_jacobian`, `round_trip_light_time_initial_state_jacobian` |
 | Numerical compatibility | Normal converged numerical behavior is intended to remain unchanged; the full P0B-1 regression passed. Only invalid/pathological last-iterate consumption is rejected. |
 | Required tests implemented | forced `max_iter=1` update failures; update-passes/equation-fails cases; independent equation-residual recomputation; counted start/end and uplink/downlink diagnostics; positive finite tolerance validation; normal cross-layer regression |
-| Not affected | FA-03B history-domain behavior remains open; the legacy counted model remains single-bounce and the four-event counted model remains future work; M3 (`two_way_range.py`) behavior is unchanged. |
+| Not affected | P0B-1 did not address FA-03B; P0B-2 resolves it separately. The legacy counted model remains single-bounce, the four-event counted model remains future work, and M3 (`two_way_range.py`) behavior is unchanged. |
 | Backward-compatibility risk | low and intentional: callers that consumed invalid last iterates now receive a controlled exception; converged cases retain their numerical path |
 | Completed phase | P0B-1 / F1 |
 
-### FA-03B — Event-state history can be silently extrapolated
+### FA-03B — Event-state history was silently extrapolated (resolved)
 
 | Field | Record |
 |---|---|
 | Category | HISTORY-DOMAIN / INTERPOLATION |
 | Severity | HIGH |
 | Difficulty | MEDIUM |
-| Status | confirmed |
-| Actual behavior | `_interp_state` falls back to `_interp_vector` outside the grid (`radiometrics.py:415-416`), which extrapolates linearly without bound via `_interp_1d_linear_extrap` (`radiometrics.py:523-536`); `_interp_matrix`/`_interp_array_and_slope` extrapolate transforms and Earth states the same way; the CN docstring documents a *small pre-grid* extrapolation as intended (`measurements.py:1030-1032`) but no code enforces any bound — an event epoch arbitrarily far outside the history extrapolates silently |
-| Affected symbols | `_interp_state`, `_interp_vector`, `_interp_matrix`, `_interp_array_and_slope`, `_interp_1d_linear_extrap`, `interp_state_history`; consumers: one-way CN/CN+S paths, `solve_two_way_light_time`, `_station_state_mci*`, UKF local histories |
-| Affected models | one-way CN/CN+S, counted Doppler, UKF two-way |
-| Not affected | M3 (`_require_spacecraft_epoch_support` raises `TwoWayEventHistoryError` with all four event epochs and the required pre-roll; generation drops and counts such rows) |
-| Scientific impact | first-sample or short-history arcs quietly use a linearized spacecraft state for the transmit event; error grows with distance outside the grid and is invisible |
-| Estimator impact | residual and Jacobian both use the extrapolated state (consistent but wrong physics near boundaries); no metadata records it |
-| Recommended fix | explicit bounded pre-grid policy (documented bound + reason, mirroring the M3 Earth pre-grid contract) or strict guard + generation-time drop with counted metadata, per model |
-| Required tests | boundary-epoch tests asserting either the documented bound or the controlled error; mutation test that an out-of-bound epoch cannot return silently |
-| Backward-compatibility risk | medium — first-node one-way measurements currently rely on the small pre-grid extrapolation; a strict guard changes arc composition (M3 generation already demonstrates the drop-and-count pattern) |
-| Recommended phase | F1 (policy), F2 (measure actual pre-grid error first) |
+| Status | confirmed at `eb92461`/D1; **resolved by P0B-2** |
+| Baseline behavior | `_interp_state`, `_interp_vector`, `_interp_matrix`, `_interp_array_and_slope`, and `_interp_pass_values` could evaluate arbitrarily outside source support. One-way CN/CN+S, counted nominal/Jacobian, and counted UKF production consumers reached those helpers without a guard. |
+| Implemented boundary rule | Every guarded source has closed support `D=[t_start,t_end]`. Exact endpoints pass. With `S=max(1,abs(q),abs(bound))`, at most `2*(nextafter(S,+inf)-S)` outside a bound is normalized to the endpoint sample. Three policy ULP and larger excursions raise `HistoryDomainError` before evaluation. Solver event variables and physical UKF local times are not clipped. |
+| One-way coverage | Every production transmit-state solver probe, final state re-query, and state/STM Jacobian lookup uses the shared guard. Nominal, sensitivity, and Jacobian paths have one domain policy. |
+| Counted coverage | `count-start`/`count-end`; uplink/downlink station events; spacecraft state and STM; Earth position/velocity; and 6x6 transform lookups are guarded independently. The first unsupported intermediate probe stops the solve. |
+| Counted UKF coverage | `_two_way_local_histories` preflights Earth position, Earth velocity, and transform source intervals before local propagation or `_interp_pass_values`. Representation-only accepted offsets alter source lookup only, not the physical local grid. The preflighted local envelope is anchored at the clock-corrected count endpoints — min/max of the raw versus corrected count-start/count-end, computed with the observable's own `_clock_corrected_receive_time` — so nonzero station clock offset/drift of either sign cannot push a corrected receive epoch outside the locally built grid (P0B-2E2). |
+| Generation and RNG | Unsupported visible position/range-rate candidates are omitted with ordered `HistoryDomainDropRecord` entries. Candidate noise slots are consumed before physics evaluation (3 position or 4 range-rate draws), preserving later seeded rows; noise-disabled generation draws nothing. |
+| Scenario/reporting | Partial drops in the selected family retain surviving arcs. An all-domain-empty selected family raises an aggregate `HistoryDomainError` before estimator entry. `ScenarioResult` carries drop counts, family counts, max required pre/post-roll, the all-empty flag, and detailed records; summary CSV appends the six scalar fields. |
+| Ownership | Propagation/history construction remains caller-owned. P0B-2 reports actual deficiencies and never creates automatic pre-roll/post-roll. The policy is family-local because one build/result owns one measurement family. |
+| Low-level compatibility | Generic interpolation helpers retain their prior behavior for non-production/diagnostic compatibility; strict guards wrap every affected legacy production boundary. |
+| Not affected | M3 retains `TwoWayEventHistoryError`, its separate four-event contract, exact event transforms, and existing generation policy. The legacy counted model remains single-bounce; nonzero delay is rejected and a four-event counted model remains future work. |
+| Numerical compatibility | Supported-interior P0B-1/P0B-2 comparisons were bit-identical in the validated fixtures. Only unsupported history use changes behavior. |
+| Required tests implemented | exact/1/2-policy-ULP acceptance; symmetric 3-policy-ULP rejection and mutation guard; first unsupported one-way/counted probe rejection; five counted history names; endpoint/leg diagnostics; UKF preflight ordering; clock-corrected UKF local envelope (zero/positive/negative offsets, corrected-endpoint containment with outward corrected endpoints as exact anchor nodes, source-boundary rejection with clock-sized post-roll); candidate-drop/RNG determinism; estimator/observability propagation; family-local partial/all-empty scenario behavior; CSV transport; M3 regression |
+| Completed phase | P0B-2A/B/C/D1/E2 / F1 |
 
 ### Other confirmed items (register in Section 18)
 
@@ -735,13 +760,13 @@ a later architecture phase.
 
 | Claim | Location | Actual behavior | Type | Severity | Correction |
 |---|---|---|---|---|---|
-| "linear interpolation over the propagated state history" | `docs/two_way_counted_doppler.md` derivation section | spacecraft state/STM interpolation is cubic Hermite (`_interp_state`); transforms/Earth are linear | docs drift | MEDIUM | reword to per-quantity methods |
-| Position-pass light-time tolerance/max-iter metadata | `measurement_model_metadata` | reports counted-Doppler defaults (1e-10/20), solver uses 1e-12/10 | metadata (FA-02) | MEDIUM | report actual solver parameters |
+| "linear interpolation over the propagated state history" | `docs/two_way_counted_doppler.md` derivation section | spacecraft state/STM interpolation is cubic Hermite (`_interp_state`); transforms/Earth are linear | docs drift | MEDIUM | **corrected by P0B-2D2** with per-quantity methods and closed-support policy |
+| Position-pass light-time tolerance/max-iter metadata | `measurement_model_metadata` | baseline mismatch resolved by P0A; position reports one-way constants (1e-12/10), range-rate reports its own config | metadata (FA-02) | MEDIUM | **corrected by P0A** |
 | M3 metadata completeness in results | `reporting.py` CSV columns | M2 fields only; no two-way convention/delay/event columns | traceability (FA-07) | MEDIUM | add M3 columns/manifest |
 | "ECEF" naming | production identifiers/docstrings | frame is ITRF93 | naming (FA-05) | LOW | docstring/comment clarification |
-| Nonzero-delay counted Doppler | metadata of a delayed run | a scalar delay cancels directly in the endpoint difference, but separate `t2u`/`t2d` event geometry is not represented by the single-bounce model | physics/API safety | HIGH | reject nonzero delay in the legacy profile; implement four-event counted Doppler separately |
-| "Frame audit: CLOSED — no correctness bug found" | `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` §Frame audit | true for the M2-era frame-direction scope; this audit added FA-01/FA-03A/FA-03B in parity/policy scope; FA-01 and FA-03A are now resolved, FA-03B remains open | scope drift | LOW | retain the narrower frame-direction claim and track remaining FA-03B separately |
-| CN pre-grid extrapolation "just before the grid start" | `_apparent_position_observable` docstring | no bound enforced in code (FA-03B) | docs vs behavior | MEDIUM | enforce or document bound |
+| Nonzero-delay counted Doppler | legacy counted profile configuration | P0A rejects nonzero delay because separate `t2u`/`t2d` event geometry is not represented by the single-bounce model | physics/API safety | HIGH | short-term rejection complete; implement four-event counted Doppler separately |
+| "Frame audit: CLOSED — no correctness bug found" | `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` §Frame audit | true for the M2-era frame-direction scope; later parity/policy findings FA-01, FA-03A, and FA-03B are now resolved by P0A/P0B-1/P0B-2 | scope drift | LOW | retain the narrower frame-direction claim and the dated resolution record |
+| CN pre-grid extrapolation "just before the grid start" | `_apparent_position_observable` docstring | **resolved by P0B-2:** strict closed support raises or drops instead of extrapolating; caller-owned pre-roll is required | docs vs behavior | MEDIUM | corrected in code/docstring and P0B-2D2 model documentation |
 
 ---
 
@@ -754,7 +779,7 @@ remediation phase.
 |---|---|---|---|---|---|---|
 | FA-01 | UKF position path ignores configured measurement profile | LOCAL-FRAME / FRAME-EPOCH | CRITICAL | EASY (reject) / HARD (implement) | confirmed at eb92461/D1; **resolved by P0A hard rejection** | F1 (done) |
 | FA-03A | Nonconverged light-time solution can reach observable paths | NUMERICAL-SOLVER / VALIDATION | HIGH | MEDIUM | confirmed at eb92461/D1; **resolved by P0B-1 strict dual-criterion enforcement** | F1 (done) |
-| FA-03B | Event-state history silently extrapolated without bound | HISTORY-DOMAIN / INTERPOLATION | HIGH | MEDIUM | confirmed; **open** (P0B) | F1 |
+| FA-03B | Event-state history silently extrapolated without bound | HISTORY-DOMAIN / INTERPOLATION | HIGH | MEDIUM | confirmed at eb92461/D1; **resolved by P0B-2 closed-support enforcement** | F1 (done) |
 | FA-02 | Position metadata reports wrong light-time solver parameters | DOCUMENTATION / metadata | MEDIUM | EASY | confirmed at eb92461/D1; **resolved by P0A metadata correction** | F0 (done) |
 | P0A-CD0 | Legacy counted-Doppler nonzero transponder delay | NUMERICAL-SOLVER (safety gate) | MEDIUM | EASY | **short-term rejection implemented (P0A)**; four-event model remains future work (CD-4) | CD-0 (done) |
 | FA-06 | Isolated worktree tests can import code from the main worktree | TEST-PROVENANCE / TECHNICAL-DEBT | MEDIUM | EASY-MEDIUM | confirmed | F0 |
@@ -797,7 +822,7 @@ produce executable evidence before any production fix.**
 | Phase | Goal | Files / symbols | Why | Risk | Tests required | Numerical acceptance | Backward compat | Depends on |
 |---|---|---|---|---|---|---|---|---|
 | **F0 — Test provenance and documentation/metadata** | FA-06 verification + provenance assertion; FA-02 metadata fields; FA-05 naming notes; FA-07 M3 CSV columns; counted-doc wording | `pytest` env / F2 harness; `measurements.measurement_model_metadata`; `reporting.py`; docs | trustworthy evidence before anything else | minimal | provenance check; metadata unit tests | n/a | none | — |
-| **F1 — UKF hard rejection and solver/domain safety** | FA-01 hard rejection (**done P0A**); FA-03A dual convergence criterion + failure policy (**done P0B-1**); FA-03B bounded/pre-roll history policy (**open**) | `scenario_config._validate_cross_field_rules`, `filters.run_lunar_ukf`; one-way/counted light-time consumers; future `radiometrics`/measurement history guards | the three physics-safety defects | completed rejection affects invalid configurations/solutions intentionally; future boundary policy may alter first-sample arcs | completed FA-01/03A contracts plus remaining FA-03B tests (Section 13) | geometric and normally converged paths unchanged; FA-03B acceptance not yet defined | explicit safety breaks only | F0, F2 evidence |
+| **F1 — UKF hard rejection and solver/domain safety** | FA-01 hard rejection (**done P0A**); FA-03A dual convergence criterion + failure policy (**done P0B-1**); FA-03B closed-support/drop/reporting policy (**done P0B-2**) | `scenario_config._validate_cross_field_rules`, `filters.run_lunar_ukf`; shared `history_domain`; one-way/counted/UKF consumers; scenario/reporting transport | the three physics-safety defects | invalid configurations, nonconverged solves, and unsupported histories now fail intentionally; domain drops may alter early arc composition | completed FA-01/03A contracts plus P0B-2 boundary, RNG, integration, empty-family, and reporting tests | supported-interior outputs unchanged in validated comparisons; exact/<=2 policy ULP accepted, 3+ rejected | explicit safety breaks only | F0, completed evidence |
 | **F2 — Executable frame diagnostics (Codex)** | Section 20 | new `examples/`/`tests/` diagnostics only | convert SR/VG items into measurements | none (read-only w.r.t. production) | self-validating diagnostics | per Section 20 | none | F0 |
 | **F3 — Counted-Doppler exact event station provider** | reuse M3 provider in `_station_state_mci*` | `radiometrics.py` | removes measured interpolation error class | changes counted outputs at interp-error level | zero-delay bitwise fixture first, then budgeted diffs | ≤0.1σ observable shift justified by F2 numbers | counted baselines shift | F2 |
 | **F4 — Shared station/frame provider (HARD — Opus-level architecture decision)** | one provider, method labels, all five paths | `measurements`/`radiometrics`/`two_way_range`/`filters`/`visibility` | eliminate 5-way duplication | wide blast radius | behavior-freeze fixtures per path | bit-identical where policy unchanged | high if rushed | F3 |
@@ -827,9 +852,12 @@ provenance assertion.
    `max_iter=1` and update-passes/equation-fails tests now assert controlled
    rejection in one-way nominal/sensitivity/Jacobian and counted start/end
    endpoint paths; raw diagnostic solutions retain measured residuals.
-5. **History-boundary sweep (FA-03B)** — transmit-epoch offsets from
-   −0.1 s to −60 s before grid start; measure extrapolated-state error vs a
-   pre-rolled truth propagation.
+5. **History-boundary sweep (FA-03B, completed by P0B-2)** — shared tests now
+   enforce exact/1/2-policy-ULP endpoint sampling and symmetric 3+-policy-ULP
+   rejection; model tests cover first unsupported probes, all five counted
+   histories, UKF preflight ordering, deterministic generation drops/RNG, and
+   family-local scenario/reporting behavior. External evidence retains the
+   pre-rolled comparison without permitting production extrapolation.
 6. **PCHIP consistency (SR-03/VG-03)** — position-derivative vs velocity
    interpolant vs direct `spkezr` on representative grids.
 7. **UKF local-grid fidelity (SR-02/VG-04)** — local re-sampled station
@@ -904,6 +932,7 @@ change origins; translations are explicit vector additions (Section 5).
 | `_station_state_mci`, `_station_state_mci_with_time_slope`, `_interp_*` | `radiometrics.py` | counted-Doppler station states, interpolators |
 | `make_exact_sxform_station_state_provider`, `solve_two_way_range_events`, `two_way_range_event_sensitivity` | `two_way_range.py` | M3 event chain |
 | `_position_measurement_from_state`, `_two_way_local_histories`, `_interp_pass_values` | `filters.py` | UKF operators (FA-01, SR-02) |
+| `normalize_supported_epoch`, `HistoryDomainError`, `HistoryDomainDropRecord`, `summarize_history_domain_drops` | `history_domain.py` | shared FA-03B closed-support, diagnostics, and drop aggregation contract |
 | `analyze_visibility_gap_with_transforms`, `sample_j2000_to_itrf93_transforms`, `calc_gst_curtis` | `visibility.py` | visibility frames |
 | `sample_moon_pa_rotations`, `nearest_rotation_at_time`, `validate_rotation_matrix` | `lunar_frames.py` | lunar PA provider |
 | `_build_moon_j2_rotation`, `_MCI_TO_MOON_BF`, `_J2000_TO_EARTH_BF`, `_prepare_harmonic_context` | `dynamics.py` | body-fixed gravity frames |
@@ -921,6 +950,7 @@ change origins; translations are explicit vector additions (Section 5).
 | `test_two_way_range` (27) + `test_two_way_range_integration` (16) | mixed | M3 events, FD, exact-vs-interp, reversed-transform, frozen-epoch, pxform-style station-velocity mutation, scipy root | factor-2, delay-twice, double-STM | — |
 | `test_measurements`, `test_stellar_aberration_vv` | mixed | M2 chain, aberration operator vs `spice.stelab` | STM mutation, wrap | UKF parity |
 | `test_estimators`, `test_observability` | SPICE-free | shared blocks, no-double-STM | second STM | UKF profile parity (VG-01) |
+| `test_history_domain`, measurement safety/owner tests, `test_filters`, `test_scenarios`, `test_reporting` | SPICE-free | closed support, two-policy-ULP normalization, one-way/counted/UKF guards, deterministic drops/RNG, family-local empty arcs, CSV transport | 3-ULP allowance mutation, unsupported-probe leakage, estimator-entry spy | cross-family coordinator (not present by design) |
 | `test_lunar_frames` | kernel-gated | MOON_PA sampling/lookup/no-fallback | bad grids, missing kernels | production cadence budget |
 | `test_visibility` | SPICE-free/comparison | GST vs transform path | — | uplink epoch, LT-awareness |
 | `test_ephemeris`, `test_spice_snapshots` | mixed | ephemeris sampling; MATLAB parity (bare `MOON_PA` fixture) | — | PCHIP pos/vel consistency |
@@ -940,4 +970,6 @@ change origins; translations are explicit vector additions (Section 5).
 
 *End of audit document. Produced read-only at `eb92461`; no production code,
 tests, or configuration were modified. Before D1 baseline finalization, the
-audit and its 2026-07-13 FA-06 revision had not been committed or pushed.*
+audit and its 2026-07-13 FA-06 revision had not been committed or pushed.
+P0B-2D2 later updated documentation only to reconcile the validated P0A,
+P0B-1, and P0B-2 safety status; historical baseline evidence remains labeled.*

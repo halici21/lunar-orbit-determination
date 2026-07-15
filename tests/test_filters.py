@@ -1,13 +1,18 @@
 import math
 import unittest
 from dataclasses import replace
+from unittest import mock
 
 import numpy as np
 
+import lunar_od.filters as filters_module
 from lunar_od import (
+    C_LIGHT_MPS,
+    HistoryDomainError,
     MeasurementNoiseConfig,
     PassGeometry,
     RangeRatePhysicsConfig,
+    RoundTripLightTimeConvergenceError,
     SquareRootUKFState,
     UKFAdaptiveConfig,
     UKFState,
@@ -33,11 +38,254 @@ from lunar_od import (
     unscented_mean_and_covariance,
 )
 from lunar_od.geometry import wrap_to_pi
-from lunar_od.filters import _apply_state_constraints, _range_rate_measurement_from_state
+from lunar_od.filters import _apply_state_constraints, _range_rate_measurement_from_state, _two_way_local_histories
+from lunar_od.radiometrics import _clock_corrected_receive_time
 from tests.slow import slow
 
 
 class FilterTests(unittest.TestCase):
+    def test_ukf_supported_local_interval_nominal_unchanged(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        result = _two_way_local_histories(
+            150.0,
+            state_mid,
+            0.0,
+            pass_geo,
+            2.0,
+            C_LIGHT_MPS,
+            0.0,
+            0.0,
+            0.0,
+            sample_body,
+            sample_body,
+            1.0e-10,
+            1.0e-12,
+            "taylor3",
+        )
+        local_t, _, earth_pos, earth_vel, xforms = result
+
+        np.testing.assert_array_equal(
+            earth_pos,
+            filters_module._interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, local_t),
+        )
+        np.testing.assert_array_equal(
+            earth_vel,
+            filters_module._interp_pass_values(pass_geo.t_s, pass_geo.earth_vel_mci_mps, local_t),
+        )
+        np.testing.assert_array_equal(
+            xforms,
+            filters_module._interp_pass_values(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, local_t),
+        )
+
+        obs_row = np.array([150.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0])
+        measurement = _range_rate_measurement_from_state(
+            state_mid,
+            obs_row,
+            pass_geo,
+            0.0,
+            0.0,
+            0.0,
+            sample_body,
+            sample_body,
+            1.0e-10,
+            1.0e-12,
+        )
+        with mock.patch.object(
+            filters_module,
+            "normalize_supported_epoch",
+            side_effect=lambda requested_epoch_s, *_args, **_kwargs: requested_epoch_s,
+        ):
+            baseline_measurement = _range_rate_measurement_from_state(
+                state_mid,
+                obs_row,
+                pass_geo,
+                0.0,
+                0.0,
+                0.0,
+                sample_body,
+                sample_body,
+                1.0e-10,
+                1.0e-12,
+            )
+        np.testing.assert_array_equal(measurement, baseline_measurement)
+
+    def test_ukf_local_envelope_covers_clock_corrected_count_endpoints(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        base = pass_geo.range_rate_physics
+
+        with self.subTest(clock="zero"):
+            local_t_zero = _call_two_way_local_histories(
+                150.0, pass_geo, state_mid, sample_body, rr_physics=replace(base)
+            )[0]
+            local_t_none = _call_two_way_local_histories(150.0, pass_geo, state_mid, sample_body)[0]
+            np.testing.assert_array_equal(local_t_zero, local_t_none)
+            self.assertEqual(float(local_t_zero[0]), 147.0)
+            self.assertEqual(float(local_t_zero[-1]), 151.0)
+
+        with self.subTest(clock="positive"):
+            positive = replace(base, station_clock_offset_s=0.25, station_clock_drift=1e-3)
+            local_t = _call_two_way_local_histories(
+                150.0, pass_geo, state_mid, sample_body, rr_physics=positive
+            )[0]
+            self.assertEqual(float(local_t[0]), 147.0)
+            self.assertEqual(float(local_t[-1]), _clock_corrected_receive_time(151.0, positive))
+            for node_s in (149.0, 150.0, 151.0):
+                self.assertIn(node_s, local_t)
+
+        with self.subTest(clock="negative"):
+            negative = replace(base, station_clock_offset_s=-0.25, station_clock_drift=-1e-3)
+            local_t = _call_two_way_local_histories(
+                150.0, pass_geo, state_mid, sample_body, rr_physics=negative
+            )[0]
+            corrected_start_s = _clock_corrected_receive_time(149.0, negative)
+            self.assertEqual(float(local_t[0]), corrected_start_s - 2.0)
+            self.assertEqual(float(local_t[-1]), 151.0)
+            self.assertIn(corrected_start_s, local_t)
+
+        with self.subTest(clock="positive-beyond-source-support"):
+            positive = replace(base, station_clock_offset_s=0.25, station_clock_drift=1e-3)
+            with self.assertRaises(HistoryDomainError) as caught:
+                _call_two_way_local_histories(
+                    199.0, pass_geo, state_mid, sample_body, rr_physics=positive
+                )
+            self.assertEqual(caught.exception.required_pre_roll_s, 0.0)
+            self.assertAlmostEqual(
+                caught.exception.required_post_roll_s,
+                _clock_corrected_receive_time(200.0, positive) - 200.0,
+                places=12,
+            )
+
+    def test_ukf_physical_source_history_offsets_rejected(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        cases = ((102.5, "pre", 0.5), (199.5, "post", 0.5))
+
+        for midpoint_s, deficiency_kind, expected_s in cases:
+            with self.subTest(deficiency_kind=deficiency_kind):
+                with self.assertRaises(HistoryDomainError) as caught:
+                    _call_two_way_local_histories(midpoint_s, pass_geo, state_mid, sample_body)
+                error = caught.exception
+                self.assertEqual(error.history_name, "earth_position_mci")
+                self.assertEqual(error.model_context, "two_way_counted_doppler_ukf_local")
+                self.assertEqual(error.consumer, "_two_way_local_histories")
+                self.assertEqual(error.event_label, "ukf-local-source-interval")
+                if deficiency_kind == "pre":
+                    self.assertEqual(error.required_pre_roll_s, expected_s)
+                    self.assertEqual(error.required_post_roll_s, 0.0)
+                else:
+                    self.assertEqual(error.required_pre_roll_s, 0.0)
+                    self.assertEqual(error.required_post_roll_s, expected_s)
+
+    def test_ukf_source_histories_independently_diagnosed(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        real_normalize = filters_module.normalize_supported_epoch
+
+        for target_history in ("earth_velocity_mci", "j2000_to_itrf93_state_transform"):
+            for midpoint_s, boundary in ((102.5, "lower"), (199.5, "upper")):
+                def selective_normalize(requested_epoch_s, support_start_s, support_end_s, **kwargs):
+                    if kwargs["history_name"] == target_history:
+                        return real_normalize(requested_epoch_s, support_start_s, support_end_s, **kwargs)
+                    return float(np.clip(requested_epoch_s, support_start_s, support_end_s))
+
+                with self.subTest(history_name=target_history, boundary=boundary):
+                    with mock.patch.object(
+                        filters_module,
+                        "normalize_supported_epoch",
+                        side_effect=selective_normalize,
+                    ):
+                        with self.assertRaises(HistoryDomainError) as caught:
+                            _call_two_way_local_histories(midpoint_s, pass_geo, state_mid, sample_body)
+                self.assertEqual(caught.exception.history_name, target_history)
+                if boundary == "lower":
+                    self.assertGreater(caught.exception.required_pre_roll_s, 0.0)
+                else:
+                    self.assertGreater(caught.exception.required_post_roll_s, 0.0)
+
+    def test_ukf_exact_and_two_ulp_boundaries_use_endpoint_samples(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        support_start_s = float(pass_geo.t_s[0])
+        support_end_s = float(pass_geo.t_s[-1])
+        lower_ulp_s = float(np.nextafter(support_start_s, np.inf) - support_start_s)
+        upper_ulp_s = float(np.nextafter(support_end_s, np.inf) - support_end_s)
+
+        for boundary, bound_s, ulp_s in (
+            ("lower", support_start_s, lower_ulp_s),
+            ("upper", support_end_s, upper_ulp_s),
+        ):
+            for policy_ulps in (0, 1, 2):
+                requested_s = bound_s + (-policy_ulps if boundary == "lower" else policy_ulps) * ulp_s
+                midpoint_s = requested_s + 3.0 if boundary == "lower" else requested_s - 1.0
+                with self.subTest(boundary=boundary, policy_ulps=policy_ulps):
+                    local_t, _, earth_pos, earth_vel, xforms = _call_two_way_local_histories(
+                        midpoint_s,
+                        pass_geo,
+                        state_mid,
+                        sample_body,
+                    )
+                    row = 0 if boundary == "lower" else -1
+                    source_row = 0 if boundary == "lower" else -1
+                    self.assertEqual(local_t[row], requested_s)
+                    np.testing.assert_array_equal(earth_pos[row], pass_geo.earth_pos_mci_m[source_row])
+                    np.testing.assert_array_equal(earth_vel[row], pass_geo.earth_vel_mci_mps[source_row])
+                    np.testing.assert_array_equal(xforms[row], pass_geo.x_j2000_to_itrf93[source_row])
+
+    def test_ukf_three_ulp_boundaries_rejected(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        support_start_s = float(pass_geo.t_s[0])
+        support_end_s = float(pass_geo.t_s[-1])
+        lower_ulp_s = float(np.nextafter(support_start_s, np.inf) - support_start_s)
+        upper_ulp_s = float(np.nextafter(support_end_s, np.inf) - support_end_s)
+
+        for boundary, bound_s, ulp_s in (
+            ("lower", support_start_s, lower_ulp_s),
+            ("upper", support_end_s, upper_ulp_s),
+        ):
+            requested_s = bound_s + (-3.0 if boundary == "lower" else 3.0) * ulp_s
+            midpoint_s = requested_s + 3.0 if boundary == "lower" else requested_s - 1.0
+            with self.subTest(boundary=boundary):
+                with self.assertRaises(HistoryDomainError):
+                    _call_two_way_local_histories(midpoint_s, pass_geo, state_mid, sample_body)
+
+    def test_ukf_preflight_precedes_all_propagation_and_resampling(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+
+        for local_state_model in ("taylor3", "ode"):
+            with self.subTest(local_state_model=local_state_model):
+                with (
+                    mock.patch.object(filters_module, "_taylor3_local_state_history") as taylor,
+                    mock.patch.object(filters_module, "_propagate_local_state_history") as ode,
+                    mock.patch.object(filters_module, "_interp_pass_values") as resample,
+                ):
+                    with self.assertRaises(HistoryDomainError):
+                        _call_two_way_local_histories(
+                            102.5,
+                            pass_geo,
+                            state_mid,
+                            sample_body,
+                            local_state_model=local_state_model,
+                        )
+                taylor.assert_not_called()
+                ode.assert_not_called()
+                resample.assert_not_called()
+
+    def test_ukf_history_domain_error_is_not_convergence_or_row_skip(self):
+        pass_geo, state_mid, sample_body = _ukf_history_domain_case()
+        obs_row = np.array([102.5, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0])
+
+        with self.assertRaises(HistoryDomainError) as caught:
+            _range_rate_measurement_from_state(
+                state_mid,
+                obs_row,
+                pass_geo,
+                0.0,
+                0.0,
+                0.0,
+                sample_body,
+                sample_body,
+                1.0e-10,
+                1.0e-12,
+            )
+        self.assertNotIsInstance(caught.exception, RoundTripLightTimeConvergenceError)
+
     def test_state_constraints_freeze_and_regularize_selected_biases(self):
         predicted = UKFState(
             x=np.array([0.0, 0.0, 2.0]),
@@ -1659,6 +1907,8 @@ class FilterTests(unittest.TestCase):
             mu_moon,
             get_earth_pos,
             get_sun_pos,
+            # FA-03B closed support: Tc=20 -> pre 10+2.5, post 10+0.5.
+            edge_margin_s=(12.5, 10.5),
         )
 
         x_guess0 = x_true0 + np.array([35.0, -25.0, 15.0, 0.02, -0.015, 0.01])
@@ -1682,8 +1932,12 @@ class FilterTests(unittest.TestCase):
 
         initial_position_error = float(np.linalg.norm(x_guess0[:3] - x_true0[:3]))
         initial_velocity_error = float(np.linalg.norm(x_guess0[3:] - x_true0[3:]))
-        final_position_error = float(np.linalg.norm(result.final_state[:3] - x_truth[-1, :3]))
-        final_velocity_error = float(np.linalg.norm(result.final_state[3:] - x_truth[-1, 3:]))
+        # FA-03B fixture migration: the last supported tag precedes the grid
+        # end, so the oracle is the truth state at the FINAL PROCESSED
+        # observation epoch (not the grid end).
+        final_truth = x_truth[int(obs_data[-1, 6]) - 1]
+        final_position_error = float(np.linalg.norm(result.final_state[:3] - final_truth[:3]))
+        final_velocity_error = float(np.linalg.norm(result.final_state[3:] - final_truth[3:]))
 
         self.assertLess(final_position_error, initial_position_error)
         self.assertLess(final_velocity_error, initial_velocity_error)
@@ -1713,7 +1967,9 @@ class FilterTests(unittest.TestCase):
             ),
         )
         max_error = 0.0
-        for row in obs_data[:15]:
+        # Boundary rows require source-history pre/post-roll; this comparison
+        # is intentionally limited to intervals fully supported by pass_geo.
+        for row in obs_data[3:-3]:
             time_idx = int(row[6]) - 1
             ode_value = _range_rate_measurement_from_state(
                 x_truth[time_idx],
@@ -1766,7 +2022,9 @@ class FilterTests(unittest.TestCase):
                     ),
                 )
                 max_error = 0.0
-                for row in obs_data[:15]:
+                # Interior epochs keep every tested count interval inside the
+                # source-history support.
+                for row in obs_data[3:-3]:
                     time_idx = int(row[6]) - 1
                     ode_value = _range_rate_measurement_from_state(
                         x_truth[time_idx],
@@ -1806,6 +2064,8 @@ class FilterTests(unittest.TestCase):
         mu_moon, x_true0, t_pass_s, x_truth, geometric_geo, _, get_earth_pos, get_sun_pos = (
             _synthetic_range_rate_case(duration_s=600.0)
         )
+        # Positive clock offset/drift pushes the corrected count-end past the
+        # raw count window; the UKF local envelope must absorb it (P0B-2E2).
         truth_physics = RangeRatePhysicsConfig(
             mode="two_way_counted_doppler",
             count_interval_s=30.0,
@@ -1820,6 +2080,8 @@ class FilterTests(unittest.TestCase):
             mu_moon,
             get_earth_pos,
             get_sun_pos,
+            # FA-03B closed support: Tc=30 -> pre 15+2.5, post 15+0.5.
+            edge_margin_s=(17.5, 15.5),
         )
         noise = generate_measurement_noise(
             clean_obs.shape[0],
@@ -1867,7 +2129,9 @@ class FilterTests(unittest.TestCase):
             atol=1e-11,
         )
 
-        final_position_error = np.linalg.norm(result.final_state[:3] - x_truth[-1, :3])
+        # FA-03B fixture migration: compare at the final PROCESSED tag epoch.
+        final_truth = x_truth[int(obs_data[-1, 6]) - 1]
+        final_position_error = np.linalg.norm(result.final_state[:3] - final_truth[:3])
         self.assertLess(final_position_error, np.linalg.norm(initial_offset[:3]))
         self.assertGreater(float(np.mean(result.accepted_updates)), 0.8)
         self.assertGreater(result.performance.measurement_model_cache_hits, 0)
@@ -1916,6 +2180,8 @@ class FilterTests(unittest.TestCase):
             mu_moon,
             get_earth_pos,
             get_sun_pos,
+            # FA-03B closed support: Tc=20 -> pre 10+2.5, post 10+0.5.
+            edge_margin_s=(12.5, 10.5),
         )
         p0 = np.diag([20.0**2] * 3 + [0.02**2] * 3)
         rng = np.random.default_rng(20260608)
@@ -1950,7 +2216,8 @@ class FilterTests(unittest.TestCase):
             final_nees.append(
                 normalized_estimation_error_squared(
                     result.final_state,
-                    x_truth[-1],
+                    # FA-03B fixture migration: truth at the final processed tag.
+                    x_truth[int(clean_obs[-1, 6]) - 1],
                     result.final_covariance,
                 )
             )
@@ -2020,6 +2287,61 @@ def _synthetic_range_rate_station(lat_deg: float, lon_deg: float, alt_m: float) 
     )
 
 
+def _ukf_history_domain_case():
+    t_grid_s = np.array([100.0, 150.0, 200.0])
+    earth_pos = np.array([[1.0, 2.0, 3.0], [6.0, 7.0, 8.0], [11.0, 12.0, 13.0]])
+    earth_vel = np.array([[4.0, 5.0, 6.0], [9.0, 10.0, 11.0], [14.0, 15.0, 16.0]])
+    xforms = np.repeat(np.eye(6)[None, :, :], t_grid_s.size, axis=0)
+    pass_geo = PassGeometry(
+        t_s=t_grid_s,
+        earth_pos_mci_m=earth_pos,
+        earth_vel_mci_mps=earth_vel,
+        x_j2000_to_itrf93=xforms,
+        stations=(_synthetic_range_rate_station(0.0, 0.0, 0.0),),
+        measurement_type="range_rate",
+        range_rate_physics=RangeRatePhysicsConfig(
+            mode="two_way_counted_doppler",
+            count_interval_s=2.0,
+            local_state_model="taylor3",
+        ),
+    )
+    state_mid = np.array([2.0e6, 1.0e5, -2.0e5, 0.0, 1.0, 0.0])
+
+    def sample_body(t_s):
+        count = np.asarray(t_s, dtype=float).reshape(-1).size
+        return np.repeat(np.array([[1.0e9, 2.0e9, 3.0e9]]), count, axis=0)
+
+    return pass_geo, state_mid, sample_body
+
+
+def _call_two_way_local_histories(
+    midpoint_s,
+    pass_geo,
+    state_mid,
+    sample_body,
+    *,
+    local_state_model="taylor3",
+    rr_physics=None,
+):
+    return _two_way_local_histories(
+        midpoint_s,
+        state_mid,
+        0.0,
+        pass_geo,
+        2.0,
+        C_LIGHT_MPS,
+        0.0,
+        0.0,
+        0.0,
+        sample_body,
+        sample_body,
+        1.0e-10,
+        1.0e-12,
+        local_state_model,
+        rr_physics=rr_physics,
+    )
+
+
 def _build_clean_position_observations(t_pass_s, x_truth, pass_geo):
     rows = []
     for time_idx, t_s in enumerate(t_pass_s, start=1):
@@ -2042,9 +2364,26 @@ def _build_clean_range_rate_observations(t_pass_s, x_truth, pass_geo):
     return obs_data
 
 
-def _build_clean_two_way_range_rate_observations(t_pass_s, x_truth, pass_geo, mu_moon, get_earth_pos, get_sun_pos):
+def _build_clean_two_way_range_rate_observations(
+    t_pass_s, x_truth, pass_geo, mu_moon, get_earth_pos, get_sun_pos,
+    *, edge_margin_s=(0.0, 0.0),
+):
+    """Clean counted-Doppler rows over the pass grid.
+
+    P0B-2 (FA-03B): counted endpoints need the closed support
+    ``[t - Tc/2 - tau_margin, t + Tc/2]`` inside the pass history, so counted
+    fixtures pass ``edge_margin_s=(pre, post)`` to keep measurement tags on
+    supported interior nodes only (time indices still address the full grid).
+    Pre margin = Tc/2 + UKF local light-time margin (max(2, 2.5*tau+1) ~ 2 s
+    for these synthetic ~6 ms geometries) + slack; post margin = Tc/2 + slack.
+    """
+    pre_margin_s, post_margin_s = edge_margin_s
+    t_first = float(t_pass_s[0]) + float(pre_margin_s)
+    t_last = float(t_pass_s[-1]) - float(post_margin_s)
     rows = []
     for time_idx, t_s in enumerate(t_pass_s, start=1):
+        if t_s < t_first or t_s > t_last:
+            continue
         for station_id in range(1, len(pass_geo.stations) + 1):
             rows.append([t_s, 0.0, 0.0, 0.0, 0.0, station_id, time_idx])
     obs_data = np.asarray(rows, dtype=float)

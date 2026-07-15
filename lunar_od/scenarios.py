@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 import numpy as np
@@ -21,6 +21,11 @@ from .estimators import (
     estimate_two_way_range_srif,
 )
 from .filters import UKFAdaptiveConfig, UnscentedTransformConfig, assess_ukf_operational_stability, run_lunar_ukf
+from .history_domain import (
+    HistoryDomainDropRecord,
+    HistoryDomainError,
+    summarize_history_domain_drops,
+)
 from .measurements import (
     PassGeometry,
     generate_position_measurements,
@@ -162,6 +167,13 @@ class ScenarioResult:
     aberration_local_jacobian_input: str = "not_applicable"
     aberration_local_jacobian_space: str = "not_applicable"
     aberration_local_jacobian_step: float = float("nan")
+    history_domain_dropped_measurements: int = 0
+    history_domain_position_drops: int = 0
+    history_domain_range_rate_drops: int = 0
+    history_domain_required_pre_roll_s: float = 0.0
+    history_domain_required_post_roll_s: float = 0.0
+    history_domain_all_measurement_arcs_empty: bool = False
+    history_domain_drop_records: tuple[dict, ...] = ()
 
     @property
     def algorithmic_success_fraction(self) -> float:
@@ -254,6 +266,7 @@ def build_measurement_arcs(
     rr_physics = _resolve_range_rate_physics(range_rate_physics, count_interval_s)
 
     arcs: list[PreparedArc] = []
+    history_domain_drop_records: list[HistoryDomainDropRecord] = []
     for arc_number, (start_idx, end_idx) in enumerate(zip(seg_starts, seg_ends), start=1):
         if end_idx < start_idx:
             continue
@@ -318,6 +331,10 @@ def build_measurement_arcs(
         else:
             raise ValueError(f"Unsupported measurement_type: {measurement_type}")
 
+        pass_metadata = _attached_measurement_metadata(pass_geo)
+        history_domain_drop_records.extend(
+            _history_domain_records_from_metadata(pass_metadata)
+        )
         if obs_data.shape[0] == 0:
             continue
         arcs.append(
@@ -332,7 +349,120 @@ def build_measurement_arcs(
             )
         )
 
+    if history_domain_drop_records:
+        aggregate = summarize_history_domain_drops(history_domain_drop_records)
+        dropped_count = int(aggregate["history_domain_dropped_measurements"])
+        aggregate.update(
+            {
+                "history_domain_position_drops": (
+                    dropped_count if measurement_type == "position" else 0
+                ),
+                "history_domain_range_rate_drops": (
+                    dropped_count if measurement_type == "range_rate" else 0
+                ),
+                "history_domain_all_measurement_arcs_empty": not arcs,
+            }
+        )
+        if not arcs:
+            error = HistoryDomainError.from_drop_summary(
+                history_domain_drop_records,
+                model_context=f"{measurement_type}_measurement_arc_build",
+                consumer="build_measurement_arcs",
+            )
+            error.history_domain_total_candidates = dropped_count
+            error.history_domain_dropped_measurements = dropped_count
+            error.history_domain_position_drops = int(
+                aggregate["history_domain_position_drops"]
+            )
+            error.history_domain_range_rate_drops = int(
+                aggregate["history_domain_range_rate_drops"]
+            )
+            error.history_domain_required_pre_roll_s = float(
+                aggregate["history_domain_required_pre_roll_s"]
+            )
+            error.history_domain_required_post_roll_s = float(
+                aggregate["history_domain_required_post_roll_s"]
+            )
+            error.history_domain_all_measurement_arcs_empty = True
+            raise error
+        arcs = [_with_history_domain_aggregate(arc, aggregate) for arc in arcs]
+
     return tuple(arcs)
+
+
+def _attached_measurement_metadata(pass_geo: PassGeometry | None) -> dict:
+    if pass_geo is None:
+        return {}
+    if pass_geo.measurement_type == "two_way_range":
+        return measurement_model_metadata(pass_geo)
+    metadata = measurement_model_metadata(pass_geo)
+    if pass_geo.measurement_metadata is not None:
+        metadata.update(pass_geo.measurement_metadata)
+    return metadata
+
+
+def _history_domain_records_from_metadata(
+    metadata: dict,
+) -> tuple[HistoryDomainDropRecord, ...]:
+    records = []
+    for record in metadata.get("history_domain_drop_records", ()):
+        if isinstance(record, HistoryDomainDropRecord):
+            records.append(record)
+        else:
+            records.append(HistoryDomainDropRecord(**dict(record)))
+    return tuple(records)
+
+
+def _with_history_domain_aggregate(
+    arc: PreparedArc,
+    aggregate: dict,
+) -> PreparedArc:
+    metadata = _attached_measurement_metadata(arc.pass_geo)
+    metadata.update(aggregate)
+    return replace(
+        arc,
+        pass_geo=replace(arc.pass_geo, measurement_metadata=metadata),
+    )
+
+
+def _history_domain_scenario_fields(
+    metadata: dict,
+    measurement_type: MeasurementType,
+) -> dict:
+    dropped = int(metadata.get("history_domain_dropped_measurements", 0))
+    records = tuple(
+        (
+            dict(record)
+            if not isinstance(record, HistoryDomainDropRecord)
+            else record.as_dict()
+        )
+        for record in metadata.get("history_domain_drop_records", ())
+    )
+    return {
+        "history_domain_dropped_measurements": dropped,
+        "history_domain_position_drops": int(
+            metadata.get(
+                "history_domain_position_drops",
+                dropped if measurement_type == "position" else 0,
+            )
+        ),
+        "history_domain_range_rate_drops": int(
+            metadata.get(
+                "history_domain_range_rate_drops",
+                dropped if measurement_type == "range_rate" else 0,
+            )
+        ),
+        "history_domain_required_pre_roll_s": float(
+            metadata.get("history_domain_required_pre_roll_s", 0.0)
+        ),
+        "history_domain_required_post_roll_s": float(
+            metadata.get("history_domain_required_post_roll_s", 0.0)
+        ),
+        "history_domain_all_measurement_arcs_empty": bool(
+            metadata.get("history_domain_all_measurement_arcs_empty", False)
+        ),
+        "history_domain_drop_records": records,
+    }
 
 
 def _resolve_range_rate_physics(
@@ -558,8 +688,10 @@ def run_batch_arc_sequence(
         if arcs and measurement_type == "range_rate":
             _rr_physics = range_rate_physics_config(arcs[0].pass_geo.range_rate_physics)
         _pass_geo0 = arcs[0].pass_geo if arcs else None
-        _measurement_meta = (
-            {} if _pass_geo0 is None else measurement_model_metadata(_pass_geo0)
+        _measurement_meta = _attached_measurement_metadata(_pass_geo0)
+        _history_domain_fields = _history_domain_scenario_fields(
+            _measurement_meta,
+            measurement_type,
         )
         return ScenarioResult(
             label=label,
@@ -617,6 +749,7 @@ def run_batch_arc_sequence(
             aberration_local_jacobian_step=float(
                 _measurement_meta.get("aberration_local_jacobian_step", float("nan"))
             ),
+            **_history_domain_fields,
         )
 
     for arc_index, arc in enumerate(arcs):
@@ -1051,7 +1184,11 @@ def run_batch_arc_sequence(
     if arcs and measurement_type == "range_rate":
         result_rr_physics = range_rate_physics_config(arcs[0].pass_geo.range_rate_physics)
     pass_geo0 = arcs[0].pass_geo if arcs else None
-    measurement_meta = {} if pass_geo0 is None else measurement_model_metadata(pass_geo0)
+    measurement_meta = _attached_measurement_metadata(pass_geo0)
+    history_domain_fields = _history_domain_scenario_fields(
+        measurement_meta,
+        measurement_type,
+    )
 
     return ScenarioResult(
         label=label,
@@ -1109,6 +1246,7 @@ def run_batch_arc_sequence(
         aberration_local_jacobian_step=float(
             measurement_meta.get("aberration_local_jacobian_step", float("nan"))
         ),
+        **history_domain_fields,
     )
 
 

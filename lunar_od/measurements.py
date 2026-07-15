@@ -9,6 +9,12 @@ from numpy.typing import ArrayLike
 
 from .geometry import ecef2razel_sez, ecef2sez_dcm, wrap_to_pi
 from .accelerated import apply_stm_to_jacobian, geometric_range_rate_observables, position_observables
+from .history_domain import (
+    HistoryDomainDropRecord,
+    HistoryDomainError,
+    normalize_supported_epoch,
+    summarize_history_domain_drops,
+)
 from .radiometrics import (
     RangeRatePhysicsConfig,
     _interp_state_transition_position,
@@ -44,6 +50,14 @@ JACOBIAN_MODELS = (
 # defaults (1e-10 s / 20), which belong to the range-rate measurement family.
 ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12
 ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10
+# FA-03B (P0B-2B): every one-way PRODUCTION history lookup — solver probes,
+# final state re-queries, and STM interpolation — passes through the shared
+# closed-support guard. The metadata policy label below names the contract:
+# closed interval, exact endpoints accepted, at most MAX_BOUNDARY_ULPS
+# representable steps normalized onto an endpoint, everything farther raises
+# HistoryDomainError before any extrapolation. Raw solvers stay generic.
+HISTORY_DOMAIN_POLICY = "strict_closed_support_two_ulp_endpoint"
+
 # FA-03A dual convergence criterion: the fixed-point update tolerance alone
 # can be satisfied by a stalled or trivially-looping iterate, so the solver
 # additionally requires the light-time equation residual
@@ -290,6 +304,15 @@ def measurement_model_metadata(
             if pass_geo.measurement_type == "position"
             else float(rr.light_time_equation_tolerance_s)
         ),
+        # FA-03B (P0B-2): history-domain policy and per-pass drop aggregates.
+        # Defaults describe a no-drop pass; generators overwrite the dynamic
+        # fields when candidates were dropped for unsupported history epochs.
+        "history_domain_policy": HISTORY_DOMAIN_POLICY,
+        "history_domain_dropped_measurements": 0,
+        "history_domain_drop_records": (),
+        "history_domain_required_pre_roll_s": 0.0,
+        "history_domain_required_post_roll_s": 0.0,
+        "history_domain_all_candidates_dropped": False,
         "count_interval_s": float(rr.count_interval_s),
         "uplink_frequency_hz": float(rr.uplink_frequency_hz),
         "turnaround_ratio": float(rr.turnaround_ratio),
@@ -465,6 +488,46 @@ def _require_one_way_light_time_convergence(
     )
 
 
+def _one_way_history_support(t_grid_s: ArrayLike) -> tuple[float, float]:
+    t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
+    return float(t_grid[0]), float(t_grid[-1])
+
+
+def _guarded_spacecraft_state_lookup(
+    t_grid_s: ArrayLike,
+    state_history_mci: ArrayLike,
+    *,
+    consumer: str,
+    observation_index: int | None = None,
+):
+    """Strict FA-03B production wrapper around ``interp_state_history``.
+
+    Every evaluation — including intermediate solver probes and final
+    re-queries — is domain-checked first, so the first unsupported probe
+    raises :class:`HistoryDomainError` before any extrapolation happens and
+    without touching the solver's event variable. The raw
+    ``interp_state_history`` helper keeps its generic (M3/diagnostic)
+    behavior; only production one-way consumers route through this wrapper.
+    """
+    t_grid = np.asarray(t_grid_s, dtype=float)
+    support_start_s, support_end_s = _one_way_history_support(t_grid)
+
+    def lookup(epoch_s: float) -> np.ndarray:
+        normalized = normalize_supported_epoch(
+            epoch_s,
+            support_start_s,
+            support_end_s,
+            history_name="spacecraft_state",
+            model_context="one_way_light_time",
+            consumer=consumer,
+            event_label="transmit",
+            observation_index=observation_index,
+        )
+        return interp_state_history(t_grid, state_history_mci, normalized)
+
+    return lookup
+
+
 def one_way_light_time_range_sensitivity(
     receive_time_s: float,
     station,
@@ -497,10 +560,15 @@ def one_way_light_time_range_sensitivity(
     station_rel_state_j2000 = np.linalg.solve(x_rx, station_ecef_state)
     station_mci_rx = earth_pos_mci_rx + station_rel_state_j2000[:3]
 
+    state_lookup = _guarded_spacecraft_state_lookup(
+        t_grid_s,
+        state_history_mci,
+        consumer="one_way_light_time_range_sensitivity",
+    )
     solution = solve_one_way_light_time(
         receive_time_s,
         station_mci_rx,
-        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
+        lambda t: state_lookup(t)[:3],
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
@@ -515,7 +583,7 @@ def one_way_light_time_range_sensitivity(
         context="sensitivity solve",
     )
 
-    state_tx = interp_state_history(t_grid_s, state_history_mci, solution.transmit_time_s)
+    state_tx = state_lookup(solution.transmit_time_s)
     rho_vec = state_tx[:3] - station_mci_rx
     range_m = float(np.linalg.norm(rho_vec))
     if range_m <= 0.0:
@@ -625,11 +693,22 @@ def one_way_light_time_initial_state_sensitivity(
         max_iter=max_iter,
         equation_tolerance_s=equation_tolerance_s,
     )
-    phi_r_tx = _interp_state_transition_position(
-        t_grid_s, phi_history, solution.transmit_time_s
+    # FA-03B + T009 contract: the spacecraft state and the STM position block
+    # must share one identical normalized transmit epoch (both histories live
+    # on the same grid, so a single closed-support normalization serves both).
+    support_start_s, support_end_s = _one_way_history_support(t_grid_s)
+    normalized_tx = normalize_supported_epoch(
+        solution.transmit_time_s,
+        support_start_s,
+        support_end_s,
+        history_name="spacecraft_state",
+        model_context="one_way_light_time",
+        consumer="one_way_light_time_initial_state_sensitivity",
+        event_label="transmit",
     )
+    phi_r_tx = _interp_state_transition_position(t_grid_s, phi_history, normalized_tx)
     spacecraft_state_tx = interp_state_history(
-        t_grid_s, state_history_mci, solution.transmit_time_s
+        t_grid_s, state_history_mci, normalized_tx
     )
     station_position_rx = _station_position_mci_at_receive_epoch(
         station, earth_pos_mci_rx, x_j2k_itrf_rx
@@ -836,9 +915,11 @@ def one_way_light_time_position_local_state_jacobian(
         max_iter=max_iter,
         equation_tolerance_s=equation_tolerance_s,
     )
-    spacecraft_state_tx = interp_state_history(
-        t_grid_s, state_history_mci, solution.transmit_time_s
-    )
+    spacecraft_state_tx = _guarded_spacecraft_state_lookup(
+        t_grid_s,
+        state_history_mci,
+        consumer="one_way_light_time_position_local_state_jacobian",
+    )(solution.transmit_time_s)
     station_position_rx = _station_position_mci_at_receive_epoch(
         station, earth_pos_mci_rx, x_j2k_itrf_rx
     )
@@ -1125,6 +1206,7 @@ def _apparent_position_observable(
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
     equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
+    observation_index: int | None = None,
 ) -> tuple[np.ndarray, float, float, int]:
     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
 
@@ -1132,9 +1214,12 @@ def _apparent_position_observable(
     the Earth centre, station, and topocentric SEZ frame are evaluated at the
     receive time ``t_r``. ``earth_pos_mci_rx`` and ``x_j2k_itrf_rx`` are the
     receive-epoch values (already indexed, not interpolated). The transmit-time
-    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``;
-    linear extrapolation is used when ``t_t`` falls just before the grid start
-    (e.g. at the first receive epoch).
+    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``
+    strictly inside its support (FA-03B): a ``t_t`` outside the propagated
+    history raises :class:`~lunar_od.history_domain.HistoryDomainError`
+    instead of extrapolating (generation drops such candidates with a
+    structured record; a small caller-owned pre-roll of the propagation is
+    the supported way to serve early receive epochs).
 
     When ``apply_stellar`` is set, the converged-light-time inertial line of
     sight is additionally rotated by the reception-case stellar aberration
@@ -1157,10 +1242,16 @@ def _apparent_position_observable(
     station_rel_j2000 = station_rel_state_j2000[:3]
     station_mci_rx = earth_pos_mci_rx + station_rel_j2000
 
+    state_lookup = _guarded_spacecraft_state_lookup(
+        t_grid_s,
+        state_history_mci,
+        consumer="_apparent_position_observable",
+        observation_index=observation_index,
+    )
     solution = solve_one_way_light_time(
         receive_time_s,
         station_mci_rx,
-        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
+        lambda t: state_lookup(t)[:3],
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
@@ -1175,7 +1266,7 @@ def _apparent_position_observable(
         context="observable solve",
     )
     transmit_time_s = solution.transmit_time_s
-    r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
+    r_sc_tt = state_lookup(transmit_time_s)[:3]
 
     if apply_stellar:
         if observer_earth_vel_rx is None:
@@ -1264,9 +1355,15 @@ def _apparent_position_rowwise(
                 earth_vel[time_idx] if (use_stellar and earth_vel is not None) else None
             ),
             apply_stellar=use_stellar,
+            observation_index=i,
         )
         h_meas[i] = z
-        r_tx[i] = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]
+        r_tx[i] = _guarded_spacecraft_state_lookup(
+            pass_geo.t_s,
+            state_history_mci,
+            consumer="_apparent_position_rowwise",
+            observation_index=i,
+        )(transmit_time_s)[:3]
     return h_meas, r_tx
 
 
@@ -1343,6 +1440,8 @@ def generate_position_measurements(
     rng = rng or np.random.default_rng()
 
     obs_counter = 0
+    candidate_counter = 0
+    drop_records: list[HistoryDomainDropRecord] = []
     for k, t_s in enumerate(t_pass_s):
         x_j2k_itrf = np.asarray(spice.sxform("J2000", "ITRF93", float(et0 + t_s)), dtype=float)
         xforms[k, :, :] = x_j2k_itrf
@@ -1363,29 +1462,11 @@ def generate_position_measurements(
 
         for station_col in active_station_cols:
             station = stations[station_col]
-            if apply_light_time:
-                if apply_stellar_aberration:
-                    obs_earth_vel = (
-                        v_earth_ssb_j2000[k]
-                        if stellar_aberration_model == "spice_ssb"
-                        else v_earth_mci[k]
-                    )
-                else:
-                    obs_earth_vel = None
-                z_clean, _t_t, _lt, _it = _apparent_position_observable(
-                    float(t_s), station, t_pass_s, state_history_mci,
-                    r_earth_mci[k], x_j2k_itrf,
-                    observer_earth_vel_rx=obs_earth_vel,
-                    apply_stellar=apply_stellar_aberration,
-                )
-            else:
-                rho_vec_ecef = r_sat_ecef - station.r_ecef_m
-                az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
-                z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
-
-            bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
-            if bias_vec.size != 3:
-                bias_vec = np.zeros(3)
+            # FA-03B RNG contract: each visible candidate owns one potential
+            # observation row and consumes its noise draws BEFORE the model
+            # evaluation, so a dropped candidate leaves later surviving noisy
+            # rows bit-identical to a pre-rolled run where every candidate
+            # had valid history. Physics calls never consume RNG.
             if noise:
                 noise_vec = np.array(
                     [
@@ -1397,6 +1478,45 @@ def generate_position_measurements(
                 )
             else:
                 noise_vec = np.zeros(3)
+
+            try:
+                if apply_light_time:
+                    if apply_stellar_aberration:
+                        obs_earth_vel = (
+                            v_earth_ssb_j2000[k]
+                            if stellar_aberration_model == "spice_ssb"
+                            else v_earth_mci[k]
+                        )
+                    else:
+                        obs_earth_vel = None
+                    z_clean, _t_t, _lt, _it = _apparent_position_observable(
+                        float(t_s), station, t_pass_s, state_history_mci,
+                        r_earth_mci[k], x_j2k_itrf,
+                        observer_earth_vel_rx=obs_earth_vel,
+                        apply_stellar=apply_stellar_aberration,
+                        observation_index=candidate_counter,
+                    )
+                else:
+                    rho_vec_ecef = r_sat_ecef - station.r_ecef_m
+                    az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+                    z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
+            except HistoryDomainError as domain_error:
+                drop_records.append(
+                    HistoryDomainDropRecord.from_error(
+                        domain_error,
+                        arc_id=arc_id,
+                        station_index=int(station_col),
+                        time_index=int(k),
+                        candidate_ordinal=candidate_counter,
+                    )
+                )
+                candidate_counter += 1
+                continue
+            candidate_counter += 1
+
+            bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
+            if bias_vec.size != 3:
+                bias_vec = np.zeros(3)
             z_noisy = z_clean + noise_vec + bias_vec
 
             station_id_1based = station_col + 1
@@ -1425,11 +1545,15 @@ def generate_position_measurements(
         companion_geometry="instantaneous",
         jacobian_model=jacobian_model,
     )
-    object.__setattr__(
-        pass_geo,
-        "measurement_metadata",
-        measurement_model_metadata(pass_geo, noise_enabled=noise, noise_seed=noise_seed),
+    metadata = measurement_model_metadata(
+        pass_geo, noise_enabled=noise, noise_seed=noise_seed
     )
+    if drop_records:
+        metadata.update(summarize_history_domain_drops(drop_records))
+        metadata["history_domain_all_candidates_dropped"] = bool(
+            candidate_counter > 0 and obs_counter == 0
+        )
+    object.__setattr__(pass_geo, "measurement_metadata", metadata)
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
 
@@ -1597,6 +1721,8 @@ def generate_range_rate_measurements(
     rng = rng or np.random.default_rng()
 
     obs_counter = 0
+    candidate_counter = 0
+    drop_records: list[HistoryDomainDropRecord] = []
     for k, t_s in enumerate(t_pass_s):
         active_station_cols = np.where(vis_mask_raw[k, :])[0]
         if active_station_cols.size == 0:
@@ -1614,39 +1740,9 @@ def generate_range_rate_measurements(
             rho_vec_ecef = r_sat_ecef - station.r_ecef_m
             rho_dot_ecef = v_sat_ecef
 
-            if companion_geometry == "instantaneous":
-                range_ideal = float(np.linalg.norm(rho_vec_ecef))
-                az_ideal, el_ideal, _ = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
-            else:
-                range_ideal, az_ideal, el_ideal = _range_rate_companion_observable(
-                    float(t_s),
-                    station,
-                    t_pass_s,
-                    state_history_mci,
-                    r_earth_mci[k],
-                    xforms[k, :, :],
-                    companion_geometry=companion_geometry,
-                )
-            if rr_physics.mode == "geometric_instantaneous":
-                rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
-            else:
-                rr_ideal = two_way_counted_doppler_observable(
-                    float(t_s),
-                    station,
-                    t_pass_s,
-                    state_history_mci,
-                    r_earth_mci,
-                    v_earth_mci,
-                    xforms,
-                    rr_physics,
-                )
-
-            station_bias = np.asarray(getattr(station, "bias", []), dtype=float).reshape(-1)
-            if station_bias.size == 4:
-                bias_vec = station_bias
-            else:
-                bias_vec = np.array([bias_range_m, bias_rr_mps, bias_az_rad, bias_el_rad], dtype=float)
-
+            # FA-03B RNG contract (see the position generator): four draws
+            # per candidate, consumed before the model evaluation, in
+            # range/range-rate/azimuth/elevation order.
             if noise:
                 noise_vec = np.array(
                     [
@@ -1659,6 +1755,53 @@ def generate_range_rate_measurements(
                 )
             else:
                 noise_vec = np.zeros(4)
+
+            try:
+                if companion_geometry == "instantaneous":
+                    range_ideal = float(np.linalg.norm(rho_vec_ecef))
+                    az_ideal, el_ideal, _ = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+                else:
+                    range_ideal, az_ideal, el_ideal = _range_rate_companion_observable(
+                        float(t_s),
+                        station,
+                        t_pass_s,
+                        state_history_mci,
+                        r_earth_mci[k],
+                        xforms[k, :, :],
+                        companion_geometry=companion_geometry,
+                    )
+                if rr_physics.mode == "geometric_instantaneous":
+                    rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
+                else:
+                    rr_ideal = two_way_counted_doppler_observable(
+                        float(t_s),
+                        station,
+                        t_pass_s,
+                        state_history_mci,
+                        r_earth_mci,
+                        v_earth_mci,
+                        xforms,
+                        rr_physics,
+                    )
+            except HistoryDomainError as domain_error:
+                drop_records.append(
+                    HistoryDomainDropRecord.from_error(
+                        domain_error,
+                        arc_id=arc_id,
+                        station_index=int(station_col),
+                        time_index=int(k),
+                        candidate_ordinal=candidate_counter,
+                    )
+                )
+                candidate_counter += 1
+                continue
+            candidate_counter += 1
+
+            station_bias = np.asarray(getattr(station, "bias", []), dtype=float).reshape(-1)
+            if station_bias.size == 4:
+                bias_vec = station_bias
+            else:
+                bias_vec = np.array([bias_range_m, bias_rr_mps, bias_az_rad, bias_el_rad], dtype=float)
 
             z = np.array([range_ideal, rr_ideal, az_ideal, el_ideal], dtype=float) + bias_vec + noise_vec
             station_id_1based = station_col + 1
@@ -1681,11 +1824,15 @@ def generate_range_rate_measurements(
         companion_geometry=companion_geometry,
         jacobian_model=jacobian_model,
     )
-    object.__setattr__(
-        pass_geo,
-        "measurement_metadata",
-        measurement_model_metadata(pass_geo, noise_enabled=noise, noise_seed=noise_seed),
+    metadata = measurement_model_metadata(
+        pass_geo, noise_enabled=noise, noise_seed=noise_seed
     )
+    if drop_records:
+        metadata.update(summarize_history_domain_drops(drop_records))
+        metadata["history_domain_all_candidates_dropped"] = bool(
+            candidate_counter > 0 and obs_counter == 0
+        )
+    object.__setattr__(pass_geo, "measurement_metadata", metadata)
     return obs_data[:obs_counter, :], pass_geo
 
 

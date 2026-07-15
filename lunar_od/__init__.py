@@ -48,6 +48,13 @@ from .accelerated import (
     position_observables,
     visibility_mask_ecef,
 )
+from .history_domain import (
+    HistoryDomainDropRecord,
+    HistoryDomainError,
+    MAX_BOUNDARY_ULPS,
+    normalize_supported_epoch,
+    summarize_history_domain_drops,
+)
 from .measurements import (
     C_LIGHT_MPS,
     ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
@@ -298,6 +305,11 @@ __all__ = [
     "PassGeometry",
     "LightTimeSolution",
     "LightTimeConvergenceError",
+    "HistoryDomainDropRecord",
+    "HistoryDomainError",
+    "MAX_BOUNDARY_ULPS",
+    "normalize_supported_epoch",
+    "summarize_history_domain_drops",
     "MeasurementJacobianError",
     "OneWayLightTimeInitialStateSensitivity",
     "OneWayLightTimeSensitivity",

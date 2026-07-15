@@ -104,6 +104,12 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                 "operational_category",
                 "final_error_acceptable",
                 "condition_acceptable",
+                "history_domain_dropped_measurements",
+                "history_domain_position_drops",
+                "history_domain_range_rate_drops",
+                "history_domain_required_pre_roll_s",
+                "history_domain_required_post_roll_s",
+                "history_domain_all_measurement_arcs_empty",
             ]
         )
         for scenario in scenarios:
@@ -201,6 +207,12 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                         result.operational_category,
                         result.final_error_acceptable,
                         result.condition_acceptable,
+                        scenario.history_domain_dropped_measurements,
+                        scenario.history_domain_position_drops,
+                        scenario.history_domain_range_rate_drops,
+                        scenario.history_domain_required_pre_roll_s,
+                        scenario.history_domain_required_post_roll_s,
+                        scenario.history_domain_all_measurement_arcs_empty,
                     ]
                 )
 
