@@ -606,7 +606,35 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
     return model
 
 
+def validate_official_earth_j2_support(enable_earth_j2: bool, *, context: str) -> None:
+    """Reject Earth J2 on official OD paths until a real Earth orientation exists (R0A).
+
+    Shared fail-closed gate for both enforcement layers: the scenario-config
+    loader (``_validate_cross_field_rules``) and the JSON scenario runner
+    (``examples/run_scenario_config.py``), so directly constructed
+    ``ScenarioConfig`` objects cannot bypass the rule. The dynamics-layer
+    Earth-J2 terms currently use an identity J2000-to-Earth-body-fixed
+    orientation that is only an experimental direct-trajectory approximation,
+    not an IERS-compliant Earth orientation; the experimental direct-trajectory
+    API itself remains available outside the official scenario/desktop/UKF
+    paths. The rejection fires before any state/STM/sigma propagation.
+    """
+    if enable_earth_j2:
+        raise ValueError(
+            f"enable_earth_j2=True is not supported on the official OD path ({context}): "
+            "the current J2000-to-Earth-body-fixed orientation is an identity-matrix "
+            "experimental direct-trajectory approximation, not an IERS-compliant Earth "
+            "orientation. Keep enable_earth_j2=False (Earth J2 remains available only "
+            "through the experimental direct dynamics API) until a validated Earth "
+            "orientation contract is implemented."
+        )
+
+
 def _validate_cross_field_rules(config: ScenarioConfig) -> None:
+    # R0A fail-closed loader gate (also enforced by the JSON scenario runner).
+    validate_official_earth_j2_support(
+        config.enable_earth_j2, context="scenario_config cross-field validation"
+    )
     if config.start_mode == "sqrt_formal" and config.estimator_type != "srif":
         raise ValueError("sqrt_formal start_mode requires estimator_type='srif'.")
     if config.bias_mode is not None and config.estimator_type not in {"srif", "ukf"}:

@@ -790,6 +790,7 @@ def run_lunar_ukf(
     atol: float = 1e-12,
     fast_sigma_propagator: Callable | None = None,
     use_stm_linearization: bool = False,
+    j2_moon: float = 0.0,
 ) -> LunarUKFResult:
     """Run a sequential UKF over one prepared lunar OD arc.
 
@@ -797,6 +798,11 @@ def run_lunar_ukf(
     states follow the BLS/SRIF conventions: global_full, station_angles, or
     station_full. Bias states are modeled as constants unless process noise is
     supplied for them.
+
+    ``j2_moon`` enters the shared sigma/STM process propagation (both the
+    standard and square-root forms use the same process function). A caller
+    supplying ``fast_sigma_propagator`` owns that propagator's force model and
+    must build it with the same ``j2_moon`` (R0A).
     """
     start_time = perf_counter()
     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
@@ -915,6 +921,7 @@ def run_lunar_ukf(
                 get_sun_pos,
                 rtol=rtol,
                 atol=atol,
+                j2_moon=j2_moon,
             )[-1, :]
             unique_dynamic_propagations += 1
             propagation_cache[key] = propagated_dyn
@@ -929,6 +936,7 @@ def run_lunar_ukf(
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos,
                 rtol=rtol, atol=atol,
+                j2_moon=j2_moon,
             )[-1, :]
 
         if covariance_form == "square_root":

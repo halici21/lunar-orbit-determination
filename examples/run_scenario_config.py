@@ -78,6 +78,14 @@ def run_configured_scenario(
     cold_start_seed: int | None = None,
     cold_start_scale: float = 1.0,
 ):
+    # R0A runtime defense-in-depth: directly constructed ScenarioConfig objects
+    # bypass loader validation, so the Earth-J2 fail-closed gate must also fire
+    # here, before any file access, SPICE load, or propagation call.
+    from lunar_od.scenario_config import validate_official_earth_j2_support
+
+    validate_official_earth_j2_support(
+        config.enable_earth_j2, context="run_configured_scenario"
+    )
     fixture_path = Path("python_port") / "fixtures" / "spice_snapshots.json"
     if not fixture_path.is_file():
         raise FileNotFoundError(f"Fixture not found: {fixture_path}")
@@ -120,6 +128,7 @@ def run_configured_scenario(
             ephemeris,
             rtol=config.rtol,
             atol=config.atol,
+            j2_moon=config.j2_moon,
         )
         visibility_config = VisibilityConfig(
             r_moon_mean_m=float(initial["r_moon_mean_m"]),
@@ -203,6 +212,7 @@ def run_configured_scenario(
             ukf_bias_freeze_relative_information=config.ukf_bias_freeze_relative_information,
             ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
             ukf_bias_regularization_std=config.ukf_bias_regularization_std,
+            j2_moon=config.j2_moon,
         )
     finally:
         spice.kclear()
