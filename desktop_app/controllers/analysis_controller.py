@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
     QComboBox, QCheckBox, QSizePolicy, QProgressBar,
     QScrollArea, QMessageBox,
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, QSettings, pyqtSignal
 from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
@@ -324,6 +324,56 @@ class _AnalysisWorker(QThread):
         except Exception as exc:
             self.failed.emit(f"{exc}\n\n{traceback.format_exc()}")
 
+    def _build_variant_params(self, variant: "VariantSpec") -> dict:
+        """Resolve one variant into a config mapping.
+
+        Single source of truth for the variant->mapping interpretation, shared
+        by the preflight and the main run loop so the same mapping is never
+        interpreted two different ways (no contract drift).
+        """
+        params = {**self._base, **variant.overrides}
+        params["name"] = f"analysis_{self._spec.title}_{variant.label}"
+        params["estimator_type"] = self._spec.estimator
+        # light-time / stellar aberration apply only to position observables,
+        # and stellar requires light time — sanitize so variant overrides that
+        # switch the observable type cannot trip the config cross-field rules.
+        if params.get("measurement_type") != "position":
+            params["apply_light_time"] = False
+        if not params.get("apply_light_time", False):
+            params["apply_stellar_aberration"] = False
+        return params
+
+    def _preflight_variant_configs(
+        self, scenario_config_from_mapping, validate_official_earth_j2_support
+    ) -> list[tuple["VariantSpec", Any]]:
+        """Validate every variant mapping BEFORE any propagation (R0A-F1).
+
+        Earth J2 is fail-closed through the SAME shared scenario_config
+        validator the JSON loader uses (not a separate desktop rule): the
+        explicit gate runs outside the per-variant try/except, so an
+        unsupported Earth-J2 selection raises a controlled error here — before
+        any truth/state/STM/UKF/fast-sigma/BLS/SRIF/batch call — instead of
+        being swallowed. Returns the validated configs so the run loop reuses
+        them without re-interpreting the mapping.
+        """
+        preflighted: list[tuple[VariantSpec, Any]] = []
+        for variant in self._spec.variants:
+            params = self._build_variant_params(variant)
+            # Fail-closed Earth-J2 gate (shared validator); intentionally NOT
+            # inside the try/except below so it propagates before propagation.
+            validate_official_earth_j2_support(
+                bool(params.get("enable_earth_j2", False)),
+                context=f"desktop analysis variant '{variant.label}'",
+            )
+            try:
+                config = scenario_config_from_mapping(params)
+            except Exception as exc:
+                self.log_line.emit(f"  Config error ({variant.label}) — {exc}")
+                preflighted.append((variant, None))
+                continue
+            preflighted.append((variant, config))
+        return preflighted
+
     def _do_run(self) -> None:
         import spiceypy as spice
         from lunar_od import (
@@ -349,6 +399,15 @@ class _AnalysisWorker(QThread):
             THESIS_EPHEMERIS_STEP_S,
             THESIS_MAX_GAP_S,
             THESIS_MIN_ELEVATION_DEG,
+        )
+        from lunar_od.scenario_config import validate_official_earth_j2_support
+
+        # R0A-F1 preflight: validate every variant config (incl. the shared
+        # Earth-J2 fail-closed gate) before loading the fixture, SPICE, or any
+        # propagation. Reused below so the mapping is interpreted only once.
+        self.log_line.emit("Validating variant configurations…")
+        preflighted_configs = self._preflight_variant_configs(
+            scenario_config_from_mapping, validate_official_earth_j2_support
         )
 
         self.log_line.emit("Loading fixture…")
@@ -413,29 +472,18 @@ class _AnalysisWorker(QThread):
             # arcs when measurement-level parameters actually change between variants.
             arc_cache: dict[tuple, Any] = {}
 
-            n_total = len(self._spec.variants)
-            for vi, variant in enumerate(self._spec.variants):
+            n_total = len(preflighted_configs)
+            for vi, (variant, config) in enumerate(preflighted_configs):
                 if self._stop:
                     self.log_line.emit("Stopped.")
                     break
 
                 self.log_line.emit(f"[{vi + 1}/{n_total}] Variant: {variant.label}…")
 
-                params = {**self._base, **variant.overrides}
-                params["name"]           = f"analysis_{self._spec.title}_{variant.label}"
-                params["estimator_type"] = self._spec.estimator
-                # light-time / stellar aberration apply only to position observables,
-                # and stellar requires light time — sanitize so variant overrides that
-                # switch the observable type cannot trip the config cross-field rules.
-                if params.get("measurement_type") != "position":
-                    params["apply_light_time"] = False
-                if not params.get("apply_light_time", False):
-                    params["apply_stellar_aberration"] = False
-
-                try:
-                    config = scenario_config_from_mapping(params)
-                except Exception as exc:
-                    self.log_line.emit(f"  Config error — {exc}")
+                if config is None:
+                    # Preflight already reported this variant's config error and
+                    # left it out of the run; the Earth-J2 case never reaches
+                    # here (it aborts the whole preflight, fail-closed).
                     continue
 
                 stations = selected_stations
