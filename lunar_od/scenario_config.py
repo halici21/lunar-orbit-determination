@@ -8,6 +8,31 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from .constants import (
+    J2_EARTH_UNNORMALIZED,
+    MU_EARTH_M3S2,
+    MU_MOON_M3S2,
+    MU_SUN_M3S2,
+    R_EARTH_J2_REF_M,
+    R_MOON_M,
+)
+from .force_contract import (
+    FORCE_CONTRACT_SCHEMA_VERSION,
+    ConsumerReadiness,
+    ConsumerRole,
+    EarthJ2ForceContract,
+    ForceElementStatus,
+    ForceModelContract,
+    LunarHarmonicsForceContract,
+    LunarJ2ForceContract,
+    OrientationPolicy,
+    PointMassForceContract,
+    ThirdBodyForceContract,
+    capability_map,
+    lunar_j2_enabled,
+    sha256_hex_of_bytes,
+)
+
 from .filters import (
     UKFAdaptiveConfig,
     UnscentedTransformConfig,
@@ -562,18 +587,12 @@ def scenario_lunar_kernel_profile(config: ScenarioConfig) -> str:
     return _LUNAR_FRAME_TO_PROFILE[config.lunar_gravity_frame]
 
 
-def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGravityModel | None:
-    """Load the configured lunar gravity model once, at setup time.
+def resolve_lunar_gravity_model_path(config: ScenarioConfig) -> Path:
+    """Resolve the configured lunar gravity coefficient file to an existing path.
 
-    Returns ``None`` (touching no file) when ``enable_lunar_harmonics`` is
-    False.  Otherwise the model path is mandatory (no automatic model
-    selection): an absolute path is used as-is; a relative path is resolved
-    against ``resolve_gravity_dir()`` (env ``LUNAR_OD_GRAVITY_DIR`` ->
-    ``~/Documents/mice/gravity`` -> ``<python_port>/data/gravity``).  The
-    production loader is called exactly once; nothing here runs per-RHS.
+    Single source of truth for the resolution + existence contract, shared by
+    the model loader and the force-contract mapping so the two cannot drift.
     """
-    if not config.enable_lunar_harmonics:
-        return None
     if config.lunar_gravity_model_path is None:
         raise ValueError(
             "enable_lunar_harmonics=True requires lunar_gravity_model_path "
@@ -591,6 +610,22 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
             f"lunar gravity model file not found: {path} "
             f"(from lunar_gravity_model_path={config.lunar_gravity_model_path!r})."
         )
+    return path
+
+
+def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGravityModel | None:
+    """Load the configured lunar gravity model once, at setup time.
+
+    Returns ``None`` (touching no file) when ``enable_lunar_harmonics`` is
+    False.  Otherwise the model path is mandatory (no automatic model
+    selection): an absolute path is used as-is; a relative path is resolved
+    against ``resolve_gravity_dir()`` (env ``LUNAR_OD_GRAVITY_DIR`` ->
+    ``~/Documents/mice/gravity`` -> ``<python_port>/data/gravity``).  The
+    production loader is called exactly once; nothing here runs per-RHS.
+    """
+    if not config.enable_lunar_harmonics:
+        return None
+    path = resolve_lunar_gravity_model_path(config)
     model = load_lunar_gravity_model(
         path,
         nmax=config.lunar_gravity_nmax,
@@ -604,6 +639,164 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
             "with j2_moon != 0 would count J2 twice. Set j2_moon=0."
         )
     return model
+
+
+_HARMONICS_DISABLED_CONTRACT = LunarHarmonicsForceContract(
+    enabled=False,
+    model_identity="not_configured",
+    coefficient_file_sha256=None,
+    degree_nmax=None,
+    order_mmax=None,
+    normalization="not_applicable",
+    model_gravitational_parameter_m3_s2=None,
+    reference_radius_m=None,
+    body_frame="not_applicable",
+    kernel_profile_policy="not_applicable",
+    rotation_cadence_s=None,
+    rotation_margin_s=None,
+)
+
+
+def _lunar_harmonics_force_contract(config: ScenarioConfig) -> LunarHarmonicsForceContract:
+    """Build the harmonics contract, hashing coefficient CONTENT (never a path).
+
+    When harmonics are disabled the path-derived fields stay neutral so an
+    inert ``lunar_gravity_model_path`` cannot leak into the fingerprint.
+    """
+    if not config.enable_lunar_harmonics:
+        return _HARMONICS_DISABLED_CONTRACT
+    path = resolve_lunar_gravity_model_path(config)
+    model = scenario_lunar_gravity_model(config)
+    content_sha256 = sha256_hex_of_bytes(path.read_bytes())
+    metadata = dict(getattr(model, "metadata", {}) or {})
+    identity = str(
+        metadata.get("model_name")
+        or metadata.get("name")
+        or metadata.get("title")
+        or "unnamed_lunar_gravity_model"
+    )
+    return LunarHarmonicsForceContract(
+        enabled=True,
+        model_identity=identity,
+        coefficient_file_sha256=content_sha256,
+        degree_nmax=int(model.nmax),
+        order_mmax=int(model.mmax),
+        normalization=str(metadata.get("normalization", "fully_normalized_4pi")),
+        model_gravitational_parameter_m3_s2=float(model.mu_m3_s2),
+        reference_radius_m=float(model.r_ref_m),
+        body_frame=str(config.lunar_gravity_frame),
+        kernel_profile_policy=str(scenario_lunar_kernel_profile(config)),
+        rotation_cadence_s=float(config.lunar_gravity_rotation_cadence_s),
+        rotation_margin_s=(
+            None
+            if config.lunar_gravity_rotation_margin_s is None
+            else float(config.lunar_gravity_rotation_margin_s)
+        ),
+    )
+
+
+def _consumer_capabilities_for(
+    *, lunar_j2_on: bool, earth_j2_on: bool, harmonics_on: bool
+):
+    """Capability matrix for the configured force set.
+
+    Precedence is worst-status-first: an experimental or unsupported element
+    downgrades the roles it reaches, and R0B never reports a role as
+    ``verified`` on the strength of a force that R0A/R1 has not qualified
+    there. SCI-003 is NOT claimed closed anywhere in this matrix.
+    """
+    if harmonics_on:
+        # High-degree harmonics: direct truth trajectory only.
+        statuses = {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
+        statuses[ConsumerRole.TRUTH_STATE] = ConsumerReadiness.UNSUPPORTED
+        return capability_map(statuses)
+    if earth_j2_on:
+        # Earth J2 is unsupported on every official OD role (R0A fail-closed).
+        return capability_map(
+            {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
+        )
+    if lunar_j2_on:
+        # R0A verified the propagation roles; posterior/observability await R1.
+        statuses = {role: ConsumerReadiness.VERIFIED for role in ConsumerRole}
+        statuses[ConsumerRole.POSTERIOR_COVARIANCE] = ConsumerReadiness.PENDING_R1
+        statuses[ConsumerRole.OBSERVABILITY] = ConsumerReadiness.PENDING_R1
+        return capability_map(statuses)
+    # Point-mass + third-body only: the long-standing verified baseline.
+    return capability_map({role: ConsumerReadiness.VERIFIED for role in ConsumerRole})
+
+
+def force_model_contract_from_scenario_config(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float = MU_MOON_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
+) -> ForceModelContract:
+    """Derive the immutable force contract implied by ``config``.
+
+    Consumes every force-related ScenarioConfig field, turning implicit
+    defaults into explicit contract values. Gravitational parameters are
+    supplied by the caller because they come from the run fixture, not from
+    the scenario config. This function never calls a propagator.
+    """
+    j2_moon = float(config.j2_moon)
+    lunar_j2_on = lunar_j2_enabled(j2_moon)
+    earth_j2_on = bool(config.enable_earth_j2)
+    harmonics = _lunar_harmonics_force_contract(config)
+    return ForceModelContract(
+        schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
+        lunar_point_mass=PointMassForceContract(
+            enabled=True,
+            body="moon",
+            gravitational_parameter_m3_s2=float(mu_moon_m3_s2),
+            policy="central_body_point_mass",
+        ),
+        earth_third_body=ThirdBodyForceContract(
+            enabled=bool(mu_earth_m3_s2),
+            body="earth",
+            gravitational_parameter_m3_s2=float(mu_earth_m3_s2),
+            policy="moon_centered_third_body_point_mass",
+        ),
+        sun_third_body=ThirdBodyForceContract(
+            enabled=bool(mu_sun_m3_s2),
+            body="sun",
+            gravitational_parameter_m3_s2=float(mu_sun_m3_s2),
+            policy="moon_centered_third_body_point_mass",
+        ),
+        lunar_j2=LunarJ2ForceContract(
+            enabled=lunar_j2_on,
+            coefficient=j2_moon,
+            # The propagator pairs a nonzero J2 with R_MOON_M; a disabled term
+            # contributes no radius to the evaluated physics.
+            reference_radius_m=float(R_MOON_M) if lunar_j2_on else 0.0,
+            orientation_policy=(
+                OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE
+                if lunar_j2_on
+                else OrientationPolicy.NOT_APPLICABLE
+            ),
+            status=ForceElementStatus.SUPPORTED,
+        ),
+        earth_j2=EarthJ2ForceContract(
+            enabled=earth_j2_on,
+            mode=str(config.earth_j2_mode),
+            coefficient=float(J2_EARTH_UNNORMALIZED) if earth_j2_on else 0.0,
+            reference_radius_m=float(R_EARTH_J2_REF_M) if earth_j2_on else 0.0,
+            orientation_policy=(
+                OrientationPolicy.EXPERIMENTAL_IDENTITY_J2000_TO_EARTH_BODY_FIXED
+                if earth_j2_on
+                else OrientationPolicy.NOT_APPLICABLE
+            ),
+            status=ForceElementStatus.UNSUPPORTED_OFFICIAL_OD,
+        ),
+        lunar_harmonics=harmonics,
+        force_ephemeris_policy=str(force_ephemeris_policy),
+        consumer_capabilities=_consumer_capabilities_for(
+            lunar_j2_on=lunar_j2_on,
+            earth_j2_on=earth_j2_on,
+            harmonics_on=bool(config.enable_lunar_harmonics),
+        ),
+    )
 
 
 def validate_official_earth_j2_support(enable_earth_j2: bool, *, context: str) -> None:
