@@ -38,6 +38,7 @@ from lunar_od import (  # noqa: E402
     thesis_seed_for,
     write_scenario_summary_csv,
 )
+from lunar_od.force_contract import scenario_result_force_fields  # noqa: E402
 from lunar_od.thesis_matrix import (  # noqa: E402
     THESIS_COLD_START_SIGMA_POS_M,
     THESIS_COLD_START_SIGMA_VEL_MPS,
@@ -77,14 +78,26 @@ def run_configured_scenario(
     measurement_seed: int | None = None,
     cold_start_seed: int | None = None,
     cold_start_scale: float = 1.0,
+    truth_force_contract=None,
+    estimator_force_contract=None,
 ):
     # R0A runtime defense-in-depth: directly constructed ScenarioConfig objects
     # bypass loader validation, so the Earth-J2 fail-closed gate must also fire
     # here, before any file access, SPICE load, or propagation call.
-    from lunar_od.scenario_config import validate_official_earth_j2_support
+    from lunar_od.scenario_config import (
+        scenario_force_model_preflight,
+        validate_official_earth_j2_support,
+    )
 
     validate_official_earth_j2_support(
         config.enable_earth_j2, context="run_configured_scenario"
+    )
+    # R0B-2 force-model parity preflight, before fixture/SPICE/propagation.
+    force_parity = scenario_force_model_preflight(
+        config,
+        truth_contract=truth_force_contract,
+        estimator_contract=estimator_force_contract,
+        context="run_configured_scenario force-model preflight",
     )
     fixture_path = Path("python_port") / "fixtures" / "spice_snapshots.json"
     if not fixture_path.is_file():
@@ -186,7 +199,7 @@ def run_configured_scenario(
             ),
         )
         ukf_transform_config, ukf_adaptive_config = scenario_ukf_configs(config)
-        return run_batch_arc_sequence(
+        scenario_result = run_batch_arc_sequence(
             arcs,
             config.measurement_type,
             config.start_mode,
@@ -213,6 +226,9 @@ def run_configured_scenario(
             ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
             ukf_bias_regularization_std=config.ukf_bias_regularization_std,
             j2_moon=config.j2_moon,
+        )
+        return replace(
+            scenario_result, **scenario_result_force_fields(force_parity)
         )
     finally:
         spice.kclear()

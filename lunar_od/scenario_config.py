@@ -23,12 +23,15 @@ from .force_contract import (
     EarthJ2ForceContract,
     ForceElementStatus,
     ForceModelContract,
+    ForceModelMismatchPolicy,
+    ForceModelParityDecision,
     LunarHarmonicsForceContract,
     LunarJ2ForceContract,
     OrientationPolicy,
     PointMassForceContract,
     ThirdBodyForceContract,
     capability_map,
+    evaluate_force_model_parity,
     lunar_j2_enabled,
     sha256_hex_of_bytes,
 )
@@ -156,6 +159,11 @@ class ScenarioConfig:
     lunar_gravity_rotation_cadence_s: float = 60.0
     lunar_gravity_rotation_margin_s: float | None = None
     lunar_gravity_kernel_profile: str | None = None
+    # Run-level force-model execution policy (R0B-2). Deliberately NOT part of
+    # ForceModelContract: the contract describes physics, this describes what
+    # the run is permitted to do with it.
+    allow_explicit_force_model_mismatch: bool = False
+    force_model_mismatch_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -255,6 +263,8 @@ def scenario_config_schema() -> dict[str, Any]:
                 "enum": list(ALLOWED_LUNAR_KERNEL_PROFILES),
                 "default": None,
             },
+            "allow_explicit_force_model_mismatch": {"type": "boolean", "default": False},
+            "force_model_mismatch_reason": {"type": ["string", "null"], "default": None},
         },
     }
 
@@ -485,6 +495,13 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         ),
         lunar_gravity_kernel_profile=_lunar_kernel_profile(
             payload.get("lunar_gravity_kernel_profile", None)
+        ),
+        allow_explicit_force_model_mismatch=_boolean(
+            payload.get("allow_explicit_force_model_mismatch", False),
+            "allow_explicit_force_model_mismatch",
+        ),
+        force_model_mismatch_reason=_optional_reason(
+            payload.get("force_model_mismatch_reason", None)
         ),
     )
     _validate_cross_field_rules(config)
@@ -796,6 +813,57 @@ def force_model_contract_from_scenario_config(
             earth_j2_on=earth_j2_on,
             harmonics_on=bool(config.enable_lunar_harmonics),
         ),
+    )
+
+
+def _optional_reason(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("force_model_mismatch_reason must be a string or null.")
+    return value
+
+
+def force_model_mismatch_policy_from_scenario_config(
+    config: ScenarioConfig,
+) -> ForceModelMismatchPolicy:
+    """Return the run-level mismatch policy declared by ``config``."""
+    return ForceModelMismatchPolicy(
+        enabled=bool(config.allow_explicit_force_model_mismatch),
+        reason=config.force_model_mismatch_reason,
+    )
+
+
+def scenario_force_model_preflight(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float = MU_MOON_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    truth_contract: ForceModelContract | None = None,
+    estimator_contract: ForceModelContract | None = None,
+    context: str = "scenario force-model preflight",
+) -> ForceModelParityDecision:
+    """Shared truth/estimator force-parity preflight (JSON runner + desktop).
+
+    Both official entry points call THIS helper so the contract is never
+    reproduced two different ways. Contracts default to the one implied by
+    ``config`` (the matched case); campaigns that deliberately propagate truth
+    with different physics pass an explicit ``truth_contract``.
+
+    Raises before any fixture read, SPICE load, or propagation.
+    """
+    derived = force_model_contract_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon_m3_s2,
+        mu_earth_m3_s2=mu_earth_m3_s2,
+        mu_sun_m3_s2=mu_sun_m3_s2,
+    )
+    return evaluate_force_model_parity(
+        truth_contract if truth_contract is not None else derived,
+        estimator_contract if estimator_contract is not None else derived,
+        force_model_mismatch_policy_from_scenario_config(config),
+        context=context,
     )
 
 

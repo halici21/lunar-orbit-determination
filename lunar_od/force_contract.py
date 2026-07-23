@@ -49,6 +49,15 @@ __all__ = [
     "canonical_json_bytes",
     "force_model_fingerprint",
     "sha256_hex_of_bytes",
+    "ESTIMATOR_CONSUMER_ROLES",
+    "ForceModelParityError",
+    "ForceModelMismatchPolicy",
+    "ForceModelParityDecision",
+    "evaluate_force_model_parity",
+    "force_model_manifest",
+    "manifest_canonical_bytes",
+    "manifest_sha256",
+    "scenario_result_force_fields",
 ]
 
 
@@ -319,3 +328,194 @@ def sha256_hex_of_bytes(data: bytes) -> str:
 def force_model_fingerprint(contract: ForceModelContract) -> str:
     """Return the deterministic ``sha256:<hex>`` force fingerprint."""
     return sha256_hex_of_bytes(canonical_json_bytes(contract))
+
+
+# ---------------------------------------------------------------------------
+# Parity enforcement (R0B-2)
+# ---------------------------------------------------------------------------
+
+#: Roles that decide whether an ESTIMATOR can consume a force model. The truth
+#: side is governed by the per-element status instead, so a high-fidelity truth
+#: trajectory can still drive an explicitly declared mismatch campaign.
+ESTIMATOR_CONSUMER_ROLES = (
+    ConsumerRole.ESTIMATOR_STATE,
+    ConsumerRole.ESTIMATOR_STM,
+    ConsumerRole.UKF_STANDARD,
+    ConsumerRole.UKF_SQUARE_ROOT,
+    ConsumerRole.UKF_FAST_SIGMA,
+)
+
+
+class ForceModelParityError(ForceContractError):
+    """Truth/estimator force models are not an allowed combination."""
+
+
+@dataclass(frozen=True)
+class ForceModelMismatchPolicy:
+    """Run-level permission to evaluate different truth/estimator physics.
+
+    Deliberately NOT part of ``ForceModelContract``: the contract describes the
+    physics, this describes what a run is allowed to do with it. Opt-in never
+    bypasses an unsupported capability.
+    """
+
+    enabled: bool = False
+    reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.enabled and not (self.reason or "").strip():
+            raise ForceModelParityError(
+                "allow_explicit_force_model_mismatch=True requires a non-empty "
+                "force_model_mismatch_reason describing the planned campaign."
+            )
+        if not self.enabled and self.reason is not None:
+            object.__setattr__(self, "reason", self.reason or None)
+
+
+@dataclass(frozen=True)
+class ForceModelParityDecision:
+    """Outcome of the pre-execution truth/estimator force comparison."""
+
+    schema_version: str
+    truth_fingerprint: str
+    estimator_fingerprint: str
+    match: bool
+    policy: ForceModelMismatchPolicy
+    manifest: Mapping[str, Any]
+    manifest_sha256: str
+
+    @property
+    def explicit_mismatch(self) -> bool:
+        return bool(self.policy.enabled and not self.match)
+
+
+def _unsupported_estimator_roles(contract: ForceModelContract) -> list[ConsumerRole]:
+    return [
+        role
+        for role in ESTIMATOR_CONSUMER_ROLES
+        if contract.consumer_capabilities[role] is ConsumerReadiness.UNSUPPORTED
+    ]
+
+
+def evaluate_force_model_parity(
+    truth_contract: ForceModelContract,
+    estimator_contract: ForceModelContract,
+    policy: ForceModelMismatchPolicy | None = None,
+    *,
+    context: str = "force-model parity preflight",
+) -> ForceModelParityDecision:
+    """Compare truth/estimator force models before anything is propagated.
+
+    Order of gates (both fail closed):
+
+    1. capability -- the estimator contract must not rely on a force whose
+       estimator-side roles are ``unsupported``. Mismatch opt-in cannot bypass
+       this, so high-degree harmonics can never enter the estimator.
+    2. parity -- differing fingerprints require an explicit opt-in plus a
+       non-empty reason.
+    """
+    policy = policy or ForceModelMismatchPolicy()
+    unsupported = _unsupported_estimator_roles(estimator_contract)
+    if unsupported:
+        raise ForceModelParityError(
+            f"{context}: the estimator force model is unsupported for role(s) "
+            + ", ".join(role.value for role in unsupported)
+            + ". This capability gate cannot be bypassed by "
+            "allow_explicit_force_model_mismatch."
+        )
+    truth_fingerprint = force_model_fingerprint(truth_contract)
+    estimator_fingerprint = force_model_fingerprint(estimator_contract)
+    match = truth_fingerprint == estimator_fingerprint
+    if not match and not policy.enabled:
+        raise ForceModelParityError(
+            f"{context}: truth force fingerprint {truth_fingerprint} does not match "
+            f"estimator force fingerprint {estimator_fingerprint}. Set "
+            "allow_explicit_force_model_mismatch=True with a "
+            "force_model_mismatch_reason to run this as a declared "
+            "force-model mismatch campaign."
+        )
+    manifest = force_model_manifest(
+        truth_contract, estimator_contract, policy, match=match
+    )
+    return ForceModelParityDecision(
+        schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
+        truth_fingerprint=truth_fingerprint,
+        estimator_fingerprint=estimator_fingerprint,
+        match=match,
+        policy=policy,
+        manifest=MappingProxyType(manifest),
+        manifest_sha256=manifest_sha256(manifest),
+    )
+
+
+def _contract_manifest_section(contract: ForceModelContract) -> dict[str, Any]:
+    payload = to_canonical_payload(contract)
+    return {
+        "fingerprint": force_model_fingerprint(contract),
+        "canonical_payload": payload,
+        "consumer_capabilities": payload["consumer_capabilities"],
+    }
+
+
+def force_model_manifest(
+    truth_contract: ForceModelContract,
+    estimator_contract: ForceModelContract,
+    policy: ForceModelMismatchPolicy | None = None,
+    *,
+    match: bool | None = None,
+) -> dict[str, Any]:
+    """Build the deterministic, path-free force-model manifest payload."""
+    policy = policy or ForceModelMismatchPolicy()
+    truth_section = _contract_manifest_section(truth_contract)
+    estimator_section = _contract_manifest_section(estimator_contract)
+    if match is None:
+        match = truth_section["fingerprint"] == estimator_section["fingerprint"]
+    return {
+        "schema_version": FORCE_CONTRACT_SCHEMA_VERSION,
+        "truth": truth_section,
+        "estimator": estimator_section,
+        "match": bool(match),
+        "mismatch_policy": {
+            "enabled": bool(policy.enabled),
+            "reason": policy.reason if policy.enabled else None,
+        },
+    }
+
+
+def manifest_canonical_bytes(manifest: Mapping[str, Any]) -> bytes:
+    """Return the canonical UTF-8 JSON bytes of a force-model manifest."""
+    return json.dumps(
+        _normalize(dict(manifest)),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def manifest_sha256(manifest: Mapping[str, Any]) -> str:
+    """Return ``sha256:<hex>`` of the canonical manifest bytes."""
+    return sha256_hex_of_bytes(manifest_canonical_bytes(manifest))
+
+
+def scenario_result_force_fields(decision: ForceModelParityDecision) -> dict[str, Any]:
+    """Map a parity decision onto the append-only ScenarioResult fields.
+
+    Posterior/observability statuses are read from the ESTIMATOR contract:
+    those roles stay ``pending_r1`` for nonzero lunar J2 until R1 qualifies
+    them, and R0B never upgrades them.
+    """
+    capabilities = decision.manifest["estimator"]["consumer_capabilities"]
+    return {
+        "force_contract_schema_version": decision.schema_version,
+        "truth_force_fingerprint": decision.truth_fingerprint,
+        "estimator_force_fingerprint": decision.estimator_fingerprint,
+        "force_model_match": bool(decision.match),
+        "explicit_force_model_mismatch": bool(decision.explicit_mismatch),
+        "force_model_mismatch_reason": decision.policy.reason or "",
+        "force_contract_manifest_sha256": decision.manifest_sha256,
+        "posterior_force_role_status": capabilities[
+            ConsumerRole.POSTERIOR_COVARIANCE.value
+        ],
+        "observability_force_role_status": capabilities[ConsumerRole.OBSERVABILITY.value],
+    }

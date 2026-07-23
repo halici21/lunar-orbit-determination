@@ -344,7 +344,10 @@ class _AnalysisWorker(QThread):
         return params
 
     def _preflight_variant_configs(
-        self, scenario_config_from_mapping, validate_official_earth_j2_support
+        self,
+        scenario_config_from_mapping,
+        validate_official_earth_j2_support,
+        scenario_force_model_preflight=None,
     ) -> list[tuple["VariantSpec", Any]]:
         """Validate every variant mapping BEFORE any propagation (R0A-F1).
 
@@ -371,6 +374,14 @@ class _AnalysisWorker(QThread):
                 self.log_line.emit(f"  Config error ({variant.label}) — {exc}")
                 preflighted.append((variant, None))
                 continue
+            # R0B-2 force-model parity gate, through the SAME shared helper the
+            # JSON runner uses. Outside the try/except above so a contract
+            # violation aborts before any propagation.
+            if scenario_force_model_preflight is not None:
+                scenario_force_model_preflight(
+                    config,
+                    context=f"desktop analysis variant '{variant.label}' force-model preflight",
+                )
             preflighted.append((variant, config))
         return preflighted
 
@@ -400,14 +411,20 @@ class _AnalysisWorker(QThread):
             THESIS_MAX_GAP_S,
             THESIS_MIN_ELEVATION_DEG,
         )
-        from lunar_od.scenario_config import validate_official_earth_j2_support
+        from lunar_od.scenario_config import (
+            scenario_force_model_preflight,
+            validate_official_earth_j2_support,
+        )
 
         # R0A-F1 preflight: validate every variant config (incl. the shared
-        # Earth-J2 fail-closed gate) before loading the fixture, SPICE, or any
-        # propagation. Reused below so the mapping is interpreted only once.
+        # Earth-J2 fail-closed gate and the R0B-2 force-parity gate) before
+        # loading the fixture, SPICE, or any propagation. Reused below so the
+        # mapping is interpreted only once.
         self.log_line.emit("Validating variant configurations…")
         preflighted_configs = self._preflight_variant_configs(
-            scenario_config_from_mapping, validate_official_earth_j2_support
+            scenario_config_from_mapping,
+            validate_official_earth_j2_support,
+            scenario_force_model_preflight,
         )
 
         self.log_line.emit("Loading fixture…")
