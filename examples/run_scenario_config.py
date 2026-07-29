@@ -9,6 +9,7 @@ Run from the project root:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from dataclasses import replace
@@ -39,6 +40,7 @@ from lunar_od import (  # noqa: E402
     write_scenario_summary_csv,
 )
 from lunar_od.force_contract import scenario_result_force_fields  # noqa: E402
+from lunar_od.reporting import write_force_model_manifest  # noqa: E402
 from lunar_od.thesis_matrix import (  # noqa: E402
     THESIS_COLD_START_SIGMA_POS_M,
     THESIS_COLD_START_SIGMA_VEL_MPS,
@@ -78,26 +80,36 @@ def run_configured_scenario(
     measurement_seed: int | None = None,
     cold_start_seed: int | None = None,
     cold_start_scale: float = 1.0,
-    truth_force_contract=None,
-    estimator_force_contract=None,
+    truth_j2_moon: float | None = None,
+    estimator_j2_moon: float | None = None,
+    manifest_dir=None,
 ):
     # R0A runtime defense-in-depth: directly constructed ScenarioConfig objects
     # bypass loader validation, so the Earth-J2 fail-closed gate must also fire
     # here, before any file access, SPICE load, or propagation call.
     from lunar_od.scenario_config import (
+        force_execution_spec_from_scenario_config,
         scenario_force_model_preflight,
         validate_official_earth_j2_support,
     )
+    from lunar_od.force_contract import bind_spec_to_runtime
 
     validate_official_earth_j2_support(
         config.enable_earth_j2, context="run_configured_scenario"
     )
-    # R0B-2 force-model parity preflight, before fixture/SPICE/propagation.
-    force_parity = scenario_force_model_preflight(
+    # Stage A — configuration + accidental-mismatch parity, using config-derived
+    # specs (default GM). Raises here (fixture read 0, SPICE 0, propagation 0)
+    # on Earth-J2, unsupported harmonics, a missing mismatch reason, or an
+    # undeclared truth/estimator physics difference.
+    _stage_a_truth = force_execution_spec_from_scenario_config(config, j2_moon=truth_j2_moon)
+    _stage_a_estimator = force_execution_spec_from_scenario_config(
+        config, j2_moon=estimator_j2_moon
+    )
+    scenario_force_model_preflight(
         config,
-        truth_contract=truth_force_contract,
-        estimator_contract=estimator_force_contract,
-        context="run_configured_scenario force-model preflight",
+        truth_spec=_stage_a_truth,
+        estimator_spec=_stage_a_estimator,
+        context="run_configured_scenario Stage A force-model preflight",
     )
     fixture_path = Path("python_port") / "fixtures" / "spice_snapshots.json"
     if not fixture_path.is_file():
@@ -112,6 +124,51 @@ def run_configured_scenario(
     mu_moon = float(initial["mu_moon_m3_s2"])
     mu_earth = float(np.asarray(constants["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
     mu_sun = float(np.asarray(constants["mu_sun_km3_s2"]).reshape(-1)[0] * 1e9)
+
+    # Stage B — effective runtime binding. Rebuild the truth/estimator specs
+    # from the EFFECTIVE fixture GM (not the default constants), finalize the
+    # parity decision, and bit-bind each spec to the exact primitives handed to
+    # the propagator. Runs after fixture read but before SPICE and any
+    # propagation (R0B-V01).
+    truth_spec = force_execution_spec_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon,
+        mu_earth_m3_s2=mu_earth,
+        mu_sun_m3_s2=mu_sun,
+        j2_moon=truth_j2_moon,
+    )
+    estimator_spec = force_execution_spec_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon,
+        mu_earth_m3_s2=mu_earth,
+        mu_sun_m3_s2=mu_sun,
+        j2_moon=estimator_j2_moon,
+    )
+    force_parity = scenario_force_model_preflight(
+        config,
+        mu_moon_m3_s2=mu_moon,
+        mu_earth_m3_s2=mu_earth,
+        mu_sun_m3_s2=mu_sun,
+        truth_spec=truth_spec,
+        estimator_spec=estimator_spec,
+        context="run_configured_scenario Stage B force-model binding",
+    )
+    _truth_runtime = {
+        "mu_moon_m3_s2": mu_moon,
+        "mu_earth_m3_s2": mu_earth,
+        "mu_sun_m3_s2": mu_sun,
+        "j2_moon": float(truth_spec.j2_moon),
+    }
+    _estimator_runtime = {
+        "mu_moon_m3_s2": mu_moon,
+        "mu_earth_m3_s2": mu_earth,
+        "mu_sun_m3_s2": mu_sun,
+        "j2_moon": float(estimator_spec.j2_moon),
+    }
+    bind_spec_to_runtime(truth_spec, _truth_runtime, context="run_configured_scenario truth binding")
+    bind_spec_to_runtime(
+        estimator_spec, _estimator_runtime, context="run_configured_scenario estimator binding"
+    )
 
     t_eval_s = np.arange(0.0, config.duration_h * 3600.0 + config.sample_step_s, config.sample_step_s)
     t_ephem_s = np.arange(0.0, config.duration_h * 3600.0 + THESIS_EPHEMERIS_STEP_S, THESIS_EPHEMERIS_STEP_S)
@@ -135,13 +192,13 @@ def run_configured_scenario(
         truth = propagate_truth_with_ephemeris(
             t_eval_s,
             x0_mci,
-            mu_moon,
-            mu_earth,
-            mu_sun,
+            _truth_runtime["mu_moon_m3_s2"],
+            _truth_runtime["mu_earth_m3_s2"],
+            _truth_runtime["mu_sun_m3_s2"],
             ephemeris,
             rtol=config.rtol,
             atol=config.atol,
-            j2_moon=config.j2_moon,
+            j2_moon=_truth_runtime["j2_moon"],
         )
         visibility_config = VisibilityConfig(
             r_moon_mean_m=float(initial["r_moon_mean_m"]),
@@ -204,9 +261,9 @@ def run_configured_scenario(
             config.measurement_type,
             config.start_mode,
             config.estimator_type,
-            mu_moon,
-            mu_earth,
-            mu_sun,
+            _estimator_runtime["mu_moon_m3_s2"],
+            _estimator_runtime["mu_earth_m3_s2"],
+            _estimator_runtime["mu_sun_m3_s2"],
             estimator_ephemeris.earth_position,
             estimator_ephemeris.sun_position,
             cold_start_bank=cold_bank,
@@ -225,8 +282,21 @@ def run_configured_scenario(
             ukf_bias_freeze_relative_information=config.ukf_bias_freeze_relative_information,
             ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
             ukf_bias_regularization_std=config.ukf_bias_regularization_std,
-            j2_moon=config.j2_moon,
+            j2_moon=_estimator_runtime["j2_moon"],
         )
+        # Persist the canonical side manifest into the scenario output bundle and
+        # attach the SAME provenance (fingerprints, manifest SHA from the actual
+        # file bytes) to the result. The CSV never carries a manifest SHA that
+        # was not written to disk (R0B-V03).
+        manifest_output_dir = Path(manifest_dir) if manifest_dir is not None else Path(config.output_dir)
+        manifest_path = manifest_output_dir / f"{config.name}_force_model_manifest.json"
+        written_path = write_force_model_manifest(force_parity.manifest, manifest_path)
+        written_sha = "sha256:" + hashlib.sha256(written_path.read_bytes()).hexdigest()
+        if written_sha != force_parity.manifest_sha256:
+            raise RuntimeError(
+                "persisted force manifest SHA does not match the decision SHA "
+                f"({written_sha} vs {force_parity.manifest_sha256})."
+            )
         return replace(
             scenario_result, **scenario_result_force_fields(force_parity)
         )

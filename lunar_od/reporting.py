@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -23,7 +24,13 @@ def write_force_model_manifest(manifest, output_path) -> Path:
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(manifest_canonical_bytes(manifest))
+    payload = manifest_canonical_bytes(manifest)
+    # Atomic write: fully materialize a sibling temp file, then replace, so a
+    # reader never observes a partial manifest and the on-disk bytes are exactly
+    # the canonical bytes the SHA is computed from.
+    tmp_path = output_path.with_name(output_path.name + ".tmp")
+    tmp_path.write_bytes(payload)
+    os.replace(tmp_path, output_path)
     return output_path
 
 

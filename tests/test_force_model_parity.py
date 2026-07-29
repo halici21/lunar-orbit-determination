@@ -24,6 +24,7 @@ from lunar_od.force_contract import (
     FORCE_CONTRACT_SCHEMA_VERSION,
     ConsumerReadiness,
     ConsumerRole,
+    ForceContractError,
     ForceModelMismatchPolicy,
     ForceModelParityError,
     evaluate_force_model_parity,
@@ -34,10 +35,15 @@ from lunar_od.force_contract import (
 )
 from lunar_od.reporting import write_force_model_manifest, write_scenario_summary_csv
 from lunar_od.scenario_config import (
+    force_execution_spec_from_scenario_config,
     force_model_contract_from_scenario_config,
     scenario_config_from_mapping,
     scenario_force_model_preflight,
 )
+
+
+def _spec_for(config, **kwargs):
+    return force_execution_spec_from_scenario_config(config, **kwargs)
 from lunar_od.scenarios import ScenarioResult
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -94,14 +100,13 @@ class P1MatchedParityTests(unittest.TestCase):
 class P2AccidentalMismatchTests(unittest.TestCase):
     def test_accidental_mismatch_is_rejected_before_any_execution(self):
         config = _config()
-        truth = _contract(_config(j2_moon=J2_MOON))
+        truth_spec = _spec_for(_config(j2_moon=J2_MOON))
         with self.assertRaises(ForceModelParityError) as caught:
-            scenario_force_model_preflight(config, truth_contract=truth)
+            scenario_force_model_preflight(config, truth_spec=truth_spec)
         self.assertIn("does not match", str(caught.exception))
 
     def test_runner_rejects_mismatch_with_zero_execution_calls(self):
         config = _config()
-        truth = _contract(_config(j2_moon=J2_MOON))
         spies = {
             name: mock.MagicMock()
             for name in (
@@ -120,8 +125,10 @@ class P2AccidentalMismatchTests(unittest.TestCase):
                 mock.patch("lunar_od.scenarios.estimate_position_srif", spies["srif"]), \
                 mock.patch("lunar_od.run_batch_arc_sequence", spies["batch"]), \
                 mock.patch.object(Path, "read_text", fixture_read):
+            # truth J2 nonzero vs estimator (config) J2 zero, no opt-in ->
+            # rejected in Stage A, before the fixture is ever read.
             with self.assertRaises(ForceModelParityError):
-                runner.run_configured_scenario(config, truth_force_contract=truth)
+                runner.run_configured_scenario(config, truth_j2_moon=J2_MOON)
         for name, spy in spies.items():
             self.assertEqual(spy.call_count, 0, f"{name} ran before the parity gate")
         self.assertEqual(fixture_read.call_count, 0)
@@ -133,8 +140,8 @@ class P3ExplicitMismatchTests(unittest.TestCase):
             allow_explicit_force_model_mismatch=True,
             force_model_mismatch_reason="R0B truth-J2 vs point-mass estimator campaign",
         )
-        truth = _contract(_config(j2_moon=J2_MOON))
-        decision = scenario_force_model_preflight(config, truth_contract=truth)
+        truth_spec = _spec_for(_config(j2_moon=J2_MOON))
+        decision = scenario_force_model_preflight(config, truth_spec=truth_spec)
         self.assertFalse(decision.match)
         self.assertTrue(decision.explicit_mismatch)
         self.assertNotEqual(decision.truth_fingerprint, decision.estimator_fingerprint)
@@ -184,52 +191,65 @@ class P5EarthJ2Tests(unittest.TestCase):
             _config(enable_earth_j2=True)
 
     def test_mismatch_optin_cannot_bypass_earth_j2_capability(self):
+        # Direct capability-gate check: an Earth-J2 estimator contract is
+        # unsupported and an explicit-mismatch opt-in cannot bypass it. (The
+        # official runner rejects Earth J2 even earlier via the R0A gate; this
+        # asserts the parity-layer capability gate itself.)
+        earth_config = dataclasses.replace(_config(), enable_earth_j2=True)
+        earth_contract = force_model_contract_from_scenario_config(earth_config)
+        policy = ForceModelMismatchPolicy(enabled=True, reason="attempted bypass")
+        with self.assertRaises(ForceModelParityError) as caught:
+            evaluate_force_model_parity(
+                _contract(), earth_contract, policy, context="bypass attempt"
+            )
+        self.assertIn("cannot be bypassed", str(caught.exception))
+
+    def test_official_runner_earth_j2_optin_still_rejected(self):
         config = dataclasses.replace(
             _config(),
             enable_earth_j2=True,
             allow_explicit_force_model_mismatch=True,
             force_model_mismatch_reason="attempted bypass",
         )
-        with self.assertRaises(ForceModelParityError) as caught:
+        with self.assertRaisesRegex(ValueError, "not supported on the official OD path"):
             scenario_force_model_preflight(config)
-        self.assertIn("cannot be bypassed", str(caught.exception))
 
 
 class P6HarmonicsStatusTests(unittest.TestCase):
-    def test_harmonics_estimator_is_unsupported_even_with_optin(self):
+    def test_official_harmonics_is_fail_closed_even_with_optin(self):
+        # R0B-F1/V06: official harmonics execution is not implemented, so the
+        # preflight rejects it (opt-in or not) rather than reporting physics it
+        # never ran.
         config = _harmonics_config(
             _config(
                 allow_explicit_force_model_mismatch=True,
                 force_model_mismatch_reason="harmonics estimator attempt",
             )
         )
-        with self.assertRaises(ForceModelParityError) as caught:
+        with self.assertRaises(ForceContractError) as caught:
             scenario_force_model_preflight(config)
-        self.assertIn("unsupported", str(caught.exception))
+        self.assertIn("EXPERIMENTAL", str(caught.exception))
+        self.assertIn("not implemented", str(caught.exception))
 
-    def test_harmonics_truth_with_lowfidelity_estimator_needs_explicit_campaign(self):
-        truth = _contract(_harmonics_config())
-        # without opt-in: rejected
-        with self.assertRaises(ForceModelParityError):
-            scenario_force_model_preflight(_config(), truth_contract=truth)
-        # with opt-in: allowed as a declared campaign
-        campaign = _config(
-            allow_explicit_force_model_mismatch=True,
-            force_model_mismatch_reason="harmonics truth vs point-mass estimator",
-        )
-        decision = scenario_force_model_preflight(campaign, truth_contract=truth)
-        self.assertFalse(decision.match)
-        self.assertTrue(decision.explicit_mismatch)
+    def test_harmonics_config_without_optin_also_rejected(self):
+        with self.assertRaises(ForceContractError):
+            scenario_force_model_preflight(_harmonics_config())
 
-    def test_harmonics_never_reports_matched_od_ready(self):
+    def test_harmonics_truth_capability_is_experimental_direct_trajectory_only(self):
         contract = _contract(_harmonics_config())
         caps = contract.consumer_capabilities
+        self.assertEqual(
+            caps[ConsumerRole.TRUTH_STATE],
+            ConsumerReadiness.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY,
+        )
         for role in (
             ConsumerRole.ESTIMATOR_STATE,
             ConsumerRole.ESTIMATOR_STM,
             ConsumerRole.UKF_STANDARD,
             ConsumerRole.UKF_SQUARE_ROOT,
             ConsumerRole.UKF_FAST_SIGMA,
+            ConsumerRole.POSTERIOR_COVARIANCE,
+            ConsumerRole.OBSERVABILITY,
         ):
             self.assertEqual(caps[role], ConsumerReadiness.UNSUPPORTED, role)
 

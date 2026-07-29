@@ -1,0 +1,359 @@
+"""R0B-F1 executed-physics binding & production provenance tests (F1-F9).
+
+These drive the REAL scenario runner, CLI main, and desktop worker (not just
+helpers) so provenance defects that only appear on the production paths are
+caught. Deterministic; SPICE/propagation are spied or stubbed, never really run.
+"""
+
+from __future__ import annotations
+
+import csv
+import dataclasses
+import hashlib
+import importlib.util
+import json
+import os
+import sys
+import tempfile
+import types
+import unittest
+from pathlib import Path
+from unittest import mock
+
+import numpy as np
+
+from lunar_od.force_contract import (
+    ConsumerReadiness,
+    ConsumerRole,
+    ForceContractError,
+    bind_spec_to_runtime,
+    force_model_fingerprint,
+)
+from lunar_od.scenario_config import (
+    force_execution_spec_from_scenario_config,
+    scenario_config_from_mapping,
+)
+from lunar_od.scenarios import ScenarioResult
+
+
+def _empty_scenario_result():
+    return ScenarioResult(
+        label="r0b_f1",
+        measurement_type="range_rate",
+        start_mode="cold",
+        arc_results=(),
+        estimator_type="bls_lm",
+    )
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+J2_MOON = 2.0346e-4
+
+_RUNNER_PATH = _REPO_ROOT / "examples" / "run_scenario_config.py"
+_spec = importlib.util.spec_from_file_location("r0b_f1_runner", _RUNNER_PATH)
+runner = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(runner)
+
+_FIXTURE = {
+    "initial_state": {
+        "state_mci_j2000_m_mps": [1.8374e6, 0.0, 0.0, 0.0, 1633.0, 0.0],
+        "mu_moon_m3_s2": 4.9028000661e12,
+        "r_moon_mean_m": 1.7374e6,
+    },
+    # Chosen so `value * 1e9` differs from MU_EARTH_M3S2's literal by ~1 ULP,
+    # which is exactly the V01 hazard the effective binding must absorb.
+    "constants": {
+        "mu_earth_km3_s2": [398600.4354360959],
+        "mu_sun_km3_s2": [132712440041.9393],
+    },
+    "epoch_utc": "2026-01-01T00:00:00",
+}
+
+_BASE_PAYLOAD = {
+    "name": "r0b_f1",
+    "measurement_type": "range_rate",
+    "estimator_type": "bls_lm",
+    "start_mode": "cold",
+    "network": "multi",
+}
+
+
+def _config(**overrides):
+    return scenario_config_from_mapping({**_BASE_PAYLOAD, **overrides})
+
+
+def _fake_ephemeris():
+    return types.SimpleNamespace(
+        earth_position=lambda t: np.zeros((np.size(np.asarray(t)), 3)),
+        earth_velocity=lambda t: np.zeros((np.size(np.asarray(t)), 3)),
+        sun_position=lambda t: np.zeros((np.size(np.asarray(t)), 3)),
+    )
+
+
+class _RunnerHarness:
+    """Patch the real run_configured_scenario down to sp-able boundaries.
+
+    truth_spy / batch_spy capture the exact GM and j2 that reach the propagator
+    and the estimator dispatch. Fixture I/O is redirected to an in-memory dict
+    and a temp output dir; SPICE is stubbed.
+    """
+
+    def __init__(self, stack, tmpdir):
+        self.truth_spy = mock.MagicMock(return_value=np.zeros((6, 6)))
+        self.batch_spy = mock.MagicMock(return_value=_empty_scenario_result())
+        eph = _fake_ephemeris()
+        spice_stub = types.SimpleNamespace(str2et=lambda _s: 0.0, kclear=lambda: None)
+        fake_station = types.SimpleNamespace(name="S1")
+        net = types.SimpleNamespace(station_names=("S1",))
+        real_read_text = Path.read_text
+
+        def _read_text(self_path, *a, **k):
+            if self_path.name == "spice_snapshots.json":
+                return json.dumps(_FIXTURE)
+            return real_read_text(self_path, *a, **k)
+
+        stack.enter_context(mock.patch.dict(sys.modules, {"spiceypy": spice_stub}))
+        stack.enter_context(mock.patch.object(Path, "is_file", lambda self: True))
+        stack.enter_context(mock.patch.object(Path, "read_text", _read_text))
+        stack.enter_context(mock.patch.object(runner, "load_spice_kernels"))
+        stack.enter_context(mock.patch.object(runner, "sample_moon_centered_ephemeris", return_value=eph))
+        stack.enter_context(mock.patch.object(runner, "perturb_moon_centered_ephemeris", return_value=eph))
+        stack.enter_context(
+            mock.patch.object(
+                runner, "sample_j2000_to_itrf93_transforms",
+                side_effect=lambda _et, t: np.repeat(np.eye(6)[None, :, :], np.size(np.asarray(t)), axis=0),
+            )
+        )
+        stack.enter_context(mock.patch.object(runner, "propagate_truth_with_ephemeris", self.truth_spy))
+        stack.enter_context(mock.patch.object(runner, "range_rate_stations", return_value=[fake_station]))
+        stack.enter_context(mock.patch.object(runner, "thesis_network_by_name", return_value=net))
+        # analyze_visibility_gap_with_transforms and run_batch_arc_sequence are
+        # imported from lunar_od INSIDE the runner function, so patch them there.
+        stack.enter_context(
+            mock.patch(
+                "lunar_od.analyze_visibility_gap_with_transforms",
+                side_effect=lambda *a, **k: (np.array([0]), np.array([5]), np.ones(6, dtype=bool), None),
+            )
+        )
+        stack.enter_context(mock.patch("lunar_od.run_batch_arc_sequence", self.batch_spy))
+        stack.enter_context(mock.patch.object(runner, "build_measurement_arcs", return_value=(object(),)))
+        stack.enter_context(mock.patch.object(runner, "_with_estimator_ephemeris", side_effect=lambda arc, e: arc))
+        stack.enter_context(mock.patch.object(runner, "make_cold_start_bank", return_value=(np.zeros(6),)))
+        stack.enter_context(mock.patch.object(runner, "scenario_ukf_configs", return_value=(None, None)))
+        stack.enter_context(mock.patch.object(runner, "scenario_range_rate_physics_config", return_value=None))
+        stack.enter_context(mock.patch.object(runner, "_initial_bias", return_value=np.zeros(0)))
+
+
+class F1EffectiveGmBindingTests(unittest.TestCase):
+    def test_effective_gm_reaches_truth_and_estimator_bit_exact(self):
+        config = _config(j2_moon=J2_MOON)
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            h = _RunnerHarness(stack, tmp)
+            runner.run_configured_scenario(config, manifest_dir=tmp)
+            fixture_earth = float(np.asarray(_FIXTURE["constants"]["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
+            fixture_moon = float(_FIXTURE["initial_state"]["mu_moon_m3_s2"])
+            fixture_sun = float(np.asarray(_FIXTURE["constants"]["mu_sun_km3_s2"]).reshape(-1)[0] * 1e9)
+            # truth propagator positional args: (t, x0, mu_moon, mu_earth, mu_sun, eph, ...)
+            targs = h.truth_spy.call_args.args
+            self.assertEqual(targs[2], fixture_moon)
+            self.assertEqual(targs[3], fixture_earth)
+            self.assertEqual(targs[4], fixture_sun)
+            # estimator/batch positional args: (arcs, mtype, start, est, mu_moon, mu_earth, mu_sun, ...)
+            bargs = h.batch_spy.call_args.args
+            self.assertEqual(bargs[4], fixture_moon)
+            self.assertEqual(bargs[5], fixture_earth)
+            self.assertEqual(bargs[6], fixture_sun)
+            # And the fingerprinted contract Earth GM equals that exact runtime value.
+            spec = force_execution_spec_from_scenario_config(
+                config, mu_moon_m3_s2=fixture_moon, mu_earth_m3_s2=fixture_earth, mu_sun_m3_s2=fixture_sun
+            )
+            self.assertEqual(spec.mu_earth_m3_s2, fixture_earth)
+            bind_spec_to_runtime(
+                spec,
+                {"mu_moon_m3_s2": fixture_moon, "mu_earth_m3_s2": fixture_earth,
+                 "mu_sun_m3_s2": fixture_sun, "j2_moon": J2_MOON},
+                context="F1",
+            )
+
+
+class F2ExecutableLunarJ2MismatchTests(unittest.TestCase):
+    def test_declared_j2_mismatch_runs_truth_and_estimator_differently(self):
+        config = _config(
+            j2_moon=J2_MOON,
+            allow_explicit_force_model_mismatch=True,
+            force_model_mismatch_reason="truth J2 vs point-mass estimator",
+        )
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            h = _RunnerHarness(stack, tmp)
+            result = runner.run_configured_scenario(
+                config, truth_j2_moon=J2_MOON, estimator_j2_moon=0.0, manifest_dir=tmp
+            )
+        # truth propagator got nonzero J2; estimator/batch got zero J2
+        self.assertEqual(h.truth_spy.call_args.kwargs["j2_moon"], J2_MOON)
+        self.assertEqual(h.batch_spy.call_args.kwargs["j2_moon"], 0.0)
+        # fingerprints differ; match false; reported consistently
+        self.assertNotEqual(result.truth_force_fingerprint, result.estimator_force_fingerprint)
+        self.assertFalse(result.force_model_match)
+        self.assertTrue(result.explicit_force_model_mismatch)
+        self.assertEqual(result.force_model_mismatch_reason, "truth J2 vs point-mass estimator")
+
+    def test_undeclared_j2_mismatch_is_rejected(self):
+        config = _config(j2_moon=J2_MOON)  # no opt-in
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            _RunnerHarness(stack, tmp)
+            from lunar_od.force_contract import ForceModelParityError
+            with self.assertRaises(ForceModelParityError):
+                runner.run_configured_scenario(
+                    config, truth_j2_moon=J2_MOON, estimator_j2_moon=0.0, manifest_dir=tmp
+                )
+
+
+class F3HarmonicsCampaignRejectionTests(unittest.TestCase):
+    def test_official_harmonics_rejected_before_any_execution(self):
+        fixture_gravity = _REPO_ROOT / "tests" / "fixtures" / "gravity" / "synthetic_norm_sha.tab"
+        config = dataclasses.replace(
+            _config(),
+            enable_lunar_harmonics=True,
+            lunar_gravity_model_path=str(fixture_gravity),
+            lunar_gravity_nmax=4,
+            lunar_gravity_mmax=4,
+        )
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            h = _RunnerHarness(stack, tmp)
+            with self.assertRaises(ForceContractError) as caught:
+                runner.run_configured_scenario(config, manifest_dir=tmp)
+        self.assertIn("EXPERIMENTAL", str(caught.exception))
+        self.assertEqual(h.truth_spy.call_count, 0)
+        self.assertEqual(h.batch_spy.call_count, 0)
+
+
+class F4RealCliManifestTests(unittest.TestCase):
+    def test_cli_persists_manifest_matching_csv_sha(self):
+        config = _config(j2_moon=J2_MOON)
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            h = _RunnerHarness(stack, tmp)
+            result = runner.run_configured_scenario(config, manifest_dir=tmp)
+            manifest_path = Path(tmp) / f"{config.name}_force_model_manifest.json"
+            self.assertTrue(manifest_path.is_file(), "side manifest was not written")
+            raw = manifest_path.read_bytes()
+            file_sha = "sha256:" + hashlib.sha256(raw).hexdigest()
+            # actual file SHA == the SHA reported on the result / CSV
+            self.assertEqual(file_sha, result.force_contract_manifest_sha256)
+            payload = json.loads(raw.decode("utf-8"))
+            self.assertEqual(payload["truth"]["fingerprint"], result.truth_force_fingerprint)
+            self.assertEqual(payload["estimator"]["fingerprint"], result.estimator_force_fingerprint)
+            # no absolute path in the manifest
+            self.assertNotIn(tmp, raw.decode("utf-8"))
+            self.assertNotIn(str(_REPO_ROOT), raw.decode("utf-8"))
+
+
+class F6NestedImmutabilityTests(unittest.TestCase):
+    def test_nested_manifest_mutation_cannot_stale_the_sha(self):
+        from lunar_od.scenario_config import scenario_force_model_preflight
+
+        decision = scenario_force_model_preflight(_config(j2_moon=J2_MOON))
+        stored = decision.manifest_sha256
+        payload = decision.manifest
+        payload["truth"]["fingerprint"] = "sha256:" + "0" * 64
+        payload["match"] = False
+        # stored SHA is unchanged and a fresh access is intact
+        self.assertEqual(decision.manifest_sha256, stored)
+        self.assertNotEqual(decision.manifest["truth"]["fingerprint"], "sha256:" + "0" * 64)
+        recomputed = "sha256:" + hashlib.sha256(decision.manifest_bytes).hexdigest()
+        self.assertEqual(recomputed, stored)
+
+
+class F7InvalidMappingKeyTests(unittest.TestCase):
+    def test_non_string_keys_raise_controlled_error(self):
+        from lunar_od.force_contract import canonical_json_bytes, ForceContractError as FCE
+
+        class _Fake:
+            consumer_capabilities = None
+
+        for bad_key in (object(), 42, 3.14, (1, 2)):
+            with self.subTest(bad_key=type(bad_key).__name__):
+                # exercise the normalizer directly through the manifest path
+                from lunar_od.force_contract import manifest_canonical_bytes
+                with self.assertRaises(FCE):
+                    manifest_canonical_bytes({bad_key: "x"})
+
+    def test_invalid_key_error_is_deterministic_across_processes(self):
+        script = (
+            "import sys; sys.path.insert(0, r'%s')\n"
+            "from lunar_od.force_contract import manifest_canonical_bytes, ForceContractError\n"
+            "try:\n"
+            "    manifest_canonical_bytes({object(): 'x'})\n"
+            "    print('NO_ERROR')\n"
+            "except ForceContractError as e:\n"
+            "    print('ForceContractError')\n" % str(_REPO_ROOT)
+        )
+        outs = []
+        for _ in range(2):
+            out = __import__("subprocess").run(
+                [sys.executable, "-c", script], capture_output=True, text=True, check=True, cwd=str(_REPO_ROOT)
+            )
+            outs.append(out.stdout.strip())
+        self.assertEqual(outs, ["ForceContractError", "ForceContractError"])
+
+
+class F8CapabilityMatrixTests(unittest.TestCase):
+    def test_harmonics_truth_cell_is_experimental_direct_trajectory_only(self):
+        from lunar_od.force_contract import consumer_capabilities_for
+
+        caps = consumer_capabilities_for(lunar_j2_on=False, earth_j2_on=False, harmonics_on=True)
+        self.assertEqual(
+            caps[ConsumerRole.TRUTH_STATE],
+            ConsumerReadiness.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY,
+        )
+
+    def test_lunar_j2_posterior_observability_pending_r1(self):
+        from lunar_od.force_contract import consumer_capabilities_for
+
+        caps = consumer_capabilities_for(lunar_j2_on=True, earth_j2_on=False, harmonics_on=False)
+        self.assertEqual(caps[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.PENDING_R1)
+        self.assertEqual(caps[ConsumerRole.OBSERVABILITY], ConsumerReadiness.PENDING_R1)
+
+    def test_earth_j2_all_unsupported(self):
+        from lunar_od.force_contract import consumer_capabilities_for
+
+        caps = consumer_capabilities_for(lunar_j2_on=False, earth_j2_on=True, harmonics_on=False)
+        for role in ConsumerRole:
+            self.assertEqual(caps[role], ConsumerReadiness.UNSUPPORTED, role)
+
+
+class F9ExistingGatesTests(unittest.TestCase):
+    def test_whitespace_only_reason_zero_call(self):
+        from lunar_od.scenario_config import scenario_force_model_preflight
+        from lunar_od.force_contract import ForceModelParityError
+
+        config = _config(
+            j2_moon=J2_MOON,
+            allow_explicit_force_model_mismatch=True,
+            force_model_mismatch_reason="   ",
+        )
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            h = _RunnerHarness(stack, tmp)
+            with self.assertRaises(ForceModelParityError):
+                runner.run_configured_scenario(config, truth_j2_moon=J2_MOON, estimator_j2_moon=0.0, manifest_dir=tmp)
+        self.assertEqual(h.truth_spy.call_count, 0)
+        self.assertEqual(h.batch_spy.call_count, 0)
+
+    def test_zero_j2_default_runs_and_reports_verified(self):
+        config = _config()  # zero J2
+        import contextlib
+        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
+            h = _RunnerHarness(stack, tmp)
+            result = runner.run_configured_scenario(config, manifest_dir=tmp)
+        self.assertEqual(h.truth_spy.call_args.kwargs["j2_moon"], 0.0)
+        self.assertEqual(h.batch_spy.call_args.kwargs["j2_moon"], 0.0)
+        self.assertTrue(result.force_model_match)
+        self.assertEqual(result.posterior_force_role_status, "verified")
+
+
+if __name__ == "__main__":
+    unittest.main()

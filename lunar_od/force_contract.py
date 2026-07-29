@@ -45,6 +45,9 @@ __all__ = [
     "ForceModelContract",
     "lunar_j2_enabled",
     "capability_map",
+    "consumer_capabilities_for",
+    "ForceExecutionSpec",
+    "bind_spec_to_runtime",
     "to_canonical_payload",
     "canonical_json_bytes",
     "force_model_fingerprint",
@@ -81,10 +84,16 @@ class ConsumerReadiness(str, Enum):
 
     There is deliberately no ``configured_but_not_consumed`` state: a force that
     is configured but never evaluated is a defect, not a reportable status.
+
+    ``EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY`` marks a role (in practice only
+    ``truth_state``) that a force can drive as an experimental direct-trajectory
+    computation but that is not qualified for official OD — distinct from
+    ``UNSUPPORTED`` (cannot be driven at all on that role) (R0B-V06/V10).
     """
 
     VERIFIED = "verified"
     PENDING_R1 = "pending_r1"
+    EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY = "experimental_direct_trajectory_only"
     UNSUPPORTED = "unsupported"
 
 
@@ -285,9 +294,19 @@ def _normalize(value: Any) -> Any:
     if isinstance(value, Mapping):
         normalized: dict[str, Any] = {}
         for key, item in value.items():
-            key_value = key.value if isinstance(key, Enum) else key
+            # Only str keys, or enums whose .value is a str. Anything else
+            # (object/int/float/tuple keys) is rejected rather than coerced
+            # through str(), which could emit an address-bearing repr and make
+            # the fingerprint process- or run-dependent (R0B-V07).
+            if isinstance(key, Enum):
+                key_value = key.value
+            else:
+                key_value = key
             if not isinstance(key_value, str):
-                key_value = str(key_value)
+                raise ForceContractError(
+                    "canonical mapping keys must be strings (or enums whose "
+                    f"value is a string); got key of type {type(key).__name__!r}."
+                )
             if key_value in normalized:
                 raise ForceContractError(f"duplicate canonical mapping key: {key_value!r}")
             normalized[key_value] = _normalize(item)
@@ -328,6 +347,172 @@ def sha256_hex_of_bytes(data: bytes) -> str:
 def force_model_fingerprint(contract: ForceModelContract) -> str:
     """Return the deterministic ``sha256:<hex>`` force fingerprint."""
     return sha256_hex_of_bytes(canonical_json_bytes(contract))
+
+
+# ---------------------------------------------------------------------------
+# Executable force specification (R0B-F1)
+# ---------------------------------------------------------------------------
+
+def consumer_capabilities_for(
+    *, lunar_j2_on: bool, earth_j2_on: bool, harmonics_on: bool
+) -> Mapping[ConsumerRole, ConsumerReadiness]:
+    """Capability matrix for a force set. Worst-status-first precedence.
+
+    R0B never reports a role ``verified`` on the strength of a force R0A/R1 has
+    not qualified there, and SCI-003 is never claimed closed. High-degree
+    harmonics is qualified only as an experimental DIRECT truth trajectory
+    (``truth_state`` -> experimental_direct_trajectory_only); every other role,
+    including every estimator role, is ``unsupported`` (R0B-V06).
+    """
+    if harmonics_on:
+        statuses = {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
+        statuses[ConsumerRole.TRUTH_STATE] = (
+            ConsumerReadiness.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY
+        )
+        return capability_map(statuses)
+    if earth_j2_on:
+        return capability_map(
+            {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
+        )
+    if lunar_j2_on:
+        statuses = {role: ConsumerReadiness.VERIFIED for role in ConsumerRole}
+        statuses[ConsumerRole.POSTERIOR_COVARIANCE] = ConsumerReadiness.PENDING_R1
+        statuses[ConsumerRole.OBSERVABILITY] = ConsumerReadiness.PENDING_R1
+        return capability_map(statuses)
+    return capability_map({role: ConsumerReadiness.VERIFIED for role in ConsumerRole})
+
+
+@dataclass(frozen=True)
+class ForceExecutionSpec:
+    """Single source of one executed force model: runtime args AND contract.
+
+    Built once from a scenario config plus the effective (fixture) GM values,
+    then everything downstream is derived from THIS object — the primitives
+    handed to the propagator (``mu_*``, ``j2_moon``), the ForceModelContract,
+    its fingerprint, and the capability decision — so a run can never report
+    physics it did not execute (R0B-V02). Truth and estimator each carry their
+    own spec; a declared mismatch campaign simply uses two different specs
+    (R0B-V05). Constant-derived values (reference radii, Earth-J2 coefficient)
+    are passed in as data to keep this module standard-library only.
+    """
+
+    j2_moon: float
+    mu_moon_m3_s2: float
+    mu_earth_m3_s2: float
+    mu_sun_m3_s2: float
+    enable_earth_j2: bool
+    earth_j2_mode: str
+    lunar_harmonics: LunarHarmonicsForceContract
+    lunar_j2_reference_radius_m: float
+    earth_j2_coefficient: float
+    earth_j2_reference_radius_m: float
+    force_ephemeris_policy: str = "moon_centered_sampled_ephemeris"
+
+    @property
+    def lunar_j2_on(self) -> bool:
+        return lunar_j2_enabled(self.j2_moon)
+
+    @property
+    def harmonics_on(self) -> bool:
+        return bool(self.lunar_harmonics.enabled)
+
+    def propagation_kwargs(self) -> dict[str, float]:
+        """Force primitives that must reach the propagator for this spec."""
+        return {
+            "mu_moon_m3_s2": float(self.mu_moon_m3_s2),
+            "mu_earth_m3_s2": float(self.mu_earth_m3_s2),
+            "mu_sun_m3_s2": float(self.mu_sun_m3_s2),
+            "j2_moon": float(self.j2_moon),
+        }
+
+    def contract(self) -> ForceModelContract:
+        lunar_j2_on = self.lunar_j2_on
+        earth_j2_on = bool(self.enable_earth_j2)
+        return ForceModelContract(
+            schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
+            lunar_point_mass=PointMassForceContract(
+                enabled=True,
+                body="moon",
+                gravitational_parameter_m3_s2=float(self.mu_moon_m3_s2),
+                policy="central_body_point_mass",
+            ),
+            earth_third_body=ThirdBodyForceContract(
+                enabled=bool(self.mu_earth_m3_s2),
+                body="earth",
+                gravitational_parameter_m3_s2=float(self.mu_earth_m3_s2),
+                policy="moon_centered_third_body_point_mass",
+            ),
+            sun_third_body=ThirdBodyForceContract(
+                enabled=bool(self.mu_sun_m3_s2),
+                body="sun",
+                gravitational_parameter_m3_s2=float(self.mu_sun_m3_s2),
+                policy="moon_centered_third_body_point_mass",
+            ),
+            lunar_j2=LunarJ2ForceContract(
+                enabled=lunar_j2_on,
+                coefficient=float(self.j2_moon),
+                reference_radius_m=(
+                    float(self.lunar_j2_reference_radius_m) if lunar_j2_on else 0.0
+                ),
+                orientation_policy=(
+                    OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE
+                    if lunar_j2_on
+                    else OrientationPolicy.NOT_APPLICABLE
+                ),
+                status=ForceElementStatus.SUPPORTED,
+            ),
+            earth_j2=EarthJ2ForceContract(
+                enabled=earth_j2_on,
+                mode=str(self.earth_j2_mode),
+                coefficient=float(self.earth_j2_coefficient) if earth_j2_on else 0.0,
+                reference_radius_m=(
+                    float(self.earth_j2_reference_radius_m) if earth_j2_on else 0.0
+                ),
+                orientation_policy=(
+                    OrientationPolicy.EXPERIMENTAL_IDENTITY_J2000_TO_EARTH_BODY_FIXED
+                    if earth_j2_on
+                    else OrientationPolicy.NOT_APPLICABLE
+                ),
+                status=ForceElementStatus.UNSUPPORTED_OFFICIAL_OD,
+            ),
+            lunar_harmonics=self.lunar_harmonics,
+            force_ephemeris_policy=str(self.force_ephemeris_policy),
+            consumer_capabilities=consumer_capabilities_for(
+                lunar_j2_on=lunar_j2_on,
+                earth_j2_on=earth_j2_on,
+                harmonics_on=self.harmonics_on,
+            ),
+        )
+
+    def fingerprint(self) -> str:
+        return force_model_fingerprint(self.contract())
+
+
+def bind_spec_to_runtime(
+    spec: ForceExecutionSpec,
+    runtime_kwargs: Mapping[str, float],
+    *,
+    context: str,
+) -> None:
+    """Assert the spec's force primitives exactly equal the runtime values.
+
+    Bit-level float equality between the fingerprinted force values and the
+    values actually handed to the propagator (R0B-V01). Raises a controlled
+    binding error on any difference.
+    """
+    expected = spec.propagation_kwargs()
+    for key, spec_value in expected.items():
+        runtime_value = float(runtime_kwargs[key])
+        # exact float equality (bit-level), NOT approximate
+        if runtime_value != spec_value or (
+            runtime_value == 0.0
+            and math.copysign(1.0, runtime_value) != math.copysign(1.0, spec_value)
+        ):
+            raise ForceContractError(
+                f"{context}: force primitive {key!r} bound to the propagator "
+                f"({runtime_value!r}) does not exactly equal the fingerprinted "
+                f"spec value ({spec_value!r})."
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -374,19 +559,30 @@ class ForceModelMismatchPolicy:
 
 @dataclass(frozen=True)
 class ForceModelParityDecision:
-    """Outcome of the pre-execution truth/estimator force comparison."""
+    """Outcome of the pre-execution truth/estimator force comparison.
+
+    The manifest is stored as immutable canonical bytes and the SHA is computed
+    from exactly those bytes. ``manifest`` re-parses a fresh copy on every
+    access, so no nested mutation of a returned payload can ever leave the
+    stored SHA stale (R0B-V08).
+    """
 
     schema_version: str
     truth_fingerprint: str
     estimator_fingerprint: str
     match: bool
     policy: ForceModelMismatchPolicy
-    manifest: Mapping[str, Any]
+    manifest_bytes: bytes
     manifest_sha256: str
 
     @property
     def explicit_mismatch(self) -> bool:
         return bool(self.policy.enabled and not self.match)
+
+    @property
+    def manifest(self) -> dict[str, Any]:
+        """Return a freshly parsed copy of the manifest (never a shared dict)."""
+        return json.loads(self.manifest_bytes.decode("utf-8"))
 
 
 def _unsupported_estimator_roles(contract: ForceModelContract) -> list[ConsumerRole]:
@@ -437,14 +633,15 @@ def evaluate_force_model_parity(
     manifest = force_model_manifest(
         truth_contract, estimator_contract, policy, match=match
     )
+    manifest_bytes = manifest_canonical_bytes(manifest)
     return ForceModelParityDecision(
         schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
         truth_fingerprint=truth_fingerprint,
         estimator_fingerprint=estimator_fingerprint,
         match=match,
         policy=policy,
-        manifest=MappingProxyType(manifest),
-        manifest_sha256=manifest_sha256(manifest),
+        manifest_bytes=manifest_bytes,
+        manifest_sha256=sha256_hex_of_bytes(manifest_bytes),
     )
 
 

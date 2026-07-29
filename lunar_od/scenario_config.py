@@ -17,22 +17,15 @@ from .constants import (
     R_MOON_M,
 )
 from .force_contract import (
-    FORCE_CONTRACT_SCHEMA_VERSION,
-    ConsumerReadiness,
     ConsumerRole,
-    EarthJ2ForceContract,
-    ForceElementStatus,
+    ForceContractError,
+    ForceExecutionSpec,
     ForceModelContract,
     ForceModelMismatchPolicy,
     ForceModelParityDecision,
     LunarHarmonicsForceContract,
-    LunarJ2ForceContract,
-    OrientationPolicy,
-    PointMassForceContract,
-    ThirdBodyForceContract,
-    capability_map,
+    bind_spec_to_runtime,
     evaluate_force_model_parity,
-    lunar_j2_enabled,
     sha256_hex_of_bytes,
 )
 
@@ -712,34 +705,36 @@ def _lunar_harmonics_force_contract(config: ScenarioConfig) -> LunarHarmonicsFor
     )
 
 
-def _consumer_capabilities_for(
-    *, lunar_j2_on: bool, earth_j2_on: bool, harmonics_on: bool
-):
-    """Capability matrix for the configured force set.
+def force_execution_spec_from_scenario_config(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float = MU_MOON_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    j2_moon: float | None = None,
+    force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
+) -> ForceExecutionSpec:
+    """Build the executable force spec implied by ``config`` (R0B-F1).
 
-    Precedence is worst-status-first: an experimental or unsupported element
-    downgrades the roles it reaches, and R0B never reports a role as
-    ``verified`` on the strength of a force that R0A/R1 has not qualified
-    there. SCI-003 is NOT claimed closed anywhere in this matrix.
+    Consumes every force-related ScenarioConfig field. Gravitational parameters
+    come from the caller (the run fixture, not the config); pass the SAME values
+    that will reach the propagator so the contract and the runtime bind exactly.
+    ``j2_moon`` may be overridden to describe one side of a declared mismatch
+    campaign; it defaults to ``config.j2_moon``. Never calls a propagator.
     """
-    if harmonics_on:
-        # High-degree harmonics: direct truth trajectory only.
-        statuses = {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
-        statuses[ConsumerRole.TRUTH_STATE] = ConsumerReadiness.UNSUPPORTED
-        return capability_map(statuses)
-    if earth_j2_on:
-        # Earth J2 is unsupported on every official OD role (R0A fail-closed).
-        return capability_map(
-            {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
-        )
-    if lunar_j2_on:
-        # R0A verified the propagation roles; posterior/observability await R1.
-        statuses = {role: ConsumerReadiness.VERIFIED for role in ConsumerRole}
-        statuses[ConsumerRole.POSTERIOR_COVARIANCE] = ConsumerReadiness.PENDING_R1
-        statuses[ConsumerRole.OBSERVABILITY] = ConsumerReadiness.PENDING_R1
-        return capability_map(statuses)
-    # Point-mass + third-body only: the long-standing verified baseline.
-    return capability_map({role: ConsumerReadiness.VERIFIED for role in ConsumerRole})
+    return ForceExecutionSpec(
+        j2_moon=float(config.j2_moon if j2_moon is None else j2_moon),
+        mu_moon_m3_s2=float(mu_moon_m3_s2),
+        mu_earth_m3_s2=float(mu_earth_m3_s2),
+        mu_sun_m3_s2=float(mu_sun_m3_s2),
+        enable_earth_j2=bool(config.enable_earth_j2),
+        earth_j2_mode=str(config.earth_j2_mode),
+        lunar_harmonics=_lunar_harmonics_force_contract(config),
+        lunar_j2_reference_radius_m=float(R_MOON_M),
+        earth_j2_coefficient=float(J2_EARTH_UNNORMALIZED),
+        earth_j2_reference_radius_m=float(R_EARTH_J2_REF_M),
+        force_ephemeris_policy=str(force_ephemeris_policy),
+    )
 
 
 def force_model_contract_from_scenario_config(
@@ -752,68 +747,16 @@ def force_model_contract_from_scenario_config(
 ) -> ForceModelContract:
     """Derive the immutable force contract implied by ``config``.
 
-    Consumes every force-related ScenarioConfig field, turning implicit
-    defaults into explicit contract values. Gravitational parameters are
-    supplied by the caller because they come from the run fixture, not from
-    the scenario config. This function never calls a propagator.
+    Thin wrapper over the executable spec (the single source), so the reported
+    contract and the executed primitives can never diverge (R0B-V02).
     """
-    j2_moon = float(config.j2_moon)
-    lunar_j2_on = lunar_j2_enabled(j2_moon)
-    earth_j2_on = bool(config.enable_earth_j2)
-    harmonics = _lunar_harmonics_force_contract(config)
-    return ForceModelContract(
-        schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
-        lunar_point_mass=PointMassForceContract(
-            enabled=True,
-            body="moon",
-            gravitational_parameter_m3_s2=float(mu_moon_m3_s2),
-            policy="central_body_point_mass",
-        ),
-        earth_third_body=ThirdBodyForceContract(
-            enabled=bool(mu_earth_m3_s2),
-            body="earth",
-            gravitational_parameter_m3_s2=float(mu_earth_m3_s2),
-            policy="moon_centered_third_body_point_mass",
-        ),
-        sun_third_body=ThirdBodyForceContract(
-            enabled=bool(mu_sun_m3_s2),
-            body="sun",
-            gravitational_parameter_m3_s2=float(mu_sun_m3_s2),
-            policy="moon_centered_third_body_point_mass",
-        ),
-        lunar_j2=LunarJ2ForceContract(
-            enabled=lunar_j2_on,
-            coefficient=j2_moon,
-            # The propagator pairs a nonzero J2 with R_MOON_M; a disabled term
-            # contributes no radius to the evaluated physics.
-            reference_radius_m=float(R_MOON_M) if lunar_j2_on else 0.0,
-            orientation_policy=(
-                OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE
-                if lunar_j2_on
-                else OrientationPolicy.NOT_APPLICABLE
-            ),
-            status=ForceElementStatus.SUPPORTED,
-        ),
-        earth_j2=EarthJ2ForceContract(
-            enabled=earth_j2_on,
-            mode=str(config.earth_j2_mode),
-            coefficient=float(J2_EARTH_UNNORMALIZED) if earth_j2_on else 0.0,
-            reference_radius_m=float(R_EARTH_J2_REF_M) if earth_j2_on else 0.0,
-            orientation_policy=(
-                OrientationPolicy.EXPERIMENTAL_IDENTITY_J2000_TO_EARTH_BODY_FIXED
-                if earth_j2_on
-                else OrientationPolicy.NOT_APPLICABLE
-            ),
-            status=ForceElementStatus.UNSUPPORTED_OFFICIAL_OD,
-        ),
-        lunar_harmonics=harmonics,
-        force_ephemeris_policy=str(force_ephemeris_policy),
-        consumer_capabilities=_consumer_capabilities_for(
-            lunar_j2_on=lunar_j2_on,
-            earth_j2_on=earth_j2_on,
-            harmonics_on=bool(config.enable_lunar_harmonics),
-        ),
-    )
+    return force_execution_spec_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon_m3_s2,
+        mu_earth_m3_s2=mu_earth_m3_s2,
+        mu_sun_m3_s2=mu_sun_m3_s2,
+        force_ephemeris_policy=force_ephemeris_policy,
+    ).contract()
 
 
 def _optional_reason(value: Any) -> str | None:
@@ -834,34 +777,102 @@ def force_model_mismatch_policy_from_scenario_config(
     )
 
 
+def reject_unsupported_official_execution(config: ScenarioConfig, *, context: str) -> None:
+    """Fail closed on force selections that the official runner cannot execute.
+
+    High-degree lunar harmonics is qualified only as an experimental direct
+    low-level trajectory computation. The official scenario/CLI/desktop runner
+    does not yet bind a harmonics model to truth propagation, so accepting it
+    here would report physics that was never executed (R0B-V06, invariant #1).
+    """
+    if config.enable_lunar_harmonics:
+        raise ForceContractError(
+            f"{context}: high-degree lunar harmonics is an EXPERIMENTAL direct "
+            "low-level trajectory capability and is not wired into the official "
+            "scenario/CLI/desktop truth execution. The official harmonics "
+            "mismatch campaign is not implemented, so no run may report harmonics "
+            "provenance as if it were executed. Set enable_lunar_harmonics=False "
+            "for official OD runs (the direct-trajectory dynamics API remains "
+            "available for experimental use)."
+        )
+
+
+def scenario_force_execution_specs(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    truth_spec: ForceExecutionSpec | None = None,
+    estimator_spec: ForceExecutionSpec | None = None,
+) -> tuple[ForceExecutionSpec, ForceExecutionSpec]:
+    """Return the (truth, estimator) executable specs from effective GM values.
+
+    Both default to the spec implied by ``config`` (the matched case). A
+    declared mismatch campaign passes two different specs — each of which fully
+    determines its own runtime primitives, so truth and estimator really run
+    different physics (R0B-V05).
+    """
+    derived = force_execution_spec_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon_m3_s2,
+        mu_earth_m3_s2=mu_earth_m3_s2,
+        mu_sun_m3_s2=mu_sun_m3_s2,
+    )
+    return (
+        truth_spec if truth_spec is not None else derived,
+        estimator_spec if estimator_spec is not None else derived,
+    )
+
+
+def scenario_force_model_configuration_preflight(
+    config: ScenarioConfig, *, context: str = "scenario force-model configuration preflight"
+) -> None:
+    """Stage A: everything checkable BEFORE the fixture is read (R0B-F1).
+
+    Mapping/Earth-J2/capability/mismatch-policy/unsupported-model validation.
+    On an accidental mismatch or an unsupported selection this raises before any
+    fixture read, SPICE load, or propagation.
+    """
+    validate_official_earth_j2_support(config.enable_earth_j2, context=context)
+    reject_unsupported_official_execution(config, context=context)
+    # Reason/policy validity independent of the GM values (fails fast without a
+    # fixture): a whitespace-only reason with opt-in is rejected here.
+    force_model_mismatch_policy_from_scenario_config(config)
+
+
 def scenario_force_model_preflight(
     config: ScenarioConfig,
     *,
     mu_moon_m3_s2: float = MU_MOON_M3S2,
     mu_earth_m3_s2: float = MU_EARTH_M3S2,
     mu_sun_m3_s2: float = MU_SUN_M3S2,
-    truth_contract: ForceModelContract | None = None,
-    estimator_contract: ForceModelContract | None = None,
+    truth_spec: ForceExecutionSpec | None = None,
+    estimator_spec: ForceExecutionSpec | None = None,
     context: str = "scenario force-model preflight",
 ) -> ForceModelParityDecision:
     """Shared truth/estimator force-parity preflight (JSON runner + desktop).
 
     Both official entry points call THIS helper so the contract is never
-    reproduced two different ways. Contracts default to the one implied by
-    ``config`` (the matched case); campaigns that deliberately propagate truth
-    with different physics pass an explicit ``truth_contract``.
+    reproduced two different ways. Runs Stage A (configuration) then evaluates
+    parity from the executable specs. Callers that already read the fixture pass
+    the effective GM values (Stage B); the default constants keep pre-fixture
+    call sites (config-only checks, tests) working.
 
     Raises before any fixture read, SPICE load, or propagation.
     """
-    derived = force_model_contract_from_scenario_config(
+    scenario_force_model_configuration_preflight(config, context=context)
+    truth, estimator = scenario_force_execution_specs(
         config,
         mu_moon_m3_s2=mu_moon_m3_s2,
         mu_earth_m3_s2=mu_earth_m3_s2,
         mu_sun_m3_s2=mu_sun_m3_s2,
+        truth_spec=truth_spec,
+        estimator_spec=estimator_spec,
     )
     return evaluate_force_model_parity(
-        truth_contract if truth_contract is not None else derived,
-        estimator_contract if estimator_contract is not None else derived,
+        truth.contract(),
+        estimator.contract(),
         force_model_mismatch_policy_from_scenario_config(config),
         context=context,
     )
