@@ -20,6 +20,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import contextlib
+
 import numpy as np
 
 from lunar_od.force_contract import (
@@ -42,6 +44,19 @@ def _empty_scenario_result():
         measurement_type="range_rate",
         start_mode="cold",
         arc_results=(),
+        estimator_type="bls_lm",
+    )
+
+
+def _scenario_result_with_arc():
+    """A ScenarioResult with one arc, so the summary CSV emits a data row."""
+    from tests.test_reporting import _arc_result
+
+    return ScenarioResult(
+        label="r0b_f1",
+        measurement_type="range_rate",
+        start_mode="cold",
+        arc_results=(_arc_result(1, 1000.0, 25.0),),
         estimator_type="bls_lm",
     )
 
@@ -99,7 +114,18 @@ class _RunnerHarness:
 
     def __init__(self, stack, tmpdir):
         self.truth_spy = mock.MagicMock(return_value=np.zeros((6, 6)))
-        self.batch_spy = mock.MagicMock(return_value=_empty_scenario_result())
+        self.batch_spy = mock.MagicMock(return_value=_scenario_result_with_arc())
+        self.spice_load_spy = mock.MagicMock()
+        # Downstream propagation/estimator entries. Once run_batch is mocked
+        # these never run, but patching them makes the F3 zero-call assertion
+        # explicit for every production entry.
+        self.state_spy = mock.MagicMock()
+        self.stm_spy = mock.MagicMock()
+        self.ukf_spy = mock.MagicMock()
+        self.fast_sigma_spy = mock.MagicMock(return_value=None)
+        self.bls_spy = mock.MagicMock()
+        self.srif_spy = mock.MagicMock()
+        self.fixture_reads = 0
         eph = _fake_ephemeris()
         spice_stub = types.SimpleNamespace(str2et=lambda _s: 0.0, kclear=lambda: None)
         fake_station = types.SimpleNamespace(name="S1")
@@ -108,13 +134,20 @@ class _RunnerHarness:
 
         def _read_text(self_path, *a, **k):
             if self_path.name == "spice_snapshots.json":
+                self.fixture_reads += 1
                 return json.dumps(_FIXTURE)
             return real_read_text(self_path, *a, **k)
 
         stack.enter_context(mock.patch.dict(sys.modules, {"spiceypy": spice_stub}))
         stack.enter_context(mock.patch.object(Path, "is_file", lambda self: True))
         stack.enter_context(mock.patch.object(Path, "read_text", _read_text))
-        stack.enter_context(mock.patch.object(runner, "load_spice_kernels"))
+        stack.enter_context(mock.patch.object(runner, "load_spice_kernels", self.spice_load_spy))
+        stack.enter_context(mock.patch("lunar_od.dynamics.propagate_state", self.state_spy))
+        stack.enter_context(mock.patch("lunar_od.dynamics.propagate_augmented_state", self.stm_spy))
+        stack.enter_context(mock.patch("lunar_od.scenarios.run_lunar_ukf", self.ukf_spy))
+        stack.enter_context(mock.patch("lunar_od.scenarios.make_fast_sigma_propagator", self.fast_sigma_spy))
+        stack.enter_context(mock.patch("lunar_od.scenarios.estimate_position_bls_lm", self.bls_spy))
+        stack.enter_context(mock.patch("lunar_od.scenarios.estimate_position_srif", self.srif_spy))
         stack.enter_context(mock.patch.object(runner, "sample_moon_centered_ephemeris", return_value=eph))
         stack.enter_context(mock.patch.object(runner, "perturb_moon_centered_ephemeris", return_value=eph))
         stack.enter_context(
@@ -189,7 +222,10 @@ class F2ExecutableLunarJ2MismatchTests(unittest.TestCase):
             result = runner.run_configured_scenario(
                 config, truth_j2_moon=J2_MOON, estimator_j2_moon=0.0, manifest_dir=tmp
             )
-        # truth propagator got nonzero J2; estimator/batch got zero J2
+        # truth propagator got nonzero J2; estimator/batch got zero J2. The
+        # estimator J2 (0.0) is what the batch forwards to BLS/STM, standard UKF,
+        # square-root UKF, and fast-sigma — all consumer boundaries share the
+        # single estimator-spec value (see F5/T3-T5 for per-path J2 execution).
         self.assertEqual(h.truth_spy.call_args.kwargs["j2_moon"], J2_MOON)
         self.assertEqual(h.batch_spy.call_args.kwargs["j2_moon"], 0.0)
         # fingerprints differ; match false; reported consistently
@@ -197,6 +233,37 @@ class F2ExecutableLunarJ2MismatchTests(unittest.TestCase):
         self.assertFalse(result.force_model_match)
         self.assertTrue(result.explicit_force_model_mismatch)
         self.assertEqual(result.force_model_mismatch_reason, "truth J2 vs point-mass estimator")
+
+    def test_estimator_j2_reaches_all_consumer_boundaries(self):
+        # Direct check that one estimator spec's J2 is what BLS/STM, standard
+        # UKF, square-root UKF, and fast-sigma all consume: run_lunar_ukf and
+        # make_fast_sigma_propagator receive it, and the batch dispatch forwards
+        # the same value the estimators use. Uses the shared reproducer helper.
+        from lunar_od.scenarios import run_batch_arc_sequence
+        from tests.test_r0a_force_config_parity import (
+            _prepared_position_arc,
+            _synthetic_ephemeris,
+            MU_MOON,
+        )
+
+        arc, get_earth, get_sun = _prepared_position_arc()
+        captured = {}
+        real_ukf = __import__("lunar_od.filters", fromlist=["run_lunar_ukf"]).run_lunar_ukf
+
+        def _ukf_spy(*args, **kwargs):
+            captured["ukf_j2"] = kwargs.get("j2_moon")
+            return real_ukf(*args, **kwargs)
+
+        fast_spy = mock.MagicMock(return_value=None)
+        with mock.patch("lunar_od.scenarios.run_lunar_ukf", side_effect=_ukf_spy), \
+                mock.patch("lunar_od.scenarios.make_fast_sigma_propagator", fast_spy):
+            run_batch_arc_sequence(
+                (arc,), "position", "cold", "ukf", MU_MOON, 0.0, 0.0,
+                get_earth, get_sun, cold_start_bank=(np.zeros(6),),
+                ephemeris=_synthetic_ephemeris(700.0), j2_moon=J2_MOON,
+            )
+        self.assertEqual(captured["ukf_j2"], J2_MOON)  # standard + SR UKF path
+        self.assertEqual(fast_spy.call_args.kwargs["j2_moon"], J2_MOON)  # fast sigma
 
     def test_undeclared_j2_mismatch_is_rejected(self):
         config = _config(j2_moon=J2_MOON)  # no opt-in
@@ -226,29 +293,121 @@ class F3HarmonicsCampaignRejectionTests(unittest.TestCase):
             with self.assertRaises(ForceContractError) as caught:
                 runner.run_configured_scenario(config, manifest_dir=tmp)
         self.assertIn("EXPERIMENTAL", str(caught.exception))
-        self.assertEqual(h.truth_spy.call_count, 0)
-        self.assertEqual(h.batch_spy.call_count, 0)
+        # EVERY production entry counter is zero: rejection precedes all of them.
+        self.assertEqual(h.fixture_reads, 0, "fixture read")
+        self.assertEqual(h.spice_load_spy.call_count, 0, "SPICE load")
+        self.assertEqual(h.truth_spy.call_count, 0, "truth")
+        self.assertEqual(h.state_spy.call_count, 0, "state")
+        self.assertEqual(h.stm_spy.call_count, 0, "STM")
+        self.assertEqual(h.ukf_spy.call_count, 0, "UKF (std/SR)")
+        self.assertEqual(h.fast_sigma_spy.call_count, 0, "fast sigma")
+        self.assertEqual(h.bls_spy.call_count, 0, "BLS")
+        self.assertEqual(h.srif_spy.call_count, 0, "SRIF")
+        self.assertEqual(h.batch_spy.call_count, 0, "batch")
 
 
 class F4RealCliManifestTests(unittest.TestCase):
-    def test_cli_persists_manifest_matching_csv_sha(self):
-        config = _config(j2_moon=J2_MOON)
+    """Drive the REAL CLI main() and prove one output bundle owns everything."""
+
+    def _write_config_json(self, config_output_dir):
+        cfg = {
+            "name": "r0b_f2_cli",
+            "measurement_type": "range_rate",
+            "estimator_type": "bls_lm",
+            "start_mode": "cold",
+            "network": "multi",
+            "j2_moon": J2_MOON,
+            "duration_h": 1.0,
+            "sample_step_s": 600.0,
+            "output_dir": str(config_output_dir),
+        }
+        cfg_path = Path(config_output_dir) / "scenario.json"
+        cfg_path.write_text(json.dumps(cfg), encoding="utf-8")
+        return cfg_path
+
+    def _read_csv_row(self, csv_path):
+        with Path(csv_path).open(newline="", encoding="utf-8") as fh:
+            return next(csv.DictReader(fh))
+
+    def test_cli_output_dir_override_owns_csv_png_and_force_manifest(self):
         import contextlib
-        with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
-            h = _RunnerHarness(stack, tmp)
-            result = runner.run_configured_scenario(config, manifest_dir=tmp)
-            manifest_path = Path(tmp) / f"{config.name}_force_model_manifest.json"
-            self.assertTrue(manifest_path.is_file(), "side manifest was not written")
+
+        with tempfile.TemporaryDirectory() as config_dir, \
+                tempfile.TemporaryDirectory() as override_dir, \
+                contextlib.ExitStack() as stack:
+            _RunnerHarness(stack, override_dir)
+            # PNG plotting is unrelated to bundle ownership; stub it so it writes
+            # to whatever path main() computes and return that path.
+            def _fake_plot(scenarios, output_path, *, title=""):
+                Path(output_path).write_bytes(b"\x89PNG\r\n")
+                return Path(output_path)
+            stack.enter_context(mock.patch.object(runner, "plot_scenario_comparison", side_effect=_fake_plot))
+
+            cfg_path = self._write_config_json(config_dir)
+            cwd_before = os.getcwd()
+            os.chdir(override_dir)  # so a stray CWD manifest would be detectable
+            try:
+                rc = runner.main([str(cfg_path), "--output-dir", override_dir])
+            finally:
+                os.chdir(cwd_before)
+
+            self.assertEqual(rc, 0)  # argument parsing + run really happened
+            name = "r0b_f2_cli"
+            csv_path = Path(override_dir) / f"{name}_summary.csv"
+            png_path = Path(override_dir) / f"{name}_comparison.png"
+            manifest_path = Path(override_dir) / f"{name}_force_model_manifest.json"
+            # (3-5) CSV, PNG, manifest all under the override bundle
+            self.assertTrue(csv_path.is_file(), "CSV not in override dir")
+            self.assertTrue(png_path.is_file(), "PNG not in override dir")
+            self.assertTrue(manifest_path.is_file(), "manifest not in override dir")
+            # (6) not in config.output_dir; (7) not in CWD (== override here, so
+            # check the config dir which is the only other candidate)
+            self.assertFalse(
+                (Path(config_dir) / f"{name}_force_model_manifest.json").exists(),
+                "manifest leaked into config.output_dir",
+            )
+            # (8-9) valid JSON, no absolute path
+            raw = manifest_path.read_bytes()
+            payload = json.loads(raw.decode("utf-8"))
+            self.assertIn("schema_version", payload)
+            self.assertNotIn(override_dir, raw.decode("utf-8"))
+            self.assertNotIn(config_dir, raw.decode("utf-8"))
+            self.assertNotIn(str(_REPO_ROOT), raw.decode("utf-8"))
+            # (10) file-byte SHA == CSV SHA == result/provenance SHA
+            file_sha = "sha256:" + hashlib.sha256(raw).hexdigest()
+            row = self._read_csv_row(csv_path)
+            self.assertEqual(file_sha, row["force_contract_manifest_sha256"])
+            # (11) truth/estimator fingerprints equal across manifest and CSV
+            self.assertEqual(payload["truth"]["fingerprint"], row["truth_force_fingerprint"])
+            self.assertEqual(payload["estimator"]["fingerprint"], row["estimator_force_fingerprint"])
+            # (12) atomic write leaves a complete file and no leftover temp
+            self.assertFalse(manifest_path.with_name(manifest_path.name + ".tmp").exists())
+
+    def test_cli_native_output_dir_owns_the_whole_bundle(self):
+        import contextlib
+
+        with tempfile.TemporaryDirectory() as config_dir, contextlib.ExitStack() as stack:
+            _RunnerHarness(stack, config_dir)
+            def _fake_plot(scenarios, output_path, *, title=""):
+                Path(output_path).write_bytes(b"\x89PNG\r\n")
+                return Path(output_path)
+            stack.enter_context(mock.patch.object(runner, "plot_scenario_comparison", side_effect=_fake_plot))
+
+            cfg_path = self._write_config_json(config_dir)
+            rc = runner.main([str(cfg_path)])  # no --output-dir override
+
+            self.assertEqual(rc, 0)
+            name = "r0b_f2_cli"
+            for suffix in ("_summary.csv", "_comparison.png", "_force_model_manifest.json"):
+                self.assertTrue(
+                    (Path(config_dir) / f"{name}{suffix}").is_file(),
+                    f"{suffix} not under config.output_dir",
+                )
+            manifest_path = Path(config_dir) / f"{name}_force_model_manifest.json"
             raw = manifest_path.read_bytes()
             file_sha = "sha256:" + hashlib.sha256(raw).hexdigest()
-            # actual file SHA == the SHA reported on the result / CSV
-            self.assertEqual(file_sha, result.force_contract_manifest_sha256)
-            payload = json.loads(raw.decode("utf-8"))
-            self.assertEqual(payload["truth"]["fingerprint"], result.truth_force_fingerprint)
-            self.assertEqual(payload["estimator"]["fingerprint"], result.estimator_force_fingerprint)
-            # no absolute path in the manifest
-            self.assertNotIn(tmp, raw.decode("utf-8"))
-            self.assertNotIn(str(_REPO_ROOT), raw.decode("utf-8"))
+            row = self._read_csv_row(Path(config_dir) / f"{name}_summary.csv")
+            self.assertEqual(file_sha, row["force_contract_manifest_sha256"])
 
 
 class F6NestedImmutabilityTests(unittest.TestCase):

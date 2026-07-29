@@ -53,6 +53,10 @@ from lunar_od.thesis_matrix import (  # noqa: E402
 def main(argv=None) -> int:
     args = _parse_args(argv)
     config = load_scenario_config_json(args.config)
+    # Single output-bundle owner for this CLI run: the override wins, otherwise
+    # the config's own directory. The summary CSV, comparison PNG, AND the
+    # force-model manifest all live here — the manifest owner is passed
+    # explicitly so it can never split off into config.output_dir (R0B-F2/V03).
     output_dir = Path(args.output_dir or config.output_dir)
     summary_csv = output_dir / f"{config.name}_summary.csv"
     comparison_png = output_dir / f"{config.name}_comparison.png"
@@ -63,7 +67,7 @@ def main(argv=None) -> int:
         print(f"Would write {comparison_png}")
         return 0
 
-    scenario = run_configured_scenario(config)
+    scenario = run_configured_scenario(config, manifest_dir=output_dir)
     summary_csv = write_scenario_summary_csv([scenario], summary_csv)
     comparison_png = plot_scenario_comparison([scenario], comparison_png, title=config.name)
     print(f"Wrote {summary_csv}")
