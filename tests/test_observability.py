@@ -10,6 +10,7 @@ from lunar_od import (
     RangeRatePhysicsConfig,
     Station,
     BiasObservabilityPolicy,
+    ObservabilityNumericalError,
     analyze_arc_observability,
     analyze_augmented_arc_observability,
     build_initial_state_jacobian,
@@ -20,10 +21,38 @@ from lunar_od import (
     measurement_sigma_vector,
     propagate_augmented_state,
     position_initial_state_jacobian_from_augmented_history,
+    summarize_weighted_jacobian,
 )
 
 
 class ObservabilityTests(unittest.TestCase):
+    def test_nonfinite_inputs_and_rank_tolerance_fail_closed(self):
+        finite = np.eye(3)
+        for bad_value in (np.nan, np.inf, -np.inf):
+            bad_jacobian = finite.copy()
+            bad_jacobian[0, 0] = bad_value
+            with self.assertRaisesRegex(ObservabilityNumericalError, "weighted_jacobian"):
+                summarize_weighted_jacobian("position", 1, bad_jacobian)
+
+            bad_fisher = finite.copy()
+            bad_fisher[0, 0] = bad_value
+            with self.assertRaisesRegex(ObservabilityNumericalError, "fisher_information"):
+                summarize_weighted_jacobian(
+                    "position", 1, finite, fisher_information=bad_fisher
+                )
+
+        with self.assertRaisesRegex(ObservabilityNumericalError, "rank_tol"):
+            summarize_weighted_jacobian("position", 1, finite, rank_tol=np.nan)
+        with self.assertRaisesRegex(ValueError, "non-negative"):
+            summarize_weighted_jacobian("position", 1, finite, rank_tol=-1.0)
+
+    def test_rank_deficiency_remains_a_diagnostic_result(self):
+        weighted = np.diag([1.0, 1e-20, 0.0])
+        result = summarize_weighted_jacobian("position", 1, weighted)
+        self.assertLess(result.rank, result.num_parameters)
+        self.assertTrue(np.isinf(result.condition_number))
+        self.assertTrue(np.all(np.isfinite(result.singular_values)))
+
     def test_implicit_position_observability_uses_shared_initial_state_block(self):
         mu_moon = 4902.800066e9
         t_all_s, x_truth, get_earth_pos, get_sun_pos = _truth_history(mu_moon)

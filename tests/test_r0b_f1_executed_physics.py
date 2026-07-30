@@ -491,12 +491,12 @@ class F8CapabilityMatrixTests(unittest.TestCase):
             ConsumerReadiness.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY,
         )
 
-    def test_lunar_j2_posterior_observability_pending_r1(self):
+    def test_lunar_j2_posterior_observability_verified_r1(self):
         from lunar_od.force_contract import consumer_capabilities_for
 
         caps = consumer_capabilities_for(lunar_j2_on=True, earth_j2_on=False, harmonics_on=False)
-        self.assertEqual(caps[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.PENDING_R1)
-        self.assertEqual(caps[ConsumerRole.OBSERVABILITY], ConsumerReadiness.PENDING_R1)
+        self.assertEqual(caps[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.VERIFIED)
+        self.assertEqual(caps[ConsumerRole.OBSERVABILITY], ConsumerReadiness.VERIFIED)
 
     def test_earth_j2_all_unsupported(self):
         from lunar_od.force_contract import consumer_capabilities_for
