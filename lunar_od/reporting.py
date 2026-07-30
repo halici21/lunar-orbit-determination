@@ -148,6 +148,18 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                 "force_contract_manifest_sha256",
                 "posterior_force_role_status",
                 "observability_force_role_status",
+                "posterior_covariance_stm_mode",
+                "posterior_covariance_rank",
+                "posterior_covariance_condition_number",
+                "posterior_covariance_min_eigenvalue",
+                "posterior_covariance_finite",
+                "observability_rank",
+                "observability_condition_number",
+                "observability_singular_value_min",
+                "observability_singular_value_max",
+                "observability_finite",
+                "condition_number_available",
+                "derivative_validation_profile",
             ]
         )
         for scenario in scenarios:
@@ -260,6 +272,18 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                         scenario.force_contract_manifest_sha256,
                         scenario.posterior_force_role_status,
                         scenario.observability_force_role_status,
+                        scenario.posterior_covariance_stm_mode,
+                        scenario.posterior_covariance_rank,
+                        scenario.posterior_covariance_condition_number,
+                        scenario.posterior_covariance_min_eigenvalue,
+                        scenario.posterior_covariance_finite,
+                        scenario.observability_rank,
+                        scenario.observability_condition_number,
+                        scenario.observability_singular_value_min,
+                        scenario.observability_singular_value_max,
+                        scenario.observability_finite,
+                        result.condition_number_available,
+                        scenario.derivative_validation_profile,
                     ]
                 )
 

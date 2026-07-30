@@ -358,11 +358,10 @@ def consumer_capabilities_for(
 ) -> Mapping[ConsumerRole, ConsumerReadiness]:
     """Capability matrix for a force set. Worst-status-first precedence.
 
-    R0B never reports a role ``verified`` on the strength of a force R0A/R1 has
-    not qualified there, and SCI-003 is never claimed closed. High-degree
-    harmonics is qualified only as an experimental DIRECT truth trajectory
-    (``truth_state`` -> experimental_direct_trajectory_only); every other role,
-    including every estimator role, is ``unsupported`` (R0B-V06).
+    R1 closes SCI-003 for lunar-J2 posterior covariance and observability.
+    High-degree harmonics remains qualified only as an experimental DIRECT
+    truth trajectory (``truth_state`` -> experimental_direct_trajectory_only),
+    and Earth J2 remains unsupported for official OD consumers.
     """
     if harmonics_on:
         statuses = {role: ConsumerReadiness.UNSUPPORTED for role in ConsumerRole}
@@ -376,8 +375,8 @@ def consumer_capabilities_for(
         )
     if lunar_j2_on:
         statuses = {role: ConsumerReadiness.VERIFIED for role in ConsumerRole}
-        statuses[ConsumerRole.POSTERIOR_COVARIANCE] = ConsumerReadiness.PENDING_R1
-        statuses[ConsumerRole.OBSERVABILITY] = ConsumerReadiness.PENDING_R1
+        statuses[ConsumerRole.POSTERIOR_COVARIANCE] = ConsumerReadiness.VERIFIED
+        statuses[ConsumerRole.OBSERVABILITY] = ConsumerReadiness.VERIFIED
         return capability_map(statuses)
     return capability_map({role: ConsumerReadiness.VERIFIED for role in ConsumerRole})
 
@@ -699,8 +698,8 @@ def scenario_result_force_fields(decision: ForceModelParityDecision) -> dict[str
     """Map a parity decision onto the append-only ScenarioResult fields.
 
     Posterior/observability statuses are read from the ESTIMATOR contract:
-    those roles stay ``pending_r1`` for nonzero lunar J2 until R1 qualifies
-    them, and R0B never upgrades them.
+    R1 qualifies both roles for nonzero lunar J2 while Earth J2 and harmonics
+    retain their fail-closed capability states.
     """
     capabilities = decision.manifest["estimator"]["consumer_capabilities"]
     return {

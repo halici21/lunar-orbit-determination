@@ -29,6 +29,10 @@ from .two_way_range import two_way_range_nominal_and_initial_jacobian
 MeasurementType = Literal["position", "range_rate", "two_way_range"]
 
 
+class ObservabilityNumericalError(ValueError):
+    """Nonfinite observability input rejected before decomposition."""
+
+
 @dataclass(frozen=True)
 class ObservabilityResult:
     measurement_type: MeasurementType
@@ -146,6 +150,7 @@ def analyze_arc_observability(
     rtol: float = 1e-11,
     atol: float = 1e-12,
     rank_tol: float | None = None,
+    j2_moon: float = 0.0,
 ) -> ObservabilityResult:
     """Analyze initial-state observability for one prepared measurement arc."""
     x0 = (
@@ -167,6 +172,7 @@ def analyze_arc_observability(
         rtol=rtol,
         atol=atol,
         rank_tol=rank_tol,
+        j2_moon=j2_moon,
     )
 
 
@@ -184,6 +190,7 @@ def analyze_augmented_arc_observability(
     rtol: float = 1e-11,
     atol: float = 1e-12,
     rank_tol: float | None = None,
+    j2_moon: float = 0.0,
 ) -> ObservabilityResult:
     """Analyze joint initial-state and measurement-bias observability."""
     x0 = (
@@ -204,6 +211,7 @@ def analyze_augmented_arc_observability(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
     h_bias = build_measurement_bias_jacobian(
         measurement_type,
@@ -277,6 +285,7 @@ def analyze_initial_state_observability(
     rtol: float = 1e-11,
     atol: float = 1e-12,
     rank_tol: float | None = None,
+    j2_moon: float = 0.0,
 ) -> ObservabilityResult:
     """Build a whitened initial-state Jacobian and Fisher information summary."""
     h_initial = build_initial_state_jacobian(
@@ -292,6 +301,7 @@ def analyze_initial_state_observability(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
     sigma = measurement_sigma_vector(obs_data, pass_geo, measurement_type)
     weighted_jacobian = h_initial / sigma[:, None]
@@ -319,6 +329,7 @@ def build_initial_state_jacobian(
     *,
     rtol: float = 1e-11,
     atol: float = 1e-12,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     """Return the measurement Jacobian with respect to the arc initial state."""
     measurement_type = _normalize_measurement_type(measurement_type)
@@ -337,6 +348,7 @@ def build_initial_state_jacobian(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
 
     if measurement_type == "two_way_range":
@@ -409,6 +421,19 @@ def summarize_weighted_jacobian(
     h_white = np.asarray(weighted_jacobian, dtype=float)
     if h_white.ndim != 2:
         raise ValueError("weighted_jacobian must be a 2-D array.")
+    if not np.all(np.isfinite(h_white)):
+        raise ObservabilityNumericalError(
+            "weighted_jacobian contains nonfinite values; SVD and "
+            "Fisher eigendecomposition were not attempted."
+        )
+    if rank_tol is not None:
+        rank_tol_value = float(rank_tol)
+        if not np.isfinite(rank_tol_value):
+            raise ObservabilityNumericalError(
+                "rank_tol must be finite before observability decomposition."
+            )
+        if rank_tol_value < 0.0:
+            raise ValueError("rank_tol must be non-negative.")
 
     fisher = (
         _symmetrize(np.asarray(fisher_information, dtype=float))
@@ -417,6 +442,11 @@ def summarize_weighted_jacobian(
     )
     if fisher.shape != (h_white.shape[1], h_white.shape[1]):
         raise ValueError("fisher_information shape must match weighted_jacobian columns.")
+    if not np.all(np.isfinite(fisher)):
+        raise ObservabilityNumericalError(
+            "fisher_information contains nonfinite values; eigendecomposition "
+            "was not attempted."
+        )
 
     singular_values = np.linalg.svd(h_white, compute_uv=False)
     eigenvalues, eigenvectors = np.linalg.eigh(fisher)
@@ -494,6 +524,8 @@ def summarize_arc_observability_combinations(
 
 def _rank_tolerance(singular_values: np.ndarray, shape: tuple[int, int], rank_tol: float | None) -> float:
     if rank_tol is not None:
+        if not np.isfinite(rank_tol):
+            raise ObservabilityNumericalError("rank_tol must be finite.")
         if rank_tol < 0.0:
             raise ValueError("rank_tol must be non-negative.")
         return float(rank_tol)
