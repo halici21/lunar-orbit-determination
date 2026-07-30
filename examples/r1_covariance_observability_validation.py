@@ -234,7 +234,7 @@ def _derivative_sweep(output_dir: Path, metadata: dict[str, object]) -> None:
     epsilons = np.logspace(-4.0, 4.0, 17)
     configurations = (
         ("point-mass baseline", MU_MOON, 0.0, 0.0, 0.0),
-        ("third-body total", MU_MOON, MU_EARTH, MU_SUN, 0.0),
+        ("third-body only", 0.0, MU_EARTH, MU_SUN, 0.0),
         ("lunar J2 total F", MU_MOON, MU_EARTH, MU_SUN, J2_MOON_UNNORMALIZED),
     )
     rows: list[dict[str, object]] = []
@@ -326,13 +326,65 @@ def _derivative_sweep(output_dir: Path, metadata: dict[str, object]) -> None:
         )
     curves["J2 contribution dr block"] = j2_errors
 
+    velocity_errors = []
+    velocity_plot_errors = []
+    analytic_velocity_block = np.eye(3)
+    for epsilon in epsilons:
+        finite_difference = np.empty((3, 3))
+        for column in range(3):
+            plus = state.copy()
+            minus = state.copy()
+            plus[3 + column] += epsilon
+            minus[3 + column] -= epsilon
+            finite_difference[:, column] = (
+                f3body_moon(
+                    plus,
+                    MU_MOON,
+                    MU_EARTH,
+                    MU_SUN,
+                    EARTH_MCI,
+                    SUN_MCI,
+                    j2_moon=J2_MOON_UNNORMALIZED,
+                )[:3]
+                - f3body_moon(
+                    minus,
+                    MU_MOON,
+                    MU_EARTH,
+                    MU_SUN,
+                    EARTH_MCI,
+                    SUN_MCI,
+                    j2_moon=J2_MOON_UNNORMALIZED,
+                )[:3]
+            ) / (2.0 * epsilon)
+        relative_error = float(
+            np.linalg.norm(analytic_velocity_block - finite_difference)
+            / np.linalg.norm(analytic_velocity_block)
+        )
+        velocity_errors.append(relative_error)
+        velocity_plot_errors.append(max(relative_error, np.finfo(float).eps))
+        rows.append(
+            {
+                "series": "velocity-column block (linear exact)",
+                "epsilon": epsilon,
+                "epsilon_unit": "m/s",
+                "relative_frobenius_error": relative_error,
+                "plotted_relative_error": velocity_plot_errors[-1],
+                "state_vector": json.dumps(state.tolist(), separators=(",", ":")),
+            }
+        )
+    curves["velocity-column block (linear exact)"] = velocity_plot_errors
+
     for label, errors in curves.items():
         minimum_index = int(np.argmin(errors))
-        if not (
-            errors[minimum_index] <= 1.0e-8
-            and errors[0] > errors[minimum_index]
-            and errors[-1] > errors[minimum_index]
-        ):
+        accurate = errors[minimum_index] <= 1.0e-8
+        nonlinear_u_shape = (
+            label == "velocity-column block (linear exact)"
+            or (
+                errors[0] > errors[minimum_index]
+                and errors[-1] > errors[minimum_index]
+            )
+        )
+        if not (accurate and nonlinear_u_shape):
             raise RuntimeError(f"R1 derivative sweep failed for {label}.")
 
     csv_path = output_dir / "r1_j2_dynamics_jacobian_fd_sweep.csv"
@@ -340,7 +392,7 @@ def _derivative_sweep(output_dir: Path, metadata: dict[str, object]) -> None:
     fig, ax = plt.subplots(figsize=(8.8, 5.4))
     for label, errors in curves.items():
         ax.loglog(epsilons, errors, marker="o", markersize=3.5, label=label)
-    ax.set_xlabel("Position perturbation epsilon (m)")
+    ax.set_xlabel("Perturbation epsilon (m; m/s for velocity-column series)")
     ax.set_ylabel("Relative Frobenius error (dimensionless)")
     ax.set_title("R1 analytic dynamics/J2 Jacobian central-difference sweep")
     ax.grid(True, which="both", alpha=0.25)
