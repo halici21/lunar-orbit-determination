@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import importlib.util
 import inspect
@@ -809,6 +810,202 @@ class R1PosteriorAndObservabilityParityTests(unittest.TestCase):
                 header = raw_csv.read_text(encoding="utf-8").splitlines()[0]
                 self.assertIn("commit_sha", header)
                 self.assertIn("branch", header)
+
+
+class R1PlotMetricTraceabilityTests(unittest.TestCase):
+    """Every figure's headline metric must come from that figure's own raw CSV.
+
+    Guards against cross-sourcing a metric from a different observability or
+    posterior campaign (arc, whitening, condition number), which leaves a
+    reported number that cannot be reproduced from the mandatory raw artifact.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        script_path = (
+            Path(__file__).resolve().parents[1]
+            / "examples"
+            / "r1_covariance_observability_validation.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "r1_plot_metrics_under_test", script_path
+        )
+        cls.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.module)
+        cls._temporary = tempfile.TemporaryDirectory()
+        cls.output = Path(cls._temporary.name)
+        cls.summary = cls.module.generate(cls.output)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._temporary.cleanup()
+
+    def test_plot5_headline_metric_is_recomputable_from_its_own_raw_csv(self):
+        module = self.module
+        raw_csv = self.output / module.PLOT5_SOURCE_CSV
+        self.assertTrue(raw_csv.is_file(), raw_csv)
+
+        # 1-3: read the final raw CSV, pair the OFF/ON spectrum rows and
+        # recompute the metric here, independently of the producer.
+        with raw_csv.open(newline="", encoding="utf-8-sig") as handle:
+            csv_rows = list(csv.DictReader(handle))
+        off = {}
+        on = {}
+        for row in csv_rows:
+            index = int(row["singular_value_index"])
+            if row["j2_state"] == "J2 OFF":
+                off[index] = float(row["singular_value"])
+            elif row["j2_state"] == "J2 ON":
+                on[index] = float(row["singular_value"])
+        self.assertTrue(off)
+        self.assertEqual(sorted(off), sorted(on))
+        independent = max(
+            abs(on[index] - off[index]) / abs(off[index]) for index in sorted(off)
+        )
+        self.assertTrue(math.isfinite(independent))
+        self.assertGreater(independent, 1.0e-9)
+
+        # 4: the generated plot-validation row must quote exactly that value.
+        rows = {
+            row["plot_id"]: row
+            for row in module.build_plot_validation_rows(self.output)
+        }
+        plot5 = rows["PLOT-5"]
+        self.assertEqual(plot5["metric_name"], module.PLOT5_METRIC_NAME)
+        self.assertEqual(plot5["formula_id"], module.PLOT5_METRIC_FORMULA_ID)
+        self.assertEqual(float(plot5["metric_value"]), independent)
+        self.assertEqual(plot5["result"], "PASS")
+
+        # 5: the report/evidence helpers must agree with the same number.
+        helper = module.plot5_metric_from_csv(raw_csv)
+        self.assertEqual(helper["metric_value"], independent)
+        self.assertEqual(
+            float(self.summary["plot_metrics"]["PLOT-5"]["metric_value"]), independent
+        )
+        matrix_path = self.output / self.summary["plot_validation_matrix"]
+        self.assertTrue(matrix_path.is_file(), matrix_path)
+        with matrix_path.open(newline="", encoding="utf-8") as handle:
+            persisted = {row["plot_id"]: row for row in csv.DictReader(handle)}
+        self.assertEqual(float(persisted["PLOT-5"]["metric_value"]), independent)
+
+        # 6: source path and row-count metadata must describe the real artifact.
+        for row in (plot5, persisted["PLOT-5"]):
+            self.assertEqual(row["source_csv"], module.PLOT5_SOURCE_CSV)
+            self.assertEqual(int(row["source_csv_rows"]), len(csv_rows))
+        self.assertEqual(helper["source_csv"], module.PLOT5_SOURCE_CSV)
+        self.assertEqual(helper["source_csv_rows"], len(csv_rows))
+
+        # Every other figure must also be recomputable from its own CSV.
+        plot4 = rows["PLOT-4"]
+        self.assertEqual(plot4["source_csv"], module.PLOT4_SOURCE_CSV)
+        plot4_helper = module.plot4_metrics_from_csv(
+            self.output / module.PLOT4_SOURCE_CSV
+        )
+        self.assertEqual(float(plot4["metric_value"]), plot4_helper["metric_value"])
+        self.assertNotEqual(float(plot4["metric_value"]), independent)
+        for plot_id, row in rows.items():
+            self.assertTrue((self.output / row["source_csv"]).is_file(), plot_id)
+            self.assertTrue(row["result"].startswith("PASS"), (plot_id, row["result"]))
+
+        # 7: the separate observability PARITY campaign metric must never be
+        # written into the PLOT-5 field.  Recompute it live and prove it is a
+        # different case, then prove the PLOT-5 row does not carry it.
+        arc, get_earth, get_sun = _observability_arc()
+
+        def run(j2_moon):
+            return analyze_arc_observability(
+                arc,
+                "position",
+                MU_MOON,
+                0.0,
+                0.0,
+                get_earth,
+                get_sun,
+                rtol=1.0e-12,
+                atol=1.0e-13,
+                j2_moon=j2_moon,
+            )
+
+        parity_off = run(0.0)
+        parity_on = run(J2_MOON_UNNORMALIZED)
+        parity_metric = module.max_component_relative_change(
+            parity_off.singular_values,
+            parity_on.singular_values,
+            metric_name="observability_parity_case_max_component_relative_change",
+            formula_id=module.PLOT5_METRIC_FORMULA_ID,
+        )["metric_value"]
+        self.assertGreater(parity_metric, 1.0e-9)
+        self.assertNotAlmostEqual(parity_metric, independent, places=12)
+        self.assertNotEqual(float(plot5["metric_value"]), parity_metric)
+        self.assertNotEqual(float(persisted["PLOT-5"]["metric_value"]), parity_metric)
+        # The two campaigns are distinguishable by conditioning, so the PLOT-5
+        # row's reported range must exclude the parity case's condition number.
+        low, high = (float(value) for value in plot5["condition_number"].split(".."))
+        self.assertFalse(low <= float(parity_on.condition_number) <= high)
+
+    def test_denominator_policy_excludes_near_zero_reference_components(self):
+        module = self.module
+        reference = np.array([1.0, 0.0, 2.0, module.DENOMINATOR_FLOOR / 10.0])
+        comparison = np.array([1.5, 7.0, 2.0, 9.0])
+        metric = module.max_component_relative_change(
+            reference,
+            comparison,
+            metric_name="synthetic_denominator_policy_probe",
+            formula_id="synthetic",
+        )
+        # Zero and sub-floor references are excluded rather than floored into a
+        # huge finite value, so the maximum comes from the first component.
+        self.assertEqual(metric["metric_value"], 0.5)
+        self.assertEqual(metric["argmax_component_index"], 1)
+        self.assertEqual(metric["component_count"], 4)
+        self.assertEqual(metric["valid_component_count"], 2)
+        self.assertEqual(metric["excluded_component_count"], 2)
+        self.assertEqual(metric["denominator_floor"], module.DENOMINATOR_FLOOR)
+        self.assertIn("controlled_exclusion", metric["denominator_policy"])
+        self.assertTrue(math.isfinite(metric["metric_value"]))
+
+        nonfinite = module.max_component_relative_change(
+            np.array([1.0, np.nan, 4.0]),
+            np.array([1.25, 5.0, np.inf]),
+            metric_name="synthetic_nonfinite_probe",
+            formula_id="synthetic",
+        )
+        self.assertEqual(nonfinite["metric_value"], 0.25)
+        self.assertEqual(nonfinite["valid_component_count"], 1)
+        self.assertEqual(nonfinite["excluded_component_count"], 2)
+
+    def test_metric_raises_controlled_error_when_no_component_is_valid(self):
+        module = self.module
+        with self.assertRaises(module.PlotMetricError) as caught:
+            module.max_component_relative_change(
+                np.zeros(3),
+                np.array([1.0, 2.0, 3.0]),
+                metric_name="synthetic_all_excluded_probe",
+                formula_id="synthetic",
+            )
+        self.assertIn("denominator policy", str(caught.exception))
+        with self.assertRaises(module.PlotMetricError):
+            module.max_component_relative_change(
+                np.array([1.0, 2.0]),
+                np.array([1.0]),
+                metric_name="synthetic_length_probe",
+                formula_id="synthetic",
+            )
+        with self.assertRaises(module.PlotMetricError):
+            module.max_component_relative_change(
+                np.zeros(0),
+                np.zeros(0),
+                metric_name="synthetic_empty_probe",
+                formula_id="synthetic",
+            )
+        with self.assertRaises(module.PlotMetricError):
+            module.max_component_relative_change(
+                np.array([1.0]),
+                np.array([2.0]),
+                metric_name="synthetic_floor_probe",
+                formula_id="synthetic",
+                denominator_floor=0.0,
+            )
 
 
 if __name__ == "__main__":
