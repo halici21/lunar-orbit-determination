@@ -174,6 +174,16 @@ class ScenarioResult:
     history_domain_required_post_roll_s: float = 0.0
     history_domain_all_measurement_arcs_empty: bool = False
     history_domain_drop_records: tuple[dict, ...] = ()
+    # R0B-2 force-model provenance (append-only).
+    force_contract_schema_version: str = ""
+    truth_force_fingerprint: str = ""
+    estimator_force_fingerprint: str = ""
+    force_model_match: bool = True
+    explicit_force_model_mismatch: bool = False
+    force_model_mismatch_reason: str = ""
+    force_contract_manifest_sha256: str = ""
+    posterior_force_role_status: str = ""
+    observability_force_role_status: str = ""
 
     @property
     def algorithmic_success_fraction(self) -> float:

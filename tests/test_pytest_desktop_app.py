@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import os
+import tempfile
 import types
 from pathlib import Path
 from unittest import mock
@@ -111,6 +113,9 @@ def _spec(estimator="bls_lm", variant_overrides=None):
     )
 
 
+_DESKTOP_OUTPUT_DIR = tempfile.mkdtemp(prefix="r0b_desktop_out_")
+
+
 def _base_params(**overrides):
     base = dict(
         duration_h=1.0,
@@ -123,11 +128,23 @@ def _base_params(**overrides):
         range_rate_physics="geometric_instantaneous",
         bias_mode=None,
         station_names=("S1",),
-        output_dir="python_port/results",
+        output_dir=_DESKTOP_OUTPUT_DIR,
         j2_moon=0.0,
     )
     base.update(overrides)
     return base
+
+
+def _empty_scenario_result():
+    from lunar_od.scenarios import ScenarioResult
+
+    return ScenarioResult(
+        label="desktop",
+        measurement_type="range_rate",
+        start_mode="cold",
+        arc_results=(),
+        estimator_type="bls_lm",
+    )
 
 
 @contextlib.contextmanager
@@ -139,7 +156,7 @@ def _patched_worker_env(order_log=None):
     """
     fake_eph = _fake_ephemeris()
     fake_station = types.SimpleNamespace(name="S1")
-    fake_result = types.SimpleNamespace(arc_results=(), final_position_errors_m=[])
+    fake_result = _empty_scenario_result()
 
     def _logged(name, retval):
         def _fn(*args, **kwargs):
@@ -302,12 +319,13 @@ def test_f5_common_truth_propagated_once_after_preflight():
             worker._do_run()
     assert order.count("truth") == 1  # common truth, not per-variant
     assert order.count("batch") == 2  # one dispatch per valid variant
-    # every config validation happens before the single truth propagation
-    assert "validate" in order
-    assert order.index("truth") > max(
-        i for i, name in enumerate(order) if name == "validate"
-    )
-    assert order.index("truth") < order.index("batch")
+    # Config validation (Stage A) precedes the single truth propagation, and
+    # truth precedes the first estimator dispatch. (The per-variant Stage B
+    # force binding validates again after truth, so the exact validate count is
+    # an implementation detail; the ordering invariant is what matters.)
+    truth_pos = order.index("truth")
+    assert "validate" in order[:truth_pos]
+    assert truth_pos < order.index("batch")
 
 
 def test_f6_zero_j2_default_path_unchanged():
@@ -321,3 +339,75 @@ def test_f6_zero_j2_default_path_unchanged():
     assert spies["batch"].call_args.kwargs["j2_moon"] == 0.0
     # default path never hits the fail-closed propagation spies directly
     assert spies["ukf"].call_count == 0
+
+
+# ---------------------------------------------------------------------------
+# R0B-F1 (V04) — real desktop worker force-model provenance
+# ---------------------------------------------------------------------------
+
+from lunar_od.constants import J2_MOON_UNNORMALIZED as _J2_MOON  # noqa: E402
+from lunar_od.scenario_config import (  # noqa: E402
+    force_execution_spec_from_scenario_config,
+    scenario_config_from_mapping,
+)
+
+
+def _run_worker_capture_results(spec, base):
+    """Run the real _do_run and capture the emitted (label, ScenarioResult)."""
+    ac = _analysis_controller()
+    worker = ac._AnalysisWorker(spec, base)
+    captured: list = []
+    worker.variant_done.connect(lambda label, result: captured.append((label, result)))
+    with _patched_worker_env() as spies:
+        worker._do_run()
+    return captured, spies
+
+
+def _fixture_earth_gm():
+    fixture = json.loads(
+        (Path(str(_analysis_controller().FIXTURE))).read_text(encoding="utf-8")
+    )
+    return float(np.asarray(fixture["constants"]["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
+
+
+import json  # noqa: E402
+
+
+def test_f5_real_desktop_result_provenance_and_manifest_default():
+    """F5: default-J2 real worker fills provenance fields and persists a manifest."""
+    _app()
+    captured, _ = _run_worker_capture_results(_spec("bls_lm"), _base_params())
+    assert captured, "worker emitted no result"
+    label, result = captured[0]
+    assert result.truth_force_fingerprint.startswith("sha256:")
+    assert result.estimator_force_fingerprint == result.truth_force_fingerprint
+    assert result.force_model_match is True
+    assert result.force_contract_manifest_sha256.startswith("sha256:")
+    assert result.force_contract_schema_version
+    # manifest persisted in the desktop output bundle, hash consistent
+    manifest_path = Path(_DESKTOP_OUTPUT_DIR) / f"analysis_R0A-F1_{label}_force_model_manifest.json"
+    assert manifest_path.is_file(), "desktop manifest not persisted"
+    file_sha = "sha256:" + hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    assert file_sha == result.force_contract_manifest_sha256
+
+
+def test_f5_real_desktop_nonzero_j2_matches_contract_fingerprint():
+    """F5: nonzero-J2 provenance fingerprint equals the spec built from runtime GM."""
+    _app()
+    captured, spies = _run_worker_capture_results(
+        _spec("bls_lm"), _base_params(j2_moon=_J2_MOON)
+    )
+    label, result = captured[0]
+    # runtime truth/batch J2 is the nonzero value
+    assert spies["truth"].call_args.kwargs["j2_moon"] == _J2_MOON
+    assert spies["batch"].call_args.kwargs["j2_moon"] == _J2_MOON
+    # provenance fingerprint equals the spec built from the effective (fixture) GM
+    config = scenario_config_from_mapping(
+        {**{k: v for k, v in _base_params(j2_moon=_J2_MOON).items()
+            if k in {"measurement_type", "start_mode", "network", "j2_moon"}},
+         "name": "x", "estimator_type": "bls_lm"}
+    )
+    spec = force_execution_spec_from_scenario_config(config, mu_earth_m3_s2=_fixture_earth_gm())
+    assert result.truth_force_fingerprint == spec.fingerprint()
+    assert result.posterior_force_role_status == "pending_r1"
+    assert result.observability_force_role_status == "pending_r1"
