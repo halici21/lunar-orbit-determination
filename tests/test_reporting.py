@@ -12,6 +12,61 @@ from lunar_od import write_scenario_summary_csv, write_visibility_summary_csv
 
 
 class ReportingTests(unittest.TestCase):
+    def test_scenario_csv_appends_r1_numerical_provenance(self):
+        scenario = ScenarioResult(
+            label="r1",
+            measurement_type="position",
+            start_mode="formal",
+            arc_results=(
+                _arc_result(1, 10.0, 1.0, condition_number=25.0),
+            ),
+            posterior_covariance_stm_mode="analytic_variational",
+            posterior_covariance_rank=6,
+            posterior_covariance_condition_number=25.0,
+            posterior_covariance_min_eigenvalue=0.5,
+            posterior_covariance_finite=True,
+            observability_rank=6,
+            observability_condition_number=50.0,
+            observability_singular_value_min=2.0,
+            observability_singular_value_max=100.0,
+            observability_finite=True,
+            derivative_validation_profile="r1.fd-sweep.v1",
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            csv_path = write_scenario_summary_csv(
+                [scenario], Path(tmp_dir) / "summary.csv"
+            )
+            with csv_path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                header = reader.fieldnames
+                row = next(reader)
+
+        r1_columns = [
+            "posterior_covariance_stm_mode",
+            "posterior_covariance_rank",
+            "posterior_covariance_condition_number",
+            "posterior_covariance_min_eigenvalue",
+            "posterior_covariance_finite",
+            "observability_rank",
+            "observability_condition_number",
+            "observability_singular_value_min",
+            "observability_singular_value_max",
+            "observability_finite",
+            "condition_number_available",
+            "derivative_validation_profile",
+        ]
+        self.assertEqual(header[-len(r1_columns) :], r1_columns)
+        self.assertEqual(
+            header[header.index("observability_force_role_status") + 1],
+            r1_columns[0],
+        )
+        self.assertEqual(row["posterior_covariance_stm_mode"], "analytic_variational")
+        self.assertEqual(row["posterior_covariance_finite"], "True")
+        self.assertEqual(row["observability_finite"], "True")
+        self.assertEqual(row["condition_number_available"], "True")
+        self.assertEqual(row["derivative_validation_profile"], "r1.fd-sweep.v1")
+
     def test_plot_and_csv_outputs_are_created(self):
         scenario = ScenarioResult(
             label="demo",

@@ -225,6 +225,7 @@ def estimate_position_srif(
             w_diag,
             rtol,
             atol,
+            j2_moon=j2_moon,
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
         posterior_sqrt_information = _position_posterior_sqrt_information(
@@ -242,6 +243,7 @@ def estimate_position_srif(
             w_diag,
             rtol,
             atol,
+            j2_moon=j2_moon,
         )
 
     stats = EstimatorStats(
@@ -450,6 +452,7 @@ def estimate_range_rate_srif(
             w_curr_diag,
             rtol,
             atol,
+            j2_moon=j2_moon,
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
         posterior_sqrt_information = _range_rate_posterior_sqrt_information(
@@ -467,6 +470,7 @@ def estimate_range_rate_srif(
             w_curr_diag,
             rtol,
             atol,
+            j2_moon=j2_moon,
         )
 
     stats = EstimatorStats(
@@ -640,6 +644,7 @@ def estimate_position_bls_lm(
             w_diag,
             rtol,
             atol,
+            j2_moon=j2_moon,
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -839,6 +844,7 @@ def estimate_range_rate_bls_lm(
             w_curr_diag,
             rtol,
             atol,
+            j2_moon=j2_moon,
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -930,6 +936,8 @@ def _position_posterior_information(
     w_diag: np.ndarray,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -942,6 +950,7 @@ def _position_posterior_information(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _position_initial_state_jacobian(
@@ -965,6 +974,8 @@ def _range_rate_nominal_and_initial_jacobian(
     x_aug_hist: np.ndarray | None,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> tuple[np.ndarray, np.ndarray]:
     if x_aug_hist is None:
         x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
@@ -978,6 +989,7 @@ def _range_rate_nominal_and_initial_jacobian(
             get_sun_pos,
             rtol=rtol,
             atol=atol,
+            j2_moon=j2_moon,
         )
 
     rr_physics = range_rate_physics_config(pass_geo.range_rate_physics)
@@ -1146,6 +1158,8 @@ def _range_rate_posterior_information(
     w_diag: np.ndarray,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1158,6 +1172,7 @@ def _range_rate_posterior_information(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
     _, h_initial = _range_rate_nominal_and_initial_jacobian(
         t_pass_s,
@@ -1172,6 +1187,7 @@ def _range_rate_posterior_information(
         x_aug_hist,
         rtol,
         atol,
+        j2_moon=j2_moon,
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
@@ -1193,6 +1209,8 @@ def _position_posterior_sqrt_information(
     w_diag: np.ndarray,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     h_initial = _position_initial_jacobian(
         t_pass_s,
@@ -1207,6 +1225,7 @@ def _position_posterior_sqrt_information(
         bias_cfg,
         rtol,
         atol,
+        j2_moon=j2_moon,
     )
     rows = np.vstack([prior_sqrt_info, h_initial * np.sqrt(w_diag)[:, None]])
     return _upper_triangular_qr_factor(rows)
@@ -1227,6 +1246,8 @@ def _range_rate_posterior_sqrt_information(
     w_diag: np.ndarray,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     h_initial = _range_rate_initial_jacobian(
         t_pass_s,
@@ -1241,6 +1262,7 @@ def _range_rate_posterior_sqrt_information(
         bias_cfg,
         rtol,
         atol,
+        j2_moon=j2_moon,
     )
     rows = np.vstack([prior_sqrt_info, h_initial * np.sqrt(w_diag)[:, None]])
     return _upper_triangular_qr_factor(rows)
@@ -1259,6 +1281,8 @@ def _position_initial_jacobian(
     bias_cfg: dict,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1271,6 +1295,7 @@ def _position_initial_jacobian(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _position_initial_state_jacobian(
@@ -1294,6 +1319,8 @@ def _range_rate_initial_jacobian(
     bias_cfg: dict,
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1306,6 +1333,7 @@ def _range_rate_initial_jacobian(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon,
     )
     _, h_initial = _range_rate_nominal_and_initial_jacobian(
         t_pass_s,
@@ -1320,6 +1348,7 @@ def _range_rate_initial_jacobian(
         x_aug_hist,
         rtol,
         atol,
+        j2_moon=j2_moon,
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
@@ -1361,6 +1390,11 @@ def _upper_triangular_qr_factor(rows: np.ndarray) -> np.ndarray:
 
 def _safe_covariance_from_information(information: np.ndarray) -> np.ndarray:
     info = _symmetrize(np.asarray(information, dtype=float))
+    if not np.all(np.isfinite(info)):
+        raise ValueError(
+            "Posterior information matrix contains nonfinite values; "
+            "covariance decomposition was not attempted."
+        )
     vals, vecs = np.linalg.eigh(info)
     max_val = float(np.max(np.abs(vals))) if vals.size else 1.0
     floor = max(max_val * 1e-14, np.finfo(float).eps)

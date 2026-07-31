@@ -309,6 +309,28 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(result.history_domain_required_post_roll_s, 0.0)
         self.assertFalse(result.history_domain_all_measurement_arcs_empty)
         self.assertEqual(result.history_domain_drop_records, ())
+        self.assertEqual(result.posterior_covariance_stm_mode, "")
+        self.assertFalse(result.posterior_covariance_finite)
+        self.assertFalse(result.observability_finite)
+        self.assertEqual(result.derivative_validation_profile, "")
+
+    def test_nonfinite_condition_numbers_fail_operational_gate(self):
+        from tests.test_reporting import _arc_result
+
+        for condition_number in (np.nan, np.inf, -np.inf):
+            arc = _arc_result(
+                1,
+                1.0,
+                1.0,
+                condition_number=condition_number,
+            )
+            self.assertFalse(arc.condition_acceptable)
+            self.assertFalse(arc.operational_success)
+            self.assertEqual(
+                arc.condition_number_available,
+                not np.isnan(condition_number),
+            )
+
 
     def test_ukf_scenario_reports_operational_stability_for_short_arc(self):
         mu_moon = 4902.800066e9

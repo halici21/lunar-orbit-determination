@@ -409,5 +409,5 @@ def test_f5_real_desktop_nonzero_j2_matches_contract_fingerprint():
     )
     spec = force_execution_spec_from_scenario_config(config, mu_earth_m3_s2=_fixture_earth_gm())
     assert result.truth_force_fingerprint == spec.fingerprint()
-    assert result.posterior_force_role_status == "pending_r1"
-    assert result.observability_force_role_status == "pending_r1"
+    assert result.posterior_force_role_status == "verified"
+    assert result.observability_force_role_status == "verified"
