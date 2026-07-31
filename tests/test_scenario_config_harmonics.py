@@ -187,10 +187,15 @@ class HarmonicsOnValidationTests(unittest.TestCase):
         ):
             scenario_config_from_mapping(_on_payload())
 
-    # 18 -- Earth J2 stays composable at the config level --------------------------
-    def test_earth_j2_not_rejected(self):
-        # the ONLY error must be the temporary guard, not an Earth-J2 rule
-        with self.assertRaisesRegex(ValueError, "not yet consumed"):
+    # 18 -- Earth J2 is fail-closed on the official config path (R0A) --------------
+    # Supersedes the Phase-13 "stays composable" contract: the identity
+    # J2000-to-Earth-body-fixed orientation is an experimental direct-trajectory
+    # approximation, so the loader now rejects enable_earth_j2=True outright.
+    def test_earth_j2_rejected_fail_closed(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "enable_earth_j2=True is not supported on the official OD path",
+        ):
             scenario_config_from_mapping(_on_payload(enable_earth_j2=True))
 
 

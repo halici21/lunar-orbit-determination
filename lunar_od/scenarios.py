@@ -610,7 +610,8 @@ def run_batch_arc_sequence(
     _fast_sigma = None
     if ephemeris is not None and estimator_type == "ukf":
         _fast_sigma = make_fast_sigma_propagator(
-            ephemeris, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2
+            ephemeris, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            j2_moon=j2_moon,
         )
 
     if start_mode not in {"cold", "hot", "formal", "sqrt_formal"}:
@@ -910,6 +911,7 @@ def run_batch_arc_sequence(
                 rtol=rtol,
                 atol=atol,
                 fast_sigma_propagator=_fast_sigma,
+                j2_moon=j2_moon,
             )
             x_est = ukf_result.final_state.copy()
             stop_reason = "Converged" if np.all(ukf_result.accepted_updates) else "Gated"
