@@ -107,7 +107,14 @@ class ReportingTests(unittest.TestCase):
             "history_domain_required_post_roll_s",
             "history_domain_all_measurement_arcs_empty",
         ]
-        self.assertEqual(fieldnames[-len(expected_tail) :], expected_tail)
+        # The history-domain block stays contiguous and in order. It is no
+        # longer the file tail: R0B-2 appends the force-model provenance block
+        # immediately after it (append-only, nothing reordered).
+        start = fieldnames.index(expected_tail[0])
+        self.assertEqual(fieldnames[start : start + len(expected_tail)], expected_tail)
+        self.assertEqual(
+            fieldnames[start + len(expected_tail)], "force_contract_schema_version"
+        )
         self.assertEqual(int(row["history_domain_dropped_measurements"]), 3)
         self.assertEqual(int(row["history_domain_position_drops"]), 0)
         self.assertEqual(int(row["history_domain_range_rate_drops"]), 3)

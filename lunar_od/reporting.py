@@ -3,13 +3,40 @@
 from __future__ import annotations
 
 import csv
+import os
 from pathlib import Path
 from typing import Sequence
 
 import numpy as np
 
 from .diagnostics import analyze_convergence, analyze_state_bias_correlation
+from .force_contract import manifest_canonical_bytes, manifest_sha256
 from .scenarios import ScenarioResult
+
+
+def write_force_model_manifest(manifest, output_path) -> Path:
+    """Write the canonical force-model manifest bytes for one run bundle.
+
+    Written from the canonical encoding, so the same run inputs produce the
+    same bytes (and therefore the same SHA-256) in any process or working
+    directory. The manifest never carries an absolute path; scientific
+    identity comes from its own hash, not from the file name.
+    """
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = manifest_canonical_bytes(manifest)
+    # Atomic write: fully materialize a sibling temp file, then replace, so a
+    # reader never observes a partial manifest and the on-disk bytes are exactly
+    # the canonical bytes the SHA is computed from.
+    tmp_path = output_path.with_name(output_path.name + ".tmp")
+    tmp_path.write_bytes(payload)
+    os.replace(tmp_path, output_path)
+    return output_path
+
+
+def force_model_manifest_sha256(manifest) -> str:
+    """Return ``sha256:<hex>`` of the canonical manifest bytes."""
+    return manifest_sha256(manifest)
 
 
 def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path) -> Path:
@@ -110,6 +137,17 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                 "history_domain_required_pre_roll_s",
                 "history_domain_required_post_roll_s",
                 "history_domain_all_measurement_arcs_empty",
+                # R0B-2 force-model provenance (append-only scalars; the
+                # canonical payload lives in the side JSON manifest, never here).
+                "force_contract_schema_version",
+                "truth_force_fingerprint",
+                "estimator_force_fingerprint",
+                "force_model_match",
+                "explicit_force_model_mismatch",
+                "force_model_mismatch_reason",
+                "force_contract_manifest_sha256",
+                "posterior_force_role_status",
+                "observability_force_role_status",
             ]
         )
         for scenario in scenarios:
@@ -213,6 +251,15 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                         scenario.history_domain_required_pre_roll_s,
                         scenario.history_domain_required_post_roll_s,
                         scenario.history_domain_all_measurement_arcs_empty,
+                        scenario.force_contract_schema_version,
+                        scenario.truth_force_fingerprint,
+                        scenario.estimator_force_fingerprint,
+                        scenario.force_model_match,
+                        scenario.explicit_force_model_mismatch,
+                        scenario.force_model_mismatch_reason,
+                        scenario.force_contract_manifest_sha256,
+                        scenario.posterior_force_role_status,
+                        scenario.observability_force_role_status,
                     ]
                 )
 

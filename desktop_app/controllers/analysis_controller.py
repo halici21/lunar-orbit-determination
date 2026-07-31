@@ -344,7 +344,10 @@ class _AnalysisWorker(QThread):
         return params
 
     def _preflight_variant_configs(
-        self, scenario_config_from_mapping, validate_official_earth_j2_support
+        self,
+        scenario_config_from_mapping,
+        validate_official_earth_j2_support,
+        scenario_force_model_preflight=None,
     ) -> list[tuple["VariantSpec", Any]]:
         """Validate every variant mapping BEFORE any propagation (R0A-F1).
 
@@ -371,6 +374,14 @@ class _AnalysisWorker(QThread):
                 self.log_line.emit(f"  Config error ({variant.label}) — {exc}")
                 preflighted.append((variant, None))
                 continue
+            # R0B-2 force-model parity gate, through the SAME shared helper the
+            # JSON runner uses. Outside the try/except above so a contract
+            # violation aborts before any propagation.
+            if scenario_force_model_preflight is not None:
+                scenario_force_model_preflight(
+                    config,
+                    context=f"desktop analysis variant '{variant.label}' force-model preflight",
+                )
             preflighted.append((variant, config))
         return preflighted
 
@@ -400,14 +411,24 @@ class _AnalysisWorker(QThread):
             THESIS_MAX_GAP_S,
             THESIS_MIN_ELEVATION_DEG,
         )
-        from lunar_od.scenario_config import validate_official_earth_j2_support
+        from dataclasses import replace as _dc_replace
+
+        from lunar_od.scenario_config import (
+            scenario_force_model_preflight,
+            validate_official_earth_j2_support,
+        )
+        from lunar_od.force_contract import scenario_result_force_fields
+        from lunar_od.reporting import write_force_model_manifest
 
         # R0A-F1 preflight: validate every variant config (incl. the shared
-        # Earth-J2 fail-closed gate) before loading the fixture, SPICE, or any
-        # propagation. Reused below so the mapping is interpreted only once.
+        # Earth-J2 fail-closed gate and the R0B-2 force-parity gate) before
+        # loading the fixture, SPICE, or any propagation. Reused below so the
+        # mapping is interpreted only once.
         self.log_line.emit("Validating variant configurations…")
         preflighted_configs = self._preflight_variant_configs(
-            scenario_config_from_mapping, validate_official_earth_j2_support
+            scenario_config_from_mapping,
+            validate_official_earth_j2_support,
+            scenario_force_model_preflight,
         )
 
         self.log_line.emit("Loading fixture…")
@@ -561,6 +582,26 @@ class _AnalysisWorker(QThread):
                     ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
                     ukf_bias_regularization_std=config.ukf_bias_regularization_std,
                     j2_moon=config.j2_moon,
+                )
+
+                # R0B-F1 (V04): Stage-B force-model decision from the EFFECTIVE
+                # fixture GM, applied to the emitted result and persisted as a
+                # canonical side manifest in the same output bundle. Uses the
+                # SAME shared helpers as the CLI (no separate desktop copy).
+                force_decision = scenario_force_model_preflight(
+                    config,
+                    mu_moon_m3_s2=mu_moon,
+                    mu_earth_m3_s2=mu_earth,
+                    mu_sun_m3_s2=mu_sun,
+                    context=f"desktop analysis variant '{variant.label}' force-model binding",
+                )
+                manifest_path = (
+                    Path(config.output_dir)
+                    / f"analysis_{self._spec.title}_{variant.label}_force_model_manifest.json"
+                )
+                write_force_model_manifest(force_decision.manifest, manifest_path)
+                result = _dc_replace(
+                    result, **scenario_result_force_fields(force_decision)
                 )
 
                 n_arcs = len(result.arc_results)

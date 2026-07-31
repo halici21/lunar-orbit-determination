@@ -8,6 +8,27 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from .constants import (
+    J2_EARTH_UNNORMALIZED,
+    MU_EARTH_M3S2,
+    MU_MOON_M3S2,
+    MU_SUN_M3S2,
+    R_EARTH_J2_REF_M,
+    R_MOON_M,
+)
+from .force_contract import (
+    ConsumerRole,
+    ForceContractError,
+    ForceExecutionSpec,
+    ForceModelContract,
+    ForceModelMismatchPolicy,
+    ForceModelParityDecision,
+    LunarHarmonicsForceContract,
+    bind_spec_to_runtime,
+    evaluate_force_model_parity,
+    sha256_hex_of_bytes,
+)
+
 from .filters import (
     UKFAdaptiveConfig,
     UnscentedTransformConfig,
@@ -131,6 +152,11 @@ class ScenarioConfig:
     lunar_gravity_rotation_cadence_s: float = 60.0
     lunar_gravity_rotation_margin_s: float | None = None
     lunar_gravity_kernel_profile: str | None = None
+    # Run-level force-model execution policy (R0B-2). Deliberately NOT part of
+    # ForceModelContract: the contract describes physics, this describes what
+    # the run is permitted to do with it.
+    allow_explicit_force_model_mismatch: bool = False
+    force_model_mismatch_reason: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -230,6 +256,8 @@ def scenario_config_schema() -> dict[str, Any]:
                 "enum": list(ALLOWED_LUNAR_KERNEL_PROFILES),
                 "default": None,
             },
+            "allow_explicit_force_model_mismatch": {"type": "boolean", "default": False},
+            "force_model_mismatch_reason": {"type": ["string", "null"], "default": None},
         },
     }
 
@@ -461,6 +489,13 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         lunar_gravity_kernel_profile=_lunar_kernel_profile(
             payload.get("lunar_gravity_kernel_profile", None)
         ),
+        allow_explicit_force_model_mismatch=_boolean(
+            payload.get("allow_explicit_force_model_mismatch", False),
+            "allow_explicit_force_model_mismatch",
+        ),
+        force_model_mismatch_reason=_optional_reason(
+            payload.get("force_model_mismatch_reason", None)
+        ),
     )
     _validate_cross_field_rules(config)
     return config
@@ -562,18 +597,12 @@ def scenario_lunar_kernel_profile(config: ScenarioConfig) -> str:
     return _LUNAR_FRAME_TO_PROFILE[config.lunar_gravity_frame]
 
 
-def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGravityModel | None:
-    """Load the configured lunar gravity model once, at setup time.
+def resolve_lunar_gravity_model_path(config: ScenarioConfig) -> Path:
+    """Resolve the configured lunar gravity coefficient file to an existing path.
 
-    Returns ``None`` (touching no file) when ``enable_lunar_harmonics`` is
-    False.  Otherwise the model path is mandatory (no automatic model
-    selection): an absolute path is used as-is; a relative path is resolved
-    against ``resolve_gravity_dir()`` (env ``LUNAR_OD_GRAVITY_DIR`` ->
-    ``~/Documents/mice/gravity`` -> ``<python_port>/data/gravity``).  The
-    production loader is called exactly once; nothing here runs per-RHS.
+    Single source of truth for the resolution + existence contract, shared by
+    the model loader and the force-contract mapping so the two cannot drift.
     """
-    if not config.enable_lunar_harmonics:
-        return None
     if config.lunar_gravity_model_path is None:
         raise ValueError(
             "enable_lunar_harmonics=True requires lunar_gravity_model_path "
@@ -591,6 +620,22 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
             f"lunar gravity model file not found: {path} "
             f"(from lunar_gravity_model_path={config.lunar_gravity_model_path!r})."
         )
+    return path
+
+
+def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGravityModel | None:
+    """Load the configured lunar gravity model once, at setup time.
+
+    Returns ``None`` (touching no file) when ``enable_lunar_harmonics`` is
+    False.  Otherwise the model path is mandatory (no automatic model
+    selection): an absolute path is used as-is; a relative path is resolved
+    against ``resolve_gravity_dir()`` (env ``LUNAR_OD_GRAVITY_DIR`` ->
+    ``~/Documents/mice/gravity`` -> ``<python_port>/data/gravity``).  The
+    production loader is called exactly once; nothing here runs per-RHS.
+    """
+    if not config.enable_lunar_harmonics:
+        return None
+    path = resolve_lunar_gravity_model_path(config)
     model = load_lunar_gravity_model(
         path,
         nmax=config.lunar_gravity_nmax,
@@ -604,6 +649,233 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
             "with j2_moon != 0 would count J2 twice. Set j2_moon=0."
         )
     return model
+
+
+_HARMONICS_DISABLED_CONTRACT = LunarHarmonicsForceContract(
+    enabled=False,
+    model_identity="not_configured",
+    coefficient_file_sha256=None,
+    degree_nmax=None,
+    order_mmax=None,
+    normalization="not_applicable",
+    model_gravitational_parameter_m3_s2=None,
+    reference_radius_m=None,
+    body_frame="not_applicable",
+    kernel_profile_policy="not_applicable",
+    rotation_cadence_s=None,
+    rotation_margin_s=None,
+)
+
+
+def _lunar_harmonics_force_contract(config: ScenarioConfig) -> LunarHarmonicsForceContract:
+    """Build the harmonics contract, hashing coefficient CONTENT (never a path).
+
+    When harmonics are disabled the path-derived fields stay neutral so an
+    inert ``lunar_gravity_model_path`` cannot leak into the fingerprint.
+    """
+    if not config.enable_lunar_harmonics:
+        return _HARMONICS_DISABLED_CONTRACT
+    path = resolve_lunar_gravity_model_path(config)
+    model = scenario_lunar_gravity_model(config)
+    content_sha256 = sha256_hex_of_bytes(path.read_bytes())
+    metadata = dict(getattr(model, "metadata", {}) or {})
+    identity = str(
+        metadata.get("model_name")
+        or metadata.get("name")
+        or metadata.get("title")
+        or "unnamed_lunar_gravity_model"
+    )
+    return LunarHarmonicsForceContract(
+        enabled=True,
+        model_identity=identity,
+        coefficient_file_sha256=content_sha256,
+        degree_nmax=int(model.nmax),
+        order_mmax=int(model.mmax),
+        normalization=str(metadata.get("normalization", "fully_normalized_4pi")),
+        model_gravitational_parameter_m3_s2=float(model.mu_m3_s2),
+        reference_radius_m=float(model.r_ref_m),
+        body_frame=str(config.lunar_gravity_frame),
+        kernel_profile_policy=str(scenario_lunar_kernel_profile(config)),
+        rotation_cadence_s=float(config.lunar_gravity_rotation_cadence_s),
+        rotation_margin_s=(
+            None
+            if config.lunar_gravity_rotation_margin_s is None
+            else float(config.lunar_gravity_rotation_margin_s)
+        ),
+    )
+
+
+def force_execution_spec_from_scenario_config(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float = MU_MOON_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    j2_moon: float | None = None,
+    force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
+) -> ForceExecutionSpec:
+    """Build the executable force spec implied by ``config`` (R0B-F1).
+
+    Consumes every force-related ScenarioConfig field. Gravitational parameters
+    come from the caller (the run fixture, not the config); pass the SAME values
+    that will reach the propagator so the contract and the runtime bind exactly.
+    ``j2_moon`` may be overridden to describe one side of a declared mismatch
+    campaign; it defaults to ``config.j2_moon``. Never calls a propagator.
+    """
+    return ForceExecutionSpec(
+        j2_moon=float(config.j2_moon if j2_moon is None else j2_moon),
+        mu_moon_m3_s2=float(mu_moon_m3_s2),
+        mu_earth_m3_s2=float(mu_earth_m3_s2),
+        mu_sun_m3_s2=float(mu_sun_m3_s2),
+        enable_earth_j2=bool(config.enable_earth_j2),
+        earth_j2_mode=str(config.earth_j2_mode),
+        lunar_harmonics=_lunar_harmonics_force_contract(config),
+        lunar_j2_reference_radius_m=float(R_MOON_M),
+        earth_j2_coefficient=float(J2_EARTH_UNNORMALIZED),
+        earth_j2_reference_radius_m=float(R_EARTH_J2_REF_M),
+        force_ephemeris_policy=str(force_ephemeris_policy),
+    )
+
+
+def force_model_contract_from_scenario_config(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float = MU_MOON_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
+) -> ForceModelContract:
+    """Derive the immutable force contract implied by ``config``.
+
+    Thin wrapper over the executable spec (the single source), so the reported
+    contract and the executed primitives can never diverge (R0B-V02).
+    """
+    return force_execution_spec_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon_m3_s2,
+        mu_earth_m3_s2=mu_earth_m3_s2,
+        mu_sun_m3_s2=mu_sun_m3_s2,
+        force_ephemeris_policy=force_ephemeris_policy,
+    ).contract()
+
+
+def _optional_reason(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError("force_model_mismatch_reason must be a string or null.")
+    return value
+
+
+def force_model_mismatch_policy_from_scenario_config(
+    config: ScenarioConfig,
+) -> ForceModelMismatchPolicy:
+    """Return the run-level mismatch policy declared by ``config``."""
+    return ForceModelMismatchPolicy(
+        enabled=bool(config.allow_explicit_force_model_mismatch),
+        reason=config.force_model_mismatch_reason,
+    )
+
+
+def reject_unsupported_official_execution(config: ScenarioConfig, *, context: str) -> None:
+    """Fail closed on force selections that the official runner cannot execute.
+
+    High-degree lunar harmonics is qualified only as an experimental direct
+    low-level trajectory computation. The official scenario/CLI/desktop runner
+    does not yet bind a harmonics model to truth propagation, so accepting it
+    here would report physics that was never executed (R0B-V06, invariant #1).
+    """
+    if config.enable_lunar_harmonics:
+        raise ForceContractError(
+            f"{context}: high-degree lunar harmonics is an EXPERIMENTAL direct "
+            "low-level trajectory capability and is not wired into the official "
+            "scenario/CLI/desktop truth execution. The official harmonics "
+            "mismatch campaign is not implemented, so no run may report harmonics "
+            "provenance as if it were executed. Set enable_lunar_harmonics=False "
+            "for official OD runs (the direct-trajectory dynamics API remains "
+            "available for experimental use)."
+        )
+
+
+def scenario_force_execution_specs(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    truth_spec: ForceExecutionSpec | None = None,
+    estimator_spec: ForceExecutionSpec | None = None,
+) -> tuple[ForceExecutionSpec, ForceExecutionSpec]:
+    """Return the (truth, estimator) executable specs from effective GM values.
+
+    Both default to the spec implied by ``config`` (the matched case). A
+    declared mismatch campaign passes two different specs — each of which fully
+    determines its own runtime primitives, so truth and estimator really run
+    different physics (R0B-V05).
+    """
+    derived = force_execution_spec_from_scenario_config(
+        config,
+        mu_moon_m3_s2=mu_moon_m3_s2,
+        mu_earth_m3_s2=mu_earth_m3_s2,
+        mu_sun_m3_s2=mu_sun_m3_s2,
+    )
+    return (
+        truth_spec if truth_spec is not None else derived,
+        estimator_spec if estimator_spec is not None else derived,
+    )
+
+
+def scenario_force_model_configuration_preflight(
+    config: ScenarioConfig, *, context: str = "scenario force-model configuration preflight"
+) -> None:
+    """Stage A: everything checkable BEFORE the fixture is read (R0B-F1).
+
+    Mapping/Earth-J2/capability/mismatch-policy/unsupported-model validation.
+    On an accidental mismatch or an unsupported selection this raises before any
+    fixture read, SPICE load, or propagation.
+    """
+    validate_official_earth_j2_support(config.enable_earth_j2, context=context)
+    reject_unsupported_official_execution(config, context=context)
+    # Reason/policy validity independent of the GM values (fails fast without a
+    # fixture): a whitespace-only reason with opt-in is rejected here.
+    force_model_mismatch_policy_from_scenario_config(config)
+
+
+def scenario_force_model_preflight(
+    config: ScenarioConfig,
+    *,
+    mu_moon_m3_s2: float = MU_MOON_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    truth_spec: ForceExecutionSpec | None = None,
+    estimator_spec: ForceExecutionSpec | None = None,
+    context: str = "scenario force-model preflight",
+) -> ForceModelParityDecision:
+    """Shared truth/estimator force-parity preflight (JSON runner + desktop).
+
+    Both official entry points call THIS helper so the contract is never
+    reproduced two different ways. Runs Stage A (configuration) then evaluates
+    parity from the executable specs. Callers that already read the fixture pass
+    the effective GM values (Stage B); the default constants keep pre-fixture
+    call sites (config-only checks, tests) working.
+
+    Raises before any fixture read, SPICE load, or propagation.
+    """
+    scenario_force_model_configuration_preflight(config, context=context)
+    truth, estimator = scenario_force_execution_specs(
+        config,
+        mu_moon_m3_s2=mu_moon_m3_s2,
+        mu_earth_m3_s2=mu_earth_m3_s2,
+        mu_sun_m3_s2=mu_sun_m3_s2,
+        truth_spec=truth_spec,
+        estimator_spec=estimator_spec,
+    )
+    return evaluate_force_model_parity(
+        truth.contract(),
+        estimator.contract(),
+        force_model_mismatch_policy_from_scenario_config(config),
+        context=context,
+    )
 
 
 def validate_official_earth_j2_support(enable_earth_j2: bool, *, context: str) -> None:
