@@ -32,6 +32,7 @@ from lunar_od import (  # noqa: E402
     sample_moon_centered_ephemeris,
     scenario_config_summary,
     scenario_range_rate_physics_config,
+    scenario_two_way_range_config,
     scenario_ukf_configs,
     thesis_network_by_name,
     thesis_seed_for,
@@ -152,6 +153,11 @@ def run_configured_scenario(
             rng=None if measurement_seed is None else np.random.default_rng(int(measurement_seed)),
             min_samples=4,
             range_rate_physics=scenario_range_rate_physics_config(config),
+            two_way_range=(
+                scenario_two_way_range_config(config)
+                if config.measurement_type == "two_way_range"
+                else None
+            ),
             apply_light_time=config.apply_light_time,
             apply_stellar_aberration=config.apply_stellar_aberration,
             stellar_aberration_model=config.stellar_aberration_model,

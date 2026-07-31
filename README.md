@@ -24,8 +24,8 @@ synthetic experiments. It is not intended to be used as flight software.
 - Optional lunar J2 perturbation support
 - SPICE-based ephemeris and frame handling
 - Ground-station visibility with elevation masks and lunar occultation
-- Synthetic range, azimuth, elevation, range-rate, and two-way counted Doppler
-  measurements
+- Synthetic range, azimuth, elevation, range-rate, two-way counted Doppler,
+  and converged two-way range measurements
 - Batch and sequential orbit determination workflows
 - BLS-LM, SRIF, and SR-UKF estimator implementations
 - Arc-by-arc campaign execution with cold, hot, formal, and square-root formal
@@ -68,6 +68,7 @@ The scientific code lives in `lunar_od/`.
 | `visibility.py` | Elevation masks, lunar occultation, tracking arcs |
 | `measurements.py` | Synthetic observations, residuals, analytic Jacobians |
 | `radiometrics.py` | Simplified two-way counted Doppler model |
+| `two_way_range.py` | Converged two-way range events, observable, Jacobian |
 | `estimators.py` | BLS-LM and SRIF estimators |
 | `filters.py` | SR-UKF prediction, update, gating, and diagnostics |
 | `scenarios.py` | Arc-by-arc campaign execution |
@@ -280,6 +281,10 @@ The measurement layer supports:
 - Elevation
 - Geometric range-rate
 - Simplified two-way counted Doppler
+- Converged two-way range (`measurement_type: two_way_range`): explicit
+  t1/t2u/t2d/t3 event chain with fixed transponder delay, exact event-epoch
+  `sxform` station states, and an implicit 3x3 event-system Jacobian
+  (BLS-LM/SRIF only; see `docs/two_way_range.md`)
 
 Measurements are generated only when the spacecraft satisfies station
 visibility constraints and is not occulted by the Moon.

@@ -5,9 +5,13 @@ from unittest import mock
 import numpy as np
 
 from lunar_od import (
+    EstimatorStats,
+    HistoryDomainDropRecord,
+    HistoryDomainError,
     PassGeometry,
     PreparedArc,
     RangeRatePhysicsConfig,
+    ScenarioResult,
     Station,
     UKFAdaptiveConfig,
     UnscentedTransformConfig,
@@ -75,6 +79,236 @@ class ScenarioTests(unittest.TestCase):
         self.assertEqual(arcs[0].pass_geo.range_rate_physics.mode, "two_way_counted_doppler")
         self.assertEqual(arcs[0].pass_geo.range_rate_physics.count_interval_s, 20.0)
         self.assertGreater(arcs[0].obs_data.shape[0], 0)
+
+    def test_position_history_domain_drops_aggregate_and_scenario_continues(self):
+        inputs = _history_domain_build_inputs()
+        first_record = _history_domain_record(
+            arc_id=1,
+            candidate_ordinal=0,
+            requested_epoch_s=-0.25,
+            required_pre_roll_s=0.25,
+        )
+        second_record = _history_domain_record(
+            arc_id=2,
+            candidate_ordinal=1,
+            requested_epoch_s=5.5,
+            required_post_roll_s=0.5,
+        )
+
+        def generate(t_pass_s, *args, arc_id, **kwargs):
+            records = (first_record,) if arc_id == 1 else (second_record,)
+            pass_geo = _history_domain_pass_geo(
+                t_pass_s,
+                "position",
+                records,
+                all_candidates_dropped=arc_id == 1,
+            )
+            if arc_id == 1:
+                obs = np.empty((0, 7), dtype=float)
+            else:
+                obs = np.array([[t_pass_s[0], 1.0, 0.1, 0.2, 1.0, 1.0, arc_id]])
+            return obs, pass_geo, obs.copy()
+
+        with mock.patch(
+            "lunar_od.scenarios.generate_position_measurements",
+            side_effect=generate,
+        ):
+            arcs = build_measurement_arcs("position", **inputs)
+
+        self.assertEqual(len(arcs), 1)
+        metadata = arcs[0].pass_geo.measurement_metadata
+        self.assertEqual(metadata["history_domain_dropped_measurements"], 2)
+        self.assertEqual(metadata["history_domain_position_drops"], 2)
+        self.assertEqual(metadata["history_domain_range_rate_drops"], 0)
+        self.assertEqual(metadata["history_domain_required_pre_roll_s"], 0.25)
+        self.assertEqual(metadata["history_domain_required_post_roll_s"], 0.5)
+        self.assertFalse(metadata["history_domain_all_measurement_arcs_empty"])
+        self.assertEqual(
+            [record["arc_id"] for record in metadata["history_domain_drop_records"]],
+            [1, 2],
+        )
+
+        stats = EstimatorStats(1, 0.0, 0.0, 0.0, condition_number=1.0, rank=6)
+        with mock.patch(
+            "lunar_od.scenarios.estimate_position_srif",
+            return_value=(np.zeros(6), "Converged", stats),
+        ):
+            result = run_batch_arc_sequence(
+                arcs,
+                "position",
+                "cold",
+                "srif",
+                0.0,
+                0.0,
+                0.0,
+                lambda t: np.zeros(3),
+                lambda t: np.zeros(3),
+            )
+
+        self.assertEqual(len(result.arc_results), 1)
+        self.assertEqual(result.history_domain_dropped_measurements, 2)
+        self.assertEqual(result.history_domain_position_drops, 2)
+        self.assertEqual(result.history_domain_range_rate_drops, 0)
+        self.assertEqual(result.history_domain_required_pre_roll_s, 0.25)
+        self.assertEqual(result.history_domain_required_post_roll_s, 0.5)
+        self.assertEqual(
+            [record["candidate_ordinal"] for record in result.history_domain_drop_records],
+            [0, 1],
+        )
+
+    def test_range_rate_history_domain_partial_drop_continues(self):
+        inputs = _history_domain_build_inputs()
+        first_record = _history_domain_record(
+            arc_id=1,
+            candidate_ordinal=0,
+            requested_epoch_s=-0.75,
+            required_pre_roll_s=0.75,
+            history_name="earth_position_mci",
+        )
+
+        def generate(t_pass_s, *args, arc_id, **kwargs):
+            records = (first_record,) if arc_id == 1 else ()
+            pass_geo = _history_domain_pass_geo(
+                t_pass_s,
+                "range_rate",
+                records,
+                all_candidates_dropped=arc_id == 1,
+            )
+            if arc_id == 1:
+                obs = np.empty((0, 8), dtype=float)
+            else:
+                obs = np.array(
+                    [[t_pass_s[0], 1.0, 0.01, 0.1, 0.2, 1.0, 1.0, arc_id]]
+                )
+            return obs, pass_geo
+
+        with mock.patch(
+            "lunar_od.scenarios.generate_range_rate_measurements",
+            side_effect=generate,
+        ):
+            arcs = build_measurement_arcs("range_rate", **inputs)
+
+        self.assertEqual(len(arcs), 1)
+        metadata = arcs[0].pass_geo.measurement_metadata
+        self.assertEqual(metadata["history_domain_dropped_measurements"], 1)
+        self.assertEqual(metadata["history_domain_position_drops"], 0)
+        self.assertEqual(metadata["history_domain_range_rate_drops"], 1)
+        self.assertEqual(metadata["history_domain_required_pre_roll_s"], 0.75)
+
+    def test_all_history_domain_empty_raises_before_estimator(self):
+        inputs = _history_domain_build_inputs()
+
+        def generate(t_pass_s, *args, arc_id, **kwargs):
+            record = _history_domain_record(
+                arc_id=arc_id,
+                candidate_ordinal=arc_id - 1,
+                requested_epoch_s=-0.25 * arc_id,
+                required_pre_roll_s=0.25 * arc_id,
+            )
+            pass_geo = _history_domain_pass_geo(
+                t_pass_s,
+                "position",
+                (record,),
+                all_candidates_dropped=True,
+            )
+            obs = np.empty((0, 7), dtype=float)
+            return obs, pass_geo, obs.copy()
+
+        with (
+            mock.patch(
+                "lunar_od.scenarios.generate_position_measurements",
+                side_effect=generate,
+            ),
+            mock.patch("lunar_od.scenarios.estimate_position_srif") as estimator,
+            self.assertRaises(HistoryDomainError) as caught,
+        ):
+            build_measurement_arcs("position", **inputs)
+
+        estimator.assert_not_called()
+        error = caught.exception
+        self.assertEqual(error.consumer, "build_measurement_arcs")
+        self.assertEqual(error.model_context, "position_measurement_arc_build")
+        self.assertEqual(error.history_domain_total_candidates, 2)
+        self.assertEqual(error.history_domain_dropped_measurements, 2)
+        self.assertEqual(error.history_domain_position_drops, 2)
+        self.assertEqual(error.history_domain_range_rate_drops, 0)
+        self.assertEqual(error.history_domain_required_pre_roll_s, 0.5)
+        self.assertEqual(error.history_domain_required_post_roll_s, 0.0)
+        self.assertTrue(error.history_domain_all_measurement_arcs_empty)
+        self.assertEqual([record.arc_id for record in error.drop_records], [1, 2])
+
+    def test_all_range_rate_history_domain_empty_raises_before_estimator(self):
+        inputs = _history_domain_build_inputs(one_arc=True)
+
+        def generate(t_pass_s, *args, arc_id, **kwargs):
+            record = _history_domain_record(
+                arc_id=arc_id,
+                candidate_ordinal=0,
+                requested_epoch_s=3.25,
+                required_post_roll_s=0.25,
+                history_name="j2000_to_itrf93_state_transform",
+            )
+            pass_geo = _history_domain_pass_geo(
+                t_pass_s,
+                "range_rate",
+                (record,),
+                all_candidates_dropped=True,
+            )
+            return np.empty((0, 8), dtype=float), pass_geo
+
+        with (
+            mock.patch(
+                "lunar_od.scenarios.generate_range_rate_measurements",
+                side_effect=generate,
+            ),
+            mock.patch("lunar_od.scenarios.estimate_range_rate_srif") as estimator,
+            self.assertRaises(HistoryDomainError) as caught,
+        ):
+            build_measurement_arcs("range_rate", **inputs)
+
+        estimator.assert_not_called()
+        error = caught.exception
+        self.assertEqual(error.history_domain_total_candidates, 1)
+        self.assertEqual(error.history_domain_position_drops, 0)
+        self.assertEqual(error.history_domain_range_rate_drops, 1)
+        self.assertEqual(error.history_domain_required_pre_roll_s, 0.0)
+        self.assertEqual(error.history_domain_required_post_roll_s, 0.25)
+        self.assertTrue(error.history_domain_all_measurement_arcs_empty)
+
+    def test_no_drop_build_preserves_pass_geometry_identity(self):
+        inputs = _history_domain_build_inputs(one_arc=True)
+        returned_pass_geo = None
+
+        def generate(t_pass_s, *args, arc_id, **kwargs):
+            nonlocal returned_pass_geo
+            returned_pass_geo = _history_domain_pass_geo(t_pass_s, "position", ())
+            obs = np.array([[t_pass_s[0], 1.0, 0.1, 0.2, 1.0, 1.0, arc_id]])
+            return obs, returned_pass_geo, obs.copy()
+
+        with mock.patch(
+            "lunar_od.scenarios.generate_position_measurements",
+            side_effect=generate,
+        ):
+            arcs = build_measurement_arcs("position", **inputs)
+
+        self.assertEqual(len(arcs), 1)
+        self.assertIs(arcs[0].pass_geo, returned_pass_geo)
+
+    def test_scenario_result_history_domain_defaults_are_backward_compatible(self):
+        result = ScenarioResult(
+            label="legacy",
+            measurement_type="position",
+            start_mode="cold",
+            arc_results=(),
+        )
+
+        self.assertEqual(result.history_domain_dropped_measurements, 0)
+        self.assertEqual(result.history_domain_position_drops, 0)
+        self.assertEqual(result.history_domain_range_rate_drops, 0)
+        self.assertEqual(result.history_domain_required_pre_roll_s, 0.0)
+        self.assertEqual(result.history_domain_required_post_roll_s, 0.0)
+        self.assertFalse(result.history_domain_all_measurement_arcs_empty)
+        self.assertEqual(result.history_domain_drop_records, ())
 
     def test_ukf_scenario_reports_operational_stability_for_short_arc(self):
         mu_moon = 4902.800066e9
@@ -890,6 +1124,96 @@ class ScenarioTests(unittest.TestCase):
         self.assertLess(abs(bias_err[3]), 4.0e-6)
 
 
+def _history_domain_build_inputs(*, one_arc: bool = False) -> dict:
+    t_sim_s = np.arange(6.0)
+    state_history = np.zeros((t_sim_s.size, 6), dtype=float)
+    if one_arc:
+        seg_starts = np.array([0])
+        seg_ends = np.array([2])
+    else:
+        seg_starts = np.array([0, 3])
+        seg_ends = np.array([2, 5])
+    stations = (_synthetic_rr_station(0.0, 0.0, 0.0),)
+    return {
+        "t_sim_s": t_sim_s,
+        "state_history_mci": state_history,
+        "seg_starts": seg_starts,
+        "seg_ends": seg_ends,
+        "vis_mask_raw": np.ones((t_sim_s.size, 1), dtype=bool),
+        "stations": stations,
+        "get_earth_pos": lambda t: np.zeros((np.size(np.asarray(t)), 3)),
+        "get_earth_vel": lambda t: np.zeros((np.size(np.asarray(t)), 3)),
+        "et0": 0.0,
+        "noise": False,
+        "min_samples": 2,
+    }
+
+
+def _history_domain_record(
+    *,
+    arc_id: int,
+    candidate_ordinal: int,
+    requested_epoch_s: float,
+    required_pre_roll_s: float = 0.0,
+    required_post_roll_s: float = 0.0,
+    history_name: str = "spacecraft_state",
+) -> dict:
+    outside_distance_s = max(required_pre_roll_s, required_post_roll_s)
+    return HistoryDomainDropRecord(
+        history_name=history_name,
+        requested_epoch_s=requested_epoch_s,
+        support_start_s=0.0,
+        support_end_s=5.0,
+        outside_distance_s=outside_distance_s,
+        required_pre_roll_s=required_pre_roll_s,
+        required_post_roll_s=required_post_roll_s,
+        model_context="test_history_domain",
+        consumer="test_generator",
+        arc_id=arc_id,
+        station_index=0,
+        time_index=0,
+        candidate_ordinal=candidate_ordinal,
+    ).as_dict()
+
+
+def _history_domain_pass_geo(
+    t_pass_s,
+    measurement_type: str,
+    records,
+    *,
+    all_candidates_dropped: bool = False,
+) -> PassGeometry:
+    records = tuple(records)
+    metadata = {
+        "history_domain_dropped_measurements": len(records),
+        "history_domain_drop_records": records,
+        "history_domain_required_pre_roll_s": max(
+            (record["required_pre_roll_s"] for record in records),
+            default=0.0,
+        ),
+        "history_domain_required_post_roll_s": max(
+            (record["required_post_roll_s"] for record in records),
+            default=0.0,
+        ),
+        "history_domain_all_candidates_dropped": all_candidates_dropped,
+    }
+    t_pass_s = np.asarray(t_pass_s, dtype=float)
+    return PassGeometry(
+        t_s=t_pass_s,
+        earth_pos_mci_m=np.zeros((t_pass_s.size, 3)),
+        earth_vel_mci_mps=np.zeros((t_pass_s.size, 3)),
+        x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass_s.size, axis=0),
+        stations=(_synthetic_rr_station(0.0, 0.0, 0.0),),
+        measurement_type=measurement_type,
+        range_rate_physics=(
+            RangeRatePhysicsConfig()
+            if measurement_type == "range_rate"
+            else None
+        ),
+        measurement_metadata=metadata,
+    )
+
+
 def _synthetic_station(lat_deg: float, lon_deg: float, alt_m: float) -> Station:
     return Station(
         name=f"Synthetic {lat_deg:.1f} {lon_deg:.1f}",
@@ -1023,8 +1347,19 @@ def _build_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, stations
 
 
 def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, stations):
-    t_pass_s = np.asarray(t_all_s[start_idx : end_idx + 1], dtype=float)
-    x_pass = np.asarray(x_truth[start_idx : end_idx + 1, :], dtype=float)
+    # P0B-2 (FA-03B): every counted endpoint needs the closed support
+    # [t - Tc/2 - tau, t + Tc/2] inside the arc's OWN pass history. Extend
+    # the sliced history by one node on each side where the global truth
+    # allows it, and keep measurement tags only on supported nodes (same
+    # migration pattern as the observability arc builder). Tc=20 -> margins
+    # pre 10+0.5, post 10+0.5 (tau ~ 6 ms for this synthetic geometry).
+    count_interval_s = 20.0
+    pre_margin_s = 0.5 * count_interval_s + 0.5
+    post_margin_s = 0.5 * count_interval_s + 0.5
+    history_start_idx = max(0, start_idx - 1)
+    history_end_idx = min(len(t_all_s) - 1, end_idx + 1)
+    t_pass_s = np.asarray(t_all_s[history_start_idx : history_end_idx + 1], dtype=float)
+    x_pass = np.asarray(x_truth[history_start_idx : history_end_idx + 1, :], dtype=float)
     pass_geo = PassGeometry(
         t_s=t_pass_s,
         earth_pos_mci_m=np.zeros((t_pass_s.size, 3)),
@@ -1032,10 +1367,14 @@ def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, 
         x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass_s.size, axis=0),
         stations=stations,
         measurement_type="range_rate",
-        range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0),
+        range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=count_interval_s),
     )
+    t_first = float(t_pass_s[0]) + pre_margin_s
+    t_last = float(t_pass_s[-1]) - post_margin_s
     rows = []
     for time_idx, t_s in enumerate(t_pass_s, start=1):
+        if t_s < t_first or t_s > t_last:
+            continue
         for station_id in range(1, len(stations) + 1):
             rows.append([t_s, 0.0, 0.0, 0.0, 0.0, station_id, time_idx, arc_id])
     obs_data = np.asarray(rows, dtype=float)

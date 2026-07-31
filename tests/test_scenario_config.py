@@ -46,7 +46,10 @@ class ScenarioConfigTests(unittest.TestCase):
         schema = scenario_config_schema()
 
         self.assertIn("measurement_type", schema["required"])
-        self.assertEqual(schema["properties"]["measurement_type"]["enum"], ["position", "range_rate"])
+        self.assertEqual(
+            schema["properties"]["measurement_type"]["enum"],
+            ["position", "range_rate", "two_way_range"],
+        )
         self.assertIn("ukf", schema["properties"]["estimator_type"]["enum"])
         self.assertEqual(
             schema["properties"]["range_rate_physics"]["enum"],

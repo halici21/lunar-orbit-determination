@@ -65,6 +65,51 @@ block: range, azimuth, elevation. The block already contains the transmit-epoch
 STM and must not be multiplied by another STM. BLS-LM, SRIF, posterior-information,
 and observability paths use the shared augmented-history mapping helper.
 
+## History-Domain Contract (P0B-2)
+
+FA-03B was confirmed at the D1 baseline: production one-way CN/CN+S solver
+probes and final state/STM lookups could silently extrapolate beyond the
+propagated history. P0B-2 removes that behavior from every production one-way
+consumer while leaving the generic raw interpolation helper available for its
+separate diagnostic/M3 uses.
+
+For a state/STM history with support `D=[t_start,t_end]`:
+
+```text
+S = max(1, abs(q), abs(bound))
+policy_ulp = nextafter(S, +infinity) - S
+```
+
+Exact endpoints are accepted. A request at most two `policy_ulp` outside a
+bound is normalized to that bound and evaluated as an endpoint sample; this is
+floating-point representation handling, not extrapolation. A request three or
+more `policy_ulp` outside support raises `HistoryDomainError` before model
+evaluation. The first unsupported intermediate solver probe fails immediately;
+a later hypothetical in-domain root does not validate an iteration that has
+already used unsupported history.
+
+The guard covers `_apparent_position_observable`, one-way range sensitivity,
+the final transmit-state re-query, and the transmit-epoch STM lookup. Nominal,
+sensitivity, and Jacobian paths therefore share both the P0B-1 convergence
+policy and the P0B-2 history-domain policy. The receive-epoch Earth state,
+station state, and frame transform remain node-indexed inputs as described in
+the frame contract.
+
+During position generation, each visible candidate owns one RNG slot. With
+noise enabled, its range/azimuth/elevation draws are consumed before model
+evaluation; an unsupported candidate is omitted from both clean and noisy
+arrays and produces an ordered `HistoryDomainDropRecord`. This keeps later
+surviving seeded rows bit-identical to a pre-rolled supported run. With noise
+disabled, no RNG draws occur. Metadata records the drop count and ordered
+records plus the maximum actual `required_pre_roll_s` and
+`required_post_roll_s`; P0B-2 does not extend propagation automatically.
+
+At scenario assembly, partial drops in the selected measurement family leave
+surviving arcs estimable. If every eligible arc in that family is empty because
+of history-domain drops, `build_measurement_arcs` raises an aggregate
+`HistoryDomainError` before any estimator call. This policy is family-local;
+the repository has no combined position/range-rate scenario coordinator.
+
 ## Stellar Aberration Apparent-LOS Chain
 
 For CN+S, M2.3 preserves the production reception-case Newtonian aberration
@@ -144,5 +189,6 @@ the complete light-time problem in SPICE.
 The legacy first-order mode remains unchanged and continues to omit the
 aberration derivative. Other exclusions are a fully analytic aberration
 derivative, media corrections, clock and station-coordinate solve-for states,
-Earth-orientation sensitivities, two-way observables, and UKF measurement-model
-changes.
+Earth-orientation sensitivities, and two-way observables. A profile-aware UKF
+CN/CN+S operator is still not implemented; P0A now rejects those UKF
+configurations instead of silently using geometric measurement physics.

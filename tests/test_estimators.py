@@ -190,9 +190,22 @@ class EstimatorTests(unittest.TestCase):
                     ),
                     jacobian_model="implicit_light_time",
                 )
-                obs_data = _build_clean_position_observations(
-                    t_pass_s, x_truth, pass_geo
+                # P0B-2B (FA-03B): the first receive tag's transmit epoch
+                # precedes the propagated history and is no longer silently
+                # extrapolated; scenario/test construction owns pre-roll, so
+                # this parity fixture builds its clean observations for the
+                # supported nodes only (time_index_1based >= 2).
+                rows = []
+                for time_idx, t_s in enumerate(t_pass_s, start=1):
+                    if time_idx == 1:
+                        continue
+                    for station_id in range(1, len(stations) + 1):
+                        rows.append([t_s, 0.0, 0.0, 0.0, station_id, time_idx])
+                obs_data = np.asarray(rows, dtype=float)
+                _, h_meas, _ = compute_position_residuals_analytic(
+                    x_truth, obs_data, pass_geo
                 )
+                obs_data[:, 1:4] = h_meas
 
                 srif_blocks = []
                 with patch.object(
@@ -752,7 +765,8 @@ class EstimatorTests(unittest.TestCase):
         mu_moon = 4902.800066e9
         r0norm = 1737.4e3 + 100e3
         x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
-        t_pass_s = np.arange(0.0, 241.0, 60.0)
+        # Counted-Doppler endpoints need 10 s of pre-roll for this fixture.
+        t_pass_s = np.arange(-60.0, 301.0, 60.0)
 
         get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
         get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
@@ -770,6 +784,7 @@ class EstimatorTests(unittest.TestCase):
             atol=1e-13,
         )
         x_truth = x_aug_truth[:, :6]
+        x_arc0 = x_truth[0].copy()
         stations = (
             _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
             _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
@@ -788,9 +803,11 @@ class EstimatorTests(unittest.TestCase):
                 count_interval_s=20.0,
             ),
         )
-        obs_data = _build_clean_rr_observations_from_model(t_pass_s, x_truth, pass_geo)
+        obs_data = _build_clean_rr_observations_from_model(
+            t_pass_s[1:-1], x_truth, pass_geo, first_time_index=2
+        )
 
-        x_guess = x_true0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
+        x_guess = x_arc0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
         initial_rms = _rr_residual_rms_from_model(
             t_pass_s,
             obs_data,
@@ -832,7 +849,8 @@ class EstimatorTests(unittest.TestCase):
         mu_moon = 4902.800066e9
         r0norm = 1737.4e3 + 100e3
         x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
-        t_pass_s = np.arange(0.0, 241.0, 60.0)
+        # Counted-Doppler endpoints need 10 s of pre-roll for this fixture.
+        t_pass_s = np.arange(-60.0, 301.0, 60.0)
 
         get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
         get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
@@ -849,6 +867,7 @@ class EstimatorTests(unittest.TestCase):
             rtol=1e-12,
             atol=1e-13,
         )
+        x_arc0 = x_aug_truth[0, :6].copy()
         stations = (
             _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
             _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
@@ -867,9 +886,11 @@ class EstimatorTests(unittest.TestCase):
                 count_interval_s=20.0,
             ),
         )
-        obs_data = _build_clean_rr_observations_from_model(t_pass_s, x_aug_truth[:, :6], pass_geo)
+        obs_data = _build_clean_rr_observations_from_model(
+            t_pass_s[1:-1], x_aug_truth[:, :6], pass_geo, first_time_index=2
+        )
 
-        x_guess = x_true0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
+        x_guess = x_arc0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
         initial_rms = _rr_residual_rms_from_model(
             t_pass_s,
             obs_data,
@@ -911,7 +932,8 @@ class EstimatorTests(unittest.TestCase):
         mu_moon = 4902.800066e9
         r0norm = 1737.4e3 + 100e3
         x0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
-        t_pass_s = np.arange(0.0, 241.0, 60.0)
+        # Counted-Doppler endpoints need 10 s of pre-roll for this fixture.
+        t_pass_s = np.arange(-60.0, 301.0, 60.0)
 
         get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
         get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
@@ -927,6 +949,7 @@ class EstimatorTests(unittest.TestCase):
             rtol=1e-12,
             atol=1e-13,
         )
+        x_arc0 = x_aug_hist[0, :6].copy()
         stations = (
             _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
             _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
@@ -943,12 +966,14 @@ class EstimatorTests(unittest.TestCase):
                 count_interval_s=20.0,
             ),
         )
-        obs_data = _build_clean_rr_observations_from_model(t_pass_s, x_aug_hist[:, :6], pass_geo)
+        obs_data = _build_clean_rr_observations_from_model(
+            t_pass_s[1:-1], x_aug_hist[:, :6], pass_geo, first_time_index=2
+        )
 
         _, h_analytic = estimator_helpers._range_rate_nominal_and_initial_jacobian(
             t_pass_s,
             obs_data,
-            x0,
+            x_arc0,
             pass_geo,
             mu_moon,
             0.0,
@@ -962,7 +987,7 @@ class EstimatorTests(unittest.TestCase):
         h_numerical = estimator_helpers._range_rate_numerical_initial_jacobian(
             t_pass_s,
             obs_data,
-            x0,
+            x_arc0,
             pass_geo,
             mu_moon,
             0.0,
@@ -1556,9 +1581,11 @@ def _build_clean_rr_observations(t_pass_s, x_truth, pass_geo):
     return obs_data
 
 
-def _build_clean_rr_observations_from_model(t_pass_s, x_truth, pass_geo):
+def _build_clean_rr_observations_from_model(
+    t_pass_s, x_truth, pass_geo, *, first_time_index=1
+):
     rows = []
-    for time_idx, t_s in enumerate(t_pass_s, start=1):
+    for time_idx, t_s in enumerate(t_pass_s, start=first_time_index):
         for station_id in range(1, len(pass_geo.stations) + 1):
             rows.append([t_s, 0.0, 0.0, 0.0, 0.0, station_id, time_idx])
     obs_data = np.asarray(rows, dtype=float)

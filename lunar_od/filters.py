@@ -15,8 +15,11 @@ from .dynamics import dynamics_jacobian_a_matrix, f3body_moon, propagate_augment
 
 _IDENTITY_6_COL: np.ndarray = np.eye(6).reshape(-1, order="F")
 from .geometry import ecef2razel_sez, wrap_to_pi
+from .history_domain import normalize_supported_epoch
 from .measurements import PassGeometry, _range_rate_companion_observable, normalize_companion_geometry
 from .radiometrics import (
+    RangeRatePhysicsConfig,
+    _clock_corrected_receive_time,
     instantaneous_geometric_range_rate,
     range_rate_physics_config,
     two_way_counted_doppler_observable,
@@ -725,6 +728,43 @@ def ukf_predict_update(
     )
 
 
+def validate_ukf_measurement_support(
+    estimator_type: str,
+    measurement_type: str,
+    measurement_model_profile: str | None = "geometric_instantaneous",
+    *,
+    apply_light_time: bool = False,
+    apply_stellar_aberration: bool = False,
+) -> None:
+    """Reject estimator/measurement combinations the UKF cannot evaluate (FA-01).
+
+    Shared safety gate for both enforcement layers: the scenario-config loader
+    (``scenario_config._validate_cross_field_rules``) and the UKF runtime
+    entry (``run_lunar_ukf``), so directly constructed ``ScenarioConfig``
+    objects cannot bypass the rule. The legacy ``apply_light_time`` /
+    ``apply_stellar_aberration`` booleans are treated as non-geometric
+    physics selections for hand-built pass geometries whose profile field was
+    left at its default. No-op for non-UKF estimators and non-position
+    measurement types (the M3 two_way_range rejection is separate and
+    unchanged).
+    """
+    if str(estimator_type).lower() != "ukf":
+        return
+    if str(measurement_type).lower() != "position":
+        return
+    profile = measurement_model_profile or "geometric_instantaneous"
+    if profile != "geometric_instantaneous" or apply_light_time or apply_stellar_aberration:
+        raise ValueError(
+            f"measurement_model_profile={profile!r} (apply_light_time="
+            f"{bool(apply_light_time)}, apply_stellar_aberration="
+            f"{bool(apply_stellar_aberration)}): UKF position measurements "
+            "currently support only the geometric instantaneous profile. CN "
+            "and CN+S profiles require a profile-aware sigma-point observable "
+            "and are therefore rejected; use estimator_type='bls_lm' or "
+            "'srif' for light-time/aberration position physics."
+        )
+
+
 def run_lunar_ukf(
     t_pass_s: ArrayLike,
     obs_data: ArrayLike,
@@ -760,8 +800,22 @@ def run_lunar_ukf(
     """
     start_time = perf_counter()
     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
+    if measurement_type == "two_way_range":
+        raise ValueError(
+            "measurement_type='two_way_range' is not supported by the UKF in M3; "
+            "use the BLS-LM or SRIF two-way range estimators."
+        )
     if measurement_type not in {"position", "range_rate"}:
         raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+    # FA-01 runtime defense-in-depth: one check per arc, before any sigma-point
+    # work, covering callers that bypass scenario-config validation.
+    validate_ukf_measurement_support(
+        "ukf",
+        measurement_type,
+        pass_geo.measurement_model_profile,
+        apply_light_time=pass_geo.apply_light_time,
+        apply_stellar_aberration=pass_geo.apply_stellar_aberration,
+    )
     adaptive = adaptive_config or UKFAdaptiveConfig()
 
     t_pass = np.asarray(t_pass_s, dtype=float).reshape(-1)
@@ -1617,6 +1671,7 @@ def _range_rate_measurement_from_state(
             rtol,
             atol,
             rr_physics.local_state_model,
+            rr_physics=rr_physics,
         )
     if companion_geometry == "instantaneous":
         az_rad, el_rad, _ = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
@@ -1689,12 +1744,26 @@ def _two_way_local_histories(
     rtol: float,
     atol: float,
     local_state_model: str = "ode",
+    rr_physics: RangeRatePhysicsConfig | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     half_count = 0.5 * count_interval_s
+    raw_count_start_s = receive_mid_time_s - half_count
+    raw_count_end_s = receive_mid_time_s + half_count
+    # The counted observable clock-corrects the count endpoints before the
+    # light-time solve, so the local envelope must cover the corrected receive
+    # epochs (either side, depending on the offset/drift sign) — not just the
+    # raw count window (FA-03B / P0B-2E2).
+    count_start_anchor_s = raw_count_start_s
+    count_end_anchor_s = raw_count_end_s
+    if rr_physics is not None and rr_physics.mode != "geometric_instantaneous":
+        corrected_count_start_s = _clock_corrected_receive_time(raw_count_start_s, rr_physics)
+        corrected_count_end_s = _clock_corrected_receive_time(raw_count_end_s, rr_physics)
+        count_start_anchor_s = min(raw_count_start_s, corrected_count_start_s)
+        count_end_anchor_s = max(raw_count_end_s, corrected_count_end_s)
     one_way_light_time_s = max(float(range_estimate_m) / light_speed_mps, 0.0)
     light_time_margin_s = max(2.0, 2.5 * one_way_light_time_s + 1.0)
-    start_t = receive_mid_time_s - half_count - light_time_margin_s
-    end_t = receive_mid_time_s + half_count
+    start_t = count_start_anchor_s - light_time_margin_s
+    end_t = count_end_anchor_s
     step_s = min(5.0, max(1.0, count_interval_s / 6.0))
     n_grid = max(2, int(np.ceil((end_t - start_t) / step_s)) + 1)
     local_t = np.linspace(start_t, end_t, n_grid)
@@ -1704,9 +1773,11 @@ def _two_way_local_histories(
                 local_t,
                 np.array(
                     [
-                        receive_mid_time_s - half_count,
+                        count_start_anchor_s,
+                        raw_count_start_s,
                         receive_mid_time_s,
-                        receive_mid_time_s + half_count,
+                        raw_count_end_s,
+                        count_end_anchor_s,
                     ],
                     dtype=float,
                 ),
@@ -1714,6 +1785,41 @@ def _two_way_local_histories(
         )
     )
     local_t.sort()
+
+    source_t = np.asarray(pass_geo.t_s, dtype=float).reshape(-1)
+    support_start_s = float(source_t[0])
+    support_end_s = float(source_t[-1])
+    requested_start_s = float(local_t[0])
+    requested_end_s = float(local_t[-1])
+    normalized_start_s = requested_start_s
+    normalized_end_s = requested_end_s
+    for history_name in (
+        "earth_position_mci",
+        "earth_velocity_mci",
+        "j2000_to_itrf93_state_transform",
+    ):
+        normalized_start_s = normalize_supported_epoch(
+            requested_start_s,
+            support_start_s,
+            support_end_s,
+            history_name=history_name,
+            model_context="two_way_counted_doppler_ukf_local",
+            consumer="_two_way_local_histories",
+            event_label="ukf-local-source-interval",
+        )
+        normalized_end_s = normalize_supported_epoch(
+            requested_end_s,
+            support_start_s,
+            support_end_s,
+            history_name=history_name,
+            model_context="two_way_counted_doppler_ukf_local",
+            consumer="_two_way_local_histories",
+            event_label="ukf-local-source-interval",
+        )
+
+    source_lookup_t = local_t
+    if normalized_start_s != requested_start_s or normalized_end_s != requested_end_s:
+        source_lookup_t = np.clip(local_t, normalized_start_s, normalized_end_s)
 
     if local_state_model == "taylor3":
         local_state = _taylor3_local_state_history(
@@ -1740,9 +1846,9 @@ def _two_way_local_histories(
             atol,
         )
 
-    local_earth_pos = _interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, local_t)
-    local_earth_vel = _interp_pass_values(pass_geo.t_s, pass_geo.earth_vel_mci_mps, local_t)
-    local_xforms = _interp_pass_values(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, local_t)
+    local_earth_pos = _interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, source_lookup_t)
+    local_earth_vel = _interp_pass_values(pass_geo.t_s, pass_geo.earth_vel_mci_mps, source_lookup_t)
+    local_xforms = _interp_pass_values(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, source_lookup_t)
     return local_t, local_state, local_earth_pos, local_earth_vel, local_xforms
 
 

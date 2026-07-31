@@ -9,6 +9,13 @@ Audit result: **no frame-correctness bug was found in the production one-way
 measurement chain.** Known approximations and open items are listed in
 "Known limitations".
 
+P0B-2 revision (2026-07-15): FA-03B history-domain enforcement now wraps the
+legacy one-way CN/CN+S, counted-Doppler nominal/Jacobian, and counted UKF
+production boundaries. This revision changes no frame direction, origin,
+epoch, or in-support interpolation convention described below; it prohibits
+unsupported event-history extrapolation and documents generation/scenario
+handling. M3 behavior is unchanged.
+
 ## 1. Matrix and vector convention (repository-wide)
 
 Vectors are NumPy `(3,)` / states `(6,)` column-style arrays,
@@ -252,15 +259,42 @@ report. Production interpolation behavior is intentionally unchanged; if
 the measured observable-level effect matters for a future campaign, fix it
 in a separate phase.
 
+P0B-2 adds a strict domain boundary around that unchanged interpolation.
+Spacecraft state/STM, Earth position/velocity, and transform lookups must lie
+inside their closed source support. Exact endpoints are accepted; at most two
+policy ULP of representation-only overshoot is normalized to the endpoint
+sample, while three or more policy ULP raises `HistoryDomainError` before any
+interpolator runs. Count-start/count-end and uplink/downlink context is retained
+in the diagnostics. The counted UKF independently preflights its Earth
+position, Earth velocity, and transform source interval before local
+propagation or resampling. It keeps the physical local-time grid unchanged and
+uses endpoint samples only for an accepted representation-level overshoot.
+
+This guard is not an exact-event frame upgrade: supported counted events still
+use the linearly interpolated 6x6 transforms and Earth histories quantified
+above. P0B-2 performs no automatic history extension.
+
+**M3 two-way range exception (2026-07-11):** the converged two-way range
+observable (`lunar_od/two_way_range.py`, `docs/two_way_range.md`) does NOT
+inherit this interpolation. Its production policy is exact event-epoch
+`spice.sxform` at the station uplink (`t1`) and downlink (`t3`) events; the
+Earth-center translation keeps a separately reported cubic-Hermite ephemeris
+interpolation (measured 1.2e-7 m at 60 s grid midpoints versus 1.1 m for
+linear). Measured two-way range effect of linear transform grids versus
+exact: 0.086 m (10 s), 0.32 m (30 s), 0.67 m (60 s) — the 60 s grid exceeds
+0.1 sigma for a 5 m range noise, which is why interpolation was rejected for
+this observable. The counted-Doppler path above is unchanged.
+
 ## 12. Known limitations
 
 - No EOP (Earth-orientation) solve-for sensitivity; no station-coordinate
   solve-for; no clock-dependent frame epoch.
 - Rigid WGS84-as-ITRF93 stations (see §9).
 - Two-way path uses linearly interpolated sxform matrices (see §11).
-- The SR-UKF position path is instantaneous-only (ignores light-time
-  measurement-model profiles); estimator-consistency work belongs to the
-  measurement roadmap, not the frame contract.
+- The SR-UKF position operator remains instantaneous-only; P0A now rejects
+  CN/CN+S position profiles at configuration and runtime boundaries instead of
+  silently accepting mismatched physics. A profile-aware UKF remains future
+  work.
 - `tests/test_spice_snapshots.py` and its MATLAB fixture use the bare
   `MOON_PA` alias (pre-dates the explicit DE421/DE440 frame-name rule). It
   resolves deterministically under the DE421-only `REQUIRED_KERNELS` set.
@@ -285,6 +319,10 @@ in a separate phase.
 | Range norm invariance through the chain | both new test files |
 | Station-velocity contribution to range-rate (sign contract) | `tests/test_frame_spice_validation.py` |
 | sxform linear-interpolation error bounds | `tests/test_frame_spice_validation.py` |
+| Closed-support/two-policy-ULP history rule and mutation guard | `tests/test_history_domain.py` |
+| One-way/counted production boundary enforcement and drop/RNG behavior | `tests/test_measurement_model_safety_diagnostics.py`, `tests/test_measurements.py` |
+| Counted UKF source-history preflight | `tests/test_filters.py` |
+| Family-local empty-arc aggregation and CSV transport | `tests/test_scenarios.py`, `tests/test_reporting.py` |
 | SPICE-vs-MATLAB snapshot cross-check (pre-existing) | `tests/test_spice_snapshots.py` |
 | SEZ chain-rule FD across geometries (pre-existing) | `tests/test_measurements.py` |
 
@@ -365,10 +403,12 @@ the receive-epoch contract matters at lunar light time.
 
 Worst case (60 s grid): station position error 11.5 m, velocity error
 8.4e-4 m/s, two-way range effect 1.4 m, equivalent range-rate effect
-5.5e-4 m/s. Whether these bounds are acceptable is a two-way (M3) decision:
-at a 10 s transform grid the range effect is ~3.6 cm and the range-rate
-effect ~2e-5 m/s; at 60 s the ~1.4 m range effect is significant relative to
-typical range noise and should be revisited when M3 fixes its grid policy.
+5.5e-4 m/s. M3 subsequently selected exact event-epoch transforms and is not
+subject to this grid policy. The remaining decision belongs to legacy counted
+Doppler: at a 10 s transform grid the range effect is ~3.6 cm and the
+range-rate effect ~2e-5 m/s; at 60 s the ~1.4 m range effect is significant
+relative to typical range noise. P0B-2 prevents out-of-support use but does not
+change these in-support interpolation errors.
 
 ### 14.5 Conclusion
 
@@ -378,3 +418,16 @@ frame audit are closed (Case A): SPICE tests passed without skipping, the
 full suite gives a natural `0 failed` with no deselection, and the
 station-velocity FD failure is classified as a test-tolerance issue that the
 plateau acceptance policy resolves.
+
+### 14.6 P0B-2 history-domain validation (2026-07-14/15)
+
+The complete patch through P0B-2D1 was reconstructed on a detached checkout.
+Focused scenario/reporting tests gave 19 passed and 9 skipped; the related
+history-domain plus M3 run gave 201 passed, 20 skipped, and one existing
+warning; the full suite gave 557 passed, 28 skipped, zero failed, zero
+deselected, and the same warning. Boundary evidence accepts exact/one/two
+policy ULP endpoint cases, rejects three and larger, and confirms that
+unsupported counted UKF intervals fail before propagation or resampling.
+Supported-interior comparison fixtures remained bit-identical. These tests
+close FA-03B implementation consistency; they do not change the interpolation
+error budget in Section 14.4 or constitute an external tracking-data oracle.

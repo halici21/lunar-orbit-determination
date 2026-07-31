@@ -24,8 +24,9 @@ from .radiometrics import (
     two_way_counted_doppler_initial_state_jacobian,
 )
 from .scenarios import PreparedArc
+from .two_way_range import two_way_range_nominal_and_initial_jacobian
 
-MeasurementType = Literal["position", "range_rate"]
+MeasurementType = Literal["position", "range_rate", "two_way_range"]
 
 
 @dataclass(frozen=True)
@@ -338,6 +339,13 @@ def build_initial_state_jacobian(
         atol=atol,
     )
 
+    if measurement_type == "two_way_range":
+        # The helper returns arc-initial-state rows (event-epoch STMs are
+        # embedded through the implicit event system): no STM here.
+        _, h_initial = two_way_range_nominal_and_initial_jacobian(
+            obs_data, pass_geo, x_aug_hist
+        )
+        return h_initial
     if measurement_type == "position":
         _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
         return position_initial_state_jacobian_from_augmented_history(
@@ -496,8 +504,10 @@ def _rank_tolerance(singular_values: np.ndarray, shape: tuple[int, int], rank_to
 
 def _normalize_measurement_type(measurement_type: str) -> MeasurementType:
     normalized = str(measurement_type).lower()
-    if normalized not in {"position", "range_rate"}:
-        raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+    if normalized not in {"position", "range_rate", "two_way_range"}:
+        raise ValueError(
+            "measurement_type must be 'position', 'range_rate', or 'two_way_range'."
+        )
     return normalized  # type: ignore[return-value]
 
 

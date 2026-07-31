@@ -21,6 +21,10 @@ from .measurements import compute_range_rate_residuals
 from .measurements import compute_range_rate_residuals_analytic, measurement_sigma_vector
 from .radiometrics import RangeRatePhysicsConfig, range_rate_physics_config
 from .radiometrics import two_way_counted_doppler_initial_state_jacobian
+from .two_way_range import (
+    compute_two_way_range_residuals,
+    two_way_range_nominal_and_initial_jacobian,
+)
 
 
 _IDENTITY_6_COL: np.ndarray = np.eye(6).reshape(-1, order="F")
@@ -1686,3 +1690,428 @@ def _position_bias_jacobian(obs_data: np.ndarray, bias_cfg: dict) -> np.ndarray:
             hb[row0 : row0 + 3, col0 : col0 + 3] = np.eye(3)
         return hb
     return np.zeros((n_obs * 3, 0), dtype=float)
+
+
+# ---------------------------------------------------------------------------
+# Two-way range (M3): scalar converged-event observable.
+#
+# Both estimators consume the same (N, 6) arc-initial-state Jacobian from
+# two_way_range_nominal_and_initial_jacobian; the rows already embed the
+# event-epoch STMs, so no STM is applied here.  Bias solve-for states are not
+# supported for this observable in M3 (deferred to the noise/bias phase).
+# ---------------------------------------------------------------------------
+
+_TWO_WAY_RANGE_NO_BIAS_CFG: dict = {"size": 0, "mode": None}
+
+
+def _two_way_range_bias_prior_and_scale(bias_cfg: dict) -> tuple[list[float], list[float]]:
+    raise ValueError("two_way_range estimation does not support bias solve-for states.")
+
+
+def _two_way_range_weight_diagonal(obs_data: np.ndarray, pass_geo: PassGeometry) -> np.ndarray:
+    sigma = measurement_sigma_vector(obs_data, pass_geo, "two_way_range")
+    return 1.0 / sigma**2
+
+
+def _two_way_range_residual_from_h(obs_data: np.ndarray, h_meas: np.ndarray) -> np.ndarray:
+    return np.asarray(obs_data[:, 1], dtype=float) - np.asarray(h_meas, dtype=float).reshape(-1)
+
+
+def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | None) -> None:
+    if bias_mode is not None:
+        raise ValueError(
+            "two_way_range estimation does not support bias_mode in M3; got "
+            f"{bias_mode!r}."
+        )
+    if x_nominal.size != 6:
+        raise ValueError(
+            "two_way_range estimation solves for the 6-element dynamic state only; "
+            f"got a {x_nominal.size}-element solve-for vector."
+        )
+
+
+def _two_way_range_posterior_information(
+    t_pass_s: np.ndarray,
+    obs_data: np.ndarray,
+    x_dyn: np.ndarray,
+    pass_geo: PassGeometry,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    prior_inv: np.ndarray,
+    w_diag: np.ndarray,
+    rtol: float,
+    atol: float,
+    j2_moon: float,
+) -> np.ndarray:
+    x_aug0 = np.concatenate([x_dyn, _IDENTITY_6_COL])
+    x_aug_hist = propagate_augmented_state(
+        t_pass_s,
+        x_aug0,
+        mu_moon_m3_s2,
+        mu_earth_m3_s2,
+        mu_sun_m3_s2,
+        get_earth_pos,
+        get_sun_pos,
+        rtol=rtol,
+        atol=atol,
+        j2_moon=j2_moon,
+    )
+    _, h_initial = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
+    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+
+
+def estimate_two_way_range_bls_lm(
+    t_pass_s: ArrayLike,
+    obs_data: ArrayLike,
+    x_nominal0: ArrayLike,
+    pass_geo: PassGeometry,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    *,
+    max_iter: int = 80,
+    tol_step_norm: float = 1e-8,
+    tol_cost_stability: float = 1e-8,
+    lambda0: float = 1e-2,
+    rtol: float = 1e-11,
+    atol: float = 1e-12,
+    j2_moon: float = 0.0,
+    bias_mode: str | None = None,
+    robust_outlier_rejection: bool = False,
+    outlier_sigma: float = 3.0,
+    max_outlier_fraction: float = 0.30,
+    prior_covariance: ArrayLike | None = None,
+    prior_sqrt_information: ArrayLike | None = None,
+    return_posterior: bool = False,
+) -> tuple[np.ndarray, str, EstimatorStats]:
+    """Two-way range batch least-squares with LM damping."""
+    t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
+    obs_data = np.asarray(obs_data, dtype=float)
+    x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
+    _validate_two_way_range_solve_for(x_nominal, bias_mode)
+
+    nx = 6
+    na = 6
+    has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
+    x_prior = x_nominal.copy()
+    prior_inv, _, scale, prior_inv_scaled, _ = _prior_information_and_scale(
+        nx,
+        _TWO_WAY_RANGE_NO_BIAS_CFG,
+        _two_way_range_bias_prior_and_scale,
+        prior_covariance,
+        prior_sqrt_information,
+    )
+    w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
+    w_curr_diag = w_diag.copy()
+
+    x_best = x_nominal.copy()
+    best_cost = np.inf
+    stop_reason = "MaxIter"
+    lambda_damping = float(lambda0)
+    last_step = np.zeros(na)
+    last_condition_number = float("nan")
+    last_rank = 0
+    max_rejected_components = 0
+    min_active_weight_fraction = 1.0
+
+    for iteration in range(1, max_iter + 1):
+        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        x_aug0 = np.concatenate([x_nominal, _IDENTITY_6_COL])
+        x_aug_hist = propagate_augmented_state(
+            t_pass_s,
+            x_aug0,
+            mu_moon_m3_s2,
+            mu_earth_m3_s2,
+            mu_sun_m3_s2,
+            get_earth_pos,
+            get_sun_pos,
+            rtol=_atol_r,
+            atol=_atol_a,
+            j2_moon=j2_moon,
+        )
+        h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
+            obs_data, pass_geo, x_aug_hist
+        )
+        residual = _two_way_range_residual_from_h(obs_data, h_nom)
+        w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
+            w_diag,
+            residual,
+            iteration,
+            enabled=robust_outlier_rejection,
+            outlier_sigma=outlier_sigma,
+            max_outlier_fraction=max_outlier_fraction,
+        )
+        max_rejected_components = max(max_rejected_components, rejected)
+        min_active_weight_fraction = min(min_active_weight_fraction, active_fraction)
+        current_cost = float(np.dot(w_curr_diag * residual, residual))
+
+        if iteration == 1:
+            best_cost = current_cost
+            x_best = x_nominal.copy()
+
+        step, last_condition_number, last_rank, singular = _lm_step(
+            h_initial,
+            residual,
+            w_curr_diag,
+            scale,
+            prior_inv_scaled,
+            scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na),
+            lambda_damping,
+        )
+        if singular:
+            stop_reason = "Singular"
+            break
+
+        step = _limit_step(step, pos_limit_m=20000.0)
+        last_step = step
+
+        x_candidate = x_nominal + step
+        x_hist_candidate = propagate_state(
+            t_pass_s, x_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+        )
+        residual_candidate, _ = compute_two_way_range_residuals(
+            x_hist_candidate, obs_data, pass_geo
+        )
+        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+
+        if candidate_cost < current_cost:
+            relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            x_nominal = x_candidate
+            x_best = x_nominal.copy()
+            best_cost = candidate_cost
+            lambda_damping = max(lambda_damping / 5.0, 1e-12)
+
+            min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
+            if relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration:
+                stop_reason = "J-Stab"
+                break
+            if np.linalg.norm(step) < tol_step_norm:
+                stop_reason = "Converged"
+                break
+        else:
+            x_nominal = x_best.copy()
+            lambda_damping *= 10.0
+            if lambda_damping > 1e12:
+                stop_reason = "Singular"
+                break
+
+    posterior_information, posterior_covariance = (None, None)
+    if return_posterior:
+        posterior_information = _two_way_range_posterior_information(
+            t_pass_s,
+            obs_data,
+            x_best,
+            pass_geo,
+            mu_moon_m3_s2,
+            mu_earth_m3_s2,
+            mu_sun_m3_s2,
+            get_earth_pos,
+            get_sun_pos,
+            prior_inv,
+            w_curr_diag,
+            rtol,
+            atol,
+            j2_moon,
+        )
+        posterior_covariance = _safe_covariance_from_information(posterior_information)
+
+    stats = EstimatorStats(
+        iterations=iteration,
+        final_cost=best_cost,
+        position_step_norm_m=float(np.linalg.norm(last_step[:3])),
+        velocity_step_norm_mps=float(np.linalg.norm(last_step[3:6])),
+        condition_number=last_condition_number,
+        rank=last_rank,
+        rejected_components=max_rejected_components,
+        active_weight_fraction=min_active_weight_fraction,
+        posterior_information=posterior_information,
+        posterior_covariance=posterior_covariance,
+    )
+    return x_best, stop_reason, stats
+
+
+def estimate_two_way_range_srif(
+    t_pass_s: ArrayLike,
+    obs_data: ArrayLike,
+    x_nominal0: ArrayLike,
+    pass_geo: PassGeometry,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    *,
+    max_iter: int = 40,
+    tol_step_norm: float = 1e-8,
+    tol_cost_stability: float = 1e-8,
+    rtol: float = 1e-11,
+    atol: float = 1e-12,
+    j2_moon: float = 0.0,
+    bias_mode: str | None = None,
+    robust_outlier_rejection: bool = False,
+    outlier_sigma: float = 3.0,
+    max_outlier_fraction: float = 0.30,
+    prior_covariance: ArrayLike | None = None,
+    prior_sqrt_information: ArrayLike | None = None,
+    return_posterior: bool = False,
+) -> tuple[np.ndarray, str, EstimatorStats]:
+    """Two-way range square-root information filter estimator."""
+    t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
+    obs_data = np.asarray(obs_data, dtype=float)
+    x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
+    _validate_two_way_range_solve_for(x_nominal, bias_mode)
+
+    nx = 6
+    na = 6
+    has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
+    x_prior = x_nominal.copy()
+    prior_inv, prior_sqrt_info, scale, _, prior_sqrt_scaled = _prior_information_and_scale(
+        nx,
+        _TWO_WAY_RANGE_NO_BIAS_CFG,
+        _two_way_range_bias_prior_and_scale,
+        prior_covariance,
+        prior_sqrt_information,
+    )
+    r_bar = prior_sqrt_scaled
+
+    w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
+    w_curr_diag = w_diag.copy()
+
+    x_best = x_nominal.copy()
+    best_cost = np.inf
+    stop_reason = "MaxIter"
+    last_step = np.zeros(6)
+    last_condition_number = float("nan")
+    last_rank = 0
+    max_rejected_components = 0
+    min_active_weight_fraction = 1.0
+
+    for iteration in range(1, max_iter + 1):
+        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        x_aug0 = np.concatenate([x_nominal, _IDENTITY_6_COL])
+        x_aug_hist = propagate_augmented_state(
+            t_pass_s,
+            x_aug0,
+            mu_moon_m3_s2,
+            mu_earth_m3_s2,
+            mu_sun_m3_s2,
+            get_earth_pos,
+            get_sun_pos,
+            rtol=_atol_r,
+            atol=_atol_a,
+            j2_moon=j2_moon,
+        )
+        h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
+            obs_data, pass_geo, x_aug_hist
+        )
+        residual = _two_way_range_residual_from_h(obs_data, h_nom)
+        w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
+            w_diag,
+            residual,
+            iteration,
+            enabled=robust_outlier_rejection,
+            outlier_sigma=outlier_sigma,
+            max_outlier_fraction=max_outlier_fraction,
+        )
+        w_sqrt = np.sqrt(w_curr_diag)
+        max_rejected_components = max(max_rejected_components, rejected)
+        min_active_weight_fraction = min(min_active_weight_fraction, active_fraction)
+        current_cost = float(np.dot(w_curr_diag * residual, residual))
+
+        if iteration == 1:
+            best_cost = current_cost
+            x_best = x_nominal.copy()
+
+        h_scaled = h_initial @ scale
+        weighted_h = h_scaled * w_sqrt[:, None]
+        weighted_r = residual * w_sqrt
+        z_bar = prior_sqrt_info @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na)
+        combined = np.vstack(
+            [
+                np.column_stack([r_bar, z_bar]),
+                np.column_stack([weighted_h, weighted_r]),
+            ]
+        )
+        _, r_qr = np.linalg.qr(combined, mode="reduced")
+        r_hat = r_qr[:na, :na]
+        z_hat = r_qr[:na, na]
+        last_condition_number = float(np.linalg.cond(r_hat))
+        last_rank = int(np.linalg.matrix_rank(r_hat))
+
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+            stop_reason = "Singular"
+            break
+
+        step_bar = np.linalg.solve(r_hat, z_hat)
+        step = scale @ step_bar
+        pos_step_norm = float(np.linalg.norm(step[:3]))
+        if pos_step_norm > 20000.0:
+            step *= 20000.0 / pos_step_norm
+        last_step = step
+
+        x_candidate = x_nominal + step
+        x_hist_candidate = propagate_state(
+            t_pass_s, x_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+        )
+        residual_candidate, _ = compute_two_way_range_residuals(
+            x_hist_candidate, obs_data, pass_geo
+        )
+        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+
+        if candidate_cost < current_cost:
+            relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            x_nominal = x_candidate
+            x_best = x_nominal.copy()
+            best_cost = candidate_cost
+
+            if relative_improvement < tol_cost_stability:
+                stop_reason = "J-Stab"
+                break
+            if np.linalg.norm(step) < tol_step_norm:
+                stop_reason = "Converged"
+                break
+        else:
+            x_nominal = x_best.copy()
+
+    posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
+    if return_posterior:
+        posterior_information = _two_way_range_posterior_information(
+            t_pass_s,
+            obs_data,
+            x_best,
+            pass_geo,
+            mu_moon_m3_s2,
+            mu_earth_m3_s2,
+            mu_sun_m3_s2,
+            get_earth_pos,
+            get_sun_pos,
+            prior_inv,
+            w_curr_diag,
+            rtol,
+            atol,
+            j2_moon,
+        )
+        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        posterior_sqrt_information = _sqrt_information_from_information(posterior_information)
+
+    stats = EstimatorStats(
+        iterations=iteration,
+        final_cost=best_cost,
+        position_step_norm_m=float(np.linalg.norm(last_step[:3])),
+        velocity_step_norm_mps=float(np.linalg.norm(last_step[3:])),
+        condition_number=last_condition_number,
+        rank=last_rank,
+        rejected_components=max_rejected_components,
+        active_weight_fraction=min_active_weight_fraction,
+        posterior_information=posterior_information,
+        posterior_covariance=posterior_covariance,
+        posterior_sqrt_information=posterior_sqrt_information,
+    )
+    return x_best, stop_reason, stats

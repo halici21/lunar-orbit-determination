@@ -9,6 +9,12 @@ from numpy.typing import ArrayLike
 
 from .geometry import ecef2razel_sez, ecef2sez_dcm, wrap_to_pi
 from .accelerated import apply_stm_to_jacobian, geometric_range_rate_observables, position_observables
+from .history_domain import (
+    HistoryDomainDropRecord,
+    HistoryDomainError,
+    normalize_supported_epoch,
+    summarize_history_domain_drops,
+)
 from .radiometrics import (
     RangeRatePhysicsConfig,
     _interp_state_transition_position,
@@ -38,6 +44,29 @@ JACOBIAN_MODELS = (
     "finite_difference_reference",
 )
 
+# One-way light-time solver policy (single source of truth, FA-02): every
+# one-way helper below defaults to these values, and position-pass metadata
+# must report them rather than the counted-Doppler RangeRatePhysicsConfig
+# defaults (1e-10 s / 20), which belong to the range-rate measurement family.
+ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12
+ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10
+# FA-03B (P0B-2B): every one-way PRODUCTION history lookup — solver probes,
+# final state re-queries, and STM interpolation — passes through the shared
+# closed-support guard. The metadata policy label below names the contract:
+# closed interval, exact endpoints accepted, at most MAX_BOUNDARY_ULPS
+# representable steps normalized onto an endpoint, everything farther raises
+# HistoryDomainError before any extrapolation. Raw solvers stay generic.
+HISTORY_DOMAIN_POLICY = "strict_closed_support_two_ulp_endpoint"
+
+# FA-03A dual convergence criterion: the fixed-point update tolerance alone
+# can be satisfied by a stalled or trivially-looping iterate, so the solver
+# additionally requires the light-time equation residual
+# |tau - rho(t_r - tau)/c| to close. 1e-11 s (~3 mm) is 10x the update
+# tolerance: a genuinely converged fixed point closes the equation to
+# O(update_tol * (1 + rho_dot/c)) << 1e-11, while any stalled iterate does
+# not. Same 1e-12/1e-11 pair as the validated M3 two-way event solver.
+ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S = 1e-11
+
 
 @dataclass(frozen=True)
 class PassGeometry:
@@ -56,6 +85,11 @@ class PassGeometry:
     companion_geometry: str = "instantaneous"
     jacobian_model: str = "analytic_exact_geometric"
     measurement_metadata: dict | None = None
+    # Two-way range (M3) transport: SPICE ET of scenario t=0 for exact
+    # event-epoch sxform evaluation, and the TwoWayRangeConfig in use.
+    # Both stay None for all other measurement types.
+    et0_s: float | None = None
+    two_way_range: object | None = None
 
 
 @dataclass(frozen=True)
@@ -66,6 +100,12 @@ class LightTimeSolution:
     iterations: int
     converged: bool
     target_position_m: np.ndarray
+    # FA-03A: independently evaluated light-time equation residual
+    # |tau - rho(t_r - tau)/c| at the returned solution; `converged` is True
+    # only when BOTH the update tolerance and this residual tolerance hold.
+    equation_residual_s: float = float("nan")
+    update_converged: bool = False
+    update_residual_s: float = float("nan")
 
 
 @dataclass(frozen=True)
@@ -107,6 +147,10 @@ class _StellarAberrationLocalJacobian:
 
 class MeasurementJacobianError(ValueError):
     """Raised when a requested measurement Jacobian is physically undefined."""
+
+
+class LightTimeConvergenceError(RuntimeError):
+    """Raised when a one-way light-time result fails its strict solve policy."""
 
 
 def normalize_measurement_model_profile(
@@ -197,6 +241,15 @@ def measurement_model_metadata(
     noise_seed: int | None = None,
 ) -> dict:
     """Build traceable measurement-physics metadata from a pass geometry."""
+    if pass_geo.measurement_type == "two_way_range":
+        # Two-way range metadata is built by the generation path in
+        # lunar_od.two_way_range; this helper only transports it.
+        if pass_geo.measurement_metadata is not None:
+            return dict(pass_geo.measurement_metadata)
+        raise ValueError(
+            "two_way_range pass geometry carries its metadata from generation; "
+            "none was attached."
+        )
     rr = range_rate_physics_config(pass_geo.range_rate_physics)
     profile_light_time = False
     profile_stellar = False
@@ -232,8 +285,34 @@ def measurement_model_metadata(
         "apply_light_time": bool(pass_geo.apply_light_time),
         "apply_stellar_aberration": bool(pass_geo.apply_stellar_aberration),
         "stellar_aberration_model": stellar_model,
-        "light_time_tolerance_s": float(rr.light_time_tolerance_s),
-        "light_time_max_iter": int(rr.light_time_max_iter),
+        # FA-02: position measurements use the one-way solver policy; only the
+        # range-rate family runs the RangeRatePhysicsConfig light-time solver.
+        "light_time_tolerance_s": (
+            float(ONE_WAY_LIGHT_TIME_TOLERANCE_S)
+            if pass_geo.measurement_type == "position"
+            else float(rr.light_time_tolerance_s)
+        ),
+        "light_time_max_iter": (
+            int(ONE_WAY_LIGHT_TIME_MAX_ITERATIONS)
+            if pass_geo.measurement_type == "position"
+            else int(rr.light_time_max_iter)
+        ),
+        # FA-03A (P0B-1): the equation-residual half of the dual convergence
+        # criterion, reported per measurement family like the fields above.
+        "light_time_equation_tolerance_s": (
+            float(ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S)
+            if pass_geo.measurement_type == "position"
+            else float(rr.light_time_equation_tolerance_s)
+        ),
+        # FA-03B (P0B-2): history-domain policy and per-pass drop aggregates.
+        # Defaults describe a no-drop pass; generators overwrite the dynamic
+        # fields when candidates were dropped for unsupported history epochs.
+        "history_domain_policy": HISTORY_DOMAIN_POLICY,
+        "history_domain_dropped_measurements": 0,
+        "history_domain_drop_records": (),
+        "history_domain_required_pre_roll_s": 0.0,
+        "history_domain_required_post_roll_s": 0.0,
+        "history_domain_all_candidates_dropped": False,
         "count_interval_s": float(rr.count_interval_s),
         "uplink_frequency_hz": float(rr.uplink_frequency_hz),
         "turnaround_ratio": float(rr.turnaround_ratio),
@@ -319,10 +398,17 @@ def solve_one_way_light_time(
     get_target_position_m,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> LightTimeSolution:
-    """Iterate one-way geometric light-time from target transmit to receive time."""
+    """Iterate one-way geometric light-time from target transmit to receive time.
+
+    Convergence requires BOTH the fixed-point update tolerance and an
+    independently evaluated light-time equation residual (FA-03A dual
+    criterion); the residual is computed with a fresh target evaluation at
+    the returned transmit epoch, never from loop bookkeeping alone.
+    """
     observer_position_m = np.asarray(observer_position_m, dtype=float).reshape(3)
     if light_speed_mps <= 0.0:
         raise ValueError("light_speed_mps must be positive.")
@@ -330,19 +416,23 @@ def solve_one_way_light_time(
         raise ValueError("tolerance_s must be positive.")
     if max_iter <= 0:
         raise ValueError("max_iter must be positive.")
+    if not np.isfinite(equation_tolerance_s) or equation_tolerance_s <= 0.0:
+        raise ValueError("equation_tolerance_s must be finite and positive.")
 
     receive_time_s = float(receive_time_s)
     target_position = np.asarray(get_target_position_m(receive_time_s), dtype=float).reshape(3)
     light_time_s = float(np.linalg.norm(target_position - observer_position_m) / light_speed_mps)
-    converged = False
+    update_converged = False
+    update_residual_s = float("inf")
 
     for iteration in range(1, max_iter + 1):
         transmit_time_s = receive_time_s - light_time_s
         target_position = np.asarray(get_target_position_m(transmit_time_s), dtype=float).reshape(3)
         new_light_time_s = float(np.linalg.norm(target_position - observer_position_m) / light_speed_mps)
-        if abs(new_light_time_s - light_time_s) <= tolerance_s:
+        update_residual_s = abs(new_light_time_s - light_time_s)
+        if update_residual_s <= tolerance_s:
             light_time_s = new_light_time_s
-            converged = True
+            update_converged = True
             break
         light_time_s = new_light_time_s
     else:
@@ -350,14 +440,92 @@ def solve_one_way_light_time(
 
     transmit_time_s = receive_time_s - light_time_s
     range_m = light_time_s * light_speed_mps
+    # FA-03A equation residual: fresh evaluation at the returned transmit
+    # epoch because the loop's target_position can lag the accepted light
+    # time by one update.
+    final_target_position = np.asarray(
+        get_target_position_m(transmit_time_s), dtype=float
+    ).reshape(3)
+    equation_residual_s = abs(
+        light_time_s
+        - float(np.linalg.norm(final_target_position - observer_position_m) / light_speed_mps)
+    )
+    converged = update_converged and equation_residual_s <= equation_tolerance_s
     return LightTimeSolution(
         range_m=range_m,
         light_time_s=light_time_s,
         transmit_time_s=transmit_time_s,
         iterations=iteration,
         converged=converged,
-        target_position_m=target_position,
+        target_position_m=final_target_position,
+        equation_residual_s=equation_residual_s,
+        update_converged=update_converged,
+        update_residual_s=float(update_residual_s),
     )
+
+
+def _require_one_way_light_time_convergence(
+    solution: LightTimeSolution,
+    receive_time_s: float,
+    *,
+    light_speed_mps: float,
+    tolerance_s: float,
+    equation_tolerance_s: float,
+    context: str,
+) -> None:
+    if solution.converged:
+        return
+    raise LightTimeConvergenceError(
+        f"One-way light-time {context} did not converge at receive time "
+        f"{float(receive_time_s):.16g} s: update converged="
+        f"{solution.update_converged} after {solution.iterations} iterations "
+        f"(residual {solution.update_residual_s:.3e} s versus tolerance "
+        f"{float(tolerance_s):.3e} s), equation residual "
+        f"{solution.equation_residual_s:.3e} s / "
+        f"{solution.equation_residual_s * light_speed_mps:.3e} m versus "
+        f"tolerance {float(equation_tolerance_s):.3e} s; refusing to use "
+        "the last iterate."
+    )
+
+
+def _one_way_history_support(t_grid_s: ArrayLike) -> tuple[float, float]:
+    t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
+    return float(t_grid[0]), float(t_grid[-1])
+
+
+def _guarded_spacecraft_state_lookup(
+    t_grid_s: ArrayLike,
+    state_history_mci: ArrayLike,
+    *,
+    consumer: str,
+    observation_index: int | None = None,
+):
+    """Strict FA-03B production wrapper around ``interp_state_history``.
+
+    Every evaluation — including intermediate solver probes and final
+    re-queries — is domain-checked first, so the first unsupported probe
+    raises :class:`HistoryDomainError` before any extrapolation happens and
+    without touching the solver's event variable. The raw
+    ``interp_state_history`` helper keeps its generic (M3/diagnostic)
+    behavior; only production one-way consumers route through this wrapper.
+    """
+    t_grid = np.asarray(t_grid_s, dtype=float)
+    support_start_s, support_end_s = _one_way_history_support(t_grid)
+
+    def lookup(epoch_s: float) -> np.ndarray:
+        normalized = normalize_supported_epoch(
+            epoch_s,
+            support_start_s,
+            support_end_s,
+            history_name="spacecraft_state",
+            model_context="one_way_light_time",
+            consumer=consumer,
+            event_label="transmit",
+            observation_index=observation_index,
+        )
+        return interp_state_history(t_grid, state_history_mci, normalized)
+
+    return lookup
 
 
 def one_way_light_time_range_sensitivity(
@@ -369,8 +537,9 @@ def one_way_light_time_range_sensitivity(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity]:
     """Return one-way range and its implicit local-state sensitivity.
 
@@ -391,21 +560,30 @@ def one_way_light_time_range_sensitivity(
     station_rel_state_j2000 = np.linalg.solve(x_rx, station_ecef_state)
     station_mci_rx = earth_pos_mci_rx + station_rel_state_j2000[:3]
 
+    state_lookup = _guarded_spacecraft_state_lookup(
+        t_grid_s,
+        state_history_mci,
+        consumer="one_way_light_time_range_sensitivity",
+    )
     solution = solve_one_way_light_time(
         receive_time_s,
         station_mci_rx,
-        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
+        lambda t: state_lookup(t)[:3],
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
-    if not solution.converged:
-        raise RuntimeError(
-            f"One-way light-time did not converge in {max_iter} iterations at "
-            f"receive time {float(receive_time_s):.16g} s."
-        )
+    _require_one_way_light_time_convergence(
+        solution,
+        receive_time_s,
+        light_speed_mps=light_speed_mps,
+        tolerance_s=tolerance_s,
+        equation_tolerance_s=equation_tolerance_s,
+        context="sensitivity solve",
+    )
 
-    state_tx = interp_state_history(t_grid_s, state_history_mci, solution.transmit_time_s)
+    state_tx = state_lookup(solution.transmit_time_s)
     rho_vec = state_tx[:3] - station_mci_rx
     range_m = float(np.linalg.norm(rho_vec))
     if range_m <= 0.0:
@@ -498,8 +676,9 @@ def one_way_light_time_initial_state_sensitivity(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, OneWayLightTimeInitialStateSensitivity]:
     """Build implicit one-way LOS sensitivities with respect to the arc initial state."""
     solution, local_range_sensitivity = one_way_light_time_range_sensitivity(
@@ -512,12 +691,24 @@ def one_way_light_time_initial_state_sensitivity(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
-    phi_r_tx = _interp_state_transition_position(
-        t_grid_s, phi_history, solution.transmit_time_s
+    # FA-03B + T009 contract: the spacecraft state and the STM position block
+    # must share one identical normalized transmit epoch (both histories live
+    # on the same grid, so a single closed-support normalization serves both).
+    support_start_s, support_end_s = _one_way_history_support(t_grid_s)
+    normalized_tx = normalize_supported_epoch(
+        solution.transmit_time_s,
+        support_start_s,
+        support_end_s,
+        history_name="spacecraft_state",
+        model_context="one_way_light_time",
+        consumer="one_way_light_time_initial_state_sensitivity",
+        event_label="transmit",
     )
+    phi_r_tx = _interp_state_transition_position(t_grid_s, phi_history, normalized_tx)
     spacecraft_state_tx = interp_state_history(
-        t_grid_s, state_history_mci, solution.transmit_time_s
+        t_grid_s, state_history_mci, normalized_tx
     )
     station_position_rx = _station_position_mci_at_receive_epoch(
         station, earth_pos_mci_rx, x_j2k_itrf_rx
@@ -637,8 +828,9 @@ def one_way_light_time_position_initial_state_jacobian(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
     apply_stellar: bool = False,
     observer_reference_velocity_j2000_mps: ArrayLike | None = None,
@@ -662,6 +854,7 @@ def one_way_light_time_position_initial_state_jacobian(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
     direction_unit_los = sensitivity.unit_line_of_sight
     j_direction_dx0 = sensitivity.j_unit_los_dx0
@@ -704,8 +897,9 @@ def one_way_light_time_position_local_state_jacobian(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, np.ndarray]:
     """Return a local receive-state [range, azimuth, elevation] Jacobian."""
@@ -719,10 +913,13 @@ def one_way_light_time_position_local_state_jacobian(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
-    spacecraft_state_tx = interp_state_history(
-        t_grid_s, state_history_mci, solution.transmit_time_s
-    )
+    spacecraft_state_tx = _guarded_spacecraft_state_lookup(
+        t_grid_s,
+        state_history_mci,
+        consumer="one_way_light_time_position_local_state_jacobian",
+    )(solution.transmit_time_s)
     station_position_rx = _station_position_mci_at_receive_epoch(
         station, earth_pos_mci_rx, x_j2k_itrf_rx
     )
@@ -754,8 +951,9 @@ def one_way_light_time_range_initial_state_jacobian(
     x_j2k_itrf_rx: ArrayLike,
     *,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
 ) -> tuple[LightTimeSolution, OneWayLightTimeSensitivity, np.ndarray]:
     """Map the implicit one-way range sensitivity to the initial state.
 
@@ -773,6 +971,7 @@ def one_way_light_time_range_initial_state_jacobian(
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
     )
     return solution, sensitivity, initial_sensitivity.d_range_dx0
 
@@ -1004,8 +1203,10 @@ def _apparent_position_observable(
     observer_earth_vel_rx: ArrayLike | None = None,
     apply_stellar: bool = False,
     light_speed_mps: float = C_LIGHT_MPS,
-    tolerance_s: float = 1e-12,
-    max_iter: int = 10,
+    tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+    max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+    equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
+    observation_index: int | None = None,
 ) -> tuple[np.ndarray, float, float, int]:
     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
 
@@ -1013,9 +1214,12 @@ def _apparent_position_observable(
     the Earth centre, station, and topocentric SEZ frame are evaluated at the
     receive time ``t_r``. ``earth_pos_mci_rx`` and ``x_j2k_itrf_rx`` are the
     receive-epoch values (already indexed, not interpolated). The transmit-time
-    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``;
-    linear extrapolation is used when ``t_t`` falls just before the grid start
-    (e.g. at the first receive epoch).
+    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``
+    strictly inside its support (FA-03B): a ``t_t`` outside the propagated
+    history raises :class:`~lunar_od.history_domain.HistoryDomainError`
+    instead of extrapolating (generation drops such candidates with a
+    structured record; a small caller-owned pre-roll of the propagation is
+    the supported way to serve early receive epochs).
 
     When ``apply_stellar`` is set, the converged-light-time inertial line of
     sight is additionally rotated by the reception-case stellar aberration
@@ -1038,16 +1242,31 @@ def _apparent_position_observable(
     station_rel_j2000 = station_rel_state_j2000[:3]
     station_mci_rx = earth_pos_mci_rx + station_rel_j2000
 
+    state_lookup = _guarded_spacecraft_state_lookup(
+        t_grid_s,
+        state_history_mci,
+        consumer="_apparent_position_observable",
+        observation_index=observation_index,
+    )
     solution = solve_one_way_light_time(
         receive_time_s,
         station_mci_rx,
-        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
+        lambda t: state_lookup(t)[:3],
         light_speed_mps=light_speed_mps,
         tolerance_s=tolerance_s,
         max_iter=max_iter,
+        equation_tolerance_s=equation_tolerance_s,
+    )
+    _require_one_way_light_time_convergence(
+        solution,
+        receive_time_s,
+        light_speed_mps=light_speed_mps,
+        tolerance_s=tolerance_s,
+        equation_tolerance_s=equation_tolerance_s,
+        context="observable solve",
     )
     transmit_time_s = solution.transmit_time_s
-    r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
+    r_sc_tt = state_lookup(transmit_time_s)[:3]
 
     if apply_stellar:
         if observer_earth_vel_rx is None:
@@ -1136,9 +1355,15 @@ def _apparent_position_rowwise(
                 earth_vel[time_idx] if (use_stellar and earth_vel is not None) else None
             ),
             apply_stellar=use_stellar,
+            observation_index=i,
         )
         h_meas[i] = z
-        r_tx[i] = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]
+        r_tx[i] = _guarded_spacecraft_state_lookup(
+            pass_geo.t_s,
+            state_history_mci,
+            consumer="_apparent_position_rowwise",
+            observation_index=i,
+        )(transmit_time_s)[:3]
     return h_meas, r_tx
 
 
@@ -1215,6 +1440,8 @@ def generate_position_measurements(
     rng = rng or np.random.default_rng()
 
     obs_counter = 0
+    candidate_counter = 0
+    drop_records: list[HistoryDomainDropRecord] = []
     for k, t_s in enumerate(t_pass_s):
         x_j2k_itrf = np.asarray(spice.sxform("J2000", "ITRF93", float(et0 + t_s)), dtype=float)
         xforms[k, :, :] = x_j2k_itrf
@@ -1235,29 +1462,11 @@ def generate_position_measurements(
 
         for station_col in active_station_cols:
             station = stations[station_col]
-            if apply_light_time:
-                if apply_stellar_aberration:
-                    obs_earth_vel = (
-                        v_earth_ssb_j2000[k]
-                        if stellar_aberration_model == "spice_ssb"
-                        else v_earth_mci[k]
-                    )
-                else:
-                    obs_earth_vel = None
-                z_clean, _t_t, _lt, _it = _apparent_position_observable(
-                    float(t_s), station, t_pass_s, state_history_mci,
-                    r_earth_mci[k], x_j2k_itrf,
-                    observer_earth_vel_rx=obs_earth_vel,
-                    apply_stellar=apply_stellar_aberration,
-                )
-            else:
-                rho_vec_ecef = r_sat_ecef - station.r_ecef_m
-                az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
-                z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
-
-            bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
-            if bias_vec.size != 3:
-                bias_vec = np.zeros(3)
+            # FA-03B RNG contract: each visible candidate owns one potential
+            # observation row and consumes its noise draws BEFORE the model
+            # evaluation, so a dropped candidate leaves later surviving noisy
+            # rows bit-identical to a pre-rolled run where every candidate
+            # had valid history. Physics calls never consume RNG.
             if noise:
                 noise_vec = np.array(
                     [
@@ -1269,6 +1478,45 @@ def generate_position_measurements(
                 )
             else:
                 noise_vec = np.zeros(3)
+
+            try:
+                if apply_light_time:
+                    if apply_stellar_aberration:
+                        obs_earth_vel = (
+                            v_earth_ssb_j2000[k]
+                            if stellar_aberration_model == "spice_ssb"
+                            else v_earth_mci[k]
+                        )
+                    else:
+                        obs_earth_vel = None
+                    z_clean, _t_t, _lt, _it = _apparent_position_observable(
+                        float(t_s), station, t_pass_s, state_history_mci,
+                        r_earth_mci[k], x_j2k_itrf,
+                        observer_earth_vel_rx=obs_earth_vel,
+                        apply_stellar=apply_stellar_aberration,
+                        observation_index=candidate_counter,
+                    )
+                else:
+                    rho_vec_ecef = r_sat_ecef - station.r_ecef_m
+                    az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+                    z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
+            except HistoryDomainError as domain_error:
+                drop_records.append(
+                    HistoryDomainDropRecord.from_error(
+                        domain_error,
+                        arc_id=arc_id,
+                        station_index=int(station_col),
+                        time_index=int(k),
+                        candidate_ordinal=candidate_counter,
+                    )
+                )
+                candidate_counter += 1
+                continue
+            candidate_counter += 1
+
+            bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
+            if bias_vec.size != 3:
+                bias_vec = np.zeros(3)
             z_noisy = z_clean + noise_vec + bias_vec
 
             station_id_1based = station_col + 1
@@ -1297,11 +1545,15 @@ def generate_position_measurements(
         companion_geometry="instantaneous",
         jacobian_model=jacobian_model,
     )
-    object.__setattr__(
-        pass_geo,
-        "measurement_metadata",
-        measurement_model_metadata(pass_geo, noise_enabled=noise, noise_seed=noise_seed),
+    metadata = measurement_model_metadata(
+        pass_geo, noise_enabled=noise, noise_seed=noise_seed
     )
+    if drop_records:
+        metadata.update(summarize_history_domain_drops(drop_records))
+        metadata["history_domain_all_candidates_dropped"] = bool(
+            candidate_counter > 0 and obs_counter == 0
+        )
+    object.__setattr__(pass_geo, "measurement_metadata", metadata)
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
 
@@ -1469,6 +1721,8 @@ def generate_range_rate_measurements(
     rng = rng or np.random.default_rng()
 
     obs_counter = 0
+    candidate_counter = 0
+    drop_records: list[HistoryDomainDropRecord] = []
     for k, t_s in enumerate(t_pass_s):
         active_station_cols = np.where(vis_mask_raw[k, :])[0]
         if active_station_cols.size == 0:
@@ -1486,39 +1740,9 @@ def generate_range_rate_measurements(
             rho_vec_ecef = r_sat_ecef - station.r_ecef_m
             rho_dot_ecef = v_sat_ecef
 
-            if companion_geometry == "instantaneous":
-                range_ideal = float(np.linalg.norm(rho_vec_ecef))
-                az_ideal, el_ideal, _ = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
-            else:
-                range_ideal, az_ideal, el_ideal = _range_rate_companion_observable(
-                    float(t_s),
-                    station,
-                    t_pass_s,
-                    state_history_mci,
-                    r_earth_mci[k],
-                    xforms[k, :, :],
-                    companion_geometry=companion_geometry,
-                )
-            if rr_physics.mode == "geometric_instantaneous":
-                rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
-            else:
-                rr_ideal = two_way_counted_doppler_observable(
-                    float(t_s),
-                    station,
-                    t_pass_s,
-                    state_history_mci,
-                    r_earth_mci,
-                    v_earth_mci,
-                    xforms,
-                    rr_physics,
-                )
-
-            station_bias = np.asarray(getattr(station, "bias", []), dtype=float).reshape(-1)
-            if station_bias.size == 4:
-                bias_vec = station_bias
-            else:
-                bias_vec = np.array([bias_range_m, bias_rr_mps, bias_az_rad, bias_el_rad], dtype=float)
-
+            # FA-03B RNG contract (see the position generator): four draws
+            # per candidate, consumed before the model evaluation, in
+            # range/range-rate/azimuth/elevation order.
             if noise:
                 noise_vec = np.array(
                     [
@@ -1531,6 +1755,53 @@ def generate_range_rate_measurements(
                 )
             else:
                 noise_vec = np.zeros(4)
+
+            try:
+                if companion_geometry == "instantaneous":
+                    range_ideal = float(np.linalg.norm(rho_vec_ecef))
+                    az_ideal, el_ideal, _ = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+                else:
+                    range_ideal, az_ideal, el_ideal = _range_rate_companion_observable(
+                        float(t_s),
+                        station,
+                        t_pass_s,
+                        state_history_mci,
+                        r_earth_mci[k],
+                        xforms[k, :, :],
+                        companion_geometry=companion_geometry,
+                    )
+                if rr_physics.mode == "geometric_instantaneous":
+                    rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
+                else:
+                    rr_ideal = two_way_counted_doppler_observable(
+                        float(t_s),
+                        station,
+                        t_pass_s,
+                        state_history_mci,
+                        r_earth_mci,
+                        v_earth_mci,
+                        xforms,
+                        rr_physics,
+                    )
+            except HistoryDomainError as domain_error:
+                drop_records.append(
+                    HistoryDomainDropRecord.from_error(
+                        domain_error,
+                        arc_id=arc_id,
+                        station_index=int(station_col),
+                        time_index=int(k),
+                        candidate_ordinal=candidate_counter,
+                    )
+                )
+                candidate_counter += 1
+                continue
+            candidate_counter += 1
+
+            station_bias = np.asarray(getattr(station, "bias", []), dtype=float).reshape(-1)
+            if station_bias.size == 4:
+                bias_vec = station_bias
+            else:
+                bias_vec = np.array([bias_range_m, bias_rr_mps, bias_az_rad, bias_el_rad], dtype=float)
 
             z = np.array([range_ideal, rr_ideal, az_ideal, el_ideal], dtype=float) + bias_vec + noise_vec
             station_id_1based = station_col + 1
@@ -1553,11 +1824,15 @@ def generate_range_rate_measurements(
         companion_geometry=companion_geometry,
         jacobian_model=jacobian_model,
     )
-    object.__setattr__(
-        pass_geo,
-        "measurement_metadata",
-        measurement_model_metadata(pass_geo, noise_enabled=noise, noise_seed=noise_seed),
+    metadata = measurement_model_metadata(
+        pass_geo, noise_enabled=noise, noise_seed=noise_seed
     )
+    if drop_records:
+        metadata.update(summarize_history_domain_drops(drop_records))
+        metadata["history_domain_all_candidates_dropped"] = bool(
+            candidate_counter > 0 and obs_counter == 0
+        )
+    object.__setattr__(pass_geo, "measurement_metadata", metadata)
     return obs_data[:obs_counter, :], pass_geo
 
 
@@ -1951,8 +2226,17 @@ def measurement_sigma_vector(
                 station.sigma_angle_rad,
                 station.sigma_angle_rad,
             ]
+    elif measurement_type == "two_way_range":
+        # M3 policy: the scalar two-way range reuses station.sigma_range_m;
+        # metadata records two_way_range_noise_source accordingly.
+        sigma = np.zeros(obs_data.shape[0], dtype=float)
+        for obs_idx in range(obs_data.shape[0]):
+            station = pass_geo.stations[int(obs_data[obs_idx, 2]) - 1]
+            sigma[obs_idx] = station.sigma_range_m
     else:
-        raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+        raise ValueError(
+            "measurement_type must be 'position', 'range_rate', or 'two_way_range'."
+        )
 
     if np.any(~np.isfinite(sigma)) or np.any(sigma <= 0.0):
         raise ValueError("Measurement sigmas must be finite and positive.")

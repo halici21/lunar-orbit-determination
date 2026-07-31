@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal
 
 import numpy as np
@@ -17,8 +17,15 @@ from .estimators import (
     estimate_position_srif,
     estimate_range_rate_bls_lm,
     estimate_range_rate_srif,
+    estimate_two_way_range_bls_lm,
+    estimate_two_way_range_srif,
 )
 from .filters import UKFAdaptiveConfig, UnscentedTransformConfig, assess_ukf_operational_stability, run_lunar_ukf
+from .history_domain import (
+    HistoryDomainDropRecord,
+    HistoryDomainError,
+    summarize_history_domain_drops,
+)
 from .measurements import (
     PassGeometry,
     generate_position_measurements,
@@ -26,8 +33,9 @@ from .measurements import (
     measurement_model_metadata,
 )
 from .radiometrics import RangeRatePhysicsConfig, range_rate_physics_config
+from .two_way_range import TwoWayRangeConfig, generate_two_way_range_measurements
 
-MeasurementType = Literal["position", "range_rate"]
+MeasurementType = Literal["position", "range_rate", "two_way_range"]
 StartMode = Literal["cold", "hot", "formal", "sqrt_formal"]
 EstimatorType = Literal["srif", "bls_lm", "ukf"]
 
@@ -159,6 +167,13 @@ class ScenarioResult:
     aberration_local_jacobian_input: str = "not_applicable"
     aberration_local_jacobian_space: str = "not_applicable"
     aberration_local_jacobian_step: float = float("nan")
+    history_domain_dropped_measurements: int = 0
+    history_domain_position_drops: int = 0
+    history_domain_range_rate_drops: int = 0
+    history_domain_required_pre_roll_s: float = 0.0
+    history_domain_required_post_roll_s: float = 0.0
+    history_domain_all_measurement_arcs_empty: bool = False
+    history_domain_drop_records: tuple[dict, ...] = ()
 
     @property
     def algorithmic_success_fraction(self) -> float:
@@ -233,6 +248,7 @@ def build_measurement_arcs(
     measurement_model_profile: str | None = None,
     companion_geometry: str = "instantaneous",
     jacobian_model: str | None = None,
+    two_way_range: TwoWayRangeConfig | None = None,
 ) -> tuple[PreparedArc, ...]:
     """Build per-arc observation packages from visibility segmentation."""
     t_sim_s = np.asarray(t_sim_s, dtype=float).reshape(-1)
@@ -250,6 +266,7 @@ def build_measurement_arcs(
     rr_physics = _resolve_range_rate_physics(range_rate_physics, count_interval_s)
 
     arcs: list[PreparedArc] = []
+    history_domain_drop_records: list[HistoryDomainDropRecord] = []
     for arc_number, (start_idx, end_idx) in enumerate(zip(seg_starts, seg_ends), start=1):
         if end_idx < start_idx:
             continue
@@ -297,9 +314,27 @@ def build_measurement_arcs(
                 companion_geometry=companion_geometry,
                 jacobian_model=jacobian_model,
             )
+        elif measurement_type == "two_way_range":
+            obs_data, pass_geo = generate_two_way_range_measurements(
+                t_pass_s,
+                x_pass,
+                stations,
+                vis_pass,
+                get_earth_pos,
+                get_earth_vel,
+                et0,
+                noise=noise,
+                rng=rng,
+                arc_id=arc_number,
+                config=two_way_range,
+            )
         else:
             raise ValueError(f"Unsupported measurement_type: {measurement_type}")
 
+        pass_metadata = _attached_measurement_metadata(pass_geo)
+        history_domain_drop_records.extend(
+            _history_domain_records_from_metadata(pass_metadata)
+        )
         if obs_data.shape[0] == 0:
             continue
         arcs.append(
@@ -314,7 +349,120 @@ def build_measurement_arcs(
             )
         )
 
+    if history_domain_drop_records:
+        aggregate = summarize_history_domain_drops(history_domain_drop_records)
+        dropped_count = int(aggregate["history_domain_dropped_measurements"])
+        aggregate.update(
+            {
+                "history_domain_position_drops": (
+                    dropped_count if measurement_type == "position" else 0
+                ),
+                "history_domain_range_rate_drops": (
+                    dropped_count if measurement_type == "range_rate" else 0
+                ),
+                "history_domain_all_measurement_arcs_empty": not arcs,
+            }
+        )
+        if not arcs:
+            error = HistoryDomainError.from_drop_summary(
+                history_domain_drop_records,
+                model_context=f"{measurement_type}_measurement_arc_build",
+                consumer="build_measurement_arcs",
+            )
+            error.history_domain_total_candidates = dropped_count
+            error.history_domain_dropped_measurements = dropped_count
+            error.history_domain_position_drops = int(
+                aggregate["history_domain_position_drops"]
+            )
+            error.history_domain_range_rate_drops = int(
+                aggregate["history_domain_range_rate_drops"]
+            )
+            error.history_domain_required_pre_roll_s = float(
+                aggregate["history_domain_required_pre_roll_s"]
+            )
+            error.history_domain_required_post_roll_s = float(
+                aggregate["history_domain_required_post_roll_s"]
+            )
+            error.history_domain_all_measurement_arcs_empty = True
+            raise error
+        arcs = [_with_history_domain_aggregate(arc, aggregate) for arc in arcs]
+
     return tuple(arcs)
+
+
+def _attached_measurement_metadata(pass_geo: PassGeometry | None) -> dict:
+    if pass_geo is None:
+        return {}
+    if pass_geo.measurement_type == "two_way_range":
+        return measurement_model_metadata(pass_geo)
+    metadata = measurement_model_metadata(pass_geo)
+    if pass_geo.measurement_metadata is not None:
+        metadata.update(pass_geo.measurement_metadata)
+    return metadata
+
+
+def _history_domain_records_from_metadata(
+    metadata: dict,
+) -> tuple[HistoryDomainDropRecord, ...]:
+    records = []
+    for record in metadata.get("history_domain_drop_records", ()):
+        if isinstance(record, HistoryDomainDropRecord):
+            records.append(record)
+        else:
+            records.append(HistoryDomainDropRecord(**dict(record)))
+    return tuple(records)
+
+
+def _with_history_domain_aggregate(
+    arc: PreparedArc,
+    aggregate: dict,
+) -> PreparedArc:
+    metadata = _attached_measurement_metadata(arc.pass_geo)
+    metadata.update(aggregate)
+    return replace(
+        arc,
+        pass_geo=replace(arc.pass_geo, measurement_metadata=metadata),
+    )
+
+
+def _history_domain_scenario_fields(
+    metadata: dict,
+    measurement_type: MeasurementType,
+) -> dict:
+    dropped = int(metadata.get("history_domain_dropped_measurements", 0))
+    records = tuple(
+        (
+            dict(record)
+            if not isinstance(record, HistoryDomainDropRecord)
+            else record.as_dict()
+        )
+        for record in metadata.get("history_domain_drop_records", ())
+    )
+    return {
+        "history_domain_dropped_measurements": dropped,
+        "history_domain_position_drops": int(
+            metadata.get(
+                "history_domain_position_drops",
+                dropped if measurement_type == "position" else 0,
+            )
+        ),
+        "history_domain_range_rate_drops": int(
+            metadata.get(
+                "history_domain_range_rate_drops",
+                dropped if measurement_type == "range_rate" else 0,
+            )
+        ),
+        "history_domain_required_pre_roll_s": float(
+            metadata.get("history_domain_required_pre_roll_s", 0.0)
+        ),
+        "history_domain_required_post_roll_s": float(
+            metadata.get("history_domain_required_post_roll_s", 0.0)
+        ),
+        "history_domain_all_measurement_arcs_empty": bool(
+            metadata.get("history_domain_all_measurement_arcs_empty", False)
+        ),
+        "history_domain_drop_records": records,
+    }
 
 
 def _resolve_range_rate_physics(
@@ -333,6 +481,7 @@ def _resolve_range_rate_physics(
         light_speed_mps=cfg.light_speed_mps,
         light_time_tolerance_s=cfg.light_time_tolerance_s,
         light_time_max_iter=cfg.light_time_max_iter,
+        light_time_equation_tolerance_s=cfg.light_time_equation_tolerance_s,
         local_state_model=cfg.local_state_model,
         station_clock_offset_s=cfg.station_clock_offset_s,
         station_clock_drift=cfg.station_clock_drift,
@@ -466,10 +615,17 @@ def run_batch_arc_sequence(
 
     if start_mode not in {"cold", "hot", "formal", "sqrt_formal"}:
         raise ValueError("start_mode must be 'cold', 'hot', 'formal', or 'sqrt_formal'.")
-    if measurement_type not in {"position", "range_rate"}:
-        raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+    if measurement_type not in {"position", "range_rate", "two_way_range"}:
+        raise ValueError(
+            "measurement_type must be 'position', 'range_rate', or 'two_way_range'."
+        )
     if estimator_type not in {"srif", "bls_lm", "ukf"}:
         raise ValueError("estimator_type must be 'srif', 'bls_lm', or 'ukf'.")
+    if measurement_type == "two_way_range" and estimator_type == "ukf":
+        raise ValueError(
+            "measurement_type='two_way_range' is not supported by the UKF in M3; "
+            "use estimator_type='bls_lm' or 'srif'."
+        )
     if start_mode == "sqrt_formal" and estimator_type != "srif":
         raise ValueError("sqrt_formal handoff is only supported by the SRIF estimators.")
     bias_mode = _normalize_bias_mode(bias_mode)
@@ -532,8 +688,10 @@ def run_batch_arc_sequence(
         if arcs and measurement_type == "range_rate":
             _rr_physics = range_rate_physics_config(arcs[0].pass_geo.range_rate_physics)
         _pass_geo0 = arcs[0].pass_geo if arcs else None
-        _measurement_meta = (
-            {} if _pass_geo0 is None else measurement_model_metadata(_pass_geo0)
+        _measurement_meta = _attached_measurement_metadata(_pass_geo0)
+        _history_domain_fields = _history_domain_scenario_fields(
+            _measurement_meta,
+            measurement_type,
         )
         return ScenarioResult(
             label=label,
@@ -591,6 +749,7 @@ def run_batch_arc_sequence(
             aberration_local_jacobian_step=float(
                 _measurement_meta.get("aberration_local_jacobian_step", float("nan"))
             ),
+            **_history_domain_fields,
         )
 
     for arc_index, arc in enumerate(arcs):
@@ -854,6 +1013,59 @@ def run_batch_arc_sequence(
             ukf_robust_reweighted_fraction = float("nan")
             truth_compare_state = x_true0
             handoff_epoch_s = float(arc.t_pass_s[0])
+        elif measurement_type == "two_way_range":
+            station_col = 2
+            estimator = (
+                estimate_two_way_range_srif
+                if estimator_type == "srif"
+                else estimate_two_way_range_bls_lm
+            )
+            _lm_kw = {"lambda0": bls_lambda0} if estimator_type == "bls_lm" else {}
+            x_est, stop_reason, stats = estimator(
+                arc.t_pass_s,
+                arc.obs_data,
+                x_nominal,
+                arc.pass_geo,
+                mu_moon_m3_s2,
+                mu_earth_m3_s2,
+                mu_sun_m3_s2,
+                get_earth_pos,
+                get_sun_pos,
+                max_iter=max_iter,
+                tol_cost_stability=tol_cost_stability,
+                rtol=rtol,
+                atol=atol,
+                j2_moon=j2_moon,
+                bias_mode=bias_mode,
+                robust_outlier_rejection=robust_outlier_rejection,
+                **_lm_kw,
+                prior_covariance=None if start_mode == "sqrt_formal" else prior_covariance,
+                prior_sqrt_information=prior_sqrt_information,
+                return_posterior=needs_posterior_handoff,
+            )
+            ukf_mean_nis = float("nan")
+            ukf_max_nis = float("nan")
+            ukf_accepted_fraction = float("nan")
+            ukf_final_q_scale = float("nan")
+            ukf_mean_abs_lag1 = float("nan")
+            ukf_max_abs_lag1 = float("nan")
+            ukf_normalized_mean_nis = float("nan")
+            ukf_nis_upper_consistent = None
+            ukf_elapsed_s = float("nan")
+            ukf_process_evaluations = 0
+            ukf_unique_propagations = 0
+            ukf_cache_hits = 0
+            ukf_measurement_evaluations = 0
+            ukf_unique_measurement_evaluations = 0
+            ukf_measurement_cache_hits = 0
+            ukf_frozen_indices = ()
+            ukf_regularized_indices = ()
+            ukf_stability_passed = None
+            ukf_min_covariance_eigenvalue = float("nan")
+            ukf_max_covariance_condition = float("nan")
+            ukf_robust_reweighted_fraction = float("nan")
+            truth_compare_state = x_true0
+            handoff_epoch_s = float(arc.t_pass_s[0])
         else:
             station_col = 5
             estimator = estimate_range_rate_srif if estimator_type == "srif" else estimate_range_rate_bls_lm
@@ -972,7 +1184,11 @@ def run_batch_arc_sequence(
     if arcs and measurement_type == "range_rate":
         result_rr_physics = range_rate_physics_config(arcs[0].pass_geo.range_rate_physics)
     pass_geo0 = arcs[0].pass_geo if arcs else None
-    measurement_meta = {} if pass_geo0 is None else measurement_model_metadata(pass_geo0)
+    measurement_meta = _attached_measurement_metadata(pass_geo0)
+    history_domain_fields = _history_domain_scenario_fields(
+        measurement_meta,
+        measurement_type,
+    )
 
     return ScenarioResult(
         label=label,
@@ -1030,6 +1246,7 @@ def run_batch_arc_sequence(
         aberration_local_jacobian_step=float(
             measurement_meta.get("aberration_local_jacobian_step", float("nan"))
         ),
+        **history_domain_fields,
     )
 
 

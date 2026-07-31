@@ -38,6 +38,11 @@ class ObservabilityTests(unittest.TestCase):
             measurement_model_profile="one_way_light_time",
             jacobian_model="implicit_light_time",
         )
+        # P0B-2B (FA-03B): the first receive tag's transmit epoch precedes
+        # the propagated history and is no longer silently extrapolated;
+        # this shared-block parity fixture excludes the unsupported first
+        # node (time_index_1based == 1) instead of relying on extrapolation.
+        arc = replace(arc, obs_data=arc.obs_data[arc.obs_data[:, 5] > 1.0])
         x0 = np.asarray(arc.truth_state_history_mci[0, :6], dtype=float)
         x_aug0 = np.concatenate([x0, np.eye(6).reshape(-1, order="F")])
         x_aug_hist = propagate_augmented_state(
@@ -232,7 +237,7 @@ class ObservabilityTests(unittest.TestCase):
             _synthetic_rr_station(45.0, -30.0, 500.0),
             _synthetic_rr_station(-35.0, 150.0, 600.0),
         )
-        arc = _build_two_way_range_rate_arc(1, 0, 12, t_all_s, x_truth, stations)
+        arc = _build_two_way_range_rate_arc(1, 1, 13, t_all_s, x_truth, stations)
 
         h_initial = build_initial_state_jacobian(
             "range_rate",
@@ -358,7 +363,8 @@ class ObservabilityTests(unittest.TestCase):
 def _truth_history(mu_moon):
     r0norm = 1737.4e3 + 100e3
     x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
-    t_all_s = np.arange(0.0, 901.0, 60.0)
+    # Keep one pre-roll node so counted-Doppler event epochs remain in-domain.
+    t_all_s = np.arange(-60.0, 901.0, 60.0)
     get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
     get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
 
@@ -461,8 +467,9 @@ def _build_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, stations
 
 
 def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, stations):
-    t_pass_s = np.asarray(t_all_s[start_idx : end_idx + 1], dtype=float)
-    x_pass = np.asarray(x_truth[start_idx : end_idx + 1, :], dtype=float)
+    history_start_idx = max(0, start_idx - 1)
+    t_pass_s = np.asarray(t_all_s[history_start_idx : end_idx + 2], dtype=float)
+    x_pass = np.asarray(x_truth[history_start_idx : end_idx + 2, :], dtype=float)
     pass_geo = PassGeometry(
         t_s=t_pass_s,
         earth_pos_mci_m=np.zeros((t_pass_s.size, 3)),
@@ -473,7 +480,11 @@ def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, 
         range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0),
     )
     rows = []
-    for time_idx, t_s in enumerate(t_pass_s, start=1):
+    measurement_times = (
+        t_pass_s[1:-1] if start_idx > history_start_idx else t_pass_s
+    )
+    first_time_index = 2 if start_idx > history_start_idx else 1
+    for time_idx, t_s in enumerate(measurement_times, start=first_time_index):
         for station_id in range(1, len(stations) + 1):
             rows.append([t_s, 0.0, 0.0, 0.0, 0.0, station_id, time_idx, arc_id])
     obs_data = np.asarray(rows, dtype=float)
