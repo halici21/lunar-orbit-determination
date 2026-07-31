@@ -224,9 +224,9 @@ class ForceContractCapabilityTests(unittest.TestCase):
         ):
             self.assertEqual(caps[role], ConsumerReadiness.VERIFIED, role)
         self.assertEqual(
-            caps[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.PENDING_R1
+            caps[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.VERIFIED
         )
-        self.assertEqual(caps[ConsumerRole.OBSERVABILITY], ConsumerReadiness.PENDING_R1)
+        self.assertEqual(caps[ConsumerRole.OBSERVABILITY], ConsumerReadiness.VERIFIED)
 
     def test_lunar_j2_element_status_is_supported(self):
         contract = _contract(j2_moon=J2_MOON)

@@ -108,7 +108,12 @@ class ArcResult:
     @property
     def condition_acceptable(self) -> bool:
         condition = float(self.stats.condition_number)
-        return bool(not np.isfinite(condition) or condition <= 1e14)
+        return bool(np.isfinite(condition) and condition <= 1e14)
+
+    @property
+    def condition_number_available(self) -> bool:
+        """Whether a condition diagnostic was computed, including infinity."""
+        return bool(not np.isnan(float(self.stats.condition_number)))
 
     @property
     def operational_success(self) -> bool:
@@ -184,6 +189,17 @@ class ScenarioResult:
     force_contract_manifest_sha256: str = ""
     posterior_force_role_status: str = ""
     observability_force_role_status: str = ""
+    posterior_covariance_stm_mode: str = ""
+    posterior_covariance_rank: int = 0
+    posterior_covariance_condition_number: float = float("nan")
+    posterior_covariance_min_eigenvalue: float = float("nan")
+    posterior_covariance_finite: bool = False
+    observability_rank: int = 0
+    observability_condition_number: float = float("nan")
+    observability_singular_value_min: float = float("nan")
+    observability_singular_value_max: float = float("nan")
+    observability_finite: bool = False
+    derivative_validation_profile: str = ""
 
     @property
     def algorithmic_success_fraction(self) -> float:
@@ -649,6 +665,7 @@ def run_batch_arc_sequence(
 
     bias0 = np.asarray(initial_bias if initial_bias is not None else [], dtype=float).reshape(-1)
     results: list[ArcResult] = []
+    observability_summaries: list[object] = []
     previous_estimate: np.ndarray | None = None
     previous_t0: float | None = None
     previous_covariance: np.ndarray | None = None
@@ -761,6 +778,11 @@ def run_batch_arc_sequence(
                 _measurement_meta.get("aberration_local_jacobian_step", float("nan"))
             ),
             **_history_domain_fields,
+            **_r1_numerical_provenance_fields(
+                _par_results,
+                estimator_type=estimator_type,
+                observability_summaries=(),
+            ),
         )
 
     for arc_index, arc in enumerate(arcs):
@@ -886,7 +908,9 @@ def run_batch_arc_sequence(
                     x0_mci=x_nominal[:6],
                     rtol=rtol,
                     atol=atol,
+                    j2_moon=j2_moon,
                 )
+                observability_summaries.append(observability)
                 decision = decide_bias_state_handling(
                     observability,
                     policy=BiasObservabilityPolicy(
@@ -1259,7 +1283,84 @@ def run_batch_arc_sequence(
             measurement_meta.get("aberration_local_jacobian_step", float("nan"))
         ),
         **history_domain_fields,
+        **_r1_numerical_provenance_fields(
+            results,
+            estimator_type=estimator_type,
+            observability_summaries=observability_summaries,
+        ),
     )
+
+
+def _r1_numerical_provenance_fields(
+    arc_results: Sequence[ArcResult],
+    *,
+    estimator_type: EstimatorType,
+    observability_summaries: Sequence[object],
+) -> dict[str, object]:
+    covariance_arrays = [
+        np.asarray(result.posterior_covariance, dtype=float)
+        for result in arc_results
+        if result.posterior_covariance is not None
+    ]
+    covariance_finite = bool(
+        covariance_arrays and all(np.all(np.isfinite(value)) for value in covariance_arrays)
+    )
+    if covariance_finite:
+        covariance_ranks = [int(np.linalg.matrix_rank(value)) for value in covariance_arrays]
+        covariance_conditions = [float(np.linalg.cond(value)) for value in covariance_arrays]
+        covariance_min_eigenvalues = [
+            float(np.min(np.linalg.eigvalsh(0.5 * (value + value.T))))
+            for value in covariance_arrays
+        ]
+        covariance_rank = min(covariance_ranks)
+        covariance_condition = max(covariance_conditions)
+        covariance_min_eigenvalue = min(covariance_min_eigenvalues)
+    else:
+        covariance_rank = 0
+        covariance_condition = float("nan")
+        covariance_min_eigenvalue = float("nan")
+
+    observability_finite = bool(
+        observability_summaries
+        and all(
+            np.all(np.isfinite(np.asarray(summary.weighted_jacobian, dtype=float)))
+            and np.all(np.isfinite(np.asarray(summary.fisher_information, dtype=float)))
+            and np.all(np.isfinite(np.asarray(summary.singular_values, dtype=float)))
+            for summary in observability_summaries
+        )
+    )
+    if observability_finite:
+        observability_rank = min(int(summary.rank) for summary in observability_summaries)
+        observability_condition = max(
+            float(summary.condition_number) for summary in observability_summaries
+        )
+        observability_singular_min = min(
+            float(np.min(summary.singular_values)) for summary in observability_summaries
+        )
+        observability_singular_max = max(
+            float(np.max(summary.singular_values)) for summary in observability_summaries
+        )
+    else:
+        observability_rank = 0
+        observability_condition = float("nan")
+        observability_singular_min = float("nan")
+        observability_singular_max = float("nan")
+
+    return {
+        "posterior_covariance_stm_mode": (
+            "ukf_sigma_point" if estimator_type == "ukf" else "analytic_variational"
+        ),
+        "posterior_covariance_rank": covariance_rank,
+        "posterior_covariance_condition_number": covariance_condition,
+        "posterior_covariance_min_eigenvalue": covariance_min_eigenvalue,
+        "posterior_covariance_finite": covariance_finite,
+        "observability_rank": observability_rank,
+        "observability_condition_number": observability_condition,
+        "observability_singular_value_min": observability_singular_min,
+        "observability_singular_value_max": observability_singular_max,
+        "observability_finite": observability_finite,
+        "derivative_validation_profile": "r1.fd-sweep.v1",
+    }
 
 
 def _ukf_default_initial_covariance(

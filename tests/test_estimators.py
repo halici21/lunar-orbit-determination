@@ -32,6 +32,46 @@ FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 class EstimatorTests(unittest.TestCase):
+    def test_posterior_covariance_rejects_nonfinite_information(self):
+        for bad_value in (np.nan, np.inf, -np.inf):
+            information = np.eye(6)
+            information[0, 0] = bad_value
+            with self.assertRaisesRegex(ValueError, "nonfinite"):
+                estimator_helpers._safe_covariance_from_information(information)
+
+    def test_position_bls_posterior_responds_to_nonzero_lunar_j2(self):
+        from tests.test_r0a_force_config_parity import J2_MOON_UNNORMALIZED, MU_MOON, _position_case
+
+        x0, t_pass, truth, pass_geo, obs, get_earth, get_sun = _position_case(
+            duration_s=240.0,
+            step_s=60.0,
+        )
+        x_start = x0.copy()
+        x_start[:3] += np.array([20.0, -10.0, 5.0])
+
+        def run(j2_moon):
+            return estimate_position_bls_lm(
+                t_pass,
+                obs,
+                x_start,
+                pass_geo,
+                MU_MOON,
+                0.0,
+                0.0,
+                get_earth,
+                get_sun,
+                max_iter=1,
+                j2_moon=j2_moon,
+                return_posterior=True,
+            )[2].posterior_covariance
+
+        posterior_off = run(0.0)
+        posterior_on = run(J2_MOON_UNNORMALIZED)
+        sigma_off = np.sqrt(np.diag(posterior_off))
+        sigma_on = np.sqrt(np.diag(posterior_on))
+        relative = np.max(np.abs(sigma_on - sigma_off) / np.maximum(sigma_off, 1e-30))
+        self.assertGreater(relative, 1e-9)
+
     def test_implicit_position_block_is_shared_and_stm_is_not_applied_twice(self):
         t_grid = np.arange(-20.0, 21.0, 10.0)
         states = np.zeros((t_grid.size, 6), dtype=float)

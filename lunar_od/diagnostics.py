@@ -108,7 +108,9 @@ def analyze_convergence(
     singular_reason = normalized in {"singular", "rank-deficient", "ill-conditioned"}
 
     cond_value = float("nan") if condition_number is None else float(condition_number)
-    ill_conditioned = bool(np.isfinite(cond_value) and cond_value > condition_threshold)
+    ill_conditioned = bool(
+        not np.isfinite(cond_value) or cond_value > condition_threshold
+    )
     rank_deficient = False
     if expected_rank is not None and rank is not None:
         rank_deficient = int(rank) < int(expected_rank)

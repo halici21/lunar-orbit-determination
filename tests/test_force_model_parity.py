@@ -254,17 +254,16 @@ class P6HarmonicsStatusTests(unittest.TestCase):
             self.assertEqual(caps[role], ConsumerReadiness.UNSUPPORTED, role)
 
 
-class P7PendingR1Tests(unittest.TestCase):
-    def test_nonzero_lunar_j2_keeps_posterior_and_observability_pending(self):
+class P7VerifiedR1Tests(unittest.TestCase):
+    def test_nonzero_lunar_j2_verifies_posterior_and_observability(self):
         decision = scenario_force_model_preflight(_config(j2_moon=J2_MOON))
         fields = scenario_result_force_fields(decision)
-        self.assertEqual(fields["posterior_force_role_status"], "pending_r1")
-        self.assertEqual(fields["observability_force_role_status"], "pending_r1")
-        self.assertNotEqual(fields["posterior_force_role_status"], "verified")
+        self.assertEqual(fields["posterior_force_role_status"], "verified")
+        self.assertEqual(fields["observability_force_role_status"], "verified")
 
 
 class P8SummaryCsvTests(unittest.TestCase):
-    EXPECTED_NEW_COLUMNS = [
+    EXPECTED_R0B_COLUMNS = [
         "force_contract_schema_version",
         "truth_force_fingerprint",
         "estimator_force_fingerprint",
@@ -274,6 +273,20 @@ class P8SummaryCsvTests(unittest.TestCase):
         "force_contract_manifest_sha256",
         "posterior_force_role_status",
         "observability_force_role_status",
+    ]
+    EXPECTED_R1_COLUMNS = [
+        "posterior_covariance_stm_mode",
+        "posterior_covariance_rank",
+        "posterior_covariance_condition_number",
+        "posterior_covariance_min_eigenvalue",
+        "posterior_covariance_finite",
+        "observability_rank",
+        "observability_condition_number",
+        "observability_singular_value_min",
+        "observability_singular_value_max",
+        "observability_finite",
+        "condition_number_available",
+        "derivative_validation_profile",
     ]
 
     def _scenario(self):
@@ -300,9 +313,16 @@ class P8SummaryCsvTests(unittest.TestCase):
         scenario, _ = self._scenario()
         rows = self._write(scenario)
         header = rows[0]
-        self.assertEqual(header[-len(self.EXPECTED_NEW_COLUMNS):], self.EXPECTED_NEW_COLUMNS)
+        self.assertEqual(header[-len(self.EXPECTED_R1_COLUMNS):], self.EXPECTED_R1_COLUMNS)
         history_idx = header.index("history_domain_all_measurement_arcs_empty")
-        self.assertEqual(header[history_idx + 1], self.EXPECTED_NEW_COLUMNS[0])
+        r0b_slice = header[
+            history_idx + 1 : history_idx + 1 + len(self.EXPECTED_R0B_COLUMNS)
+        ]
+        self.assertEqual(r0b_slice, self.EXPECTED_R0B_COLUMNS)
+        self.assertEqual(
+            header[history_idx + 1 + len(self.EXPECTED_R0B_COLUMNS)],
+            self.EXPECTED_R1_COLUMNS[0],
+        )
         # pre-existing columns keep their identity and order
         self.assertEqual(header[0], "scenario")
         self.assertLess(header.index("measurement_type"), history_idx)

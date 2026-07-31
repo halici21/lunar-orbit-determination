@@ -96,6 +96,19 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertFalse(max_iter.converged)
         self.assertFalse(max_iter.finite_final_cost)
 
+    def test_nonfinite_condition_numbers_are_ill_conditioned(self):
+        for condition_number in (np.nan, np.inf, -np.inf):
+            result = analyze_convergence(
+                "Converged",
+                rank=6,
+                expected_rank=6,
+                condition_number=condition_number,
+                final_cost=1.0,
+            )
+            self.assertTrue(result.singular_or_ill_conditioned)
+            self.assertFalse(result.converged)
+
+
     def test_innovation_consistency_computes_nis(self):
         innovation = np.array([2.0, -1.0])
         covariance = np.diag([4.0, 0.25])
