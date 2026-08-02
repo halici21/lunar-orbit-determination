@@ -72,6 +72,41 @@ FROZEN_TRANSPONDER_DELAYS_S = (0.0, 1e-6, 1e-5, 1e-4, 1e-3)
 FROZEN_EPOCH_UTC = "2027-03-02 00:00:00"
 FROZEN_RANDOM_SEED = 20260731
 FROZEN_REFERENCE_FD_GATE = 1e-6
+ESTIMATOR_MAX_ITERATIONS = 12
+ESTIMATOR_PRIMARY_ARTIFACT = "r2_estimator_impact.csv"
+ESTIMATOR_PLOT_ALIAS_ARTIFACT = "r2_estimator_state_bias_impact.csv"
+ESTIMATOR_ARTIFACT_RELATIONSHIP = (
+    "byte_identical_plot_contract_alias_not_independent_campaign"
+)
+PARAMETER_ROW_SEMANTICS = "boolean_plot_metric_selector_not_row_index"
+ESTIMATOR_RESULT_QUALIFICATION = "non-converged bounded operational indicator"
+COST_METRIC_QUALIFICATION = "informational_wall_clock"
+COST_TIMING_VARIABILITY = "machine_load_and_evaluation_order_dependent"
+COST_QUALITATIVE_CONCLUSION = (
+    "reference_path_not_slower_than_legacy_in_recorded_validation_environments"
+)
+IMPLEMENTATION_NOMINAL_COST_RATIOS = {
+    LEGACY_MODEL_ID: 1.0,
+    EXACT_STATION_MODEL_ID: 0.5457375993128624,
+    FOUR_EVENT_MODEL_ID: 0.6097004509340777,
+}
+INDEPENDENT_VALIDATION_COST_RATIOS = {
+    LEGACY_MODEL_ID: 1.0,
+    EXACT_STATION_MODEL_ID: 0.415,
+    FOUR_EVENT_MODEL_ID: 0.559,
+}
+STRUCTURAL_EXACT_SXFORM_CALLS = {
+    LEGACY_MODEL_ID: 0,
+    EXACT_STATION_MODEL_ID: 24,
+    FOUR_EVENT_MODEL_ID: 24,
+}
+R2_BASELINE_COMMIT = "b3928c7d3eecd9c3baa6c62f0a474d0489b12d8d"
+R2_ACCEPTED_IMPLEMENTATION_COMMIT = "24db42decaca10b9d5503c1ef7133afb8015a426"
+R2_ACCEPTED_IMPLEMENTATION_TREE = "b9a66062ea336f150a251c3c0608f90e4f710ca3"
+R2_CANONICAL_PATCH_SHA256 = (
+    "24153c234a02344e1a1773198129c616116b6bd468895cdf7f51f5715b1eccdb"
+)
+R2_CANONICAL_PATCH_BYTE_COUNT = 160609
 FROZEN_ZERO_J2_FINGERPRINT = (
     "sha256:9b93897a545d0d2f1cb2b5329ce6be79051fef97e1529bff3bea565c4c31418d"
 )
@@ -1102,7 +1137,7 @@ def _reference_estimator(
     prior_covariance: np.ndarray,
     legacy_config: RangeRatePhysicsConfig,
     *,
-    max_iterations: int = 12,
+    max_iterations: int = ESTIMATOR_MAX_ITERATIONS,
 ) -> ReferenceEstimatorResult:
     """Small reference-only iterated BLS-LM or SRIF campaign estimator."""
 
@@ -1295,6 +1330,7 @@ def run_estimator_impact_campaign(
                     "campaign_contract_version": CAMPAIGN_CONTRACT_VERSION,
                     "estimator": estimator,
                     "parameter_row": True,
+                    "parameter_row_semantics": PARAMETER_ROW_SEMANTICS,
                     "parameter_index": index,
                     "parameter_name": name,
                     "parameter_unit": unit,
@@ -1313,6 +1349,10 @@ def run_estimator_impact_campaign(
                     "reference_iterations": reference.iterations,
                     "legacy_converged": legacy.converged,
                     "reference_converged": reference.converged,
+                    "legacy_strict_step_tolerance_met": legacy.converged,
+                    "reference_strict_step_tolerance_met": reference.converged,
+                    "max_iterations": ESTIMATOR_MAX_ITERATIONS,
+                    "convergence_changed": legacy.converged != reference.converged,
                     "legacy_operational_success": legacy.operational_success,
                     "reference_operational_success": reference.operational_success,
                     "operational_success_changed": (
@@ -1322,6 +1362,19 @@ def run_estimator_impact_campaign(
                     "reference_covariance_symmetry_error": reference.covariance_symmetry_error,
                     "legacy_covariance_min_eigenvalue": legacy.covariance_min_eigenvalue,
                     "reference_covariance_min_eigenvalue": reference.covariance_min_eigenvalue,
+                    "operational_success_semantics": (
+                        "finite_estimate_residuals_and_valid_posterior_covariance"
+                    ),
+                    "result_qualification": ESTIMATOR_RESULT_QUALIFICATION,
+                    "converged_posterior_solution_claim": "NOT_CLAIMED",
+                    "comparison_symmetry": (
+                        "same_truth_epochs_noise_prior_and_iteration_settings"
+                    ),
+                    "primary_scientific_artifact": ESTIMATOR_PRIMARY_ARTIFACT,
+                    "plot_contract_alias_source_artifact": (
+                        ESTIMATOR_PLOT_ALIAS_ARTIFACT
+                    ),
+                    "artifact_relationship": ESTIMATOR_ARTIFACT_RELATIONSHIP,
                     "truth_bias_mps": truth_bias,
                     "observation_count": len(definitions),
                     "noise_seed": FROZEN_RANDOM_SEED,
@@ -1501,12 +1554,25 @@ def run_cost_campaign(
                 "jacobian_runtime_s": jacobian_runtime,
                 "combined_runtime_s": combined,
                 "relative_combined_runtime_ratio": combined / legacy_combined,
+                "implementation_nominal_relative_combined_runtime_ratio": (
+                    IMPLEMENTATION_NOMINAL_COST_RATIOS[model_id]
+                ),
+                "independent_validation_relative_combined_runtime_ratio": (
+                    INDEPENDENT_VALIDATION_COST_RATIOS[model_id]
+                ),
                 "exact_sxform_call_count_per_observable_plus_jacobian": exact_calls[model_id],
+                "structural_exact_sxform_call_count": STRUCTURAL_EXACT_SXFORM_CALLS[
+                    model_id
+                ],
                 "precomputed_transform_samples": fixture.t_grid_s.size if model_id == LEGACY_MODEL_ID else 0,
                 "history_grid_memory_bytes": fixture.grid_memory_bytes,
                 "observable_error_to_F_mps": errors[model_id][0],
                 "max_abs_jacobian_error_to_F": errors[model_id][1],
                 "timing_repetitions": repeats,
+                "metric_qualification": COST_METRIC_QUALIFICATION,
+                "timing_variability": COST_TIMING_VARIABILITY,
+                "production_performance_guarantee": "NOT_CLAIMED",
+                "qualitative_conclusion": COST_QUALITATIVE_CONCLUSION,
             }
         )
     _assert_finite_rows(rows, label="cost")
@@ -1969,11 +2035,56 @@ def generate_plots(output_dir: Path) -> None:
     _plot_cost(output_dir)
 
 
+def _sigma_classification(value: float) -> str:
+    if value > 0.5:
+        return "blocker"
+    if value > 0.1:
+        return "material"
+    return "negligible"
+
+
+def _cadence_report_value(cadence_s: float, value: float) -> str:
+    return f"{value:.3f}" if cadence_s <= 1.0 else f"{value:.0f}"
+
+
+def _cadence_qualification_rows(
+    observable_rows: Sequence[dict[str, object]],
+) -> list[dict[str, object]]:
+    values_by_cadence: dict[float, list[float]] = {}
+    for row in observable_rows:
+        cadence_s = float(row["legacy_transform_cadence_s"])
+        values_by_cadence.setdefault(cadence_s, []).append(
+            abs(float(row["frame_error_over_sigma"]))
+        )
+    if not values_by_cadence:
+        raise ValueError("observable_rows must contain at least one cadence.")
+    return [
+        {
+            "legacy_transform_cadence_s": cadence_s,
+            "max_abs_frame_error_over_sigma": max(values),
+            "classification": _sigma_classification(max(values)),
+            "classification_scope": "cadence_specific_frozen_campaign_result",
+        }
+        for cadence_s, values in sorted(values_by_cadence.items())
+    ]
+
+
 def _decision_rows(
     observable_rows: Sequence[dict[str, object]],
     delay_rows: Sequence[dict[str, object]],
     estimator_rows: Sequence[dict[str, object]],
 ) -> list[dict[str, object]]:
+    cadence_rows = _cadence_qualification_rows(observable_rows)
+    finest_cadence = cadence_rows[0]
+    one_second = next(
+        (row for row in cadence_rows if float(row["legacy_transform_cadence_s"]) == 1.0),
+        None,
+    )
+    if one_second is None:
+        raise ValueError("The R2 decision contract requires a 1 s cadence row.")
+    worst_cadence = max(
+        cadence_rows, key=lambda row: float(row["max_abs_frame_error_over_sigma"])
+    )
     max_frame = max(abs(float(row["frame_error_over_sigma"])) for row in observable_rows)
     max_zero_event = max(abs(float(row["four_event_error_over_sigma"])) for row in observable_rows)
     max_delay_event = max(abs(float(row["observable_shift_over_sigma"])) for row in delay_rows)
@@ -2014,6 +2125,31 @@ def _decision_rows(
             "metric_contract_version": METRIC_CONTRACT_VERSION,
             "scientific_decision": decision,
             "classification": classification,
+            "classification_scope": "frozen_full_campaign_envelope",
+            "envelope_classification": classification,
+            "every_production_configuration_classification": "NOT CLAIMED",
+            "current_production_cadence_policy": (
+                "scenario_dependent_trajectory_history_node_spacing"
+            ),
+            "finest_campaign_cadence_s": finest_cadence[
+                "legacy_transform_cadence_s"
+            ],
+            "finest_cadence_max_abs_frame_error_over_sigma": finest_cadence[
+                "max_abs_frame_error_over_sigma"
+            ],
+            "finest_cadence_classification": finest_cadence["classification"],
+            "one_second_max_abs_frame_error_over_sigma": one_second[
+                "max_abs_frame_error_over_sigma"
+            ],
+            "one_second_classification": one_second["classification"],
+            "worst_case_cadence_s": worst_cadence["legacy_transform_cadence_s"],
+            "worst_case_max_abs_frame_error_over_sigma": worst_cadence[
+                "max_abs_frame_error_over_sigma"
+            ],
+            "worst_case_classification": worst_cadence["classification"],
+            "cadence_qualification_json": json.dumps(
+                cadence_rows, sort_keys=True, separators=(",", ":")
+            ),
             "max_abs_frame_error_over_sigma": max_frame,
             "max_abs_zero_delay_four_event_error_over_sigma": max_zero_event,
             "max_abs_delay_sensitivity_over_sigma": max_delay_event,
@@ -2087,11 +2223,32 @@ def write_implementation_report(
     error_budget_rows: Sequence[dict[str, object]],
     plot_rows: Sequence[dict[str, object]],
     compatibility_rows: Sequence[dict[str, object]],
+    observable_rows: Sequence[dict[str, object]],
+    estimator_rows: Sequence[dict[str, object]],
+    cost_rows: Sequence[dict[str, object]],
 ) -> Path:
     p08 = next(row for row in error_budget_rows if row["acceptance_id"] == "R2-P08")
     p09 = next(row for row in error_budget_rows if row["acceptance_id"] == "R2-P09")
     fd = next(row for row in plot_rows if row["plot_id"] == "R2-PLOT-4")
     compatibility_pass = all(bool(row["pass"]) for row in compatibility_rows)
+    cadence_rows = _cadence_qualification_rows(observable_rows)
+    parameter_rows = [row for row in estimator_rows if bool(row["parameter_row"])]
+    estimator_by_name = {
+        estimator: next(row for row in parameter_rows if row["estimator"] == estimator)
+        for estimator in ("BLS_LM", "SRIF")
+    }
+    cost_by_model = {str(row["model_id"]): row for row in cost_rows}
+    cadence_table = [
+        "| Legacy transform cadence | Maximum frame error / sigma | Classification |",
+        "|---:|---:|---|",
+    ]
+    cadence_table.extend(
+        "| "
+        f"{float(row['legacy_transform_cadence_s']):g} s | "
+        f"{_cadence_report_value(float(row['legacy_transform_cadence_s']), float(row['max_abs_frame_error_over_sigma']))} | "
+        f"{row['classification']} |"
+        for row in cadence_rows
+    )
     lines = [
         "# R2 Strict Option B Implementation Report",
         "",
@@ -2106,6 +2263,23 @@ def write_implementation_report(
         "The accepted production counted-Doppler implementation remains unchanged. This",
         "campaign compares L (legacy), S (exact-event station single-bounce), and F",
         "(exact-event station four-event) through an opt-in reference module.",
+        "",
+        "The decision is an envelope conclusion: exact station-transform upgrade is",
+        "required for the frozen campaign envelope, whose classification is",
+        f"`{decision_row['envelope_classification']}`. Current production cadence is",
+        "scenario-dependent because it follows trajectory-history node spacing; a",
+        "claim that every production configuration is blocked is `NOT CLAIMED`.",
+        "",
+        "### Cadence Qualification",
+        "",
+        *cadence_table,
+        "",
+        f"The finest-cadence result is `{float(decision_row['finest_cadence_max_abs_frame_error_over_sigma']):.6g}` sigma",
+        f"(`{decision_row['finest_cadence_classification']}`); the 1 s result is",
+        f"`{float(decision_row['one_second_max_abs_frame_error_over_sigma']):.6g}` sigma",
+        f"(`{decision_row['one_second_classification']}`). The worst frozen result is",
+        f"`{float(decision_row['worst_case_max_abs_frame_error_over_sigma']):.6g}` sigma at",
+        f"`{float(decision_row['worst_case_cadence_s']):g} s`.",
         "",
         "## Frozen Error Budgets",
         "",
@@ -2125,12 +2299,55 @@ def write_implementation_report(
         f"- hypothetical delay sensitivity: `{float(decision_row['max_abs_delay_sensitivity_over_sigma']):.6g}` sigma",
         f"- total observable component: `{float(decision_row['max_abs_total_error_over_sigma']):.6g}` sigma",
         f"- estimator shift: `{float(decision_row['max_abs_estimator_shift_over_posterior_sigma']):.6g}` posterior sigma",
-        f"- classification: `{decision_row['classification']}`",
+        f"- envelope classification: `{decision_row['envelope_classification']}`",
+        "- every-production-configuration classification: `NOT CLAIMED`",
+        "",
+        "## Estimator Qualification",
+        "",
+        f"- BLS legacy/reference converged: `{estimator_by_name['BLS_LM']['legacy_converged']}` / `{estimator_by_name['BLS_LM']['reference_converged']}`",
+        f"- SRIF legacy/reference converged: `{estimator_by_name['SRIF']['legacy_converged']}` / `{estimator_by_name['SRIF']['reference_converged']}`",
+        f"- operational success is `{estimator_by_name['BLS_LM']['legacy_operational_success']}` because estimates, residuals, and posterior covariance diagnostics are finite and valid",
+        f"- strict step tolerance was not met within `{ESTIMATOR_MAX_ITERATIONS}` iterations; convergence changed: `{decision_row['convergence_changed']}`",
+        "- legacy and reference fits use the same truth, epochs, noise, prior, and iteration settings",
+        f"- `{float(decision_row['max_abs_estimator_shift_over_posterior_sigma']):.17g}` sigma is a `{ESTIMATOR_RESULT_QUALIFICATION}`; a converged posterior solution is `NOT_CLAIMED`",
+        "",
+        f"`parameter_row=True` means `{PARAMETER_ROW_SEMANTICS}`. `{ESTIMATOR_PRIMARY_ARTIFACT}`",
+        f"is the primary scientific artifact; `{ESTIMATOR_PLOT_ALIAS_ARTIFACT}` is its",
+        "byte-identical plot-contract alias/source, not an independent campaign.",
+        "R2-P15 remains PASS.",
+        "",
+        "## Cost Qualification",
+        "",
+        "Wall-clock ratios are informational and machine/load/evaluation-order",
+        "dependent; no production performance guarantee is claimed.",
+        "",
+        "| Model | Implementation nominal ratio | Independent validation ratio | Structural sxform calls |",
+        "|---|---:|---:|---:|",
+        *[
+            "| "
+            f"{model_id} | "
+            f"{float(cost_by_model[model_id]['implementation_nominal_relative_combined_runtime_ratio']):.6g} | "
+            f"{float(cost_by_model[model_id]['independent_validation_relative_combined_runtime_ratio']):.6g} | "
+            f"{int(cost_by_model[model_id]['structural_exact_sxform_call_count'])} |"
+            for model_id in (LEGACY_MODEL_ID, EXACT_STATION_MODEL_ID, FOUR_EVENT_MODEL_ID)
+        ],
+        "",
+        "The reference path did not appear slower than legacy in the recorded",
+        "validation environments. R2-P16 remains informational.",
         "",
         "## Traceability",
         "",
         f"All seven plot headlines were independently recomputed from their own CSVs. Compatibility gates pass: `{compatibility_pass}`.",
         f"Metric contract: `{METRIC_CONTRACT_VERSION}`. Campaign contract: `{CAMPAIGN_CONTRACT_VERSION}`.",
+        "",
+        "Canonical patch serialization uses:",
+        "",
+        f"`git diff --binary --full-index {R2_BASELINE_COMMIT} {R2_ACCEPTED_IMPLEMENTATION_COMMIT} --output=r2_measurement_fidelity.patch`",
+        "",
+        f"The accepted patch is `{R2_CANONICAL_PATCH_BYTE_COUNT}` bytes with SHA-256",
+        f"`{R2_CANONICAL_PATCH_SHA256}`. Final commit/tree identity, the exact changed",
+        "paths, and equality of every unchanged Git blob are the hard source-identity",
+        "evidence; patch-file hashing is serialization provenance.",
         "",
         "Regression tallies and immutable patch identity are appended by the implementation",
         "owner after isolated focused/normal/slow qualification; no push or PR is performed.",
@@ -2230,6 +2447,9 @@ def run_campaign(output_dir: Path, *, quick: bool = False) -> dict[str, object]:
         error_budget_rows,
         plot_rows,
         compatibility_rows,
+        decomposition["observable"],
+        estimator_rows,
+        cost_rows,
     )
     manifest = {
         "campaign_contract_version": CAMPAIGN_CONTRACT_VERSION,
@@ -2241,6 +2461,32 @@ def run_campaign(output_dir: Path, *, quick: bool = False) -> dict[str, object]:
         "delays_s": list(FROZEN_TRANSPONDER_DELAYS_S),
         "geometry_ids": [spec.geometry_id for spec in geometries],
         "scientific_decision": decision_rows[0]["scientific_decision"],
+        "decision_scope": decision_rows[0]["classification_scope"],
+        "envelope_classification": decision_rows[0]["envelope_classification"],
+        "every_production_configuration_classification": (
+            decision_rows[0]["every_production_configuration_classification"]
+        ),
+        "current_production_cadence_policy": decision_rows[0][
+            "current_production_cadence_policy"
+        ],
+        "parameter_row_semantics": PARAMETER_ROW_SEMANTICS,
+        "estimator_artifacts": {
+            "primary_scientific_artifact": ESTIMATOR_PRIMARY_ARTIFACT,
+            "plot_contract_alias_source_artifact": ESTIMATOR_PLOT_ALIAS_ARTIFACT,
+            "relationship": ESTIMATOR_ARTIFACT_RELATIONSHIP,
+        },
+        "estimator_result_qualification": ESTIMATOR_RESULT_QUALIFICATION,
+        "cost_metric_qualification": COST_METRIC_QUALIFICATION,
+        "cost_timing_variability": COST_TIMING_VARIABILITY,
+        "production_performance_guarantee": "NOT_CLAIMED",
+        "canonical_patch": {
+            "baseline_commit": R2_BASELINE_COMMIT,
+            "accepted_implementation_commit": R2_ACCEPTED_IMPLEMENTATION_COMMIT,
+            "accepted_implementation_tree": R2_ACCEPTED_IMPLEMENTATION_TREE,
+            "sha256": R2_CANONICAL_PATCH_SHA256,
+            "byte_count": R2_CANONICAL_PATCH_BYTE_COUNT,
+            "serialization": "git_diff_binary_full_index_direct_output",
+        },
         "output_dir": str(output_dir),
         "files": sorted(path.name for path in output_dir.iterdir() if path.is_file()),
     }

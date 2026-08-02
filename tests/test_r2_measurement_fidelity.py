@@ -6,6 +6,8 @@ import csv
 import hashlib
 import json
 from pathlib import Path
+import shutil
+import subprocess
 
 import numpy as np
 import pytest
@@ -431,10 +433,13 @@ def test_denominator_policy_rejects_nonfinite_and_records_controlled_exclusions(
     assert all(row["denominator_policy"] == campaign.CONTROLLED_EXCLUSION_POLICY for row in jacobian)
     assert all(row["denominator_policy"] == campaign.CONTROLLED_EXCLUSION_POLICY for row in fd_rows)
     for basename in (contract["basename"] for contract in campaign.PLOT_CONTRACT):
-        text = (quick_campaign_dir / f"{basename}.csv").read_text(encoding="utf-8").lower()
-        assert ",nan" not in text
-        assert ",inf" not in text
-        assert ",-inf" not in text
+        rows = _csv_rows(quick_campaign_dir / f"{basename}.csv")
+        for row in rows:
+            assert all(
+                value.strip().lower()
+                not in {"nan", "+nan", "-nan", "inf", "+inf", "-inf", "infinity"}
+                for value in row.values()
+            )
 
 
 def _independent_headline(contract: dict[str, object], rows: list[dict[str, str]]) -> float:
@@ -488,6 +493,246 @@ def test_scientific_decision_uses_zero_delay_lsf_not_hypothetical_delay(quick_ca
     assert row["scientific_decision"] == "EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED"
     assert not _truth(row["operational_success_changed"])
     assert not _truth(row["convergence_changed"])
+
+
+def test_report_and_decision_qualify_the_full_cadence_envelope(tmp_path):
+    cadence_values = {
+        0.1: 0.0692770208843285,
+        1.0: 0.170714924934146,
+        3.0: 198.871549109754,
+        10.0: 728.172058966265,
+        30.0: 3189.77691492364,
+        60.0: 6882.61153566145,
+        120.0: 14268.279471039,
+    }
+    observable_rows = [
+        {
+            "legacy_transform_cadence_s": cadence_s,
+            "frame_error_over_sigma": value,
+            "four_event_error_over_sigma": 0.0,
+            "total_error_over_sigma": value,
+        }
+        for cadence_s, value in cadence_values.items()
+    ]
+    estimator_rows = [
+        {
+            "estimator": estimator,
+            "parameter_row": True,
+            "estimate_shift_over_reference_posterior_sigma": 0.009216843912656895,
+            "operational_success_changed": False,
+            "legacy_converged": False,
+            "reference_converged": False,
+            "legacy_operational_success": True,
+        }
+        for estimator in ("BLS_LM", "SRIF")
+    ]
+    decision = campaign._decision_rows(
+        observable_rows,
+        [{"observable_shift_over_sigma": 0.22590160369873047}],
+        estimator_rows,
+    )[0]
+    qualification = json.loads(str(decision["cadence_qualification_json"]))
+    assert [row["legacy_transform_cadence_s"] for row in qualification] == list(
+        cadence_values
+    )
+    assert [row["classification"] for row in qualification] == [
+        "negligible",
+        "material",
+        "blocker",
+        "blocker",
+        "blocker",
+        "blocker",
+        "blocker",
+    ]
+    assert decision["scientific_decision"] == "EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED"
+    assert decision["envelope_classification"] == "production_blocker"
+    assert decision["every_production_configuration_classification"] == "NOT CLAIMED"
+    assert decision["finest_cadence_classification"] == "negligible"
+    assert decision["one_second_classification"] == "material"
+    assert float(decision["worst_case_cadence_s"]) == 120.0
+
+    cost_rows = [
+        {
+            "model_id": model_id,
+            "implementation_nominal_relative_combined_runtime_ratio": (
+                campaign.IMPLEMENTATION_NOMINAL_COST_RATIOS[model_id]
+            ),
+            "independent_validation_relative_combined_runtime_ratio": (
+                campaign.INDEPENDENT_VALIDATION_COST_RATIOS[model_id]
+            ),
+            "structural_exact_sxform_call_count": (
+                campaign.STRUCTURAL_EXACT_SXFORM_CALLS[model_id]
+            ),
+        }
+        for model_id in (LEGACY_MODEL_ID, EXACT_STATION_MODEL_ID, FOUR_EVENT_MODEL_ID)
+    ]
+    report = campaign.write_implementation_report(
+        tmp_path,
+        decision,
+        [
+            {
+                "acceptance_id": "R2-P08",
+                "value": 1.0,
+                "source_csv": "observable.csv",
+                "formula_id": "p08",
+            },
+            {
+                "acceptance_id": "R2-P09",
+                "value": 0.01,
+                "source_csv": "jacobian.csv",
+                "formula_id": "p09",
+                "denominator_policy": campaign.CONTROLLED_EXCLUSION_POLICY,
+            },
+        ],
+        [{"plot_id": "R2-PLOT-4", "headline_value": 1e-7}],
+        [{"pass": True}],
+        observable_rows,
+        estimator_rows,
+        cost_rows,
+    ).read_text(encoding="utf-8")
+    expected_report_values = {
+        0.1: "0.069",
+        1.0: "0.171",
+        3.0: "199",
+        10.0: "728",
+        30.0: "3190",
+        60.0: "6883",
+        120.0: "14268",
+    }
+    for cadence_s, value in expected_report_values.items():
+        assert f"| {cadence_s:g} s | {value} |" in report
+    assert "every production configuration is blocked is `NOT CLAIMED`" in report
+    assert "Current production cadence is\nscenario-dependent" in report
+    assert "current production is already a blocker" not in report.lower()
+
+
+def test_canonical_patch_provenance_is_reproducible(tmp_path):
+    git = shutil.which("git")
+    if git is None:
+        windows_git = Path(r"C:\Program Files\Git\cmd\git.exe")
+        git = str(windows_git) if windows_git.is_file() else None
+    assert git is not None
+    patch_path = tmp_path / "r2_measurement_fidelity.patch"
+    command = [
+        git,
+        "-C",
+        str(ROOT),
+        "diff",
+        "--binary",
+        "--full-index",
+        campaign.R2_BASELINE_COMMIT,
+        campaign.R2_ACCEPTED_IMPLEMENTATION_COMMIT,
+        f"--output={patch_path}",
+    ]
+    subprocess.run(command, check=True)
+    patch_bytes = patch_path.read_bytes()
+    assert len(patch_bytes) == campaign.R2_CANONICAL_PATCH_BYTE_COUNT
+    assert hashlib.sha256(patch_bytes).hexdigest() == campaign.R2_CANONICAL_PATCH_SHA256
+    assert not patch_bytes.startswith(b"\xef\xbb\xbf")
+    assert b"\r\n" not in patch_bytes
+    assert patch_bytes.startswith(b"diff --git a/")
+
+    changed_paths = subprocess.run(
+        [
+            git,
+            "-C",
+            str(ROOT),
+            "diff",
+            "--name-only",
+            campaign.R2_BASELINE_COMMIT,
+            campaign.R2_ACCEPTED_IMPLEMENTATION_COMMIT,
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+    assert changed_paths == [
+        "examples/r2_measurement_fidelity_validation.py",
+        "lunar_od/two_way_counted_doppler_reference.py",
+        "tests/test_r2_measurement_fidelity.py",
+    ]
+    tree = subprocess.run(
+        [git, "-C", str(ROOT), "rev-parse", f"{campaign.R2_ACCEPTED_IMPLEMENTATION_COMMIT}^{{tree}}"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert tree == campaign.R2_ACCEPTED_IMPLEMENTATION_TREE
+    reference_blob = subprocess.run(
+        [
+            git,
+            "-C",
+            str(ROOT),
+            "rev-parse",
+            f"{campaign.R2_ACCEPTED_IMPLEMENTATION_COMMIT}:lunar_od/two_way_counted_doppler_reference.py",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert reference_blob == "1b2b0b1ff42c1004dfceeabf0f7180c4fdea5215"
+
+
+def test_estimator_metadata_qualifies_nonconvergence_alias_and_selector(
+    quick_campaign_dir,
+):
+    primary = quick_campaign_dir / campaign.ESTIMATOR_PRIMARY_ARTIFACT
+    alias = quick_campaign_dir / campaign.ESTIMATOR_PLOT_ALIAS_ARTIFACT
+    assert primary.read_bytes() == alias.read_bytes()
+    rows = _csv_rows(primary)
+    assert len(rows) == 14
+    assert max(
+        abs(float(row["estimate_shift_over_reference_posterior_sigma"]))
+        for row in rows
+    ) == 0.009216843912656895
+    for row in rows:
+        assert not _truth(row["legacy_converged"])
+        assert not _truth(row["reference_converged"])
+        assert _truth(row["legacy_operational_success"])
+        assert _truth(row["reference_operational_success"])
+        assert not _truth(row["legacy_strict_step_tolerance_met"])
+        assert not _truth(row["reference_strict_step_tolerance_met"])
+        assert not _truth(row["convergence_changed"])
+        assert int(row["max_iterations"]) == campaign.ESTIMATOR_MAX_ITERATIONS
+        assert row["result_qualification"] == campaign.ESTIMATOR_RESULT_QUALIFICATION
+        assert row["converged_posterior_solution_claim"] == "NOT_CLAIMED"
+        assert row["parameter_row_semantics"] == campaign.PARAMETER_ROW_SEMANTICS
+        assert row["primary_scientific_artifact"] == primary.name
+        assert row["plot_contract_alias_source_artifact"] == alias.name
+        assert row["artifact_relationship"] == campaign.ESTIMATOR_ARTIFACT_RELATIONSHIP
+    manifest = json.loads((quick_campaign_dir / "r2_campaign_manifest.json").read_text())
+    assert manifest["parameter_row_semantics"] == campaign.PARAMETER_ROW_SEMANTICS
+    assert manifest["estimator_artifacts"]["relationship"] == (
+        campaign.ESTIMATOR_ARTIFACT_RELATIONSHIP
+    )
+
+
+def test_cost_metadata_is_informational_and_records_timing_variability(
+    quick_campaign_dir,
+):
+    primary = quick_campaign_dir / "r2_accuracy_cost_tradeoff.csv"
+    alias = quick_campaign_dir / "r2_cost_summary.csv"
+    assert primary.read_bytes() == alias.read_bytes()
+    rows = _csv_rows(primary)
+    by_model = {row["model_id"]: row for row in rows}
+    for model_id in (LEGACY_MODEL_ID, EXACT_STATION_MODEL_ID, FOUR_EVENT_MODEL_ID):
+        row = by_model[model_id]
+        assert row["metric_qualification"] == campaign.COST_METRIC_QUALIFICATION
+        assert row["timing_variability"] == campaign.COST_TIMING_VARIABILITY
+        assert row["production_performance_guarantee"] == "NOT_CLAIMED"
+        assert row["qualitative_conclusion"] == campaign.COST_QUALITATIVE_CONCLUSION
+        assert float(row["implementation_nominal_relative_combined_runtime_ratio"]) == (
+            campaign.IMPLEMENTATION_NOMINAL_COST_RATIOS[model_id]
+        )
+        assert float(row["independent_validation_relative_combined_runtime_ratio"]) == (
+            campaign.INDEPENDENT_VALIDATION_COST_RATIOS[model_id]
+        )
+        assert int(row["structural_exact_sxform_call_count"]) == (
+            campaign.STRUCTURAL_EXACT_SXFORM_CALLS[model_id]
+        )
+    report = (quick_campaign_dir / "R2_IMPLEMENTATION_REPORT.md").read_text()
+    assert "no production performance guarantee is claimed" in report
+    assert "R2-P16 remains informational" in report
 
 
 def test_strict_option_b_protected_production_files_are_byte_identical():
