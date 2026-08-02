@@ -1,13 +1,15 @@
 ---
 name: lunar-od-validation-gates
 description: >-
-  Use to plan scientific/numerical validation for a Lunar OD change: choose
-  targeted tests, recommend full regression, identify impacted metrics and
-  baselines, assess numerical drift, and judge whether a tolerance update is
+  Use to plan scientific/numerical validation for a SINGLE Lunar OD change:
+  choose targeted tests, recommend full regression, identify impacted metrics
+  and baselines, assess numerical drift, and judge whether a tolerance update is
   justified. Trigger: any code or scientific-model change, tolerance update,
   regression planning, or writing a validation summary. For software-engineering
   quality (lint, types, CI, coverage, dependency hygiene, flaky tests) use
-  lunar-od-software-quality-gates instead.
+  lunar-od-software-quality-gates; for recurring/scheduled test cadences use
+  lunar-od-continuous-verification.
+
 ---
 
 # Lunar OD Validation Gates

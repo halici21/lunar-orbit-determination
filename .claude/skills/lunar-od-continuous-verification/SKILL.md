@@ -1,6 +1,14 @@
 ---
 name: lunar-od-continuous-verification
-description: Use when planning recurring test execution for the Lunar OD project, including every-commit tests, pre-push checks, pull-request gates, nightly scientific regression, manual long campaigns, release validation, thesis-freeze verification, SPICE-dependent tests, desktop smoke tests, baseline comparisons, and external cross-validation scheduling.
+description: >-
+  Use when planning RECURRING or scheduled test execution for the Lunar OD
+  project: every-commit tests, pre-push checks, pull-request gates, nightly
+  scientific regression, manual long campaigns, release validation,
+  thesis-freeze verification, SPICE-dependent test scheduling, desktop smoke
+  tests, baseline comparisons, and external cross-validation cadences. Not for
+  choosing the validation plan of a single code change — use
+  lunar-od-validation-gates for that.
+
 ---
 
 # Lunar OD Continuous Verification

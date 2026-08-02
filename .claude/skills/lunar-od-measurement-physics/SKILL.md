@@ -2,12 +2,20 @@
 name: lunar-od-measurement-physics
 description: >-
   Use when reviewing or modifying Lunar OD measurement models in
-  python_port/lunar_od/measurements.py and radiometrics.py (and
-  measurement_ingestion.py): range, azimuth/elevation, range-rate, two-way counted
-  Doppler, light-time correction, stellar aberration, station motion, residuals,
-  and analytic Jacobians. Tests: test_measurements.py,
-  test_doppler_model_review.py, test_stellar_aberration_vv.py. Trigger: changing a
-  measurement/observable, residual, or Jacobian, or validating measurement physics.
+  python_port/lunar_od/measurements.py, radiometrics.py, two_way_range.py (and
+  measurement_ingestion.py): range, azimuth/elevation, range-rate, two-way
+  counted Doppler, converged two-way range (t1/t2u/t2d/t3 event chain,
+  transponder delay), light-time correction, stellar aberration, station states
+  at event epochs, residuals, and analytic/implicit Jacobians. Tests:
+  test_measurements.py, test_doppler_model_review.py,
+  test_stellar_aberration_vv.py, test_two_way_range.py,
+  test_two_way_range_integration.py,
+  test_measurement_model_safety_diagnostics.py. Trigger: changing a
+  measurement/observable, residual, or Jacobian, or validating measurement
+  physics. Not for frame/SPICE kernel mechanics (lunar-od-dynamics-spice) or
+  estimator-loop changes (lunar-od-estimator-engineering) — invoke those
+  alongside for cross-domain tasks.
+
 ---
 
 # Lunar OD Measurement Physics

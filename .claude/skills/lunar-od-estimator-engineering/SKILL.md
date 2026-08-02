@@ -2,12 +2,16 @@
 name: lunar-od-estimator-engineering
 description: >-
   Use when working on Lunar OD estimators in python_port/lunar_od/estimators.py
-  (BLS-LM, SRIF), filters.py (SR-UKF), scenarios.py, and observability.py: STM
+  (BLS-LM, SRIF, and the estimate_two_way_range_* pair), filters.py (SR-UKF,
+  validate_ukf_measurement_support), scenarios.py, and observability.py: STM
   mapping, covariance propagation, LM damping, UKF sigma points, NIS/NEES,
   observability, arc handoff / start modes, and estimator-comparison validity.
-  Tests: test_estimators.py, test_filters.py, test_scenarios.py. Trigger: editing
-  an estimator/filter, or judging whether a BLS-LM vs SRIF vs SR-UKF comparison is
-  fair.
+  Tests: test_estimators.py, test_filters.py, test_scenarios.py,
+  test_observability.py. Trigger: editing an estimator/filter, or judging
+  whether a BLS-LM vs SRIF vs SR-UKF comparison is fair. Not for the measurement
+  equations themselves (lunar-od-measurement-physics) — invoke it alongside when
+  the change spans both.
+
 ---
 
 # Lunar OD Estimator Engineering
