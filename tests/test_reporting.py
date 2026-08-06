@@ -3,6 +3,7 @@ import math
 import tempfile
 import unittest
 from pathlib import Path
+from lunar_od import reporting as reporting_module
 
 import numpy as np
 
@@ -56,7 +57,17 @@ class ReportingTests(unittest.TestCase):
             "condition_number_available",
             "derivative_validation_profile",
         ]
-        self.assertEqual(header[-len(r1_columns) :], r1_columns)
+        # Owner Addendum 03 Decision 4: the R1 segment keeps its identity and
+        # order, and the two R3 measurement-provenance columns are appended
+        # after it. The header tail is R1_COLUMNS + R3 columns.
+        r3_columns = list(reporting_module.R3_MEASUREMENT_PROVENANCE_COLUMNS)
+        expected_tail = [*r1_columns, *r3_columns]
+        self.assertEqual(header[-len(expected_tail) :], expected_tail)
+        self.assertEqual(
+            header[-(len(r1_columns) + len(r3_columns)) : -len(r3_columns)],
+            r1_columns,
+        )
+        self.assertEqual(header[-len(r3_columns) :], r3_columns)
         self.assertEqual(
             header[header.index("observability_force_role_status") + 1],
             r1_columns[0],

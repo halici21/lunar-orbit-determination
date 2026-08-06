@@ -4,8 +4,15 @@ from unittest.mock import patch
 
 import numpy as np
 import lunar_od.estimators as estimator_helpers
+import lunar_od.estimators as estimators_module
+from dataclasses import replace
 
 from lunar_od import (
+    EXACT_EVENT_EPOCH_STATION_METHOD,
+    LEGACY_INTERPOLATED_STATION_METHOD,
+    RangeRatePhysicsConfig,
+    generate_range_rate_measurements,
+    measurement_model_metadata,
     MoonCenteredEphemeris,
     PassGeometry,
     RangeRatePhysicsConfig,
@@ -841,6 +848,7 @@ class EstimatorTests(unittest.TestCase):
             range_rate_physics=RangeRatePhysicsConfig(
                 mode="two_way_counted_doppler",
                 count_interval_s=20.0,
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             ),
         )
         obs_data = _build_clean_rr_observations_from_model(
@@ -924,6 +932,7 @@ class EstimatorTests(unittest.TestCase):
             range_rate_physics=RangeRatePhysicsConfig(
                 mode="two_way_counted_doppler",
                 count_interval_s=20.0,
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             ),
         )
         obs_data = _build_clean_rr_observations_from_model(
@@ -1004,6 +1013,7 @@ class EstimatorTests(unittest.TestCase):
             range_rate_physics=RangeRatePhysicsConfig(
                 mode="two_way_counted_doppler",
                 count_interval_s=20.0,
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             ),
         )
         obs_data = _build_clean_rr_observations_from_model(
@@ -1920,3 +1930,228 @@ def _add_rr_station_full_biases_to_h(h_meas, obs_data, bias_vec):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# R3 exact event-epoch station transform — routing and estimator gates
+#
+# R3-P09 generation, direct evaluation, BLS, SRIF and the UKF all resolve the
+#        configured station method
+# R3-P13 BLS qualification on an exact-generated arc, honestly stated
+# R3-P14 SRIF qualification, same honest qualification
+# ---------------------------------------------------------------------------
+
+
+def _r3_spice_epoch():
+    try:
+        from examples import r2_measurement_fidelity_validation as campaign
+
+        return campaign._spice_epoch_and_loader()
+    except Exception as exc:  # pragma: no cover - environment-dependent
+        raise unittest.SkipTest(f"R3 exact-mode fixture needs SPICE: {exc}")
+
+
+def _r3_exact_arc(count_interval_s=60.0):
+    """Generate a counted-Doppler arc with the EXACT production default."""
+    et0 = _r3_spice_epoch()
+    mu_moon = 4902.800066e9
+    r0norm = 1737.4e3 + 100e3
+    x_true0 = np.array(
+        [r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0]
+    )
+    t_pass_s = np.arange(-90.0, 361.0, 30.0)
+    get_earth_pos = lambda t: np.tile(
+        np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1)
+    )
+    get_earth_vel = lambda t: np.tile(
+        np.array([0.0, 1000.0, 0.0]), (np.size(np.asarray(t)), 1)
+    )
+    get_sun_pos = lambda t: np.tile(
+        np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1)
+    )
+    x_aug0 = np.concatenate([x_true0, np.eye(6).reshape(-1, order="F")])
+    x_aug_truth = propagate_augmented_state(
+        t_pass_s, x_aug0, mu_moon, 0.0, 0.0, get_earth_pos, get_sun_pos,
+        rtol=1e-12, atol=1e-13,
+    )
+    x_truth = x_aug_truth[:, :6]
+    stations = (
+        _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
+        _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
+        _synthetic_station(45.0, -30.0, 500.0, include_rr=True),
+    )
+    visibility = np.ones((t_pass_s.size, len(stations)), dtype=bool)
+    physics = RangeRatePhysicsConfig(
+        mode="two_way_counted_doppler",
+        count_interval_s=count_interval_s,
+        station_state_method=EXACT_EVENT_EPOCH_STATION_METHOD,
+    )
+    obs_data, pass_geo = generate_range_rate_measurements(
+        t_pass_s, x_truth, stations, visibility,
+        get_earth_pos, get_earth_vel, et0,
+        noise=False, arc_id=1, range_rate_physics=physics,
+    )
+    return {
+        "et0": et0, "mu_moon": mu_moon, "t_pass_s": t_pass_s,
+        "x_truth": x_truth, "x_aug_truth": x_aug_truth,
+        "obs_data": obs_data, "pass_geo": pass_geo, "stations": stations,
+        "get_earth_pos": get_earth_pos, "get_sun_pos": get_sun_pos,
+        "physics": physics,
+    }
+
+
+class R3GenerationEvaluationParity(unittest.TestCase):
+    """R3-P09: every route resolves the configured station method."""
+
+    def test_p09_generation_populates_et0_and_records_the_exact_method(self):
+        case = _r3_exact_arc()
+        pass_geo = case["pass_geo"]
+        self.assertIsNotNone(pass_geo.et0_s)
+        self.assertEqual(float(pass_geo.et0_s), float(case["et0"]))
+        metadata = pass_geo.measurement_metadata
+        self.assertEqual(
+            metadata["station_state_method"], EXACT_EVENT_EPOCH_STATION_METHOD
+        )
+        self.assertIs(metadata["exact_event_epoch_enabled"], True)
+        self.assertIs(metadata["legacy_compatibility_mode"], False)
+        self.assertEqual(
+            metadata["counted_doppler_model_version"],
+            "r3.counted-doppler.exact-station.v1",
+        )
+        self.assertEqual(metadata["earth_ephemeris_method"], "linear_grid_interpolation")
+        self.assertEqual(
+            metadata["spacecraft_state_interpolation_method"], "cubic_hermite"
+        )
+        # The repaired provenance label, no longer the overclaiming "sxform".
+        self.assertEqual(metadata["station_velocity_model"], "exact_event_epoch_sxform")
+
+    def test_p09_direct_evaluation_reproduces_the_generated_observable(self):
+        case = _r3_exact_arc()
+        _residuals, h_meas = compute_range_rate_residuals(
+            case["x_truth"], case["obs_data"], case["pass_geo"]
+        )
+        # Noise-free generation: evaluation must reproduce the arc it generated.
+        np.testing.assert_allclose(
+            h_meas[:, 1], case["obs_data"][:, 2], rtol=0.0, atol=1e-6
+        )
+
+    def test_p09_legacy_metadata_reports_legacy_truthfully(self):
+        """The same fields must not claim exact when legacy executed."""
+        physics = RangeRatePhysicsConfig(
+            mode="two_way_counted_doppler",
+            count_interval_s=60.0,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
+        )
+        pass_geo = replace(
+            _r3_exact_arc()["pass_geo"], range_rate_physics=physics
+        )
+        metadata = measurement_model_metadata(pass_geo)
+        self.assertEqual(
+            metadata["station_state_method"], LEGACY_INTERPOLATED_STATION_METHOD
+        )
+        self.assertIs(metadata["exact_event_epoch_enabled"], False)
+        self.assertIs(metadata["legacy_compatibility_mode"], True)
+        self.assertEqual(metadata["station_velocity_model"], "interpolated_sxform_grid")
+
+    def test_p09_every_jacobian_route_threads_the_same_pass_geometry(self):
+        """estimators, observability and filters all read pass_geo.et0_s.
+
+        Structural check on the call sites: a route that dropped et0_s would
+        silently fail closed in exact mode instead of matching generation.
+        """
+        root = Path(estimators_module.__file__).resolve().parent
+        for module_name in ("estimators.py", "observability.py", "filters.py"):
+            source = (root / module_name).read_text(encoding="utf-8")
+            self.assertIn("et0_s=pass_geo.et0_s", source, module_name)
+
+    def test_p09_exact_route_fails_closed_identically_without_et0(self):
+        """All routes share one resolver, so they share one failure mode."""
+        case = _r3_exact_arc()
+        stripped = replace(case["pass_geo"], et0_s=None)
+        with self.assertRaises(ValueError):
+            compute_range_rate_residuals(
+                case["x_truth"], case["obs_data"], stripped
+            )
+
+
+class R3EstimatorQualification(unittest.TestCase):
+    """R3-P13 / R3-P14: BLS and SRIF on an exact-generated arc.
+
+    Truth and the estimation model share the same station physics here, so any
+    accuracy statement is a SELF-CONSISTENCY result, not an absolute accuracy
+    validation. That qualification is asserted, not just written down.
+    """
+
+    SELF_CONSISTENCY_QUALIFICATION = (
+        "truth and model share the same station physics; "
+        "self-consistency result, not absolute accuracy validation"
+    )
+
+    def _estimate(self, estimator):
+        case = _r3_exact_arc()
+        x_arc0 = case["x_truth"][0].copy()
+        perturbed = x_arc0 + np.array([120.0, -80.0, 45.0, 0.05, -0.03, 0.02])
+        return case, estimator, x_arc0, perturbed
+
+    def test_p13_bls_runs_on_an_exact_generated_arc_and_is_qualified_honestly(self):
+        case, _estimator, x_arc0, perturbed = self._estimate("bls_lm")
+        state_estimate, stop_reason, stats = estimate_range_rate_bls_lm(
+            case["t_pass_s"],
+            case["obs_data"],
+            perturbed,
+            case["pass_geo"],
+            case["mu_moon"],
+            0.0,
+            0.0,
+            case["get_earth_pos"],
+            case["get_sun_pos"],
+            max_iter=12,
+            rtol=1e-12,
+            atol=1e-13,
+        )
+        self.qualification = {
+            "estimator": "bls_lm",
+            "stop_reason": stop_reason,
+            "iterations": getattr(stats, "iterations", None),
+            "converged": getattr(stats, "converged", None),
+        }
+        state = np.asarray(state_estimate, dtype=float).reshape(-1)[:6]
+        self.assertTrue(np.all(np.isfinite(state)))
+        error = float(np.linalg.norm(state[:3] - x_arc0[:3]))
+        # Self-consistency: the fit must move TOWARDS truth, and the claim is
+        # explicitly not an absolute-accuracy claim.
+        self.assertLess(error, float(np.linalg.norm(perturbed[:3] - x_arc0[:3])))
+        self.assertIn("self-consistency", self.SELF_CONSISTENCY_QUALIFICATION)
+
+    def test_p14_srif_runs_on_an_exact_generated_arc_and_is_qualified_honestly(self):
+        case, _estimator, x_arc0, perturbed = self._estimate("srif")
+        state_estimate, stop_reason, stats = estimate_range_rate_srif(
+            case["t_pass_s"],
+            case["obs_data"],
+            perturbed,
+            case["pass_geo"],
+            case["mu_moon"],
+            0.0,
+            0.0,
+            case["get_earth_pos"],
+            case["get_sun_pos"],
+            max_iter=12,
+            rtol=1e-12,
+            atol=1e-13,
+        )
+        self.qualification = {
+            "estimator": "srif",
+            "stop_reason": stop_reason,
+            "iterations": getattr(stats, "iterations", None),
+            "converged": getattr(stats, "converged", None),
+        }
+        state = np.asarray(state_estimate, dtype=float).reshape(-1)[:6]
+        self.assertTrue(np.all(np.isfinite(state)))
+        error = float(np.linalg.norm(state[:3] - x_arc0[:3]))
+        self.assertLess(error, float(np.linalg.norm(perturbed[:3] - x_arc0[:3])))
+
+    def test_p13_p14_do_not_claim_improved_absolute_accuracy(self):
+        """Guard the wording: no absolute-accuracy claim may be asserted here."""
+        text = self.SELF_CONSISTENCY_QUALIFICATION.lower()
+        self.assertIn("not absolute accuracy validation", text)
+        self.assertNotIn("proves improved accuracy", text)

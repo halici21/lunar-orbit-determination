@@ -3,9 +3,19 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 
+import numpy as np
+
+import lunar_od.scenario_config as scenario_config_module
+
 from lunar_od import (
+    EXACT_EVENT_EPOCH_STATION_METHOD,
+    LEGACY_INTERPOLATED_STATION_METHOD,
+    RangeRatePhysicsConfig,
+    make_exact_counted_doppler_station_state_provider,
+    two_way_counted_doppler_observable,
     load_scenario_config_json,
     scenario_config_from_mapping,
     scenario_config_schema,
@@ -468,3 +478,190 @@ class ScenarioConfigTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# R3 exact event-epoch station transform — configuration and disclosure gates
+#
+# R3-P15 configuration, schema, default and reporting provenance
+# R3-P23 the default change is deliberate, detectable and documented
+# ---------------------------------------------------------------------------
+
+
+def _r3_scenario_payload(**overrides):
+    payload = {
+        "name": "r3-scenario",
+        "measurement_type": "range_rate",
+        "estimator_type": "bls_lm",
+        "start_mode": "cold",
+        "network": "multi",
+    }
+    payload.update(overrides)
+    return payload
+
+
+class R3ScenarioConfigurationContract(unittest.TestCase):
+    """R3-P15: every supported route executes and records the method."""
+
+    def test_p15_omitted_field_defaults_to_the_exact_method(self):
+        config = scenario_config_from_mapping(_r3_scenario_payload())
+        self.assertEqual(config.station_state_method, EXACT_EVENT_EPOCH_STATION_METHOD)
+        physics = scenario_range_rate_physics_config(config)
+        self.assertEqual(
+            physics.station_state_method, EXACT_EVENT_EPOCH_STATION_METHOD
+        )
+        self.assertTrue(physics.exact_event_epoch_enabled)
+        self.assertFalse(physics.legacy_compatibility_mode)
+
+    def test_p15_explicit_exact_is_accepted_and_reported(self):
+        config = scenario_config_from_mapping(
+            _r3_scenario_payload(
+                range_rate_physics="two_way_counted_doppler",
+                station_state_method=EXACT_EVENT_EPOCH_STATION_METHOD,
+            )
+        )
+        physics = scenario_range_rate_physics_config(config)
+        self.assertTrue(physics.exact_event_epoch_enabled)
+        self.assertEqual(
+            physics.station_velocity_model, "exact_event_epoch_sxform"
+        )
+
+    def test_p15_explicit_legacy_is_accepted_and_warns_once(self):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            config = scenario_config_from_mapping(
+                _r3_scenario_payload(
+                    range_rate_physics="two_way_counted_doppler",
+                    station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
+                )
+            )
+        deprecations = [
+            item for item in caught if issubclass(item.category, DeprecationWarning)
+        ]
+        self.assertEqual(len(deprecations), 1)
+        self.assertIn(
+            "EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED", str(deprecations[0].message)
+        )
+        physics = scenario_range_rate_physics_config(config)
+        self.assertTrue(physics.legacy_compatibility_mode)
+        self.assertEqual(physics.station_velocity_model, "interpolated_sxform_grid")
+
+    def test_p15_json_schema_accepts_both_values_and_rejects_a_third(self):
+        schema = scenario_config_schema()
+        enum = schema["properties"]["station_state_method"]["enum"]
+        self.assertEqual(
+            sorted(enum),
+            sorted(
+                [
+                    EXACT_EVENT_EPOCH_STATION_METHOD,
+                    LEGACY_INTERPOLATED_STATION_METHOD,
+                ]
+            ),
+        )
+        self.assertEqual(
+            schema["properties"]["station_state_method"]["default"],
+            EXACT_EVENT_EPOCH_STATION_METHOD,
+        )
+        with self.assertRaises(ValueError):
+            scenario_config_from_mapping(
+                _r3_scenario_payload(station_state_method="something_else")
+            )
+
+    def test_p15_legacy_requires_the_counted_doppler_physics(self):
+        """F12 cross-field rule: legacy is meaningless without counted Doppler."""
+        with self.assertRaises(ValueError) as ctx:
+            scenario_config_from_mapping(
+                _r3_scenario_payload(
+                    station_state_method=LEGACY_INTERPOLATED_STATION_METHOD
+                )
+            )
+        self.assertIn("only", str(ctx.exception).lower())
+
+    def test_p15_no_cli_or_desktop_source_change_was_required(self):
+        """Both entry points route through scenario_range_rate_physics_config."""
+        root = Path(scenario_config_module.__file__).resolve().parents[1]
+        for relative in (
+            "examples/run_scenario_config.py",
+            "desktop_app/controllers/analysis_controller.py",
+        ):
+            source = (root / relative).read_text(encoding="utf-8")
+            self.assertNotIn("station_state_method", source, relative)
+
+
+class R3DefaultChangeDisclosure(unittest.TestCase):
+    """R3-P23: a pre-R3 scenario file changes behaviour, visibly."""
+
+    def test_p23_pre_r3_scenario_without_the_field_selects_exact(self):
+        """The gate asserts the change is disclosed, not that it is prevented."""
+        pre_r3 = _r3_scenario_payload(
+            range_rate_physics="two_way_counted_doppler", count_interval_s=60.0
+        )
+        self.assertNotIn("station_state_method", pre_r3)
+        config = scenario_config_from_mapping(pre_r3)
+        self.assertEqual(config.station_state_method, EXACT_EVENT_EPOCH_STATION_METHOD)
+
+    def test_p23_the_two_methods_produce_a_different_observable(self):
+        """Old files change behaviour: that is the accepted R2 consequence."""
+        t_grid = np.linspace(-400.0, 400.0, 81)
+        earth_pos = np.zeros((t_grid.size, 3))
+        earth_vel = np.zeros((t_grid.size, 3))
+        earth_pos[:, 0] = 3.8e8
+        omega = 7.292115e-5
+
+        def sxform_fn(_source, _target, et):
+            theta = omega * float(et)
+            c, s = np.cos(theta), np.sin(theta)
+            rot = np.array([[c, s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
+            rot_dot = omega * np.array(
+                [[-s, c, 0.0], [-c, -s, 0.0], [0.0, 0.0, 0.0]]
+            )
+            xform = np.zeros((6, 6))
+            xform[:3, :3] = rot
+            xform[3:, :3] = rot_dot
+            xform[3:, 3:] = rot
+            return xform
+
+        xforms = np.array([sxform_fn("J2000", "ITRF93", float(t)) for t in t_grid])
+        states = np.zeros((t_grid.size, 6))
+        states[:, 0] = 2.0e6 + 90.0 * t_grid
+        states[:, 1] = 5.0e5 + 1400.0 * t_grid
+        states[:, 3] = 90.0
+        states[:, 4] = 1400.0
+
+        class _Site:
+            name = "R3 disclosure site"
+            r_ecef_m = np.array([6378137.0, 0.0, 0.0])
+
+        common = dict(
+            mode="two_way_counted_doppler",
+            count_interval_s=60.0,
+            light_time_tolerance_s=1e-12,
+            light_time_equation_tolerance_s=1e-11,
+            light_time_max_iter=30,
+        )
+        exact_value = two_way_counted_doppler_observable(
+            0.0, _Site(), t_grid, states, earth_pos, earth_vel, xforms,
+            RangeRatePhysicsConfig(
+                **common, station_state_method=EXACT_EVENT_EPOCH_STATION_METHOD
+            ),
+            station_state_provider=make_exact_counted_doppler_station_state_provider(
+                _Site(), 0.0, t_grid, earth_pos, earth_vel, sxform_fn=sxform_fn
+            ),
+        )
+        legacy_value = two_way_counted_doppler_observable(
+            0.0, _Site(), t_grid, states, earth_pos, earth_vel, xforms,
+            RangeRatePhysicsConfig(
+                **common, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD
+            ),
+        )
+        self.assertNotEqual(exact_value, legacy_value)
+        self.assertTrue(np.isfinite(exact_value))
+
+    def test_p23_documentation_states_that_old_files_change_behaviour(self):
+        root = Path(scenario_config_module.__file__).resolve().parents[1]
+        doc = (root / "docs" / "two_way_counted_doppler.md").read_text(encoding="utf-8")
+        lowered = doc.lower()
+        self.assertIn("station_state_method", lowered)
+        self.assertIn("exact_event_epoch_sxform", lowered)
+        self.assertIn("legacy_interpolated_transform_grid", lowered)
+        self.assertIn("automatically", lowered)

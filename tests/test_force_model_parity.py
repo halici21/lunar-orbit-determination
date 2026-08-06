@@ -4,6 +4,7 @@ Deterministic and fast: no SPICE, no real propagation, no RNG.
 """
 
 from __future__ import annotations
+from lunar_od import reporting as reporting_module
 
 import csv
 import dataclasses
@@ -313,7 +314,17 @@ class P8SummaryCsvTests(unittest.TestCase):
         scenario, _ = self._scenario()
         rows = self._write(scenario)
         header = rows[0]
-        self.assertEqual(header[-len(self.EXPECTED_R1_COLUMNS):], self.EXPECTED_R1_COLUMNS)
+        # Owner Addendum 03 Decision 4: R1 columns keep their identity and
+        # order; the R3 measurement-provenance columns are appended after them,
+        # so the tail is R1_COLUMNS + R3_MEASUREMENT_PROVENANCE_COLUMNS.
+        r3_columns = list(reporting_module.R3_MEASUREMENT_PROVENANCE_COLUMNS)
+        expected_tail = [*self.EXPECTED_R1_COLUMNS, *r3_columns]
+        self.assertEqual(header[-len(expected_tail):], expected_tail)
+        self.assertEqual(
+            header[-(len(self.EXPECTED_R1_COLUMNS) + len(r3_columns)) : -len(r3_columns)],
+            self.EXPECTED_R1_COLUMNS,
+        )
+        self.assertEqual(header[-len(r3_columns):], r3_columns)
         history_idx = header.index("history_domain_all_measurement_arcs_empty")
         r0b_slice = header[
             history_idx + 1 : history_idx + 1 + len(self.EXPECTED_R0B_COLUMNS)
