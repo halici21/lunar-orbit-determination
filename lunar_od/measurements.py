@@ -16,6 +16,11 @@ from .history_domain import (
     summarize_history_domain_drops,
 )
 from .radiometrics import (
+    COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD,
+    COUNTED_DOPPLER_MODEL_VERSION,
+    COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD,
+    STATION_STATE_SOURCE_FRAME,
+    STATION_STATE_TARGET_FRAME,
     RangeRatePhysicsConfig,
     _interp_state_transition_position,
     instantaneous_geometric_range_rate,
@@ -325,7 +330,46 @@ def measurement_model_metadata(
         "jacobian_model": pass_geo.jacobian_model,
         "station_position_epoch": "receive",
         "station_velocity_epoch": "receive",
-        "station_velocity_model": "sxform",
+        # R3 provenance repair: the pre-R3 literal "sxform" overclaimed the
+        # interpolated legacy path, which never evaluates sxform at the event
+        # epoch. Both methods are now reported truthfully and separately.
+        "station_velocity_model": (
+            rr.station_velocity_model
+            if pass_geo.measurement_type != "position"
+            else "sxform"
+        ),
+        "station_state_method": (
+            rr.station_state_method
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "exact_event_epoch_enabled": (
+            bool(rr.exact_event_epoch_enabled)
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "legacy_compatibility_mode": (
+            bool(rr.legacy_compatibility_mode)
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "counted_doppler_model_version": (
+            COUNTED_DOPPLER_MODEL_VERSION
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "earth_ephemeris_method": (
+            COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "spacecraft_state_interpolation_method": (
+            COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "station_state_source_frame": STATION_STATE_SOURCE_FRAME,
+        "station_state_target_frame": STATION_STATE_TARGET_FRAME,
         "frame_transformation_epoch": "receive",
         "troposphere_model": "none",
         "ionosphere_model": "none",
@@ -1782,6 +1826,7 @@ def generate_range_rate_measurements(
                         v_earth_mci,
                         xforms,
                         rr_physics,
+                        et0_s=float(et0),
                     )
             except HistoryDomainError as domain_error:
                 drop_records.append(
@@ -1823,6 +1868,10 @@ def generate_range_rate_measurements(
         measurement_model_profile=measurement_model_profile,
         companion_geometry=companion_geometry,
         jacobian_model=jacobian_model,
+        # R3: the exact event-epoch station transform converts scenario time
+        # to ET, so range-rate geometries must carry et0_s (previously only
+        # two-way range set it). Without it the exact method fails closed.
+        et0_s=float(et0),
     )
     metadata = measurement_model_metadata(
         pass_geo, noise_enabled=noise, noise_seed=noise_seed
@@ -1907,6 +1956,7 @@ def compute_range_rate_residuals(
                 pass_geo.earth_vel_mci_mps,
                 pass_geo.x_j2000_to_itrf93,
                 rr_physics,
+                et0_s=pass_geo.et0_s,
             )
         h_meas[obs_idx, :] = [range_val, rr_val, az_rad, el_rad]
 

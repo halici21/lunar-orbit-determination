@@ -404,6 +404,8 @@ def _build_two_way_range_rate_initial_state_jacobian(
             pass_geo.earth_vel_mci_mps,
             pass_geo.x_j2000_to_itrf93,
             rr_physics,
+            # R3: same station-state method as the observable (R3-P09).
+            et0_s=pass_geo.et0_s,
         )
     return h_initial
 

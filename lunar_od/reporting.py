@@ -11,6 +11,15 @@ import numpy as np
 
 from .diagnostics import analyze_convergence, analyze_state_bias_correlation
 from .force_contract import manifest_canonical_bytes, manifest_sha256
+from .radiometrics import COUNTED_DOPPLER_MODEL_VERSION
+
+# Owner Addendum 03 Decision 4: the R3 measurement-provenance columns are a
+# separate, append-only segment. They are never folded into R1_COLUMNS and
+# never inserted before the R1 segment.
+R3_MEASUREMENT_PROVENANCE_COLUMNS = (
+    "station_state_method",
+    "counted_doppler_model_version",
+)
 from .scenarios import ScenarioResult
 
 
@@ -160,6 +169,10 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                 "observability_finite",
                 "condition_number_available",
                 "derivative_validation_profile",
+                # R3 (appended last, following the R0B/R1 column convention):
+                # which station site-state strategy executed, and the
+                # counted-Doppler model version that produced the observable.
+                *R3_MEASUREMENT_PROVENANCE_COLUMNS,
             ]
         )
         for scenario in scenarios:
@@ -284,6 +297,8 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                         scenario.observability_finite,
                         result.condition_number_available,
                         scenario.derivative_validation_profile,
+                        scenario.station_state_method,
+                        COUNTED_DOPPLER_MODEL_VERSION,
                     ]
                 )
 

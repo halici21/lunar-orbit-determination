@@ -32,7 +32,11 @@ from .measurements import (
     generate_range_rate_measurements,
     measurement_model_metadata,
 )
-from .radiometrics import RangeRatePhysicsConfig, range_rate_physics_config
+from .radiometrics import (
+    DEFAULT_STATION_STATE_METHOD,
+    RangeRatePhysicsConfig,
+    range_rate_physics_config,
+)
 from .two_way_range import TwoWayRangeConfig, generate_two_way_range_measurements
 
 MeasurementType = Literal["position", "range_rate", "two_way_range"]
@@ -158,6 +162,9 @@ class ScenarioResult:
     estimator_type: EstimatorType = "srif"
     range_rate_physics: str = "geometric_instantaneous"
     count_interval_s: float = 60.0
+    # R3: the station site-state strategy this run actually executed, resolved
+    # alongside the range-rate physics so every result records its own method.
+    station_state_method: str = DEFAULT_STATION_STATE_METHOD
     measurement_model_profile: str = "geometric_instantaneous"
     companion_geometry: str = "instantaneous"
     jacobian_model: str = "analytic_exact_geometric"
@@ -729,6 +736,7 @@ def run_batch_arc_sequence(
             estimator_type=estimator_type,
             range_rate_physics=_rr_physics.mode,
             count_interval_s=_rr_physics.count_interval_s,
+            station_state_method=_rr_physics.station_state_method,
             measurement_model_profile=(
                 "geometric_instantaneous"
                 if _pass_geo0 is None

@@ -1709,6 +1709,12 @@ def _range_rate_measurement_from_state(
             local_earth_vel,
             local_xforms,
             rr_physics,
+            # R3: the UKF local window is resampled from pass_geo onto the same
+            # scenario-seconds base, so the scenario ET origin still applies and
+            # this route honours the configured station method (R3-P09/R3-P24).
+            # In exact mode local_xforms is no longer read for the station
+            # state; it still feeds the companion range/az/el observable.
+            et0_s=pass_geo.et0_s,
         )
     measurement = np.array([range_m, rr_mps, az_rad, el_rad], dtype=float)
     if bias_cfg is None:
