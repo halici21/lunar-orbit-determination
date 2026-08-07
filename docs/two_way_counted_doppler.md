@@ -233,3 +233,88 @@ station location solve-for partials
 Those corrections should be added only after each correction's computed value
 and partial derivative can be tested independently against numerical
 finite-difference references.
+
+## R3 — exact event-epoch station transform
+
+R3 replaces the station site-state source of the counted-Doppler path. The
+observable equations, the light-time solver, the FA-03B history-domain policy,
+the count-interval definition, the clock model and the zero-delay gate are all
+unchanged; only the inputs to those equations change.
+
+### The two strategies
+
+`RangeRatePhysicsConfig.station_state_method` (and the matching
+`ScenarioConfig.station_state_method`) selects one of:
+
+| Value | Site transform | Status |
+|---|---|---|
+| `exact_event_epoch_sxform` | `spice.sxform("J2000", "ITRF93", et0_s + t_event)` evaluated at the true event epoch | **production default** |
+| `legacy_interpolated_transform_grid` | element-wise linear interpolation of the pre-sampled transform grid | explicit compatibility mode |
+
+Element-wise linear interpolation of a rotation matrix is not a rotation between
+grid nodes. The resulting station-position error follows
+`(omega*dt)^2 * R_earth / 8` — about 1526 m at a 600 s transform cadence, 15.3 m
+at 60 s and 0.42 m at 10 s. Removing that term is the accepted R2 decision
+`EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED`.
+
+In exact mode the analytic Jacobian also takes its uplink station velocity
+`vg1` from the exact station state (`station_state[3:6]`) instead of the
+interpolation slope. Legacy mode keeps the slope, preserving model L bit for
+bit.
+
+### The default change
+
+A scenario file written before R3 has no `station_state_method` field. Such a
+file now **automatically** receives `exact_event_epoch_sxform`, so its
+counted-Doppler observable changes. This is deliberate — it is the intended
+consequence of the accepted R2 decision — and it is never silent: every run
+records the method it executed in its measurement metadata and in the scenario
+CSV. Gate R3-P23 exists specifically to assert that the change is disclosed
+rather than prevented.
+
+To reproduce pre-R3 numbers, opt in explicitly:
+
+```json
+{
+  "range_rate_physics": "two_way_counted_doppler",
+  "station_state_method": "legacy_interpolated_transform_grid"
+}
+```
+
+Selecting the legacy value emits a `DeprecationWarning` naming the accepted R2
+decision. The legacy value is only meaningful together with
+`range_rate_physics = "two_way_counted_doppler"`; any other combination is
+rejected at configuration load.
+
+### No fallback
+
+If the exact evaluation cannot be performed — kernels missing, an unknown frame,
+an epoch outside coverage, a non-finite or wrongly shaped transform, a
+non-finite Earth history, or a missing/non-finite `et0_s` — the run **fails
+closed** with `StationStateEvaluationError` or `ValueError`. There is no
+automatic fallback to the interpolated grid under any condition; legacy is a
+deliberate opt-in, never a degradation path.
+
+### What R3 deliberately does not change
+
+* the Earth ephemeris stays on **linear** grid interpolation, so the exact
+  production path reproduces the accepted R2 model S exactly and the S−L
+  difference isolates the site transform alone;
+* the spacecraft state and STM stay on **cubic Hermite** interpolation;
+* the event model stays **single-bounce**; a nonzero transponder delay is still
+  rejected at configuration construction;
+* M3 two-way range is untouched, and its provider is mirrored rather than
+  imported or shared.
+
+### Provenance
+
+Each run records `station_state_method`, `exact_event_epoch_enabled`,
+`legacy_compatibility_mode`, `earth_ephemeris_method`,
+`spacecraft_state_interpolation_method`, the `J2000`/`ITRF93` frame pair and
+`counted_doppler_model_version = r3.counted-doppler.exact-station.v1`. The
+scenario CSV gains `station_state_method` and `counted_doppler_model_version` as
+its final two columns, appended after the R1 numerical-provenance segment.
+
+The pre-R3 metadata field `station_velocity_model` reported the literal
+`"sxform"` for both paths, which overclaimed the interpolated route. It now
+reports `exact_event_epoch_sxform` or `interpolated_sxform_grid` truthfully.

@@ -36,6 +36,7 @@ from lunar_od.two_way_counted_doppler_reference import (
     evaluate_lsf_decomposition,
     exact_station_four_event_counted_doppler_jacobian,
     exact_station_four_event_counted_doppler_reference,
+    exact_station_single_bounce_counted_doppler_jacobian,
     exact_station_single_bounce_counted_doppler_reference,
     generate_four_event_counted_doppler_reference,
     make_exact_event_station_state_provider,
@@ -735,10 +736,180 @@ def test_cost_metadata_is_informational_and_records_timing_variability(
     assert "R2-P16 remains informational" in report
 
 
+def _require_r2_history():
+    """Return the git executable, or skip with an explicit provenance reason.
+
+    Owner Addendum 02: a working-tree fallback is FORBIDDEN. In a source
+    archive without Git this skips loudly; in the R3 qualification worktree it
+    must actually run, so a skip there is itself a finding.
+    """
+    try:
+        return campaign.resolve_git_executable()
+    except campaign.R2HistoricalProvenanceUnavailable as exc:
+        pytest.skip(str(exc))
+
+
 def test_strict_option_b_protected_production_files_are_byte_identical():
-    for relative_path, expected in campaign.BASELINE_FILE_SHA256.items():
+    """R2 Strict Option B did not change production bytes WHILE R2 was built.
+
+    Owner Addendum 02: this is a HISTORICAL claim about the Git range
+    ``R2_BASELINE_COMMIT..R2_ACCEPTED_HEAD_COMMIT``. It is deliberately NOT a
+    claim that a later phase may never touch these files: R3 changes five of
+    them by frozen design, and those are qualified by the R3 acceptance gates
+    instead. Nothing here is re-baselined to R3 bytes.
+    """
+    _require_r2_history()
+
+    # (1) repository root resolves and (2)-(3) both anchors are reachable.
+    for commit in (campaign.R2_BASELINE_COMMIT, campaign.R2_ACCEPTED_HEAD_COMMIT):
+        resolved = campaign._run_git(ROOT, "rev-parse", commit).decode().strip()
+        assert resolved == commit
+
+    table = campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256
+    assert len(table) == 15
+
+    for relative_path, expected in table.items():
+        # (4) present in both commits, (5)-(6) hashes match the recorded R2
+        # values, (7) the two blobs are byte-identical.
+        # Raw stored blobs prove baseline-vs-accepted identity independently
+        # of platform line-ending policy...
+        baseline_blob = campaign.r2_historical_blob_bytes(
+            ROOT, campaign.R2_BASELINE_COMMIT, relative_path
+        )
+        accepted_blob = campaign.r2_historical_blob_bytes(
+            ROOT, campaign.R2_ACCEPTED_HEAD_COMMIT, relative_path
+        )
+        assert baseline_blob == accepted_blob, relative_path
+        # ...while the recorded R2 hashes are hashes of the CHECKOUT
+        # representation (the R2 campaign ran on a core.autocrlf=true Windows
+        # checkout), so they are reproduced with git's own filter view. No
+        # recorded hash is re-baselined and the working tree is never read.
+        baseline_checkout = campaign.r2_historical_checkout_bytes(
+            ROOT, campaign.R2_BASELINE_COMMIT, relative_path
+        )
+        accepted_checkout = campaign.r2_historical_checkout_bytes(
+            ROOT, campaign.R2_ACCEPTED_HEAD_COMMIT, relative_path
+        )
+        assert hashlib.sha256(baseline_checkout).hexdigest() == expected, relative_path
+        assert hashlib.sha256(accepted_checkout).hexdigest() == expected, relative_path
+
+    # (8)-(9) the R2 branch added exactly three paths and modified/deleted/
+    # renamed nothing.
+    name_status = (
+        campaign._run_git(
+            ROOT,
+            "diff",
+            "--name-status",
+            campaign.R2_BASELINE_COMMIT,
+            campaign.R2_ACCEPTED_HEAD_COMMIT,
+        )
+        .decode()
+        .splitlines()
+    )
+    statuses = [line.split("\t") for line in name_status if line.strip()]
+    assert sorted(path for status, path in statuses) == sorted(
+        campaign.R2_EXPECTED_ADDED_PATHS
+    )
+    assert {status for status, _ in statuses} == {"A"}
+
+    # (10) the accepted R2 tree is the tree that reached the canonical branch.
+    accepted_tree = (
+        campaign._run_git(
+            ROOT, "rev-parse", f"{campaign.R2_ACCEPTED_HEAD_COMMIT}^{{tree}}"
+        )
+        .decode()
+        .strip()
+    )
+    merge_tree = (
+        campaign._run_git(
+            ROOT, "rev-parse", f"{campaign.R2_CANONICAL_MERGE_COMMIT}^{{tree}}"
+        )
+        .decode()
+        .strip()
+    )
+    assert accepted_tree == campaign.R2_ACCEPTED_HEAD_TREE
+    assert accepted_tree == merge_tree
+
+
+def test_r2_protected_partition_is_exactly_eight_changed_and_seven_protected():
+    """15 historical paths == 8 intentionally changed by R3 + 7 still frozen."""
+    historical = set(campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256)
+    changed = set(campaign.R3_INTENTIONALLY_CHANGED_R2_PROTECTED_PATHS)
+    protected = set(campaign.R2_CURRENT_TREE_PROTECTED_PATHS)
+
+    assert len(historical) == 15
+    assert len(changed) == 8
+    assert len(protected) == 7
+    assert changed & protected == set()
+    assert changed | protected == historical
+    assert historical - (changed | protected) == set()
+    assert (changed | protected) - historical == set()
+    assert changed == {
+        "lunar_od/radiometrics.py",
+        "lunar_od/measurements.py",
+        "lunar_od/estimators.py",
+        "lunar_od/filters.py",
+        "lunar_od/observability.py",
+        "lunar_od/scenario_config.py",
+        "lunar_od/reporting.py",
+        "lunar_od/scenarios.py",
+    }
+
+
+def test_r2_historical_identity_declares_the_filtered_checkout_representation():
+    """The recorded hashes are checkout bytes, never raw blobs or the worktree."""
+    assert campaign.R2_HISTORICAL_IDENTITY_REPRESENTATION == "filtered_checkout"
+    assert campaign.R2_HISTORICAL_GIT_OPERATION == "cat-file --filters"
+    assert campaign.R2_HISTORICAL_RAW_IDENTITY_REPRESENTATION == "raw_git_blob"
+    assert campaign.R2_HISTORICAL_RAW_GIT_OPERATION == "show"
+    assert campaign.R2_HISTORICAL_READS_WORKING_TREE is False
+    assert campaign.BASELINE_FILE_SHA256 is campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256
+    _require_r2_history()
+    # The two representations are genuinely different for text files, which is
+    # exactly why they must never be compared against the same table.
+    path = "lunar_od/dynamics.py"
+    raw = campaign.r2_historical_blob_bytes(ROOT, campaign.R2_BASELINE_COMMIT, path)
+    filtered = campaign.r2_historical_checkout_bytes(
+        ROOT, campaign.R2_BASELINE_COMMIT, path
+    )
+    assert filtered != raw
+    assert (
+        hashlib.sha256(filtered).hexdigest()
+        == campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[path]
+    )
+    assert hashlib.sha256(raw).hexdigest() != campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[path]
+
+
+def test_r2_current_tree_protection_holds_for_paths_r3_must_not_change():
+    """The ten historical paths R3 may not touch are still byte-identical."""
+    for relative_path in campaign.R2_CURRENT_TREE_PROTECTED_PATHS:
+        expected = campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
         actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
         assert actual == expected, relative_path
+
+
+def test_r2_historical_gate_never_falls_back_to_the_working_tree(monkeypatch):
+    """Missing Git must fail closed, never silently use working-tree bytes."""
+    monkeypatch.setattr(campaign.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(Path, "is_file", lambda _self: False)
+    with pytest.raises(campaign.R2HistoricalProvenanceUnavailable) as excinfo:
+        campaign.resolve_git_executable()
+    assert "R2 historical provenance unavailable" in str(excinfo.value)
+
+    with pytest.raises(campaign.R2HistoricalProvenanceUnavailable):
+        campaign.build_r2_historical_byte_identity_rows(ROOT)
+
+
+def test_r2_historical_gate_reports_unreachable_commit_rather_than_passing():
+    """An unreachable anchor is a provenance failure, not a PASS."""
+    _require_r2_history()
+    with pytest.raises(campaign.R2HistoricalProvenanceUnavailable) as excinfo:
+        campaign.r2_historical_blob_bytes(
+            ROOT,
+            "0" * 40,
+            "lunar_od/radiometrics.py",
+        )
+    assert "R2 historical provenance unavailable" in str(excinfo.value)
 
 
 def _force_contract(j2_moon: float):
@@ -828,3 +999,396 @@ def test_reference_module_is_opt_in_and_absent_from_production_dispatch():
     for relative_path in protected:
         source = (ROOT / relative_path).read_text(encoding="utf-8")
         assert "two_way_counted_doppler_reference" not in source
+
+
+# ---------------------------------------------------------------------------
+# R3 exact event-epoch station transform — R2 parity and preservation gates
+#
+# R3-P04 production exact observable == accepted R2 model S observable
+# R3-P05 production exact Jacobian   == accepted R2 model S Jacobian
+# R3-P10 legacy retained, never silently used, L/S/F decomposition intact
+# R3-P11 zero-delay decomposition: production == S, F - S == 0
+# ---------------------------------------------------------------------------
+
+R3_EXACT_METHOD = "exact_event_epoch_sxform"
+R3_LEGACY_METHOD = "legacy_interpolated_transform_grid"
+R3_P04_OBSERVABLE_TOLERANCE = 1e-12
+R3_P05_JACOBIAN_TOLERANCE = 1e-10
+
+
+def _r3_production_config(fixture, method, interval_s=3.0):
+    return RangeRatePhysicsConfig(
+        mode="two_way_counted_doppler",
+        count_interval_s=float(interval_s),
+        output_unit="mps_equivalent",
+        light_time_tolerance_s=1e-12,
+        light_time_equation_tolerance_s=1e-11,
+        light_time_max_iter=25,
+        station_state_method=method,
+    )
+
+
+def _r3_reference_provider(fixture):
+    return make_exact_event_station_state_provider(
+        fixture.station,
+        fixture.et0_s,
+        fixture.t_grid_s,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+    )
+
+
+def _r3_relative(produced, reference):
+    denominator = abs(float(reference))
+    if denominator <= 1e-300:
+        return abs(float(produced))
+    return abs(float(produced) - float(reference)) / denominator
+
+
+# --- R3-P04 two-level parity contract (Owner Addendum 05) -------------------
+#
+# R3-P04A endpoint round-trip light-time parity, rho_relative_difference <= 1e-15
+# R3-P04B observable ULP budget, K = 2.0
+#
+# The original single pure-relative observable criterion could not hold at short
+# count intervals: rho_start and rho_end are two nearly equal binary64 light
+# times, so an endpoint difference of about one ULP is amplified in
+# h = c*(rho_end - rho_start)/(2*Tc) by c/(2*Tc). P04A tests the physics without
+# that amplification; P04B bounds the amplified residue by an explicit analytic
+# ULP budget. Every frozen count interval stays in scope.
+
+R3_P04A_RHO_RELATIVE_TOLERANCE = 1.0e-15
+R3_P04B_ULP_FACTOR = 2.0
+
+
+def _r3_endpoint_round_trip_light_times(fixture, interval_s):
+    """Return production and reference (rho_start, rho_end) for one interval."""
+    exact_cfg = _r3_production_config(fixture, R3_EXACT_METHOD, interval_s)
+    legacy_cfg = _r3_production_config(fixture, R3_LEGACY_METHOD, interval_s)
+    half = 0.5 * float(interval_s)
+    mid = fixture.spec.receive_mid_time_s
+
+    production = {}
+    for label, raw in (("start", mid - half), ("end", mid + half)):
+        provider = campaign.resolve_counted_doppler_station_state_provider(
+            exact_cfg,
+            fixture.station,
+            fixture.t_grid_s,
+            fixture.earth_pos_mci_m,
+            fixture.earth_vel_mci_mps,
+            et0_s=fixture.et0_s,
+        )
+        solution = campaign.solve_two_way_light_time(
+            campaign._clock_corrected_receive_time(raw, exact_cfg),
+            fixture.station,
+            fixture.t_grid_s,
+            fixture.state_history_mci,
+            fixture.earth_pos_mci_m,
+            fixture.earth_vel_mci_mps,
+            fixture.x_j2000_to_itrf93,
+            exact_cfg,
+            station_state_provider=provider,
+        )
+        production[label] = float(solution.round_trip_light_time_s)
+
+    result = exact_station_single_bounce_counted_doppler_reference(
+        mid,
+        _r3_reference_provider(fixture),
+        fixture.t_grid_s,
+        fixture.state_history_mci,
+        CountedDopplerReferenceConfig.from_legacy(legacy_cfg),
+    )
+    reference = {
+        "start": float(result.start_solution.t3_s - result.start_solution.t1_s),
+        "end": float(result.end_solution.t3_s - result.end_solution.t1_s),
+    }
+    return production, reference
+
+
+def _r3_rho_relative_difference(rho_production_s, rho_reference_s):
+    """The frozen R3-P04A comparison, verbatim."""
+    rho_scale_s = max(
+        abs(float(rho_production_s)),
+        abs(float(rho_reference_s)),
+        1.0,
+    )
+    rho_absolute_difference_s = abs(
+        float(rho_production_s) - float(rho_reference_s)
+    )
+    return rho_absolute_difference_s / rho_scale_s
+
+
+def _r3_observable_ulp_budget_mps(rho_start_s, rho_end_s, interval_s):
+    """K * ulp(half round-trip range) / Tc, the frozen R3-P04B budget."""
+    light_speed = campaign.C_LIGHT_MPS
+    ulp_range_m = float(
+        np.spacing(
+            max(
+                abs(light_speed * float(rho_start_s) / 2.0),
+                abs(light_speed * float(rho_end_s) / 2.0),
+            )
+        )
+    )
+    return R3_P04B_ULP_FACTOR * ulp_range_m / float(interval_s)
+
+
+@pytest.mark.parametrize("interval_s", campaign.FROZEN_INTERVALS_S)
+def test_r3_p04a_endpoint_round_trip_light_times_match_model_s(real_fixture, interval_s):
+    """R3-P04A: the event solve itself is identical, free of amplification."""
+    production, reference = _r3_endpoint_round_trip_light_times(real_fixture, interval_s)
+    for label in ("start", "end"):
+        relative = _r3_rho_relative_difference(production[label], reference[label])
+        assert relative <= R3_P04A_RHO_RELATIVE_TOLERANCE, (interval_s, label, relative)
+
+
+@pytest.mark.parametrize("interval_s", campaign.FROZEN_INTERVALS_S)
+def test_r3_p04b_observable_difference_stays_inside_the_ulp_budget(real_fixture, interval_s):
+    """R3-P04B: the amplified residue is bounded by the analytic ULP budget."""
+    fixture = real_fixture
+    production_rho, reference_rho = _r3_endpoint_round_trip_light_times(fixture, interval_s)
+    budget_mps = _r3_observable_ulp_budget_mps(
+        production_rho["start"], production_rho["end"], interval_s
+    )
+    produced = campaign.two_way_counted_doppler_observable(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.t_grid_s,
+        fixture.state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
+        et0_s=fixture.et0_s,
+    )
+    reference = exact_station_single_bounce_counted_doppler_reference(
+        fixture.spec.receive_mid_time_s,
+        _r3_reference_provider(fixture),
+        fixture.t_grid_s,
+        fixture.state_history_mci,
+        CountedDopplerReferenceConfig.from_legacy(
+            _r3_production_config(fixture, R3_LEGACY_METHOD, interval_s)
+        ),
+    ).observable
+    absolute_difference = abs(float(produced) - float(reference))
+    assert absolute_difference <= budget_mps, (
+        interval_s,
+        absolute_difference,
+        budget_mps,
+        # The relative difference is recorded, never suppressed.
+        _r3_relative(produced, reference),
+    )
+
+
+def test_r3_p04_covers_every_frozen_count_interval(real_fixture):
+    """No frozen interval may be dropped, skipped or narrowed away."""
+    assert campaign.FROZEN_INTERVALS_S == (1.0, 10.0, 30.0, 60.0, 100.0)
+    for interval_s in campaign.FROZEN_INTERVALS_S:
+        production, reference = _r3_endpoint_round_trip_light_times(
+            real_fixture, interval_s
+        )
+        assert set(production) == {"start", "end"}
+        assert set(reference) == {"start", "end"}
+
+
+def test_r3_p04a_holds_across_the_frozen_transform_cadences(spice_epoch_s):
+    """The endpoint parity is a property of the model, not of one cadence."""
+    for cadence_s in (0.1, 3.0, 60.0):
+        fixture = campaign.build_campaign_fixture(
+            campaign.frozen_geometry_specs()[0], cadence_s, et0_s=spice_epoch_s
+        )
+        for interval_s in campaign.FROZEN_INTERVALS_S:
+            production, reference = _r3_endpoint_round_trip_light_times(
+                fixture, interval_s
+            )
+            for label in ("start", "end"):
+                relative = _r3_rho_relative_difference(
+                    production[label], reference[label]
+                )
+                assert relative <= R3_P04A_RHO_RELATIVE_TOLERANCE, (
+                    cadence_s,
+                    interval_s,
+                    label,
+                    relative,
+                )
+
+
+@pytest.mark.parametrize("interval_s", campaign.FROZEN_INTERVALS_S)
+def test_r3_p05_production_exact_jacobian_equals_accepted_model_s(real_fixture, interval_s):
+    """R3-P05: all six analytic components match the accepted model S Jacobian.
+
+    Unchanged frozen threshold 1e-10, evaluated over every frozen count
+    interval. The Jacobian is not formed from a cancelling endpoint difference
+    of two large ranges, so it needs no ULP budget.
+    """
+    fixture = real_fixture
+    production = campaign.two_way_counted_doppler_initial_state_jacobian(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
+        et0_s=fixture.et0_s,
+    )
+    reference = exact_station_single_bounce_counted_doppler_jacobian(
+        fixture.spec.receive_mid_time_s,
+        _r3_reference_provider(fixture),
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        CountedDopplerReferenceConfig.from_legacy(
+            _r3_production_config(fixture, R3_LEGACY_METHOD, interval_s)
+        ),
+    ).jacobian_dx0
+    assert production.shape == (6,)
+    for column in range(6):
+        assert (
+            _r3_relative(production[column], reference[column])
+            <= R3_P05_JACOBIAN_TOLERANCE
+        ), column
+
+
+def test_r3_p10_legacy_mode_still_reproduces_accepted_model_l(real_fixture):
+    """R3-P10: legacy mode is bitwise model L, and exact is measurably different."""
+    fixture = real_fixture
+    interval_s = 3.0
+    legacy_cfg = _r3_production_config(fixture, R3_LEGACY_METHOD, interval_s)
+    decomposition = evaluate_lsf_decomposition(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.et0_s,
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        legacy_cfg,
+    )
+    production_legacy = campaign.two_way_counted_doppler_observable(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.t_grid_s,
+        fixture.state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        legacy_cfg,
+    )
+    # Bitwise, not approximately: model L must be untouched by R3.
+    assert production_legacy == decomposition.legacy_observable
+    # And the exact default must actually differ, or R3 changed nothing.
+    production_exact = campaign.two_way_counted_doppler_observable(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.t_grid_s,
+        fixture.state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
+        et0_s=fixture.et0_s,
+    )
+    assert production_exact != production_legacy
+
+
+def test_r3_p10_lsf_decomposition_still_runs_and_reproduces_the_triangle(real_fixture):
+    """evaluate_lsf_decomposition must keep working unchanged after R3."""
+    fixture = real_fixture
+    decomposition = evaluate_lsf_decomposition(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.et0_s,
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_LEGACY_METHOD, 3.0),
+    )
+    assert decomposition.observable_triangle_residual == pytest.approx(0.0, abs=1e-14)
+    np.testing.assert_allclose(
+        decomposition.jacobian_triangle_residual, 0.0, atol=1e-14
+    )
+    # L, S and F remain three distinct models.
+    assert decomposition.legacy_observable != decomposition.exact_station_observable
+    assert decomposition.frame_interpolation_error != 0.0
+
+
+def test_r3_p11_production_exact_equals_s_and_zero_delay_f_minus_s_is_zero(real_fixture):
+    """R3-P11: production R3 == S column, and F - S == 0 at zero delay."""
+    fixture = real_fixture
+    interval_s = 3.0
+    decomposition = evaluate_lsf_decomposition(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.et0_s,
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_LEGACY_METHOD, interval_s),
+    )
+    production_exact = campaign.two_way_counted_doppler_observable(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.t_grid_s,
+        fixture.state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
+        et0_s=fixture.et0_s,
+    )
+    production_rho, _reference_rho = _r3_endpoint_round_trip_light_times(
+        fixture, interval_s
+    )
+    budget_mps = _r3_observable_ulp_budget_mps(
+        production_rho["start"], production_rho["end"], interval_s
+    )
+    # Owner Addendum 05: production R3 equals the S column inside the analytic
+    # ULP budget; the relative difference is recorded, not suppressed.
+    assert (
+        abs(float(production_exact) - float(decomposition.exact_station_observable))
+        <= budget_mps
+    ), _r3_relative(production_exact, decomposition.exact_station_observable)
+    # Zero transponder delay: the four-event contribution is exactly zero.
+    assert decomposition.four_event_model_error == pytest.approx(0.0, abs=1e-14)
+    assert (
+        decomposition.four_event_observable
+        == pytest.approx(decomposition.exact_station_observable, abs=1e-14)
+    )
+
+
+def test_r3_p11_production_exact_jacobian_equals_the_s_jacobian_column(real_fixture):
+    """The Jacobian half of the zero-delay decomposition agrees too."""
+    fixture = real_fixture
+    interval_s = 3.0
+    decomposition = evaluate_lsf_decomposition(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.et0_s,
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_LEGACY_METHOD, interval_s),
+    )
+    production = campaign.two_way_counted_doppler_initial_state_jacobian(
+        fixture.spec.receive_mid_time_s,
+        fixture.station,
+        fixture.t_grid_s,
+        fixture.augmented_state_history_mci,
+        fixture.earth_pos_mci_m,
+        fixture.earth_vel_mci_mps,
+        fixture.x_j2000_to_itrf93,
+        _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
+        et0_s=fixture.et0_s,
+    )
+    for column in range(6):
+        assert (
+            _r3_relative(production[column], decomposition.exact_station_jacobian[column])
+            <= R3_P05_JACOBIAN_TOLERANCE
+        ), column

@@ -46,6 +46,7 @@ from lunar_od.measurements import (
     ONE_WAY_LIGHT_TIME_TOLERANCE_S,
 )
 from lunar_od.radiometrics import (
+    LEGACY_INTERPOLATED_STATION_METHOD,
     interp_state_history,
     solve_two_way_light_time,
     two_way_counted_doppler_initial_state_jacobian,
@@ -510,6 +511,11 @@ def test_p0b1_counted_observable_and_jacobian_reject_nonconverged_endpoints():
         count_interval_s=0.2,
         light_time_tolerance_s=1.0e-15,
         light_time_max_iter=1,
+        # Owner Addendum 01: legacy-contract fixture. R3 flipped the
+        # production default to the exact event-epoch transform; this
+        # test qualifies the accepted legacy/model-L behaviour, so it
+        # selects the compatibility mode explicitly.
+        station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
     )
     endpoints = (-0.1, 0.1)
     solutions = [
@@ -624,6 +630,11 @@ def test_p0b1_dual_criterion_rejects_equation_residual_after_updates_converge():
         light_time_tolerance_s=1.0,
         light_time_equation_tolerance_s=1.0e-12,
         light_time_max_iter=1,
+        # Owner Addendum 01: legacy-contract fixture. R3 flipped the
+        # production default to the exact event-epoch transform; this
+        # test qualifies the accepted legacy/model-L behaviour, so it
+        # selects the compatibility mode explicitly.
+        station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
     )
     counted = solve_two_way_light_time(
         -0.1,
@@ -771,6 +782,11 @@ def test_fa03b_counted_boundary_matrix_enforces_domain():
         mode="two_way_counted_doppler",
         count_interval_s=0.5,
         light_time_tolerance_s=1.0e-13,
+        # Owner Addendum 01: legacy-contract fixture. R3 flipped the
+        # production default to the exact event-epoch transform; this
+        # test qualifies the accepted legacy/model-L behaviour, so it
+        # selects the compatibility mode explicitly.
+        station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
     )
     lower_policy_ulp = np.nextafter(1.0, np.inf) - 1.0
     upper_policy_ulp = np.nextafter(10.0, np.inf) - 10.0

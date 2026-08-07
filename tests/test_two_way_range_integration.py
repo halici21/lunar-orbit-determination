@@ -22,6 +22,7 @@ import numpy as np
 from lunar_od.config import Station
 from lunar_od.radiometrics import (
     C_LIGHT_MPS,
+    LEGACY_INTERPOLATED_STATION_METHOD,
     RangeRatePhysicsConfig,
     _interp_matrix,
     _interp_state,
@@ -499,10 +500,18 @@ class TwoWayRangeLegacyConsistencyTests(unittest.TestCase):
     def test_counted_doppler_endpoint_consistency_at_zero_delay(self):
         """Directive 28.4: the counted-Doppler m/s equivalent equals the
         endpoint difference of half-round-trip ranges divided by the count
-        interval.  The new helper must reproduce that endpoint quantity within
-        the measured transform-interpolation bound (the legacy solver linearly
-        interpolates the pass-grid transforms; the new solver uses exact
-        event-epoch sxform).  Counted-Doppler production code is unchanged."""
+        interval.  The M3 helper must reproduce that endpoint quantity within
+        the measured transform-interpolation bound (the legacy counted-Doppler
+        path linearly interpolates the pass-grid transforms; the M3 helper uses
+        exact event-epoch sxform).
+
+        Owner Addendum 01: this test is KEPT AND PINNED TO EXPLICIT LEGACY
+        MODE. Since R3 it no longer represents the production default, which is
+        the exact event-epoch transform; it represents the explicit legacy
+        compatibility model and preserves the historical bounded-consistency
+        contract between M3 and the accepted legacy counted Doppler (model L).
+        The R3 exact default is verified by separate acceptance tests
+        (R3-P04/R3-P05/R3-P10/R3-P11). M3 production code is unchanged."""
         from lunar_od.radiometrics import two_way_counted_doppler_observable
 
         et0, t_pass, earth_pos, earth_vel, _, _, _, _, x_aug = _truth_setup(step_s=10.0)
@@ -518,6 +527,7 @@ class TwoWayRangeLegacyConsistencyTests(unittest.TestCase):
             count_interval_s=count_interval_s,
             light_time_tolerance_s=1e-12,
             light_time_max_iter=25,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
         doppler_mps = two_way_counted_doppler_observable(
             t_mid, _STATION, t_pass, x_aug[:, :6], earth_pos, earth_vel, xforms, rr_cfg

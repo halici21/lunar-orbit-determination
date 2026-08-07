@@ -1389,7 +1389,15 @@ def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, 
         x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass_s.size, axis=0),
         stations=stations,
         measurement_type="range_rate",
-        range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=count_interval_s),
+        range_rate_physics=RangeRatePhysicsConfig(
+            mode="two_way_counted_doppler",
+            count_interval_s=count_interval_s,
+            # Owner Addendum 06: legacy-contract fixture. R3 made the exact
+            # event-epoch transform the production default; this synthetic
+            # scenario arc qualifies accepted pre-R3 behaviour, so it opts
+            # into the compatibility mode explicitly and keeps model L.
+            station_state_method="legacy_interpolated_transform_grid",
+        ),
     )
     t_first = float(t_pass_s[0]) + pre_margin_s
     t_last = float(t_pass_s[-1]) - post_margin_s

@@ -5,6 +5,7 @@ from dataclasses import replace
 import numpy as np
 
 from lunar_od import (
+    LEGACY_INTERPOLATED_STATION_METHOD,
     PassGeometry,
     PreparedArc,
     RangeRatePhysicsConfig,
@@ -506,7 +507,7 @@ def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, 
         x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass_s.size, axis=0),
         stations=stations,
         measurement_type="range_rate",
-        range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0),
+        range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD),
     )
     rows = []
     measurement_times = (

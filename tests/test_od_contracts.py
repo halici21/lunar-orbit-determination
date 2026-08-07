@@ -1,8 +1,34 @@
+import ast
+import hashlib
+import subprocess
 import unittest
+import warnings
+from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 
+import lunar_od.radiometrics as radiometrics_module
+import lunar_od.two_way_range as two_way_range_module
+from examples import r2_measurement_fidelity_validation as campaign_module
+from lunar_od.constants import J2_MOON_UNNORMALIZED
+from lunar_od.force_contract import (
+    FORCE_CONTRACT_SCHEMA_VERSION,
+    ConsumerReadiness,
+    ConsumerRole,
+    consumer_capabilities_for,
+)
+from lunar_od.scenario_config import (
+    force_model_contract_from_scenario_config,
+    scenario_config_from_mapping,
+)
 from lunar_od import (
+    EXACT_EVENT_EPOCH_STATION_METHOD,
+    LEGACY_INTERPOLATED_STATION_METHOD,
+    RangeRatePhysicsConfig,
+    StationStateEvaluationError,
+    make_exact_counted_doppler_station_state_provider,
+    two_way_counted_doppler_observable,
     PassGeometry,
     RangeRatePhysicsConfig,
     Station,
@@ -146,6 +172,365 @@ def _pass_geo(t_s, stations):
         stations=tuple(stations),
         measurement_type="range_rate",
     )
+
+
+
+# ---------------------------------------------------------------------------
+# R3 exact event-epoch station transform — contract gates
+#
+# R3-P12 nonzero transponder delay stays fail-closed
+# R3-P16 every failure condition fails closed, with no legacy fallback (F01-F14)
+# R3-P17 R3 changes nothing outside the measurement model
+# R3-P21 provider protocol is shape-compatible with M3 without importing it
+# ---------------------------------------------------------------------------
+
+
+class _R3Station:
+    name = "R3 contract station"
+    r_ecef_m = np.array([6378137.0, 0.0, 0.0])
+
+
+def _r3_identity_sxform(_source, _target, _et):
+    return np.eye(6)
+
+
+def _r3_grid(n=9, span=400.0):
+    t_grid = np.linspace(-span, span, n)
+    earth_pos = np.zeros((n, 3))
+    earth_vel = np.zeros((n, 3))
+    earth_pos[:, 0] = 3.8e8
+    return t_grid, earth_pos, earth_vel
+
+
+class R3NonzeroDelayRemainsFailClosed(unittest.TestCase):
+    """R3-P12: R3 adds no silent four-event support."""
+
+    def test_p12_nonzero_delay_rejected_at_config_construction(self):
+        for method in (
+            EXACT_EVENT_EPOCH_STATION_METHOD,
+            LEGACY_INTERPOLATED_STATION_METHOD,
+        ):
+            with self.assertRaises(ValueError) as ctx:
+                RangeRatePhysicsConfig(
+                    mode="two_way_counted_doppler",
+                    transponder_delay_s=1e-6,
+                    station_state_method=method,
+                )
+            message = str(ctx.exception)
+            self.assertIn("four-event", message)
+            self.assertIn("legacy single-bounce counted-Doppler", message)
+
+    def test_p12_zero_delay_is_still_accepted_in_both_methods(self):
+        for method in (
+            EXACT_EVENT_EPOCH_STATION_METHOD,
+            LEGACY_INTERPOLATED_STATION_METHOD,
+        ):
+            config = RangeRatePhysicsConfig(
+                mode="two_way_counted_doppler",
+                transponder_delay_s=0.0,
+                station_state_method=method,
+            )
+            self.assertEqual(config.transponder_delay_s, 0.0)
+
+
+class R3FailureContract(unittest.TestCase):
+    """R3-P16: F01-F14 fail closed; F14 is the defining no-fallback rule."""
+
+    def _provider_kwargs(self, **overrides):
+        t_grid, earth_pos, earth_vel = _r3_grid()
+        kwargs = dict(
+            station=_R3Station(),
+            et0_s=0.0,
+            t_grid_s=t_grid,
+            earth_pos_mci_m=earth_pos,
+            earth_vel_mci_mps=earth_vel,
+            sxform_fn=_r3_identity_sxform,
+        )
+        kwargs.update(overrides)
+        return kwargs
+
+    def _make(self, **overrides):
+        kwargs = self._provider_kwargs(**overrides)
+        return make_exact_counted_doppler_station_state_provider(
+            kwargs.pop("station"),
+            kwargs.pop("et0_s"),
+            kwargs.pop("t_grid_s"),
+            kwargs.pop("earth_pos_mci_m"),
+            kwargs.pop("earth_vel_mci_mps"),
+            **kwargs,
+        )
+
+    def test_f01_f02_f03_sxform_failure_is_wrapped_and_names_the_context(self):
+        def exploding(_source, _target, _et):
+            raise RuntimeError("SPICE(NOFRAMECONNECT) kernel pool empty")
+
+        provider = self._make(sxform_fn=exploding)
+        with self.assertRaises(StationStateEvaluationError) as ctx:
+            provider.state(0.0)
+        message = str(ctx.exception)
+        self.assertIn("R3 contract station", message)
+        self.assertIn("J2000->ITRF93", message)
+        self.assertIn("ET", message)
+        self.assertIn("no legacy fallback was used", message.lower())
+
+    def test_f04_wrong_shape_or_nonfinite_transform_is_rejected(self):
+        for bad in (np.eye(5), np.full((6, 6), np.nan), np.full((6, 6), np.inf)):
+            provider = self._make(sxform_fn=lambda _s, _t, _e, m=bad: m)
+            with self.assertRaises(StationStateEvaluationError) as ctx:
+                provider.state(0.0)
+            self.assertIn("no legacy fallback was used", str(ctx.exception).lower())
+
+    def test_f05_malformed_station_site_is_rejected_at_construction(self):
+        class _Bad:
+            name = "bad site"
+            r_ecef_m = np.array([1.0, np.nan, 3.0])
+
+        with self.assertRaises(ValueError) as ctx:
+            self._make(station=_Bad())
+        self.assertIn("bad site", str(ctx.exception))
+
+    def test_f06_nonfinite_earth_history_fails_closed(self):
+        t_grid, earth_pos, earth_vel = _r3_grid()
+        earth_pos = earth_pos.copy()
+        earth_pos[4, 1] = np.nan
+        provider = self._make(earth_pos_mci_m=earth_pos)
+        with self.assertRaises(StationStateEvaluationError) as ctx:
+            provider.state(float(t_grid[4]))
+        message = str(ctx.exception)
+        self.assertIn("Earth position history is non-finite", message)
+        self.assertIn("no legacy fallback was used", message.lower())
+
+    def test_f07_provider_must_declare_the_mci_moon_centred_contract(self):
+        provider = self._make()
+        wrong = replace(provider, center="earth")
+        t_grid, earth_pos, earth_vel = _r3_grid()
+        with self.assertRaises(StationStateEvaluationError) as ctx:
+            radiometrics_module._counted_station_state(
+                0.0,
+                _R3Station(),
+                t_grid,
+                earth_pos,
+                earth_vel,
+                np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0),
+                provider=wrong,
+                endpoint_label="contract",
+                event_label="downlink",
+                consumer="test",
+            )
+        self.assertIn("Moon-centred", str(ctx.exception))
+
+    def test_f11_missing_or_nonfinite_et0_is_an_explicit_failure(self):
+        for bad_et0 in (None, float("nan"), float("inf")):
+            with self.assertRaises(ValueError) as ctx:
+                self._make(et0_s=bad_et0)
+            message = str(ctx.exception)
+            self.assertIn("et0_s must be finite", message)
+            self.assertIn("deliberate opt-in", message)
+
+    def test_f14_exact_never_falls_back_when_legacy_data_is_available(self):
+        """The defining rule: exact configured + no et0_s + legacy grid present.
+
+        Expected: explicit failure, the legacy helper is never called, and no
+        provenance claims a successful exact evaluation.
+        """
+        t_grid, earth_pos, earth_vel = _r3_grid(n=41, span=400.0)
+        states = np.zeros((t_grid.size, 6))
+        states[:, 0] = 2.0e6 + 90.0 * t_grid
+        states[:, 3] = 90.0
+        # A perfectly usable legacy transform grid is deliberately supplied.
+        xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        exact_cfg = RangeRatePhysicsConfig(
+            mode="two_way_counted_doppler",
+            count_interval_s=20.0,
+            station_state_method=EXACT_EVENT_EPOCH_STATION_METHOD,
+        )
+        calls = []
+        original = radiometrics_module._station_state_mci
+
+        def counting(*args, **kwargs):
+            calls.append(1)
+            return original(*args, **kwargs)
+
+        radiometrics_module._station_state_mci = counting
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                two_way_counted_doppler_observable(
+                    0.0, _R3Station(), t_grid, states, earth_pos, earth_vel,
+                    xforms, exact_cfg, et0_s=None,
+                )
+        finally:
+            radiometrics_module._station_state_mci = original
+        self.assertIn("et0_s must be finite", str(ctx.exception))
+        self.assertEqual(len(calls), 0, "legacy helper must never be reached")
+
+    def test_f14_legacy_remains_reachable_only_by_explicit_opt_in(self):
+        t_grid, earth_pos, earth_vel = _r3_grid(n=41, span=400.0)
+        states = np.zeros((t_grid.size, 6))
+        states[:, 0] = 2.0e6 + 90.0 * t_grid
+        states[:, 3] = 90.0
+        xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+        legacy_cfg = RangeRatePhysicsConfig(
+            mode="two_way_counted_doppler",
+            count_interval_s=20.0,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
+        )
+        value = two_way_counted_doppler_observable(
+            0.0, _R3Station(), t_grid, states, earth_pos, earth_vel,
+            xforms, legacy_cfg,
+        )
+        self.assertTrue(np.isfinite(value))
+
+
+class R3ProviderProtocolCompatibility(unittest.TestCase):
+    """R3-P21: shape-compatible with the M3 provider, without importing it."""
+
+    def test_p21_exposes_the_m3_provider_surface(self):
+        t_grid, earth_pos, earth_vel = _r3_grid()
+        provider = make_exact_counted_doppler_station_state_provider(
+            _R3Station(), 0.0, t_grid, earth_pos, earth_vel,
+            sxform_fn=_r3_identity_sxform,
+        )
+        for attribute in ("state", "station_state_method", "earth_ephemeris_method"):
+            self.assertTrue(hasattr(provider, attribute), attribute)
+        self.assertEqual(provider.state(0.0).shape, (6,))
+        m3_provider = two_way_range_module.TwoWayStationStateProvider
+        self.assertTrue(callable(getattr(m3_provider, "state", None)))
+        m3_fields = set(getattr(m3_provider, "__dataclass_fields__", {}))
+        for attribute in ("state_fn", "station_state_method", "earth_ephemeris_method"):
+            self.assertIn(attribute, m3_fields, attribute)
+        # The R3 provider carries the same surface, so a later Option-C
+        # unification stays a rename rather than a redesign.
+        r3_fields = set(type(provider).__dataclass_fields__)
+        self.assertTrue(m3_fields.issubset(r3_fields), m3_fields - r3_fields)
+
+    def test_p21_radiometrics_does_not_import_two_way_range_or_the_reference(self):
+        """Checked on the import graph, not on raw text.
+
+        The words appear legitimately in prose (for example the nonzero-delay
+        message naming M3 two-way range); only real imports are forbidden.
+        """
+        tree = ast.parse(
+            Path(radiometrics_module.__file__).read_text(encoding="utf-8")
+        )
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    imported.add(node.module)
+                imported.update(
+                    f"{node.module or ''}.{alias.name}" for alias in node.names
+                )
+        forbidden = {"two_way_range", "two_way_counted_doppler_reference"}
+        for name in imported:
+            leaf = name.lstrip(".").split(".")[-1]
+            self.assertNotIn(leaf, forbidden, f"radiometrics imports {name}")
+        # Import-time module graph confirms it too.
+        self.assertNotIn(
+            "two_way_range",
+            {
+                getattr(value, "__name__", "").split(".")[-1]
+                for value in vars(radiometrics_module).values()
+                if isinstance(value, type(radiometrics_module))
+            },
+        )
+
+    def test_p21_m3_production_module_is_byte_identical_to_the_baseline(self):
+        git = campaign_module.resolve_git_executable()
+        root = Path(radiometrics_module.__file__).resolve().parents[1]
+        baseline = subprocess.run(
+            [git, "-C", str(root), "cat-file", "--filters",
+             "632560d72d51b3d77b401365b1839908c2c8e85f:lunar_od/two_way_range.py"],
+            check=True, capture_output=True,
+        ).stdout
+        current = (root / "lunar_od" / "two_way_range.py").read_bytes()
+        self.assertEqual(hashlib.sha256(current).hexdigest(),
+                         hashlib.sha256(baseline).hexdigest())
+
+
+class R3CompatibilityUnchangedOutsideTheMeasurementModel(unittest.TestCase):
+    """R3-P17: a measurement-model update never moves the force contract."""
+
+    ZERO_J2_FINGERPRINT = (
+        "sha256:9b93897a545d0d2f1cb2b5329ce6be79051fef97e1529bff3bea565c4c31418d"
+    )
+    LUNAR_J2_FINGERPRINT = (
+        "sha256:11d33466c53e4c4a48cb8f72984ad1740e81de26ef342b4ecd106a30a7ddb52d"
+    )
+
+    def _contract(self, j2_moon):
+        config = scenario_config_from_mapping(
+            {
+                "name": "r3-compat",
+                "measurement_type": "range_rate",
+                "estimator_type": "bls_lm",
+                "start_mode": "cold",
+                "network": "multi",
+                "j2_moon": j2_moon,
+            }
+        )
+        return force_model_contract_from_scenario_config(config)
+
+    def test_p17_fingerprints_and_schema_are_unchanged(self):
+        self.assertEqual(
+            self._contract(0.0).force_model_fingerprint(), self.ZERO_J2_FINGERPRINT
+        )
+        self.assertEqual(
+            self._contract(float(J2_MOON_UNNORMALIZED)).force_model_fingerprint(),
+            self.LUNAR_J2_FINGERPRINT,
+        )
+        self.assertEqual(FORCE_CONTRACT_SCHEMA_VERSION, "r0b.force-model-contract.v1")
+
+    def test_p17_readiness_and_fail_closed_roles_are_unchanged(self):
+        lunar = consumer_capabilities_for(
+            lunar_j2_on=True, earth_j2_on=False, harmonics_on=False
+        )
+        self.assertEqual(
+            lunar[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.VERIFIED
+        )
+        self.assertEqual(lunar[ConsumerRole.OBSERVABILITY], ConsumerReadiness.VERIFIED)
+        earth = consumer_capabilities_for(
+            lunar_j2_on=False, earth_j2_on=True, harmonics_on=False
+        )
+        self.assertTrue(
+            all(value == ConsumerReadiness.UNSUPPORTED for value in earth.values())
+        )
+        harmonics = consumer_capabilities_for(
+            lunar_j2_on=False, earth_j2_on=False, harmonics_on=True
+        )
+        self.assertEqual(
+            harmonics[ConsumerRole.TRUTH_STATE],
+            ConsumerReadiness.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY,
+        )
+        self.assertEqual(
+            harmonics[ConsumerRole.POSTERIOR_COVARIANCE], ConsumerReadiness.UNSUPPORTED
+        )
+
+    def test_p17_station_method_does_not_reach_the_force_contract(self):
+        """Selecting either station strategy must not move a fingerprint."""
+        before = self._contract(float(J2_MOON_UNNORMALIZED)).force_model_fingerprint()
+        for method in (
+            EXACT_EVENT_EPOCH_STATION_METHOD,
+            LEGACY_INTERPOLATED_STATION_METHOD,
+        ):
+            payload = {
+                "name": "r3-compat",
+                "measurement_type": "range_rate",
+                "estimator_type": "bls_lm",
+                "start_mode": "cold",
+                "network": "multi",
+                "j2_moon": float(J2_MOON_UNNORMALIZED),
+                "range_rate_physics": "two_way_counted_doppler",
+                "station_state_method": method,
+            }
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                config = scenario_config_from_mapping(payload)
+            after = force_model_contract_from_scenario_config(
+                config
+            ).force_model_fingerprint()
+            self.assertEqual(after, before)
 
 
 if __name__ == "__main__":

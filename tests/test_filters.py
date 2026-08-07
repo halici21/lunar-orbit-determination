@@ -39,7 +39,10 @@ from lunar_od import (
 )
 from lunar_od.geometry import wrap_to_pi
 from lunar_od.filters import _apply_state_constraints, _range_rate_measurement_from_state, _two_way_local_histories
-from lunar_od.radiometrics import _clock_corrected_receive_time
+from lunar_od.radiometrics import (
+    LEGACY_INTERPOLATED_STATION_METHOD,
+    _clock_corrected_receive_time,
+)
 from tests.slow import slow
 
 
@@ -1898,7 +1901,7 @@ class FilterTests(unittest.TestCase):
             x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass_s.size, axis=0),
             stations=stations,
             measurement_type="range_rate",
-            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0),
+            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD),
         )
         obs_data = _build_clean_two_way_range_rate_observations(
             t_pass_s,
@@ -1956,6 +1959,7 @@ class FilterTests(unittest.TestCase):
                 mode="two_way_counted_doppler",
                 count_interval_s=30.0,
                 local_state_model="ode",
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             ),
         )
         taylor_geo = replace(
@@ -1964,6 +1968,7 @@ class FilterTests(unittest.TestCase):
                 mode="two_way_counted_doppler",
                 count_interval_s=30.0,
                 local_state_model="taylor3",
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             ),
         )
         max_error = 0.0
@@ -2011,6 +2016,7 @@ class FilterTests(unittest.TestCase):
                         mode="two_way_counted_doppler",
                         count_interval_s=count_interval_s,
                         local_state_model="ode",
+                        station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
                     ),
                 )
                 taylor_geo = replace(
@@ -2019,6 +2025,7 @@ class FilterTests(unittest.TestCase):
                         mode="two_way_counted_doppler",
                         count_interval_s=count_interval_s,
                         local_state_model="taylor3",
+                        station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
                     ),
                 )
                 max_error = 0.0
@@ -2071,6 +2078,7 @@ class FilterTests(unittest.TestCase):
             count_interval_s=30.0,
             station_clock_offset_s=2e-3,
             station_clock_drift=2e-6,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
         truth_geo = replace(geometric_geo, range_rate_physics=truth_physics)
         clean_obs = _build_clean_two_way_range_rate_observations(
@@ -2098,6 +2106,7 @@ class FilterTests(unittest.TestCase):
                 mode="two_way_counted_doppler",
                 count_interval_s=30.0,
                 local_state_model="taylor3",
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             ),
         )
         initial_offset = np.array([40.0, -30.0, 20.0, 0.02, -0.015, 0.01])
@@ -2171,7 +2180,7 @@ class FilterTests(unittest.TestCase):
             x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass_s.size, axis=0),
             stations=stations,
             measurement_type="range_rate",
-            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0),
+            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD),
         )
         clean_obs = _build_clean_two_way_range_rate_observations(
             t_pass_s,
@@ -2303,6 +2312,7 @@ def _ukf_history_domain_case():
             mode="two_way_counted_doppler",
             count_interval_s=2.0,
             local_state_model="taylor3",
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         ),
     )
     state_mid = np.array([2.0e6, 1.0e5, -2.0e5, 0.0, 1.0, 0.0])

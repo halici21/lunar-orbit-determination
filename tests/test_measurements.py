@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from lunar_od import (
+    LEGACY_INTERPOLATED_STATION_METHOD,
     ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
     C_LIGHT_MPS,
     MeasurementJacobianError,
@@ -42,7 +43,7 @@ FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 class MeasurementTests(unittest.TestCase):
     def test_two_way_counted_doppler_zero_for_static_geometry(self):
         t_grid, states, earth_pos, earth_vel, xforms, station = _linear_two_way_fixture(speed_mps=0.0)
-        config = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0)
+        config = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD)
 
         rr_eq = two_way_counted_doppler_observable(
             0.0,
@@ -60,7 +61,7 @@ class MeasurementTests(unittest.TestCase):
     def test_two_way_counted_doppler_tracks_receding_range_rate(self):
         speed_mps = 125.0
         t_grid, states, earth_pos, earth_vel, xforms, station = _linear_two_way_fixture(speed_mps=speed_mps)
-        config = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0)
+        config = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD)
 
         rr_eq = two_way_counted_doppler_observable(
             0.0,
@@ -86,7 +87,7 @@ class MeasurementTests(unittest.TestCase):
         dense_earth = np.zeros((dense_t.size, 3))
         coarse_xforms = np.repeat(np.eye(6)[None, :, :], coarse_t.size, axis=0)
         dense_xforms = np.repeat(np.eye(6)[None, :, :], dense_t.size, axis=0)
-        config = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0)
+        config = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD)
 
         coarse_rr = two_way_counted_doppler_observable(
             0.0,
@@ -118,6 +119,7 @@ class MeasurementTests(unittest.TestCase):
             count_interval_s=60.0,
             output_unit="hz",
             turnaround_ratio=1.0,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
         shifted = RangeRatePhysicsConfig(
             mode="two_way_counted_doppler",
@@ -125,6 +127,7 @@ class MeasurementTests(unittest.TestCase):
             output_unit="hz",
             turnaround_ratio=1.2,
             station_clock_drift=2e-4,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
 
         base_hz = two_way_counted_doppler_observable(
@@ -163,12 +166,14 @@ class MeasurementTests(unittest.TestCase):
             mode="two_way_counted_doppler",
             count_interval_s=60.0,
             local_state_model="taylor3",
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
         with self.assertRaises(ValueError):
             RangeRatePhysicsConfig(
                 mode="two_way_counted_doppler",
                 count_interval_s=120.0,
                 local_state_model="taylor3",
+                station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
             )
 
     def test_two_way_counted_doppler_residual_closure(self):
@@ -180,7 +185,7 @@ class MeasurementTests(unittest.TestCase):
             x_j2000_to_itrf93=xforms,
             stations=(station,),
             measurement_type="range_rate",
-            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0),
+            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD),
         )
         obs_data = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, float(t_grid.size // 2 + 1)]], dtype=float)
         _, h_meas = compute_range_rate_residuals(states, obs_data, pass_geo)
@@ -237,7 +242,7 @@ class MeasurementTests(unittest.TestCase):
             x_j2000_to_itrf93=xforms,
             stations=(station,),
             measurement_type="range_rate",
-            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0),
+            range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0, station_state_method=LEGACY_INTERPOLATED_STATION_METHOD),
         )
         obs_data = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 1.0, float(t_grid.size // 2 + 1)]], dtype=float)
         bias_rr_mps = 0.0125
@@ -1484,6 +1489,7 @@ class HistoryDomainCountedTests(unittest.TestCase):
             mode="two_way_counted_doppler",
             count_interval_s=0.5,
             light_time_tolerance_s=1.0e-13,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
 
     def test_counted_intermediate_downlink_probe_rejected_immediately(self):
@@ -1933,6 +1939,7 @@ class HistoryDomainOneWayTests(unittest.TestCase):
             mode="two_way_counted_doppler",
             count_interval_s=0.5,
             light_time_tolerance_s=1.0e-13,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
         )
         with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
             return generate_range_rate_measurements(

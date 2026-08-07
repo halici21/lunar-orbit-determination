@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -36,7 +37,12 @@ from .filters import (
 )
 from .gravity_harmonics import SphericalHarmonicGravityModel
 from .gravity_model_loader import load_lunar_gravity_model, resolve_gravity_dir
-from .radiometrics import RangeRatePhysicsConfig
+from .radiometrics import (
+    DEFAULT_STATION_STATE_METHOD,
+    LEGACY_INTERPOLATED_STATION_METHOD,
+    STATION_STATE_METHODS,
+    RangeRatePhysicsConfig,
+)
 from .scenarios import EstimatorType, MeasurementType, StartMode
 from .thesis_matrix import (
     THESIS_ATOL,
@@ -57,6 +63,9 @@ ALLOWED_START_MODES = ("cold", "hot", "formal", "sqrt_formal")
 ALLOWED_NETWORKS = tuple(network.name for network in THESIS_NETWORKS)
 ALLOWED_BIAS_MODES = (None, "global", "station_angles", "station_full")
 ALLOWED_RANGE_RATE_PHYSICS = ("geometric_instantaneous", "two_way_counted_doppler")
+# R3: counted-Doppler station site-state strategy. The default is the exact
+# event-epoch transform; the legacy value is an explicit compatibility mode.
+ALLOWED_STATION_STATE_METHODS = tuple(STATION_STATE_METHODS)
 ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     "geometric_instantaneous",
     "one_way_light_time",
@@ -103,6 +112,12 @@ class ScenarioConfig:
     uplink_frequency_hz: float = 7.2e9
     turnaround_ratio: float = 880.0 / 749.0
     two_way_local_state_model: str = "ode"
+    # R3: omitted in a pre-R3 scenario file, this defaults to the exact
+    # event-epoch transform. That is the intended, disclosed consequence of
+    # the accepted R2 decision EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED
+    # (gated by R3-P23): old files change behaviour, never silently -- every
+    # run records the method it used.
+    station_state_method: str = DEFAULT_STATION_STATE_METHOD
     station_clock_offset_s: float = 0.0
     station_clock_drift: float = 0.0
     clock_reference_time_s: float = 0.0
@@ -189,6 +204,10 @@ def scenario_config_schema() -> dict[str, Any]:
             "uplink_frequency_hz": {"type": "number", "default": 7.2e9},
             "turnaround_ratio": {"type": "number", "default": 880.0 / 749.0},
             "two_way_local_state_model": {"enum": ["ode", "taylor3"], "default": "ode"},
+            "station_state_method": {
+                "enum": list(ALLOWED_STATION_STATE_METHODS),
+                "default": DEFAULT_STATION_STATE_METHOD,
+            },
             "station_clock_offset_s": {"type": "number", "default": 0.0},
             "station_clock_drift": {"type": "number", "default": 0.0},
             "clock_reference_time_s": {"type": "number", "default": 0.0},
@@ -312,6 +331,11 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             payload.get("two_way_local_state_model", "ode"),
             ("ode", "taylor3"),
             "two_way_local_state_model",
+        ),
+        station_state_method=_enum_value(
+            payload.get("station_state_method", DEFAULT_STATION_STATE_METHOD),
+            ALLOWED_STATION_STATE_METHODS,
+            "station_state_method",
         ),
         station_clock_offset_s=_finite_float(
             payload.get("station_clock_offset_s", 0.0),
@@ -572,6 +596,7 @@ def scenario_range_rate_physics_config(config: ScenarioConfig) -> RangeRatePhysi
         station_clock_drift=config.station_clock_drift,
         clock_reference_time_s=config.clock_reference_time_s,
         transponder_delay_s=config.transponder_delay_s,
+        station_state_method=config.station_state_method,
     )
 
 
@@ -913,6 +938,24 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError("bias solve-for modes are supported here only for estimator_type='srif' or 'ukf'.")
     if config.range_rate_physics != "geometric_instantaneous" and config.measurement_type != "range_rate":
         raise ValueError("non-geometric range_rate_physics requires measurement_type='range_rate'.")
+    # R3 (F12): the legacy station strategy only means anything for the counted
+    # Doppler path, and selecting it is an explicit, warned opt-in.
+    if config.station_state_method == LEGACY_INTERPOLATED_STATION_METHOD:
+        if config.range_rate_physics != "two_way_counted_doppler":
+            raise ValueError(
+                "station_state_method='legacy_interpolated_transform_grid' is only "
+                "meaningful with range_rate_physics='two_way_counted_doppler'; got "
+                f"range_rate_physics={config.range_rate_physics!r}."
+            )
+        warnings.warn(
+            "station_state_method='legacy_interpolated_transform_grid' selects the "
+            "pre-R3 interpolated transform-grid station state. The accepted R2 "
+            "decision is EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED; this "
+            "compatibility mode is retained for reproducing model L and is not "
+            "the production default.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
     # FA-01 loader gate: UKF position measurements only support the geometric
     # instantaneous profile (shared helper; also enforced at run_lunar_ukf).
     validate_ukf_measurement_support(

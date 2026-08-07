@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, field
+from typing import Callable, Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -16,6 +16,37 @@ DEFAULT_X_BAND_TURNAROUND_RATIO = 880.0 / 749.0
 TAYLOR3_MAX_COUNT_INTERVAL_S = 60.0
 
 RangeRatePhysicsMode = Literal["geometric_instantaneous", "two_way_counted_doppler"]
+
+# R3: how the counted-Doppler station site state is transformed out of the
+# Earth body-fixed frame. The exact method evaluates the J2000->ITRF93 state
+# transform at the true event epoch; the legacy method interpolates the
+# pre-sampled transform grid element-wise, which is not a rotation between
+# grid nodes (the S-L term the accepted R2 decision requires production to
+# remove).
+StationStateMethod = Literal[
+    "exact_event_epoch_sxform",
+    "legacy_interpolated_transform_grid",
+]
+EXACT_EVENT_EPOCH_STATION_METHOD = "exact_event_epoch_sxform"
+LEGACY_INTERPOLATED_STATION_METHOD = "legacy_interpolated_transform_grid"
+STATION_STATE_METHODS = (
+    EXACT_EVENT_EPOCH_STATION_METHOD,
+    LEGACY_INTERPOLATED_STATION_METHOD,
+)
+DEFAULT_STATION_STATE_METHOD = EXACT_EVENT_EPOCH_STATION_METHOD
+
+# Provenance labels for the two policies R3 deliberately does NOT change.
+# Earth ephemeris stays linear so the exact production path reproduces R2
+# model S exactly and S-L isolates the site transform alone (R3-P22).
+COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD = "linear_grid_interpolation"
+COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD = "cubic_hermite"
+COUNTED_DOPPLER_MODEL_VERSION = "r3.counted-doppler.exact-station.v1"
+STATION_STATE_SOURCE_FRAME = "J2000"
+STATION_STATE_TARGET_FRAME = "ITRF93"
+# Truthful station_velocity_model provenance labels (the pre-R3 literal
+# "sxform" overclaimed the interpolated path).
+EXACT_STATION_VELOCITY_MODEL = "exact_event_epoch_sxform"
+LEGACY_STATION_VELOCITY_MODEL = "interpolated_sxform_grid"
 
 
 @dataclass(frozen=True)
@@ -43,10 +74,22 @@ class RangeRatePhysicsConfig:
     # FA-03A (P0B-1): equation-residual half of the dual convergence
     # criterion (per leg, seconds). Kept last to preserve positional callers.
     light_time_equation_tolerance_s: float = 1e-11
+    # R3: station site-state strategy. Kept last (after the FA-03A field) so
+    # every existing positional caller keeps working unchanged. The default
+    # is the exact event-epoch transform: this is the intended, disclosed
+    # consequence of the accepted R2 decision
+    # EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED. Selecting the legacy value is
+    # an explicit opt-in compatibility mode, never an automatic fallback.
+    station_state_method: StationStateMethod = DEFAULT_STATION_STATE_METHOD
 
     def __post_init__(self) -> None:
         normalized = _normalize_range_rate_mode(self.mode)
         object.__setattr__(self, "mode", normalized)
+        if self.station_state_method not in STATION_STATE_METHODS:
+            raise ValueError(
+                "station_state_method must be one of "
+                f"{STATION_STATE_METHODS}; got {self.station_state_method!r}."
+            )
         if self.count_interval_s <= 0.0:
             raise ValueError("count_interval_s must be positive.")
         if self.uplink_frequency_hz <= 0.0:
@@ -100,6 +143,25 @@ class RangeRatePhysicsConfig:
                 "(TwoWayRangeConfig) nonzero-delay support is unaffected."
             )
 
+    @property
+    def exact_event_epoch_enabled(self) -> bool:
+        """True when the site transform is evaluated at the true event epoch."""
+        return self.station_state_method == EXACT_EVENT_EPOCH_STATION_METHOD
+
+    @property
+    def legacy_compatibility_mode(self) -> bool:
+        """True when the run deliberately opted into the pre-R3 station path."""
+        return self.station_state_method == LEGACY_INTERPOLATED_STATION_METHOD
+
+    @property
+    def station_velocity_model(self) -> str:
+        """Truthful provenance label for the station velocity actually used."""
+        return (
+            EXACT_STATION_VELOCITY_MODEL
+            if self.exact_event_epoch_enabled
+            else LEGACY_STATION_VELOCITY_MODEL
+        )
+
 
 @dataclass(frozen=True)
 class RoundTripLightTimeSolution:
@@ -128,6 +190,350 @@ class RoundTripLightTimeSolution:
 
 class RoundTripLightTimeConvergenceError(RuntimeError):
     """Raised when a round-trip light-time result fails its strict policy."""
+
+
+class StationStateEvaluationError(RuntimeError):
+    """Raised when an exact event-epoch station state cannot be evaluated.
+
+    R3 failure contract F14 (the defining rule): there is NO fallback path
+    from a failed exact evaluation to the legacy interpolated transform grid,
+    under any condition. Every raise site below therefore fails closed.
+    """
+
+
+@dataclass
+class CountedDopplerStationStateProvider:
+    """Exact event-epoch station-state source for counted Doppler.
+
+    Shape-compatible with ``two_way_range.TwoWayStationStateProvider`` — it
+    exposes ``state(t_s)`` — but deliberately NOT imported from it. Two
+    reasons, both frozen by the R3 architecture:
+
+    * production ``radiometrics`` must not depend on ``two_way_range`` (M3) or
+      on the R2 reference module;
+    * M3's provider interpolates the Earth ephemeris with cubic Hermite, while
+      counted Doppler and R2 model S both require LINEAR Earth interpolation so
+      that the S-L difference isolates the site transform alone (R3-P22).
+
+    The cache is keyed on the exact IEEE-754 float64 event epoch: no tolerance
+    and no rounding, so it is provably result-neutral (R3-P19a). It lives for
+    one measurement evaluation and is released with the provider.
+    """
+
+    state_fn: Callable[[float], np.ndarray]
+    station_state_method: str = EXACT_EVENT_EPOCH_STATION_METHOD
+    earth_ephemeris_method: str = COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD
+    source_frame: str = STATION_STATE_SOURCE_FRAME
+    target_frame: str = STATION_STATE_TARGET_FRAME
+    center: str = "moon"
+    cache_enabled: bool = True
+    station_name: str = "<unnamed>"
+    _sxform_counter: list[int] = field(default_factory=lambda: [0])
+    _cache: dict[float, np.ndarray] = field(default_factory=dict)
+
+    def state(self, t_s: float) -> np.ndarray:
+        key = float(t_s)
+        if self.cache_enabled:
+            cached = self._cache.get(key)
+            if cached is not None:
+                return cached
+        state = np.asarray(self.state_fn(key), dtype=float).reshape(6)
+        if not np.all(np.isfinite(state)):
+            raise StationStateEvaluationError(
+                "Exact event-epoch station state is non-finite at "
+                f"t={key:.16g} s for station {self.station_name!r} "
+                f"({self.source_frame}->{self.target_frame}); no legacy "
+                "fallback was used."
+            )
+        state.flags.writeable = False
+        if self.cache_enabled:
+            self._cache[key] = state
+        return state
+
+    @property
+    def exact_sxform_call_count(self) -> int:
+        """Number of exact sxform evaluations actually performed (R3-P19)."""
+        return int(self._sxform_counter[0])
+
+    @property
+    def cached_epoch_count(self) -> int:
+        return len(self._cache)
+
+
+def make_exact_counted_doppler_station_state_provider(
+    station,
+    et0_s: float,
+    t_grid_s: ArrayLike,
+    earth_pos_mci_m: ArrayLike,
+    earth_vel_mci_mps: ArrayLike,
+    *,
+    sxform_fn: Callable[[str, str, float], ArrayLike] | None = None,
+    cache_enabled: bool = True,
+) -> CountedDopplerStationStateProvider:
+    """Build the exact event-epoch counted-Doppler station-state provider.
+
+    The site transform is evaluated with ``spice.sxform`` at the true event
+    epoch ``et0_s + t_s``. The Earth ephemeris keeps the LEGACY linear grid
+    interpolation on purpose (R3-P22). ``sxform_fn`` exists only for
+    deterministic SPICE-free fixtures and must obey the same J2000-to-ITRF93
+    state-transform convention.
+    """
+    t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
+    earth_pos = np.asarray(earth_pos_mci_m, dtype=float)
+    earth_vel = np.asarray(earth_vel_mci_mps, dtype=float)
+    station_name = str(getattr(station, "name", "<unnamed>"))
+    if t_grid.size < 2 or np.any(np.diff(t_grid) <= 0.0):
+        raise ValueError("t_grid_s must contain at least two strictly increasing epochs.")
+    if earth_pos.shape != (t_grid.size, 3) or earth_vel.shape != (t_grid.size, 3):
+        raise ValueError("earth ephemeris histories must have shape (N, 3) matching t_grid_s.")
+    if et0_s is None or not np.isfinite(float(et0_s)):
+        # F11: the exact method cannot convert scenario time to ET without a
+        # finite et0_s, and legacy is a deliberate opt-in, never a fallback.
+        raise ValueError(
+            "et0_s must be finite to evaluate the exact event-epoch station "
+            "transform; supply et0_s on the pass geometry. Legacy "
+            f"station_state_method={LEGACY_INTERPOLATED_STATION_METHOD!r} is a "
+            "deliberate opt-in compatibility mode, not an automatic fallback."
+        )
+    # F05: malformed fixed station site, rejected at construction, not per call.
+    r_ecef = np.asarray(getattr(station, "r_ecef_m", None), dtype=float).reshape(-1)
+    if r_ecef.size != 3 or not np.all(np.isfinite(r_ecef)):
+        raise ValueError(
+            f"Station {station_name!r} has a malformed r_ecef_m: expected three "
+            f"finite values, got {r_ecef!r}."
+        )
+
+    if sxform_fn is None:
+        import spiceypy as spice
+
+        sxform_fn = spice.sxform
+
+    station_ecef_state = np.concatenate([r_ecef.reshape(3), np.zeros(3)])
+    counter = [0]
+    et0 = float(et0_s)
+
+    def state_fn(t_s: float) -> np.ndarray:
+        t = float(t_s)
+        earth_pos_t = _interp_vector(t_grid, earth_pos, t)
+        earth_vel_t = _interp_vector(t_grid, earth_vel, t)
+        # F06: a non-finite Earth history must fail closed, never silently
+        # produce a station state.
+        if not np.all(np.isfinite(earth_pos_t)):
+            raise StationStateEvaluationError(
+                f"Earth position history is non-finite at t={t:.16g} s "
+                f"(station {station_name!r}); no legacy fallback was used."
+            )
+        if not np.all(np.isfinite(earth_vel_t)):
+            raise StationStateEvaluationError(
+                f"Earth velocity history is non-finite at t={t:.16g} s "
+                f"(station {station_name!r}); no legacy fallback was used."
+            )
+        earth_state = np.concatenate([earth_pos_t, earth_vel_t])
+        try:
+            raw_xform = sxform_fn(
+                STATION_STATE_SOURCE_FRAME, STATION_STATE_TARGET_FRAME, et0 + t
+            )
+        except StationStateEvaluationError:
+            raise
+        except Exception as exc:  # F01/F02/F03: kernels, frames, coverage
+            raise StationStateEvaluationError(
+                "Exact event-epoch station transform failed for station "
+                f"{station_name!r} at t={t:.16g} s "
+                f"(ET {et0 + t:.16g}, et0_s={et0:.16g}), frame pair "
+                f"{STATION_STATE_SOURCE_FRAME}->{STATION_STATE_TARGET_FRAME}: "
+                f"{type(exc).__name__}: {exc}. No legacy fallback was used."
+            ) from exc
+        xform = np.asarray(raw_xform, dtype=float)
+        # F04: never solve with a non-finite or wrongly shaped transform.
+        if xform.shape != (6, 6) or not np.all(np.isfinite(xform)):
+            raise StationStateEvaluationError(
+                "Exact event-epoch station transform is invalid for station "
+                f"{station_name!r} at t={t:.16g} s (ET {et0 + t:.16g}): shape "
+                f"{xform.shape}, finite={bool(np.all(np.isfinite(xform)))}, "
+                f"frame pair {STATION_STATE_SOURCE_FRAME}->"
+                f"{STATION_STATE_TARGET_FRAME}. No legacy fallback was used."
+            )
+        counter[0] += 1
+        station_rel_j2000 = np.linalg.solve(xform, station_ecef_state)
+        return earth_state + station_rel_j2000
+
+    return CountedDopplerStationStateProvider(
+        state_fn=state_fn,
+        cache_enabled=bool(cache_enabled),
+        station_name=station_name,
+        _sxform_counter=counter,
+    )
+
+
+def resolve_counted_doppler_station_state_provider(
+    config: RangeRatePhysicsConfig,
+    station,
+    t_grid_s: ArrayLike,
+    earth_pos_mci_m: ArrayLike,
+    earth_vel_mci_mps: ArrayLike,
+    *,
+    et0_s: float | None = None,
+    sxform_fn: Callable[[str, str, float], ArrayLike] | None = None,
+    cache_enabled: bool = True,
+) -> CountedDopplerStationStateProvider | None:
+    """Resolve the station strategy once per measurement evaluation.
+
+    Returns ``None`` for the legacy interpolated-grid strategy, in which case
+    the unchanged ``_station_state_mci`` helpers are used.
+    """
+    if not config.exact_event_epoch_enabled:
+        return None
+    return make_exact_counted_doppler_station_state_provider(
+        station,
+        et0_s,
+        t_grid_s,
+        earth_pos_mci_m,
+        earth_vel_mci_mps,
+        sxform_fn=sxform_fn,
+        cache_enabled=cache_enabled,
+    )
+
+
+def _require_exact_provider_contract(provider: CountedDopplerStationStateProvider) -> None:
+    """F07: the provider must declare the MCI J2000-aligned, Moon-centred contract."""
+    declared = (
+        provider.station_state_method,
+        provider.source_frame,
+        provider.target_frame,
+        provider.center,
+    )
+    expected = (
+        EXACT_EVENT_EPOCH_STATION_METHOD,
+        STATION_STATE_SOURCE_FRAME,
+        STATION_STATE_TARGET_FRAME,
+        "moon",
+    )
+    if declared != expected:
+        raise StationStateEvaluationError(
+            "Counted-Doppler station provider declares "
+            f"{declared!r} but the counted-Doppler contract expects "
+            f"{expected!r} (MCI J2000-aligned, Moon-centred). No legacy "
+            "fallback was used."
+        )
+
+
+def _normalize_exact_station_epoch(
+    t_grid_s: ArrayLike,
+    t_s: float,
+    *,
+    endpoint_label: str,
+    event_label: str,
+    consumer: str,
+) -> float:
+    """Apply the unchanged FA-03B closed-support policy to the Earth lookups.
+
+    The exact path still interpolates the Earth ephemeris on ``t_grid_s``, so
+    those lookups keep exactly the legacy guard (F08). It deliberately does
+    NOT normalize against the transform grid, because the exact path never
+    reads ``x_j2000_to_itrf93`` at all (R3-P24).
+    """
+    earth_pos_epoch = _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="earth_position_mci",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    _normalize_counted_history_epoch(
+        t_grid_s,
+        t_s,
+        history_name="earth_velocity_mci",
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    return earth_pos_epoch
+
+
+def _counted_station_state(
+    t_s: float,
+    station,
+    t_grid_s: ArrayLike,
+    earth_pos_mci_m: ArrayLike,
+    earth_vel_mci_mps: ArrayLike,
+    x_j2000_to_itrf93: ArrayLike,
+    *,
+    provider: CountedDopplerStationStateProvider | None,
+    endpoint_label: str,
+    event_label: str,
+    consumer: str,
+) -> np.ndarray:
+    """Return the MCI station state through the resolved R3 strategy."""
+    if provider is None:
+        return _station_state_mci(
+            t_s,
+            station,
+            t_grid_s,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            x_j2000_to_itrf93,
+            endpoint_label=endpoint_label,
+            event_label=event_label,
+            consumer=consumer,
+        )
+    _require_exact_provider_contract(provider)
+    epoch = _normalize_exact_station_epoch(
+        t_grid_s,
+        t_s,
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    return provider.state(epoch)
+
+
+def _counted_station_state_and_velocity(
+    t_s: float,
+    station,
+    t_grid_s: ArrayLike,
+    earth_pos_mci_m: ArrayLike,
+    earth_vel_mci_mps: ArrayLike,
+    x_j2000_to_itrf93: ArrayLike,
+    *,
+    provider: CountedDopplerStationStateProvider | None,
+    endpoint_label: str,
+    event_label: str,
+    consumer: str,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return (station state, the velocity used as ``vg1`` in the Jacobian).
+
+    Legacy keeps the interpolation-slope velocity exactly as before — an
+    internal inconsistency of model L that R3 deliberately preserves rather
+    than silently repairs. Exact mode uses the true station velocity
+    ``state[3:6]``, which is what R2 model S uses.
+    """
+    if provider is None:
+        state, slope = _station_state_mci_with_time_slope(
+            t_s,
+            station,
+            t_grid_s,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            x_j2000_to_itrf93,
+            endpoint_label=endpoint_label,
+            event_label=event_label,
+            consumer=consumer,
+        )
+        return state, np.asarray(slope[:3], dtype=float)
+    state = _counted_station_state(
+        t_s,
+        station,
+        t_grid_s,
+        earth_pos_mci_m,
+        earth_vel_mci_mps,
+        x_j2000_to_itrf93,
+        provider=provider,
+        endpoint_label=endpoint_label,
+        event_label=event_label,
+        consumer=consumer,
+    )
+    return state, np.asarray(state[3:6], dtype=float)
 
 
 def range_rate_physics_config(config: RangeRatePhysicsConfig | str | None) -> RangeRatePhysicsConfig:
@@ -188,6 +594,9 @@ def two_way_counted_doppler_observable(
     earth_vel_mci_mps: ArrayLike,
     x_j2000_to_itrf93: ArrayLike,
     config: RangeRatePhysicsConfig | str | None = None,
+    *,
+    et0_s: float | None = None,
+    station_state_provider: CountedDopplerStationStateProvider | None = None,
 ) -> float:
     """Compute simplified two-way counted Doppler or its m/s equivalent.
 
@@ -195,10 +604,24 @@ def two_way_counted_doppler_observable(
     coherent turnaround ratio. Optional station clock and transponder-delay
     errors can be enabled for mismatch campaigns. Media corrections are not yet
     modeled.
+
+    R3: the station site state is produced by the strategy selected in
+    ``config.station_state_method``. The provider is resolved ONCE here and
+    shared by both count endpoints.
     """
     cfg = range_rate_physics_config(config)
     if cfg.mode != "two_way_counted_doppler":
         raise ValueError("two_way_counted_doppler_observable requires two_way_counted_doppler mode.")
+
+    if station_state_provider is None:
+        station_state_provider = resolve_counted_doppler_station_state_provider(
+            cfg,
+            station,
+            t_grid_s,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            et0_s=et0_s,
+        )
 
     half_tc = 0.5 * cfg.count_interval_s
     t_start = float(receive_mid_time_s) - half_tc
@@ -215,6 +638,7 @@ def two_way_counted_doppler_observable(
         x_j2000_to_itrf93,
         cfg,
         endpoint_label="count-start endpoint",
+        station_state_provider=station_state_provider,
     )
     _require_round_trip_light_time_convergence(
         start_solution, cfg, endpoint_label="count-start endpoint"
@@ -229,6 +653,7 @@ def two_way_counted_doppler_observable(
         x_j2000_to_itrf93,
         cfg,
         endpoint_label="count-end endpoint",
+        station_state_provider=station_state_provider,
     )
     _require_round_trip_light_time_convergence(
         end_solution, cfg, endpoint_label="count-end endpoint"
@@ -251,11 +676,29 @@ def two_way_counted_doppler_initial_state_jacobian(
     earth_vel_mci_mps: ArrayLike,
     x_j2000_to_itrf93: ArrayLike,
     config: RangeRatePhysicsConfig | str | None = None,
+    *,
+    et0_s: float | None = None,
+    station_state_provider: CountedDopplerStationStateProvider | None = None,
 ) -> np.ndarray:
-    """Return analytic counted-Doppler partials with respect to arc initial state."""
+    """Return analytic counted-Doppler partials with respect to arc initial state.
+
+    R3: one station-state provider is resolved here and shared by both count
+    endpoints, so the Jacobian consumes exactly the station states the
+    observable consumed (R3-P08).
+    """
     cfg = range_rate_physics_config(config)
     if cfg.mode != "two_way_counted_doppler":
         raise ValueError("two_way_counted_doppler_initial_state_jacobian requires two_way_counted_doppler mode.")
+
+    if station_state_provider is None:
+        station_state_provider = resolve_counted_doppler_station_state_provider(
+            cfg,
+            station,
+            t_grid_s,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            et0_s=et0_s,
+        )
 
     half_tc = 0.5 * cfg.count_interval_s
     receive_start = _clock_corrected_receive_time(float(receive_mid_time_s) - half_tc, cfg)
@@ -270,6 +713,7 @@ def two_way_counted_doppler_initial_state_jacobian(
         x_j2000_to_itrf93,
         cfg,
         endpoint_label="count-start Jacobian endpoint",
+        station_state_provider=station_state_provider,
     )
     d_tau_end = round_trip_light_time_initial_state_jacobian(
         receive_end,
@@ -281,6 +725,7 @@ def two_way_counted_doppler_initial_state_jacobian(
         x_j2000_to_itrf93,
         cfg,
         endpoint_label="count-end Jacobian endpoint",
+        station_state_provider=station_state_provider,
     )
     if cfg.output_unit == "hz":
         scale = cfg.turnaround_ratio * cfg.uplink_frequency_hz / cfg.count_interval_s
@@ -300,12 +745,27 @@ def round_trip_light_time_initial_state_jacobian(
     config: RangeRatePhysicsConfig | str | None = None,
     *,
     endpoint_label: str = "Jacobian endpoint",
+    et0_s: float | None = None,
+    station_state_provider: CountedDopplerStationStateProvider | None = None,
 ) -> np.ndarray:
     """Return d(round-trip light-time)/d(initial spacecraft state)."""
     cfg = range_rate_physics_config(config)
     x_aug = np.asarray(augmented_state_history_mci, dtype=float)
     if x_aug.ndim != 2 or x_aug.shape[1] < 42:
         raise ValueError("augmented_state_history_mci must contain state plus 6x6 STM columns.")
+
+    # R3-P08: one resolved provider for the solve AND for the post-solve
+    # station re-queries, so the Jacobian can never consume interpolated
+    # station states while the observable consumed exact ones.
+    if station_state_provider is None and et0_s is not None:
+        station_state_provider = resolve_counted_doppler_station_state_provider(
+            cfg,
+            station,
+            t_grid_s,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            et0_s=et0_s,
+        )
 
     solution = solve_two_way_light_time(
         receive_time_s,
@@ -317,6 +777,7 @@ def round_trip_light_time_initial_state_jacobian(
         x_j2000_to_itrf93,
         cfg,
         endpoint_label=endpoint_label,
+        station_state_provider=station_state_provider,
     )
     _require_round_trip_light_time_convergence(
         solution, cfg, endpoint_label=endpoint_label
@@ -325,24 +786,28 @@ def round_trip_light_time_initial_state_jacobian(
     t2 = solution.transponder_time_s
     t3 = solution.receive_time_s
 
-    station_rx_state = _station_state_mci(
+    station_rx_state = _counted_station_state(
         t3,
         station,
         t_grid_s,
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        provider=station_state_provider,
         endpoint_label=endpoint_label,
         event_label="downlink",
         consumer="round_trip_light_time_initial_state_jacobian",
     )
-    station_tx_state, station_tx_slope = _station_state_mci_with_time_slope(
+    # Legacy keeps the interpolation-slope velocity; exact mode substitutes the
+    # true station velocity state[3:6], which is what R2 model S uses.
+    station_tx_state, station_tx_velocity = _counted_station_state_and_velocity(
         t1,
         station,
         t_grid_s,
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        provider=station_state_provider,
         endpoint_label=endpoint_label,
         event_label="uplink",
         consumer="round_trip_light_time_initial_state_jacobian",
@@ -369,7 +834,7 @@ def round_trip_light_time_initial_state_jacobian(
     v2 = sc_t2_state[3:6]
     g3 = station_rx_state[:3]
     g1 = station_tx_state[:3]
-    vg1 = station_tx_slope[:3]
+    vg1 = station_tx_velocity
     a2 = phi_position_t2
 
     rho_down = r2 - g3
@@ -404,17 +869,34 @@ def solve_two_way_light_time(
     config: RangeRatePhysicsConfig | str | None = None,
     *,
     endpoint_label: str = "round-trip endpoint",
+    et0_s: float | None = None,
+    station_state_provider: CountedDopplerStationStateProvider | None = None,
 ) -> RoundTripLightTimeSolution:
     """Solve station-spacecraft-station geometric round-trip light-time."""
     cfg = range_rate_physics_config(config)
     receive_time_s = float(receive_time_s)
-    station_rx_state = _station_state_mci(
+    if station_state_provider is None and et0_s is not None:
+        # Convenience for direct callers that supply et0_s; the production
+        # counted-Doppler entry points resolve once and thread the provider in
+        # (frozen architecture section 3). A direct caller that supplies
+        # neither keeps the legacy strategy: this is NOT the F14 fallback
+        # case, which concerns a FAILED exact evaluation.
+        station_state_provider = resolve_counted_doppler_station_state_provider(
+            cfg,
+            station,
+            t_grid_s,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            et0_s=et0_s,
+        )
+    station_rx_state = _counted_station_state(
         receive_time_s,
         station,
         t_grid_s,
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        provider=station_state_provider,
         endpoint_label=endpoint_label,
         event_label="downlink",
         consumer="solve_two_way_light_time",
@@ -466,13 +948,14 @@ def solve_two_way_light_time(
     uplink_converged = False
     uplink_update_residual_s = float("inf")
     for uplink_iter in range(1, cfg.light_time_max_iter + 1):
-        station_tx_state = _station_state_mci(
+        station_tx_state = _counted_station_state(
             t1,
             station,
             t_grid_s,
             earth_pos_mci_m,
             earth_vel_mci_mps,
             x_j2000_to_itrf93,
+            provider=station_state_provider,
             endpoint_label=endpoint_label,
             event_label="uplink",
             consumer="solve_two_way_light_time",
@@ -498,13 +981,14 @@ def solve_two_way_light_time(
             np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps
         )
     )
-    station_tx_final = _station_state_mci(
+    station_tx_final = _counted_station_state(
         t1,
         station,
         t_grid_s,
         earth_pos_mci_m,
         earth_vel_mci_mps,
         x_j2000_to_itrf93,
+        provider=station_state_provider,
         endpoint_label=endpoint_label,
         event_label="uplink",
         consumer="solve_two_way_light_time",

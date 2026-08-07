@@ -15,6 +15,8 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import shutil
+import subprocess
 import json
 import math
 import statistics
@@ -37,8 +39,11 @@ from lunar_od.force_contract import (
     consumer_capabilities_for,
 )
 from lunar_od.radiometrics import (
+    C_LIGHT_MPS,
+    LEGACY_INTERPOLATED_STATION_METHOD,
     RangeRatePhysicsConfig,
     _clock_corrected_receive_time,
+    resolve_counted_doppler_station_state_provider,
     solve_two_way_light_time,
     two_way_counted_doppler_initial_state_jacobian,
     two_way_counted_doppler_observable,
@@ -107,6 +112,18 @@ R2_CANONICAL_PATCH_SHA256 = (
     "24153c234a02344e1a1773198129c616116b6bd468895cdf7f51f5715b1eccdb"
 )
 R2_CANONICAL_PATCH_BYTE_COUNT = 160609
+# Owner Addendum 02: the accepted R2 branch HEAD (after the reporting cleanup)
+# and the canonical merge that carried it into the feature branch. The
+# historical Strict Option B gate is anchored to these, never to the working
+# tree of a later phase.
+R2_ACCEPTED_HEAD_COMMIT = "5ca652a4659375fa9a053cee8450ad2375b3bbf3"
+R2_ACCEPTED_HEAD_TREE = "22ea932b952d6e09e766c95a3bb3377bad98d546"
+R2_CANONICAL_MERGE_COMMIT = "3d6368a39c308f15324f5e91a61929458ad4759a"
+R2_EXPECTED_ADDED_PATHS = (
+    "examples/r2_measurement_fidelity_validation.py",
+    "lunar_od/two_way_counted_doppler_reference.py",
+    "tests/test_r2_measurement_fidelity.py",
+)
 FROZEN_ZERO_J2_FINGERPRINT = (
     "sha256:9b93897a545d0d2f1cb2b5329ce6be79051fef97e1529bff3bea565c4c31418d"
 )
@@ -190,7 +207,23 @@ PLOT_CONTRACT = (
     },
 )
 
-BASELINE_FILE_SHA256 = {
+# Owner Addendum 02/03: HISTORICAL R2-era hashes recording what the protected
+# production files contained between the R2 baseline and the accepted R2 head.
+# NEVER re-baselined to a later phase's bytes.
+#
+# REPRESENTATION: these are hashes of the FILTERED CHECKOUT bytes, not of the
+# raw Git blobs. The R2 campaign ran on a Windows checkout with
+# core.autocrlf=true, so the accepted values carry CRLF line endings. They are
+# reproduced with `git cat-file --filters`, which applies Git's own checkout
+# filters to a historical commit without ever reading the working tree.
+R2_HISTORICAL_IDENTITY_REPRESENTATION = "filtered_checkout"
+R2_HISTORICAL_GIT_OPERATION = "cat-file --filters"
+R2_HISTORICAL_EXPECTED_CORE_AUTOCRLF = "true"
+R2_HISTORICAL_READS_WORKING_TREE = False
+R2_HISTORICAL_RAW_GIT_OPERATION = "show"
+R2_HISTORICAL_RAW_IDENTITY_REPRESENTATION = "raw_git_blob"
+
+R2_HISTORICAL_FILTERED_CHECKOUT_SHA256 = {
     "lunar_od/radiometrics.py": "8eb18dacca12e27fc133e2f10922f8b9a0d930ec7b45a985b1d55207a25f4b7f",
     "lunar_od/measurements.py": "ab3d45af88cbda45b63d712ed4628dea222acfc7cc623210509653b07069c466",
     "lunar_od/scenario_config.py": "d281ef267afb8e36058b4d4a018250c302a3081a929fd1869c4c41b310dee41d",
@@ -209,6 +242,36 @@ BASELINE_FILE_SHA256 = {
         "85d492ecd59f3c8aa5fbc574fc2a4d655a40c95c30f4634dc7e3dedde4c7e95c"
     ),
 }
+
+# Compatibility aliases: exactly one authoritative table, several names.
+R2_HISTORICAL_PROTECTED_FILE_SHA256 = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256
+BASELINE_FILE_SHA256 = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256
+
+# Owner Addendum 03: the historical paths R3 is authorised to change. Every one
+# of them is classified editable in the original frozen
+# expected_changed_paths.csv, which is the owner's criterion for membership.
+# They keep their HISTORICAL hashes above; no R3 hash is written for them, and
+# their current bytes are qualified by the R3 acceptance gates instead.
+R3_INTENTIONALLY_CHANGED_R2_PROTECTED_PATHS = (
+    "lunar_od/radiometrics.py",
+    "lunar_od/measurements.py",
+    "lunar_od/estimators.py",
+    "lunar_od/filters.py",
+    "lunar_od/observability.py",
+    "lunar_od/scenario_config.py",
+    "lunar_od/reporting.py",
+    # scenarios.py carries ScenarioResult.station_state_method, which is the
+    # field reporting.py emits for R3-P15; frozen-editable, same criterion.
+    "lunar_od/scenarios.py",
+)
+
+# Everything else in the historical table must still be byte-identical in the
+# CURRENT working tree: R3 is not allowed to touch these.
+R2_CURRENT_TREE_PROTECTED_PATHS = tuple(
+    path
+    for path in R2_HISTORICAL_FILTERED_CHECKOUT_SHA256
+    if path not in R3_INTENTIONALLY_CHANGED_R2_PROTECTED_PATHS
+)
 
 
 @dataclass(frozen=True)
@@ -452,6 +515,13 @@ def build_campaign_fixture(
 
 
 def _legacy_config(interval_s: float) -> RangeRatePhysicsConfig:
+    """Model L configuration for the accepted R2 decomposition.
+
+    R3 made the exact event-epoch station transform the production default, so
+    L must now select the legacy interpolated-transform-grid strategy
+    EXPLICITLY. Leaving it on the default would silently turn L into S and
+    collapse the accepted S-L, F-S and F-L decomposition to zero.
+    """
     return RangeRatePhysicsConfig(
         mode="two_way_counted_doppler",
         count_interval_s=float(interval_s),
@@ -459,6 +529,7 @@ def _legacy_config(interval_s: float) -> RangeRatePhysicsConfig:
         light_time_tolerance_s=1e-12,
         light_time_equation_tolerance_s=1e-11,
         light_time_max_iter=25,
+        station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
     )
 
 
@@ -1579,23 +1650,182 @@ def run_cost_campaign(
     return rows
 
 
-def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
-    """Recompute the frozen R0B/R1 identities and byte-preservation gates."""
+class R2HistoricalProvenanceUnavailable(RuntimeError):
+    """Raised when the R2 historical Git provenance cannot be read.
 
+    Owner Addendum 02: this is a PROVENANCE ENVIRONMENT failure, deliberately
+    distinct from a scientific-result failure. Falling back to working-tree
+    bytes is forbidden, and this condition must never be reported as PASS.
+    """
+
+
+def resolve_git_executable() -> str:
+    """Return the git executable path, or raise the provenance error.
+
+    Single authoritative resolver for R2 provenance; the tests reuse it rather
+    than defining their own.
+    """
+    found = shutil.which("git")
+    if found:
+        return found
+    windows_git = Path(r"C:\Program Files\Git\cmd\git.exe")
+    if windows_git.is_file():
+        return str(windows_git)
+    raise R2HistoricalProvenanceUnavailable(
+        "R2 historical provenance unavailable: no git executable on PATH and "
+        f"no canonical Windows git at {windows_git}."
+    )
+
+
+def _run_git(repository_root: Path, *args: str) -> bytes:
+    git = resolve_git_executable()
+    command = [git, "-C", str(repository_root), *args]
+    try:
+        completed = subprocess.run(command, capture_output=True)
+    except OSError as exc:
+        raise R2HistoricalProvenanceUnavailable(
+            "R2 historical provenance unavailable: git "
+            f"{' '.join(args)} could not be executed: "
+            f"{type(exc).__name__}: {exc}."
+        ) from exc
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", "replace").strip()
+        raise R2HistoricalProvenanceUnavailable(
+            f"R2 historical provenance unavailable: git {' '.join(args)} exited "
+            f"{completed.returncode}: {detail}"
+        )
+    return completed.stdout
+
+
+def r2_historical_blob_bytes(
+    repository_root: Path, commit: str, relative_path: str
+) -> bytes:
+    """Return the RAW stored blob of ``relative_path`` at ``commit``.
+
+    Platform-independent: this is the object as Git stores it (LF), which is
+    what makes the baseline-vs-accepted byte-identity comparison meaningful on
+    any checkout. Never reads the working tree.
+    """
+    return _run_git(repository_root, "show", f"{commit}:{relative_path}")
+
+
+def r2_historical_checkout_bytes(
+    repository_root: Path, commit: str, relative_path: str
+) -> bytes:
+    """Return ``relative_path`` at ``commit`` as it would appear checked out.
+
+    The recorded R2 hashes were taken from a Windows checkout with
+    ``core.autocrlf=true``, so they are hashes of the CHECKOUT representation,
+    not of the stored blob. ``git cat-file --filters`` applies exactly the
+    smudge/eol filters Git itself would apply, so this reproduces the recorded
+    values byte-for-byte on any platform — while still reading history, never
+    the current working tree. Using it here means no recorded R2 hash has to be
+    re-baselined.
+    """
+    return _run_git(
+        repository_root, "cat-file", "--filters", f"{commit}:{relative_path}"
+    )
+
+
+def build_r2_historical_byte_identity_rows(
+    repository_root: Path,
+) -> list[dict[str, object]]:
+    """Verify the R2 Strict Option B claim against Git history.
+
+    The claim: between the R2 baseline and the accepted R2 head, the protected
+    production files were not modified. This says nothing about whether a LATER
+    phase (such as R3) may change them.
+    """
     rows: list[dict[str, object]] = []
-    for relative_path, expected_hash in BASELINE_FILE_SHA256.items():
-        payload = (repository_root / relative_path).read_bytes()
-        actual_hash = hashlib.sha256(payload).hexdigest()
+    for relative_path, expected_hash in R2_HISTORICAL_FILTERED_CHECKOUT_SHA256.items():
+        baseline_blob = r2_historical_blob_bytes(
+            repository_root, R2_BASELINE_COMMIT, relative_path
+        )
+        accepted_blob = r2_historical_blob_bytes(
+            repository_root, R2_ACCEPTED_HEAD_COMMIT, relative_path
+        )
+        baseline_checkout = r2_historical_checkout_bytes(
+            repository_root, R2_BASELINE_COMMIT, relative_path
+        )
+        accepted_checkout = r2_historical_checkout_bytes(
+            repository_root, R2_ACCEPTED_HEAD_COMMIT, relative_path
+        )
+        baseline_hash = hashlib.sha256(baseline_checkout).hexdigest()
+        accepted_hash = hashlib.sha256(accepted_checkout).hexdigest()
         rows.append(
             {
-                "gate_id": "byte_identity",
+                "gate_id": "r2_historical_byte_identity",
+                "item": relative_path,
+                "expected": expected_hash,
+                "actual": accepted_hash,
+                "pass": (
+                    baseline_hash == expected_hash
+                    and accepted_hash == expected_hash
+                    and baseline_blob == accepted_blob
+                ),
+                "representation": R2_HISTORICAL_IDENTITY_REPRESENTATION,
+                "raw_blob_identity": baseline_blob == accepted_blob,
+                "reads_working_tree": R2_HISTORICAL_READS_WORKING_TREE,
+                "evidence": (
+                    "SHA-256 of the filtered-checkout representation "
+                    f"(git {R2_HISTORICAL_GIT_OPERATION}) compared against the "
+                    "recorded R2 values, plus a separate raw-blob "
+                    f"(git {R2_HISTORICAL_RAW_GIT_OPERATION}) identity check, at "
+                    f"{R2_BASELINE_COMMIT[:7]} and {R2_ACCEPTED_HEAD_COMMIT[:7]}"
+                ),
+            }
+        )
+    return rows
+
+
+def build_r2_current_tree_protection_rows(
+    repository_root: Path,
+) -> list[dict[str, object]]:
+    """Protect, in the CURRENT tree, the historical paths R3 may not change."""
+    rows: list[dict[str, object]] = []
+    for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+        expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+        actual_hash = hashlib.sha256(
+            (repository_root / relative_path).read_bytes()
+        ).hexdigest()
+        rows.append(
+            {
+                "gate_id": "r2_current_tree_protection",
                 "item": relative_path,
                 "expected": expected_hash,
                 "actual": actual_hash,
                 "pass": actual_hash == expected_hash,
-                "evidence": "SHA-256 of working-tree bytes",
+                "evidence": "SHA-256 of current working-tree bytes",
             }
         )
+    for relative_path in R3_INTENTIONALLY_CHANGED_R2_PROTECTED_PATHS:
+        rows.append(
+            {
+                "gate_id": "r3_intentional_change",
+                "item": relative_path,
+                "expected": "changed by R3 (frozen expected_changed_paths.csv: editable)",
+                "actual": "changed by R3",
+                "pass": True,
+                "evidence": (
+                    "historical R2 hash retained; current bytes are qualified by "
+                    "the R3 acceptance gates, not by the R2 historical claim"
+                ),
+            }
+        )
+    return rows
+
+
+def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
+    """Recompute the frozen R0B/R1 identities and byte-preservation gates.
+
+    Owner Addendum 02: byte identity is evaluated against R2 GIT HISTORY, not
+    against the working tree of a later phase. The current tree is still
+    protected for every historical path R3 is not authorised to change.
+    """
+
+    rows: list[dict[str, object]] = []
+    rows.extend(build_r2_historical_byte_identity_rows(repository_root))
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
 
     from lunar_od.constants import J2_MOON_UNNORMALIZED
 
@@ -1702,10 +1932,16 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
             "item": "accepted_r1_zero_j2_vector",
             "expected": "1088 values; 0 mismatch; 0 ULP",
             "actual": "1088 values; 0 mismatch; 0 ULP",
-            "pass": all(row["pass"] for row in rows if row["gate_id"] == "byte_identity"),
+            "pass": all(
+                row["pass"]
+                for row in rows
+                if row["gate_id"]
+                in {"r2_historical_byte_identity", "r2_current_tree_protection"}
+            ),
             "evidence": (
-                "R2 changes are new reference/reproducer/test files only; frozen production "
-                "bytes and the accepted R1 compatibility regression are unchanged"
+                "R2 changes were new reference/reproducer/test files only (verified "
+                "against R2 git history); the accepted R1 compatibility "
+                "regression is unchanged"
             ),
         }
     )

@@ -1025,6 +1025,9 @@ def _range_rate_two_way_analytic_initial_jacobian(
             pass_geo.earth_vel_mci_mps,
             pass_geo.x_j2000_to_itrf93,
             rr_physics,
+            # R3: transport the scenario ET origin so this route resolves the
+            # same station-state method the observable used (R3-P09).
+            et0_s=pass_geo.et0_s,
         )
     return h_initial
 
