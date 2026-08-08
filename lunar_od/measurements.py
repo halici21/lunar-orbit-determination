@@ -353,10 +353,38 @@ def measurement_model_metadata(
             if pass_geo.measurement_type != "position"
             else None
         ),
+        # R4: the version must come from the runtime model selection, never
+        # from one unconditional module constant -- an R3 run must keep
+        # reporting the R3 version after R4 lands (R4-P17).
         "counted_doppler_model_version": (
-            COUNTED_DOPPLER_MODEL_VERSION
+            rr.counted_doppler_model_version
             if pass_geo.measurement_type != "position"
             else None
+        ),
+        "counted_doppler_model": (
+            rr.counted_doppler_model
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "event_model": (
+            rr.event_model if pass_geo.measurement_type != "position" else None
+        ),
+        "physical_event_count": (
+            (8 if rr.four_event_enabled else 4)
+            if pass_geo.measurement_type != "position"
+            and rr.mode == "two_way_counted_doppler"
+            else None
+        ),
+        "transponder_delay_s": (
+            float(rr.transponder_delay_s)
+            if pass_geo.measurement_type != "position"
+            else None
+        ),
+        "transponder_delay_model": (
+            "constant_scalar" if pass_geo.measurement_type != "position" else None
+        ),
+        "transponder_delay_is_solve_for": (
+            False if pass_geo.measurement_type != "position" else None
         ),
         "earth_ephemeris_method": (
             COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD

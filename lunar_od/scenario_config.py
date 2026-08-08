@@ -38,7 +38,11 @@ from .filters import (
 from .gravity_harmonics import SphericalHarmonicGravityModel
 from .gravity_model_loader import load_lunar_gravity_model, resolve_gravity_dir
 from .radiometrics import (
+    COUNTED_DOPPLER_MODELS,
+    DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
+    EXACT_EVENT_EPOCH_STATION_METHOD,
+    FOUR_EVENT_COUNTED_DOPPLER_MODEL,
     LEGACY_INTERPOLATED_STATION_METHOD,
     STATION_STATE_METHODS,
     RangeRatePhysicsConfig,
@@ -66,6 +70,7 @@ ALLOWED_RANGE_RATE_PHYSICS = ("geometric_instantaneous", "two_way_counted_dopple
 # R3: counted-Doppler station site-state strategy. The default is the exact
 # event-epoch transform; the legacy value is an explicit compatibility mode.
 ALLOWED_STATION_STATE_METHODS = tuple(STATION_STATE_METHODS)
+ALLOWED_COUNTED_DOPPLER_MODELS = tuple(COUNTED_DOPPLER_MODELS)
 ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     "geometric_instantaneous",
     "one_way_light_time",
@@ -118,6 +123,11 @@ class ScenarioConfig:
     # (gated by R3-P23): old files change behaviour, never silently -- every
     # run records the method it used.
     station_state_method: str = DEFAULT_STATION_STATE_METHOD
+    # R4 (CD-4): omitted in a pre-R4 scenario file, this defaults to the
+    # accepted R3 single-bounce model, so an old zero-delay configuration keeps
+    # its exact R3 behaviour and its R3 provenance. The four-event model is
+    # explicit opt-in (owner decision Q4); there is no automatic migration.
+    counted_doppler_model: str = DEFAULT_COUNTED_DOPPLER_MODEL
     station_clock_offset_s: float = 0.0
     station_clock_drift: float = 0.0
     clock_reference_time_s: float = 0.0
@@ -207,6 +217,10 @@ def scenario_config_schema() -> dict[str, Any]:
             "station_state_method": {
                 "enum": list(ALLOWED_STATION_STATE_METHODS),
                 "default": DEFAULT_STATION_STATE_METHOD,
+            },
+            "counted_doppler_model": {
+                "enum": list(ALLOWED_COUNTED_DOPPLER_MODELS),
+                "default": DEFAULT_COUNTED_DOPPLER_MODEL,
             },
             "station_clock_offset_s": {"type": "number", "default": 0.0},
             "station_clock_drift": {"type": "number", "default": 0.0},
@@ -336,6 +350,11 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             payload.get("station_state_method", DEFAULT_STATION_STATE_METHOD),
             ALLOWED_STATION_STATE_METHODS,
             "station_state_method",
+        ),
+        counted_doppler_model=_enum_value(
+            payload.get("counted_doppler_model", DEFAULT_COUNTED_DOPPLER_MODEL),
+            ALLOWED_COUNTED_DOPPLER_MODELS,
+            "counted_doppler_model",
         ),
         station_clock_offset_s=_finite_float(
             payload.get("station_clock_offset_s", 0.0),
@@ -597,6 +616,7 @@ def scenario_range_rate_physics_config(config: ScenarioConfig) -> RangeRatePhysi
         clock_reference_time_s=config.clock_reference_time_s,
         transponder_delay_s=config.transponder_delay_s,
         station_state_method=config.station_state_method,
+        counted_doppler_model=config.counted_doppler_model,
     )
 
 
@@ -956,6 +976,36 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
             DeprecationWarning,
             stacklevel=2,
         )
+    # R4 (CD-4) loader gate: the four-event counted-Doppler model is a
+    # counted-Doppler model and requires the exact event-epoch station
+    # transform. The message is raised here so a scenario file fails at load
+    # time rather than deep inside measurement evaluation.
+    if config.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL:
+        if config.range_rate_physics != "two_way_counted_doppler":
+            raise ValueError(
+                "counted_doppler_model='four_event_delay' requires "
+                "range_rate_physics='two_way_counted_doppler'; got "
+                f"range_rate_physics={config.range_rate_physics!r}."
+            )
+        if config.station_state_method != EXACT_EVENT_EPOCH_STATION_METHOD:
+            raise ValueError(
+                "counted_doppler_model='four_event_delay' requires "
+                f"station_state_method='{EXACT_EVENT_EPOCH_STATION_METHOD}'; got "
+                f"{config.station_state_method!r}. The four-event model must "
+                "not run on the legacy interpolated transform grid."
+            )
+        if config.estimator_type == "ukf":
+            # R4 qualifies BLS-LM and SRIF only (R4-P21). Four-event SR-UKF
+            # support is deliberately deferred as R4-FUTURE-UKF-FOUR-EVENT, so
+            # the combination fails closed rather than silently running an
+            # unqualified model. Existing R3 UKF counted-Doppler behaviour is
+            # untouched.
+            raise ValueError(
+                "counted_doppler_model='four_event_delay' is not supported with "
+                "estimator_type='ukf'. Four-event SR-UKF support is deferred "
+                "(R4-FUTURE-UKF-FOUR-EVENT); use estimator_type='bls_lm' or "
+                "'srif', or counted_doppler_model='single_bounce_exact_station'."
+            )
     # FA-01 loader gate: UKF position measurements only support the geometric
     # instantaneous profile (shared helper; also enforced at run_lunar_ukf).
     validate_ukf_measurement_support(

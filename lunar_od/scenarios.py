@@ -33,7 +33,11 @@ from .measurements import (
     measurement_model_metadata,
 )
 from .radiometrics import (
+    COUNTED_DOPPLER_MODEL_VERSION,
+    DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
+    FOUR_EVENT_COUNTED_DOPPLER_MODEL,
+    FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION,
     RangeRatePhysicsConfig,
     range_rate_physics_config,
 )
@@ -165,6 +169,10 @@ class ScenarioResult:
     # R3: the station site-state strategy this run actually executed, resolved
     # alongside the range-rate physics so every result records its own method.
     station_state_method: str = DEFAULT_STATION_STATE_METHOD
+    # R4: the counted-Doppler event model this run actually executed. Kept with
+    # a default so every existing construction site is unaffected and an old
+    # zero-delay run still records the accepted R3 model and R3 version.
+    counted_doppler_model: str = DEFAULT_COUNTED_DOPPLER_MODEL
     measurement_model_profile: str = "geometric_instantaneous"
     companion_geometry: str = "instantaneous"
     jacobian_model: str = "analytic_exact_geometric"
@@ -207,6 +215,15 @@ class ScenarioResult:
     observability_singular_value_max: float = float("nan")
     observability_finite: bool = False
     derivative_validation_profile: str = ""
+
+    @property
+    def counted_doppler_model_version(self) -> str:
+        """Truthful counted-Doppler model version for this run (R4-P17)."""
+        return (
+            FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION
+            if self.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL
+            else COUNTED_DOPPLER_MODEL_VERSION
+        )
 
     @property
     def algorithmic_success_fraction(self) -> float:
@@ -737,6 +754,7 @@ def run_batch_arc_sequence(
             range_rate_physics=_rr_physics.mode,
             count_interval_s=_rr_physics.count_interval_s,
             station_state_method=_rr_physics.station_state_method,
+            counted_doppler_model=_rr_physics.counted_doppler_model,
             measurement_model_profile=(
                 "geometric_instantaneous"
                 if _pass_geo0 is None

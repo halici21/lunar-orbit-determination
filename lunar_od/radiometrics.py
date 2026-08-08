@@ -27,6 +27,10 @@ StationStateMethod = Literal[
     "exact_event_epoch_sxform",
     "legacy_interpolated_transform_grid",
 ]
+CountedDopplerModel = Literal[
+    "single_bounce_exact_station",
+    "four_event_delay",
+]
 EXACT_EVENT_EPOCH_STATION_METHOD = "exact_event_epoch_sxform"
 LEGACY_INTERPOLATED_STATION_METHOD = "legacy_interpolated_transform_grid"
 STATION_STATE_METHODS = (
@@ -39,6 +43,20 @@ DEFAULT_STATION_STATE_METHOD = EXACT_EVENT_EPOCH_STATION_METHOD
 # Earth ephemeris stays linear so the exact production path reproduces R2
 # model S exactly and S-L isolates the site transform alone (R3-P22).
 COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD = "linear_grid_interpolation"
+# R4 (CD-4): counted-Doppler event model selector. ``single_bounce_exact_station``
+# is the accepted R3 model and stays the default, so a stored scenario without
+# the field keeps its R3 behaviour and its R3 provenance (owner decision Q4).
+# ``four_event_delay`` is the explicit opt-in R4 model that resolves the
+# spacecraft receive/transmit events separately and therefore admits a nonzero
+# constant transponder delay.
+SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL = "single_bounce_exact_station"
+FOUR_EVENT_COUNTED_DOPPLER_MODEL = "four_event_delay"
+COUNTED_DOPPLER_MODELS = (
+    SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL,
+    FOUR_EVENT_COUNTED_DOPPLER_MODEL,
+)
+DEFAULT_COUNTED_DOPPLER_MODEL = SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL
+FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION = "r4.counted-doppler.four-event-delay.v1"
 COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD = "cubic_hermite"
 COUNTED_DOPPLER_MODEL_VERSION = "r3.counted-doppler.exact-station.v1"
 STATION_STATE_SOURCE_FRAME = "J2000"
@@ -81,6 +99,11 @@ class RangeRatePhysicsConfig:
     # EXACT_STATION_TRANSFORM_UPGRADE_REQUIRED. Selecting the legacy value is
     # an explicit opt-in compatibility mode, never an automatic fallback.
     station_state_method: StationStateMethod = DEFAULT_STATION_STATE_METHOD
+    # R4: counted-Doppler event model. Kept last (after the R3 field) so every
+    # existing positional caller keeps working unchanged. The default is the
+    # accepted R3 single-bounce model; ``four_event_delay`` is explicit opt-in
+    # and is the only model that may carry a nonzero transponder delay.
+    counted_doppler_model: CountedDopplerModel = DEFAULT_COUNTED_DOPPLER_MODEL
 
     def __post_init__(self) -> None:
         normalized = _normalize_range_rate_mode(self.mode)
@@ -126,7 +149,41 @@ class RangeRatePhysicsConfig:
             raise ValueError("clock_reference_time_s must be finite.")
         if self.transponder_delay_s < 0.0 or not np.isfinite(self.transponder_delay_s):
             raise ValueError("transponder_delay_s must be finite and non-negative.")
-        if self.mode == "two_way_counted_doppler" and self.transponder_delay_s != 0.0:
+        if self.counted_doppler_model not in COUNTED_DOPPLER_MODELS:
+            raise ValueError(
+                "counted_doppler_model must be one of "
+                f"{COUNTED_DOPPLER_MODELS}; got {self.counted_doppler_model!r}."
+            )
+        if self.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL:
+            # R4-F09/R4-P16 cross-field rules. The four-event model is a
+            # counted-Doppler model and requires the exact event-epoch station
+            # transform; it must never run on the legacy interpolated grid.
+            if self.mode != "two_way_counted_doppler":
+                raise ValueError(
+                    "counted_doppler_model='four_event_delay' requires "
+                    "mode='two_way_counted_doppler'; got mode="
+                    f"{self.mode!r}."
+                )
+            if self.station_state_method != EXACT_EVENT_EPOCH_STATION_METHOD:
+                raise ValueError(
+                    "counted_doppler_model='four_event_delay' requires "
+                    f"station_state_method='{EXACT_EVENT_EPOCH_STATION_METHOD}'; "
+                    f"got {self.station_state_method!r}. The four-event model "
+                    "must not run on the legacy interpolated transform grid."
+                )
+            if self.transponder_delay_s >= self.count_interval_s:
+                # R4-F08: a delay comparable to the count interval breaks the
+                # endpoint-difference interpretation of counted Doppler.
+                raise ValueError(
+                    "transponder_delay_s must be smaller than count_interval_s; "
+                    f"got delay {self.transponder_delay_s!r} s and count "
+                    f"interval {self.count_interval_s!r} s."
+                )
+        if (
+            self.mode == "two_way_counted_doppler"
+            and self.counted_doppler_model == SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL
+            and self.transponder_delay_s != 0.0
+        ):
             # P0A safety gate: the legacy solver keeps a single spacecraft
             # bounce state, so a nonzero delay would use physically
             # inconsistent uplink geometry (r_sc at the downlink transmit
@@ -140,7 +197,9 @@ class RangeRatePhysicsConfig:
                 "Nonzero transponder delay is not supported by the legacy "
                 "single-bounce counted-Doppler model. Use zero delay or a "
                 "future four-event counted-Doppler model. M3 two-way range "
-                "(TwoWayRangeConfig) nonzero-delay support is unaffected."
+                "(TwoWayRangeConfig) nonzero-delay support is unaffected. "
+                "R4: select counted_doppler_model='four_event_delay' to enable "
+                "the four-event model that supports a nonzero constant delay."
             )
 
     @property
@@ -161,6 +220,25 @@ class RangeRatePhysicsConfig:
             if self.exact_event_epoch_enabled
             else LEGACY_STATION_VELOCITY_MODEL
         )
+
+    @property
+    def four_event_enabled(self) -> bool:
+        """True when the explicit R4 four-event counted-Doppler model is selected."""
+        return self.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL
+
+    @property
+    def counted_doppler_model_version(self) -> str:
+        """Truthful model-version label for the counted-Doppler path actually used."""
+        return (
+            FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION
+            if self.four_event_enabled
+            else COUNTED_DOPPLER_MODEL_VERSION
+        )
+
+    @property
+    def event_model(self) -> str:
+        """Truthful event-structure label: four physical events, or one bounce."""
+        return "four_event" if self.four_event_enabled else "single_bounce"
 
 
 @dataclass(frozen=True)
@@ -613,6 +691,26 @@ def two_way_counted_doppler_observable(
     if cfg.mode != "two_way_counted_doppler":
         raise ValueError("two_way_counted_doppler_observable requires two_way_counted_doppler mode.")
 
+    if cfg.four_event_enabled:
+        # R4 dispatch. The import is deliberately function-local: it keeps the
+        # R3 rule that production ``radiometrics`` carries no module-level
+        # dependency on M3 or on the R2 reference module, while still routing
+        # the explicitly selected four-event model to its own module.
+        from .two_way_counted_doppler import four_event_counted_doppler_observable
+
+        return four_event_counted_doppler_observable(
+            receive_mid_time_s,
+            station,
+            t_grid_s,
+            state_history_mci,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            x_j2000_to_itrf93,
+            cfg,
+            et0_s=et0_s,
+            station_state_provider=station_state_provider,
+        )
+
     if station_state_provider is None:
         station_state_provider = resolve_counted_doppler_station_state_provider(
             cfg,
@@ -689,6 +787,29 @@ def two_way_counted_doppler_initial_state_jacobian(
     cfg = range_rate_physics_config(config)
     if cfg.mode != "two_way_counted_doppler":
         raise ValueError("two_way_counted_doppler_initial_state_jacobian requires two_way_counted_doppler mode.")
+
+    if cfg.four_event_enabled:
+        # R4 dispatch, mirroring the observable. Function-local import for the
+        # same reason: production ``radiometrics`` keeps no module-level
+        # dependency on M3 or on the R2 reference module. Routing here means the
+        # existing consumers (measurements, estimators, filters, observability)
+        # receive the selected model through the unchanged abstraction.
+        from .two_way_counted_doppler import (
+            four_event_counted_doppler_initial_state_jacobian,
+        )
+
+        return four_event_counted_doppler_initial_state_jacobian(
+            receive_mid_time_s,
+            station,
+            t_grid_s,
+            augmented_state_history_mci,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            x_j2000_to_itrf93,
+            cfg,
+            et0_s=et0_s,
+            station_state_provider=station_state_provider,
+        )
 
     if station_state_provider is None:
         station_state_provider = resolve_counted_doppler_station_state_provider(

@@ -665,3 +665,109 @@ class R3DefaultChangeDisclosure(unittest.TestCase):
         self.assertIn("exact_event_epoch_sxform", lowered)
         self.assertIn("legacy_interpolated_transform_grid", lowered)
         self.assertIn("automatically", lowered)
+
+
+class R4CountedDopplerModelSelection(unittest.TestCase):
+    """R4-P16: the counted-Doppler event model is explicit opt-in and fails closed."""
+
+    BASE = {
+        "name": "r4",
+        "measurement_type": "range_rate",
+        "estimator_type": "bls_lm",
+        "start_mode": "cold",
+        "network": "multi",
+    }
+    COUNTED = "two_way_counted_doppler"
+
+    def _config(self, **overrides):
+        payload = dict(self.BASE)
+        payload.update(overrides)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return scenario_config_from_mapping(payload)
+
+    def test_omitted_field_keeps_the_accepted_r3_model(self):
+        """A pre-R4 scenario file must behave exactly as before (owner Q4)."""
+        self.assertEqual(
+            self._config().counted_doppler_model, "single_bounce_exact_station"
+        )
+
+    def test_explicit_four_event_is_accepted_with_counted_doppler(self):
+        config = self._config(
+            range_rate_physics=self.COUNTED, counted_doppler_model="four_event_delay"
+        )
+        self.assertEqual(config.counted_doppler_model, "four_event_delay")
+
+    def test_four_event_requires_counted_doppler_physics(self):
+        with self.assertRaises(ValueError) as ctx:
+            self._config(counted_doppler_model="four_event_delay")
+        self.assertIn("two_way_counted_doppler", str(ctx.exception))
+
+    def test_four_event_rejects_the_legacy_station_grid(self):
+        with self.assertRaises(ValueError) as ctx:
+            self._config(
+                range_rate_physics=self.COUNTED,
+                counted_doppler_model="four_event_delay",
+                station_state_method="legacy_interpolated_transform_grid",
+            )
+        self.assertIn("exact_event_epoch_sxform", str(ctx.exception))
+
+    def test_four_event_is_rejected_for_the_ukf(self):
+        """Four-event SR-UKF support is deferred (R4-FUTURE-UKF-FOUR-EVENT)."""
+        with self.assertRaises(ValueError) as ctx:
+            self._config(
+                range_rate_physics=self.COUNTED,
+                counted_doppler_model="four_event_delay",
+                estimator_type="ukf",
+            )
+        self.assertIn("ukf", str(ctx.exception).lower())
+
+    def test_r3_model_still_rejects_a_nonzero_delay(self):
+        """The P0A gate is narrowed by model selection, never deleted."""
+        with self.assertRaises(ValueError) as ctx:
+            self._config(range_rate_physics=self.COUNTED, transponder_delay_s=1e-3)
+        self.assertIn("single-bounce counted-Doppler model", str(ctx.exception))
+
+    def test_four_event_permits_a_nonzero_delay(self):
+        config = self._config(
+            range_rate_physics=self.COUNTED,
+            counted_doppler_model="four_event_delay",
+            transponder_delay_s=1e-3,
+        )
+        self.assertEqual(config.transponder_delay_s, 1e-3)
+
+    def test_unknown_model_value_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self._config(
+                range_rate_physics=self.COUNTED, counted_doppler_model="four_event"
+            )
+
+    def test_schema_publishes_the_enum_and_the_r3_default(self):
+        schema = scenario_config_schema()["properties"]["counted_doppler_model"]
+        self.assertEqual(
+            schema["enum"], ["single_bounce_exact_station", "four_event_delay"]
+        )
+        self.assertEqual(schema["default"], "single_bounce_exact_station")
+
+    def test_no_delay_drift_field_is_introduced(self):
+        """Owner decision Q1: drifting delay is out of R4 scope."""
+        config = self._config(range_rate_physics=self.COUNTED)
+        self.assertFalse(hasattr(config, "transponder_delay_rate_s_per_s"))
+        self.assertFalse(hasattr(config, "transponder_delay_reference_epoch_s"))
+        self.assertNotIn(
+            "transponder_delay_rate_s_per_s", scenario_config_schema()["properties"]
+        )
+
+    def test_model_selection_reaches_the_range_rate_physics_config(self):
+        physics = scenario_range_rate_physics_config(
+            self._config(
+                range_rate_physics=self.COUNTED,
+                counted_doppler_model="four_event_delay",
+            )
+        )
+        self.assertEqual(physics.counted_doppler_model, "four_event_delay")
+        self.assertTrue(physics.four_event_enabled)
+        self.assertEqual(
+            physics.counted_doppler_model_version,
+            "r4.counted-doppler.four-event-delay.v1",
+        )

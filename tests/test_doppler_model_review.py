@@ -648,3 +648,167 @@ class R3TransformGridIsNotReadInExactMode(unittest.TestCase):
                 0.0, case["station"], case["t_grid"], case["states"],
                 case["earth_pos"], case["earth_vel"], poisoned, legacy_cfg,
             )
+
+
+# ---------------------------------------------------------------------------
+# R4 (CD-4): finite-difference qualification of the four-event model.
+# ---------------------------------------------------------------------------
+
+class R4FourEventDerivativeQualification(unittest.TestCase):
+    """R4-P10 / R4-P10b / R4-P12.
+
+    The counted observable is a cancellation structure, so its finite
+    difference is round-off limited: the error falls as 1/h until truncation
+    takes over.  Both gates therefore use the accepted best-over-step-sweep
+    metric with a sweep wide enough that every column and the delay derivative
+    clear the floor.  The 1e-6 threshold is the inherited R3-P06 value and is
+    not adjusted anywhere below.
+    """
+
+    @staticmethod
+    def _module():
+        from tests import test_two_way_counted_doppler_four_event as fixture
+
+        return fixture
+
+    @classmethod
+    def setUpClass(cls):
+        fixture = cls._module()
+        cls.fx = fixture
+        n = fixture.T_GRID.size
+        aug = np.zeros((n, 42))
+        aug[:, :6] = fixture.STATES
+        phi = np.eye(6)
+        aug[0, 6:42] = phi.reshape(-1, order="F")
+        for k in range(1, n):
+            dt = float(fixture.T_GRID[k] - fixture.T_GRID[k - 1])
+            r = fixture.STATES[k - 1, :3]
+            rn = float(np.linalg.norm(r))
+            g = fixture.MU_MOON / rn**3 * (3.0 * np.outer(r, r) / rn**2 - np.eye(3))
+            a_mat = np.zeros((6, 6))
+            a_mat[:3, 3:] = np.eye(3)
+            a_mat[3:, :3] = g
+            phi = (np.eye(6) + a_mat * dt + 0.5 * (a_mat @ a_mat) * dt * dt) @ phi
+            aug[k, 6:42] = phi.reshape(-1, order="F")
+        cls.aug = aug
+        cls.phi_history = np.array(
+            [row.reshape((6, 6), order="F") for row in aug[:, 6:42]]
+        )
+
+    def _perturbed_history(self, column, step):
+        """Propagate the initial-state perturbation through the TRUE STM.
+
+        Shifting the stored history uniformly would make this gate vacuous.
+        """
+        delta = np.zeros(6)
+        delta[column] = step
+        return self.fx.STATES + np.einsum("kij,j->ki", self.phi_history, delta)
+
+    def test_p12_analytic_state_jacobian_matches_finite_differences(self):
+        from lunar_od.two_way_counted_doppler import (
+            four_event_counted_doppler_initial_state_jacobian,
+        )
+
+        fixture = self.fx
+        position_steps = [10.0**e for e in range(-2, 7)]
+        velocity_steps = [10.0**e for e in range(-5, 4)]
+        worst = 0.0
+        unresolved = 0
+        for receive_mid_s, count_interval_s in fixture.GEOMETRIES:
+            config = fixture._config(count_interval_s, 1e-4)
+            analytic = four_event_counted_doppler_initial_state_jacobian(
+                receive_mid_s, None, fixture.T_GRID, self.aug, fixture.EARTH_POS,
+                fixture.EARTH_VEL, fixture.TRANSFORM_GRID, config,
+                station_state_provider=fixture._provider(),
+            )
+            for column in range(6):
+                steps = position_steps if column < 3 else velocity_steps
+                best = float("inf")
+                for step in steps:
+                    plus = fixture._observable(
+                        receive_mid_s, config,
+                        states=self._perturbed_history(column, step),
+                    )
+                    minus = fixture._observable(
+                        receive_mid_s, config,
+                        states=self._perturbed_history(column, -step),
+                    )
+                    finite = (plus - minus) / (2.0 * step)
+                    if abs(analytic[column]) <= 1e-300:
+                        continue
+                    best = min(best, abs(finite - analytic[column]) / abs(analytic[column]))
+                if not np.isfinite(best):
+                    unresolved += 1
+                    continue
+                worst = max(worst, best)
+        self.assertEqual(unresolved, 0, "every column must be resolvable")
+        self.assertLess(worst, 1e-6, f"max_best_relative_fd_column_error {worst!r}")
+
+    def test_p10_analytic_delay_sensitivity_matches_finite_differences(self):
+        from lunar_od.two_way_counted_doppler import (
+            four_event_counted_doppler_delay_sensitivity,
+        )
+
+        fixture = self.fx
+        # Step-adequate qualification point: at delta_0 = 1 s the admissible
+        # central step clears the observable's cancellation floor.  The analytic
+        # coefficient varies by ~2e-4 relative between 1e-3 s and 1 s, so this
+        # qualifies the same expression used at operational delays.
+        worst = 0.0
+        for receive_mid_s, count_interval_s in fixture.GEOMETRIES:
+            config = fixture._config(count_interval_s, 1.0)
+            analytic = four_event_counted_doppler_delay_sensitivity(
+                receive_mid_s, None, fixture.T_GRID, fixture.STATES, fixture.EARTH_POS,
+                fixture.EARTH_VEL, fixture.TRANSFORM_GRID, config,
+                station_state_provider=fixture._provider(),
+            )
+            best = float("inf")
+            for step in (0.1, 0.2, 0.5):
+                finite = (
+                    fixture._observable(receive_mid_s, fixture._config(count_interval_s, 1.0 + step))
+                    - fixture._observable(receive_mid_s, fixture._config(count_interval_s, 1.0 - step))
+                ) / (2.0 * step)
+                best = min(best, abs(finite - analytic) / abs(analytic))
+            worst = max(worst, best)
+        self.assertLess(worst, 1e-6, f"max_best_relative_delay_fd_error {worst!r}")
+
+    def test_p10b_delay_finite_difference_is_round_off_limited(self):
+        """The residual at operational delays is a step artefact, not a model error.
+
+        Larger delta_0 admits a larger step (delta_0 - h >= 0), so a
+        round-off-limited finite difference must improve monotonically across
+        the decade ladder and reach the 1e-6 gate at the qualification point.
+        A wrong analytic expression would instead plateau at its model error.
+        """
+        from lunar_od.two_way_counted_doppler import (
+            four_event_counted_doppler_delay_sensitivity,
+        )
+
+        fixture = self.fx
+        ladder = [1e-4, 1e-3, 1e-2, 1e-1, 1.0]
+        receive_mid_s, count_interval_s = 300.0, 60.0
+        curve = []
+        for delay_s in ladder:
+            config = fixture._config(count_interval_s, delay_s)
+            analytic = four_event_counted_doppler_delay_sensitivity(
+                receive_mid_s, None, fixture.T_GRID, fixture.STATES, fixture.EARTH_POS,
+                fixture.EARTH_VEL, fixture.TRANSFORM_GRID, config,
+                station_state_provider=fixture._provider(),
+            )
+            best = float("inf")
+            for fraction in (1000.0, 100.0, 10.0, 2.0):
+                step = delay_s / fraction
+                finite = (
+                    fixture._observable(
+                        receive_mid_s, fixture._config(count_interval_s, delay_s + step)
+                    )
+                    - fixture._observable(
+                        receive_mid_s, fixture._config(count_interval_s, delay_s - step)
+                    )
+                ) / (2.0 * step)
+                best = min(best, abs(finite - analytic) / abs(analytic))
+            curve.append(best)
+        for earlier, later in zip(curve, curve[1:]):
+            self.assertLessEqual(later, earlier * 2.0)
+        self.assertGreater(curve[0] / curve[-1], 1e3)
+        self.assertLess(curve[-1], 1e-6)

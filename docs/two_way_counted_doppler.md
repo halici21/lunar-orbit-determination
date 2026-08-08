@@ -318,3 +318,70 @@ its final two columns, appended after the R1 numerical-provenance segment.
 The pre-R3 metadata field `station_velocity_model` reported the literal
 `"sxform"` for both paths, which overclaimed the interpolated route. It now
 reports `exact_event_epoch_sxform` or `interpolated_sxform_grid` truthfully.
+
+## R4 (CD-4): four-event counted Doppler with a constant transponder delay
+
+R4 productionises the already accepted four-event model-F capability for
+explicit nonzero constant transponder delay. This is a capability expansion, not
+a claim that the preceding R2 campaign established an operational need for
+nonzero delay.
+
+### Selection
+
+```
+counted_doppler_model = "single_bounce_exact_station"   # DEFAULT, the accepted R3 model
+counted_doppler_model = "four_event_delay"              # R4, explicit opt-in
+```
+
+A stored scenario without the field keeps the R3 model *and* its R3 provenance
+string; nothing is migrated automatically. `four_event_delay` requires
+`range_rate_physics="two_way_counted_doppler"` and
+`station_state_method="exact_event_epoch_sxform"`, and rejects
+`estimator_type="ukf"` (four-event SR-UKF support is deferred). The P0A gate is
+**narrowed, not removed**: a nonzero delay is still rejected for the
+single-bounce model, and `transponder_delay_s` must be finite, non-negative and
+smaller than `count_interval_s`.
+
+### Events
+
+```
+t1   ground transmit          t2u  spacecraft uplink receive
+t2d  spacecraft downlink TX   t3   ground receive (the independent variable)
+
+t1 < t2u <= t2d < t3          t2d - t2u = delta_0
+```
+
+At `delta_0 = 0` the chain collapses to `t2u == t2d` and the observable
+reproduces the accepted R3 single-bounce value **bitwise**. The count interval
+remains defined on the ground receive epochs.
+
+### Composition boundary
+
+`lunar_od/two_way_counted_doppler.py` composes the accepted M3 event solver and
+its uniform 3x3 implicit sensitivity read-only; `lunar_od/two_way_range.py` and
+`lunar_od/two_way_counted_doppler_reference.py` stay byte-identical. M3's
+station-provider *factory* is deliberately **not** used, because it interpolates
+the Earth-centre ephemeris with cubic Hermite while counted Doppler requires
+**linear**; R4 injects the accepted R3 `CountedDopplerStationStateProvider`
+instead. M3's `two_way_range_measurement_metadata` is likewise not composed, as
+it would emit `cubic_hermite_grid_interpolation` for an R4 run.
+
+### The constant-delay sensitivity is NOT zero
+
+A constant delay shifts the uplink chain backwards in time, but the shift
+magnitude depends on the local geometry, so the two count endpoints do not shift
+identically. The residual difference is `O(v/c)`, and the observable's
+`c / (2 Tc)` scaling cancels that `1/c`:
+
+```
+dt2d/d(delta_0) = 0
+dt2u/d(delta_0) = -1
+dt1 /d(delta_0) = -(c - u.vs(t2u)) / (c - u.vg(t1))          = -1 + O(v/c)
+
+d(rho)/d(delta_0) = -u.(vs(t2u) - vg(t1)) / (c - u.vg(t1))
+dH/d(delta_0)    ~= -0.5 * (uplink range acceleration)
+```
+
+This is a **first-order** effect, of order `0.5 (m/s)/s` for lunar geometry, and
+it is qualified against an independent finite difference. `delta_0` remains a
+configuration parameter: R4 does not estimate it.
