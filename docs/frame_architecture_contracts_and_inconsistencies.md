@@ -781,7 +781,7 @@ remediation phase.
 | FA-03A | Nonconverged light-time solution can reach observable paths | NUMERICAL-SOLVER / VALIDATION | HIGH | MEDIUM | confirmed at eb92461/D1; **resolved by P0B-1 strict dual-criterion enforcement** | F1 (done) |
 | FA-03B | Event-state history silently extrapolated without bound | HISTORY-DOMAIN / INTERPOLATION | HIGH | MEDIUM | confirmed at eb92461/D1; **resolved by P0B-2 closed-support enforcement** | F1 (done) |
 | FA-02 | Position metadata reports wrong light-time solver parameters | DOCUMENTATION / metadata | MEDIUM | EASY | confirmed at eb92461/D1; **resolved by P0A metadata correction** | F0 (done) |
-| P0A-CD0 | Legacy counted-Doppler nonzero transponder delay | NUMERICAL-SOLVER (safety gate) | MEDIUM | EASY | **short-term rejection implemented (P0A)**; four-event model remains future work (CD-4) | CD-0 (done) |
+| P0A-CD0 | Legacy counted-Doppler nonzero transponder delay | NUMERICAL-SOLVER (safety gate) | MEDIUM | EASY | **rejection retained for the single-bounce model (P0A, narrowed by model selection)**; four-event model **implemented in R4** as `counted_doppler_model='four_event_delay'` (CD-4 closed) | CD-0 (done), CD-4 (R4) |
 | FA-06 | Isolated worktree tests can import code from the main worktree | TEST-PROVENANCE / TECHNICAL-DEBT | MEDIUM | EASY-MEDIUM | confirmed | F0 |
 | FA-07 | M3 event/convention metadata absent from result CSV | DOCUMENTATION / traceability | MEDIUM | EASY-MEDIUM | confirmed | F0 |
 | FA-04 | Bare `MOON_PA` sampler default / fixtures bypass versioned-frame rule | LUNAR-FIXED-FRAME (API/default bypass) | LOW-MEDIUM | EASY-MEDIUM (fixture decision) | confirmed | F6 |

@@ -20,6 +20,10 @@ R3_MEASUREMENT_PROVENANCE_COLUMNS = (
     "station_state_method",
     "counted_doppler_model_version",
 )
+# R4 follows the same append-only convention: one new field, placed after the
+# complete R3 segment, so the pre-R1, R1 and R3 blocks all stay contiguous and
+# in their existing order.
+R4_MEASUREMENT_PROVENANCE_COLUMNS = ("counted_doppler_model",)
 from .scenarios import ScenarioResult
 
 
@@ -173,6 +177,8 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                 # which station site-state strategy executed, and the
                 # counted-Doppler model version that produced the observable.
                 *R3_MEASUREMENT_PROVENANCE_COLUMNS,
+                # R4 (appended last): which counted-Doppler event model ran.
+                *R4_MEASUREMENT_PROVENANCE_COLUMNS,
             ]
         )
         for scenario in scenarios:
@@ -298,7 +304,11 @@ def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path)
                         result.condition_number_available,
                         scenario.derivative_validation_profile,
                         scenario.station_state_method,
-                        COUNTED_DOPPLER_MODEL_VERSION,
+                        # R4: emit the version the run actually used. Before R4
+                        # this was the module constant, which would now
+                        # overclaim R4 for an R3 run and vice versa.
+                        scenario.counted_doppler_model_version,
+                        scenario.counted_doppler_model,
                     ]
                 )
 
