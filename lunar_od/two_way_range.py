@@ -319,7 +319,14 @@ def solve_two_way_range_events(
     _require_spacecraft_epoch_support("t2d", t2d, t_grid, {**events, "t2d": t2d})
     sc_t2d_state = _interp_state(t_grid, states, t2d)
     downlink_range_m = float(np.linalg.norm(sc_t2d_state[:3] - station_rx_state[:3]))
-    downlink_equation_residual_s = abs(t3 - t2d - downlink_range_m / c)
+    # Q1-F01: the residual is evaluated against the AUTHORITATIVE LOCAL light time
+    # ``downlink_lt``, not against ``t3 - t2d``. Re-deriving the interval from two
+    # rounded large epochs gives it the granularity of ulp(t3) rather than
+    # ulp(tau) -- ~1.5e-11 s versus ~4.4e-16 s at a one-day pass-relative epoch --
+    # which makes the accepted 1e-11 s tolerance unreachable beyond ~12.5 h. The
+    # physical equation and its tolerance are unchanged; only the conditioning of
+    # its evaluation is repaired.
+    downlink_equation_residual_s = abs(downlink_lt - downlink_range_m / c)
     events["t2d"] = t2d
 
     # Transponder relation: t2u = t2d - delay (fixed coordinate-time delay).
@@ -327,6 +334,11 @@ def solve_two_way_range_events(
     events["t2u"] = t2u
     _require_spacecraft_epoch_support("t2u", t2u, t_grid, events)
     sc_t2u_state = _interp_state(t_grid, states, t2u)
+    # The transponder relation is a representation check: t2u is CONSTRUCTED as
+    # t2d - delay, so this measures how well the epoch pair carries the delay. It
+    # is already well conditioned for every frozen delay (1e-6 s >> ulp(t2d)) and
+    # is deliberately left on the epoch representation, because detecting a delay
+    # too small for the epochs to carry is exactly what it should do.
     transponder_equation_residual_s = abs((t2d - t2u) - cfg.transponder_delay_s)
 
     # Uplink: G_u = t2u - t1 - |r_sc(t2u) - r_st(t1)| / c = 0, fixed-point
@@ -353,7 +365,9 @@ def solve_two_way_range_events(
             break
     station_tx_state = station_state_provider.state(t1)
     uplink_range_m = float(np.linalg.norm(sc_t2u_state[:3] - station_tx_state[:3]))
-    uplink_equation_residual_s = abs(t2u - t1 - uplink_range_m / c)
+    # Q1-F01: as for the downlink, compared against the authoritative local
+    # ``uplink_lt`` rather than the re-derived ``t2u - t1``.
+    uplink_equation_residual_s = abs(uplink_lt - uplink_range_m / c)
     events["t1"] = t1
 
     converged = (
@@ -390,7 +404,13 @@ def solve_two_way_range_events(
             f"downlink {downlink_lt!r} s."
         )
 
-    round_trip_light_time_s = t3 - t1
+    # Q1-F01: the physical round-trip light time is assembled from the three
+    # well-conditioned LOCAL intervals rather than from ``t3 - t1``. The two
+    # forms are mathematically identical, but ``t3 - t1`` inherits ulp(t3), and
+    # the counted-Doppler observable amplifies that by c/(2*Tc) into a floor of
+    # c*ulp(t)/(2*Tc) -- measured at 2.18e-4 m/s for Tc = 10 s at a one-day
+    # epoch, which swamps the delay physics it is meant to resolve.
+    round_trip_light_time_s = downlink_lt + cfg.transponder_delay_s + uplink_lt
     raw_range_m = 0.5 * c * round_trip_light_time_s
     calibrated_range_m = 0.5 * c * (round_trip_light_time_s - cfg.transponder_delay_s)
 
