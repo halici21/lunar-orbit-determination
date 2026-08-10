@@ -12,10 +12,11 @@ provider factory).
 """
 
 import math
+import pathlib
 import unittest
 
 import numpy as np
-from scipy.optimize import root
+from scipy.optimize import brentq, root
 
 import lunar_od.radiometrics as radiometrics
 from lunar_od.radiometrics import (
@@ -58,6 +59,47 @@ STATION_LON0 = math.radians(20.0)
 # (examples/r2_measurement_fidelity_validation.py FROZEN_TRANSPONDER_DELAYS_S).
 FROZEN_DELAYS_S = (0.0, 1e-6, 1e-5, 1e-4, 1e-3)
 GEOMETRIES = ((300.0, 10.0), (300.0, 60.0), (700.0, 60.0), (700.0, 30.0), (500.0, 100.0))
+
+# --- Owner Addendum 06: independent numerical-accuracy oracle ----------------
+# Structurally independent of production: it solves the LOCAL light-time
+# unknowns with a scalar root finder and never calls a production event solver
+# or the R2 reference. Validated against a 60-digit Decimal formulation
+# (agreement < 1e-14 s) in the Phase-1A oracle-validation artifact.
+NOMINAL_ROUND_TRIP_LIGHT_TIME_S = 2.56
+# Accumulated binary64 rounding of the repaired arithmetic, in ulp(rho):
+# two range/c divisions + local light-time representation + two additions
+# assembling the round-trip light time + the endpoint difference.
+INDEPENDENT_ORACLE_K = 5
+
+
+def _independent_local_round_trip_light_time(t3: float) -> float:
+    """Round-trip light time from a scalar root solve on local unknowns."""
+    station_rx = _station_state(t3)
+
+    def downlink_residual(tau):
+        sc = _interp_state(T_GRID, STATES, t3 - tau)
+        return tau - float(np.linalg.norm(sc[:3] - station_rx[:3])) / C_LIGHT
+
+    tau_down = brentq(downlink_residual, 1.0, 4.0, xtol=1e-15, rtol=8.9e-16,
+                      maxiter=200)
+    t2 = t3 - tau_down
+    sc_t2 = _interp_state(T_GRID, STATES, t2)
+
+    def uplink_residual(tau):
+        g1 = _station_state(t2 - tau)
+        return tau - float(np.linalg.norm(sc_t2[:3] - g1[:3])) / C_LIGHT
+
+    tau_up = brentq(uplink_residual, 1.0, 4.0, xtol=1e-15, rtol=8.9e-16, maxiter=200)
+    return tau_down + tau_up
+
+
+def _independent_observable(receive_mid_s: float, count_interval_s: float) -> float:
+    """Zero-delay counted-Doppler observable from the independent oracle."""
+    half = 0.5 * count_interval_s
+    rho_start = _independent_local_round_trip_light_time(receive_mid_s - half)
+    rho_end = _independent_local_round_trip_light_time(receive_mid_s + half)
+    return C_LIGHT * ((rho_end - rho_start) / count_interval_s) / 2.0
+
 
 
 def _station_state(t_s: float) -> np.ndarray:
@@ -284,10 +326,22 @@ class ZeroDelayReductionPivot(unittest.TestCase):
                 )
 
     def test_p08_matches_the_accepted_model_s_within_the_ulp_budget(self):
-        """Models S and F build metre ranges first, so they differ by association.
+        """P08C: historical model-S characterization (Owner Addendum 06).
 
-        That difference is bounded by the frozen K = 2 ULP budget and by the
-        4.9e-10 s round-trip light-time equivalence, not by bitwise identity.
+        This assertion previously served as the primary NUMERICAL-ACCURACY
+        oracle for the zero-delay observable. Owner Addendum 06 superseded that
+        role: the long-arc time-conditioning repair (Q1-F01/Q1-F04) removed an
+        O(ulp(pass-relative epoch)) error from production, and the accepted
+        model-S reference -- which is byte-protected and therefore still
+        reconstructs short intervals from large rounded epochs -- retains it.
+        An independent 60-digit oracle that calls neither side shows repaired
+        production closer to truth in every fixture case, by 20x to 280x.
+
+        The test identity is deliberately preserved rather than renamed, and the
+        model-S comparison is still computed. What changed is its role: it now
+        CHARACTERIZES the historical reference's conditioning instead of bounding
+        production. Numerical accuracy is gated by
+        ``test_p08b_matches_the_independent_high_precision_oracle``.
         """
         for receive_mid_s, count_interval_s in GEOMETRIES:
             with self.subTest(t=receive_mid_s, tc=count_interval_s):
@@ -299,11 +353,69 @@ class ZeroDelayReductionPivot(unittest.TestCase):
                     CountedDopplerReferenceConfig(count_interval_s=count_interval_s),
                 ).observable
                 r4_value = _observable(receive_mid_s, _config(count_interval_s, 0.0))
-                difference = abs(r4_value - reference)
-                ulp_budget = 2.0 * np.spacing(0.5 * C_LIGHT * 2.56) / count_interval_s
-                self.assertLessEqual(difference, ulp_budget)
-                rtlt_equivalent = 2.0 * count_interval_s * difference / C_LIGHT
-                self.assertLessEqual(rtlt_equivalent, 4.9e-10)
+                truth = _independent_observable(receive_mid_s, count_interval_s)
+                production_error = abs(r4_value - truth)
+                reference_error = abs(reference - truth)
+                # The characterization claim: production is the more accurate of
+                # the two. If this ever inverts, the supersession premise fails.
+                self.assertLess(
+                    production_error,
+                    reference_error,
+                    "repaired production must remain closer to independent truth "
+                    "than the historical model-S reference",
+                )
+                # Model-S must still be reproducible and physically sane.
+                self.assertTrue(math.isfinite(reference))
+                self.assertLess(abs(reference - r4_value) / abs(truth), 1e-6)
+
+    def test_p08b_matches_the_independent_high_precision_oracle(self):
+        """P08B: the post-repair numerical-accuracy gate (Owner Addendum 06).
+
+        The bound is derived, not fitted: accumulating the binary64 rounding of
+        the repaired arithmetic -- two range/c divisions, the local light-time
+        representation, two additions assembling the round-trip light time, and
+        the endpoint difference -- gives K = 5 ulp(rho), which the counted
+        observable scales by c / (2 Tc).
+        """
+        for receive_mid_s, count_interval_s in GEOMETRIES:
+            with self.subTest(t=receive_mid_s, tc=count_interval_s):
+                truth = _independent_observable(receive_mid_s, count_interval_s)
+                r4_value = _observable(receive_mid_s, _config(count_interval_s, 0.0))
+                budget = (
+                    INDEPENDENT_ORACLE_K
+                    * C_LIGHT
+                    * np.spacing(NOMINAL_ROUND_TRIP_LIGHT_TIME_S)
+                    / (2.0 * count_interval_s)
+                )
+                self.assertLessEqual(abs(r4_value - truth), budget)
+
+    def test_p08b_oracle_is_structurally_independent_of_production(self):
+        """The accuracy oracle must not be production wearing a different hat."""
+        source = pathlib.Path(__file__).read_text(encoding="utf-8")
+        body = source.split("def _independent_local_round_trip_light_time")[1]
+        body = body.split(chr(10) + "def ")[0]
+        for forbidden in ("solve_two_way_light_time", "solve_two_way_range_events",
+                          "four_event_counted_doppler", "counted_doppler_reference"):
+            self.assertNotIn(forbidden, body)
+
+    def test_p08b_oracle_agrees_with_a_second_independent_formulation(self):
+        """Cross-check the scalar-root oracle against a coarse fixed-point solve."""
+        for receive_mid_s, _tc in GEOMETRIES[:3]:
+            with self.subTest(t=receive_mid_s):
+                a = _independent_local_round_trip_light_time(receive_mid_s)
+                # Independent fixed-point on the same local unknowns.
+                station_rx = _station_state(receive_mid_s)
+                tau_d = 0.0
+                for _ in range(80):
+                    sc = _interp_state(T_GRID, STATES, receive_mid_s - tau_d)
+                    tau_d = float(np.linalg.norm(sc[:3] - station_rx[:3])) / C_LIGHT
+                t2 = receive_mid_s - tau_d
+                sc2 = _interp_state(T_GRID, STATES, t2)
+                tau_u = 0.0
+                for _ in range(80):
+                    g1 = _station_state(t2 - tau_u)
+                    tau_u = float(np.linalg.norm(sc2[:3] - g1[:3])) / C_LIGHT
+                self.assertAlmostEqual(a, tau_d + tau_u, delta=1e-13)
 
 
 class ModelFParity(unittest.TestCase):
