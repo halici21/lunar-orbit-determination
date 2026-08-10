@@ -436,17 +436,127 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
             },
         )
 
-    def test_p21_m3_production_module_is_byte_identical_to_the_baseline(self):
+    # --- Owner Addendum 07B: M3 source-protection identity transition -------
+    #
+    # This gate used to assert
+    #
+    #     current repaired production blob == pre-repair production blob
+    #
+    # which became logically unsatisfiable the moment Owner Addendum 05
+    # authorized editing lunar_od/two_way_range.py to repair the confirmed
+    # long-arc time-conditioning defect. Its scientific purpose was never
+    # "the source may never change"; it was PROTECTION / PROVENANCE.
+    #
+    # It is therefore replaced by three separate hard contracts (P21-A/B/C),
+    # none of which involves a physical threshold. Nothing is weakened: the
+    # historical blob stays permanently pinned, the repaired blob is pinned
+    # too, and the diff between them is bounded to the authorized scope.
+
+    #: Pre-repair M3 blob. Present at BOTH the R3 baseline (632560d) and the
+    #: canonical R4 baseline (ec4b6871) -- two_way_range.py did not change
+    #: between them -- so this single object identity anchors the whole
+    #: pre-repair lineage.
+    M3_HISTORICAL_BLOB = "a3561b252d4ca627f8fdda05deff7baf86858eeb"
+    M3_CANONICAL_PRE_REPAIR_COMMIT = "ec4b6871cc8a6bf1f15e7a1dc5d0b7fb013f83d8"
+    M3_R3_BASELINE_COMMIT = "632560d72d51b3d77b401365b1839908c2c8e85f"
+
+    #: Repaired CANDIDATE blob. Deliberately not called "canonical": canonical
+    #: still points at the pre-repair source and no merge has occurred.
+    M3_REPAIRED_CANDIDATE_BLOB = "e3a05e2447e61babcfb79de0ec790eb560ac4bf9"
+
+    def _git_blob_id(self, root, commit):
+        """Blob object id of M3 at ``commit``, from the Git object store.
+
+        Object lookup only -- deliberately no working-tree fallback, so a
+        dirty or reverted checkout can never make this gate pass.
+        """
+        git = campaign_module.resolve_git_executable()
+        return subprocess.run(
+            [git, "-C", str(root), "rev-parse", f"{commit}:lunar_od/two_way_range.py"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+
+    def test_p21a_m3_historical_pre_repair_blob_identity_is_preserved(self):
+        """P21-A: the pre-repair M3 object is permanently protected."""
+        root = Path(radiometrics_module.__file__).resolve().parents[1]
+        for commit in (self.M3_CANONICAL_PRE_REPAIR_COMMIT, self.M3_R3_BASELINE_COMMIT):
+            self.assertEqual(
+                self._git_blob_id(root, commit),
+                self.M3_HISTORICAL_BLOB,
+                f"historical M3 blob moved at {commit}",
+            )
+
+    def test_p21b_m3_repaired_candidate_blob_identity_is_fixed(self):
+        """P21-B: the active repaired source has a pinned, auditable identity."""
         git = campaign_module.resolve_git_executable()
         root = Path(radiometrics_module.__file__).resolve().parents[1]
-        baseline = subprocess.run(
-            [git, "-C", str(root), "cat-file", "--filters",
-             "632560d72d51b3d77b401365b1839908c2c8e85f:lunar_od/two_way_range.py"],
-            check=True, capture_output=True,
+        # hash-object over the working tree, so an unrecorded local edit to the
+        # repaired module is caught rather than silently qualified.
+        current = subprocess.run(
+            [git, "-C", str(root), "hash-object", "lunar_od/two_way_range.py"],
+            check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        self.assertEqual(current, self.M3_REPAIRED_CANDIDATE_BLOB)
+        self.assertNotEqual(
+            current,
+            self.M3_HISTORICAL_BLOB,
+            "repaired candidate must not be the pre-repair blob",
+        )
+
+    def test_p21c_m3_repair_diff_stays_inside_the_authorized_scope(self):
+        """P21-C: historical -> repaired diff is conditioning-only.
+
+        Owner Addendum 05 authorized a numerical time-conditioning repair and
+        nothing else. This bounds the diff to that scope by checking, in the
+        changed lines, that the physical light-time equation, the event
+        definitions, the range/delay conventions and the speed of light are
+        untouched.
+        """
+        git = campaign_module.resolve_git_executable()
+        root = Path(radiometrics_module.__file__).resolve().parents[1]
+        diff = subprocess.run(
+            [git, "-C", str(root), "diff", "-U0",
+             self.M3_CANONICAL_PRE_REPAIR_COMMIT, "--",
+             "lunar_od/two_way_range.py"],
+            check=True, capture_output=True, text=True,
         ).stdout
-        current = (root / "lunar_od" / "two_way_range.py").read_bytes()
-        self.assertEqual(hashlib.sha256(current).hexdigest(),
-                         hashlib.sha256(baseline).hexdigest())
+
+        changed = [
+            line[1:].strip()
+            for line in diff.splitlines()
+            if (line.startswith("+") or line.startswith("-"))
+            and not line.startswith(("+++", "---"))
+        ]
+        code = [
+            line for line in changed
+            if line and not line.startswith("#")
+        ]
+
+        # Every changed CODE line must be one of the three authorized
+        # conditioning repairs -- residual evaluation, or round-trip assembly.
+        authorized_substrings = (
+            "downlink_equation_residual_s =",
+            "uplink_equation_residual_s =",
+            "round_trip_light_time_s =",
+        )
+        for line in code:
+            self.assertTrue(
+                any(token in line for token in authorized_substrings),
+                f"M3 repair touched an unauthorized code line: {line!r}",
+            )
+
+        # And these invariants must appear nowhere in the changed code.
+        forbidden = (
+            "light_speed_mps =", "C_LIGHT", "transponder_delay_s =",
+            "def solve_two_way_range_events", "station_state_provider =",
+            "_interp_state(", "earth_", "sxform", "j2_", "force",
+        )
+        for line in code:
+            for token in forbidden:
+                self.assertNotIn(
+                    token, line,
+                    f"M3 repair changed a protected construct ({token}): {line!r}",
+                )
 
 
 class R3CompatibilityUnchangedOutsideTheMeasurementModel(unittest.TestCase):

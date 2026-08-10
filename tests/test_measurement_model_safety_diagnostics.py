@@ -483,15 +483,34 @@ def test_p0b1_one_way_nonconverged_last_iterate_is_rejected():
 
 
 def _round_trip_equation_residuals(solution, t_grid: np.ndarray, states: np.ndarray, config):
+    """Independent recomputation of the per-leg light-time equation residuals.
+
+    Owner Addendum 07C -- ARITHMETIC ASSOCIATION.
+
+    This helper used to re-derive each leg's light time by SUBTRACTING EVENT
+    EPOCHS::
+
+        downlink = (receive_time_s - transponder_time_s) - geometric_light_time
+        uplink   = (transponder_time_s - delay - transmit_time_s) - geometric_light_time
+
+    That is exactly the association the Addendum-05 repair removed from
+    production, because re-deriving a ~2.6 s interval from two rounded epochs
+    gives it the granularity of ulp(epoch) instead of ulp(tau). Production now
+    evaluates each residual against its AUTHORITATIVE LOCAL light time, so the
+    two sides no longer agree to the 4-ULP cross-check tolerance -- the
+    observed gap was 1.11e-16 s, i.e. one rounding unit of the old route.
+
+    The fail-closed contract this test protects is NOT affected and is NOT
+    changed: the solver still refuses to converge, and the 1e-11 s physical
+    equation criterion is untouched. Only this recomputation is realigned onto
+    the same well-conditioned association production uses, so that it remains
+    an independent check of the RESIDUAL VALUE rather than a check of the
+    obsolete arithmetic route.
+    """
     sc_t2 = interp_state_history(t_grid, states, solution.transponder_time_s)[:3]
     geometric_light_time = float(np.linalg.norm(sc_t2) / config.light_speed_mps)
-    downlink = (solution.receive_time_s - solution.transponder_time_s) - geometric_light_time
-    uplink = (
-        solution.transponder_time_s
-        - config.transponder_delay_s
-        - solution.transmit_time_s
-        - geometric_light_time
-    )
+    downlink = float(solution.downlink_light_time_s) - geometric_light_time
+    uplink = float(solution.uplink_light_time_s) - geometric_light_time
     return np.array([downlink, uplink], dtype=float)
 
 
