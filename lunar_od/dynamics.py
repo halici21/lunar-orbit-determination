@@ -634,6 +634,90 @@ def propagate_state(
     return solution.y.T
 
 
+def _propagate_augmented_with_harmonics(
+    t_eval_s, state_aug0_mci, mu_moon, mu_earth, mu_sun,
+    get_earth_pos, get_sun_pos, harmonic_model, h_ctx, *,
+    rtol, atol, method, j2_moon, j2_earth, earth_j2_mode,
+):
+    """42-state RHS with a MATCHED harmonic acceleration and gradient.
+
+    The same ``harmonic_model`` supplies both, so trajectory and variational
+    fidelity cannot diverge, and the same rotation is applied to both.
+    """
+    from scipy.integrate import solve_ivp
+    from .gravity_harmonics import spherical_harmonic_gravity_gradient
+
+    rot_const, rot_t, rot_grid = h_ctx[0], h_ctx[1], h_ctx[2]
+
+    def _rotation_at(t_s: float) -> np.ndarray:
+        if rot_const is not None:
+            return rot_const
+        return nearest_rotation_at_time(rot_grid, rot_t, float(t_s))
+
+    state_aug0_mci = np.asarray(state_aug0_mci, dtype=float).reshape(-1)
+    if state_aug0_mci.size != 42:
+        raise ValueError("Initial augmented state must have 42 elements.")
+
+    def rhs(t_s: float, state_aug: np.ndarray) -> np.ndarray:
+        t_s = float(t_s)
+        x_mci = state_aug[:6]
+        phi = state_aug[6:].reshape((6, 6), order="F")
+        r_earth = _vec3(get_earth_pos(t_s), "r_moon_earth_m")
+        r_sun = _vec3(get_sun_pos(t_s), "r_moon_sun_m")
+        c_bf = _rotation_at(t_s)
+        x_dot = f3body_moon(
+            x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
+            j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+            harmonic_model=harmonic_model, c_inertial_to_bf_harmonic=c_bf,
+        )
+        a_matrix = dynamics_jacobian_a_matrix(
+            x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
+            j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+        )
+        a_matrix[3:6, 0:3] = a_matrix[3:6, 0:3] + spherical_harmonic_gravity_gradient(
+            x_mci[:3], harmonic_model, c_bf
+        )
+        phi_dot = a_matrix @ phi
+        return np.concatenate([x_dot, phi_dot.reshape(-1, order="F")])
+
+    if method.upper() == "ADAMS":
+        return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
+    solution = solve_ivp(
+        rhs, (float(t_eval_s[0]), float(t_eval_s[-1])), state_aug0_mci,
+        method=method, t_eval=t_eval_s, rtol=rtol, atol=atol,
+    )
+    if not solution.success:
+        raise RuntimeError(f"Augmented harmonic propagation failed: {solution.message}")
+    return solution.y.T
+
+
+_GENERIC_PA_FRAMES = {"MOON_PA", "MOON_ME"}
+
+
+def require_explicit_pa_realization(model: SphericalHarmonicGravityModel) -> str:
+    """Return the model's explicit PA realization frame, or fail closed.
+
+    A generic ``MOON_PA`` label is NOT acceptable for OD use.  SPICE resolves
+    the generic alias according to whichever lunar frame kernel was furnished
+    last (``moon_080317.tf`` -> MOON_PA_DE421, ``moon_de440_220930.tf`` ->
+    MOON_PA_DE440), so a model carrying only the generic label can silently be
+    evaluated in a realization that is not the one its coefficients were solved
+    in.  The realization must therefore be stated explicitly, e.g.
+    ``MOON_PA_DE440``.
+    """
+    frame = str(getattr(model, "frame", "") or "").strip().upper()
+    if frame in _GENERIC_PA_FRAMES or not frame:
+        raise ValueError(
+            f"lunar harmonics model carries the generic body-fixed frame label "
+            f"{frame or '(empty)'!r}, which does not identify a principal-axes "
+            "realization. SPICE resolves the generic MOON_PA alias by kernel "
+            "load order, so this could silently evaluate the field in the wrong "
+            "realization. Set an explicit realization (e.g. 'MOON_PA_DE440') "
+            "matching the coefficient product."
+        )
+    return frame
+
+
 def propagate_augmented_state(
     t_eval_s: ArrayLike,
     state_aug0_mci: ArrayLike,
@@ -650,6 +734,8 @@ def propagate_augmented_state(
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
     harmonic_model: SphericalHarmonicGravityModel | None = None,
+    harmonic_rotation=None,
+    harmonic_stm_opt_in: bool = False,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -661,20 +747,46 @@ def propagate_augmented_state(
     ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'``) for Earth's
     J2 in the Moon-centered frame.
 
-    Lunar spherical harmonics are acceleration-only and have NO gravity
-    gradient, so they cannot participate in STM propagation: requesting
-    ``harmonic_model`` here raises immediately (a silent acceleration/gradient
-    mismatch is forbidden).
+    Lunar spherical harmonics in the STM are **explicit opt-in only** and are
+    still fail-closed by default.  Passing ``harmonic_model`` without
+    ``harmonic_stm_opt_in=True`` raises, exactly as before.  With the opt-in the
+    matched analytic Pines gradient drives the variational equations, and three
+    further conditions are enforced (each a hard error, never a silent
+    downgrade):
+
+    - the model must declare an explicit principal-axes realization
+      (``MOON_PA_DE440``, not the generic ``MOON_PA`` alias);
+    - ``harmonic_rotation`` must be supplied and must satisfy the same
+      composition rules as the 6-state path (J2 double-count ban, epoch-grid
+      requirement for m > 0, grid coverage);
+    - the SAME model instance drives both the acceleration and the gradient, so
+      trajectory/variational degree, order and coefficients cannot diverge.
+
+    This does not change any default: with ``harmonic_model=None`` the function
+    behaves exactly as before.
     """
     from scipy.integrate import solve_ivp
 
+    t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
     if harmonic_model is not None:
-        raise ValueError(
-            "lunar harmonics gradient not implemented; use 6-state propagation "
-            "or disable lunar harmonics for STM"
+        if not harmonic_stm_opt_in:
+            raise ValueError(
+                "lunar harmonics in the STM are explicit opt-in only; pass "
+                "harmonic_stm_opt_in=True to use the matched analytic Pines "
+                "gradient, or use 6-state propagation. (Refusing rather than "
+                "silently falling back to a J2-level gradient.)"
+            )
+        require_explicit_pa_realization(harmonic_model)
+        _h_ctx = _prepare_harmonic_context(
+            harmonic_model, harmonic_rotation, j2_moon, t_eval_s
+        )
+        return _propagate_augmented_with_harmonics(
+            t_eval_s, state_aug0_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, harmonic_model, _h_ctx,
+            rtol=rtol, atol=atol, method=method,
+            j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
         )
 
-    t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
     if t_eval_s.size == 0:
         raise ValueError("t_eval_s must contain at least one epoch.")
 

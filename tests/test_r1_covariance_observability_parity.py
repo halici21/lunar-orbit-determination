@@ -755,7 +755,11 @@ class R1PosteriorAndObservabilityParityTests(unittest.TestCase):
         ):
             self.assertEqual(harmonic_capabilities[role], ConsumerReadiness.UNSUPPORTED)
         _, _, _, _, get_earth, get_sun, initial = _position_fixture()
-        with self.assertRaisesRegex(ValueError, "harmonics gradient not implemented"):
+        # The analytic Pines gradient now exists, so the refusal is
+        # "explicit opt-in only" rather than "not implemented".  The
+        # fail-closed contract this test protects is unchanged: harmonics
+        # must never reach the STM path implicitly.
+        with self.assertRaisesRegex(ValueError, "explicit opt-in only"):
             dynamics.propagate_augmented_state(
                 [0.0, 60.0],
                 np.concatenate([initial, np.eye(6).reshape(-1, order="F")]),

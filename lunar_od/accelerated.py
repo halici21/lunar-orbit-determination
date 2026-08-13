@@ -1089,6 +1089,178 @@ def _pines_accel_bf_numba(
     return out
 
 
+@_optional_njit(cache=True, fastmath=False)
+def _pines_gradient_bf_numba(
+    r_bf: np.ndarray,
+    mu: float,
+    r_ref: float,
+    cbar: np.ndarray,
+    sbar: np.ndarray,
+    nmax: int,
+    mmax: int,
+) -> np.ndarray:
+    """Numba twin of ``gravity_harmonics._pines_gradient_bf``.
+
+    Same expansion, same normalization, same Abar recursion, same truncation
+    semantics and the same chain-rule split
+    ``G = (da/dr) e^T + (1/r) M (I - e e^T)`` as the qualified Python analytic
+    gradient.  It is a transcription, not a re-derivation, and it is NOT a
+    finite-difference or reduced-order substitute.
+
+    fastmath note: this kernel is deliberately ``fastmath=False`` while the
+    acceleration twin is ``fastmath=True``.  The gradient's symmetry and trace
+    are used as round-off-level correctness diagnostics, and fastmath permits
+    the reassociation that would blur exactly those cancellations.  Correctness
+    diagnostics win over the small speed difference here.
+    """
+    x = r_bf[0]
+    y = r_bf[1]
+    z = r_bf[2]
+    r = np.sqrt(x * x + y * y + z * z)
+    s = x / r
+    t = y / r
+    u = z / r
+
+    # Two spare columns: the gradient needs Abar_n,m+1 AND Abar_n,m+2.
+    ab = np.zeros((nmax + 1, nmax + 3))
+    ab[0, 0] = 1.0
+    ab[1, 0] = np.sqrt(3.0) * u
+    ab[1, 1] = np.sqrt(3.0)
+    for n in range(2, nmax + 1):
+        ab[n, n] = np.sqrt((2.0 * n + 1.0) / (2.0 * n)) * ab[n - 1, n - 1]
+        ab[n, n - 1] = u * np.sqrt(2.0 * n) * ab[n, n]
+    for m in range(0, nmax - 1):
+        for n in range(m + 2, nmax + 1):
+            alpha = np.sqrt((2.0 * n - 1.0) * (2.0 * n + 1.0) / ((n - m) * (n + m)))
+            beta = np.sqrt(
+                (2.0 * n + 1.0) * (n + m - 1.0) * (n - m - 1.0)
+                / ((2.0 * n - 3.0) * (n + m) * (n - m))
+            )
+            ab[n, m] = alpha * u * ab[n - 1, m] - beta * ab[n - 2, m]
+
+    rm = np.zeros(nmax + 1)
+    im = np.zeros(nmax + 1)
+    rm[0] = 1.0
+    for m in range(1, nmax + 1):
+        rm[m] = s * rm[m - 1] - t * im[m - 1]
+        im[m] = s * im[m - 1] + t * rm[m - 1]
+
+    dadr0 = 0.0
+    dadr1 = 0.0
+    dadr2 = 0.0
+    m00 = 0.0
+    m01 = 0.0
+    m02 = 0.0
+    m10 = 0.0
+    m11 = 0.0
+    m12 = 0.0
+    m20 = 0.0
+    m21 = 0.0
+    m22 = 0.0
+
+    rho = r_ref / r
+    kn = (mu / (r * r)) * rho * rho
+    for n in range(2, nmax + 1):
+        m_top = mmax if mmax < n else n
+        for m in range(0, m_top + 1):
+            cnm = cbar[n, m]
+            snm = sbar[n, m]
+            if cnm == 0.0 and snm == 0.0:
+                continue
+
+            p = ab[n, m]
+            if m == 0:
+                dfac = np.sqrt(n * (n + 1) / 2.0)
+            else:
+                dfac = np.sqrt((n - m) * (n + m + 1.0))
+            q = dfac * ab[n, m + 1]
+            # f_n,m+1 is only defined for m + 1 <= n; at m = n the whole second
+            # derivative term is identically zero because Abar_n,m+2 = 0.
+            if m + 1 <= n:
+                if m + 1 == 0:
+                    dfac2 = np.sqrt(n * (n + 1) / 2.0)
+                else:
+                    dfac2 = np.sqrt((n - m - 1.0) * (n + m + 2.0))
+                qp = dfac * dfac2 * ab[n, m + 2]
+            else:
+                qp = 0.0
+
+            d = cnm * rm[m] + snm * im[m]
+            if m == 0:
+                e = 0.0
+                f = 0.0
+            else:
+                e = cnm * rm[m - 1] + snm * im[m - 1]
+                f = snm * rm[m - 1] - cnm * im[m - 1]
+            if m >= 2:
+                g2 = cnm * rm[m - 2] + snm * im[m - 2]
+                h2 = snm * rm[m - 2] - cnm * im[m - 2]
+            else:
+                g2 = 0.0
+                h2 = 0.0
+
+            w = (n + m + 1.0) * p + u * q
+            lam = w * d
+            wu = (n + m + 2.0) * q + u * qp
+            mm1 = m * (m - 1.0)
+
+            gx = m * p * e - s * lam
+            gy = m * p * f - t * lam
+            gz = q * d - u * lam
+
+            radial = -(n + 2.0) * kn / r
+            dadr0 += radial * gx
+            dadr1 += radial * gy
+            dadr2 += radial * gz
+
+            m00 += kn * (mm1 * p * g2 - lam - s * m * w * e)
+            m01 += kn * (mm1 * p * h2 - s * m * w * f)
+            m02 += kn * (m * q * e - s * d * wu)
+
+            m10 += kn * (mm1 * p * h2 - t * m * w * e)
+            m11 += kn * (-mm1 * p * g2 - lam - t * m * w * f)
+            m12 += kn * (m * q * f - t * d * wu)
+
+            m20 += kn * (m * e * (q - u * w))
+            m21 += kn * (m * f * (q - u * w))
+            m22 += kn * (qp * d - lam - u * d * wu)
+        kn *= rho
+
+    # G = dadr e^T + (1/r) (M - (M e) e^T)
+    me0 = m00 * s + m01 * t + m02 * u
+    me1 = m10 * s + m11 * t + m12 * u
+    me2 = m20 * s + m21 * t + m22 * u
+
+    out = np.zeros((3, 3))
+    out[0, 0] = dadr0 * s + (m00 - me0 * s) / r
+    out[0, 1] = dadr0 * t + (m01 - me0 * t) / r
+    out[0, 2] = dadr0 * u + (m02 - me0 * u) / r
+    out[1, 0] = dadr1 * s + (m10 - me1 * s) / r
+    out[1, 1] = dadr1 * t + (m11 - me1 * t) / r
+    out[1, 2] = dadr1 * u + (m12 - me1 * u) / r
+    out[2, 0] = dadr2 * s + (m20 - me2 * s) / r
+    out[2, 1] = dadr2 * t + (m21 - me2 * t) / r
+    out[2, 2] = dadr2 * u + (m22 - me2 * u) / r
+    return out
+
+
+def pines_gradient_bf_fast(r_bf, mu, r_ref, cbar, sbar, nmax, mmax) -> np.ndarray:
+    """Input-casting wrapper around the njit Pines gradient kernel.
+
+    Mirrors :func:`pines_accel_bf_fast`, including the minimum-radius guard, so
+    the two fast paths refuse the same inputs.
+    """
+    r = np.asarray(r_bf, dtype=np.float64).reshape(3)
+    if float(np.sqrt(r[0] * r[0] + r[1] * r[1] + r[2] * r[2])) < _HARMONIC_MIN_RADIUS_M:
+        raise ValueError("position radius is too small for a harmonic field evaluation.")
+    return _pines_gradient_bf_numba(
+        r, float(mu), float(r_ref),
+        np.ascontiguousarray(cbar, dtype=np.float64),
+        np.ascontiguousarray(sbar, dtype=np.float64),
+        int(nmax), int(mmax),
+    )
+
+
 def pines_accel_bf_fast(r_bf, mu, r_ref, cbar, sbar, nmax, mmax) -> np.ndarray:
     """Input-casting wrapper around the njit Pines body-fixed kernel.
 

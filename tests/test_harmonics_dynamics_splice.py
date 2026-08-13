@@ -193,14 +193,40 @@ class StmGuardTests(unittest.TestCase):
     def _aug0(self):
         return np.concatenate([_polar_state(), np.eye(6).reshape(-1, order="F")])
 
-    # 7 -- STM + harmonics -> explicit error -----------------------------------
+    # 7 -- STM + harmonics without the explicit opt-in -> explicit error -------
     def test_stm_with_harmonics_raises(self):
+        """Harmonics must never reach the STM implicitly.
+
+        The analytic Pines gradient now exists, so the refusal is no longer
+        "not implemented" -- it is "explicit opt-in only".  The contract this
+        test protects is unchanged and just as strict: passing a harmonic model
+        to the 42-state path without deliberately opting in MUST raise, never
+        silently fall back to a J2-level gradient.
+        """
         teval = np.arange(0.0, 300.0 + 1, 60.0)
         with self.assertRaises(ValueError) as ctx:
             propagate_augmented_state(teval, self._aug0(), MU_M, MU_E, MU_S, GE, GS,
                                       harmonic_model=_c20_model())
-        self.assertIn("gradient not implemented", str(ctx.exception))
-        self.assertIn("6-state", str(ctx.exception))
+        message = str(ctx.exception)
+        self.assertIn("explicit opt-in only", message)
+        self.assertIn("harmonic_stm_opt_in", message)
+
+    # 7b -- opting in with a generic PA label is still refused ------------------
+    def test_stm_opt_in_still_rejects_generic_pa_realization(self):
+        """Opting in is not enough: the PA realization must be explicit.
+
+        SPICE resolves the generic ``MOON_PA`` alias by kernel load order, so a
+        model carrying only that label could silently be evaluated in the wrong
+        principal-axes realization.
+        """
+        teval = np.arange(0.0, 300.0 + 1, 60.0)
+        with self.assertRaises(ValueError) as ctx:
+            propagate_augmented_state(teval, self._aug0(), MU_M, MU_E, MU_S, GE, GS,
+                                      harmonic_model=_c20_model(),
+                                      harmonic_rotation=np.eye(3),
+                                      harmonic_stm_opt_in=True)
+        self.assertIn("realization", str(ctx.exception))
+        self.assertIn("MOON_PA_DE440", str(ctx.exception))
 
     # 8 -- STM harmonics-off unchanged ------------------------------------------
     def test_stm_without_harmonics_unchanged(self):
