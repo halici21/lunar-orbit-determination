@@ -1096,8 +1096,12 @@ def solve_two_way_light_time(
     # events: the spacecraft state at the final t2 was re-interpolated above;
     # the uplink station is re-queried at the final t1 (the loop's last
     # station_tx_state can lag t1 by one update).
+    # Q1-F01: compared against the AUTHORITATIVE LOCAL light time rather than the
+    # re-derived ``receive_time_s - t2``, which inherits ulp(receive_time_s) and
+    # makes the accepted 1e-11 s tolerance unreachable beyond ~12.5 h of
+    # pass-relative time. Physical equation and tolerance unchanged.
     downlink_equation_residual_s = abs(
-        (receive_time_s - t2)
+        downlink_lt
         - float(
             np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps
         )
@@ -1114,8 +1118,9 @@ def solve_two_way_light_time(
         event_label="uplink",
         consumer="solve_two_way_light_time",
     )
+    # Q1-F01: as for the downlink leg.
     uplink_equation_residual_s = abs(
-        (t2 - cfg.transponder_delay_s - t1)
+        uplink_lt
         - float(
             np.linalg.norm(sc_t2_state[:3] - station_tx_final[:3]) / cfg.light_speed_mps
         )
@@ -1131,7 +1136,12 @@ def solve_two_way_light_time(
         receive_time_s=receive_time_s,
         transmit_time_s=float(t1),
         transponder_time_s=float(t2),
-        round_trip_light_time_s=float(receive_time_s - t1),
+        # Q1-F01: assembled from the well-conditioned LOCAL intervals in exactly
+        # the same association M3 uses, so the R4 four-event model still reduces
+        # to this single-bounce model BITWISE at zero delay.
+        round_trip_light_time_s=float(
+            downlink_lt + cfg.transponder_delay_s + uplink_lt
+        ),
         uplink_light_time_s=float(uplink_lt),
         downlink_light_time_s=float(downlink_lt),
         iterations=int(iteration_count + uplink_iter),
