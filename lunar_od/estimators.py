@@ -55,6 +55,7 @@ class EstimatorStats:
     posterior_information: np.ndarray | None = None
     posterior_covariance: np.ndarray | None = None
     posterior_sqrt_information: np.ndarray | None = None
+    termination_detail: str = ""
 
 
 def estimate_position_srif(
@@ -624,7 +625,7 @@ def estimate_position_bls_lm(
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "Singular"
+                stop_reason = "DampingLimit"
                 break
 
     posterior_information, posterior_covariance = (None, None)
@@ -824,7 +825,7 @@ def estimate_range_rate_bls_lm(
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "Singular"
+                stop_reason = "DampingLimit"
                 break
 
     posterior_information, posterior_covariance = (None, None)
@@ -1825,8 +1826,25 @@ def estimate_two_way_range_bls_lm(
     prior_covariance: ArrayLike | None = None,
     prior_sqrt_information: ArrayLike | None = None,
     return_posterior: bool = False,
+    harmonic_model=None,
+    harmonic_epoch_et0: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
-    """Two-way range batch least-squares with LM damping."""
+    """Two-way range batch least-squares with LM damping.
+
+    Lunar spherical harmonics (default-off, opt-in): pass ``harmonic_model``
+    plus ``harmonic_epoch_et0`` (the SPICE ET at ``t = 0``) to run the estimator
+    on a real GRAIL field evaluated in the exact-epoch ``MOON_PA_DE440`` frame.
+    Both the nominal 42-state propagation AND the LM candidate propagation
+    receive the SAME model, and the augmented pass sets
+    ``harmonic_stm_opt_in=True`` so the variational equations use the MATCHED
+    analytic Pines gradient rather than a lower-order one. Leaving the model
+    ``None`` keeps the historical central/J2 behaviour bit-for-bit.
+    """
+    _harm = (
+        {} if harmonic_model is None
+        else {"harmonic_model": harmonic_model,
+              "harmonic_epoch_et0": harmonic_epoch_et0}
+    )
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -1849,12 +1867,65 @@ def estimate_two_way_range_bls_lm(
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
+    termination_detail = "MAX_ITER"
     lambda_damping = float(lambda0)
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
     max_rejected_components = 0
     min_active_weight_fraction = 1.0
+
+    def _acceptance_residual(x_state):
+        """Residual used ONLY for the LM accept/reject comparison.
+
+        PHASE 6.2 repair.  Previously the current state was scored from the
+        42-state augmented propagation while the candidate was scored from a
+        plain 6-state propagation.  Both carried the same nominal rtol label,
+        but the augmented integrator also error-controls the 36 STM components
+        and so takes a far smaller step sequence: measured 0.049-0.449 m
+        trajectory error against 1.06-6.75 m for the 6-state path at the same
+        label.  Near the solution, where residuals are small, that made a
+        candidate look up to 1900x worse than the incumbent regardless of the
+        step, so every candidate was rejected, lambda escalated to the 1e12
+        guard, and the solve stopped with a "Singular" label despite a
+        well-conditioned system.
+
+        Both states now go through this one path at the CALLER'S requested
+        tolerance, so the comparison is like-for-like.  The augmented pass keeps
+        its own adaptive tolerance for the Jacobian, which does not need this
+        accuracy.  Consequence: identical states produce identical costs.
+        """
+        hist = propagate_state(
+            t_pass_s, x_state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+            **_harm,
+        )
+        res, _ = compute_two_way_range_residuals(hist, obs_data, pass_geo)
+        return np.asarray(res, dtype=float)
+
+    def _acceptance_cost(x_state, residual_vec, weight_diag):
+        """Accept/reject scalar: the objective _lm_step actually minimises.
+
+        PHASE 6.2 repair.  The LM normal equations carry both the
+        measurement information and the prior information, so they are
+        Gauss-Newton for the MAP objective
+
+            J_MAP = 0.5 r^T W r + 0.5 (x - x_prior)^T P0^-1 (x - x_prior).
+
+        Acceptance used to score only the measurement half, so a step the
+        normal equations had proposed as a MAP descent could be rejected,
+        and a step that worsened J_MAP could be accepted.  Both were
+        observed in a real solve, at 0.13-0.14 m steps.
+
+        The returned scalar is 2 * J_MAP: the measurement term keeps the
+        factor of two it already carried and the prior term is given the
+        same one, so only the objective changes, not its scaling.
+        """
+        cost = float(np.dot(weight_diag * residual_vec, residual_vec))
+        if has_explicit_prior:
+            delta_prior = np.asarray(x_state, dtype=float) - x_prior
+            cost += float(delta_prior @ prior_inv @ delta_prior)
+        return cost
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
@@ -1870,6 +1941,7 @@ def estimate_two_way_range_bls_lm(
             rtol=_atol_r,
             atol=_atol_a,
             j2_moon=j2_moon,
+            **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
         )
         h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
             obs_data, pass_geo, x_aug_hist
@@ -1885,7 +1957,8 @@ def estimate_two_way_range_bls_lm(
         )
         max_rejected_components = max(max_rejected_components, rejected)
         min_active_weight_fraction = min(min_active_weight_fraction, active_fraction)
-        current_cost = float(np.dot(w_curr_diag * residual, residual))
+        _acc_residual = _acceptance_residual(x_nominal)
+        current_cost = _acceptance_cost(x_nominal, _acc_residual, w_curr_diag)
 
         if iteration == 1:
             best_cost = current_cost
@@ -1902,20 +1975,15 @@ def estimate_two_way_range_bls_lm(
         )
         if singular:
             stop_reason = "Singular"
+            termination_detail = "MATRIX_SINGULAR"
             break
 
         step = _limit_step(step, pos_limit_m=20000.0)
         last_step = step
 
         x_candidate = x_nominal + step
-        x_hist_candidate = propagate_state(
-            t_pass_s, x_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-            get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-        )
-        residual_candidate, _ = compute_two_way_range_residuals(
-            x_hist_candidate, obs_data, pass_geo
-        )
-        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+        residual_candidate = _acceptance_residual(x_candidate)
+        candidate_cost = _acceptance_cost(x_candidate, residual_candidate, w_curr_diag)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -1927,15 +1995,21 @@ def estimate_two_way_range_bls_lm(
             min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
             if relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration:
                 stop_reason = "J-Stab"
+                termination_detail = "COST_STABLE"
                 break
             if np.linalg.norm(step) < tol_step_norm:
                 stop_reason = "Converged"
+                termination_detail = "STEP_NORM"
                 break
         else:
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "Singular"
+                # PHASE 6.2: damping exhaustion, NOT a singular linear solve.
+                # _lm_step reported no singularity to reach here; the LM step
+                # simply stopped being accepted.  The 1e12 limit is unchanged.
+                stop_reason = "DampingLimit"
+                termination_detail = "LAMBDA_HARD_LIMIT"
                 break
 
     posterior_information, posterior_covariance = (None, None)
@@ -1969,6 +2043,7 @@ def estimate_two_way_range_bls_lm(
         active_weight_fraction=min_active_weight_fraction,
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
+        termination_detail=termination_detail,
     )
     return x_best, stop_reason, stats
 

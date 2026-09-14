@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import math
+
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import ArrayLike
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    # Opt-in SRP. Imported lazily at the call sites so that a propagation
+    # without ``srp`` never touches the module, exactly as before it existed.
+    from .srp import SRPOptions
 
 try:
     from .accelerated import (
@@ -23,11 +31,24 @@ try:
     _FAST_HARMONICS = True
 except Exception:
     _FAST_HARMONICS = False
+
+# Numba twin of the analytic Pines gravity gradient, which drives the 42-state
+# variational equations.  Qualified against the pure-Python reference by
+# tests/test_pines_gradient_numba_parity.py (elementwise, Laplace structure,
+# inertial assembly under a real DE440 rotation, and end-to-end STM parity).
+# Module-level so a test can force either path and compare.
+try:
+    from .accelerated import pines_gradient_bf_fast as _pines_gradient_bf_fast
+    _HARMONIC_GRADIENT_FAST = True
+except Exception:
+    _pines_gradient_bf_fast = None
+    _HARMONIC_GRADIENT_FAST = False
 from .gravity_harmonics import (
     SphericalHarmonicGravityModel,
     spherical_harmonic_acceleration,
 )
-from .lunar_frames import nearest_rotation_at_time
+from .lunar_frames import moon_pa_de440_rotation_at_et, nearest_rotation_at_time
+from .spice_loader import require_moon_pa_de440
 
 # ---------------------------------------------------------------------------
 # J2 support — Moon's mean-pole rotation frame
@@ -204,6 +225,7 @@ def f3body_moon(
     earth_j2_mode: str = "indirect",
     harmonic_model: SphericalHarmonicGravityModel | None = None,
     c_inertial_to_bf_harmonic: ArrayLike | None = None,
+    srp: "SRPOptions | None" = None,
 ) -> np.ndarray:
     """6-state derivative matching MATLAB `f3body_moon.m`.
 
@@ -223,6 +245,13 @@ def f3body_moon(
     guards: composition rules (J2 double-count ban, the m > 0 epoch-rotation
     requirement, the STM refusal) are enforced at the propagation entry points.
     A model containing C20 must NOT be combined with ``j2_moon != 0``.
+
+    Pass ``srp`` (an ``lunar_od.srp.SRPOptions``) to add the opt-in cannonball
+    solar radiation pressure with its conical lunar shadow.  ``srp=None``, the
+    default, adds nothing and leaves this function's result bit-for-bit what it
+    was before SRP existed.  The Sun position reused for the force is the same
+    ``r_moon_sun_m`` already supplied for the third-body term, so no second
+    ephemeris, frame or origin convention enters.
     """
     state_mci = _state6(state_mci)
     r_sc_m = state_mci[:3]
@@ -252,6 +281,12 @@ def f3body_moon(
     if harmonic_model is not None:
         a_total_mps2 = a_total_mps2 + spherical_harmonic_acceleration(
             r_sc_m, harmonic_model, c_inertial_to_bf_harmonic
+        )
+    if srp is not None and srp.is_active:
+        from .srp import srp_acceleration_with_lunar_shadow
+
+        a_total_mps2 = a_total_mps2 + srp_acceleration_with_lunar_shadow(
+            r_sc_m, r_moon_sun_m, srp
         )
     return np.concatenate([v_sc_mps, a_total_mps2])
 
@@ -431,6 +466,7 @@ def _prepare_harmonic_context(
     harmonic_rotation,
     j2_moon: float,
     t_eval_s: np.ndarray,
+    direct_epoch_mode: bool = False,
 ):
     """Validate the harmonics composition ONCE at propagation setup.
 
@@ -457,6 +493,17 @@ def _prepare_harmonic_context(
             "without C20 (neither is altered silently)."
         )
     tesseral = _harmonic_tesseral_active(harmonic_model)
+    if direct_epoch_mode:
+        # Q1-F09 DIRECT mode: the RHS evaluates MOON_PA_DE440 at the exact epoch
+        # et0 + t_s, so no sampled rotation is required OR consulted. The guards
+        # below exist to forbid a FROZEN or absent frame for m > 0 models; an
+        # exact per-RHS query satisfies that intent strictly more tightly.
+        return (
+            None, None, None,
+            harmonic_model.cbar, harmonic_model.sbar,
+            float(harmonic_model.mu_m3_s2), float(harmonic_model.r_ref_m),
+            int(harmonic_model.nmax), int(harmonic_model.mmax),
+        )
     if harmonic_rotation is None:
         raise ValueError(
             "harmonic_rotation is required with harmonic_model: pass a constant "
@@ -507,6 +554,101 @@ def _prepare_harmonic_context(
     )
 
 
+
+def _direct_de440_preflight(harmonic_epoch_et0) -> None:
+    """Validate DIRECT mode and prove MOON_PA_DE440 BEFORE integration starts.
+
+    Q1-F09. Passing ``harmonic_epoch_et0`` selects the exact-epoch DE440
+    temporal frame model. That is a fail-closed contract: if the epoch is not
+    finite, or the DE440 kernels are missing/incomplete, propagation must not
+    begin. There is no fallback to the rotation grid, to the generic
+    ``MOON_PA`` alias, to DE421 or to identity.
+    """
+    if harmonic_epoch_et0 is None:
+        return
+    et0 = float(harmonic_epoch_et0)
+    if not math.isfinite(et0):
+        raise ValueError(
+            "harmonic_epoch_et0 must be a finite SPICE ET (TDB seconds past "
+            f"J2000) at propagation-relative t_s = 0; got {harmonic_epoch_et0!r}."
+        )
+    require_moon_pa_de440(et0)
+
+
+def _share_sun_lookup(
+    get_sun_pos: Callable[[float], ArrayLike],
+    srp: "SRPOptions | None",
+) -> Callable[[float], ArrayLike]:
+    """Give the force model and the SRP term one Sun lookup per epoch.
+
+    Both need the Sun at the same instant, and without this the provider would
+    be called twice per RHS evaluation. That is free when the provider is an
+    interpolator and expensive when it is a direct ephemeris query, which is
+    exactly the case a campaign is most likely to hand in.
+
+    Returned unchanged when SRP is off, so no default path acquires a cache.
+    """
+    if srp is None or not srp.is_active:
+        return get_sun_pos
+
+    cache: dict[str, object] = {"t": None, "r": None}
+
+    def cached_sun(t_s: float) -> ArrayLike:
+        t = float(t_s)
+        if cache["t"] != t:
+            cache["t"] = t
+            cache["r"] = get_sun_pos(t)
+        return cache["r"]
+
+    return cached_sun
+
+
+def _with_srp_acceleration(
+    rhs: Callable[[float, np.ndarray], np.ndarray],
+    get_sun_pos: Callable[[float], ArrayLike],
+    srp: "SRPOptions | None",
+    *,
+    state_size: int,
+) -> Callable[[float, np.ndarray], np.ndarray]:
+    """Add the opt-in SRP acceleration on top of an existing RHS closure.
+
+    Returns ``rhs`` ITSELF when SRP is off. That identity matters: an SRP-free
+    propagation runs the same object it always did, so there is no way for the
+    perturbation to leak into a default path through a wrapper that forgot to
+    check a flag.
+
+    Only elements 3:6 are touched — the velocity derivative. For the 42-state
+    augmented path that leaves elements 6:42, the variational block, untouched,
+    which is the Phase 13 STM policy expressed in one line: the trajectory gets
+    ``a_SRP``, the A-matrix does not get its position gradient. Phase 13 measured
+    that gradient at 4.02e-13 of the gravity gradient on the reference arc, so
+    omitting it is an approximation with a measured size, not an oversight.
+    """
+    if srp is None or not srp.is_active:
+        return rhs
+
+    from .srp import srp_acceleration_with_lunar_shadow
+
+    def rhs_with_srp(t_s: float, state: np.ndarray) -> np.ndarray:
+        out = np.array(rhs(t_s, state), dtype=float, copy=True)
+        if out.size < 6:
+            raise ValueError(
+                f"SRP needs at least a 6-element derivative; got {out.size}"
+            )
+        out[3:6] += srp_acceleration_with_lunar_shadow(
+            np.asarray(state, dtype=float)[:3],
+            get_sun_pos(float(t_s)),
+            srp,
+        )
+        return out
+
+    rhs_with_srp.__doc__ = (
+        f"{state_size}-state RHS with opt-in cannonball SRP "
+        f"(K_SRP = {srp.k_srp_m2_per_kg} m^2/kg, shadow {srp.shadow_model})."
+    )
+    return rhs_with_srp
+
+
 def propagate_state(
     t_eval_s: ArrayLike,
     state0_mci: ArrayLike,
@@ -524,6 +666,8 @@ def propagate_state(
     earth_j2_mode: str = "indirect",
     harmonic_model: SphericalHarmonicGravityModel | None = None,
     harmonic_rotation=None,
+    harmonic_epoch_et0: float | None = None,
+    srp: "SRPOptions | None" = None,
 ) -> np.ndarray:
     """Propagate the 6-state dynamics at requested epochs.
 
@@ -544,6 +688,14 @@ def propagate_state(
     ``max(2 * cadence, 120 s)``).  A model containing C20 must be used with
     ``j2_moon=0`` (enforced here with ``ValueError`` — J2 is never counted
     twice and nothing is silently altered); Earth J2 remains composable.
+
+    Solar radiation pressure (Phase 16, opt-in, default-off): pass ``srp`` as an
+    ``lunar_od.srp.SRPOptions`` carrying an explicit ``k_srp_m2_per_kg``.  With
+    ``srp=None`` every force path below is the one that ran before SRP existed —
+    the same closure object, not an equivalent one — so no existing caller can
+    acquire SRP by accident.  There is no default coefficient: enabling SRP
+    without one raises, because the frozen reference spacecraft reports K_SRP as
+    UNKNOWN and the Phase 15 screening envelope is not a bound.
     """
     from scipy.integrate import solve_ivp
 
@@ -552,12 +704,17 @@ def propagate_state(
         raise ValueError("t_eval_s must contain at least one epoch.")
 
     state0_mci = _state6(state0_mci)
+    # One Sun lookup per epoch, shared by the force model and the SRP term.
+    # Identity function when SRP is off.
+    get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
     _emode = _earth_mode_int(j2_earth, earth_j2_mode)
     _h_ctx = None
     if harmonic_model is not None:
         _h_ctx = _prepare_harmonic_context(
-            harmonic_model, harmonic_rotation, j2_moon, t_eval_s
+            harmonic_model, harmonic_rotation, j2_moon, t_eval_s,
+            direct_epoch_mode=harmonic_epoch_et0 is not None,
         )
+        _direct_de440_preflight(harmonic_epoch_et0)
 
     if _FAST_DYNAMICS:
         _j2 = float(j2_moon)
@@ -588,6 +745,14 @@ def propagate_state(
         (_rc, _rt, _rg, _hcb, _hsb, _hmu, _hrr, _hn, _hm) = _h_ctx
 
         def _rotation_at(t_s: float) -> np.ndarray:
+            # Q1-F09: DIRECT mode. ``harmonic_epoch_et0`` is the SPICE ET at
+            # propagation-relative t_s = 0 (NOT at t_eval_s[0], which may be
+            # negative for pre-roll). The exact epoch is et0 + t_s; there is no
+            # rounding, no nearest grid sample and no chunk rebasing.
+            if harmonic_epoch_et0 is not None:
+                return moon_pa_de440_rotation_at_et(
+                    float(harmonic_epoch_et0) + float(t_s)
+                )
             if _rc is not None:
                 return _rc
             return nearest_rotation_at_time(_rg, _rt, float(t_s))
@@ -616,6 +781,11 @@ def propagate_state(
                     c_inertial_to_bf_harmonic=_rotation_at(t_s),
                 )
 
+    # SRP wraps whichever of the four force paths above was selected, rather
+    # than being threaded through each. That keeps every SRP-off path literally
+    # untouched, and makes the perturbation additive by construction.
+    rhs = _with_srp_acceleration(rhs, get_sun_pos, srp, state_size=6)
+
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state0_mci, rhs, rtol, atol)
 
@@ -638,11 +808,17 @@ def _propagate_augmented_with_harmonics(
     t_eval_s, state_aug0_mci, mu_moon, mu_earth, mu_sun,
     get_earth_pos, get_sun_pos, harmonic_model, h_ctx, *,
     rtol, atol, method, j2_moon, j2_earth, earth_j2_mode,
+    harmonic_epoch_et0=None, srp=None,
 ):
     """42-state RHS with a MATCHED harmonic acceleration and gradient.
 
     The same ``harmonic_model`` supplies both, so trajectory and variational
     fidelity cannot diverge, and the same rotation is applied to both.
+
+    ``srp`` enters the trajectory derivative through ``f3body_moon`` and is
+    deliberately absent from ``dynamics_jacobian_a_matrix``: matched fidelity is
+    a requirement for GRAVITY, where the gradient is large, and an explicit
+    approximation for SRP, whose gradient Phase 13 measured at 4.02e-13 of it.
     """
     from scipy.integrate import solve_ivp
     from .gravity_harmonics import spherical_harmonic_gravity_gradient
@@ -650,6 +826,13 @@ def _propagate_augmented_with_harmonics(
     rot_const, rot_t, rot_grid = h_ctx[0], h_ctx[1], h_ctx[2]
 
     def _rotation_at(t_s: float) -> np.ndarray:
+        # Q1-F09: DIRECT mode, identical contract to the 6-state path so the
+        # trajectory and the variational equations can never see different
+        # lunar orientations. ET = et0 + t_s, exact.
+        if harmonic_epoch_et0 is not None:
+            return moon_pa_de440_rotation_at_et(
+                float(harmonic_epoch_et0) + float(t_s)
+            )
         if rot_const is not None:
             return rot_const
         return nearest_rotation_at_time(rot_grid, rot_t, float(t_s))
@@ -669,14 +852,27 @@ def _propagate_augmented_with_harmonics(
             x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_model=harmonic_model, c_inertial_to_bf_harmonic=c_bf,
+            srp=srp,
         )
         a_matrix = dynamics_jacobian_a_matrix(
             x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
         )
-        a_matrix[3:6, 0:3] = a_matrix[3:6, 0:3] + spherical_harmonic_gravity_gradient(
-            x_mci[:3], harmonic_model, c_bf
-        )
+        # Same analytic Pines gradient either way; the fast branch is the
+        # qualified Numba twin.  The inertial assembly C^T G_bf C mirrors
+        # spherical_harmonic_gravity_gradient exactly.
+        if _HARMONIC_GRADIENT_FAST and _pines_gradient_bf_fast is not None:
+            _g_bf = _pines_gradient_bf_fast(
+                c_bf @ x_mci[:3], harmonic_model.mu_m3_s2,
+                harmonic_model.r_ref_m, harmonic_model.cbar,
+                harmonic_model.sbar, harmonic_model.nmax, harmonic_model.mmax,
+            )
+            _g_harm = c_bf.T @ _g_bf @ c_bf
+        else:
+            _g_harm = spherical_harmonic_gravity_gradient(
+                x_mci[:3], harmonic_model, c_bf
+            )
+        a_matrix[3:6, 0:3] = a_matrix[3:6, 0:3] + _g_harm
         phi_dot = a_matrix @ phi
         return np.concatenate([x_dot, phi_dot.reshape(-1, order="F")])
 
@@ -735,7 +931,9 @@ def propagate_augmented_state(
     earth_j2_mode: str = "indirect",
     harmonic_model: SphericalHarmonicGravityModel | None = None,
     harmonic_rotation=None,
+    harmonic_epoch_et0: float | None = None,
     harmonic_stm_opt_in: bool = False,
+    srp: "SRPOptions | None" = None,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -764,6 +962,14 @@ def propagate_augmented_state(
 
     This does not change any default: with ``harmonic_model=None`` the function
     behaves exactly as before.
+
+    Solar radiation pressure (Phase 16, opt-in, default-off): passing ``srp``
+    adds ``a_SRP`` to the TRAJECTORY derivative only.  The variational block is
+    left alone, which is the qualified Phase 13 policy — the SRP position
+    gradient measured 4.02e-13 of the gravity gradient on the reference arc, so
+    the STM omits it.  That is an explicit approximation, not an exact result,
+    and an estimator that later solves for K_SRP will need its own sensitivity
+    path rather than this one.
     """
     from scipy.integrate import solve_ivp
 
@@ -778,13 +984,17 @@ def propagate_augmented_state(
             )
         require_explicit_pa_realization(harmonic_model)
         _h_ctx = _prepare_harmonic_context(
-            harmonic_model, harmonic_rotation, j2_moon, t_eval_s
+            harmonic_model, harmonic_rotation, j2_moon, t_eval_s,
+            direct_epoch_mode=harmonic_epoch_et0 is not None,
         )
+        _direct_de440_preflight(harmonic_epoch_et0)
         return _propagate_augmented_with_harmonics(
             t_eval_s, state_aug0_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, harmonic_model, _h_ctx,
             rtol=rtol, atol=atol, method=method,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+            harmonic_epoch_et0=harmonic_epoch_et0,
+            srp=srp,
         )
 
     if t_eval_s.size == 0:
@@ -794,6 +1004,7 @@ def propagate_augmented_state(
     if state_aug0_mci.size != 42:
         raise ValueError("Initial augmented state must have 42 elements.")
 
+    get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
     _emode = _earth_mode_int(j2_earth, earth_j2_mode)
 
     if _FAST_DYNAMICS:
@@ -815,6 +1026,8 @@ def propagate_augmented_state(
                 t_s, state_aug, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
             )
+
+    rhs = _with_srp_acceleration(rhs, get_sun_pos, srp, state_size=42)
 
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
@@ -929,3 +1142,164 @@ from .force_models import (  # noqa: E402
     body_j2_acceleration,
     body_j2_gravity_gradient,
 )
+
+
+# ---------------------------------------------------------------------------
+# K_SRP sensitivity (Phase 17) — opt-in, additive, default-off
+# ---------------------------------------------------------------------------
+#: Layout of the K-sensitivity augmented state: [x(6); Phi(36, column-major);
+#: dx/dK(6)]. The first 42 elements are exactly the existing 42-state layout, so
+#: a caller can slice this result and get the ordinary augmented history back.
+K_SENSITIVITY_STATE_SIZE = 48
+
+
+def propagate_state_with_k_sensitivity(
+    t_eval_s: ArrayLike,
+    state0_mci: ArrayLike,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    *,
+    srp: "SRPOptions",
+    rtol: float = 1e-11,
+    atol: float = 1e-12,
+    method: str = "ADAMS",
+    j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
+    harmonic_model: SphericalHarmonicGravityModel | None = None,
+    harmonic_rotation=None,
+    harmonic_epoch_et0: float | None = None,
+    harmonic_stm_opt_in: bool = False,
+    s_k0: ArrayLike | None = None,
+) -> np.ndarray:
+    """Propagate state, STM and the SRP-coefficient sensitivity together.
+
+    Returns ``(len(t_eval_s), 48)``: ``[x(6); Phi(36); dx/dK_SRP(6)]``.
+
+    The sensitivity satisfies the standard static-parameter variational equation
+
+        d/dt (dx/dK) = A(t) (dx/dK) + df/dK,     df/dK = [0; g(r, t)]
+
+    where ``g`` is the K-independent SRP kernel — evaluated directly, never as
+    ``a/K``, so ``K = 0`` is a legal starting point for a solve-for.
+
+    ``A(t)`` is the SAME matrix that drives the STM, which is the point: Phase 16
+    omits the SRP position gradient from ``A`` as a measured approximation, and
+    this uses that same ``A`` rather than a partially-corrected one. A
+    sensitivity propagated against a different Jacobian from the STM beside it
+    would be internally inconsistent, and mixing in only the illumination
+    derivative would be worse still.
+
+    ``dx/dK(t0) = 0`` by default: the initial Cartesian state is parameterised
+    independently of the coefficient, so perturbing K does not move it.
+
+    This function is only meaningful with SRP active; there is no coefficient to
+    differentiate otherwise, and it refuses rather than returning zeros that
+    would look like a qualified result.
+    """
+    from scipy.integrate import solve_ivp
+
+    from .srp import srp_acceleration_kernel
+
+    if srp is None or not srp.is_active:
+        raise ValueError(
+            "propagate_state_with_k_sensitivity needs an active SRPOptions: "
+            "there is no coefficient to differentiate with respect to. Use "
+            "propagate_augmented_state for the SRP-free 42-state path."
+        )
+
+    t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
+    if t_eval_s.size == 0:
+        raise ValueError("t_eval_s must contain at least one epoch.")
+    state0_mci = _state6(state0_mci)
+
+    _h_ctx = None
+    if harmonic_model is not None:
+        if not harmonic_stm_opt_in:
+            raise ValueError(
+                "lunar harmonics in the variational equations are explicit "
+                "opt-in only; pass harmonic_stm_opt_in=True to use the matched "
+                "analytic Pines gradient."
+            )
+        require_explicit_pa_realization(harmonic_model)
+        _h_ctx = _prepare_harmonic_context(
+            harmonic_model, harmonic_rotation, j2_moon, t_eval_s,
+            direct_epoch_mode=harmonic_epoch_et0 is not None,
+        )
+        _direct_de440_preflight(harmonic_epoch_et0)
+        _rc, _rt, _rg = _h_ctx[0], _h_ctx[1], _h_ctx[2]
+
+    def _rotation_at(t_s: float) -> np.ndarray:
+        if harmonic_epoch_et0 is not None:
+            return moon_pa_de440_rotation_at_et(
+                float(harmonic_epoch_et0) + float(t_s)
+            )
+        if _rc is not None:
+            return _rc
+        return nearest_rotation_at_time(_rg, _rt, float(t_s))
+
+    get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
+
+    sens0 = (np.zeros(6) if s_k0 is None
+             else np.asarray(s_k0, dtype=float).reshape(6))
+    aug0 = np.concatenate(
+        [state0_mci, np.eye(6).reshape(-1, order="F"), sens0]
+    )
+
+    def rhs(t_s: float, state_aug: np.ndarray) -> np.ndarray:
+        t_s = float(t_s)
+        x_mci = state_aug[:6]
+        phi = state_aug[6:42].reshape((6, 6), order="F")
+        s_k = state_aug[42:48]
+        r_earth = _vec3(get_earth_pos(t_s), "r_moon_earth_m")
+        r_sun = _vec3(get_sun_pos(t_s), "r_moon_sun_m")
+        c_bf = _rotation_at(t_s) if _h_ctx is not None else None
+
+        x_dot = f3body_moon(
+            x_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, r_earth, r_sun,
+            j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+            harmonic_model=harmonic_model, c_inertial_to_bf_harmonic=c_bf,
+            srp=srp,
+        )
+        a_matrix = dynamics_jacobian_a_matrix(
+            x_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, r_earth, r_sun,
+            j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+        )
+        if _h_ctx is not None:
+            if _HARMONIC_GRADIENT_FAST and _pines_gradient_bf_fast is not None:
+                _g_bf = _pines_gradient_bf_fast(
+                    c_bf @ x_mci[:3], harmonic_model.mu_m3_s2,
+                    harmonic_model.r_ref_m, harmonic_model.cbar,
+                    harmonic_model.sbar, harmonic_model.nmax,
+                    harmonic_model.mmax,
+                )
+                _g_harm = c_bf.T @ _g_bf @ c_bf
+            else:
+                from .gravity_harmonics import spherical_harmonic_gravity_gradient
+                _g_harm = spherical_harmonic_gravity_gradient(
+                    x_mci[:3], harmonic_model, c_bf
+                )
+            a_matrix = a_matrix.copy()
+            a_matrix[3:6, 0:3] = a_matrix[3:6, 0:3] + _g_harm
+
+        phi_dot = a_matrix @ phi
+        df_dk = np.zeros(6)
+        df_dk[3:] = srp_acceleration_kernel(x_mci[:3], r_sun, srp)
+        s_dot = a_matrix @ s_k + df_dk
+        return np.concatenate([x_dot, phi_dot.reshape(-1, order="F"), s_dot])
+
+    if method.upper() == "ADAMS":
+        return _propagate_vode(t_eval_s, aug0, rhs, rtol, atol)
+
+    solution = solve_ivp(
+        rhs, (float(t_eval_s[0]), float(t_eval_s[-1])), aug0,
+        method=method, t_eval=t_eval_s, rtol=rtol, atol=atol,
+    )
+    if not solution.success:
+        raise RuntimeError(
+            f"K-sensitivity propagation failed: {solution.message}"
+        )
+    return solution.y.T

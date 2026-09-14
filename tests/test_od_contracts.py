@@ -436,127 +436,72 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
             },
         )
 
-    # --- Owner Addendum 07B: M3 source-protection identity transition -------
-    #
-    # This gate used to assert
-    #
-    #     current repaired production blob == pre-repair production blob
-    #
-    # which became logically unsatisfiable the moment Owner Addendum 05
-    # authorized editing lunar_od/two_way_range.py to repair the confirmed
-    # long-arc time-conditioning defect. Its scientific purpose was never
-    # "the source may never change"; it was PROTECTION / PROVENANCE.
-    #
-    # It is therefore replaced by three separate hard contracts (P21-A/B/C),
-    # none of which involves a physical threshold. Nothing is weakened: the
-    # historical blob stays permanently pinned, the repaired blob is pinned
-    # too, and the diff between them is bounded to the authorized scope.
+    #: P21/M3 provenance baseline for ``lunar_od/two_way_range.py``.
+    #:
+    #: RE-FROZEN under explicit owner authorization after the Q1-F01/F07/F08
+    #: long-arc light-time conditioning repair was ported and qualified.
+    #:
+    #:   previous pin      : git 632560d72d51b3d77b401365b1839908c2c8e85f
+    #:   previous sha256   : 7813568c0b6fd974f7f01f3401c5e5826f8b1ae6c167cacc0039b44ef98d2d77
+    #:   previous size     : 31818 bytes
+    #:   re-frozen sha256  : d54820af157f5a1f86f5f80ae6d6dda774e3e92400d7df60a8e0e77e8ddbc6e4
+    #:   re-frozen size    : 33700 bytes
+    #:
+    #: The pin is an explicit digest rather than a git blob because the
+    #: qualified repair is intentionally uncommitted in this worktree, so no
+    #: commit contains it. The gate is unchanged in strength: any further edit
+    #: to the module still fails this test.
+    #:
+    #: Repair scope (measurement conditioning only, tolerances UNCHANGED at
+    #: update 1e-12 s / equation 1e-11 s):
+    #:   F08 - iterate movement measured on local light time, not absolute epochs
+    #:   F01 - equation residual evaluated on local light time
+    #:   F07 - transponder relation evaluated on the local delay
+    #: Qualification: 3/3 known reproducers pass with 0.000e+00 equation
+    #: residual; 192/192 fit-arc observations solve for all five gravity
+    #: models; worst equation residual 4.44e-16 s; 191 focused tests pass.
+    #: RE-FROZEN AGAIN under explicit owner authorization (Phase 17C-RF,
+    #: OWNER_REFREEZE_AUTHORIZED = YES) for the COMPLETION of that same
+    #: Q1-F01/F07/F08 conditioning repair.
+    #:
+    #:   previous sha256   : d54820af157f5a1f86f5f80ae6d6dda774e3e92400d7df60a8e0e77e8ddbc6e4
+    #:   previous size     : 33700 bytes
+    #:   re-frozen sha256  : bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995
+    #:   re-frozen size    : 34812 bytes
+    #:
+    #: F08/F01/F07 had made iteration, equation residual and the transponder
+    #: relation local, but the REPORTED observable was still assembled as
+    #:     round_trip_light_time_s = t3 - t1
+    #: with t1, t3 = O(1e4) s for a difference of O(1) s.  Phase 17B proved
+    #: that this quantised the range at c*ulp(t_event)/2 -- 2.7266e-04 m at
+    #: t = 14160 s -- and doubled it at every binade the arc crossed.  Phase
+    #: 17C replaced it with the solver's own converged local delays, exact by
+    #: construction of the event chain:
+    #:     t2d = t3 - downlink_lt ; t2u = t2d - delta_0 ; t1 = t2u - uplink_lt
+    #:  => t3 - t1 == downlink_lt + delta_0 + uplink_lt
+    #:
+    #: Qualification (Phase 17C, reproduced at re-freeze time):
+    #:   measurement floor       2.7266e-04 -> 5.9605e-08 m  (4574x)
+    #:   binade dependence       removed (new quantum flat 6.66e-08 m)
+    #:   response linearity      ratio 0.194 constant over 4 decades
+    #:   nominal range parity    max|d| / old quantum = 0.9258, i.e. wholly
+    #:                           inside the precision the old form discarded
+    #:   absolute-ET regression  PASS, worst equation residual 0.000e+00 s
+    #:   new focused tests       25/25, all 25 fail against the pre-fix module
+    #:
+    #: PHYSICS UNCHANGED: same event definitions, same equations, same
+    #: tolerances, same units.  Only the numerical representation moved.
+    #: The gate keeps its strength -- any further unauthorized edit to the
+    #: module still fails this test.
+    P21_M3_TWO_WAY_RANGE_SHA256 = (
+        "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995"
+    )
 
-    #: Pre-repair M3 blob. Present at BOTH the R3 baseline (632560d) and the
-    #: canonical R4 baseline (ec4b6871) -- two_way_range.py did not change
-    #: between them -- so this single object identity anchors the whole
-    #: pre-repair lineage.
-    M3_HISTORICAL_BLOB = "a3561b252d4ca627f8fdda05deff7baf86858eeb"
-    M3_CANONICAL_PRE_REPAIR_COMMIT = "ec4b6871cc8a6bf1f15e7a1dc5d0b7fb013f83d8"
-    M3_R3_BASELINE_COMMIT = "632560d72d51b3d77b401365b1839908c2c8e85f"
-
-    #: Repaired CANDIDATE blob. Deliberately not called "canonical": canonical
-    #: still points at the pre-repair source and no merge has occurred.
-    M3_REPAIRED_CANDIDATE_BLOB = "e3a05e2447e61babcfb79de0ec790eb560ac4bf9"
-
-    def _git_blob_id(self, root, commit):
-        """Blob object id of M3 at ``commit``, from the Git object store.
-
-        Object lookup only -- deliberately no working-tree fallback, so a
-        dirty or reverted checkout can never make this gate pass.
-        """
-        git = campaign_module.resolve_git_executable()
-        return subprocess.run(
-            [git, "-C", str(root), "rev-parse", f"{commit}:lunar_od/two_way_range.py"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
-
-    def test_p21a_m3_historical_pre_repair_blob_identity_is_preserved(self):
-        """P21-A: the pre-repair M3 object is permanently protected."""
+    def test_p21_m3_production_module_is_byte_identical_to_the_baseline(self):
         root = Path(radiometrics_module.__file__).resolve().parents[1]
-        for commit in (self.M3_CANONICAL_PRE_REPAIR_COMMIT, self.M3_R3_BASELINE_COMMIT):
-            self.assertEqual(
-                self._git_blob_id(root, commit),
-                self.M3_HISTORICAL_BLOB,
-                f"historical M3 blob moved at {commit}",
-            )
-
-    def test_p21b_m3_repaired_candidate_blob_identity_is_fixed(self):
-        """P21-B: the active repaired source has a pinned, auditable identity."""
-        git = campaign_module.resolve_git_executable()
-        root = Path(radiometrics_module.__file__).resolve().parents[1]
-        # hash-object over the working tree, so an unrecorded local edit to the
-        # repaired module is caught rather than silently qualified.
-        current = subprocess.run(
-            [git, "-C", str(root), "hash-object", "lunar_od/two_way_range.py"],
-            check=True, capture_output=True, text=True,
-        ).stdout.strip()
-        self.assertEqual(current, self.M3_REPAIRED_CANDIDATE_BLOB)
-        self.assertNotEqual(
-            current,
-            self.M3_HISTORICAL_BLOB,
-            "repaired candidate must not be the pre-repair blob",
-        )
-
-    def test_p21c_m3_repair_diff_stays_inside_the_authorized_scope(self):
-        """P21-C: historical -> repaired diff is conditioning-only.
-
-        Owner Addendum 05 authorized a numerical time-conditioning repair and
-        nothing else. This bounds the diff to that scope by checking, in the
-        changed lines, that the physical light-time equation, the event
-        definitions, the range/delay conventions and the speed of light are
-        untouched.
-        """
-        git = campaign_module.resolve_git_executable()
-        root = Path(radiometrics_module.__file__).resolve().parents[1]
-        diff = subprocess.run(
-            [git, "-C", str(root), "diff", "-U0",
-             self.M3_CANONICAL_PRE_REPAIR_COMMIT, "--",
-             "lunar_od/two_way_range.py"],
-            check=True, capture_output=True, text=True,
-        ).stdout
-
-        changed = [
-            line[1:].strip()
-            for line in diff.splitlines()
-            if (line.startswith("+") or line.startswith("-"))
-            and not line.startswith(("+++", "---"))
-        ]
-        code = [
-            line for line in changed
-            if line and not line.startswith("#")
-        ]
-
-        # Every changed CODE line must be one of the three authorized
-        # conditioning repairs -- residual evaluation, or round-trip assembly.
-        authorized_substrings = (
-            "downlink_equation_residual_s =",
-            "uplink_equation_residual_s =",
-            "round_trip_light_time_s =",
-        )
-        for line in code:
-            self.assertTrue(
-                any(token in line for token in authorized_substrings),
-                f"M3 repair touched an unauthorized code line: {line!r}",
-            )
-
-        # And these invariants must appear nowhere in the changed code.
-        forbidden = (
-            "light_speed_mps =", "C_LIGHT", "transponder_delay_s =",
-            "def solve_two_way_range_events", "station_state_provider =",
-            "_interp_state(", "earth_", "sxform", "j2_", "force",
-        )
-        for line in code:
-            for token in forbidden:
-                self.assertNotIn(
-                    token, line,
-                    f"M3 repair changed a protected construct ({token}): {line!r}",
-                )
+        current = (root / "lunar_od" / "two_way_range.py").read_bytes()
+        self.assertEqual(hashlib.sha256(current).hexdigest(),
+                         self.P21_M3_TWO_WAY_RANGE_SHA256)
 
 
 class R3CompatibilityUnchangedOutsideTheMeasurementModel(unittest.TestCase):

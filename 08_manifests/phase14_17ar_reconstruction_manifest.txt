@@ -1,0 +1,59 @@
+GIT PHASE P1 RECONSTRUCTION MANIFEST
+
+SOURCE_BASE=fc13cc4000767ac07abeb3856ec18521bfbc0f76
+QUALIFIED_BOUNDARY=Phase 17A-R
+RECONSTRUCTION_DATE=2026-09-14
+RECONSTRUCTION_BRANCH=feature/phase14-17ar-qualified
+PRESERVATION_SOURCE_COMMIT=13e75f111dbb13bd6ee57d405a66e15c4d909f7
+
+This manifest records a later provenance-preservation action.  Phase 14 through
+Phase 17A-R qualification was originally performed in an uncommitted worktree
+whose committed base was fc13cc4; this file does not rewrite or back-date any
+historical report.
+
+SOURCE_REPORTS_AND_MANIFESTS=
+  od_covariance_campaign/08_manifests/phase14_base_freeze.txt
+  od_covariance_campaign/08_manifests/phase15_baseline_freeze.txt
+  od_covariance_campaign/08_manifests/phase16_baseline_freeze.txt
+  od_covariance_campaign/08_manifests/phase17_baseline_freeze.txt
+  od_covariance_campaign/08_manifests/phase17a_baseline_freeze.txt
+  od_covariance_campaign/08_manifests/phase17ar_manifest.txt
+  od_covariance_campaign/00_recovery/phase14_base_snapshot/worktree_files/
+
+QUALIFIED_FILE_HASHES_SHA256=
+  49bd030ec0aaa4b210ab47eac374fce32c60342e16f4b6644cd694ff0a9324ab  lunar_od/dynamics.py
+  bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995  lunar_od/two_way_range.py
+  a41e276e5331134d5bfc877b5cc20b1a875a3638ed6dd87fb0b37d2320f2faf5  lunar_od/radiometrics.py
+  8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa  lunar_od/two_way_counted_doppler_reference.py
+  94146c906686ea7c08a671a8db2976d9d6191d85efc259fbf2aa415d260a58cd  lunar_od/estimators.py
+  43dc95e22847fbb855981d8c6eb5f65ba73b2e2e39ea0222b95d4822f4ab0045  lunar_od/filters.py
+
+ESTIMATOR_FILTER_BASELINE=
+  estimators.py recovered from phase14_base_snapshot/worktree_files
+  filters.py independently recovered from the clean Phase 17C-RF R4 worktree
+  Both are pre-Phase-17-R qualified bytes; neither is restored to fc13cc4 blindly.
+
+EXCLUDED_PHASE17R_WIP_FILES=
+  lunar_od/estimators.py (current WIP replaced by qualified baseline)
+  lunar_od/filters.py (current WIP replaced by qualified baseline)
+  tests/test_k_srp_bls_solve_for.py
+  tests/test_k_srp_srif_solve_for.py
+  tests/test_k_srp_srukf_solve_for.py
+
+AMBIGUOUS_FILES=
+  Phase 17-R report/checkpoint artifacts in the separate od_covariance_campaign
+  repository remain WIP evidence and are not imported into this qualified branch.
+  Temporary campaign outputs remain outside the target repository pending owner
+  approval of a canonical artifact layout.
+
+PHASE16_DYNAMICS_PROVENANCE=
+  The qualified Phase 17A-R dynamics hash is 49bd...; it intentionally differs
+  from the pre-Phase-16 64411... baseline because later SRP/gravity evolution is
+  qualified.  No refreeze was performed.
+
+P21_M3_TWO_WAY_RANGE_SHA256=bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995
+MODEL_S_REFREEZE_SHA256=8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa
+
+OWNER_AUTHORIZATION=User-authorized GIT PHASE P1 repository consolidation run
+HISTORICAL_REPORTS_MODIFIED=NO
+PHYSICAL_MODEL_CHANGE=NONE

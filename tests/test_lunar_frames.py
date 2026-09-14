@@ -52,7 +52,7 @@ class MoonPaSamplingTests(unittest.TestCase):
         cls.kernel_dir = resolve_kernel_dir()
         cls.kernel_paths = required_kernel_paths()
         cls.t_grid = np.arange(0.0, 2.0 * 86400.0 + 1.0, 3600.0)   # 49 epochs
-        cls.rots = sample_moon_pa_rotations(ET0, cls.t_grid)
+        cls.rots = sample_moon_pa_rotations(ET0, cls.t_grid, frame="MOON_PA_DE421")
 
     # 1 -- kernel discovery ------------------------------------------------
     def test_kernel_discovery(self):
@@ -109,10 +109,11 @@ class MoonPaSamplingTests(unittest.TestCase):
     # 15 -- nearest 60 s grid vs direct SPICE (robust bound, not flaky) ------
     def test_nearest_60s_grid_vs_direct_spice(self):
         t_grid = np.arange(0.0, 7200.0 + 1.0, 60.0)          # 2 h, 60 s cadence
-        rots = sample_moon_pa_rotations(ET0, t_grid)
+        rots = sample_moon_pa_rotations(ET0, t_grid, frame="MOON_PA_DE421")
         t_query = 90.0                                        # exact midpoint
         c_near = nearest_rotation_at_time(rots, t_grid, t_query)
         c_true = sample_moon_pa_rotations(ET0 + t_query, np.array([0.0]),
+                                          frame="MOON_PA_DE421",
                                           load_kernels=False)[0]
         angle = _rotation_angle(c_near, c_true)
         # 30 s of lunar rotation ~ 8.0e-5 rad; bound is >10x above that.
@@ -123,16 +124,18 @@ class MoonPaSamplingTests(unittest.TestCase):
     def test_missing_kernel_raises(self):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(FileNotFoundError):
-                sample_moon_pa_rotations(ET0, np.array([0.0]), kernel_dir=tmp)
+                sample_moon_pa_rotations(ET0, np.array([0.0]),
+                                         frame="MOON_PA_DE421",
+                                         kernel_dir=tmp)
 
     # input validation of the sampler (no SPICE call happens: grid checked first)
     def test_sampler_rejects_bad_grids(self):
         with self.assertRaises(ValueError):
-            sample_moon_pa_rotations(ET0, np.zeros((2, 2)))          # 2-D
+            sample_moon_pa_rotations(ET0, np.zeros((2, 2)), frame="MOON_PA_DE421")          # 2-D
         with self.assertRaises(ValueError):
-            sample_moon_pa_rotations(ET0, np.array([]))              # empty
+            sample_moon_pa_rotations(ET0, np.array([]), frame="MOON_PA_DE421")              # empty
         with self.assertRaises(ValueError):
-            sample_moon_pa_rotations(ET0, np.array([0.0, 60.0, 30.0]))  # non-monotonic
+            sample_moon_pa_rotations(ET0, np.array([0.0, 60.0, 30.0]), frame="MOON_PA_DE421")  # non-monotonic
 
 
 class NearestLookupTests(unittest.TestCase):

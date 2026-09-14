@@ -1096,12 +1096,8 @@ def solve_two_way_light_time(
     # events: the spacecraft state at the final t2 was re-interpolated above;
     # the uplink station is re-queried at the final t1 (the loop's last
     # station_tx_state can lag t1 by one update).
-    # Q1-F01: compared against the AUTHORITATIVE LOCAL light time rather than the
-    # re-derived ``receive_time_s - t2``, which inherits ulp(receive_time_s) and
-    # makes the accepted 1e-11 s tolerance unreachable beyond ~12.5 h of
-    # pass-relative time. Physical equation and tolerance unchanged.
     downlink_equation_residual_s = abs(
-        downlink_lt
+        (receive_time_s - t2)
         - float(
             np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps
         )
@@ -1118,9 +1114,8 @@ def solve_two_way_light_time(
         event_label="uplink",
         consumer="solve_two_way_light_time",
     )
-    # Q1-F01: as for the downlink leg.
     uplink_equation_residual_s = abs(
-        uplink_lt
+        (t2 - cfg.transponder_delay_s - t1)
         - float(
             np.linalg.norm(sc_t2_state[:3] - station_tx_final[:3]) / cfg.light_speed_mps
         )
@@ -1136,9 +1131,20 @@ def solve_two_way_light_time(
         receive_time_s=receive_time_s,
         transmit_time_s=float(t1),
         transponder_time_s=float(t2),
-        # Q1-F01: assembled from the well-conditioned LOCAL intervals in exactly
-        # the same association M3 uses, so the R4 four-event model still reduces
-        # to this single-bounce model BITWISE at zero delay.
+        # Phase 17C: assembled from the solver's own LOCAL delays instead of
+        # differencing two arc-relative epochs. Exact by construction of the
+        # chain solved above:
+        #     t2 = receive_time_s - downlink_lt
+        #     t1 = t2 - delta_0 - uplink_lt
+        #  => receive_time_s - t1 == downlink_lt + delta_0 + uplink_lt
+        # receive_time_s and t1 are both ~1e4 s while their difference is
+        # ~2.7 s, so the epoch form quantised the observable at c*ulp(t)/2 and
+        # doubled at every binary exponent boundary the arc crossed. The local
+        # sum is ~4000x finer here and does not degrade as the arc lengthens.
+        # This is the same repair applied to solve_two_way_range_events, and it
+        # must be applied here too: R4 reduces to R3 bitwise at zero delay, so
+        # repairing only one of the two breaks that frozen contract.
+        # Equations, tolerances and physics are UNCHANGED.
         round_trip_light_time_s=float(
             downlink_lt + cfg.transponder_delay_s + uplink_lt
         ),
