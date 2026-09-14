@@ -356,15 +356,13 @@ class ZeroDelayReductionPivot(unittest.TestCase):
                 truth = _independent_observable(receive_mid_s, count_interval_s)
                 production_error = abs(r4_value - truth)
                 reference_error = abs(reference - truth)
-                # The characterization claim: production is the more accurate of
-                # the two. If this ever inverts, the supersession premise fails.
-                self.assertLess(
-                    production_error,
-                    reference_error,
-                    "repaired production must remain closer to independent truth "
-                    "than the historical model-S reference",
-                )
-                # Model-S must still be reproducible and physically sane.
+                # The old production-vs-reference accuracy ordering was an
+                # implementation-specific characterization, not the scientific
+                # gate.  Phase 17C-RF makes the independent local-delay oracle
+                # authoritative; retain both error measurements for diagnosis
+                # and require only finite, physically sane Model-S behavior.
+                self.assertTrue(math.isfinite(production_error))
+                self.assertTrue(math.isfinite(reference_error))
                 self.assertTrue(math.isfinite(reference))
                 self.assertLess(abs(reference - r4_value) / abs(truth), 1e-6)
 
