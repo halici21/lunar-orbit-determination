@@ -11,8 +11,38 @@ import os
 from pathlib import Path
 from typing import Iterable
 
+#: DE440 lunar principal-axis capability. These two files are an ATOMIC PAIR:
+#: the frame definition declares ``MOON_PA_DE440`` while the binary PCK carries
+#: its orientation data, and NEITHER IS SUFFICIENT ALONE. Measured behaviour
+#: with only one of them present:
+#:
+#:   frame definition only -> SpiceFRAMEDATANOTFOUND, and generic ``MOON_PA``
+#:                            stops resolving as well (a partial configuration
+#:                            is strictly worse than neither file)
+#:   binary PCK only       -> SpiceUNKNOWNFRAME
+#:
+#: Keep them together. Removing one silently degrades the lunar frame contract.
+MOON_PA_DE440_KERNELS = (
+    "moon_de440_220930.txt",
+    "moon_pa_de440_200625.bpc",
+)
+
+#: ORDER IS LOAD-BEARING, not cosmetic. Both ``moon_de440_220930.txt`` and
+#: ``moon_080317.tf.txt`` define the generic ``MOON_PA`` alias, and SPICE lets
+#: the LAST text kernel loaded win that name. Listing the DE440 pair FIRST
+#: therefore leaves generic ``MOON_PA`` bound to the historical DE421
+#: realization while both explicit frames stay resolvable, so adding DE440
+#: capability changes no existing consumer's physics. Appending the pair at the
+#: end instead silently rebinds generic ``MOON_PA`` to DE440 -- a ~7.6e-7
+#: rotation change (~1.65 m at the lunar surface) that was measured breaking
+#: the MATLAB SPICE snapshot fixture. ``test_de440_kernel_contract`` pins this.
 REQUIRED_KERNELS = (
     "naif0012.tls.txt",
+    # DE440 lunar PA (atomic pair -- see MOON_PA_DE440_KERNELS above). Loaded
+    # BEFORE moon_080317.tf.txt so it adds MOON_PA_DE440 without capturing the
+    # generic alias. High-order gravity selects its realization by EXPLICIT
+    # versioned frame name and never relies on generic ``MOON_PA``.
+    *MOON_PA_DE440_KERNELS,
     "de421.bsp",
     "earth_assoc_itrf93.tf.txt",
     "moon_080317.tf.txt",
@@ -21,6 +51,49 @@ REQUIRED_KERNELS = (
     "gm_de431.tpc.txt",
     "pck00010.tpc.txt",
 )
+
+#: Explicit versioned lunar PA frames. The generic ``MOON_PA`` alias is
+#: deliberately absent: with both DE421 and DE440 orientation kernels furnished
+#: it binds by kernel load order, so scientific code must name a realization.
+MOON_PA_DE440_FRAME = "MOON_PA_DE440"
+MOON_PA_DE421_FRAME = "MOON_PA_DE421"
+
+
+class LunarFrameKernelError(RuntimeError):
+    """Raised when the explicit DE440 lunar PA realization is unusable."""
+
+
+def require_moon_pa_de440(et_s: float) -> None:
+    """Fail closed unless ``MOON_PA_DE440`` is resolvable at ``et_s``.
+
+    Queries the EXPLICIT versioned frame. There is deliberately no fallback to
+    the generic ``MOON_PA`` alias, to ``MOON_PA_DE421``, or to identity: a
+    caller that needs the DE440 realization must get that realization or an
+    error, never a silently different one.
+
+    Parameters
+    ----------
+    et_s : SPICE ET (TDB seconds past J2000) at which to test the frame.
+
+    Raises
+    ------
+    LunarFrameKernelError
+        When the frame cannot be evaluated, with the underlying SPICE error
+        preserved as the exception cause.
+    """
+    import spiceypy as spice
+
+    try:
+        spice.pxform("J2000", MOON_PA_DE440_FRAME, float(et_s))
+    except Exception as exc:  # noqa: BLE001 - normalised into a project error
+        raise LunarFrameKernelError(
+            f"{MOON_PA_DE440_FRAME} is not resolvable at et={float(et_s)!r}. "
+            "The DE440 lunar principal-axis kernels are missing or incomplete; "
+            f"both files of the atomic pair are required: {MOON_PA_DE440_KERNELS}. "
+            "No fallback to the generic MOON_PA alias or to MOON_PA_DE421 is "
+            "performed, because either would silently supply a different "
+            "physical realization."
+        ) from exc
 
 
 def default_kernel_candidates() -> list[Path]:

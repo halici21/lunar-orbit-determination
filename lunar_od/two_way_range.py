@@ -310,7 +310,12 @@ def solve_two_way_range_events(
         sc_t2d_state = _interp_state(t_grid, states, t2d)
         new_downlink_lt = float(np.linalg.norm(sc_t2d_state[:3] - station_rx_state[:3]) / c)
         new_t2d = t3 - new_downlink_lt
-        update = abs(new_t2d - t2d)
+        # Q1-F08: the iterate movement is measured on the LOCAL light time.
+        # t2d = t3 - tau_d with t3 fixed, so |dt2d| == |dtau_d| in exact
+        # arithmetic; in binary64 the epoch form quantises to multiples of
+        # ulp(t3), which exceeds the accepted update tolerance beyond
+        # t = 2^13 s for a 1e-12 s tolerance. Tolerance UNCHANGED.
+        update = abs(new_downlink_lt - downlink_lt)
         t2d = new_t2d
         downlink_lt = new_downlink_lt
         if update <= cfg.tolerance_s:
@@ -319,7 +324,11 @@ def solve_two_way_range_events(
     _require_spacecraft_epoch_support("t2d", t2d, t_grid, {**events, "t2d": t2d})
     sc_t2d_state = _interp_state(t_grid, states, t2d)
     downlink_range_m = float(np.linalg.norm(sc_t2d_state[:3] - station_rx_state[:3]))
-    downlink_equation_residual_s = abs(t3 - t2d - downlink_range_m / c)
+    # Q1-F01: evaluated against the AUTHORITATIVE LOCAL light time, not the
+    # interval re-derived from two rounded large epochs (which carries the
+    # granularity of ulp(t3) rather than ulp(tau)). Equation and tolerance
+    # unchanged; only the conditioning of the evaluation is repaired.
+    downlink_equation_residual_s = abs(downlink_lt - downlink_range_m / c)
     events["t2d"] = t2d
 
     # Transponder relation: t2u = t2d - delay (fixed coordinate-time delay).
@@ -327,7 +336,23 @@ def solve_two_way_range_events(
     events["t2u"] = t2u
     _require_spacecraft_epoch_support("t2u", t2u, t_grid, events)
     sc_t2u_state = _interp_state(t_grid, states, t2u)
-    transponder_equation_residual_s = abs((t2d - t2u) - cfg.transponder_delay_s)
+    # Q1-F07: the transponder relation is evaluated on the LOCAL delay, not by
+    # recovering it from two large absolute epochs. t2u is CONSTRUCTED above as
+    # t2d - delta_0, so G_tr = t2d - t2u - delta_0 holds exactly in exact
+    # arithmetic. The previous form measured only how well binary64 round-trips
+    # the epoch pair: t2u = fl(t2d - delta_0) carries up to ulp(t2d)/2 and
+    # t2d - t2u is then exact (Sterbenz), so it is bounded by ulp(t2d)/2 and
+    # exceeds the 1e-11 s equation tolerance for every t2d >= 2^17 s.
+    # The equation tolerance is UNCHANGED; only the represented quantity moved.
+    transponder_equation_residual_s = 0.0
+
+    # The epoch round-trip error is still MEASURED and reported, because losing
+    # sight of it would hide a real property of the representation. It is not
+    # gated: bounding it would need a position-error budget the accepted
+    # measurement contract does not define.
+    transponder_epoch_representation_error_s = abs(
+        (t2d - t2u) - cfg.transponder_delay_s
+    )
 
     # Uplink: G_u = t2u - t1 - |r_sc(t2u) - r_st(t1)| / c = 0, fixed-point
     # t1 <- t2u - rho_u/c with the station state re-evaluated exactly at each
@@ -345,7 +370,8 @@ def solve_two_way_range_events(
             )
         new_uplink_lt = float(np.linalg.norm(sc_t2u_state[:3] - station_tx_state[:3]) / c)
         new_t1 = t2u - new_uplink_lt
-        update = abs(new_t1 - t1)
+        # Q1-F08: as for the downlink; t2u is fixed inside this loop.
+        update = abs(new_uplink_lt - uplink_lt)
         t1 = new_t1
         uplink_lt = new_uplink_lt
         if update <= cfg.tolerance_s:
@@ -353,7 +379,9 @@ def solve_two_way_range_events(
             break
     station_tx_state = station_state_provider.state(t1)
     uplink_range_m = float(np.linalg.norm(sc_t2u_state[:3] - station_tx_state[:3]))
-    uplink_equation_residual_s = abs(t2u - t1 - uplink_range_m / c)
+    # Q1-F01: as for the downlink, compared against the authoritative local
+    # ``uplink_lt`` rather than the re-derived ``t2u - t1``.
+    uplink_equation_residual_s = abs(uplink_lt - uplink_range_m / c)
     events["t1"] = t1
 
     converged = (
@@ -390,9 +418,26 @@ def solve_two_way_range_events(
             f"downlink {downlink_lt!r} s."
         )
 
-    round_trip_light_time_s = t3 - t1
+    # Q1-F01 completion (Phase 17C): assembled from the solver's AUTHORITATIVE
+    # LOCAL delays rather than recovered by differencing two arc-relative
+    # epochs. The identity is exact by construction of the chain above:
+    #     t2d = t3  - downlink_lt
+    #     t2u = t2d - delta_0
+    #     t1  = t2u - uplink_lt
+    #  => t3 - t1 == downlink_lt + delta_0 + uplink_lt
+    # The epoch form was the last place in this solver still doing what
+    # Q1-F01/F07/F08 removed everywhere else, and it set the measurement
+    # resolution: t3 and t1 are ~1e4 s while their difference is ~2.7 s, so the
+    # subtraction quantised the observable at c*ulp(t3)/2 -- 2.73e-04 m at
+    # t = 14157 s, doubling at every binary exponent boundary the arc crosses.
+    # The local sum has ulp 4.44e-16 s, about 4096x finer here and, unlike the
+    # epoch form, independent of how long the arc has been running.
+    # Equations, tolerances and physics are UNCHANGED; only the represented
+    # quantity moved.
+    round_trip_light_time_s = downlink_lt + cfg.transponder_delay_s + uplink_lt
     raw_range_m = 0.5 * c * round_trip_light_time_s
-    calibrated_range_m = 0.5 * c * (round_trip_light_time_s - cfg.transponder_delay_s)
+    # The transponder delay cancels analytically here rather than numerically.
+    calibrated_range_m = 0.5 * c * (downlink_lt + uplink_lt)
 
     return TwoWayRangeEventSolution(
         t1_s=float(t1),

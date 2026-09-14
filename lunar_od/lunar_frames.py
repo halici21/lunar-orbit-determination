@@ -89,7 +89,7 @@ def sample_moon_pa_rotations(
     et0: float,
     t_grid_s: ArrayLike,
     *,
-    frame: str = "MOON_PA",
+    frame: str,
     kernel_dir: os.PathLike[str] | str | None = None,
     load_kernels: bool = True,
 ) -> np.ndarray:
@@ -100,8 +100,11 @@ def sample_moon_pa_rotations(
     et0 : SPICE ET (TDB seconds past J2000) of grid epoch zero.
     t_grid_s : (N,) propagation-relative seconds, strictly increasing; row i is
         evaluated at ``et0 + t_grid_s[i]``.
-    frame : target body-fixed frame (default ``"MOON_PA"``; the GRAIL/GRGM
-        coefficient frame).
+    frame : target body-fixed frame. REQUIRED -- there is deliberately no
+        default. With both DE421 and DE440 lunar PA orientation kernels
+        furnished, the generic ``"MOON_PA"`` alias binds by kernel load
+        order, so a versioned realization (``"MOON_PA_DE440"`` /
+        ``"MOON_PA_DE421"``) must be named explicitly by the caller.
     kernel_dir : optional explicit SPICE kernel directory; ``None`` uses the
         standard resolver chain (``LUNAR_OD_KERNEL_DIR`` env var,
         ``~/Documents/mice/kernels``, ``<root>/kernels``).
@@ -130,6 +133,27 @@ def sample_moon_pa_rotations(
             spice.pxform("J2000", frame, float(et0 + rel_t_s)), dtype=np.float64
         )
     return rotations
+
+
+def moon_pa_de440_rotation_at_et(et: float) -> np.ndarray:
+    """Exact-epoch ``J2000 -> MOON_PA_DE440`` rotation (no grid, no cache).
+
+    The EXPLICIT DE440 realization, queried at the exact ET requested. There is
+    deliberately no interpolation, no nearest-neighbour grid, no cache and no
+    fallback to the generic ``MOON_PA`` alias or to ``MOON_PA_DE421``: a caller
+    asking for DE440 gets DE440 at that epoch, or a SPICE error.
+
+    Convention (unchanged): ``r_pa = C @ r_j2000``.
+
+    A direct ``pxform`` costs ~5 us, four orders of magnitude below one
+    GL1800F 100x100 acceleration (~15.5 ms), so temporal caching is not
+    warranted for the high-order path.
+    """
+    import spiceypy as spice
+
+    return np.asarray(
+        spice.pxform("J2000", "MOON_PA_DE440", float(et)), dtype=np.float64
+    )
 
 
 def nearest_rotation_at_time(
