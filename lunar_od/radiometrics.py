@@ -1131,7 +1131,23 @@ def solve_two_way_light_time(
         receive_time_s=receive_time_s,
         transmit_time_s=float(t1),
         transponder_time_s=float(t2),
-        round_trip_light_time_s=float(receive_time_s - t1),
+        # Phase 17C: assembled from the solver's own LOCAL delays instead of
+        # differencing two arc-relative epochs. Exact by construction of the
+        # chain solved above:
+        #     t2 = receive_time_s - downlink_lt
+        #     t1 = t2 - delta_0 - uplink_lt
+        #  => receive_time_s - t1 == downlink_lt + delta_0 + uplink_lt
+        # receive_time_s and t1 are both ~1e4 s while their difference is
+        # ~2.7 s, so the epoch form quantised the observable at c*ulp(t)/2 and
+        # doubled at every binary exponent boundary the arc crossed. The local
+        # sum is ~4000x finer here and does not degrade as the arc lengthens.
+        # This is the same repair applied to solve_two_way_range_events, and it
+        # must be applied here too: R4 reduces to R3 bitwise at zero delay, so
+        # repairing only one of the two breaks that frozen contract.
+        # Equations, tolerances and physics are UNCHANGED.
+        round_trip_light_time_s=float(
+            downlink_lt + cfg.transponder_delay_s + uplink_lt
+        ),
         uplink_light_time_s=float(uplink_lt),
         downlink_light_time_s=float(downlink_lt),
         iterations=int(iteration_count + uplink_iter),

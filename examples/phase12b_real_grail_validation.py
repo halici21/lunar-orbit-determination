@@ -377,7 +377,8 @@ class _CountingGetter:
 
 
 def run_case(get_earth, get_sun, state0, teval, *, j2_moon=0.0, j2_earth=0.0,
-             harmonic_model=None, harmonic_rotation=None) -> dict:
+             harmonic_model=None, harmonic_rotation=None,
+             harmonic_epoch_et0=None) -> dict:
     """One propagation with runtime, RHS-eval count and altitude sanity."""
     from lunar_od.dynamics import propagate_state
 
@@ -387,6 +388,7 @@ def run_case(get_earth, get_sun, state0, teval, *, j2_moon=0.0, j2_earth=0.0,
         teval, state0, MU_M, MU_E, MU_S, ge, get_sun,
         method="ADAMS", j2_moon=j2_moon, j2_earth=j2_earth,
         harmonic_model=harmonic_model, harmonic_rotation=harmonic_rotation,
+        harmonic_epoch_et0=harmonic_epoch_et0,
     )
     runtime = time.perf_counter() - t0
     if not np.all(np.isfinite(traj)):

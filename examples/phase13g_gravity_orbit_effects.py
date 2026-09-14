@@ -448,11 +448,20 @@ class WindowRunner:
 
     def run(self, name: str, *, model=None, rotation=None, rotation_label="",
             j2_moon=0.0, variant="", model_key="", nmax=None,
-            diagnostic=False, intentionally_wrong=False, elements=True) -> dict:
+            diagnostic=False, intentionally_wrong=False, elements=True,
+            direct_de440=False) -> dict:
+        # ``direct_de440`` selects the exact-epoch MOON_PA_DE440 RHS frame
+        # (ET = et0 + t_s) instead of the 60 s nearest-neighbour grid. It is
+        # opt-in per run because the DE421 runs and the intentionally-wrong
+        # pairing diagnostics must stay on the grid path they were qualified on
+        # -- and because the wrong-pairing run holds a DE440 grid while the
+        # DE421 kernel profile is furnished, where a live DE440 query cannot
+        # resolve at all.
         res = run_case(self.eph.earth_position, self.eph.sun_position,
                        self.s0, self.teval,
                        j2_moon=j2_moon, harmonic_model=model,
-                       harmonic_rotation=rotation)
+                       harmonic_rotation=rotation,
+                       harmonic_epoch_et0=self.et0 if direct_de440 else None)
         traj = res["traj"]
         self.trajs[name] = traj
         radii = np.linalg.norm(traj[:, :3], axis=1)
@@ -618,13 +627,13 @@ def run_compare() -> dict:
         pair440 = wr.pair("MOON_PA_DE440")
         for nmax in (64, 128):
             wr.run(f"g1800_full{nmax}", model=truncate_model(big1800, nmax),
-                   rotation=pair440, rotation_label="MOON_PA_DE440@60s",
+                   rotation=pair440, rotation_label="MOON_PA_DE440@exact", direct_de440=True,
                    model_key="gl1800f", variant="full", nmax=nmax)
         rt128 = wr.run_rows[-1]["runtime_s"]
         projected = rt128 * 4.0
         if projected <= OPT_RUNTIME_GATE_S:
             wr.run("g1800_full256", model=truncate_model(big1800, 256),
-                   rotation=pair440, rotation_label="MOON_PA_DE440@60s",
+                   rotation=pair440, rotation_label="MOON_PA_DE440@exact", direct_de440=True,
                    model_key="gl1800f", variant="full", nmax=256)
             wr.compare("g1800_ladder_128_vs_256", "g1800_full128",
                        "g1800_full256", "high-degree convergence tail")
@@ -780,7 +789,7 @@ def run_sensitivity() -> dict:
                 pair440 = wr.pair("MOON_PA_DE440")
                 for nmax in (64, 128):
                     wr.run(f"g1800_full{nmax}", model=truncate_model(big1800, nmax),
-                           rotation=pair440, rotation_label="MOON_PA_DE440@60s",
+                           rotation=pair440, rotation_label="MOON_PA_DE440@exact", direct_de440=True,
                            model_key="gl1800f", variant="full", nmax=nmax)
                 cmp("cross_model_nmax64", "v6_full64", "g1800_full64",
                     "GRGM660PRIM@64 (DE421) vs GL1800F@64 (DE440); coefficient+"
@@ -794,7 +803,7 @@ def run_sensitivity() -> dict:
                         wr.run("g1800_full256",
                                model=truncate_model(big1800, 256),
                                rotation=pair440,
-                               rotation_label="MOON_PA_DE440@60s",
+                               rotation_label="MOON_PA_DE440@exact", direct_de440=True,
                                model_key="gl1800f", variant="full", nmax=256)
                         cmp("g1800_ladder_128_vs_256", "g1800_full128",
                             "g1800_full256", "high-degree tail at perilune")
@@ -1096,7 +1105,8 @@ def gl256_gate(measured_128_runtime_s: float) -> dict:
 
 # -- continuous seven-day runner (Option A, approved after preflight FAIL) ---
 def run_case_continuous_sevenday(get_earth, get_sun, s0, t_end, out_step, *,
-                                 j2_moon=0.0, model=None, rotation=None) -> dict:
+                                 j2_moon=0.0, model=None, rotation=None,
+                                 harmonic_epoch_et0=None) -> dict:
     """ONE uninterrupted ``propagate_state`` call per model case.
 
     Wraps the validated ``run_case`` (no behavioral copy).  Surface crossing
@@ -1108,7 +1118,8 @@ def run_case_continuous_sevenday(get_earth, get_sun, s0, t_end, out_step, *,
     teval = np.arange(0.0, t_end + out_step / 2.0, out_step)
     try:
         res = run_case(get_earth, get_sun, s0, teval, j2_moon=j2_moon,
-                       harmonic_model=model, harmonic_rotation=rotation)
+                       harmonic_model=model, harmonic_rotation=rotation,
+                       harmonic_epoch_et0=harmonic_epoch_et0)
     except RuntimeError as exc:
         return {"t": np.array([]), "traj": np.empty((0, 6)),
                 "runtime_s": float("nan"), "rhs_evals": 0,
@@ -1349,14 +1360,14 @@ def run_sevenday(store: dict) -> dict:
         if 128 in gl_runs:
             results["g1800_128"] = do_run(
                 "g1800_128", model=truncate_model(big1800, 128),
-                rotation=pair440)
+                rotation=pair440, harmonic_epoch_et0=et0)
         if 256 in gl_runs:
             gate = gl256_gate(results["g1800_128"]["runtime_s"])
             stage["gl256_gate"] = gate
             if gate["run"]:
                 results["g1800_256"] = do_run(
                     "g1800_256", model=truncate_model(big1800, 256),
-                    rotation=pair440)
+                    rotation=pair440, harmonic_epoch_et0=et0)
             else:
                 print(f"  {cid} g1800_256 SKIPPED: {gate['reason']}")
 

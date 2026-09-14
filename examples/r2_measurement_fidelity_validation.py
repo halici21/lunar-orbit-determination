@@ -273,6 +273,45 @@ R2_CURRENT_TREE_PROTECTED_PATHS = tuple(
     if path not in R3_INTENTIONALLY_CHANGED_R2_PROTECTED_PATHS
 )
 
+# --------------------------------------------------------------------------
+# Closure re-freeze (authorized 2026-08-13)
+# --------------------------------------------------------------------------
+# The high-order lunar-gravity closure campaign was explicitly authorized to
+# change exactly two of the still-protected paths.  Those paths stay INSIDE
+# R2_CURRENT_TREE_PROTECTED_PATHS -- the 8-changed / 7-protected partition is
+# unchanged -- but their expected current-tree hash is re-frozen at the new
+# qualified content.  This is a re-freeze, not an exemption: an unauthorized
+# future edit to either file still fails the gate.
+#
+#   lunar_od/accelerated.py : + _pines_gradient_bf_numba / pines_gradient_bf_fast
+#                             (Numba twin of the qualified analytic Pines
+#                             gravity gradient; acceleration kernels untouched)
+#   lunar_od/dynamics.py    : + require_explicit_pa_realization
+#                             + _propagate_augmented_with_harmonics
+#                             + propagate_augmented_state(harmonic_rotation=,
+#                               harmonic_stm_opt_in=) explicit opt-in gate
+#
+# R2_HISTORICAL_FILTERED_CHECKOUT_SHA256 is deliberately NOT edited: it remains
+# a truthful record of the R2-era bytes, exactly as R3 left it.
+CLOSURE_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "d0f7ab029912ecfe986b11e3e5b1361c9051d6bdbb2bbd8026f599028465648e",
+    "lunar_od/accelerated.py":
+        "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
+}
+
+
+def expected_current_tree_sha256(relative_path: str) -> str:
+    """Expected CURRENT-tree hash for a protected path.
+
+    The R2-era historical hash, unless the path was re-frozen by an authorized
+    later campaign.  Single resolution point so the gate and its test can never
+    disagree.
+    """
+    if relative_path in CLOSURE_REFROZEN_CURRENT_TREE_SHA256:
+        return CLOSURE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    return R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+
 
 @dataclass(frozen=True)
 class GeometrySpec:
@@ -1781,7 +1820,12 @@ def build_r2_historical_byte_identity_rows(
 def build_r2_current_tree_protection_rows(
     repository_root: Path,
 ) -> list[dict[str, object]]:
-    """Protect, in the CURRENT tree, the historical paths R3 may not change."""
+    """Protect, in the CURRENT tree, the historical paths R3 may not change.
+
+    The two paths the authorized high-order gravity closure changed are checked
+    too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+    their new qualified content.
+    """
     rows: list[dict[str, object]] = []
     for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
         expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
@@ -1796,6 +1840,23 @@ def build_r2_current_tree_protection_rows(
                 "actual": actual_hash,
                 "pass": actual_hash == expected_hash,
                 "evidence": "SHA-256 of current working-tree bytes",
+            }
+        )
+    for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+        actual_hash = hashlib.sha256(
+            (repository_root / relative_path).read_bytes()
+        ).hexdigest()
+        rows.append(
+            {
+                "gate_id": "closure_current_tree_protection",
+                "item": relative_path,
+                "expected": expected_hash,
+                "actual": actual_hash,
+                "pass": actual_hash == expected_hash,
+                "evidence": (
+                    "SHA-256 of current working-tree bytes, re-frozen at the "
+                    "authorized high-order gravity closure content"
+                ),
             }
         )
     for relative_path in R3_INTENTIONALLY_CHANGED_R2_PROTECTED_PATHS:

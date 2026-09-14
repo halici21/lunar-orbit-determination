@@ -165,7 +165,8 @@ def rotation_pair(et0, t_end_s, cadence_s):
     """MOON_PA rotation grid covering [-margin, T+margin] (kernels pre-loaded)."""
     margin = max(2.0 * cadence_s, 120.0)
     t_grid = np.arange(-margin, t_end_s + margin + cadence_s / 2.0, cadence_s)
-    rots = sample_moon_pa_rotations(et0, t_grid, load_kernels=False)
+    rots = sample_moon_pa_rotations(et0, t_grid, frame="MOON_PA_DE421",
+                                    load_kernels=False)
     return (t_grid, rots)
 
 
@@ -182,6 +183,7 @@ def midpoint_rotation_error(et0, pair, cadence_s, t_end_s, n_probe=8) -> float:
         t_q = float(frac * t_end_s + cadence_s / 2.0)
         c_near = nearest_rotation_at_time(rots, t_grid, t_q)
         c_true = sample_moon_pa_rotations(et0 + t_q, np.array([0.0]),
+                                          frame="MOON_PA_DE421",
                                           load_kernels=False)[0]
         worst = max(worst, _rot_angle(c_near, c_true))
     return worst

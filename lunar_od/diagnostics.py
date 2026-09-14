@@ -69,6 +69,7 @@ class ConvergenceDiagnostics:
     converged_by_step_norm: bool
     converged_by_cost_stability: bool
     max_iter_reached: bool
+    damping_limit_reached: bool
     singular_or_ill_conditioned: bool
     rank_deficient: bool
     outlier_rejected: bool
@@ -106,6 +107,12 @@ def analyze_convergence(
     converged_by_cost = normalized in {"j-stab", "cost-stable", "cost_stable"}
     max_iter = normalized in {"maxiter", "max-iter", "maximum-iterations"}
     singular_reason = normalized in {"singular", "rank-deficient", "ill-conditioned"}
+    # PHASE 6.2: damping exhaustion is a distinct termination.  It means the
+    # LM step stopped being accepted, not that the normal matrix failed, so it
+    # must NOT set singular_or_ill_conditioned on the strength of the label
+    # alone.  Science validity is decided separately, from the conditioning,
+    # rank and finiteness evidence below.
+    damping_limit = normalized in {"dampinglimit", "damping-limit", "lambdalimit", "lambda-limit"}
 
     cond_value = float("nan") if condition_number is None else float(condition_number)
     ill_conditioned = bool(
@@ -123,6 +130,8 @@ def analyze_convergence(
         category = "converged_cost_stability"
     elif max_iter:
         category = "max_iter"
+    elif damping_limit and not singular_or_ill_conditioned:
+        category = "damping_limit"
     elif singular_or_ill_conditioned:
         category = "singular_or_ill_conditioned"
     else:
@@ -136,6 +145,7 @@ def analyze_convergence(
         converged_by_step_norm=converged_by_step,
         converged_by_cost_stability=converged_by_cost,
         max_iter_reached=bool(max_iter),
+        damping_limit_reached=bool(damping_limit),
         singular_or_ill_conditioned=singular_or_ill_conditioned,
         rank_deficient=rank_deficient,
         outlier_rejected=bool((0 if rejected_components is None else int(rejected_components)) > 0),

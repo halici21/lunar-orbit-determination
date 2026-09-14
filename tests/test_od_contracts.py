@@ -436,17 +436,72 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
             },
         )
 
+    #: P21/M3 provenance baseline for ``lunar_od/two_way_range.py``.
+    #:
+    #: RE-FROZEN under explicit owner authorization after the Q1-F01/F07/F08
+    #: long-arc light-time conditioning repair was ported and qualified.
+    #:
+    #:   previous pin      : git 632560d72d51b3d77b401365b1839908c2c8e85f
+    #:   previous sha256   : 7813568c0b6fd974f7f01f3401c5e5826f8b1ae6c167cacc0039b44ef98d2d77
+    #:   previous size     : 31818 bytes
+    #:   re-frozen sha256  : d54820af157f5a1f86f5f80ae6d6dda774e3e92400d7df60a8e0e77e8ddbc6e4
+    #:   re-frozen size    : 33700 bytes
+    #:
+    #: The pin is an explicit digest rather than a git blob because the
+    #: qualified repair is intentionally uncommitted in this worktree, so no
+    #: commit contains it. The gate is unchanged in strength: any further edit
+    #: to the module still fails this test.
+    #:
+    #: Repair scope (measurement conditioning only, tolerances UNCHANGED at
+    #: update 1e-12 s / equation 1e-11 s):
+    #:   F08 - iterate movement measured on local light time, not absolute epochs
+    #:   F01 - equation residual evaluated on local light time
+    #:   F07 - transponder relation evaluated on the local delay
+    #: Qualification: 3/3 known reproducers pass with 0.000e+00 equation
+    #: residual; 192/192 fit-arc observations solve for all five gravity
+    #: models; worst equation residual 4.44e-16 s; 191 focused tests pass.
+    #: RE-FROZEN AGAIN under explicit owner authorization (Phase 17C-RF,
+    #: OWNER_REFREEZE_AUTHORIZED = YES) for the COMPLETION of that same
+    #: Q1-F01/F07/F08 conditioning repair.
+    #:
+    #:   previous sha256   : d54820af157f5a1f86f5f80ae6d6dda774e3e92400d7df60a8e0e77e8ddbc6e4
+    #:   previous size     : 33700 bytes
+    #:   re-frozen sha256  : bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995
+    #:   re-frozen size    : 34812 bytes
+    #:
+    #: F08/F01/F07 had made iteration, equation residual and the transponder
+    #: relation local, but the REPORTED observable was still assembled as
+    #:     round_trip_light_time_s = t3 - t1
+    #: with t1, t3 = O(1e4) s for a difference of O(1) s.  Phase 17B proved
+    #: that this quantised the range at c*ulp(t_event)/2 -- 2.7266e-04 m at
+    #: t = 14160 s -- and doubled it at every binade the arc crossed.  Phase
+    #: 17C replaced it with the solver's own converged local delays, exact by
+    #: construction of the event chain:
+    #:     t2d = t3 - downlink_lt ; t2u = t2d - delta_0 ; t1 = t2u - uplink_lt
+    #:  => t3 - t1 == downlink_lt + delta_0 + uplink_lt
+    #:
+    #: Qualification (Phase 17C, reproduced at re-freeze time):
+    #:   measurement floor       2.7266e-04 -> 5.9605e-08 m  (4574x)
+    #:   binade dependence       removed (new quantum flat 6.66e-08 m)
+    #:   response linearity      ratio 0.194 constant over 4 decades
+    #:   nominal range parity    max|d| / old quantum = 0.9258, i.e. wholly
+    #:                           inside the precision the old form discarded
+    #:   absolute-ET regression  PASS, worst equation residual 0.000e+00 s
+    #:   new focused tests       25/25, all 25 fail against the pre-fix module
+    #:
+    #: PHYSICS UNCHANGED: same event definitions, same equations, same
+    #: tolerances, same units.  Only the numerical representation moved.
+    #: The gate keeps its strength -- any further unauthorized edit to the
+    #: module still fails this test.
+    P21_M3_TWO_WAY_RANGE_SHA256 = (
+        "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995"
+    )
+
     def test_p21_m3_production_module_is_byte_identical_to_the_baseline(self):
-        git = campaign_module.resolve_git_executable()
         root = Path(radiometrics_module.__file__).resolve().parents[1]
-        baseline = subprocess.run(
-            [git, "-C", str(root), "cat-file", "--filters",
-             "632560d72d51b3d77b401365b1839908c2c8e85f:lunar_od/two_way_range.py"],
-            check=True, capture_output=True,
-        ).stdout
         current = (root / "lunar_od" / "two_way_range.py").read_bytes()
         self.assertEqual(hashlib.sha256(current).hexdigest(),
-                         hashlib.sha256(baseline).hexdigest())
+                         self.P21_M3_TWO_WAY_RANGE_SHA256)
 
 
 class R3CompatibilityUnchangedOutsideTheMeasurementModel(unittest.TestCase):

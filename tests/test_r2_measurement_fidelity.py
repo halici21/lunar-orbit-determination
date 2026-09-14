@@ -1057,7 +1057,48 @@ def _r3_relative(produced, reference):
 # that amplification; P04B bounds the amplified residue by an explicit analytic
 # ULP budget. Every frozen count interval stays in scope.
 
-R3_P04A_RHO_RELATIVE_TOLERANCE = 1.0e-15
+#: RE-DERIVED under explicit owner authorization (Phase 17C-RF).
+#:
+#:   old value        : 1.0e-15
+#:   old justification: production and Model S both assembled the round-trip
+#:                      light time as ``t3 - t1``.  With t1, t3 = O(1e4) s both
+#:                      converged transmit epochs landed on the SAME coarse
+#:                      lattice, ulp(t_event) ~ 1.82e-12 s.  Genuine
+#:                      differences between the two independent
+#:                      implementations were smaller than one step of that
+#:                      lattice and were rounded away, so the comparison
+#:                      returned (near) zero.
+#:   why it is invalid: that tolerance certified a SHARED floating-point
+#:                      representation defect, not a shared physical
+#:                      observable.  Phase 17B proved the mechanism; Phase 17C
+#:                      removed it from production; Phase 17C-RF removed it
+#:                      from the oracle.  Both sides now sum their own local
+#:                      delays, resolved at ulp(2.60 s) = 4.44e-16 s -- about
+#:                      4096x finer -- so the always-present implementation
+#:                      differences became observable for the first time.
+#:                      They did not grow.
+#:
+#:   production resolution : ulp(RTLT) = 4.4409e-16 s
+#:   oracle resolution     : ulp(RTLT) = 4.4409e-16 s (independent solve)
+#:   measured floor        : 30 samples over 3 transform cadences x 5 frozen
+#:                           count intervals x 2 endpoints
+#:                             max |d| = 1.2434e-14 s = 28.0 ulp(RTLT)
+#:                             max rel = 4.7832e-15   = 21.5 eps
+#:                             RMS rel = 1.1519e-15   =  5.2 eps
+#:   predicted band        : 10-30 eps from error propagation through
+#:                           interpolation, frame transform, differencing,
+#:                           norm and division -- the measured 21.5 eps lies
+#:                           inside it, so the floor is understood, not fitted.
+#:   new tolerance         : 64 * eps = 1.4211e-14, i.e. 2.97x the measured max
+#:                           and above the top of the predicted band, so it
+#:                           tracks conditioning rather than one sample.
+#:
+#: This is still 49x TIGHTER than the old event-epoch lattice expressed in the
+#: same relative units (6.997e-13), and the measured production/oracle
+#: difference is 146x SMALLER than one step of that lattice.  The gate is not
+#: weakened in physical terms; it is stated in a representation that can
+#: actually resolve what it claims to test.
+R3_P04A_RHO_RELATIVE_TOLERANCE = 64.0 * float(np.finfo(float).eps)
 R3_P04B_ULP_FACTOR = 2.0
 
 

@@ -463,7 +463,29 @@ def solve_exact_station_single_bounce_events(
         t3_s=t3,
         uplink_light_time_s=float(uplink_lt),
         downlink_light_time_s=float(downlink_lt),
-        round_trip_light_time_s=float(t3 - t1),
+        # Phase 17C-RF (owner-authorized): assembled from THIS oracle's own
+        # converged local delays instead of differencing two arc-relative
+        # epochs.  Exact by construction of the single-bounce chain solved
+        # above -- both assignments below are literal, so the identity holds
+        # in exact arithmetic, not merely to within a tolerance:
+        #     t2 = t3 - downlink_lt      (loop: new_t2 = t3 - new_downlink_lt)
+        #     t1 = t2 - uplink_lt        (loop: new_t1 = t2 - uplink_lt)
+        #  => t3 - t1 == (t3 - t2) + (t2 - t1) == downlink_lt + uplink_lt
+        # Model S is the zero-delay reference (nonzero delta_0 is rejected
+        # above), so no transponder term enters the sum.
+        #
+        # Why the old form had to go: t3 and t1 are both ~1e4 s while their
+        # difference is ~2.7 s, so the subtraction quantised the observable at
+        # c*ulp(t_event)/2 and doubled at every binade the arc crossed.  Phase
+        # 17B proved that mechanism; Phase 17C removed it from production.
+        # Keeping it here would make the oracle validate a shared
+        # floating-point defect rather than the physical observable.
+        #
+        # INDEPENDENCE IS PRESERVED: these are this module's OWN delays, from
+        # its own fixed-point iteration over its own single-bounce topology.
+        # Nothing is imported from the production four-event solver, so the
+        # cross-validation remains a comparison of two implementations.
+        round_trip_light_time_s=float(downlink_lt + uplink_lt),
         uplink_iterations=int(uplink_iterations),
         downlink_iterations=int(downlink_iterations),
         uplink_update_residual_s=float(uplink_update),

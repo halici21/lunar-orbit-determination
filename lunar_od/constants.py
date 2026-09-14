@@ -61,3 +61,31 @@ J2_MOON_UNNORMALIZED: float = 2.0346e-4          # IAU/GRAIL lunar J2 (unnormali
 # Defined for Phase 5 (Earth-J2) preparation only; not yet wired into any
 # propagation path in Phase 2.
 J2_EARTH_UNNORMALIZED: float = 1.08262668e-3     # EGM96 Earth J2 (unnormalized)
+
+# ---------------------------------------------------------------------------
+# Solar radiation constants (Phase 16, for the opt-in cannonball SRP force)
+#
+# Consumed only by lunar_od.srp, which is itself opt-in. Defining them here
+# rather than inside that module keeps one canonical declaration per number, so
+# a second SRP consumer cannot introduce a slightly different solar constant.
+# ---------------------------------------------------------------------------
+# Speed of light in vacuum, exact by SI definition. This MUST equal
+# measurements.C_LIGHT_MPS, which predates this block and is the measurement
+# domain's own declaration; a test asserts the two agree so they cannot drift.
+# It is repeated rather than imported because this module has no dependencies
+# and the measurement stack must not be pulled into the force model.
+SPEED_OF_LIGHT_M_S: float = 299_792_458.0        # SI definition, exact
+
+# Total solar irradiance at 1 AU. IAU 2015 Resolution B3 nominal value.
+SOLAR_IRRADIANCE_1AU_W_M2: float = 1361.0        # IAU 2015 B3 nominal TSI
+
+# Radiation pressure at 1 AU: P = S / c, N/m^2. The reflectivity coefficient
+# C_R carries the optical behaviour, so this is the total-absorption reference.
+SOLAR_PRESSURE_1AU_N_M2: float = SOLAR_IRRADIANCE_1AU_W_M2 / SPEED_OF_LIGHT_M_S
+
+# Astronomical unit, exact by IAU 2012 Resolution B2.
+AU_M: float = 1.495978707e11                     # IAU 2012 B2, exact
+
+# Mean solar radius (IAU 2015 B3 nominal). Used for the apparent angular radius
+# of the solar disk in the conical shadow model, NOT for any gravity term.
+R_SUN_M: float = 6.957e8                         # IAU 2015 B3 nominal solar radius
