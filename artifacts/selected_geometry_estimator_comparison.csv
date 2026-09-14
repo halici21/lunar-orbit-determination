@@ -1,0 +1,6 @@
+estimator,case,k_estimate,sigma_k,endpoint_holdout_m,rms_holdout_m,status
+BLS,G1 2-orbit,0.01,,2.5462973690779505,3.1648239879781,Converged
+BLS,G1 2-orbit,0.015,,2.8174624483511668,3.24902745880859,MaxIter
+BLS,G1 2-orbit,0.011799924331532739,0.0016448079813578963,2.6507150030754407,3.1976088890595102,J-Stab
+SRIF,G1 2-orbit,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,directional characterization only
+SR-UKF,G1 2-orbit,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,directional characterization only

@@ -1,0 +1,24 @@
+{
+  "phase": "PHASE17_R1G",
+  "truth_status": "SYNTHETIC_CAMPAIGN_TRUTH",
+  "k_truth_m2_per_kg": 0.01,
+  "k_wrong_m2_per_kg": 0.015,
+  "k_initial_m2_per_kg": 0.012,
+  "cadence_s": 60.0,
+  "holdout_duration_orbits": 0.7,
+  "estimator_sweep": "BLS primary; SRIF/SR-UKF confirmation not promoted because no practical candidate met selection criteria",
+  "range_schedule": "qualified two-way range; station visibility masks from existing DSN configuration",
+  "doppler_schedule": "existing four-event counted-Doppler SR-UKF synthetic path; directional information-only characterization",
+  "priors": {"broad_sigma_k": 1.0, "moderate_sigma_k": 0.01, "screening_envelope_used": false},
+  "process_noise_k": 0.0,
+  "cases": [
+    {"id": "G0", "arc_orbits": 1.3, "stations": ["Canberra DSN"], "measurements": ["range"]},
+    {"id": "G1", "arc_orbits": 2.0, "stations": ["Canberra DSN"], "measurements": ["range"]},
+    {"id": "G2", "arc_orbits": 3.0, "stations": ["Canberra DSN"], "measurements": ["range"]},
+    {"id": "G3", "arc_orbits": 5.0, "stations": ["Canberra DSN"], "measurements": ["range"]},
+    {"id": "G4", "arc_orbits": 2.0, "stations": ["Goldstone DSN", "Madrid DSN", "Canberra DSN"], "measurements": ["range"]},
+    {"id": "G5", "arc_orbits": 3.0, "stations": ["Goldstone DSN", "Madrid DSN", "Canberra DSN"], "measurements": ["range"]},
+    {"id": "D0", "stations": ["synthetic 3-station SR-UKF geometry"], "measurements": ["four-event counted Doppler"]},
+    {"id": "RD0", "stations": ["synthetic 3-station SR-UKF geometry"], "measurements": ["range + four-event counted Doppler"]}
+  ]
+}
