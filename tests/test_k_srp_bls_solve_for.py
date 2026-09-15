@@ -205,14 +205,17 @@ def test_k_scale_choice_does_not_change_the_physical_estimate(fx):
     eigenvalue spread inside double-precision range.  Without it, this
     fixture's single 5.5-hour single-station pass gives K's information
     content in atwa units roughly 1e13-1e16x smaller than the orbital
-    state's (measured directly: see the campaign report), which pushes the
-    shared _safe_covariance_from_information eigenvalue floor (max_eig*1e-14)
-    to engage differently at different scales -- a genuine, documented
-    LIMITATION of that shared safety net on severely ill-conditioned systems,
-    not something Phase 17-R may fix (it is used by every estimator in this
-    module). In the well-posed regime tested here, both scale choices
-    reproduce the SAME K estimate AND the same K variance to machine
-    precision.
+    state's, which pushed the shared _safe_covariance_from_information
+    eigenvalue floor (max_eig*1e-14) to engage differently at different
+    scales.
+
+    Phase 17-R1COV has since REMOVED that limitation from the K solve-for
+    path: covariance there now comes from an orthogonal factorization of the
+    design matrix, which never forms the normal matrix, and scale invariance
+    holds with no prior at all (see test_k_srp_square_root_covariance.py).
+    The prior is retained here so this test keeps testing what it always
+    tested -- the K ESTIMATE's scale invariance in a well-posed regime -- and
+    so its assertions remain comparable with the Phase 17-R baseline.
     """
     x_guess = fx["x_true0"] + np.array([5.0, -3.0, 2.0, 0.0, 0.0, 0.0])
     srp = SRPOptions(k_srp_m2_per_kg=0.01)

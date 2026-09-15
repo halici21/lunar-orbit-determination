@@ -9,6 +9,11 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 from numpy.typing import ArrayLike
+# Phase 17-R1COV.  scipy is already a hard dependency of lunar_od (dynamics,
+# filters, ephemeris), so this adds no new requirement; it is imported here for
+# the triangular solves of the square-root covariance path, which must never
+# form or invert the normal matrix.
+from scipy.linalg import solve_triangular
 
 from .accelerated import apply_stm_to_jacobian
 from .dynamics import (
@@ -1416,6 +1421,115 @@ def _safe_covariance_from_information(information: np.ndarray) -> np.ndarray:
     return _symmetrize((vecs / vals) @ vecs.T)
 
 
+class RankDeficientCovarianceError(np.linalg.LinAlgError):
+    """No finite covariance exists for at least one direction of the problem.
+
+    Phase 17-R1COV.  Raised in preference to returning a plausible-looking
+    finite matrix: a caller told "no covariance exists" can act correctly,
+    whereas a caller handed a floor-derived number cannot tell that anything
+    went wrong.
+    """
+
+    def __init__(self, message: str, *, rank: int, n: int,
+                 singular_ratio: float, threshold: float):
+        super().__init__(message)
+        self.rank = rank
+        self.n = n
+        self.singular_ratio = singular_ratio
+        self.threshold = threshold
+
+
+def _square_root_covariance_from_design(
+    h_full: np.ndarray,
+    w_diag: np.ndarray,
+    prior_inv: np.ndarray,
+    scale: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Phase 17-R1COV.  Posterior covariance without forming H^T W H.
+
+    Returns ``(covariance_physical, sqrt_information_physical)``.
+
+    WHY THIS EXISTS.  ``_safe_covariance_from_information`` recovers covariance
+    by eigendecomposing the normal matrix and clipping eigenvalues at
+    ``max_eig * 1e-14``.  For the K-augmented problem that clip is not a
+    safety net, it is the answer: R1M measured that the reported sigma_K is
+    reproduced to 1.5e-10 by ``sqrt(K_scale**2 / floor)`` alone, and that it
+    scales linearly with the arbitrary K bookkeeping constant while every
+    physical quantity stays invariant.
+
+    The root cause is that forming the normal matrix squares the condition
+    number exactly -- measured ratio cond(H^T W H) / cond(H_w)**2 = 1.0000 on
+    every tested arc.  The whitened, scaled DESIGN matrix is conditioned at
+    1e8-2.6e9 against a double-precision limit of 1/eps = 4.5e15, so the weak
+    K direction is comfortably resolvable; squaring pushes it past the limit.
+
+    This routine therefore never forms the normal matrix.  It builds
+
+        A = [ W^(1/2) H S ; L^T ]      with  L L^T = S^T P0^-1 S
+
+    factors A = Q R, and recovers P = R^-1 R^-T by two triangular solves.
+
+    Qualified in Phase 17-R1COV against an EXACT rational-arithmetic oracle
+    (agreement <= 1.6e-13 on sigma_K and <= 6.8e-12 across the full
+    covariance), for scaling invariance (spread 0.0 across K scales spanning
+    4x), for correct prior response, and against a sequentially accumulated
+    SRIF R factor.
+
+    Note that ``_sqrt_information_from_information`` cannot serve this purpose:
+    it applies the SAME eigenvalue floor and then factors the already-floored
+    matrix, so it is a square root OF the defect (measured 90-99.6% error).
+    """
+    h_full = np.asarray(h_full, dtype=float)
+    w_diag = np.asarray(w_diag, dtype=float)
+    n = h_full.shape[1]
+
+    rows = [np.sqrt(w_diag)[:, None] * (h_full @ scale)]
+    if prior_inv is not None:
+        prior_scaled = _symmetrize(scale.T @ np.asarray(prior_inv, float) @ scale)
+        # eigendecomposition rather than Cholesky: the prior information matrix
+        # is routinely only SEMI-definite here (data-only is all zeros, and a
+        # partial prior constrains some parameters and not others), and
+        # Cholesky raises on both.
+        p_vals, p_vecs = np.linalg.eigh(prior_scaled)
+        keep = p_vals > 0.0
+        if np.any(keep):
+            rows.append(np.sqrt(p_vals[keep])[:, None] * p_vecs[:, keep].T)
+    a_aug = np.vstack(rows)
+
+    r_factor = np.asarray(np.linalg.qr(a_aug, mode="r"))[:n, :n]
+    signs = np.where(np.diag(r_factor) < 0.0, -1.0, 1.0)
+    r_factor = signs[:, None] * r_factor
+
+    # Rank test on the SINGULAR VALUES of R (a triangular factor's diagonal can
+    # be arbitrarily unrepresentative of them).  The criterion is a pure ratio,
+    # hence invariant to any uniform rescaling -- precisely the scale-awareness
+    # the absolute eigenvalue floor lacked.  On the weak-K lunar arcs the ratio
+    # is ~3.8e-10 against a threshold of ~1.6e-15, five orders of margin, so
+    # the weak direction is retained on its own merits.
+    sv = np.linalg.svd(r_factor, compute_uv=False)
+    threshold = float(n) * float(np.finfo(float).eps)
+    ratio = float(sv[-1] / sv[0]) if sv[0] > 0.0 else 0.0
+    rank = int(np.sum(sv > sv[0] * threshold))
+    if rank < n or not np.all(np.isfinite(r_factor)):
+        raise RankDeficientCovarianceError(
+            "augmented problem is numerically rank %d of %d "
+            "(sigma_min/sigma_max = %.3e, resolvability threshold %.3e); "
+            "no finite covariance exists for the unresolved direction"
+            % (rank, n, ratio, threshold),
+            rank=rank, n=n, singular_ratio=ratio, threshold=threshold)
+
+    eye = np.eye(n)
+    y_factor = solve_triangular(r_factor, eye, trans="T", lower=False)
+    cov_scaled = solve_triangular(r_factor, y_factor, lower=False)
+    covariance = scale @ _symmetrize(cov_scaled) @ scale.T
+
+    # R is expressed in scaled coordinates; map it back so the reported
+    # sqrt-information satisfies R_phys^T R_phys = posterior_information.
+    # scale is diagonal, so dividing columns preserves upper-triangularity.
+    sqrt_information = r_factor / np.diag(scale)[None, :]
+    return _symmetrize(covariance), sqrt_information
+
+
 def _symmetrize(matrix: np.ndarray) -> np.ndarray:
     return 0.5 * (matrix + matrix.T)
 
@@ -1870,6 +1984,39 @@ def _two_way_range_posterior_information_with_k(
     j2_moon: float,
 ) -> np.ndarray:
     """Phase 17-R.  (7,7) posterior information at the converged (x0, K)."""
+    h_full = _two_way_range_posterior_design_with_k(
+        t_pass_s, obs_data, x_dyn, k_srp, srp, pass_geo,
+        mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+        get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
+    )
+    return _symmetrize(h_full.T @ (w_diag[:, None] * h_full) + prior_inv)
+
+
+def _two_way_range_posterior_design_with_k(
+    t_pass_s: np.ndarray,
+    obs_data: np.ndarray,
+    x_dyn: np.ndarray,
+    k_srp: float,
+    srp,
+    pass_geo: PassGeometry,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    rtol: float,
+    atol: float,
+    j2_moon: float,
+) -> np.ndarray:
+    """Phase 17-R1COV.  The (M,7) augmented design matrix at the solution.
+
+    Split out of ``_two_way_range_posterior_information_with_k`` so the
+    square-root covariance path can reach the design rows WITHOUT a second
+    trajectory propagation, and without the information matrix ever being
+    formed on its behalf.  The arithmetic of the information matrix is
+    unchanged by the split, so ``posterior_information`` stays bitwise
+    identical to Phase 17-R.
+    """
     x_aug_hist = propagate_state_with_k_sensitivity(
         t_pass_s, x_dyn, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_srp),
@@ -1877,8 +2024,7 @@ def _two_way_range_posterior_information_with_k(
     )
     _, h_x0 = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
     h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
-    h_full = np.hstack([h_x0, h_k[:, None]])
-    return _symmetrize(h_full.T @ (w_diag[:, None] * h_full) + prior_inv)
+    return np.hstack([h_x0, h_k[:, None]])
 
 
 def estimate_two_way_range_bls_lm(
@@ -2238,25 +2384,33 @@ def estimate_two_way_range_bls_lm(
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
         if solve_for_k_srp:
-            posterior_information = _two_way_range_posterior_information_with_k(
+            # Phase 17-R1COV.  The design matrix is read once and used for BOTH
+            # the reported information matrix and the covariance.
+            #
+            # Phase 17-R conditioned on `scale` before the floored inverse and
+            # believed that sufficed.  Phase 17-R1M showed it does not: the
+            # reported sigma_K was reproduced to 1.5e-10 by the eigenvalue
+            # floor alone and moved linearly with the arbitrary K bookkeeping
+            # scale, i.e. it was an artifact rather than an uncertainty.  The
+            # cause is that forming H^T W H squares the condition number
+            # exactly, pushing a resolvable K direction past double precision.
+            #
+            # The covariance is therefore taken from an orthogonal
+            # factorization of the design matrix, which never forms the normal
+            # matrix.  posterior_information is still reported, unchanged, for
+            # callers that want it -- it is only no longer INVERTED.
+            posterior_design = _two_way_range_posterior_design_with_k(
                 t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-                get_earth_pos, get_sun_pos, prior_inv, w_curr_diag, rtol, atol, j2_moon,
+                get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
             )
-            # K's information content differs from the orbital state's by up
-            # to ~1e13-1e16x in atwa units (measured: s23 of the campaign
-            # report), so the RAW 7x7 information matrix carries a dynamic
-            # range that trips the eigenvalue floor inside
-            # _safe_covariance_from_information (max_eig * 1e-14 exceeds a
-            # genuinely small-but-real eigenvalue, clipping it).  Condition on
-            # the SAME scale already used for the LM solve -- exactly the
-            # scale-invariant transform verified in s20 -- invert there, then
-            # map back.  This branch is unreachable for solve_for_k_srp=False,
-            # so the six-state path below keeps its original, unconditioned
-            # call exactly as before.
-            info_scaled = scale.T @ posterior_information @ scale
-            cov_scaled = _safe_covariance_from_information(info_scaled)
-            posterior_covariance = scale @ cov_scaled @ scale.T
+            posterior_information = _symmetrize(
+                posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
+                + prior_inv
+            )
+            posterior_covariance, _ = _square_root_covariance_from_design(
+                posterior_design, w_curr_diag, prior_inv, scale
+            )
         else:
             posterior_information = _two_way_range_posterior_information(
                 t_pass_s,
@@ -2557,17 +2711,23 @@ def estimate_two_way_range_srif(
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
         if solve_for_k_srp:
-            posterior_information = _two_way_range_posterior_information_with_k(
+            # Phase 17-R1COV.  Same square-root covariance path as the BLS
+            # branch (see its comment for the full rationale).  Unreachable for
+            # solve_for_k_srp=False.
+            posterior_design = _two_way_range_posterior_design_with_k(
                 t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-                get_earth_pos, get_sun_pos, prior_inv, w_curr_diag, rtol, atol, j2_moon,
+                get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
             )
-            # Same conditioning as the BLS branch (see its comment): condition
-            # on scale before the shared eigenvalue-floor-safe inverse, then
-            # map back.  Unreachable for solve_for_k_srp=False.
-            info_scaled = scale.T @ posterior_information @ scale
-            cov_scaled = _safe_covariance_from_information(info_scaled)
-            posterior_covariance = scale @ cov_scaled @ scale.T
+            posterior_information = _symmetrize(
+                posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
+                + prior_inv
+            )
+            posterior_covariance, k_sqrt_information = (
+                _square_root_covariance_from_design(
+                    posterior_design, w_curr_diag, prior_inv, scale
+                )
+            )
         else:
             posterior_information = _two_way_range_posterior_information(
                 t_pass_s,
@@ -2586,7 +2746,18 @@ def estimate_two_way_range_srif(
                 j2_moon,
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
-        posterior_sqrt_information = _sqrt_information_from_information(posterior_information)
+            k_sqrt_information = None
+        # Phase 17-R1COV.  _sqrt_information_from_information applies the SAME
+        # eigenvalue floor and then factors the already-floored matrix, so on
+        # the K path it is a square root OF the defect (measured 90-99.6%
+        # error against an exact oracle).  On that path the genuine R factor
+        # from the design-matrix QR is used instead.  The six-state path is
+        # untouched: shipping a qualified covariance beside a contaminated
+        # sqrt-information in the same stats object would be a trap.
+        posterior_sqrt_information = (
+            k_sqrt_information if k_sqrt_information is not None
+            else _sqrt_information_from_information(posterior_information)
+        )
 
     stats = EstimatorStats(
         iterations=iteration,

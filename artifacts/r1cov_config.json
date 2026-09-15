@@ -1,0 +1,49 @@
+{
+  "phase": "PHASE 17-R1COV",
+  "title": "SQUARE-ROOT COVARIANCE QUALIFICATION AND K_SRP FORMAL-UNCERTAINTY REPAIR",
+  "scope": "COVARIANCE_METHOD_ONLY_K_SOLVE_FOR_PATH",
+  "git": {
+    "branch": "feature/phase17-r-k-srp-estimation",
+    "head": "f0ee0fac0f07db8ad3da60ef7434749eaa5438a4",
+    "tree": "c646b86d9281d4053155a686c80fa1e7bfbbf737",
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "r1m_content_commit": "f2af3045e44860b0892fe84b788ab7b75c7c63a2"
+  },
+  "oracle": {
+    "method": "exact rational arithmetic (fractions.Fraction)",
+    "rationale": "every IEEE-754 double is a dyadic rational, so the normal matrix is exactly representable and the inverse carries zero arithmetic error",
+    "convergence_study": "decimal.Decimal at 50/80/120/200 digits",
+    "mpmath_available": false
+  },
+  "method": {
+    "covariance": "QR of the whitened scaled design, P = R^-1 R^-T via two triangular solves; normal matrix never formed",
+    "prior_handling": "prior square-root rows appended to the design",
+    "prior_sqrt": "symmetric eigendecomposition (prior information is routinely only semi-definite; Cholesky would raise)",
+    "rank_criterion": "sigma_i > sigma_max * n * eps on the singular values of R (a pure ratio, hence scale-invariant)",
+    "rank_failure": "RankDeficientCovarianceError raised, never a floor-derived finite covariance"
+  },
+  "truth": {
+    "k_srp_truth_m2_per_kg": 0.01,
+    "provenance": "SYNTHETIC_CAMPAIGN_TRUTH"
+  },
+  "epoch": {
+    "campaign_et0": 857806356.99998,
+    "orbit_period_s": 7067.459765661043
+  },
+  "scaling": {
+    "position_m": 1000000.0,
+    "velocity_m_s": 1000.0,
+    "k_srp_m2_per_kg": 0.01
+  },
+  "production_change": {
+    "files": [
+      "lunar_od/estimators.py"
+    ],
+    "call_sites_modified": 2,
+    "call_sites_protected": 26,
+    "srukf_modified": false,
+    "default_six_state_modified": false,
+    "scenarios_duplicate_helper_modified": false
+  }
+}
