@@ -1,0 +1,80 @@
+{
+  "phase": "PHASE 17-R1M",
+  "scope": "ANALYSIS_ONLY_NO_PRODUCTION_CHANGE",
+  "git": {
+    "head": "7acb10ac511ac01ffb0f2aed08034ed403e9bd51",
+    "branch": "feature/phase17-r-k-srp-estimation",
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "dirty_tracked_files": []
+  },
+  "provenance": "SYNTHETIC_CAMPAIGN_TRUTH",
+  "truth": {
+    "k_srp_truth_m2_per_kg": 0.01,
+    "k_srp_wrong_fixed": 0.015,
+    "k_srp_solve_initial": 0.012
+  },
+  "epoch": {
+    "campaign_et0": 857806356.99998,
+    "orbit_period_s": 7067.459765661043
+  },
+  "sampling": {
+    "cadence_s": 60.0,
+    "integrator_rtol": 1e-12,
+    "integrator_atol": 1e-13
+  },
+  "scaling": {
+    "position_m": 1000000.0,
+    "velocity_m_s": 1000.0,
+    "k_srp_m2_per_kg": 0.01
+  },
+  "measurement": {
+    "family": "two_way_converged_event_range",
+    "four_event_counted_doppler_substituted": false,
+    "geometric_range_rate_substituted": false,
+    "noise": false,
+    "min_elevation_deg": 10.0,
+    "tolerance_s": 1e-13,
+    "equation_tolerance_s": 1e-14
+  },
+  "schedule": {
+    "window_orbits": 0.5,
+    "campaigns": {
+      "M1": [
+        0.5,
+        2.5
+      ],
+      "M2": [
+        0.5,
+        2.5,
+        5.5
+      ],
+      "M3": [
+        0.5,
+        1.5,
+        2.5,
+        3.5,
+        5.5
+      ]
+    },
+    "stations": [
+      "Goldstone DSN",
+      "Madrid DSN",
+      "Canberra DSN"
+    ],
+    "single_arc_cases": {
+      "G0": 1.3,
+      "G1": 2.0,
+      "G2": 3.0,
+      "G3": 5.0
+    }
+  },
+  "frozen_production_files": [
+    "lunar_od/dynamics.py",
+    "lunar_od/two_way_range.py",
+    "lunar_od/radiometrics.py",
+    "lunar_od/two_way_counted_doppler_reference.py",
+    "lunar_od/estimators.py",
+    "lunar_od/filters.py"
+  ]
+}
