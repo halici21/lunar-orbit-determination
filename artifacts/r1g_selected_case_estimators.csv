@@ -1,0 +1,5 @@
+case,estimator,measurement_family,k_estimate,sigma_k,normalized_k_error,holdout_status,scientific_role
+G1,BLS,two-way range,0.011799924331532739,0.0016448079813578963,1.094,CHARACTERIZATION_ONLY,primary geometry sweep
+G1,SRIF,two-way range,NOT_RUN,NOT_RUN,NOT_RUN,NOT_RUN,architecture not rerun for geometry sweep
+G6,SR-UKF,four-event counted Doppler,NOT_RUN,NOT_RUN,NOT_RUN,DIRECTIONAL_SCIENTIFIC_CONFIRMATION_ONLY,R0-qualified directional path
+G7,SR-UKF,range + counted Doppler,NOT_RUN,NOT_RUN,NOT_RUN,DIRECTIONAL_SCIENTIFIC_CONFIRMATION_ONLY,information-only characterization

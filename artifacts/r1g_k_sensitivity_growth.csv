@@ -1,0 +1,5 @@
+case,arc_orbits,trajectory_sensitivity_final_norm,trajectory_sensitivity_max_norm,trajectory_sensitivity_rms_norm,measurement_sensitivity_rms,measurement_sensitivity_max,measurement_sensitivity_median,status
+G0,1.3,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,not instrumented by frozen BLS sweep
+G1,2.0,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,not instrumented by frozen BLS sweep
+G2,3.0,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,not instrumented by frozen BLS sweep
+G3,5.0,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,NOT_RECORDED,not instrumented by frozen BLS sweep

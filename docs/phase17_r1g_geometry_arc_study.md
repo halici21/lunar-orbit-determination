@@ -1,4 +1,4 @@
-# PHASE 17-R1G — GEOMETRY AND ARC EXPANSION STUDY FOR K_SRP OBSERVABILITY
+# PHASE 17-R1G — GEOMETRY, ARC-LENGTH, AND MEASUREMENT-DIVERSITY STUDY FOR K_SRP OBSERVABILITY
 
 ## Executive summary
 
@@ -57,6 +57,27 @@ No production source was changed. R0 estimator gates, P21, Model-S, long-arc, ev
 
 The study package includes machine-readable geometry, observability, holdout, and estimator-comparison CSV/JSON files, plus eight figures: scaled conditioning versus arc, conditional K information versus arc, solve-K sigma versus arc, holdout error versus arc, measurement-family information, K estimate/uncertainty, selected 2-orbit holdout comparison, and weakest-mode K alignment. These are descriptive artifacts generated from the frozen implementation; they do not alter estimator or measurement code. The three-estimator comparison CSV explicitly marks SRIF and SR-UKF as not rerun for the geometry sweep, while retaining their R0 qualification status.
 
+## 10. Prior diagnostic reassessment
+
+The scalar data-only Schur information was compared with prior information rather than inferred from the reported estimator sigma alone. For the baseline, `I(K|state)=1.5212`; broad and moderate prior information are `1` and `10000`, respectively. For the strongest stable range case (G1), `I(K|state)=2658.51`. Thus the moderate prior is not evidence of data domination. The estimator-reported sigmas (`0.00346885` for G0 and `0.00164481` for G1) are not reproduced by the scalar Schur calculation, so the shared covariance/floor or full-model scaling diagnostic remains unresolved. R1G therefore makes no data-dominated claim: the prior classification is `DIAGNOSTIC_UNCERTAIN` for broad G0/G1 and `PRIOR_INFLUENCED` or `PRIOR_DOMINATED` for moderate priors. No covariance infrastructure was modified.
+
+## 11. Required comparison summary
+
+| Case | Arc | Stations | Measurements | Rank | Smallest scaled σ | Weak-mode K | Conditional K info | σ_K | Wrong/correct separation | Solve-K holdout benefit | Classification |
+|---|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| G0 | 1.3 | Canberra | range | 6/7 | 1.22e-4 | 0.99999999985 | 1.52 | 3.47e-3 | 0.097 m RMS | −0.040 m RMS | not distinguishable |
+| G1 | 2.0 | Canberra | range | 6/7 | 2.66e-1 | 0.99999999376 | 2.66e3 | 1.64e-3 | 0.084 m RMS | 0.051 m RMS better than wrong | weakly distinguishable |
+| G2 | 3.0 | Canberra | range | 6/7 | 9.36e-1 | 0.99999999451 | 9.36e3 | 9.32e-4 | 0.516 m RMS | catastrophic | unstable solve |
+| G3 | 5.0 | Canberra | range | 6/7 | 3.52 | 0.99999999554 | 3.52e4 | 5.24e-4 | 0.841 m RMS | catastrophic | unstable solve |
+| G6 | 2.0 | Canberra | counted Doppler | 6/7 | — | ~1.0 | 247.5 | — | not run | directional characterization |
+| G7 | 2.0 | Canberra | range+Doppler | 6/7 | — | ~1.0 | 260.8 | — | not run | directional characterization |
+
+## 12. Required interpretation and limits
+
+R1G answers the causal questions as follows. The R1 failure is not explained by short arc length alone: additional passes increase conditional information by four orders of magnitude, but the data-only matrix remains rank 6/7 and the nonlinear solves become unstable at 3–5 orbits. Multiple stations did not help in the tested qualified visibility mask because they contributed no additional independent rows. Counted Doppler supplied a distinct sensitivity direction but remained rank 6/7; range+Doppler increased conditional information only from `247.5` to `260.8` in the directional test. No first practical geometry was found. The only stable candidate, G1, showed a modest absolute holdout improvement over wrong-fixed K, but the correct/wrong separation is small and the predictive-recovery ratio is ill-conditioned. Therefore solve-K predictive usefulness is not established.
+
+The sweep did not instrument trajectory-sensitivity norms, eclipse-entry counts, RTN posterior correlations, or fixed-versus-solve RTN covariance in the frozen BLS harness; these are explicitly marked `NOT_RECORDED` rather than fabricated. SRIF and direct range SR-UKF geometry confirmation were not run because the current qualified architectures are not measurement-identical. R0's common Gaussian, default-parity, P21, Model-S, long-arc, event-conditioning, derivative-chain, and zero-sensitivity gates remain the applicable regression evidence.
+
 ## Final verdict
 
 `PRACTICAL_GEOMETRY_FOUND=NO`.
@@ -69,6 +90,10 @@ The study package includes machine-readable geometry, observability, holdout, an
 
 `K_OBSERVABILITY_BEST_CASE_CLASS=WEAKLY_OBSERVABLE_BUT_NOT_ROBUSTLY_PREDICTIVE`.
 
-`PHASE17_R1G_GATE=PASS_WITH_NEGATIVE_SCIENTIFIC_RESULT`.
+`PHASE17_R1G_GATE=CHARACTERIZATION_COMPLETE`.
+
+`PRIOR_DIAGNOSTIC_STATUS=PRIOR_DIAGNOSTIC_STILL_UNRESOLVED`.
+
+`PRACTICAL_GEOMETRY_FOUND=NO`.
 
 The next action is a separately authorized multi-arc or additional-observable study. Do not begin R2 closure, merge, or push automatically.

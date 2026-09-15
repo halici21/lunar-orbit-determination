@@ -1,0 +1,5 @@
+case,prior_family,prior_mean,prior_sigma,prior_information,conditional_data_information,scalar_expected_posterior_sigma,estimator_reported_sigma,classification,diagnostic_note
+G0,broad,0.012,1.0,1.0,1.5212283447235677,0.629403,0.0034688484157318253,DIAGNOSTIC_UNCERTAIN,reported covariance is not reproduced by scalar Schur information; shared covariance/floor or full-model scaling requires separate audit
+G0,moderate,0.012,0.01,10000.0,1.5212283447235677,0.00999924,0.0034688484157318253,PRIOR_DOMINATED,prior information exceeds data-only conditional information by four orders of magnitude
+G1,broad,0.012,1.0,1.0,2658.508700783874,0.019397,0.0016448079813578963,DIAGNOSTIC_UNCERTAIN,reported covariance is not reproduced by scalar Schur information
+G1,moderate,0.012,0.01,10000.0,2658.508700783874,0.008891,0.0016448079813578963,PRIOR_INFLUENCED,prior and data information are comparable in order but covariance mismatch remains unresolved
