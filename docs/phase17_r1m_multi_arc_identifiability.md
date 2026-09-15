@@ -1037,10 +1037,17 @@ START_BRANCH = feature/phase17-r-k-srp-estimation
 START_HEAD   = 7acb10ac511ac01ffb0f2aed08034ed403e9bd51
 START_TREE   = 68f2a1af1f9f271ade72ab6354071d79e4594bb7
 
-FINAL_HEAD = recorded in artifacts/r1m_manifest.json
-FINAL_TREE = recorded in artifacts/r1m_manifest.json
-    (a commit cannot contain its own hash; the manifest written by the final
-     commit of this phase records the tip, and START_HEAD above is its parent)
+CONTENT_COMMIT = f2af3045e44860b0892fe84b788ab7b75c7c63a2
+CONTENT_TREE   = 0fc06af901fbbb7ae0bf4b5dd405eaf5d3213ef1
+    (parent = START_HEAD; contains the analysis scripts, artifacts, figures
+     and this report)
+
+FINAL_HEAD = the manifest commit, which is the child of CONTENT_COMMIT
+FINAL_TREE = the manifest commit's tree
+    A commit cannot contain its own hash, so these two values are reported in
+    the phase closure message rather than embedded here. Everything else in
+    this block is self-contained, and artifacts/r1m_manifest.json records
+    CONTENT_COMMIT above.
 
 R1M_INPUT_GATE = PASS
 
@@ -1182,8 +1189,12 @@ NEXT_ACTION =
   PHASE_17_R1O_ADDITIONAL_OBSERVABLE_FEASIBILITY (§66).
   Neither begins automatically; both require separate authorization.
 
-COMMITS_CREATED = recorded in artifacts/r1m_manifest.json
-COMMIT_LIST     = recorded in artifacts/r1m_manifest.json
+COMMITS_CREATED = 2
+COMMIT_LIST =
+  f2af3045e44860b0892fe84b788ab7b75c7c63a2  analysis scripts, artifacts,
+                                            figures and this report
+  <manifest commit>                         artifacts/r1m_manifest.json and
+                                            this reference
 
 PUSH = NONE
 MERGE = NONE
