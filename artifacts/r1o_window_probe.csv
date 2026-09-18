@@ -1,0 +1,10 @@
+station_a,station_b,elevation_threshold_deg,simultaneous_visible_count
+Goldstone DSN,Madrid DSN,0,28
+Goldstone DSN,Madrid DSN,5,7
+Goldstone DSN,Madrid DSN,10,0
+Goldstone DSN,Canberra DSN,0,125
+Goldstone DSN,Canberra DSN,5,95
+Goldstone DSN,Canberra DSN,10,72
+Madrid DSN,Canberra DSN,0,26
+Madrid DSN,Canberra DSN,5,6
+Madrid DSN,Canberra DSN,10,0

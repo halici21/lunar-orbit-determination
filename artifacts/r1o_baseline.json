@@ -1,0 +1,96 @@
+{
+  "qualified_k_covariance_reproduction_gate": "PASS",
+  "g1_baseline": {
+    "n_obs": 144,
+    "raw_i_kk": 52687.50943130677,
+    "conditional_k_information": 2658.5200669606706,
+    "orthogonal_fraction": 0.22462916179515535,
+    "theta_k_deg": 12.981072508043274,
+    "smallest_scaled_singular_value": 0.26585200379147694,
+    "scaled_condition": 1.3903638120770826e+16,
+    "rank": 6,
+    "weakest_mode_k_component": 0.9999999937608572,
+    "qualified_sigma_k": 0.019394564345071103,
+    "fractional_sigma_k": 1.9394564345071104,
+    "rank_margin": 5456290.772861988
+  },
+  "window_probe": [
+    {
+      "station_a": "Goldstone DSN",
+      "station_b": "Madrid DSN",
+      "elevation_threshold_deg": 0,
+      "simultaneous_visible_count": 28
+    },
+    {
+      "station_a": "Goldstone DSN",
+      "station_b": "Madrid DSN",
+      "elevation_threshold_deg": 5,
+      "simultaneous_visible_count": 7
+    },
+    {
+      "station_a": "Goldstone DSN",
+      "station_b": "Madrid DSN",
+      "elevation_threshold_deg": 10,
+      "simultaneous_visible_count": 0
+    },
+    {
+      "station_a": "Goldstone DSN",
+      "station_b": "Canberra DSN",
+      "elevation_threshold_deg": 0,
+      "simultaneous_visible_count": 125
+    },
+    {
+      "station_a": "Goldstone DSN",
+      "station_b": "Canberra DSN",
+      "elevation_threshold_deg": 5,
+      "simultaneous_visible_count": 95
+    },
+    {
+      "station_a": "Goldstone DSN",
+      "station_b": "Canberra DSN",
+      "elevation_threshold_deg": 10,
+      "simultaneous_visible_count": 72
+    },
+    {
+      "station_a": "Madrid DSN",
+      "station_b": "Canberra DSN",
+      "elevation_threshold_deg": 0,
+      "simultaneous_visible_count": 26
+    },
+    {
+      "station_a": "Madrid DSN",
+      "station_b": "Canberra DSN",
+      "elevation_threshold_deg": 5,
+      "simultaneous_visible_count": 6
+    },
+    {
+      "station_a": "Madrid DSN",
+      "station_b": "Canberra DSN",
+      "elevation_threshold_deg": 10,
+      "simultaneous_visible_count": 0
+    }
+  ],
+  "o0_range_w15": {
+    "n_obs": 782,
+    "raw_i_kk": 18268566.025090486,
+    "conditional_k_information": 1162817.0907819087,
+    "orthogonal_fraction": 0.2522919965229832,
+    "theta_k_deg": 14.613182283011557,
+    "smallest_scaled_singular_value": 116.28170840871176,
+    "scaled_condition": 9325336632734080.0,
+    "rank": 6,
+    "weakest_mode_k_component": 0.9999999967347587,
+    "qualified_sigma_k": 0.0009273513250655349,
+    "fractional_sigma_k": 0.09273513250655349,
+    "rank_margin": 6662381.157463631
+  },
+  "o1_range_doppler_carried_forward": {
+    "source": "R1G",
+    "doppler_only_i_kk": 247.5,
+    "range_doppler_i_kk": 260.8,
+    "weakest_k_component": 1.0,
+    "gain_ratio": 1.0537373737373739,
+    "rank": "6/7",
+    "classification": "ADDS_INFORMATION_MAGNITUDE_ONLY (R1G-reported, not re-derived)"
+  }
+}

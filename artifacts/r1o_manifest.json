@@ -1,0 +1,137 @@
+{
+  "phase": "PHASE 17-R1O",
+  "title": "ADDITIONAL OBSERVABLE FEASIBILITY FOR K_SRP IDENTIFIABILITY",
+  "date": "2026-09-18",
+  "scope": "ANALYSIS_ONLY_NO_PRODUCTION_OBSERVABLE",
+  "git": {
+    "start_branch": "feature/phase17-r-k-srp-estimation",
+    "start_head": "75d1b4699d4cfdf220df9faf7b0a90c989b30c1b",
+    "start_tree": "da27b74399eb833dcbb9c07f22d2c100257fbd92",
+    "r1cov_final_head_reachable": true,
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "main_changed": false,
+    "origin_main_changed": false,
+    "push": "NONE",
+    "merge": "NONE",
+    "force_push": "NONE",
+    "history_rewrite": "NONE",
+    "final_head_note": "the commit adding this manifest; a commit cannot embed its own hash"
+  },
+  "gates": {
+    "r1o_input_gate": "PASS",
+    "qualified_k_covariance_reproduction_gate": "PASS",
+    "r1o_covariance_crosscheck_gate": "PASS",
+    "report_completeness_gate": "PASS",
+    "phase17_r1o_gate": "PASS"
+  },
+  "candidates": {
+    "ddor": {
+      "status": "DDOR_LIKE_INFORMATION_SURROGATE",
+      "best_noise_nrad": 1.0,
+      "best_fractional_sigma_k": 0.012239563473411628,
+      "best_f_perp": 0.44190102061139763,
+      "best_theta_k_deg": 26.225236769733115,
+      "worst_tested_noise_nrad": 300.0,
+      "worst_tested_fractional_sigma_k": 0.08946171536226412,
+      "operational_plausibility": "CLEARLY_OPERATIONALLY_PLAUSIBLE",
+      "noise_robustness_class": "ROBUST_TO_REALISTIC_NOISE",
+      "information_direction_class": "STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION"
+    },
+    "landmark": {
+      "status": "IDEALIZED_KNOWN_LANDMARK_LOS_SURROGATE",
+      "best_noise_urad": 1.0,
+      "best_fractional_sigma_k": 0.001939336877417611,
+      "best_f_perp": 0.8757007657422435,
+      "best_theta_k_deg": 61.12801981208624,
+      "worst_tested_noise_urad": 1000.0,
+      "worst_tested_fractional_sigma_k": 0.08927227103540357,
+      "operational_plausibility": "CLEARLY_OPERATIONALLY_PLAUSIBLE",
+      "noise_robustness_class": "ROBUST_TO_REALISTIC_NOISE",
+      "attitude_sensitivity_class": "SEVERE_AT_ATTITUDE_LIMITED_FLOOR",
+      "landmark_uncertainty_class": "SEVERE_EROSION",
+      "information_direction_class": "STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION"
+    },
+    "celestial_los": {
+      "status": "CHARACTERIZED_NEGLIGIBLE_GAIN",
+      "max_f_perp_gain": 0.008281279442348077
+    },
+    "crosslink": {
+      "status": "NOT_RUN",
+      "mission_architecture_change": true
+    }
+  },
+  "baseline": {
+    "g1_continuity_fractional_sigma_k": 1.9394564345071104,
+    "o0_range_w15_fractional_sigma_k": 0.09273513250655349,
+    "o0_range_w15_n_obs": 782,
+    "o1_range_doppler_carried_forward_source": "R1G"
+  },
+  "selected_candidates": [
+    "DDOR-like plane-of-sky angle",
+    "Lunar landmark LOS"
+  ],
+  "ranking": "DDOR first (robust, no new hardware, flight heritage); landmark second (strongest idealized effect, but severely eroded by realistic attitude/map uncertainty, and requires new camera/attitude/landmark infrastructure)",
+  "next_action": "PHASE_17_R1O_D_PRODUCTION_DDOR_MEASUREMENT_MODEL_DESIGN_AND_QUALIFICATION; PHASE_17_R1O_OPT held as documented second candidate. Neither automatic.",
+  "regression": {
+    "targeted": {
+      "collected": 344,
+      "passed": 332,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 12
+    },
+    "full_suite": {
+      "collected": 1264,
+      "passed": 1223,
+      "failed": 2,
+      "errors": 10,
+      "skipped": 29
+    },
+    "r1cov_full_suite_baseline": {
+      "collected": 1264,
+      "passed": 1223,
+      "failed": 2,
+      "errors": 10,
+      "skipped": 29
+    },
+    "identical_to_r1cov_baseline": true,
+    "r1o_introduced_nonpasses": 0,
+    "new_scientific_regressions": 0,
+    "unknown_nonpasses": 0
+  },
+  "scripts": [
+    "phase17_r1o_baseline.py",
+    "phase17_r1o_celestial.py",
+    "phase17_r1o_comparison.py",
+    "phase17_r1o_confirmation.py",
+    "phase17_r1o_core.py",
+    "phase17_r1o_crosscheck.py",
+    "phase17_r1o_ddor.py",
+    "phase17_r1o_landmark.py"
+  ],
+  "report": "docs/phase17_r1o_additional_observable_feasibility.md",
+  "artifact_sha256": {
+    "r1o_baseline.csv": "458d2db27fed4810daf7fc7a5b9b9b39fc09749b730d5107e56982e06092d171",
+    "r1o_baseline.json": "15ae5fca062c5970eeb417bb5aaeb1d32225d3bba24eeef04b5f7c4bc989baf8",
+    "r1o_celestial_los.csv": "99f69349b14b2efd86984181604d0049cb871fb7548044cc6ba9723e6f0af186",
+    "r1o_celestial_summary.json": "ba42d5b756d6fea9fdc6a6190c1953fc3106c2082a9546f8b4442563dba596b1",
+    "r1o_conditional_k_vs_precision.png": "0803a8319b68e6cb453204a70658d27f8c136d4f7e49aa4575873b8dd3435f94",
+    "r1o_config.json": "61c50da0e2a1bd52338448faf0e273b2b6e5b0954ada8361a17f7be8e235cb63",
+    "r1o_confirmation.csv": "87e17518f4f518ab816df935921de213c02cf34a02c55435a147fa2b0dab5928",
+    "r1o_covariance_crosscheck.csv": "69acee4a8deb24aaa364c1cac120a2d3cb427313a4b82f9782bd3e017e231172",
+    "r1o_crosscheck_summary.json": "9628ed32b06dc49c7acbcb3cd5a0ddb19627b6cd9174ab0e8186dc30c405360a",
+    "r1o_ddor_sigma_vs_noise.png": "4fb45eaa5c0131a1aefba81af34d64e09ad640cc0716ac6ee8618aa93014f148",
+    "r1o_ddor_summary.json": "1c876ce2e0efefff45d0b255fd798cf63f2d74dc4a80f90790cc03bcd8b78db5",
+    "r1o_ddor_sweep.csv": "8937bc71a4ccd41d69c13fd72fb63b74f5cb1c1340f59d710e0fab0c2594debd",
+    "r1o_magnitude_vs_direction.png": "a59d2f44f8194512daa6cd322572d69cadeadb05896f31e9f98a84a90b51ca5b",
+    "r1o_metrics_by_observable.png": "723cb3510de8b28ab019b5308a686c9950c89de93077aa81833142218b287a81",
+    "r1o_observable_comparison.csv": "c4edd9301473afb7d7de67371e7415e92adfe640d54bf9a0a50382b6c8541627",
+    "r1o_optical_landmark_sweep.csv": "e158ed5c96a39331bb4e4a078220ec6f6cff988bc0273e74a6eaa58dd07b276a",
+    "r1o_optical_sigma_vs_noise.png": "164e91f8df4a1b0e42048fda3154de47db76c40cc43c2b113cfd10b839b30a85",
+    "r1o_optical_summary.json": "25aee2e8744e272ed8a37c00a22116825bc247f7a4064d8f1d838ccde90395d5",
+    "r1o_selected_candidates.csv": "14ac97d436b360c97ef44625877ca424a087ee20782c9bf9b7f37c22b21f4321",
+    "r1o_singular_spectra.png": "88c505192985a208fb7c4b81aede64f157f176392184d8cedc70064f85ebca6e",
+    "r1o_window_probe.csv": "4ff942c21b7b9a9d111e69d66c60db26383fd84e0a5a8a187d4ce45307b2f95c"
+  }
+}

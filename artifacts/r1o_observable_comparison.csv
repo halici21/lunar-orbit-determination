@@ -1,0 +1,9 @@
+case,observable_set,added_obs,conditional_k_info,f_perp,theta_k_deg,sigma_k_over_k,weakest_k,info_direction_class
+G1 (continuity control),range,0,2658.5200669606706,0.22462916179515535,12.981072508043274,1.9394564345071104,0.9999999937608572,ADDS_INFORMATION_MAGNITUDE_ONLY (R1M baseline)
+"O0 (range, W15)",range,782,1162817.0907819087,0.2522919965229832,14.613182283011557,0.09273513250655349,0.9999999967347587,CONTROL (baseline for all other rows)
+"O1 (range+Doppler, R1G carried fwd)",range+doppler,n/a,260.8,nan,nan,nan,1.0,"ADDS_INFORMATION_MAGNITUDE_ONLY (R1G-reported, not re-derived)"
+O2 DDOR best-in-class (2 nrad),range+ddor,143,66752593.26606807,0.44190102061139763,26.225236769733115,0.012239563473411628,nan,STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION
+O2 DDOR degraded (300 nrad),range+ddor,143,nan,nan,nan,0.08946171536226412,nan,magnitude-only regime
+O3 landmark best-case (1 urad),range+landmark,6568,2658847864.284467,0.8757007657422435,61.12801981208624,0.001939336877417611,nan,STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION
+O3 landmark degraded (attitude-limited),range+landmark,6568,nan,nan,nan,0.08927227103540357,nan,magnitude-only regime
+O4 celestial LOS (Earth center),range+earth_los,n/a,nan,nan,nan,nan,nan,CHARACTERIZED_NEGLIGIBLE_GAIN
