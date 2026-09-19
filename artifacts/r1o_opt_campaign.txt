@@ -1,0 +1,107 @@
+
+========================================================================================
+s41 -- CADENCE FAMILY (the observation-count confound, made visible)
+========================================================================================
+  cadence=   90 s  samples=  1179  visible=   8  mean off-boresight= 0.000 deg  f_perp 0.2955 -> 0.2602   sigma_K/K=1.3263%
+  cadence=   30 s  samples=  3535  visible=  22  mean off-boresight= 4.896 deg  f_perp 0.2952 -> 0.2638   sigma_K/K=0.8587%
+  cadence=   10 s  samples= 10602  visible=  50  mean off-boresight= 6.817 deg  f_perp 0.2950 -> 0.2636   sigma_K/K=0.5825%
+
+  Observation count rises 6x across this family while f_perp stays flat:
+  that is the signature of information MAGNITUDE accumulating without
+  information DIRECTION rotating.
+
+========================================================================================
+s42/s43 -- PRIMARY INFORMATION GEOMETRY, LITERATURE-ANCHORED NOISE
+========================================================================================
+  range-only baseline: f_perp=0.294990  theta_K=17.1569 deg  sigma_K/K=3.4954%
+
+  centroiding sigma | source                       | f_perp   | theta_K  | sigma_K/K
+    0.10 px         | dedicated-camera best case   | 0.319308 | 18.6211 |   2.9746%
+    0.25 px         | LONEStar best in-flight      | 0.325272 | 18.9821 |   3.1257%
+    1.00 px         | LONEStar worst in-flight     | 0.324580 | 18.9401 |   3.1740%
+    2.50 px         | Federici et al. 2025 nominal | 0.317862 | 18.5337 |   3.2435%
+
+  0.001 px (unreachable, shows the asymptote): f_perp=0.261783  sigma_K/K=0.093192%
+
+  OPTICAL BLOCK ALONE (0.25 px, 100 rows): f_perp=0.261735  theta_K=15.1730 deg
+
+  SUMMARY OF THE PRIMARY QUESTION
+    f_perp   range-only                     0.294990
+    f_perp   optical block alone            0.261735
+    f_perp   best combined (any noise case) 0.325272
+    sigma_K/K range-only                    3.4954%
+    sigma_K/K best combined                 2.9746%
+    operational improvement factor          1.175x
+
+    R1O published claim, for comparison:    f_perp 0.8757, sigma_K/K 0.19%
+      (shown NOT as a target but because this phase exists to test it;
+       s40 establishes that it rests on a transposed Phi)
+
+  OPTICAL_INFORMATION_CLASS = MARGINAL_DIRECTION_GAIN
+    criterion: a STEP CHANGE requires >=3x sigma_K improvement AND
+    f_perp >= 0.60; a MARGINAL gain is any measurable improvement
+    below that; MAGNITUDE_ONLY is no directional gain at all.
+
+========================================================================================
+s44/s45 -- RANDOM ATTITUDE KNOWLEDGE ERROR (literature-anchored sweep)
+========================================================================================
+  Random per-observation attitude error IS measurement noise, so it
+  enters the weight in quadrature (pixel domain).  Bias does NOT --
+  see s46 for the two distinct bias formulas.
+
+  attitude sigma      | px equiv | source                    | f_perp   | sigma_K/K
+     8.00 arcsec       |    0.351 | BCT XACT in-orbit (MinXSS) | 0.325690 |   3.1433%
+    10.00 arcsec       |    0.397 | Apollo sextant RMS sighting | 0.325739 |   3.1477%
+    40.00 arcsec       |    1.259 | compact tracker pixel scale | 0.323654 |   3.1841%
+   120.00 arcsec       |    3.711 | coarse tracker, 3-sigma roll | 0.312234 |   3.3022%
+   103.13 arcsec       |    3.192 | R1O conservative 0.5 mrad floor | 0.314524 |   3.2781%
+
+========================================================================================
+s46 -- ATTITUDE / BORESIGHT BIAS: THE TWO DISTINCT FORMULAS
+========================================================================================
+  R1O-D established that an UNMODELED coherent error and a SOLVED-FOR
+  nuisance parameter are NOT the same question and must not share a
+  formula.  Both are computed here for the same physical bias.
+
+  bias magnitude  | Case B: K point shift      | Case C: sigma_K/K when solved
+     1.0 arcsec    | -5.641295e-06 ( -0.0564% of K) |   3.1261%
+     8.0 arcsec    | -4.513036e-05 ( -0.4513% of K) |   3.1267%
+    40.0 arcsec    | -2.256518e-04 ( -2.2565% of K) |   3.1268%
+   120.0 arcsec    | -6.769554e-04 ( -6.7696% of K) |   3.1268%
+
+========================================================================================
+s47/s48 -- LANDMARK CATALOG (MAP) ERROR: RANDOM AND COHERENT
+========================================================================================
+  RANDOM per-observation map error (identification jitter):
+      50.0 m ->    3.129 px equivalent | f_perp=0.314817 | sigma_K/K=  3.2750%
+     200.0 m ->   12.477 px equivalent | f_perp=0.298047 | sigma_K/K=  3.4596%
+
+  COHERENT per-landmark catalog error (the physically correct model:
+  a catalog entry is wrong the SAME way in every image of it):
+  map bias    | Case B: K point shift       | Case C: sigma_K/K when solved
+    50.0 m     | -3.709369e-04 ( -3.7094% of K) |   3.4094%
+   200.0 m     | -1.483747e-03 (-14.8375% of K) |   3.4792%
+
+========================================================================================
+s49 -- CAMERA CALIBRATION PERTURBATION (focal length)
+========================================================================================
+  A focal-length calibration error rescales the image plane.  Evaluated
+  as a MODEL perturbation (the measurement is formed with the wrong f),
+  not as noise.
+    df/f=1e-04 | rows= 100 | f_perp=0.325272 | sigma_K/K=  3.1257%
+    df/f=1e-03 | rows= 100 | f_perp=0.325270 | sigma_K/K=  3.1256%
+    df/f=1e-02 | rows= 100 | f_perp=0.325252 | sigma_K/K=  3.1250%
+
+========================================================================================
+s50 -- COMBINED REALISTIC CASE (pre-declared component values)
+========================================================================================
+  Components declared from the literature contract BEFORE running:
+    centroiding        0.25 px  (LONEStar best in-flight)
+    attitude knowledge 10 arcsec (Apollo sextant / good compact tracker)
+    catalog, random    50 m
+
+  effective sigma = 3.1437 px
+  f_perp=0.314746  theta_K=18.3455 deg  sigma_K/K=3.2757%
+  range-only for comparison:      sigma_K/K=3.4954%
+
+  wrote artifacts/r1o_opt_campaign.json

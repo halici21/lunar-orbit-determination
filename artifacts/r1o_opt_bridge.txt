@@ -1,0 +1,48 @@
+
+========================================================================================
+BASELINE -- RANGE ONLY (production two-way range, unaffected by s40)
+========================================================================================
+  n_obs=438  f_perp=0.295486  theta_K=17.1867 deg  sigma_K/K=10.4083%
+
+========================================================================================
+STEP 1 -- R1O's LANDMARK SURROGATE, EXACTLY AS PUBLISHED (Phi^T)
+========================================================================================
+  landmark rows=6568 at sigma=1 urad
+  f_perp=0.876626  theta_K=61.2380 deg  sigma_K/K=0.1939%
+  (R1O published headline: f_perp=0.8757, sigma_K/K=0.19%)
+
+========================================================================================
+STEP 2 -- THE SAME SURROGATE WITH Phi UNFLATTENED CORRECTLY
+========================================================================================
+  landmark rows=6568 at sigma=1 urad
+  f_perp=0.253154  theta_K=14.6642 deg  sigma_K/K=0.6716%
+  K column identical to the published run (S_K needs no reshape): True
+
+========================================================================================
+STEP 3 -- PRODUCTION OPTICAL MODEL, IDEAL LIMIT
+========================================================================================
+  1 urad at IFOV 157.143 urad/px  ->  sigma = 0.006364 px
+  production rows=16  (visible obs=8, mean range=101.601 km, mean off-boresight=0.000 deg)
+  f_perp=0.260151  theta_K=15.0790 deg  sigma_K/K=1.3263%
+
+========================================================================================
+STEP 4 -- WHAT DIFFERS, ISOLATED
+========================================================================================
+  The surrogate and the production model differ in exactly three ways:
+    (i)   Phi transposition            -> step 1 vs step 2
+    (ii)  observable definition        -> boresight-relative arcsin angles
+          vs a pinhole image-plane (u, v) pair
+    (iii) visibility gate              -> a 30 deg off-nadir cone vs the
+          camera own 9.141 deg half-FOV + far-side occultation test
+
+  row counts: published surrogate 6568, corrected surrogate 6568, production 16
+
+  f_perp:   range-only               0.295486
+            + surrogate as published 0.876626
+            + surrogate corrected    0.253154
+            + production optical     0.260151
+
+  attributable to the Phi transposition alone : +0.623473 f_perp
+  attributable to the measurement model+gate  : -0.006998 f_perp
+
+  wrote artifacts/r1o_opt_bridge.json

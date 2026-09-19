@@ -1,0 +1,63 @@
+{
+  "range_only": {
+    "n_obs": 438.0,
+    "raw_i_kk": 10572228.916106636,
+    "conditional_k_information": 923082.251895249,
+    "orthogonal_fraction": 0.29548600839218875,
+    "theta_k_deg": 17.18668284293203,
+    "smallest_scaled_singular_value": 92.30822254237351,
+    "scaled_condition": 6866577323613260.0,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.999999988253906,
+    "qualified_sigma_k": 0.0010408299954407121,
+    "fractional_sigma_k": 0.10408299954407121,
+    "rank_margin": 7764108.184087029
+  },
+  "surrogate_as_published": {
+    "n_obs": 7006.0,
+    "raw_i_kk": 3459528694.349565,
+    "conditional_k_information": 2658557288.454011,
+    "orthogonal_fraction": 0.8766263950880918,
+    "theta_k_deg": 61.23804723256851,
+    "smallest_scaled_singular_value": 265855.7288438847,
+    "scaled_condition": 129827255046967.67,
+    "rank": 7.0,
+    "weakest_mode_k_component": 0.9999999999971444,
+    "qualified_sigma_k": 1.9394428576477378e-05,
+    "fractional_sigma_k": 0.0019394428576477378,
+    "rank_margin": 56464930.39106649
+  },
+  "surrogate_corrected": {
+    "n_obs": 7006.0,
+    "raw_i_kk": 3459528694.349565,
+    "conditional_k_information": 221710038.86186308,
+    "orthogonal_fraction": 0.25315365991109723,
+    "theta_k_deg": 14.66420833138914,
+    "smallest_scaled_singular_value": 22171.003885701168,
+    "scaled_condition": 1.0687275279448822e+16,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.9999999999879009,
+    "qualified_sigma_k": 6.715947939982974e-05,
+    "fractional_sigma_k": 0.006715947939982974,
+    "rank_margin": 6223407.4659771295
+  },
+  "production_ideal": {
+    "n_obs": 454.0,
+    "raw_i_kk": 839941258.7067235,
+    "conditional_k_information": 56846101.234702654,
+    "orthogonal_fraction": 0.2601512306673155,
+    "theta_k_deg": 15.079035823839558,
+    "smallest_scaled_singular_value": 5684.610123390083,
+    "scaled_condition": 9492350500615464.0,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.9999999999929766,
+    "qualified_sigma_k": 0.00013263240904498767,
+    "fractional_sigma_k": 0.013263240904498767,
+    "rank_margin": 6603510.1776263965
+  },
+  "_attribution": {
+    "phi_transposition_delta_f_perp": 0.6234727351769946,
+    "measurement_model_delta_f_perp": -0.006997570756218263,
+    "k_column_unaffected_by_transposition": true
+  }
+}
