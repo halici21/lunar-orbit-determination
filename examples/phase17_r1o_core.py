@@ -122,12 +122,22 @@ def chain_to_augmented_columns(
 ) -> tuple[np.ndarray, np.ndarray]:
     """(dg/dx0, dg/dK) for one row, from a position Jacobian and one nom48 row.
 
-    nom48_row is 48 columns: [0:6] state, [6:42] Phi (6x6, row-major), [42:48]
-    dx/dK.  Only the position ROWS of Phi (mapping dx0 -> dr(t)) and the
-    position rows of dx/dK are used, exactly as `_two_way_range_k_srp_column`
-    uses them for the production range observable.
+    nom48_row is 48 columns: [0:6] state, [6:42] Phi (6x6, COLUMN-MAJOR),
+    [42:48] dx/dK.  Only the position ROWS of Phi (mapping dx0 -> dr(t)) and
+    the position rows of dx/dK are used, exactly as
+    `_two_way_range_k_srp_column` uses them for the production range
+    observable.
+
+    STORAGE ORDER (Phase 17-R1O-R): `lunar_od.dynamics` packs and propagates
+    Phi column-major (`reshape(-1, order="F")`, dynamics.py s1249/s1292), so it
+    MUST be unflattened with order="F".  Until Phase 17-R1O-R this line used
+    NumPy's default C order, which silently substitutes Phi^T -- Phi is not
+    symmetric, and every surrogate state-design row R1O published was built
+    from the transpose.  `examples/phase17_r1o_r_stm_oracle.py` establishes the
+    contract by measurement (re-propagated finite differences, no variational
+    block), and `tests/test_r1o_stm_layout.py` protects it permanently.
     """
-    phi = np.asarray(nom48_row[6:42], dtype=float).reshape(6, 6)
+    phi = np.asarray(nom48_row[6:42], dtype=float).reshape((6, 6), order="F")
     s_k = np.asarray(nom48_row[42:48], dtype=float)
     h_x0 = dg_dr @ phi[:3, :]
     h_k = dg_dr @ s_k[:3]
