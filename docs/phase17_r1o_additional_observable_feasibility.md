@@ -1,5 +1,28 @@
 # PHASE 17-R1O — ADDITIONAL OBSERVABLE FEASIBILITY FOR K_SRP IDENTIFIABILITY
 
+> ## HISTORICAL RESULT — SUPERSEDED
+>
+> **Every surrogate result in this report used Phi^T in place of Phi.**
+>
+> `examples/phase17_r1o_core.py::chain_to_augmented_columns` unflattened the column-major 6x6
+> state-transition matrix with NumPy's default C order. Phi is not symmetric, so all three
+> surrogate observables below — the DDOR-like angle, the lunar-landmark LOS, and the
+> Earth-center LOS control — were built on transposed state Jacobians. The K columns were
+> unaffected.
+>
+> Corrected on this report's own configuration, the landmark headline `f_perp = 0.8757` becomes
+> **`0.2530`** against a range-only baseline of `0.2523`, and the DDOR headline `f_perp = 0.4419`
+> becomes **`0.0701`**. Neither candidate meaningfully rotates the K_SRP information direction.
+> The `sigma_K/K` improvements are real, but they are information *magnitude*, not *direction*.
+>
+> **The cross-observable ranking, the candidate selection, and the
+> `STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION` classifications in this report are withdrawn.**
+> The range-only baseline, and every K-column value, remain valid.
+>
+> The original numbers below are deliberately preserved as a historical artifact. See
+> **`docs/phase17_r1o_scientific_erratum.md`** and **`docs/phase17_r1o_r_stm_layout_repair.md`**
+> (Phase 17-R1O-R, repair commit `75ba49a7e86cf7c4ea01e45ca757126159dc0654`).
+
 ## 1. Executive Summary
 
 R1COV qualified a trustworthy formal covariance for the K_SRP solve-for path and, in doing so,

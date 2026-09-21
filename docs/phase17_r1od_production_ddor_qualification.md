@@ -1,5 +1,28 @@
 # PHASE 17-R1O-D — PRODUCTION ΔDOR MEASUREMENT MODEL DESIGN, PHYSICS QUALIFICATION, AND K_SRP VALIDATION
 
+> ### PROVENANCE NOTE (Phase 17-R1O-R) — result VALID, causal attribution REVISED
+>
+> **This phase's own production result is unchanged and was re-run to confirm it.** Production
+> ΔDOR remains `MAGNITUDE_ONLY`, with `f_perp` below the range-only baseline at every tested
+> precision (1 nrad `0.0738` ... 100 nrad `0.2641`), and `lunar_od/delta_dor.py` was never touched.
+>
+> **What is revised is s21's explanation of the surrogate-vs-production gap.** R1O's surrogate is
+> now known to have used Phi^T (an STM storage-order defect in `phase17_r1o_core`, repaired in
+> Phase 17-R1O-R). With Phi corrected, R1O's surrogate lands almost exactly on production:
+>
+> | noise | R1O surrogate as published | surrogate with Phi corrected | production |
+> |---:|---:|---:|---:|
+> | 1 nrad | 0.441901 | 0.070144 | 0.0738 |
+> | 5 nrad | 0.363285 | 0.206980 | 0.2121 |
+>
+> So ~97-99% of the gap s21 attributed to discarded differential light-time was in fact the STM
+> defect. The event-physics difference is real but small, and acts in the *opposite* direction
+> (production is marginally better than the corrected surrogate, not worse).
+>
+> s21's bridge experiment could not have detected this: it varied event physics between two arms
+> that **both** used the defective Phi. A controlled comparison cannot reveal a defect its control
+> and treatment arms share. See `docs/phase17_r1o_scientific_erratum.md`.
+
 ## 1. Executive Summary
 
 R1O demonstrated, with an explicitly-labeled analysis-only surrogate, that DDOR-like plane-of-sky

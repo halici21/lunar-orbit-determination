@@ -1,5 +1,18 @@
 # PHASE 17-R1O-OPT — PRODUCTION LUNAR LANDMARK OPTICAL MEASUREMENT MODEL AND K_SRP IDENTIFIABILITY QUALIFICATION
 
+> ### PROVENANCE NOTE (Phase 17-R1O-R) — CONFIRMED
+>
+> The STM storage-order defect this phase discovered in `phase17_r1o_core.chain_to_augmented_columns`
+> has been repaired and R1O requalified (`docs/phase17_r1o_scientific_erratum.md`, repair commit
+> `75ba49a7e86cf7c4ea01e45ca757126159dc0654`).
+>
+> This phase's production optical result is **unaffected and confirmed**: it never used the
+> defective helper. Re-running R1O's landmark surrogate with Phi corrected, on R1O's own published
+> three-station configuration, gives `f_perp = 0.2530` against a `0.2523` range-only baseline —
+> independently reproducing this phase's `MARGINAL_DIRECTION_GAIN` finding from the surrogate side.
+> The corrected surrogate and the production optical model now agree that lunar-landmark
+> observations supply K information *magnitude*, not *direction*.
+
 **Status: `CHARACTERIZATION_COMPLETE`** — every physics/derivative gate PASSED; the identifiability
 question resolved with a **decisive negative result about Phase 17-R1O's published claim**, and a
 **defect found in R1O's own committed analysis code** that invalidates that claim's headline numbers.

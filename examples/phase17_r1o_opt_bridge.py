@@ -24,6 +24,21 @@ This script therefore reports the surrogate BOTH ways: exactly as R1O
 published it, and with the transposition corrected.  No attempt is made to
 reproduce any particular number -- the production model is authoritative and
 the corrected surrogate is reported wherever it lands (R1O-OPT s3).
+
+SUPERSEDED BY PHASE 17-R1O-R -- THIS SCRIPT NO LONGER REPRODUCES ITS OWN s40
+-----------------------------------------------------------------------------
+Phase 17-R1O-R repaired `chain_to_augmented_columns` (commit 75ba49a).  STEP 1
+below calls `build_landmark_arc`, which now unflattens Phi correctly, so it no
+longer reproduces the f_perp ~ 0.8766 this script reported and its
+"as published" label is no longer accurate: STEP 1 and STEP 2 now agree.
+
+To reproduce this script's published output, check out commit 887efa6 or
+earlier.  For the authoritative historical-vs-corrected comparison, use
+`examples/phase17_r1o_r_requalification.py`, which reproduces the defective
+path explicitly (by feeding the repaired helper vec_F(Phi^T)) instead of
+depending on the helper still being broken, and which runs on R1O's own
+three-station published configuration rather than this script's single-station
+baseline.
 """
 from __future__ import annotations
 
