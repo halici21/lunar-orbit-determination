@@ -694,3 +694,130 @@ See the verdict block below.
 
 Owner review of this erratum and of the withdrawn R1O ranking. Then Phase 17-GEO
 (geometry generalization). Not started here.
+
+---
+
+## 39. Verdict Fields
+
+```
+START_BRANCH = feature/phase17-r-k-srp-estimation
+START_HEAD   = 887efa62b0dd44e916036313bc39ea6e49422524
+START_TREE   = 4df2e2d22130edc87aa6e8169172bdf7b950a33e
+
+FINAL_HEAD   = 8fdde8c54a244b3f8030ff5af943ba3f13248a35
+FINAL_TREE   = 877bd81653fb204498baec92ae845b0c23f5fc2b
+               (final science-bearing commit; a following commit adds only this
+                verdict block and artifacts/r1o_r_manifest.json)
+
+R1O_REPAIR_INPUT_GATE = PASS
+
+STM_PACK_ORDER           = column-major (order="F")
+STM_UNPACK_ORDER         = column-major (order="F")
+STM_LAYOUT_CONTRACT_GATE = PASS
+
+R1O_STM_LAYOUT_ORACLE_GATE     = PASS
+R1O_STM_LAYOUT_REGRESSION_GATE = PASS
+
+K_COLUMN_INVARIANCE_GATE = PASS   (bitwise identical, all four affected designs)
+
+AFFECTED_ANALYSES =
+  phase17_r1o_core.build_landmark_arc
+  phase17_r1o_core.build_ddor_arc
+  phase17_r1o_celestial
+  phase17_r1od_surrogate_bridge (surrogate side only)
+
+UNAFFECTED_ANALYSES =
+  R1O range-only baseline (production two-way range Jacobian)
+  production DDOR   (lunar_od/delta_dor.py -- re-run, reproduces exactly)
+  production optical (lunar_od/lunar_landmark_optical.py)
+  ALL K columns everywhere (S_K is a 6-vector, never reshaped)
+  Phase 17-R1M, Phase 17-R1COV
+
+R1O_HISTORICAL_LANDMARK_REPRODUCTION_GATE = PASS
+  (bitwise vs the literal pre-repair expression; every published digit reproduced)
+
+LANDMARK_F_PERP_HISTORICAL = 0.875701   (R1O published 0.8757)
+LANDMARK_F_PERP_CORRECTED  = 0.252964
+LANDMARK_F_PERP_PRODUCTION = 0.261735 optical-alone / 0.325272 best-combined
+                             (R1O-OPT, on its own single-station baseline 0.294990
+                              -- NOT directly comparable to the 0.252292 three-station
+                              baseline used for the columns above)
+
+LANDMARK_SIGMA_K_FRAC_HISTORICAL = 0.00193934   (R1O published 0.001939)
+LANDMARK_SIGMA_K_FRAC_CORRECTED  = 0.00671352
+LANDMARK_SIGMA_K_FRAC_PRODUCTION = 0.029746     (R1O-OPT best combined, own baseline)
+
+DDOR_F_PERP_HISTORICAL = 0.441901 @1nrad   0.363285 @5nrad   (published 0.4419 / 0.3633)
+DDOR_F_PERP_CORRECTED  = 0.070144 @1nrad   0.206980 @5nrad
+DDOR_F_PERP_PRODUCTION = 0.0738   @1nrad   0.2121   @5nrad   (R1O-D, re-run, same arc)
+
+EARTH_LOS_F_PERP_HISTORICAL = 0.261667
+EARTH_LOS_F_PERP_CORRECTED  = 0.257829
+
+R1OD_BRIDGE_SURROGATE_HISTORICAL = 0.260790
+R1OD_BRIDGE_SURROGATE_CORRECTED  = 0.252403
+
+R1OD_PRODUCTION_DDOR_UNCHANGED = YES   (verified by full re-run, not asserted)
+
+R1O_ORIGINAL_CLASS  = STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION (both candidates)
+R1O_CORRECTED_CLASS = NO_STRONG_COMPLEMENTARY_OBSERVABLE_FOUND
+                      + MARGINAL_INFORMATION_DIRECTION_CHANGES_ONLY
+                      + LANDMARK_SURROGATE_AGREES_WITH_PRODUCTION_AFTER_STM_REPAIR
+                      + DDOR_SURROGATE_STILL_DIFFERS_FROM_PRODUCTION_DUE_TO_EVENT_PHYSICS
+                        (real, but ~30-100x smaller than the STM term)
+
+R1O_ORIGINAL_RANKING_VALID = NO
+R1O_CORRECTED_PRIMARY_CONCLUSION =
+  On this trajectory neither candidate meaningfully rotates K_SRP's information
+  direction out of the six-state subspace at any tested precision.  The landmark
+  case is a large information-MAGNITUDE gain (sigma_K/K 9.27% -> 0.67%) at an
+  unchanged f_perp; the DDOR case reduces f_perp below the range-only baseline.
+
+ERRATUM_DOCUMENT_CREATED           = YES (docs/phase17_r1o_scientific_erratum.md)
+ORIGINAL_R1O_REPORT_MARKED_SUPERSEDED = YES (header notice; zero numbers deleted)
+
+PRODUCTION_CODE_CHANGED   = NO   (lunar_od/ byte-identical to START_TREE)
+ANALYSIS_CODE_CHANGED     = YES  (one line + docstring in phase17_r1o_core.py)
+HISTORICAL_REPORT_CHANGED = YES  (notices only: +23/-0, +13/-0, +23/-0 lines)
+
+PHYSICAL_MODEL_CHANGED         = NO
+MEASUREMENT_MODEL_CHANGED      = NO
+ESTIMATOR_ARCHITECTURE_CHANGED = NO
+K_SOLVE_FOR_MATH_CHANGED       = NO
+COVARIANCE_METHOD_CHANGED      = NO
+
+TOTAL_TESTS_COLLECTED = 1465
+TESTS_PASSED          = 1424   (1278 + 146 subtests)
+TESTS_FAILED          = 2
+TESTS_ERRORS          = 10
+TESTS_SKIPPED         = 29
+  R1O-OPT baseline was 1460 / 1419 / 2 / 10 / 29.  The entire delta is the 5 new
+  tests.  The non-passing set is IDENTICAL: the FA-06 isolated-import guard
+  (KNOWN_PREEXISTING_ENVIRONMENT -- the workspace-root pytest.ini injects a
+  sibling worktree onto pythonpath) and the R2 protected-tree byte gate on
+  lunar_od/dynamics.py (KNOWN_PREEXISTING_PROVENANCE -- awaiting owner re-freeze;
+  lunar_od/ was not modified by this phase), plus the 10 R2 errors downstream of
+  that gate.
+
+R1O_R_INTRODUCED_NONPASSES = 0
+NEW_SCIENTIFIC_REGRESSIONS = 0
+UNKNOWN_NONPASSES          = 0
+
+MAIN_CHANGED        = NO   (fea476f81dad07b3914e53eab709e10fa6e9d10b)
+ORIGIN_MAIN_CHANGED = NO   (fea476f81dad07b3914e53eab709e10fa6e9d10b)
+
+PHASE17_R1O_R_GATE = PASS
+
+PRIMARY_CLASS = HISTORICAL_ANALYSIS_DEFECT_REPAIRED_AND_R1O_SCIENTIFIC_CONCLUSIONS_REQUALIFIED
+NEXT_ACTION   = Owner review of the erratum and the withdrawn R1O ranking, then
+                PHASE 17-GEO (geometry generalization).  Not started here.
+
+COMMITS_CREATED = 3
+COMMIT_LIST =
+  75ba49a7e86cf7c4ea01e45ca757126159dc0654  STM layout repair + oracle + regression test
+  8fdde8c54a244b3f8030ff5af943ba3f13248a35  requalification + erratum + provenance notices
+  (this commit)                             verdict block + manifest
+
+PUSH  = NONE
+MERGE = NONE
+```

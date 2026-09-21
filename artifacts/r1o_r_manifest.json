@@ -1,0 +1,232 @@
+{
+  "phase": "17-R1O-R",
+  "gate": "PASS",
+  "primary_class": "HISTORICAL_ANALYSIS_DEFECT_REPAIRED_AND_R1O_SCIENTIFIC_CONCLUSIONS_REQUALIFIED",
+  "start_branch": "feature/phase17-r-k-srp-estimation",
+  "start_head": "887efa62b0dd44e916036313bc39ea6e49422524",
+  "start_tree": "4df2e2d22130edc87aa6e8169172bdf7b950a33e",
+  "final_head": "8fdde8c54a244b3f8030ff5af943ba3f13248a35",
+  "final_tree": "877bd81653fb204498baec92ae845b0c23f5fc2b",
+  "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "main_changed": "NO",
+  "origin_main_changed": "NO",
+  "push": "NONE",
+  "merge": "NONE",
+  "defect": {
+    "location": "examples/phase17_r1o_core.py::chain_to_augmented_columns",
+    "wrong": "nom48_row[6:42].reshape(6, 6)            # C order -> Phi^T",
+    "right": "nom48_row[6:42].reshape((6, 6), order=\"F\")",
+    "stm_pack_order": "column-major (order='F')",
+    "stm_unpack_order": "column-major (order='F')",
+    "production_code_changed": false,
+    "k_columns_affected": false,
+    "k_column_reason": "S_K is a plain 6-vector in columns [42:48]; it is never reshaped, so no storage-order convention applies to it"
+  },
+  "gates": {
+    "R1O_REPAIR_INPUT_GATE": "PASS",
+    "STM_LAYOUT_CONTRACT_GATE": "PASS",
+    "R1O_STM_LAYOUT_ORACLE_GATE": "PASS",
+    "R1O_STM_LAYOUT_REGRESSION_GATE": "PASS",
+    "K_COLUMN_INVARIANCE_GATE": "PASS",
+    "R1O_HISTORICAL_LANDMARK_REPRODUCTION_GATE": "PASS",
+    "R1OD_PRODUCTION_DDOR_UNCHANGED": "YES"
+  },
+  "oracle": {
+    "mid-arc": {
+      "fd_precision_floor": 1.3109711373025229e-05,
+      "f_order_rel_err": 8.8784263695512e-06,
+      "c_order_rel_err": 1.0000000304549483,
+      "f_order_err_over_floor": 0.6772404149049083,
+      "c_over_f_separation": 112632.575732618,
+      "phi_symmetric": false
+    },
+    "end-arc": {
+      "fd_precision_floor": 3.579854046596343e-05,
+      "f_order_rel_err": 2.5901783473528806e-05,
+      "c_order_rel_err": 1.000000033612368,
+      "f_order_err_over_floor": 0.7235430030494044,
+      "c_over_f_separation": 38607.38140423232,
+      "phi_symmetric": false
+    }
+  },
+  "historical_equivalence": {
+    "max_abs_state_diff": 0.0,
+    "max_abs_k_diff": 0.0,
+    "bitwise": true
+  },
+  "k_column_invariance": {
+    "landmark_k_bitwise_identical": true,
+    "landmark_state_columns_changed": true,
+    "max_abs_k_diff": 0.0
+  },
+  "results": {
+    "range_only": {
+      "f_perp": 0.2522919965229832,
+      "theta_k_deg": 14.613182283011557,
+      "conditional_k_information": 1162817.0907819087,
+      "sigma_k_frac": 0.09273513250655349
+    },
+    "landmark_1urad_historical": {
+      "f_perp": 0.8757007657422435,
+      "theta_k_deg": 61.12801981208624,
+      "conditional_k_information": 2658847864.284467,
+      "sigma_k_frac": 0.001939336877417611
+    },
+    "landmark_1urad_corrected": {
+      "f_perp": 0.2529641165726124,
+      "theta_k_deg": 14.652982920765192,
+      "conditional_k_information": 221870657.0487675,
+      "sigma_k_frac": 0.00671351657142759
+    },
+    "landmark_delta_f_perp_stm": -0.6227366491696311,
+    "ddor_1nrad_historical": {
+      "f_perp": 0.4419010206113976,
+      "theta_k_deg": 26.22523676973311,
+      "conditional_k_information": 66752593.266068056,
+      "sigma_k_frac": 0.012239563473411631
+    },
+    "ddor_1nrad_corrected": {
+      "f_perp": 0.0701437410716681,
+      "theta_k_deg": 4.022243268635391,
+      "conditional_k_information": 1681883.7827453183,
+      "sigma_k_frac": 0.07710845626571834
+    },
+    "ddor_5nrad_historical": {
+      "f_perp": 0.36328521665697683,
+      "theta_k_deg": 21.30209004731932,
+      "conditional_k_information": 4119143.7280133893,
+      "sigma_k_frac": 0.049271584305024874
+    },
+    "ddor_5nrad_corrected": {
+      "f_perp": 0.20697985685777934,
+      "theta_k_deg": 11.945422596047027,
+      "conditional_k_information": 1337111.610509038,
+      "sigma_k_frac": 0.08648009739219573
+    },
+    "earth_los_historical": {
+      "f_perp": 0.2616674066794974,
+      "theta_k_deg": 15.169023185229467,
+      "conditional_k_information": 1250870.372136077,
+      "sigma_k_frac": 0.08941159597207914
+    },
+    "earth_los_corrected": {
+      "f_perp": 0.25782916025274866,
+      "theta_k_deg": 14.941291093371206,
+      "conditional_k_information": 1214442.9379920284,
+      "sigma_k_frac": 0.09074264688351999
+    },
+    "r1od_bridge_surrogate_historical": {
+      "f_perp": 0.26079007909722524,
+      "theta_k_deg": 15.11694779787645,
+      "conditional_k_information": 1242472.9417430707,
+      "sigma_k_frac": 0.08971323766323246
+    },
+    "r1od_bridge_surrogate_corrected": {
+      "f_perp": 0.2524025057143515,
+      "theta_k_deg": 14.619725761561746,
+      "conditional_k_information": 1163836.923849349,
+      "sigma_k_frac": 0.09269449318677098
+    }
+  },
+  "r1o_published_for_comparison": {
+    "landmark_f_perp": 0.8757,
+    "landmark_sigma_k_frac": 0.001939,
+    "ddor_f_perp": 0.4419,
+    "ddor_sigma_k_frac": 0.01224,
+    "baseline_f_perp": 0.2523,
+    "reproduced_exactly": true
+  },
+  "production_ddor_rerun": {
+    "source": "examples/phase17_r1od_campaign.py (unmodified)",
+    "range_only_f_perp": 0.2523,
+    "f_perp_by_nrad": {
+      "1": 0.0738,
+      "2": 0.1264,
+      "3": 0.1657,
+      "5": 0.2121,
+      "10": 0.2493,
+      "30": 0.2636,
+      "100": 0.2641
+    },
+    "reproduces_r1od_published": true
+  },
+  "ddor_attribution": {
+    "1nrad": {
+      "surrogate_published": 0.441901,
+      "surrogate_corrected": 0.070144,
+      "production": 0.0738,
+      "stm_term": -0.371757,
+      "event_physics_term": 0.003656,
+      "stm_share": 0.9903
+    },
+    "5nrad": {
+      "surrogate_published": 0.363285,
+      "surrogate_corrected": 0.20698,
+      "production": 0.2121,
+      "stm_term": -0.156305,
+      "event_physics_term": 0.00512,
+      "stm_share": 0.9683
+    },
+    "note": "R1O-D's production result is VALID and was re-run to confirm it. Its s21 causal attribution of the surrogate-production gap to discarded differential light-time is SUPERSEDED: the STM defect accounts for ~97-99%. R1O-D could not detect this because both arms of its bridge experiment used the defective Phi."
+  },
+  "classification": {
+    "R1O_ORIGINAL_CLASS": "STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION",
+    "R1O_CORRECTED_CLASS": "NO_STRONG_COMPLEMENTARY_OBSERVABLE_FOUND",
+    "R1O_ORIGINAL_RANKING_VALID": "NO",
+    "earth_los_classification_change": "NONE (still CHARACTERIZED_NEGLIGIBLE_GAIN)"
+  },
+  "affected_analyses": [
+    "phase17_r1o_core.build_landmark_arc",
+    "phase17_r1o_core.build_ddor_arc",
+    "phase17_r1o_celestial",
+    "phase17_r1od_surrogate_bridge (surrogate side only)"
+  ],
+  "unaffected_analyses": [
+    "R1O range-only baseline (production two-way range Jacobian)",
+    "production DDOR (lunar_od/delta_dor.py) -- re-run, reproduces exactly",
+    "production optical (lunar_od/lunar_landmark_optical.py)",
+    "all K columns everywhere (S_K needs no reshape)",
+    "Phase 17-R1M",
+    "Phase 17-R1COV"
+  ],
+  "regression": {
+    "passed": 1278,
+    "failed": 2,
+    "error": 10,
+    "skipped": 29,
+    "xfailed": 0,
+    "xpassed": 0,
+    "subtests_passed": 146,
+    "summary_line": "2 failed, 1278 passed, 29 skipped, 1 warning, 10 errors, 146 subtests passed in 160.40s (0:02:40)",
+    "passed_including_subtests": 1424,
+    "total": 1465,
+    "new_permanent_tests": 5,
+    "r1o_opt_baseline": {
+      "total": 1460,
+      "passed": 1419,
+      "failed": 2,
+      "error": 10,
+      "skipped": 29
+    },
+    "r1o_r_introduced_nonpasses": 0,
+    "new_scientific_regressions": 0,
+    "unknown_nonpasses": 0,
+    "nonpass_set": [
+      "test_measurement_model_safety_diagnostics.py::test_fa06_pytest_session_imports_isolated_repository (KNOWN_PREEXISTING_ENVIRONMENT: workspace-root pytest.ini injects a sibling worktree onto pythonpath)",
+      "test_r2_measurement_fidelity.py::test_r2_current_tree_protection_holds_for_paths_r3_must_not_change (KNOWN_PREEXISTING_PROVENANCE: R2 byte gate awaiting owner re-freeze; lunar_od/ is byte-identical to the phase-start commit)",
+      "10 dependent errors in test_r2_measurement_fidelity.py (KNOWN_PREEXISTING_PROVENANCE, downstream of the byte gate)"
+    ]
+  },
+  "system_impact": {
+    "PRODUCTION_CODE_CHANGED": "NO",
+    "ANALYSIS_CODE_CHANGED": "YES",
+    "HISTORICAL_REPORT_CHANGED": "YES (notices only, zero deletions)",
+    "PHYSICAL_MODEL_CHANGED": "NO",
+    "MEASUREMENT_MODEL_CHANGED": "NO",
+    "ESTIMATOR_ARCHITECTURE_CHANGED": "NO",
+    "K_SOLVE_FOR_MATH_CHANGED": "NO",
+    "COVARIANCE_METHOD_CHANGED": "NO"
+  },
+  "next_action": "Owner review, then Phase 17-GEO (geometry generalization). Not started."
+}
