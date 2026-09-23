@@ -1,0 +1,60 @@
+{
+ "phase": "17-GEO",
+ "gate": "CHARACTERIZATION_COMPLETE",
+ "primary_class": "GEOMETRY_CHANGES_INFORMATION_MAGNITUDE_WITHOUT_BREAKING_K_STATE_DEGENERACY",
+ "start_head": "fac1564e57c83b962cfa9e5332d371999accb876",
+ "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+ "grid_sha256": "df65557f8287501aaccfcc7c907ced2de21b975583bf3f683135396907132d0a",
+ "push": "NONE",
+ "merge": "NONE",
+ "main_changed": "NO",
+ "gates": {
+  "GEO_INPUT_GATE": "PASS",
+  "R1O_R_STM_LAYOUT_GATE": "PASS",
+  "GRAPHIFY_DISCOVERY_GATE": "PASS",
+  "GEO_RUNTIME_CONFIG_AUDIT": "PASS",
+  "GEO_PROVENANCE_GATE": "PASS",
+  "GEO_LITERATURE_CONTRACT_GATE": "PASS",
+  "GEO_GRID_PREDECLARED": "YES",
+  "GEO_BASELINE_REPRODUCTION_GATE": "PASS",
+  "MATCHED_COUNT_CONTROL_GATE": "PASS",
+  "GEO_INFORMATION_NUMERICS_GATE": "PASS",
+  "GEO_CROSS_GEOMETRY_JACOBIAN_GATE": "FAIL"
+ },
+ "fixture_finding": {
+  "published_f_perp": 0.252292,
+  "consistent_f_perp": 0.091508,
+  "offset_only_f_perp": 0.206667,
+  "clamp_only_f_perp": 0.085728,
+  "earth_epoch_offset_s": 504000.0
+ },
+ "jacobian_fail_characterization": {
+  "max_state_rel_err": "~1e-6..3e-5",
+  "tolerance_independent": true,
+  "max_abs_f_perp_impact": 3.77e-06
+ },
+ "headline": {
+  "f_perp_range_primary": [
+   0.0326,
+   0.2814
+  ],
+  "sigma_k_frac_range": [
+   0.0442,
+   7.6116
+  ],
+  "best_f_perp": "G3_i26.7_bcan 0.2814",
+  "strong_direction_gain_found": false,
+  "phase_spread_post_hoc": [
+   0.048,
+   0.183
+  ]
+ },
+ "regression": {
+  "total": 1465,
+  "passed": 1424,
+  "failed": 2,
+  "errors": 10,
+  "skipped": 29,
+  "new_nonpasses": 0
+ }
+}
