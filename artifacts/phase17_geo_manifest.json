@@ -4,7 +4,7 @@
  "primary_class": "GEOMETRY_CHANGES_INFORMATION_MAGNITUDE_WITHOUT_BREAKING_K_STATE_DEGENERACY",
  "start_head": "fac1564e57c83b962cfa9e5332d371999accb876",
  "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
- "grid_sha256": "df65557f8287501aaccfcc7c907ced2de21b975583bf3f683135396907132d0a",
+ "grid_sha256": "2ba87a471c6b303e7d39a0607daed60bca693b21cb6075642ed7b64e4c7e754d",
  "push": "NONE",
  "merge": "NONE",
  "main_changed": "NO",
@@ -56,5 +56,6 @@
   "errors": 10,
   "skipped": 29,
   "new_nonpasses": 0
- }
+ },
+ "grid_sha256_convention": "SHA-256 of the newline-normalized (LF) text, as the campaign guard and the committed git blob compute it; raw on-disk bytes differ under core.autocrlf=true"
 }
