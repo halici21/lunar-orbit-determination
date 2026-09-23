@@ -1,0 +1,21 @@
+# Graphify indexing exclusions. gitignore syntax, applied after .gitignore, and it
+# can only exclude MORE. Keep the graph an engineering map of lunar_od/, examples/,
+# tests/ and desktop_app/ -- not of generated records or tooling.
+
+# Generated run outputs and phase manifests: records of results, not architecture.
+# Not indexed by a code-only build anyway; excluded so a semantic (docs) build does
+# not ingest ~120 generated JSON/CSV/TXT files as if they were design documents.
+artifacts/
+08_manifests/
+
+# Claude Code tooling (skills, skill-sync validator), not project architecture.
+.claude/
+# Agent instructions, not design documentation. Indexed, every symbol the policy
+# names would gain a spurious "documented in" edge.
+CLAUDE.md
+
+# Untracked Phase 17-R1O-D scripts written against a superseded delta_dor API and
+# deliberately kept out of git. Indexing them adds edges to functions that no longer
+# exist with those signatures.
+examples/phase17_r1od_fd_convergence.py
+examples/phase17_r1od_qualification.py

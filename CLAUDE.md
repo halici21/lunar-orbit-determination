@@ -68,3 +68,79 @@ python .claude/skills/_shared/validate_skill_sync.py
 which compares name, description, remaining frontmatter, and body hash for
 every matching skill name across all roots (repo worktrees + user level) and
 reports every mismatch.
+
+## Graphify dependency graph (selective use)
+
+`graphify-out/graph.json` is a deterministic graph (AST + Markdown, no LLM) of
+`lunar_od/`, `examples/`, `tests/`, `desktop_app/` and the `docs/` reports. It is a **discovery and impact-analysis aid. The source
+code is authoritative.** Never implement a change from graph edges alone: open the
+real files and verify every relationship you act on. Skill routing (above) still comes
+first; Graphify complements `lunar-od-repo-navigator`, it does not replace it.
+
+**Use it** when the change surface is not already known: the impact of changing a
+shared symbol, callers and tests of a function, refactor scope, what consumes a config
+or interface, or orienting in an unfamiliar subsystem. **Skip it** when the file and
+symbol are already known: single-file edits, doc or text changes, locations the user
+named, small scoped fixes.
+
+Commands, most reliable first (validated against source 2026-09-23):
+- `graphify affected "<symbol>" --depth 2`: reverse dependencies, including tests.
+  Reproduced the hand-built Phase 17-R1O-R blast radius of
+  `chain_to_augmented_columns` exactly.
+- `graphify explain "<symbol>"`: file:line, callers, callees, tests.
+- `graphify path "<A>" "<B>" --undirected`: where two symbols are *wired together*
+  (e.g. `build_range_arc` joins `propagate_state_with_k_sensitivity` to
+  `_two_way_range_k_srp_column`), not how data flows between them.
+- `graphify explain "<symbol>"` also lists the doc sections that name the symbol,
+  with file:line (e.g. `_two_way_range_k_srp_column` -> sections of the R1O, R1O-D
+  and R1O-OPT reports and the erratum). These are `[INFERRED]` name matches: open
+  the section to confirm it really describes that code.
+- `graphify god-nodes`: architectural hubs (`load_spice_kernels`,
+  `RangeRatePhysicsConfig`, `propagate_augmented_state`, `PassGeometry`, ...).
+- `graphify query "<question>"`: free-text search, noisy in code-only mode (matches
+  docstrings; missed `_square_root_covariance_from_design`). Name symbols instead.
+
+**`affected` is a lower bound.** Calls made through a module alias
+(`import lunar_od.estimators as estimator_helpers; estimator_helpers.f()`) are not
+resolved; 39 such aliases exist, mostly in `tests/`. Before declaring a symbol unused
+or a change safe, confirm with a Grep for the bare symbol name.
+
+Also invisible to the graph, so verify in source:
+- **Data carried inside arrays.** The K_SRP chain (`srp_acceleration_kernel` ->
+  `propagate_state_with_k_sensitivity` -> `nom48[:, 42:48]` ->
+  `_two_way_range_k_srp_column`) and the column-major STM block `[6:42]` have no
+  edge. The Phase 17-R1O storage-order defect lived exactly there.
+- `lunar_od/__init__.py` re-exports everything, so any two exported functions look
+  two hops apart through it. Discard paths routed through `__init__.py`.
+- Physical and numerical meaning: units, frames, epochs, `order="F"` layouts,
+  tolerances. Communities are unlabeled ("Community N"; no LLM backend configured).
+- Doc links are name matches, so very short symbol names false-positive (a theme
+  class `C` in `desktop_app/styles/theme.py` "appears" in two reports).
+
+High-value queries here:
+- `graphify affected "propagate_state_with_k_sensitivity"`: everything built on the
+  K_SRP variational propagator.
+- `graphify affected "RangeRatePhysicsConfig"` or `"PassGeometry"`: measurement-layer
+  hubs; changing either implies broad regression.
+- `graphify explain "_interp_state"`: the Hermite interpolator every event solver
+  shares (the R1O-D FD-fidelity bug).
+- `graphify affected "_square_root_covariance_from_design"`: estimator branches and
+  tests on the R1COV covariance path.
+- `graphify explain "scenario_config_from_mapping"`: config entry to its runners.
+- `graphify affected "load_spice_kernels"`: SPICE-dependent test scope.
+
+Non-trivial change protocol (internal discipline, do not narrate): identify the
+subsystem; if the impact is not obvious, run `affected` / `explain` before broad
+Grep; read the real implementation; implement; run focused tests; run broader
+validation when a god node or shared module changed.
+
+**Refresh.** The graph is per-worktree and gitignored. The installed git hook
+rebuilds only in the primary checkout `python_port/`; in linked worktrees such as
+this one it is a deliberate no-op. After architecture-relevant code changes (new,
+moved or deleted modules; changed call structure) run `graphify update .` (no LLM,
+~25 s, also refreshes doc links; add `--force` after deleting code or adding an
+exclusion). Build and refresh with `update`, not `extract --code-only`, which drops
+the doc links. Not needed for edits inside a
+function body. If a shell cannot resolve `graphify`, it is at
+`%USERPROFILE%\.local\bin\graphify.exe`. `/graphify` in chat runs the full skill
+pipeline; prefer the CLI commands above.

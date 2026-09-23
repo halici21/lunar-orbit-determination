@@ -62,3 +62,8 @@ temp/
 # Generated campaign exports
 exports/
 plots/
+
+# Graphify dependency graph: regenerated per worktree (`graphify update .`).
+# graph.json alone is ~9.5 MB and GRAPH_REPORT.md embeds the build commit, so
+# tracking either would churn on every commit.
+graphify-out/
