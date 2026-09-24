@@ -56,7 +56,7 @@ def _passes(obs: np.ndarray, n_stations: int) -> dict:
 
 def run_case(case: dict) -> dict:
     import phase17_geo_core as G
-    from phase17_r1m_core import build_range_arc
+    from phase17_r1m_core import EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED, build_range_arc
 
     t0 = time.time()
     cid = case["id"]
@@ -64,8 +64,10 @@ def run_case(case: dict) -> dict:
     x0 = np.asarray(case["x0"], float)
     try:
         if case["fixture"] == "PUBLISHED_R1M":
+            # the published R1M..R1O-R fixture, reproduced on purpose (FXR)
             fx = build_range_arc(0.0, case["duration_s"], label=cid,
-                                 station_filter=tuple(case["stations"]), cadence_s=90.0)
+                                 station_filter=tuple(case["stations"]), cadence_s=90.0,
+                                 earth_fixture=EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED)
             arc = G.GeoArc(cid, fx.t_grid, fx.nom48, fx.obs, fx.pass_geo, fx.h_x0,
                            fx.h_k, fx.w, tuple(case["stations"]))
         else:

@@ -28,7 +28,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
+from phase17_r1m_core import (  # noqa: E402
+    build_range_arc, campaign_epoch, earth_position_mci,
+)
 from phase17_r1o_core import (  # noqa: E402
     assert_no_direct_k_dependence, chain_to_augmented_columns, combined_metrics,
     position_jacobian_fd,
@@ -73,7 +75,8 @@ def main() -> None:
     for i in range(0, n, 4):  # every 4th sample: Earth LOS is slowly varying
         t_abs = w15_range.t_grid[i]
         r_sc = w15_range.nom48[i, :3]
-        r_earth = np.asarray(C.get_earth_pos(t_abs), float).reshape(3)
+        r_earth = np.asarray(earth_position_mci(t_abs, w15_range.earth_fixture),
+                             float).reshape(3)
         e1 = np.array([0.0, 1.0, 0.0])
         e2 = np.array([0.0, 0.0, 1.0])
 

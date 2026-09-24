@@ -26,10 +26,34 @@ they answer different questions: I_K|x asks "how much independent K
 information is there", f_perp asks "what fraction of K's own signature is
 independent".  A configuration can raise the first while leaving the second
 almost unchanged, which is exactly the distinction s33 asks for.
+
+EARTH EPOCH CONTRACT (Phase 17-FXR)
+-----------------------------------
+Up to Phase 17-FXR, `build_range_arc` took the Sun, the Earth rotation and the
+spacecraft state from the Phase-7 manifest epoch (`phase7_et0`) but fed the
+MEASUREMENT model the campaign module's Earth table
+(`od_gravity_covariance_campaign.get_earth_pos`), whose t = 0 is the canonical
+campaign ET0, 504000 s (5.83 d) EARLIER, and which `np.interp` holds constant
+after 4 orbits.  The range line of sight was therefore drawn to where the
+Earth was 5.83 days before the measurement.  The production range model cannot
+detect this: it receives Earth as an untagged callable of scenario seconds.
+
+The canonical fixture is now `EARTH_FIXTURE_CANONICAL`: exact SPICE Earth
+states at the SAME ET origin the production model uses for the Earth rotation
+(`pass_geo.et0_s`), over an explicit coverage interval, failing loudly
+(`EarthEphemerisCoverageError`) instead of clamping.  The defective fixture is
+kept, only by explicit request, as `EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED` so
+the published R1M..R1O-R numbers stay reproducible.  See
+docs/phase17_fxr_earth_epoch_fixture_erratum.md.
+
+The dynamics are untouched: `build_range_arc` runs with mu_earth = mu_sun = 0,
+so the constant `earth_at` it hands the propagator is never used as a force.
 """
 from __future__ import annotations
 
+import functools
 import json
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -62,6 +86,165 @@ def campaign_initial_state() -> np.ndarray:
     return x_ext[int(np.argmin(np.abs(t_ext)))].copy()
 
 
+# ======================================================================
+# Earth ephemeris for the MEASUREMENT geometry (Phase 17-FXR)
+# ======================================================================
+#: The only Earth fixture for science: exact SPICE Earth at the measurement ET.
+EARTH_FIXTURE_CANONICAL = "CANONICAL_EPOCH_CONSISTENT_SPICE"
+#: SUPERSEDED, DEFECTIVE.  The R1M..R1O-R fixture: campaign Earth table from an
+#: epoch 504000 s early, clamped after 4 orbits.  Reproduction only.
+EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED = "LEGACY_OFFSET_CLAMPED_TABLE_SUPERSEDED_BY_PHASE17_FXR"
+#: FXR s17 attribution diagnostics: each carries exactly ONE of the two defects.
+EARTH_FIXTURE_DIAG_OFFSET_UNCLAMPED = "DIAGNOSTIC_OFFSET_EPOCH_UNCLAMPED"
+EARTH_FIXTURE_DIAG_CORRECT_EPOCH_CLAMPED = "DIAGNOSTIC_CORRECT_EPOCH_CLAMPED"
+_NON_CANONICAL_EARTH_FIXTURES = (
+    EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED,
+    EARTH_FIXTURE_DIAG_OFFSET_UNCLAMPED,
+    EARTH_FIXTURE_DIAG_CORRECT_EPOCH_CLAMPED,
+)
+
+
+class EarthEphemerisCoverageError(ValueError):
+    """An Earth state was requested outside the fixture's declared coverage."""
+
+
+class SupersededEarthFixtureWarning(UserWarning):
+    """A superseded or diagnostic Earth fixture was explicitly selected."""
+
+
+@functools.lru_cache(maxsize=1)
+def _campaign_et0() -> float:
+    return campaign_epoch()[0]
+
+
+def _spice_earth_state_mci(et: float) -> np.ndarray:
+    """Moon-centred J2000 Earth state [m, m/s], geometric (no aberration)."""
+    import spiceypy as spice
+    return np.asarray(spice.spkezr("EARTH", float(et), "J2000", "NONE", "MOON")[0]) * 1e3
+
+
+def _legacy_campaign_module():
+    import od_gravity_covariance_campaign as C  # noqa: N811
+    return C
+
+
+@dataclass(frozen=True)
+class EarthEphemeris:
+    """Epoch-tagged Earth ephemeris handed to the production measurement model.
+
+    ``pos(t)`` / ``vel(t)`` take scenario seconds ``t`` (the same ``t`` the
+    production range model passes, measured from ``et_origin``) and return
+    (n, 3) Moon-centred J2000 Earth position [m] / velocity [m/s].
+
+    CANONICAL: SPICE at ``et_origin + t``; any ``t`` outside
+    [t_min_s, t_max_s] raises EarthEphemerisCoverageError -- never a clamp.
+    Non-canonical fixtures reproduce a defect on purpose and say which.
+    """
+
+    fixture: str
+    et_origin: float            # SPICE ET (TDB s) the Earth's own t = 0 refers to
+    t_min_s: float
+    t_max_s: float
+    clamp_after_s: float = float("inf")   # t beyond which Earth is held constant
+    frame: str = "J2000"
+    center: str = "MOON"
+    units: str = "m, m/s"
+
+    def _check(self, t: np.ndarray) -> None:
+        if self.fixture != EARTH_FIXTURE_CANONICAL:
+            return
+        bad = (t < self.t_min_s) | (t > self.t_max_s)
+        if np.any(bad):
+            raise EarthEphemerisCoverageError(
+                "Earth state requested at t=%r s, outside coverage [%r, %r] s "
+                "(ET origin %r)" % (t[bad][:3].tolist(), self.t_min_s, self.t_max_s,
+                                    self.et_origin))
+
+    def _column(self, t, cols: slice) -> np.ndarray:
+        tt = np.atleast_1d(np.asarray(t, dtype=float))
+        if self.fixture == EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED:
+            C = _legacy_campaign_module()  # noqa: N806
+            fn = C.get_earth_pos if cols.start == 0 else C.get_earth_vel
+            return fn(t)
+        self._check(tt)
+        tt = np.minimum(tt, self.clamp_after_s)
+        return np.array([_spice_earth_state_mci(self.et_origin + x)[cols] for x in tt])
+
+    def pos(self, t) -> np.ndarray:
+        return self._column(t, slice(0, 3))
+
+    def vel(self, t) -> np.ndarray:
+        return self._column(t, slice(3, 6))
+
+    def describe(self) -> dict:
+        return dict(fixture=self.fixture, et_origin=self.et_origin, t_min_s=self.t_min_s,
+                    t_max_s=self.t_max_s, clamp_after_s=self.clamp_after_s,
+                    frame=self.frame, center=self.center, units=self.units)
+
+
+def measurement_earth_ephemeris(earth_fixture: str, et_measurement_origin: float,
+                                t_max_s: float, *, t_min_s: float = 0.0) -> EarthEphemeris:
+    """The Earth ephemeris a range arc hands the measurement model.
+
+    ``et_measurement_origin`` is the ET the production model adds scenario
+    seconds to for the Earth ROTATION (``pass_geo.et0_s``).  The canonical
+    fixture uses that same origin -- the whole point of the FXR repair.
+    """
+    if earth_fixture == EARTH_FIXTURE_CANONICAL:
+        return EarthEphemeris(earth_fixture, float(et_measurement_origin),
+                              float(t_min_s), float(t_max_s))
+    if earth_fixture not in _NON_CANONICAL_EARTH_FIXTURES:
+        raise ValueError("unknown earth_fixture %r" % (earth_fixture,))
+    warnings.warn("Earth fixture %s selected: SUPERSEDED/DIAGNOSTIC geometry, not for "
+                  "science (Phase 17-FXR)" % earth_fixture, SupersededEarthFixtureWarning,
+                  stacklevel=3)
+    C = _legacy_campaign_module()  # noqa: N806
+    table_end = float(C.T_OBS[-1])
+    if earth_fixture == EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED:
+        # The table's t = 0 is the campaign ET0 whatever arc is being built.
+        return EarthEphemeris(earth_fixture, float(C.ET0), float(C.T_OBS[0]), table_end,
+                              clamp_after_s=table_end)
+    if abs(float(et_measurement_origin) - _campaign_et0()) > 0.0:
+        raise ValueError("attribution diagnostics are defined for arcs starting at the "
+                         "campaign epoch only")
+    if earth_fixture == EARTH_FIXTURE_DIAG_OFFSET_UNCLAMPED:
+        return EarthEphemeris(earth_fixture, float(C.ET0), float(t_min_s), float(t_max_s))
+    return EarthEphemeris(earth_fixture, float(et_measurement_origin), float(t_min_s),
+                          float(t_max_s), clamp_after_s=table_end)
+
+
+def _earth_state_abs(t_abs_s, earth_fixture: str, cols: slice) -> np.ndarray:
+    tt = np.atleast_1d(np.asarray(t_abs_s, dtype=float))
+    if earth_fixture == EARTH_FIXTURE_CANONICAL:
+        et0 = _campaign_et0()
+        return np.array([_spice_earth_state_mci(et0 + float(x))[cols] for x in tt])
+    if earth_fixture == EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED:
+        C = _legacy_campaign_module()  # noqa: N806
+        fn = C.get_earth_pos if cols.start == 0 else C.get_earth_vel
+        return np.asarray(fn(t_abs_s), dtype=float)
+    if earth_fixture in (EARTH_FIXTURE_DIAG_OFFSET_UNCLAMPED,
+                         EARTH_FIXTURE_DIAG_CORRECT_EPOCH_CLAMPED):
+        eph = measurement_earth_ephemeris(earth_fixture, _campaign_et0(), float(np.max(tt)))
+        return eph.pos(tt) if cols.start == 0 else eph.vel(tt)
+    raise ValueError("unknown earth_fixture %r" % (earth_fixture,))
+
+
+def earth_position_mci(t_abs_s, earth_fixture: str = EARTH_FIXTURE_CANONICAL) -> np.ndarray:
+    """Earth position (n, 3) [m] at campaign-epoch seconds, for analysis helpers
+    that place stations outside `build_range_arc` (DDOR, LOS controls).
+
+    Canonical: SPICE at campaign ET0 + t (SPICE raises outside kernel coverage).
+    Legacy: the campaign table, as R1O/R1O-D/R1O-R read it.  The two FXR
+    diagnostic fixtures are accepted for attribution only.
+    """
+    return _earth_state_abs(t_abs_s, earth_fixture, slice(0, 3))
+
+
+def earth_velocity_mci(t_abs_s, earth_fixture: str = EARTH_FIXTURE_CANONICAL) -> np.ndarray:
+    """Earth velocity (n, 3) [m/s]; same contract as `earth_position_mci`."""
+    return _earth_state_abs(t_abs_s, earth_fixture, slice(3, 6))
+
+
 @dataclass(frozen=True)
 class ArcFixture:
     """One contiguous observation window on the frozen R1/R1G arc."""
@@ -76,6 +259,11 @@ class ArcFixture:
     h_x0: np.ndarray            # (M,6) arc-initial-state Jacobian
     h_k: np.ndarray             # (M,)  K column
     w: np.ndarray               # (M,)  measurement weight diagonal (1/sigma^2)
+    earth: EarthEphemeris | None = None   # what the measurement model was given (FXR)
+
+    @property
+    def earth_fixture(self) -> str:
+        return self.earth.fixture if self.earth is not None else "UNRECORDED"
 
     @property
     def n_obs(self) -> int:
@@ -94,6 +282,7 @@ def build_range_arc(
     station_filter=None,
     k_srp: float = K_TRUTH,
     cadence_s: float = CADENCE_S,
+    earth_fixture: str = EARTH_FIXTURE_CANONICAL,
 ) -> ArcFixture:
     """Propagate one window of the frozen arc and read its design matrices.
 
@@ -102,6 +291,10 @@ def build_range_arc(
     every arc in a multi-arc study shares one physically continuous truth
     trajectory -- arcs differ by which observations are used, never by a
     different truth.
+
+    ``earth_fixture`` selects the Earth ephemeris the MEASUREMENT model sees
+    (station placement, visibility, light time).  Only the default is valid
+    science; see the module docstring (Phase 17-FXR).
     """
     import spiceypy as spice
 
@@ -159,13 +352,14 @@ def build_range_arc(
     x_true = nom48[:, :6]
 
     t_local = t_grid - t_grid[0]
+    earth = measurement_earth_ephemeris(earth_fixture, et0 + t_grid[0], float(t_local[-1]))
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid[0], t_local)
     vis_cfg = VisibilityConfig(
         r_moon_mean_m=1_737_400.0, earth_rotation_rad_s=7.292115e-5,
         epoch_utc=spice.et2utc(et0 + t_grid[0], "ISOC", 3),
         min_elevation_deg=10.0)
     _, _, vis, _ = analyze_visibility_gap_with_transforms(
-        t_local, x_true, C.STATIONS, C.get_earth_pos, xf, 0.0, vis_cfg)
+        t_local, x_true, C.STATIONS, earth.pos, xf, 0.0, vis_cfg)
     vis = np.asarray(vis, dtype=bool).reshape(t_local.size, len(C.STATIONS))
 
     if station_filter is None:
@@ -181,7 +375,7 @@ def build_range_arc(
     tight = TwoWayRangeConfig(tolerance_s=1e-13, equation_tolerance_s=1e-14,
                               max_iter=200)
     obs, pass_geo = generate_two_way_range_measurements(
-        t_local, x_true, stations, vis_used, C.get_earth_pos, C.get_earth_vel,
+        t_local, x_true, stations, vis_used, earth.pos, earth.vel,
         et0 + t_grid[0], noise=False, rng=None, config=tight)
 
     _, h_x0 = two_way_range_nominal_and_initial_jacobian(
@@ -192,7 +386,7 @@ def build_range_arc(
     return ArcFixture(label=label, t_grid=t_grid, x_true=x_true, nom48=nom48,
                       obs=obs, pass_geo=pass_geo, station_name=station_name,
                       h_x0=np.asarray(h_x0, float), h_k=np.asarray(h_k, float),
-                      w=np.asarray(w, float))
+                      w=np.asarray(w, float), earth=earth)
 
 
 # ======================================================================

@@ -34,7 +34,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
+from phase17_r1m_core import (  # noqa: E402
+    build_range_arc, campaign_epoch, earth_position_mci,
+)
 from phase17_r1o_core import build_ddor_arc, combined_metrics  # noqa: E402
 
 from lunar_od.delta_dor import (  # noqa: E402
@@ -73,7 +75,7 @@ def reduced_simultaneous_ddor_rows(arc, station_a, station_b, min_elevation_deg=
     t_grid = arc.t_grid
     t_local = t_grid - t_grid[0]
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid[0], t_local)
-    earth_pos_fixed = np.asarray(C.get_earth_pos(0.0), float).reshape(3)
+    earth_pos_fixed = np.asarray(earth_position_mci(0.0, arc.earth_fixture), float).reshape(3)
 
     def station_pos_at(station, i):
         rel = _station_relative_state_j2000_at_receive_epoch(station, xf[i])

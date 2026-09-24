@@ -35,14 +35,18 @@ def _init():
 
 def run(mode: str) -> dict:
     import phase17_geo_core as G
-    from phase17_r1m_core import build_range_arc, campaign_epoch, campaign_initial_state
+    from phase17_r1m_core import (
+        EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED, build_range_arc, campaign_epoch,
+        campaign_initial_state,
+    )
 
     et0, T = campaign_epoch()
     x0 = campaign_initial_state()
     D = 15.0 * T
     if mode == "PUBLISHED":
         fx = build_range_arc(0.0, D, label=mode, station_filter=(
-            "Goldstone DSN", "Madrid DSN", "Canberra DSN"), cadence_s=90.0)
+            "Goldstone DSN", "Madrid DSN", "Canberra DSN"), cadence_s=90.0,
+            earth_fixture=EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED)
         h_x0, h_k, w, obs = fx.h_x0, fx.h_k, fx.w, fx.obs
     else:
         arc = G.build_geo_range_arc(x0, et0, D, label=mode, earth_mode=mode)

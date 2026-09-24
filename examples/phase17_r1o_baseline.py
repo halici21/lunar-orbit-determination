@@ -40,7 +40,9 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from phase17_r1cov_core import exact_covariance, scale_matrix  # noqa: E402
-from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
+from phase17_r1m_core import (  # noqa: E402
+    build_range_arc, campaign_epoch, earth_position_mci,
+)
 from phase17_r1o_core import combined_metrics, relative_error  # noqa: E402
 
 ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/artifacts")
@@ -110,7 +112,7 @@ def main() -> None:
     els = {n: [] for n in by_name}
     for i, t_abs in enumerate(probe.t_grid):
         r_sc = probe.nom48[i, :3]
-        earth_pos = C.get_earth_pos(t_abs)
+        earth_pos = earth_position_mci(t_abs, probe.earth_fixture)
         for n, s in by_name.items():
             els[n].append(station_elevation_deg(s, r_sc, earth_pos, xf[i]))
     names = list(by_name)

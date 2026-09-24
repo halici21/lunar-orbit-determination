@@ -47,10 +47,10 @@ from phase17_r1cov_core import (  # noqa: E402
     square_root_covariance,
 )
 from phase17_r1m_core import (  # noqa: E402
-    CADENCE_S, CAMPAIGN_ROOT, K_TRUTH, RTOL, ATOL, ArcFixture, SCALE_POS,
-    SCALE_VEL, SCALE_K, build_range_arc, campaign_epoch, campaign_initial_state,
-    information_matrix, orthogonal_decomposition, schur_conditional, spectrum,
-    whitened,
+    CADENCE_S, CAMPAIGN_ROOT, EARTH_FIXTURE_CANONICAL, K_TRUTH, RTOL, ATOL,
+    ArcFixture, SCALE_POS, SCALE_VEL, SCALE_K, build_range_arc, campaign_epoch,
+    campaign_initial_state, earth_position_mci, information_matrix,
+    orthogonal_decomposition, schur_conditional, spectrum, whitened,
 )
 
 C_LIGHT_MPS = 299792458.0
@@ -203,6 +203,7 @@ def build_ddor_arc(
     sigma_angle_rad: float,
     min_elevation_deg: float = DDOR_MIN_ELEVATION_DEG,
     label: str = "ddor",
+    earth_fixture: str = EARTH_FIXTURE_CANONICAL,
 ) -> DdorArc:
     """Build the design rows for a DDOR-like differenced one-way range.
 
@@ -220,6 +221,8 @@ def build_ddor_arc(
     which is the standard DDOR relation between angular and delay precision
     and is what lets w(t) = 1/sigma_delay(t)^2 correctly reduce information
     when the baseline happens to be poorly oriented relative to the source.
+
+    ``earth_fixture`` must match the range arc it is combined with (FXR).
     """
     import od_gravity_covariance_campaign as C  # noqa: N811
     from lunar_od.visibility import sample_j2000_to_itrf93_transforms
@@ -232,7 +235,7 @@ def build_ddor_arc(
     max_conv_err = 0.0
     for i, t_abs in enumerate(t_grid_s):
         r_sc = nom48[i, :3]
-        earth_pos = C.get_earth_pos(t_abs)
+        earth_pos = earth_position_mci(t_abs, earth_fixture)
         xfi = xf[i]
         r_a = station_position_mci(station_a, earth_pos, xfi)
         r_b = station_position_mci(station_b, earth_pos, xfi)

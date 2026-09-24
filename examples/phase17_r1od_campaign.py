@@ -5,6 +5,12 @@ ANALYSIS SPACE ONLY.  Builds real production ΔDOR observation rows (via
 W15 campaign window, on the Goldstone-Canberra pair (s30/s32), and reproduces
 R1O's information-geometry comparison using R1COV's qualified square-root
 covariance -- never the floored normal-matrix path (s42).
+
+EARTH (Phase 17-FXR).  Station positions follow `earth_fixture` (canonical by
+default; the published run used the superseded campaign table) and
+`earth_anchor`: R1O-D as published froze the Earth centre at the arc start for
+the whole 15-orbit arc (EARTH_ANCHOR_FROZEN_ARC_START); the epoch-consistent
+choice evaluates it at each measurement epoch (EARTH_ANCHOR_MEASUREMENT_EPOCH).
 """
 from __future__ import annotations
 
@@ -17,7 +23,10 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
+from phase17_r1m_core import (  # noqa: E402
+    EARTH_FIXTURE_CANONICAL, build_range_arc, campaign_epoch, earth_position_mci,
+    earth_velocity_mci,
+)
 from phase17_r1o_core import combined_metrics  # noqa: E402
 from phase17_r1cov_core import scale_matrix, square_root_covariance  # noqa: E402
 
@@ -34,6 +43,10 @@ from lunar_od.measurements import _station_relative_state_j2000_at_receive_epoch
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 DDOR_PAIR = ("Goldstone DSN", "Canberra DSN")
 ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/artifacts")
+#: R1O-D as published: Earth centre frozen at the arc start (t = 0).
+EARTH_ANCHOR_FROZEN_ARC_START = "FROZEN_ARC_START"
+#: Epoch-consistent: Earth centre at each measurement-grid epoch (FXR).
+EARTH_ANCHOR_MEASUREMENT_EPOCH = "MEASUREMENT_EPOCH"
 
 
 def hdr(t):
@@ -43,23 +56,42 @@ def hdr(t):
     print("=" * 88)
 
 
-def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0):
+def earth_center_history(t_grid, earth_fixture=EARTH_FIXTURE_CANONICAL,
+                         earth_anchor=EARTH_ANCHOR_FROZEN_ARC_START):
+    """(N, 3) Earth position and (N, 3) Earth velocity used to place stations.
+
+    FROZEN_ARC_START reproduces R1O-D: position at t = 0 on every row and no
+    Earth velocity.  MEASUREMENT_EPOCH evaluates both at each grid epoch.
+    """
+    n = len(t_grid)
+    if earth_anchor == EARTH_ANCHOR_FROZEN_ARC_START:
+        pos = np.asarray(earth_position_mci(0.0, earth_fixture), float).reshape(3)
+        return np.tile(pos, (n, 1)), np.zeros((n, 3))
+    if earth_anchor == EARTH_ANCHOR_MEASUREMENT_EPOCH:
+        return (earth_position_mci(t_grid, earth_fixture),
+                earth_velocity_mci(t_grid, earth_fixture))
+    raise ValueError("unknown earth_anchor %r" % (earth_anchor,))
+
+
+def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0, *,
+                    earth_fixture=EARTH_FIXTURE_CANONICAL,
+                    earth_anchor=EARTH_ANCHOR_MEASUREMENT_EPOCH):
     """Production ΔDOR design rows: h_x0 (M,6), h_k (M,), D_S (M,), used t (M,)."""
     from lunar_od.visibility import sample_j2000_to_itrf93_transforms
     from lunar_od.geometry import ecef2razel_sez
-    import od_gravity_covariance_campaign as C  # noqa: N811
 
     et0, _ = campaign_epoch()
     t_grid = arc.t_grid
     t_local = t_grid - t_grid[0]
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid[0], t_local)
-    earth_pos_fixed = np.asarray(C.get_earth_pos(0.0), float).reshape(3)
+    earth_pos_hist, earth_vel_hist = earth_center_history(t_grid, earth_fixture, earth_anchor)
 
     def station_hist(station):
         rows = []
         for i in range(len(t_grid)):
             rel = _station_relative_state_j2000_at_receive_epoch(station, xf[i])
-            rows.append(np.concatenate([earth_pos_fixed + rel[:3], rel[3:]]))
+            rows.append(np.concatenate([earth_pos_hist[i] + rel[:3],
+                                        earth_vel_hist[i] + rel[3:]]))
         return np.asarray(rows, dtype=float)
 
     hist_a, hist_b = station_hist(station_a), station_hist(station_b)
@@ -86,8 +118,8 @@ def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0):
     n_attempted, n_dual_visible, n_converged = 0, 0, 0
     for i, t_obs in enumerate(t_grid):
         r_sc_i = arc.nom48[i, :3]
-        el_a = elevation_deg(station_a, r_sc_i, earth_pos_fixed, xf[i])
-        el_b = elevation_deg(station_b, r_sc_i, earth_pos_fixed, xf[i])
+        el_a = elevation_deg(station_a, r_sc_i, earth_pos_hist[i], xf[i])
+        el_b = elevation_deg(station_b, r_sc_i, earth_pos_hist[i], xf[i])
         if el_a < min_elevation_deg or el_b < min_elevation_deg:
             continue
         n_dual_visible += 1
@@ -117,7 +149,33 @@ def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0):
         d_s=np.asarray(d_s_vals, float), t_used=np.asarray(t_used, float),
         cond_numbers=np.asarray(cond_numbers, float),
         n_dual_visible=n_dual_visible, n_converged=n_converged,
+        earth_fixture=earth_fixture, earth_anchor=earth_anchor,
     )
+
+
+def ddor_delay_weights(arc, ddor, station_a, station_b, sigma_angle_rad):
+    """1/sigma_delay^2 per ΔDOR row: sigma_delay = B_perp * sigma_angle / c,
+    with stations placed on the SAME Earth fixture/anchor the rows used."""
+    from lunar_od.visibility import sample_j2000_to_itrf93_transforms
+
+    et0, _ = campaign_epoch()
+    t_local = arc.t_grid - arc.t_grid[0]
+    xf_full = sample_j2000_to_itrf93_transforms(et0 + arc.t_grid[0], t_local)
+    earth_pos_hist, _ = earth_center_history(arc.t_grid, ddor["earth_fixture"],
+                                             ddor["earth_anchor"])
+    idx_lookup = {t: i for i, t in enumerate(arc.t_grid)}
+    sig = []
+    for t_obs in ddor["t_used"]:
+        i = idx_lookup[t_obs]
+        r_a = earth_pos_hist[i] + _station_relative_state_j2000_at_receive_epoch(
+            station_a, xf_full[i])[:3]
+        r_b = earth_pos_hist[i] + _station_relative_state_j2000_at_receive_epoch(
+            station_b, xf_full[i])[:3]
+        los = (r_a - arc.nom48[i, :3]) / np.linalg.norm(r_a - arc.nom48[i, :3])
+        baseline = r_b - r_a
+        b_perp = float(np.linalg.norm(baseline - np.dot(baseline, los) * los))
+        sig.append(max(b_perp, 1.0) * sigma_angle_rad / 299792458.0)
+    return 1.0 / np.asarray(sig) ** 2
 
 
 def main() -> None:
@@ -152,27 +210,7 @@ def main() -> None:
              m_range_only["fractional_sigma_k"]))
 
     sigma_angle_rad = 5e-9  # representative operational DDOR precision (R1O s24 anchor)
-    sigma_delay_rows = []
-    et0v, _ = campaign_epoch()
-    from lunar_od.visibility import sample_j2000_to_itrf93_transforms
-    t_local = arc.t_grid - arc.t_grid[0]
-    xf_full = sample_j2000_to_itrf93_transforms(et0v + arc.t_grid[0], t_local)
-    earth_pos_fixed = np.asarray(C.get_earth_pos(0.0), float).reshape(3)
-
-    def station_pos_at(station, i):
-        rel = _station_relative_state_j2000_at_receive_epoch(station, xf_full[i])
-        return earth_pos_fixed + rel[:3]
-
-    idx_lookup = {t: i for i, t in enumerate(arc.t_grid)}
-    for t_obs in ddor["t_used"]:
-        i = idx_lookup[t_obs]
-        r_a, r_b = station_pos_at(station_a, i), station_pos_at(station_b, i)
-        s_hat = quasar.unit_vector_j2000
-        los = (r_a - arc.nom48[i, :3]) / np.linalg.norm(r_a - arc.nom48[i, :3])
-        baseline = r_b - r_a
-        b_perp = float(np.linalg.norm(baseline - np.dot(baseline, los) * los))
-        sigma_delay_rows.append(max(b_perp, 1.0) * sigma_angle_rad / 299792458.0)
-    w_ddor = 1.0 / np.asarray(sigma_delay_rows) ** 2
+    w_ddor = ddor_delay_weights(arc, ddor, station_a, station_b, sigma_angle_rad)
 
     m_combined = combined_metrics([
         (arc.h_x0, arc.h_k, arc.w), (ddor["h_x0"], ddor["h_k"], w_ddor)])
@@ -209,18 +247,9 @@ def main() -> None:
     hdr("s31/s44 -- RANDOM NOISE STUDY")
     noise_rows = []
     for nrad in (1.0, 2.0, 3.0, 5.0, 10.0, 30.0, 100.0):
-        sig_r = nrad * 1e-9
-        w_i = []
-        for t_obs in ddor["t_used"]:
-            i = idx_lookup[t_obs]
-            r_a, r_b = station_pos_at(station_a, i), station_pos_at(station_b, i)
-            s_hat = quasar.unit_vector_j2000
-            los = (r_a - arc.nom48[i, :3]) / np.linalg.norm(r_a - arc.nom48[i, :3])
-            baseline = r_b - r_a
-            b_perp = float(np.linalg.norm(baseline - np.dot(baseline, los) * los))
-            w_i.append(1.0 / (max(b_perp, 1.0) * sig_r / 299792458.0) ** 2)
+        w_i = ddor_delay_weights(arc, ddor, station_a, station_b, nrad * 1e-9)
         m_i = combined_metrics([(arc.h_x0, arc.h_k, arc.w),
-                                (ddor["h_x0"], ddor["h_k"], np.asarray(w_i))])
+                                (ddor["h_x0"], ddor["h_k"], w_i)])
         noise_rows.append(dict(noise_nrad=nrad, f_perp=m_i["orthogonal_fraction"],
                                fractional_sigma_k=m_i["fractional_sigma_k"],
                                conditional_k_info=m_i["conditional_k_information"]))

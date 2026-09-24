@@ -47,7 +47,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from phase17_r1m_core import (  # noqa: E402
-    K_TRUTH, build_range_arc, campaign_epoch,
+    EARTH_FIXTURE_CANONICAL, K_TRUTH, build_range_arc, campaign_epoch,
+    earth_position_mci,
 )
 from phase17_r1o_core import (  # noqa: E402
     build_ddor_arc, build_landmark_arc, chain_to_augmented_columns,
@@ -117,13 +118,12 @@ def _assert_historical_equivalence(nom48: np.ndarray, hist48: np.ndarray) -> dic
 # ======================================================================
 # s19 -- Earth-center LOS negative control (R1O's own construction)
 # ======================================================================
-def earth_los_rows(nom48: np.ndarray, t_grid: np.ndarray) -> tuple:
-    import od_gravity_covariance_campaign as C  # noqa: N811
-
+def earth_los_rows(nom48: np.ndarray, t_grid: np.ndarray, *,
+                   earth_fixture: str = EARTH_FIXTURE_CANONICAL) -> tuple:
     rows_x0, rows_k, max_conv = [], [], 0.0
     for i in range(0, t_grid.size, 4):      # R1O sampled every 4th epoch
         r_sc = nom48[i, :3]
-        r_earth = np.asarray(C.get_earth_pos(t_grid[i]), float).reshape(3)
+        r_earth = np.asarray(earth_position_mci(t_grid[i], earth_fixture), float).reshape(3)
         e1 = np.array([0.0, 1.0, 0.0])
         e2 = np.array([0.0, 0.0, 1.0])
 
@@ -145,18 +145,18 @@ def earth_los_rows(nom48: np.ndarray, t_grid: np.ndarray) -> tuple:
 # s20 -- R1O-D bridge, surrogate side only (production DDOR untouched)
 # ======================================================================
 def bridge_reduced_rows(nom48: np.ndarray, t_grid: np.ndarray, et0: float,
-                        station_a, station_b, min_elevation_deg: float = 10.0):
+                        station_a, station_b, min_elevation_deg: float = 10.0, *,
+                        earth_fixture: str = EARTH_FIXTURE_CANONICAL):
     """R1O-D's `reduced_simultaneous_ddor_rows`, re-run through whichever
     nom48 it is handed.  Production ΔDOR is NOT touched by this phase.
     """
     from lunar_od.geometry import ecef2razel_sez
     from lunar_od.measurements import _station_relative_state_j2000_at_receive_epoch
     from lunar_od.visibility import sample_j2000_to_itrf93_transforms
-    import od_gravity_covariance_campaign as C  # noqa: N811
 
     t_local = t_grid - t_grid[0]
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid[0], t_local)
-    earth_pos_fixed = np.asarray(C.get_earth_pos(0.0), float).reshape(3)
+    earth_pos_fixed = np.asarray(earth_position_mci(0.0, earth_fixture), float).reshape(3)
 
     def station_pos_at(station, i):
         rel = _station_relative_state_j2000_at_receive_epoch(station, xf[i])

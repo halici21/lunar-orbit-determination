@@ -36,7 +36,9 @@ ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/ar
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
+from phase17_r1m_core import (  # noqa: E402
+    build_range_arc, campaign_epoch, earth_position_mci,
+)
 
 from lunar_od.delta_dor import (  # noqa: E402
     QuasarDirection,
@@ -86,7 +88,8 @@ def main() -> None:
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid[0], t_local)
 
     def station_state_history(station):
-        earth_pos_fixed = np.asarray(C.get_earth_pos(0.0), float).reshape(3)
+        earth_pos_fixed = np.asarray(earth_position_mci(0.0, arc.earth_fixture),
+                                     float).reshape(3)
         rows = []
         for i in range(len(t_grid)):
             rel = _station_relative_state_j2000_at_receive_epoch(station, xf[i])
