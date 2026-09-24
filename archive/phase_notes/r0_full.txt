@@ -1,0 +1,621 @@
+........................................................................ [  5%]
+..............................................................ss...ss. [ 11%]
+.ss...ss........ss...s....................................................................................... [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 31%]
+.....................F.................................................. [ 37%]
+................................................................... [ 42%]
+........................................................................ [ 48%]
+..s.....................
+BENCH position_observables n_obs=6000 python_loop_s=0.154546 numba_s=0.000349 speedup=443.08x
+.
+BENCH geometric_range_rate_observables n_obs=6000 python_loop_s=0.183484 numba_s=0.000397 speedup=462.53x
+........................................ [ 53%]
+........................................s.................EEEEEEE..EE... [ 59%]
+F.....E............................................sssssss.............. [ 65%]
+........................................................................ [ 71%]
+........................................................................ [ 77%]
+...................................................ssss..s....ssss...... [ 82%]
+........................................................................ [ 88%]
+....................................................................................................................... [ 98%]
+.......................                                                  [100%]
+=================================== ERRORS ====================================
+_____ ERROR at setup of test_delay_campaign_covers_frozen_values_and_p04 ______
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_estimator_impact_is_finite_deterministic_and_model_paired _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_cost_campaign_characterizes_l_s_f_without_production_gate _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_denominator_policy_rejects_nonfinite_and_records_controlled_exclusions _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_each_plot_headline_recomputes_independently_from_its_own_csv _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_seven_authoritative_csv_png_pairs_exist_and_are_nonempty _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_scientific_decision_uses_zero_delay_lsf_not_hypothetical_delay _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_estimator_metadata_qualifies_nonconvergence_alias_and_selector _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_cost_metadata_is_informational_and_records_timing_variability _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+_ ERROR at setup of test_compatibility_summary_carries_forward_1088_value_zero_j2_gate _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=None, _trace=<pluggy._tracing.TagTracerSub object at 0x000002943ADDD5B0>, _basetemp=WindowsPath('C:/Users/erayh/AppData/Local/Temp/pytest-of-erayh/pytest-172'), _retention_count=3, _retention_policy='all')
+spice_epoch_s = 857217669.1853889
+
+    @pytest.fixture(scope="module")
+    def quick_campaign_dir(tmp_path_factory, spice_epoch_s):
+        output_dir = tmp_path_factory.mktemp("r2_quick_campaign")
+>       manifest = campaign.run_campaign(output_dir, quick=True)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_r2_measurement_fidelity.py:130: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+examples\r2_measurement_fidelity_validation.py:2729: in run_campaign
+    compatibility_rows = build_compatibility_rows(repository_root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+examples\r2_measurement_fidelity_validation.py:1889: in build_compatibility_rows
+    rows.extend(build_r2_current_tree_protection_rows(repository_root))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+repository_root = WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0')
+
+    def build_r2_current_tree_protection_rows(
+        repository_root: Path,
+    ) -> list[dict[str, object]]:
+        """Protect, in the CURRENT tree, the historical paths R3 may not change.
+    
+        The two paths the authorized high-order gravity closure changed are checked
+        too, against their RE-FROZEN hashes -- they stay byte-protected, just at
+        their new qualified content.
+        """
+        rows: list[dict[str, object]] = []
+        for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual_hash = hashlib.sha256(
+                (repository_root / relative_path).read_bytes()
+            ).hexdigest()
+            rows.append(
+                {
+                    "gate_id": "r2_current_tree_protection",
+                    "item": relative_path,
+                    "expected": expected_hash,
+                    "actual": actual_hash,
+                    "pass": actual_hash == expected_hash,
+                    "evidence": "SHA-256 of current working-tree bytes",
+                }
+            )
+>       for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       NameError: name 'CLOSURE_CURRENT_TREE_SHA256' is not defined
+
+examples\r2_measurement_fidelity_validation.py:1845: NameError
+================================== FAILURES ===================================
+____________ test_fa06_pytest_session_imports_isolated_repository _____________
+
+pytestconfig = <_pytest.config.Config object at 0x000002943AD3C1A0>
+
+    def test_fa06_pytest_session_imports_isolated_repository(pytestconfig):
+        """FA-06 guard: pytest must import lunar_od from this isolated worktree."""
+        repository_root = Path(__file__).resolve().parents[1]
+        package_path = Path(lunar_od.__file__).resolve()
+        relevant_sys_path = [entry for entry in sys.path if "python_port" in entry.lower()]
+    
+        print(f"[FA-06] pytest rootdir={pytestconfig.rootpath}")
+        print(f"[FA-06] pytest config={pytestconfig.inipath}")
+        print(f"[FA-06] repository root={repository_root}")
+        print(f"[FA-06] lunar_od.__file__={package_path}")
+        print(f"[FA-06] sys.executable={sys.executable}")
+        print(f"[FA-06] relevant sys.path={relevant_sys_path}")
+        print(f"[FA-06] effective pytest pythonpath={pytestconfig.getini('pythonpath')}")
+    
+        assert package_path.is_relative_to(repository_root)
+>       assert pytestconfig.getini("pythonpath") == []
+E       AssertionError: assert [WindowsPath(...desktop_app')] == []
+E         
+E         Left contains 2 more items, first extra item: WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port')
+E         Use -v to get more diff
+
+tests\test_measurement_model_safety_diagnostics.py:177: AssertionError
+---------------------------- Captured stdout call -----------------------------
+[FA-06] pytest rootdir=C:\Users\erayh\Documents\Python\Grad
+[FA-06] pytest config=C:\Users\erayh\Documents\Python\Grad\pytest.ini
+[FA-06] repository root=C:\Users\erayh\Documents\Python\Grad\python_port_phase17r0
+[FA-06] lunar_od.__file__=C:\Users\erayh\Documents\Python\Grad\python_port_phase17r0\lunar_od\__init__.py
+[FA-06] sys.executable=C:\Users\erayh\miniforge3\python.exe
+[FA-06] relevant sys.path=['C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0\\examples', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0\\examples', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0\\examples', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0\\examples', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0\\examples', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port_phase17r0', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port', 'C:\\Users\\erayh\\Documents\\Python\\Grad\\python_port\\desktop_app']
+[FA-06] effective pytest pythonpath=[WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port'), WindowsPath('C:/Users/erayh/Documents/Python/Grad/python_port/desktop_app')]
+_____ test_r2_current_tree_protection_holds_for_paths_r3_must_not_change ______
+
+    def test_r2_current_tree_protection_holds_for_paths_r3_must_not_change():
+        """The ten historical paths R3 may not touch are still byte-identical."""
+        for relative_path in campaign.R2_CURRENT_TREE_PROTECTED_PATHS:
+            expected = campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+            actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
+>           assert actual == expected, relative_path
+E           AssertionError: lunar_od/dynamics.py
+E           assert 'b369899a45a8...de90215f15fdb' == 'dde8c188e035...235b0e62f3199'
+E             
+E             - dde8c188e0356e6bb2d7c4ac95887f3c56bf4e75122a4f2cfbb235b0e62f3199
+E             + b369899a45a8cc645e65c6065771a9dff3fcd61d65b58a0f62bde90215f15fdb
+
+tests\test_r2_measurement_fidelity.py:916: AssertionError
+============================== warnings summary ===============================
+python_port_phase17r0/tests/test_estimators.py::EstimatorTests::test_two_way_analytic_initial_jacobian_matches_numerical_reference
+  C:\Users\erayh\Documents\Python\Grad\python_port_phase17r0\tests\test_estimators.py:1037: RuntimeWarning: _range_rate_numerical_initial_jacobian runs 12 ODE integrations per call and is ~10x slower than the analytic path; use only in tests.
+    h_numerical = estimator_helpers._range_rate_numerical_initial_jacobian(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests\test_measurement_model_safety_diagnostics.py::test_fa06_pytest_session_imports_isolated_repository
+FAILED tests\test_r2_measurement_fidelity.py::test_r2_current_tree_protection_holds_for_paths_r3_must_not_change
+ERROR tests\test_r2_measurement_fidelity.py::test_delay_campaign_covers_frozen_values_and_p04
+ERROR tests\test_r2_measurement_fidelity.py::test_estimator_impact_is_finite_deterministic_and_model_paired
+ERROR tests\test_r2_measurement_fidelity.py::test_cost_campaign_characterizes_l_s_f_without_production_gate
+ERROR tests\test_r2_measurement_fidelity.py::test_denominator_policy_rejects_nonfinite_and_records_controlled_exclusions
+ERROR tests\test_r2_measurement_fidelity.py::test_each_plot_headline_recomputes_independently_from_its_own_csv
+ERROR tests\test_r2_measurement_fidelity.py::test_seven_authoritative_csv_png_pairs_exist_and_are_nonempty
+ERROR tests\test_r2_measurement_fidelity.py::test_scientific_decision_uses_zero_delay_lsf_not_hypothetical_delay
+ERROR tests\test_r2_measurement_fidelity.py::test_estimator_metadata_qualifies_nonconvergence_alias_and_selector
+ERROR tests\test_r2_measurement_fidelity.py::test_cost_metadata_is_informational_and_records_timing_variability
+ERROR tests\test_r2_measurement_fidelity.py::test_compatibility_summary_carries_forward_1088_value_zero_j2_gate

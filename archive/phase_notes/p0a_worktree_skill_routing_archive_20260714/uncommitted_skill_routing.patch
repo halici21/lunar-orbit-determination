@@ -1,0 +1,468 @@
+diff --git a/.claude/skills/_shared/skill-routing-policy.md b/.claude/skills/_shared/skill-routing-policy.md
+index 83f3457..81a3aab 100644
+--- a/.claude/skills/_shared/skill-routing-policy.md
++++ b/.claude/skills/_shared/skill-routing-policy.md
+@@ -1,39 +1,70 @@
+ # Skill Routing Policy
+ 
+-Prevent overuse of skills and excessive shared-reference loading. Default to the
+-**smallest sufficient** skill set.
++Invoke every skill that is **materially relevant** to the task — not just the
++first one that matches, and not every skill indiscriminately. Relevance is
++judged against the actual request, files, and domain in play; it is not
++satisfied by a skill merely existing or sounding topically adjacent.
+ 
+-## Routing rules
+-- Use the smallest sufficient skill set; use **one primary skill** by default.
+-- Add secondary skills only when the task clearly requires them.
+-- Do not load broad governance files for small explanation or lookup tasks.
+-- Do not use `lunar-od-result-validator` unless interpreting numerical results,
+-  plots, tables, or claims.
+-- Do not use `lunar-od-validation-gates` unless accepting a code/science change
+-  or selecting required validation.
+-- Do not use `lunar-od-test-strategist` unless designing, reviewing, or repairing
++## Mandatory discovery
++- Before substantive analysis, editing, or validation, check each available
++  skill's description against: the requested outcome, the files/modules
++  involved, the physical/mathematical domain, and the phase of work
++  (understanding, implementation, testing, validation, documentation).
++- Invoke **all** skills that are materially relevant to the current phase.
++  Do not stop at one skill when a second, differently-scoped skill also
++  applies (e.g. a measurement-Jacobian change touching frame transforms needs
++  both `lunar-od-measurement-physics` and `lunar-od-dynamics-spice`).
++- Do not omit a specialist skill just because a broader one was already
++  invoked, and do not substitute a generic skill for a relevant specialist.
++- Re-evaluate relevance whenever the task moves to a new phase (analysis ->
++  implementation -> testing -> validation -> documentation), a new
++  file/subsystem becomes relevant, the suspected root cause changes, or the
++  user expands scope. State a short routing update when this happens.
++
++## The cap: relevant, not exhaustive
++"Invoke every relevant skill" is not "invoke every skill." Each skill below
++still applies only within its own stated trigger — these guards exist so that
++a narrow task doesn't drag in skills whose trigger condition isn't actually
++met, not to cap the count of skills used when several triggers genuinely fire:
++- `lunar-od-result-validator` — only when interpreting/accepting numerical
++  results, plots, tables, or claims.
++- `lunar-od-statistical-diagnostics` — only when computing/summarizing result
++  statistics (paired with `lunar-od-result-validator` for the acceptance call).
++- `lunar-od-validation-gates` — only when accepting a single code/science
++  change or selecting its required validation scope.
++- `lunar-od-test-strategist` — only when designing, reviewing, or repairing
+   tests.
+-- Do not use `lunar-od-continuous-verification` unless scheduling recurring tests
+-  or CI / nightly / release workflows.
+-- Do not use `lunar-od-software-quality-gates` unless checking lint, format, type
++- `lunar-od-continuous-verification` — only when scheduling recurring/CI/
++  nightly/release test cadences (not a single change's validation plan).
++- `lunar-od-software-quality-gates` — only when checking lint, format, type
+   checking, dependency hygiene, CI, maintainability, or packaging.
+ 
+-## Small Task Mode
+-For narrow questions, explanation requests, or file lookups:
+-- inspect the directly relevant file or section,
+-- avoid broad validation workflows,
+-- answer concisely,
+-- mention optional validation only if relevant.
++For a narrow lookup or explanation with no matching trigger, it is correct
++for the routing statement to name a single skill, or none — that is the cap
++doing its job, not under-routing.
+ 
+-## Escalation Mode
+-Use full governance (multiple skills + their shared checklists) only when:
++## Escalation signal
++Expect more than one skill, and full shared-checklist loading, when:
+ - code changes are requested,
+-- scientific behavior may change,
+-- numerical outputs may change,
++- scientific behavior or numerical outputs may change,
+ - tests / baselines / fixtures are being designed,
+ - result claims are being accepted or published,
+-- public release or thesis-freeze work is being prepared.
++- public release or thesis-freeze work is being prepared,
++- the task spans more than one domain (e.g. frames + measurements + estimator).
+ 
+ ## Shared-reference loading
+-Read at most **1-2** shared files by default — only those the current task needs.
+-Load additional shared files only when the task requires them.
++Load only the shared files the current task actually needs — typically 1-2 —
++and load more only when a later phase genuinely requires them. This is about
++avoiding wasted context, not about avoiding a needed skill.
++
++## Reporting and integrity
++- Before substantive work, state: `Skill routing: invoking [names] because
++  [brief scope mapping].`
++- When a later phase makes another skill relevant: `Skill routing update:
++  invoking [names] because [newly discovered need].`
++- A skill counts as used only when actually invoked through the Skill tool.
++  Do not claim a skill was applied because its description was visible, its
++  guidance overlapped with another skill, or its name was mentioned in the
++  response.
++- If a materially relevant skill cannot be invoked, state which one, why, and
++  what specialist coverage is therefore missing.
+diff --git a/.claude/skills/lunar-od-campaign-design/SKILL.md b/.claude/skills/lunar-od-campaign-design/SKILL.md
+index 57ef755..5c8ecd5 100644
+--- a/.claude/skills/lunar-od-campaign-design/SKILL.md
++++ b/.claude/skills/lunar-od-campaign-design/SKILL.md
+@@ -6,8 +6,9 @@ description: >-
+   noise seed, same station visibility / occultation, matched initial uncertainty,
+   a clear scenario matrix, and predefined success metrics. Covers baseline,
+   28-day arc-by-arc, fragmented-visibility, two-way-Doppler, and
+-  covariance-handoff campaigns. Use when planning an experiment or a scenario
+-  config before running.
++  covariance-handoff campaigns. Use when PLANNING an experiment or scenario
++  matrix before running; for encoding the plan into JSON/ScenarioConfig fields
++  use lunar-od-scenario-config.
+ metadata:
+   version: "2.0"
+   adapted-from: K-Dense experimental-design
+diff --git a/.claude/skills/lunar-od-continuous-verification/SKILL.md b/.claude/skills/lunar-od-continuous-verification/SKILL.md
+index fdeefde..a3b3fc4 100644
+--- a/.claude/skills/lunar-od-continuous-verification/SKILL.md
++++ b/.claude/skills/lunar-od-continuous-verification/SKILL.md
+@@ -1,6 +1,13 @@
+ ---
+ name: lunar-od-continuous-verification
+-description: Use when planning recurring test execution for the Lunar OD project, including every-commit tests, pre-push checks, pull-request gates, nightly scientific regression, manual long campaigns, release validation, thesis-freeze verification, SPICE-dependent tests, desktop smoke tests, baseline comparisons, and external cross-validation scheduling.
++description: >-
++  Use when planning RECURRING or scheduled test execution for the Lunar OD
++  project: every-commit tests, pre-push checks, pull-request gates, nightly
++  scientific regression, manual long campaigns, release validation,
++  thesis-freeze verification, SPICE-dependent test scheduling, desktop smoke
++  tests, baseline comparisons, and external cross-validation cadences. Not for
++  choosing the validation plan of a single code change — use
++  lunar-od-validation-gates for that.
+ ---
+ 
+ # Lunar OD Continuous Verification
+diff --git a/.claude/skills/lunar-od-desktop-app/SKILL.md b/.claude/skills/lunar-od-desktop-app/SKILL.md
+index 996ecbf..a563cde 100644
+--- a/.claude/skills/lunar-od-desktop-app/SKILL.md
++++ b/.claude/skills/lunar-od-desktop-app/SKILL.md
+@@ -7,7 +7,9 @@ description: >-
+   wiring a designed screen into PyQt5, connecting controllers/services/workers,
+   keeping execution non-blocking, or integrating .ui files with backend services.
+   For layout / visual hierarchy / UX / screenshot review, use
+-  lunar-od-interface-designer first.
++  lunar-od-interface-designer first. Not for the scenario/estimator logic being
++  wired up (lunar-od-scenario-config, lunar-od-estimator-engineering) — invoke
++  those alongside when the UI change touches backend behavior.
+ ---
+ 
+ # Lunar OD Desktop App
+diff --git a/.claude/skills/lunar-od-dynamics-spice/SKILL.md b/.claude/skills/lunar-od-dynamics-spice/SKILL.md
+index 5862216..699e1b9 100644
+--- a/.claude/skills/lunar-od-dynamics-spice/SKILL.md
++++ b/.claude/skills/lunar-od-dynamics-spice/SKILL.md
+@@ -2,13 +2,18 @@
+ name: lunar-od-dynamics-spice
+ description: >-
+   Use when working on lunar dynamics, propagation, SPICE, or reference frames:
+-  Moon point-mass and Earth/Sun third-body gravity, J2/Jn, STM propagation, Numba
+-  acceleration of dynamics, SPICE kernels and ephemerides, MCI / body-fixed /
+-  ECEF / J2000 / ITRF93 frame logic, and external dynamics cross-validation. File
+-  areas: python_port/lunar_od/dynamics.py, accelerated.py, ephemeris.py,
+-  spice_loader.py and tests test_dynamics.py, test_ephemeris.py,
+-  test_spice_loader.py. Trigger: editing force models, propagation, STM, frames,
+-  or SPICE handling.
++  Moon point-mass and Earth/Sun third-body gravity, J2/Jn, STM propagation,
++  Numba acceleration of dynamics, SPICE kernels and ephemerides, MCI /
++  body-fixed / ECEF (ITRF93) / J2000 / SEZ frame logic, sxform/pxform contracts,
++  station inertial velocity, and external dynamics cross-validation. File areas:
++  python_port/lunar_od/dynamics.py, accelerated.py, ephemeris.py,
++  spice_loader.py, lunar_frames.py; docs frame_transformations.md and
++  frame_architecture_contracts_and_inconsistencies.md; tests test_dynamics.py,
++  test_ephemeris.py, test_spice_loader.py, test_lunar_frames.py,
++  test_frame_transformations.py, test_frame_spice_validation.py. Trigger:
++  editing force models, propagation, STM, frames, or SPICE handling. For
++  measurement-epoch and observable-Jacobian questions invoke
++  lunar-od-measurement-physics alongside.
+ ---
+ 
+ # Lunar OD Dynamics & SPICE
+diff --git a/.claude/skills/lunar-od-estimator-engineering/SKILL.md b/.claude/skills/lunar-od-estimator-engineering/SKILL.md
+index a08c8ed..f84200f 100644
+--- a/.claude/skills/lunar-od-estimator-engineering/SKILL.md
++++ b/.claude/skills/lunar-od-estimator-engineering/SKILL.md
+@@ -2,12 +2,15 @@
+ name: lunar-od-estimator-engineering
+ description: >-
+   Use when working on Lunar OD estimators in python_port/lunar_od/estimators.py
+-  (BLS-LM, SRIF), filters.py (SR-UKF), scenarios.py, and observability.py: STM
++  (BLS-LM, SRIF, and the estimate_two_way_range_* pair), filters.py (SR-UKF,
++  validate_ukf_measurement_support), scenarios.py, and observability.py: STM
+   mapping, covariance propagation, LM damping, UKF sigma points, NIS/NEES,
+   observability, arc handoff / start modes, and estimator-comparison validity.
+-  Tests: test_estimators.py, test_filters.py, test_scenarios.py. Trigger: editing
+-  an estimator/filter, or judging whether a BLS-LM vs SRIF vs SR-UKF comparison is
+-  fair.
++  Tests: test_estimators.py, test_filters.py, test_scenarios.py,
++  test_observability.py. Trigger: editing an estimator/filter, or judging
++  whether a BLS-LM vs SRIF vs SR-UKF comparison is fair. Not for the measurement
++  equations themselves (lunar-od-measurement-physics) — invoke it alongside when
++  the change spans both.
+ ---
+ 
+ # Lunar OD Estimator Engineering
+diff --git a/.claude/skills/lunar-od-figures/SKILL.md b/.claude/skills/lunar-od-figures/SKILL.md
+index b5f129b..4c176b1 100644
+--- a/.claude/skills/lunar-od-figures/SKILL.md
++++ b/.claude/skills/lunar-od-figures/SKILL.md
+@@ -6,7 +6,10 @@ description: >-
+   comparison plots, runtime plots, Monte Carlo summaries, and arc-by-arc
+   diagnostics, for the thesis, GitHub README, or presentation. Use when the user
+   asks for a plot, figure, chart, or diagram from result CSVs or reproducible
+-  experiment data.
++  experiment data. Not for deciding whether the underlying numbers are correct
++  or acceptable (lunar-od-statistical-diagnostics, lunar-od-result-validator) —
++  invoke those alongside when the figure needs scientific interpretation, not
++  just rendering.
+ metadata:
+   version: "2.0"
+   adapted-from: K-Dense scientific-visualization, matplotlib
+diff --git a/.claude/skills/lunar-od-literature-review/SKILL.md b/.claude/skills/lunar-od-literature-review/SKILL.md
+index 6c326e3..60b1535 100644
+--- a/.claude/skills/lunar-od-literature-review/SKILL.md
++++ b/.claude/skills/lunar-od-literature-review/SKILL.md
+@@ -8,7 +8,9 @@ description: >-
+   thesis references. Use when the user asks what the literature says, wants
+   primary sources, wants to justify a measurement-realism upgrade, or to compare
+   this implementation against Moyer, Thornton & Border, Tapley-Schutz-Born,
+-  Montenbruck & Gill, Vallado, DSN 810-005, or SPICE docs.
++  Montenbruck & Gill, Vallado, DSN 810-005, or SPICE docs. Not for producing the
++  thesis prose itself (lunar-od-thesis-writing) — use this skill first to find
++  and vet sources, then that one to write.
+ metadata:
+   version: "2.0"
+   adapted-from: K-Dense literature-review, paper-lookup, citation-management
+diff --git a/.claude/skills/lunar-od-measurement-physics/SKILL.md b/.claude/skills/lunar-od-measurement-physics/SKILL.md
+index 256bd38..3de06ba 100644
+--- a/.claude/skills/lunar-od-measurement-physics/SKILL.md
++++ b/.claude/skills/lunar-od-measurement-physics/SKILL.md
+@@ -2,12 +2,19 @@
+ name: lunar-od-measurement-physics
+ description: >-
+   Use when reviewing or modifying Lunar OD measurement models in
+-  python_port/lunar_od/measurements.py and radiometrics.py (and
+-  measurement_ingestion.py): range, azimuth/elevation, range-rate, two-way counted
+-  Doppler, light-time correction, stellar aberration, station motion, residuals,
+-  and analytic Jacobians. Tests: test_measurements.py,
+-  test_doppler_model_review.py, test_stellar_aberration_vv.py. Trigger: changing a
+-  measurement/observable, residual, or Jacobian, or validating measurement physics.
++  python_port/lunar_od/measurements.py, radiometrics.py, two_way_range.py (and
++  measurement_ingestion.py): range, azimuth/elevation, range-rate, two-way
++  counted Doppler, converged two-way range (t1/t2u/t2d/t3 event chain,
++  transponder delay), light-time correction, stellar aberration, station states
++  at event epochs, residuals, and analytic/implicit Jacobians. Tests:
++  test_measurements.py, test_doppler_model_review.py,
++  test_stellar_aberration_vv.py, test_two_way_range.py,
++  test_two_way_range_integration.py,
++  test_measurement_model_safety_diagnostics.py. Trigger: changing a
++  measurement/observable, residual, or Jacobian, or validating measurement
++  physics. Not for frame/SPICE kernel mechanics (lunar-od-dynamics-spice) or
++  estimator-loop changes (lunar-od-estimator-engineering) — invoke those
++  alongside for cross-domain tasks.
+ ---
+ 
+ # Lunar OD Measurement Physics
+diff --git a/.claude/skills/lunar-od-model-review/SKILL.md b/.claude/skills/lunar-od-model-review/SKILL.md
+index 6d7dde2..10ab809 100644
+--- a/.claude/skills/lunar-od-model-review/SKILL.md
++++ b/.claude/skills/lunar-od-model-review/SKILL.md
+@@ -7,7 +7,10 @@ description: >-
+   Jacobians use the same model; flags synthetic-data bias, missing or
+   frame-inconsistent light-time, simplified Doppler, weak observability,
+   covariance mistuning, and invalid estimator comparisons. Use when reviewing OD
+-  code or results for correctness.
++  code or results for correctness. Not for accepting/rejecting one specific
++  numerical result (lunar-od-result-validator) or planning the regression scope
++  of one change (lunar-od-validation-gates) — this skill audits model/code
++  assumptions themselves, independent of any single run.
+ metadata:
+   version: "2.0"
+   adapted-from: K-Dense scientific-critical-thinking, peer-review
+diff --git a/.claude/skills/lunar-od-performance-optimizer/SKILL.md b/.claude/skills/lunar-od-performance-optimizer/SKILL.md
+index 1f51529..18ad6e4 100644
+--- a/.claude/skills/lunar-od-performance-optimizer/SKILL.md
++++ b/.claude/skills/lunar-od-performance-optimizer/SKILL.md
+@@ -7,7 +7,9 @@ description: >-
+   python_port/plan.md. File areas: plan.md, lunar_od/dynamics.py, accelerated.py,
+   measurements.py, estimators.py, filters.py, scenarios.py. Trigger: making code
+   faster without changing physics. Always compare optimized output against
+-  baseline before claiming behavior preservation.
++  baseline before claiming behavior preservation — invoke
++  lunar-od-validation-gates alongside to confirm numerical equivalence before
++  accepting a speedup.
+ ---
+ 
+ # Lunar OD Performance Optimizer
+diff --git a/.claude/skills/lunar-od-public-repo-curator/SKILL.md b/.claude/skills/lunar-od-public-repo-curator/SKILL.md
+index 26ad717..9f09789 100644
+--- a/.claude/skills/lunar-od-public-repo-curator/SKILL.md
++++ b/.claude/skills/lunar-od-public-repo-curator/SKILL.md
+@@ -7,7 +7,9 @@ description: >-
+   publishing or a release, or auditing what should be committed vs ignored. Checks
+   for SPICE kernels, generated results, private PDFs, thesis drafts, virtual
+   environments, caches, large binaries, and secrets. Identify risks only — do not
+-  delete files unless explicitly asked.
++  delete files unless explicitly asked. Not for code lint/type/CI checks
++  (lunar-od-software-quality-gates) — this skill is about publish-readiness of
++  files and artifacts, not code quality.
+ ---
+ 
+ # Lunar OD Public Repo Curator
+diff --git a/.claude/skills/lunar-od-repo-navigator/SKILL.md b/.claude/skills/lunar-od-repo-navigator/SKILL.md
+index 0f58503..0f9afcf 100644
+--- a/.claude/skills/lunar-od-repo-navigator/SKILL.md
++++ b/.claude/skills/lunar-od-repo-navigator/SKILL.md
+@@ -7,7 +7,9 @@ description: >-
+   results/. Trigger phrases: "where is", "which file", "what calls", "which script
+   produced this figure/CSV", "what does this module do", "what will this change
+   affect". Use this before proposing edits, to find the right module, function,
+-  test, and result artifact.
++  test, and result artifact. For tracing one specific result/figure/number back
++  to its exact script + config + seed + commit, use
++  lunar-od-result-reproducer instead.
+ ---
+ 
+ # Lunar OD Repo Navigator
+diff --git a/.claude/skills/lunar-od-result-reproducer/SKILL.md b/.claude/skills/lunar-od-result-reproducer/SKILL.md
+index 87b3ef2..b6a1c7d 100644
+--- a/.claude/skills/lunar-od-result-reproducer/SKILL.md
++++ b/.claude/skills/lunar-od-result-reproducer/SKILL.md
+@@ -6,7 +6,8 @@ description: >-
+   slide/table/README number come from?", or verifying thesis figures,
+   presentation claims, README metrics, and protected baseline results. Maps a
+   claim to script -> config -> artifact (under python_port/results/ and
+-  examples/) -> seed -> commit.
++  examples/) -> seed -> commit. For general code/architecture navigation with no
++  specific result to trace, use lunar-od-repo-navigator instead.
+ ---
+ 
+ # Lunar OD Result Reproducer
+diff --git a/.claude/skills/lunar-od-result-validator/SKILL.md b/.claude/skills/lunar-od-result-validator/SKILL.md
+index 0c0af36..b6e36be 100644
+--- a/.claude/skills/lunar-od-result-validator/SKILL.md
++++ b/.claude/skills/lunar-od-result-validator/SKILL.md
+@@ -1,12 +1,14 @@
+ ---
+ name: lunar-od-result-validator
+ description: >-
+-  Use for scientific interpretation and acceptance review of Lunar OD results:
++  Use for scientific interpretation and ACCEPTANCE review of Lunar OD results:
+   residual analysis (bias / trend / autocorrelation / whiteness), convergence,
+   covariance credibility, NIS/NEES interpretation, estimator-comparison review,
+   operational-success review, and the final science-review decision. Trigger:
+-  judging whether a result is plausible, fair, statistically defensible, and what
+-  truth-model level its accuracy claim uses.
++  judging whether a result is plausible, fair, statistically defensible, and
++  what truth-model level its accuracy claim uses. This is the
++  acceptance-decision layer; for computing/summarizing the statistics themselves
++  invoke lunar-od-statistical-diagnostics alongside.
+ ---
+ 
+ # Lunar OD Result Validator
+diff --git a/.claude/skills/lunar-od-scenario-config/SKILL.md b/.claude/skills/lunar-od-scenario-config/SKILL.md
+index 03f10f2..5f1512f 100644
+--- a/.claude/skills/lunar-od-scenario-config/SKILL.md
++++ b/.claude/skills/lunar-od-scenario-config/SKILL.md
+@@ -6,7 +6,9 @@ description: >-
+   examples/run_scenario_config.py: scenario configs, station networks, measurement
+   selection, estimator settings, start modes, noise settings, and UI-to-backend
+   scenario mapping. Trigger: creating/validating a scenario config, or ensuring a
+-  UI-created scenario is reproducible. Tests: test_scenario_config.py.
++  UI-created scenario is reproducible. Tests: test_scenario_config.py. For
++  designing the experiment/scenario matrix itself before encoding it, use
++  lunar-od-campaign-design first.
+ ---
+ 
+ # Lunar OD Scenario Config
+diff --git a/.claude/skills/lunar-od-software-quality-gates/SKILL.md b/.claude/skills/lunar-od-software-quality-gates/SKILL.md
+index 7fe2d02..db66785 100644
+--- a/.claude/skills/lunar-od-software-quality-gates/SKILL.md
++++ b/.claude/skills/lunar-od-software-quality-gates/SKILL.md
+@@ -7,7 +7,9 @@ description: >-
+   maintainability/complexity review, pre-commit/pre-push checks, and deciding
+   whether a change is software-safe. File areas: python_port/lunar_od/, tests/,
+   examples/, desktop_app/, and the requirements files. Use together with
+-  lunar-od-validation-gates (which covers scientific/numerical validation).
++  lunar-od-validation-gates (which covers scientific/numerical validation). Not
++  for recurring/scheduled CI cadences (lunar-od-continuous-verification) — this
++  skill is about the quality of the code and pipeline itself, not when tests run.
+ ---
+ 
+ # Lunar OD Software Quality Gates
+diff --git a/.claude/skills/lunar-od-statistical-diagnostics/SKILL.md b/.claude/skills/lunar-od-statistical-diagnostics/SKILL.md
+index 695dafc..18a9b05 100644
+--- a/.claude/skills/lunar-od-statistical-diagnostics/SKILL.md
++++ b/.claude/skills/lunar-od-statistical-diagnostics/SKILL.md
+@@ -5,8 +5,10 @@ description: >-
+   consistency: median / p95 / max / RMS position and velocity error, runtime,
+   operational success fraction, NIS, NEES, residual distributions, covariance
+   conditioning, correlation between arc geometry and error, seeded Monte Carlo,
+-  and long-duration / fragmented-visibility campaigns. Use when the user wants to
+-  interpret result CSVs or compare BLS-LM vs SR-UKF statistically.
++  and long-duration / fragmented-visibility campaigns. Use when the user wants
++  to interpret result CSVs or compare BLS-LM vs SR-UKF statistically. This is
++  the metric-computation/interpretation layer; for the final scientific
++  pass/fail acceptance decision invoke lunar-od-result-validator alongside.
+ metadata:
+   version: "2.0"
+   adapted-from: K-Dense statistical-analysis, exploratory-data-analysis
+diff --git a/.claude/skills/lunar-od-test-strategist/SKILL.md b/.claude/skills/lunar-od-test-strategist/SKILL.md
+index 4e15503..2456d44 100644
+--- a/.claude/skills/lunar-od-test-strategist/SKILL.md
++++ b/.claude/skills/lunar-od-test-strategist/SKILL.md
+@@ -1,6 +1,16 @@
+ ---
+ name: lunar-od-test-strategist
+-description: Use when designing, reviewing, or improving Lunar OD tests in python_port/tests/ and related source areas, including unit tests, regression tests, finite-difference checks, fixture comparisons, scenario smoke tests, estimator fairness tests, statistical consistency tests, numerical tolerances, and test-oracle selection for dynamics, measurements, estimators, filters, scenarios, desktop workflows, and performance changes.
++description: >-
++  Use when designing, reviewing, or improving Lunar OD tests in
++  python_port/tests/ and related source areas, including unit tests, regression
++  tests, finite-difference checks, fixture comparisons, scenario smoke tests,
++  estimator fairness tests, statistical consistency tests, numerical
++  tolerances, and test-oracle selection for dynamics, measurements, estimators,
++  filters, scenarios, desktop workflows, and performance changes. Not for
++  choosing the validation scope of one already-made change
++  (lunar-od-validation-gates) or scheduling recurring/CI runs
++  (lunar-od-continuous-verification) — this skill designs/reviews the tests
++  themselves.
+ ---
+ 
+ # Lunar OD Test Strategist
+diff --git a/.claude/skills/lunar-od-thesis-writing/SKILL.md b/.claude/skills/lunar-od-thesis-writing/SKILL.md
+index 8cfbe07..534fefe 100644
+--- a/.claude/skills/lunar-od-thesis-writing/SKILL.md
++++ b/.claude/skills/lunar-od-thesis-writing/SKILL.md
+@@ -6,6 +6,7 @@ description: >-
+   experiment setup, results interpretation, limitations, and conclusion — as
+   thesis paragraphs and as slide speaker notes. Use when the user asks to draft
+   or revise academic text, figure captions, or talking points for this project.
++  For finding or vetting primary sources first, use lunar-od-literature-review.
+ metadata:
+   version: "2.0"
+   adapted-from: K-Dense scientific-writing, scientific-slides
+diff --git a/.claude/skills/lunar-od-validation-gates/SKILL.md b/.claude/skills/lunar-od-validation-gates/SKILL.md
+index 2b0334c..2c03417 100644
+--- a/.claude/skills/lunar-od-validation-gates/SKILL.md
++++ b/.claude/skills/lunar-od-validation-gates/SKILL.md
+@@ -1,13 +1,14 @@
+ ---
+ name: lunar-od-validation-gates
+ description: >-
+-  Use to plan scientific/numerical validation for a Lunar OD change: choose
+-  targeted tests, recommend full regression, identify impacted metrics and
+-  baselines, assess numerical drift, and judge whether a tolerance update is
++  Use to plan scientific/numerical validation for a SINGLE Lunar OD change:
++  choose targeted tests, recommend full regression, identify impacted metrics
++  and baselines, assess numerical drift, and judge whether a tolerance update is
+   justified. Trigger: any code or scientific-model change, tolerance update,
+   regression planning, or writing a validation summary. For software-engineering
+   quality (lint, types, CI, coverage, dependency hygiene, flaky tests) use
+-  lunar-od-software-quality-gates instead.
++  lunar-od-software-quality-gates; for recurring/scheduled test cadences use
++  lunar-od-continuous-verification.
+ ---
+ 
+ # Lunar OD Validation Gates

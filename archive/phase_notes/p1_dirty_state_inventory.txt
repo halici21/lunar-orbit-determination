@@ -1,0 +1,81 @@
+GIT PHASE P1 — PRE-PRESERVATION DIRTY STATE INVENTORY
+Captured: 2026-09-14 (Europe/Istanbul)
+
+TARGET_REPOSITORY=C:\Users\erayh\Documents\Python\Grad\python_port
+REMOTE=https://github.com/halici21/lunar-orbit-determination.git
+PRIMARY_WORKTREE_BRANCH=feature/lunar-j2-force-models
+PRIMARY_WORKTREE_HEAD=632560d72d51b3d77b401365b1839908c2c8e85f
+PRIMARY_WORKTREE_TREE=ebf383ad751d221ba8b86b47aed10ce20a2a7fba
+CANONICAL_WORKTREE=C:\Users\erayh\Documents\Python\Grad\python_port_grail_pines_20260813
+CANONICAL_BRANCH=feature/lunar-high-order-gravity-closure
+CANONICAL_HEAD=fc13cc4000767ac07abeb3856ec18521bfbc0f76
+CANONICAL_TREE=7018a2f9bd4c1d1ba501e959d5a66a6d6b27e940
+STAGED_FILES=0
+TRACKED_MODIFIED_FILES=17
+UNTRACKED_TARGET_FILES=31
+
+[TRACKED MODIFIED FILES]
+examples/phase12b_real_grail_validation.py | HEAD_BLOB=9e7d3e6a40f5dd0b879830d7cd78b776a872f8c8 | SHA256=cf83c67365d23e42bc04b68c0130b9f79a5a7ea7f1011aee15e5a7f27f171e84 | SIZE=41424 | EOL=CRLF_OR_MIXED | DIFF=3/1
+examples/phase13c_harmonics_validation.py | HEAD_BLOB=1c171c4a98a1f45f13ba9ea7ece5b2812fe922fe | SHA256=ffbad57f15220c68b165b40158026d0d9811c6cfa9c087913850e4724b2a6bc1 | SIZE=24177 | EOL=CRLF_OR_MIXED | DIFF=3/1
+examples/phase13g_gravity_orbit_effects.py | HEAD_BLOB=c29bd84b3d9c3c120a62f51978a1d99ef643b4d4 | SHA256=958f5b6f09624072f858d3b981e92714727ad32c9f6adc1c57dc2c6a1b19945c | SIZE=102709 | EOL=CRLF_OR_MIXED | DIFF=21/10
+examples/r2_measurement_fidelity_validation.py | HEAD_BLOB=5ec52a5eae1413e78d1172065b000480a4327333 | SHA256=03a6ec1f2fb08f24076595446e3fed729c22c7f0e4572d2cfa31723a96bd5a30 | SIZE=121085 | EOL=CRLF_OR_MIXED | DIFF=62/1
+lunar_od/constants.py | HEAD_BLOB=e057432ea3aa3ac7b6ba7ed3acd8275ea4a0d20e | SHA256=384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede | SIZE=5182 | EOL=CRLF_OR_MIXED | DIFF=28/0
+lunar_od/diagnostics.py | HEAD_BLOB=0cdcac48b98aa47820dc302964da82b731103664 | SHA256=9eff91a3fd287a59b459cce4f6096b1063809d1339be68160599c5cbe5cf7016 | SIZE=14076 | EOL=CRLF_OR_MIXED | DIFF=10/0
+lunar_od/dynamics.py | HEAD_BLOB=b6759304826e5ec1c7c5b84f8eef0da281ada402 | SHA256=49bd030ec0aaa4b210ab47eac374fce32c60342e16f4b6644cd694ff0a9324ab | SIZE=53731 | EOL=CRLF_OR_MIXED | DIFF=380/6
+lunar_od/estimators.py | HEAD_BLOB=8dbd551f8975f1eeddf4ad5e43005da635d17653 | SHA256=93e9f15ae5eb7e5773d15510587e6a20db06486936d16ffa6dc0d1380d0ee9b4 | SIZE=100049 | EOL=CRLF_OR_MIXED | DIFF=552/99
+lunar_od/filters.py | HEAD_BLOB=35eed4b2b50a2023bfcf91c5fcb3b6a05552ae47 | SHA256=1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0 | SIZE=87203 | EOL=CRLF_OR_MIXED | DIFF=100/3
+lunar_od/lunar_frames.py | HEAD_BLOB=86d3ee7fc4af11542079d92ebbd0453dec50ec3a | SHA256=bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4 | SIZE=9003 | EOL=CRLF_OR_MIXED | DIFF=27/3
+lunar_od/radiometrics.py | HEAD_BLOB=ecef8f4809b576e4c25ccbdb644a060288c9b6fb | SHA256=a41e276e5331134d5bfc877b5cc20b1a875a3638ed6dd87fb0b37d2320f2faf5 | SIZE=59491 | EOL=CRLF_OR_MIXED | DIFF=17/1
+lunar_od/spice_loader.py | HEAD_BLOB=93a5a18c633be62074a1e186d48d5dddaf3d4f37 | SHA256=98ed4603517b44d5c9ab2b7626e370ae5409a5014d10e942c5222e0d04965862 | SIZE=6532 | EOL=CRLF_OR_MIXED | DIFF=73/0
+lunar_od/two_way_counted_doppler_reference.py | HEAD_BLOB=1b2b0b1ff42c1004dfceeabf0f7180c4fdea5215 | SHA256=8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa | SIZE=42996 | EOL=CRLF_OR_MIXED | DIFF=23/1
+lunar_od/two_way_range.py | HEAD_BLOB=a3561b252d4ca627f8fdda05deff7baf86858eeb | SHA256=bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995 | SIZE=34812 | EOL=CRLF_OR_MIXED | DIFF=52/7
+tests/test_lunar_frames.py | HEAD_BLOB=683329508d44f10ed839dee1c76f16857bdda3c0 | SHA256=8a396009bb5757d1d149df9e5363177de7c311dcf10c79ca08e9900ceba39ee3 | SIZE=9915 | EOL=CRLF_OR_MIXED | DIFF=9/6
+tests/test_od_contracts.py | HEAD_BLOB=3325baf14f1c5adfb2870f22d6e3799f467b6503 | SHA256=0631bc1b89ca16f7e3d636223c08061691dcf51838d375f0f1b7e120e053ad6e | SIZE=26208 | EOL=CRLF_OR_MIXED | DIFF=62/7
+tests/test_r2_measurement_fidelity.py | HEAD_BLOB=3aa0fffd2f81796c899463bfcbf09d5b92b9d2bb | SHA256=f6eb3b4b1cc6858a329b1ba3cf4db8bedfb6ab8f6cb32f26950f5cef06d72d78 | SIZE=59321 | EOL=CRLF_OR_MIXED | DIFF=42/1
+
+[UNTRACKED TARGET FILES]
+docs/solar_radiation_pressure.md | SHA256=272c688f2877ef37264278a85e316ea0bf6b44f8d5ebcd7d2ecb4133d5367148 | SIZE=6001 | CLASS=DOCUMENTATION
+lunar_od/reference_config/__init__.py | SHA256=8e38138f3ed90a830d9555ff6bf2c88820a643e12c8b2e763c81c48696e6e756 | SIZE=4507 | CLASS=PRODUCTION
+lunar_od/reference_config/errors.py | SHA256=472c6fbf943766ef133443ca03589f35465d3b5d527f9f2cd62ec3d73afa5e5d | SIZE=3145 | CLASS=PRODUCTION
+lunar_od/reference_config/fingerprint.py | SHA256=525ce42ae8e2586c04a9a9c0ce0f42663d5e5ef99b6899c3e5ac744a6c748079 | SIZE=5193 | CLASS=PRODUCTION
+lunar_od/reference_config/loader.py | SHA256=8dbfacf3b2c42df87dd19d4b34b6640fa5e802ac8d9acde188a6667b4367b609 | SIZE=17174 | CLASS=PRODUCTION
+lunar_od/reference_config/model.py | SHA256=d336bb74bde478f7b14ae12fb00b892c7b3c120f1b26dcec242cf8c5f0a99136 | SIZE=18294 | CLASS=PRODUCTION
+lunar_od/reference_config/registry.py | SHA256=b7bf70b7a0d76b0fd32887a73538792bc3242353cfda1cd025b8f02c463b6576 | SIZE=7564 | CLASS=PRODUCTION
+lunar_od/reference_config/reporting.py | SHA256=51b67983991b555430a574f26e39cdfb2def98155fb3e1fb12f5ec6e22ec8603 | SIZE=3576 | CLASS=PRODUCTION
+lunar_od/reference_config/schema.py | SHA256=3f61a677d88bda04229e3d833ef9ae7702f9702a88595bdbebee87a01182e211 | SIZE=9920 | CLASS=PRODUCTION
+lunar_od/reference_config/validation.py | SHA256=648dc248923844473c339eb8e3760cc860ad631eb9603a43712ada0bed3fd196 | SIZE=16597 | CLASS=PRODUCTION
+lunar_od/reference_config/vocabulary.py | SHA256=8532b415defe42f93c345e540b7441cce2941621b1f65d16714b6ce64a22437f | SIZE=3529 | CLASS=PRODUCTION
+lunar_od/rf/__init__.py | SHA256=cc4bdd8eca6d864425eef569ddf3d3a2fb6d51b3fab227cbbd10de16bd52b46c | SIZE=2877 | CLASS=PRODUCTION
+lunar_od/rf/doppler_noise.py | SHA256=2742bb4a7d0608d1ca357ec8b846438c1ccbb8317d79c10eef5546c9d3ebaac5 | SIZE=8474 | CLASS=PRODUCTION
+lunar_od/rf/environment.py | SHA256=ae7b3d8c04807d513824fae623a6be131c272dc8fb2cae8efc84d7c7e67e9214 | SIZE=5600 | CLASS=PRODUCTION
+lunar_od/rf/link_budget.py | SHA256=82c85b035f69ae51b1b891ec8824437837a374da56d27e3dc3c1a0ed391f5bde | SIZE=11498 | CLASS=PRODUCTION
+lunar_od/rf/reference.py | SHA256=357cf275e78293ba5bc3931b63d52aa6a2ca255c1dddf0e50bcedafa2eb120fe | SIZE=5411 | CLASS=PRODUCTION
+lunar_od/rf/types.py | SHA256=aff0f165116bf734946abfcbb87966cf80ea5650521d993912626865f023d812 | SIZE=8807 | CLASS=PRODUCTION
+lunar_od/srp.py | SHA256=d9ba4c225e5e48e18a0b7b4274643f338b7c2ed05a8fb50dd15b875c855bf43f | SIZE=16867 | CLASS=PRODUCTION
+tests/test_de440_kernel_contract.py | SHA256=640209de71c21113fdc608dc4f31c331d1333b8a98907b023e26c0d182537276 | SIZE=6043 | CLASS=TEST
+tests/test_direct_spice_rhs.py | SHA256=3ab37f1bb5d43cf49a14603b09a624cb92116da238e4ecc1df671dca5406c055 | SIZE=8662 | CLASS=TEST
+tests/test_estimator_lm_consistency.py | SHA256=098fbe9fd6410dbe5f1e2765131c8c2ccd21a21b196103da1daa5335906f1735 | SIZE=22297 | CLASS=TEST
+tests/test_k_sensitivity_fd_harness.py | SHA256=98a76e435293c660b1a97977b4ef3e794fa2d11e80201b54f094228878ca650e | SIZE=9124 | CLASS=TEST
+tests/test_k_srp_bls_solve_for.py | SHA256=ee6bc9a40fac7b63f9a76d3c661af4ae1563dee3a9d5a2f8d23af2b9d69926ab | SIZE=13883 | CLASS=TEST / PHASE17R_WIP
+tests/test_k_srp_srif_solve_for.py | SHA256=dd05cffb6372e1aafdacf47c0e28a4d18ccf3dc508f2f09a4ecd71a1afd150d7 | SIZE=8113 | CLASS=TEST / PHASE17R_WIP
+tests/test_k_srp_srukf_solve_for.py | SHA256=eacc014214fd52c571217f21f60f4b1f8f4e9e7a42491eb8ad0c4e678ed24674 | SIZE=9805 | CLASS=TEST / PHASE17R_WIP
+tests/test_pines_gradient_numba_parity.py | SHA256=49fb19bc699f53f983e303acf8f54dfe35d302587d0fc925991d3a128ff2e48b | SIZE=8326 | CLASS=TEST
+tests/test_reference_config.py | SHA256=17a26eae2ec9daf91765a2f56b32c8a27442d9e30f3fb89dbe0b3f6fae3b793f | SIZE=33561 | CLASS=TEST
+tests/test_rf_link_budget.py | SHA256=54a95ed4e82e27b62f47c97b08d0d25ad45d292c11cf744499b80b0dd3aaa4f6 | SIZE=17364 | CLASS=TEST
+tests/test_srp_k_sensitivity.py | SHA256=98eff05f8100c19438f7cac7c1338ff83d210a35080e0695e4ca394b728141e0 | SIZE=10070 | CLASS=TEST
+tests/test_srp_production.py | SHA256=c0602a3e32c33beb1e20f5d3113178f02b74e028bc1de511cfa58d7ddb71554a | SIZE=28284 | CLASS=TEST
+tests/test_two_way_event_conditioning.py | SHA256=403c742303ce2004f26e234013af7b34dd5ee8ae1ec38098a54014ebd5fd6432 | SIZE=9091 | CLASS=TEST
+
+[NESTED ARTIFACT REPOSITORY]
+PATH=C:\Users\erayh\Documents\Python\Grad\od_covariance_campaign
+IS_GIT_REPOSITORY=true
+REMOTE=(none)
+BRANCH=master
+HEAD=1d24e1278434b2c9ecc5a5661cb7eb7194823504
+TREE=e25f3675a436d45a42d2f197df6b6114a7900e41
+TRACKED_FILES=976
+UNTRACKED_FILES=83
+POLICY=separate artifact repository; do not recurse its .git into target
+
+[IGNORED]
+Python __pycache__ directories are ignored and are not scientific source/artifact inputs.
