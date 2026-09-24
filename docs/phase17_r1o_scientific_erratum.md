@@ -1,5 +1,18 @@
 # SCIENTIFIC ERRATUM — PHASE 17-R1O
 
+> ### SECOND ERRATUM (Phase 17-FXR) — Earth-epoch fixture
+>
+> §5–§8 below were computed on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. On the consistent fixture, with the corrected STM:
+> - range only: 0.0915
+> - landmark 1 µrad: 0.2524
+> - ΔDOR-like 1 nrad / 5 nrad: 0.3619 / 0.3203
+> - Earth LOS: 0.0920
+> - production ΔDOR 5 nrad: 0.3204 (STRONG_DIRECTION_GAIN)
+>
+> §8's "neither ... meaningfully rotates K_SRP's information direction" and §7's "R1O-D conclusion
+> VALID" do not hold on the consistent geometry. §2–§4, the STM defect and its repair, stand.
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 **Status:** Phase 17-R1O's cross-observable ranking is **SUPERSEDED**.
 **Issued by:** Phase 17-R1O-R (`docs/phase17_r1o_r_stm_layout_repair.md`).
 **Repair commit:** `75ba49a7e86cf7c4ea01e45ca757126159dc0654`.

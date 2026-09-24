@@ -1,5 +1,29 @@
 # PHASE 17-R1O-D — PRODUCTION ΔDOR MEASUREMENT MODEL DESIGN, PHYSICS QUALIFICATION, AND K_SRP VALIDATION
 
+> ### ERRATUM (Phase 17-FXR) — relative classification CHANGED
+>
+> The range arc of this campaign was built on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. The ΔDOR stations were also placed on an
+> Earth **frozen at t = 0 for the whole 15-orbit arc**. Neither the production ΔDOR code
+> (`lunar_od/delta_dor.py`) nor its software qualification is affected. Re-run on the
+> epoch-consistent fixture, with the same pair, quasar, grid and noise levels:
+>
+> | quantity | published | consistent (Earth at measurement epoch) |
+> |---|---:|---:|
+> | range-only `f_perp` / `sigma_K/K` | 0.2523 / 9.27% | 0.0915 / 25.40% |
+> | range + ΔDOR 5 nrad `f_perp` / `sigma_K/K` | 0.2121 / 8.67% | 0.3204 / 3.97% |
+> | `f_perp` gain / class | −0.040 / MAGNITUDE_ONLY | **+0.229 / STRONG_DIRECTION_GAIN** |
+> | range + ΔDOR 1 nrad `f_perp` / `sigma_K/K` | 0.0738 / 7.82% | 0.3622 / 0.83% |
+> | Case B: K shift per 1 ns session bias | 22.5% of K | 2.5% of K |
+>
+> The cause is the epoch offset. The class flips exactly when the Earth epoch is corrected:
+> repairing only the clamp still gives STRONG, and repairing only the offset still gives
+> MAGNITUDE_ONLY. Keeping this report's frozen-Earth convention gives +0.245. The normal-matrix
+> rank (6/7) and the K-alignment of the weakest mode do not change.
+>
+> The earlier provenance note said "below the range-only baseline at every tested precision".
+> That was already inexact: 30 and 100 nrad gave 0.2636 and 0.2641, both above 0.2523.
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 > ### PROVENANCE NOTE (Phase 17-R1O-R) — result VALID, causal attribution REVISED
 >
 > **This phase's own production result is unchanged and was re-run to confirm it.** Production

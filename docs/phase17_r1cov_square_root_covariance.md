@@ -1,5 +1,20 @@
 # PHASE 17-R1COV — SQUARE-ROOT COVARIANCE QUALIFICATION AND K_SRP FORMAL-UNCERTAINTY REPAIR
 
+> ### ERRATUM (Phase 17-FXR) — algorithm VALID, canonical numbers SUPERSEDED
+>
+> The QR / square-root covariance qualification is mathematical and unchanged. On the
+> epoch-consistent designs, production `_square_root_covariance_from_design` again matches the
+> exact rational oracle (at most 3.4e-13 relative), and cond(HᵀWH)/cond(A)² = 1.0000. The scenario
+> numbers below were computed on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**, and are superseded:
+>
+> | quantity | published | corrected |
+> |---|---:|---:|
+> | G0 / G1 / G3 qualified `sigma_K`, data only [m²/kg] | 0.904 / 0.0194 / 0.00533 | 0.193 / 0.0781 / 0.0232 |
+> | old floored-path overconfidence, G0 / G1 / G3 | ×261 / ×11.8 / ×10.2 | ×65 / ×45 / ×51 |
+> | best existing case, M3 Model B | 0.00452 (45%), 295 obs | 0.0358 (358%), 250 obs |
+>
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 ## 1. Executive Summary
 
 R1M established that the production-reported `sigma_K` was controlled by the eigenvalue safety

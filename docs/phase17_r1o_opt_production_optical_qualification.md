@@ -1,5 +1,22 @@
 # PHASE 17-R1O-OPT — PRODUCTION LUNAR LANDMARK OPTICAL MEASUREMENT MODEL AND K_SRP IDENTIFIABILITY QUALIFICATION
 
+> ### ERRATUM (Phase 17-FXR) — classification CONFIRMED, numbers SUPERSEDED
+>
+> The production optical rows do not depend on the Earth: they are bitwise identical on both
+> fixtures. The range block they are combined with did depend on it, because it was built on
+> the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. On the consistent geometry, the default single-station choice also changes from
+> Canberra to Goldstone.
+>
+> | quantity | published | consistent |
+> |---|---:|---:|
+> | range only (10 s) `f_perp` / `sigma_K/K` | 0.2950 / 3.50% | 0.0861 / 12.82% |
+> | optical only (0.25 px) `f_perp` | 0.2617 | 0.2617 |
+> | best combined `f_perp`, 0.1–2.5 px | 0.3253 | 0.1405 |
+> | operational improvement factor | ×1.18 | ×1.79 |
+> | class | MARGINAL_DIRECTION_GAIN | MARGINAL_DIRECTION_GAIN |
+>
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 > ### PROVENANCE NOTE (Phase 17-R1O-R) — CONFIRMED
 >
 > The STM storage-order defect this phase discovered in `phase17_r1o_core.chain_to_augmented_columns`

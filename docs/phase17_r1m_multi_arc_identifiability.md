@@ -1,5 +1,34 @@
 # PHASE 17-R1M — MULTI-ARC K_SRP IDENTIFIABILITY AND COVARIANCE-DIAGNOSTIC STUDY
 
+> ### ERRATUM (Phase 17-FXR) — absolute numbers SUPERSEDED, qualitative conclusion PARTIAL
+>
+> Every range design in this report was built on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. Multi-arc windows also restarted
+> that table at their own t = 0, so their offset was 504000 s **plus** the window start. The text
+> and numbers below are preserved. `EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED` reproduces them
+> bit for bit. Re-run with the same code and schedules on the epoch-consistent fixture:
+>
+> | quantity | published | corrected |
+> |---|---:|---:|
+> | G0 / G1 / G2 / G3 `f_perp` | 0.0089 / 0.2246 / 0.2434 / 0.2690 | 0.0508 / 0.0673 / 0.0731 / 0.0594 |
+> | G0 / G1 / G3 `I(K\|x)` | 1.22 / 2.66e3 / 3.52e4 | 26.9 / 164 / 1.86e3 |
+> | F3 pure / G3 contiguous / M3 linked `I(K\|x)` | 5.54e3 < 3.52e4 < 4.90e4 | 570 < 1.86e3, M3 linked 780 |
+> | best linked data-only `sigma_K/K` | 25% (F3-B), 45% (M3-B) | 89% (F3-B), 358% (M3-B) |
+> | largest `f_perp` in any configuration | 0.30 | 0.088 |
+>
+> **Still true on the corrected geometry:**
+> - range-only multi-arc accumulates information without separating K (normal-matrix rank 6/7 and
+>   a K-aligned weakest mode in every configuration);
+> - pure multi-arc is worse than contiguous tracking;
+> - continuity-linked beats pure multi-arc in every campaign, and beats its contiguous control;
+> - no configuration is practically identifiable;
+> - `MULTI_ARC_PRODUCTION_IMPLEMENTATION_JUSTIFIED = NO`;
+> - the covariance-floor diagnosis.
+>
+> **No longer true:** M3 Model B as the best configuration, and M3 Model B beating contiguous G3.
+> The window anchors were read from the published (defective) visibility. On the corrected
+> geometry the M windows hold 34–71 observations instead of 59 each. FXR did not re-anchor them.
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 ## 1. Executive Summary
 
 R1M asked whether observations from several separated tracking arcs, each with its own local

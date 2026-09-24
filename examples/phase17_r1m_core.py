@@ -92,7 +92,7 @@ def campaign_initial_state() -> np.ndarray:
 #: The only Earth fixture for science: exact SPICE Earth at the measurement ET.
 EARTH_FIXTURE_CANONICAL = "CANONICAL_EPOCH_CONSISTENT_SPICE"
 #: SUPERSEDED, DEFECTIVE.  The R1M..R1O-R fixture: campaign Earth table from an
-#: epoch 504000 s early, clamped after 4 orbits.  Reproduction only.
+#: epoch 504000 s early, held constant after 28260 s (3.9986 orbits).  Reproduction only.
 EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED = "LEGACY_OFFSET_CLAMPED_TABLE_SUPERSEDED_BY_PHASE17_FXR"
 #: FXR s17 attribution diagnostics: each carries exactly ONE of the two defects.
 EARTH_FIXTURE_DIAG_OFFSET_UNCLAMPED = "DIAGNOSTIC_OFFSET_EPOCH_UNCLAMPED"
@@ -204,7 +204,7 @@ def measurement_earth_ephemeris(earth_fixture: str, et_measurement_origin: float
         # The table's t = 0 is the campaign ET0 whatever arc is being built.
         return EarthEphemeris(earth_fixture, float(C.ET0), float(C.T_OBS[0]), table_end,
                               clamp_after_s=table_end)
-    if abs(float(et_measurement_origin) - _campaign_et0()) > 0.0:
+    if float(et_measurement_origin) != _campaign_et0():
         raise ValueError("attribution diagnostics are defined for arcs starting at the "
                          "campaign epoch only")
     if earth_fixture == EARTH_FIXTURE_DIAG_OFFSET_UNCLAMPED:

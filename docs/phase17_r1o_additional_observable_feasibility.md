@@ -1,5 +1,24 @@
 # PHASE 17-R1O — ADDITIONAL OBSERVABLE FEASIBILITY FOR K_SRP IDENTIFIABILITY
 
+> ## ERRATUM 2 (Phase 17-FXR) — Earth-epoch fixture
+>
+> This report is also affected by the STM defect (see the block below). Beyond that, every
+> range baseline and every ΔDOR-like and Earth-LOS surrogate row here used the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. With the
+> corrected STM **and** the consistent fixture:
+>
+> | case (`f_perp`) | R1O-R corrected, published fixture | FXR, consistent fixture |
+> |---|---:|---:|
+> | range only | 0.2523 | 0.0915 |
+> | landmark 1 µrad | 0.2530 | 0.2524 |
+> | ΔDOR-like 1 nrad | 0.0701 | 0.3619 |
+> | ΔDOR-like 5 nrad | 0.2070 | 0.3203 |
+> | Earth-center LOS 1 µrad | 0.2578 | 0.0920 |
+>
+> The original ranking remains invalid, because of the STM defect. R1O-R's corrected conclusion,
+> that neither candidate improves on the range baseline, **no longer holds**: on the consistent
+> geometry both surrogates raise `f_perp` well above it. The LOS negative control stays null.
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 > ## HISTORICAL RESULT — SUPERSEDED
 >
 > **Every surrogate result in this report used Phi^T in place of Phi.**

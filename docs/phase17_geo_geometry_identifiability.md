@@ -1,5 +1,17 @@
 # PHASE 17-GEO — GEOMETRY-DEPENDENT K_SRP IDENTIFIABILITY IN LUNAR ORBIT DETERMINATION
 
+> ### NOTE (Phase 17-FXR) — canonical baseline CONFIRMED; one wording correction
+>
+> FXR reproduces this phase's consistent canonical baseline bitwise (960 obs, `f_perp` 0.091508,
+> `sigma_K/K` 25.40%). This phase's science class stands.
+>
+> Wording correction (§1 item 6, §28): each G5 case was propagated independently for its own K,
+> so G5 is a physical K-truth sweep. Across K, `f_perp` runs from 0.0915053 to 0.0915166 and
+> absolute `sigma_K` varies by 1.3e-4 relative. "Invariant" and "exactly" therefore hold to about
+> 1e-4, not exactly. The §28 table prints the K = 0.01 value on every row. §57's "fixture erratum
+> phase" option has now been carried out.
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 > **The question, answered in plain language first (§73).** When the lunar orbit's altitude,
 > inclination, Sun orientation, eclipse history and tracking geometry are changed, does K_SRP start
 > to leave a measurement pattern that small initial position/velocity errors can no longer imitate?

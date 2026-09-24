@@ -1,5 +1,18 @@
 # PHASE 17-R1O-R — SCIENTIFIC ERRATUM, STM LAYOUT REPAIR, AND HISTORICAL R1O REQUALIFICATION
 
+> ### ERRATUM (Phase 17-FXR) — STM repair VALID, baseline numbers SUPERSEDED
+>
+> The column-major STM finding does not depend on the Earth geometry. FXR re-verified it on the
+> consistent fixture:
+> - historical-path equivalence holds bitwise;
+> - nom48 is identical on both fixtures;
+> - `tests/test_r1o_stm_layout.py` passes 5/5.
+>
+> This report's requalification table was computed on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. Its range baseline (0.2523), and
+> its conclusion that neither surrogate improves on that baseline, are superseded: on the
+> consistent geometry, range is 0.0915, ΔDOR-like 5 nrad is 0.3203 and landmark 1 µrad is 0.2524.
+> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+
 ## 1. Executive Summary
 
 Phase 17-R1O-OPT found a defect in the already-closed Phase 17-R1O analysis code. This phase
