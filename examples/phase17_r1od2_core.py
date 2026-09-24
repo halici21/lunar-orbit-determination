@@ -374,10 +374,12 @@ def ops_selection(rows: DdorRows, mode: str, t_mid_split: float,
 
 
 def subset(rows: DdorRows, sel: np.ndarray) -> DdorRows:
-    return DdorRows(rows.pair, rows.row_rule + "|" + "subset", rows.t_used[sel], rows.idx[sel],
+    """Row subset that KEEPS each row's parent-window session (renumbered 0..q-1),
+    so a session's normal points share one session bias."""
+    sess = np.unique(rows.session[sel], return_inverse=True)[1] if sel.size else np.zeros(0, int)
+    return DdorRows(rows.pair, rows.row_rule + "|subset", rows.t_used[sel], rows.idx[sel],
                     rows.h_x0[sel], rows.h_k[sel], rows.d_s[sel], rows.b_perp[sel],
-                    rows.baseline[sel], rows.s_sc_geo[sel], sessions_from_indices(rows.idx[sel])
-                    if sel.size else np.zeros(0, int),
+                    rows.baseline[sel], rows.s_sc_geo[sel], np.asarray(sess, int),
                     rows.n_candidates, int(sel.size), rows.cond_max)
 
 
@@ -407,11 +409,18 @@ def info_metrics(blocks, nuisance: np.ndarray | None = None,
     h_full = np.hstack([h_x0, h_k[:, None]] + ([nuisance] if q else []))
     scale = np.diag(list(np.diag(SCALE)) + [NUISANCE_SCALE_S] * q)
     a = sw[:, None] * (h_full @ scale)
-    _, sv, vt = np.linalg.svd(a, full_matrices=False)
-    rank, ratio, thr = numerical_rank(np.linalg.qr(a, mode="r"))
-    # direction: K vs state (+ nuisance)
     a_other = sw[:, None] * np.hstack([h_x0] + ([nuisance] if q else []))
     b_k = sw * h_k
+    if q and nuisance_prior_sigma is not None:
+        # a nuisance prior is information: append its square-root pseudo-rows to
+        # BOTH the design (SVD / rank) and the projector, so a partly-constrained
+        # bias can only absorb part of the K signature (K has no prior row)
+        prior_rows = np.hstack([np.zeros((q, 7)), np.eye(q) / nuisance_prior_sigma])
+        a = np.vstack([a, prior_rows @ scale])
+        a_other = np.vstack([a_other, np.hstack([np.zeros((q, 6)), np.eye(q) / nuisance_prior_sigma])])
+        b_k = np.concatenate([b_k, np.zeros(q)])
+    _, sv, vt = np.linalg.svd(a, full_matrices=False)
+    rank, ratio, thr = numerical_rank(np.linalg.qr(a, mode="r"))
     qm, _ = np.linalg.qr(a_other)
     b_perp = b_k - qm @ (qm.T @ b_k)
     nk, npp = float(np.linalg.norm(b_k)), float(np.linalg.norm(b_perp))
@@ -477,9 +486,11 @@ def omitted_bias_k_shift(blocks, delta_full: np.ndarray) -> float:
     delta (length = total rows; zeros on range rows) is present in the data."""
     h_x0, h_k, w = _assemble(blocks)
     sw = np.sqrt(w)
-    a = sw[:, None] * np.hstack([h_x0, h_k[:, None]])
+    # scaled columns (the design is conditioned ~1e8 only after scaling; an
+    # unscaled SVD cutoff could silently discard the weak K direction)
+    a = sw[:, None] * (np.hstack([h_x0, h_k[:, None]]) @ SCALE)
     sol, *_ = np.linalg.lstsq(a, sw * delta_full, rcond=None)
-    return float(sol[K_INDEX])
+    return float(sol[K_INDEX] * SCALE[K_INDEX, K_INDEX])
 
 
 def session_nuisance_columns(n_range: int, rows: DdorRows) -> np.ndarray:
@@ -611,6 +622,7 @@ def geometry_descriptors(scn: Scenario, rb: RangeBlock) -> dict:
         earth_los_vs_srp_direction_deg=ang(earth, -sun),
         beta_deg=G.beta_deg(np.asarray(el["h_hat_mci"]), et_mid),
         earth_view_deg=G.earth_view_deg(np.asarray(el["h_hat_mci"]), et_mid),
+        moon_geocentric_declination_deg=math.degrees(math.asin(-earth[2] / np.linalg.norm(earth))),
         inc_lme_deg=el["inc_deg"], alt_km=(el["a_m"] - G.r_moon()) / 1e3,
         period_s=el["period_s"], et_mid=et_mid,
         range_obs=int(rb.n_obs),
