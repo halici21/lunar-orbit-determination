@@ -1,0 +1,22 @@
+{
+ "worktree": "python_port_p0b2_final_closure_20260716_181920",
+ "base_commit": "da28e5acb8dba0367f2252070ed77c8941b86de5",
+ "branch": "HEAD",
+ "modified": [],
+ "untracked": [
+  "_closure_full.xml",
+  "_closure_m3.xml",
+  "_closure_slow.xml"
+ ],
+ "unique_files": [
+  "_closure_full.xml",
+  "_closure_m3.xml",
+  "_closure_slow.xml"
+ ],
+ "content_status": {
+  "_closure_full.xml": "NOT IN ANY COMMIT",
+  "_closure_m3.xml": "NOT IN ANY COMMIT",
+  "_closure_slow.xml": "NOT IN ANY COMMIT"
+ },
+ "what": "pytest JUnit reports of the P0B-2 final closure run at da28e5a"
+}
