@@ -1,0 +1,26 @@
+{
+ "worktree": "python_port_r1_r4_phase1_complete_20260810_090000",
+ "base_commit": "a347397e89f0c7b921eaa66c3f94909f75113bd7",
+ "branch": "fix/r1-r4-long-arc-time-conditioning",
+ "modified": [
+  "lunar_od/radiometrics.py",
+  "lunar_od/two_way_range.py",
+  "tests/test_od_contracts.py"
+ ],
+ "untracked": [
+  "tests/test_q1_f08_update_conditioning.py"
+ ],
+ "content_status": {
+  "lunar_od/radiometrics.py": "NOT IN ANY COMMIT",
+  "lunar_od/two_way_range.py": "NOT IN ANY COMMIT",
+  "tests/test_od_contracts.py": "NOT IN ANY COMMIT",
+  "tests/test_q1_f08_update_conditioning.py": "NOT IN ANY COMMIT"
+ },
+ "unique_files": [
+  "lunar_od/radiometrics.py",
+  "lunar_od/two_way_range.py",
+  "tests/test_od_contracts.py",
+  "tests/test_q1_f08_update_conditioning.py"
+ ],
+ "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+}

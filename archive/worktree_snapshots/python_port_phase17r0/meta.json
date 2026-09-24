@@ -1,0 +1,19 @@
+{
+ "worktree": "python_port_phase17r0",
+ "base_commit": "595f5b9853048bcb74ee622688821d237095a24b",
+ "branch": "feature/phase17-r-k-srp-estimation",
+ "modified": [],
+ "untracked": [
+  "examples/phase17_r1od_fd_convergence.py",
+  "examples/phase17_r1od_qualification.py"
+ ],
+ "content_status": {
+  "examples/phase17_r1od_fd_convergence.py": "NOT IN ANY COMMIT",
+  "examples/phase17_r1od_qualification.py": "NOT IN ANY COMMIT"
+ },
+ "unique_files": [
+  "examples/phase17_r1od_fd_convergence.py",
+  "examples/phase17_r1od_qualification.py"
+ ],
+ "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+}

@@ -1,0 +1,336 @@
+[
+ {
+  "worktree": "python_port",
+  "base_commit": "632560d72d51b3d77b401365b1839908c2c8e85f",
+  "branch": "feature/lunar-j2-force-models",
+  "modified": [
+   "PYQT5_DESKTOP_APP_README.md"
+  ],
+  "untracked": [
+   "docs/measurement_models_physics_derivatives_and_gaps.md"
+  ],
+  "content_status": {
+   "PYQT5_DESKTOP_APP_README.md": "NOT IN ANY COMMIT",
+   "docs/measurement_models_physics_derivatives_and_gaps.md": "NOT IN ANY COMMIT"
+  },
+  "unique_files": [
+   "PYQT5_DESKTOP_APP_README.md",
+   "docs/measurement_models_physics_derivatives_and_gaps.md"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_p0b2_final_requal_validate_20260715_203553",
+  "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+  "branch": "HEAD",
+  "modified": [
+   "docs/frame_architecture_contracts_and_inconsistencies.md",
+   "docs/frame_transformations.md",
+   "docs/frame_validation_results_and_test_gaps.md",
+   "docs/one_way_light_time_jacobians.md",
+   "docs/two_way_counted_doppler.md",
+   "lunar_od/__init__.py",
+   "lunar_od/filters.py",
+   "lunar_od/measurements.py",
+   "lunar_od/radiometrics.py",
+   "lunar_od/reporting.py",
+   "lunar_od/scenarios.py",
+   "tests/test_estimators.py",
+   "tests/test_filters.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py",
+   "tests/test_reporting.py",
+   "tests/test_scenarios.py"
+  ],
+  "untracked": [
+   "lunar_od/history_domain.py",
+   "tests/test_history_domain.py"
+  ],
+  "content_status": {
+   "docs/frame_architecture_contracts_and_inconsistencies.md": "NOT IN ANY COMMIT",
+   "docs/frame_transformations.md": "da28e5a fix: enforce strict history-domain safety",
+   "docs/frame_validation_results_and_test_gaps.md": "NOT IN ANY COMMIT",
+   "docs/one_way_light_time_jacobians.md": "da28e5a fix: enforce strict history-domain safety",
+   "docs/two_way_counted_doppler.md": "NOT IN ANY COMMIT",
+   "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+   "lunar_od/filters.py": "543b6b9 fix: enforce force-model parity in scenarios and UKF",
+   "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/radiometrics.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/reporting.py": "9a8e40f feat: enforce and report force-model parity",
+   "lunar_od/scenarios.py": "543b6b9 fix: enforce force-model parity in scenarios and UKF",
+   "tests/test_estimators.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_filters.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_measurement_model_safety_diagnostics.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_measurements.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_observability.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_reporting.py": "9a8e40f feat: enforce and report force-model parity",
+   "tests/test_scenarios.py": "760ac0f test: qualify posterior and observability force parity",
+   "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+   "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+  },
+  "unique_files": [
+   "docs/frame_architecture_contracts_and_inconsistencies.md",
+   "docs/frame_validation_results_and_test_gaps.md",
+   "docs/two_way_counted_doppler.md"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_p0b2_final_validate_20260715_004152",
+  "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+  "branch": "HEAD",
+  "modified": [
+   "docs/frame_architecture_contracts_and_inconsistencies.md",
+   "docs/frame_transformations.md",
+   "docs/frame_validation_results_and_test_gaps.md",
+   "docs/one_way_light_time_jacobians.md",
+   "docs/two_way_counted_doppler.md",
+   "lunar_od/__init__.py",
+   "lunar_od/filters.py",
+   "lunar_od/measurements.py",
+   "lunar_od/radiometrics.py",
+   "lunar_od/reporting.py",
+   "lunar_od/scenarios.py",
+   "tests/test_estimators.py",
+   "tests/test_filters.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py",
+   "tests/test_reporting.py",
+   "tests/test_scenarios.py"
+  ],
+  "untracked": [
+   "lunar_od/history_domain.py",
+   "tests/test_history_domain.py"
+  ],
+  "content_status": {
+   "docs/frame_architecture_contracts_and_inconsistencies.md": "NOT IN ANY COMMIT",
+   "docs/frame_transformations.md": "da28e5a fix: enforce strict history-domain safety",
+   "docs/frame_validation_results_and_test_gaps.md": "NOT IN ANY COMMIT",
+   "docs/one_way_light_time_jacobians.md": "da28e5a fix: enforce strict history-domain safety",
+   "docs/two_way_counted_doppler.md": "NOT IN ANY COMMIT",
+   "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+   "lunar_od/filters.py": "NOT IN ANY COMMIT",
+   "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/radiometrics.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/reporting.py": "9a8e40f feat: enforce and report force-model parity",
+   "lunar_od/scenarios.py": "543b6b9 fix: enforce force-model parity in scenarios and UKF",
+   "tests/test_estimators.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_filters.py": "NOT IN ANY COMMIT",
+   "tests/test_measurement_model_safety_diagnostics.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_measurements.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_observability.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_reporting.py": "9a8e40f feat: enforce and report force-model parity",
+   "tests/test_scenarios.py": "NOT IN ANY COMMIT",
+   "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+   "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+  },
+  "unique_files": [
+   "docs/frame_architecture_contracts_and_inconsistencies.md",
+   "docs/frame_validation_results_and_test_gaps.md",
+   "docs/two_way_counted_doppler.md",
+   "lunar_od/filters.py",
+   "tests/test_filters.py",
+   "tests/test_scenarios.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_p0b2ab_validate_20260714_204309",
+  "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+  "branch": "HEAD",
+  "modified": [
+   "lunar_od/__init__.py",
+   "lunar_od/measurements.py",
+   "tests/test_estimators.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py"
+  ],
+  "untracked": [
+   "lunar_od/history_domain.py",
+   "tests/test_history_domain.py"
+  ],
+  "content_status": {
+   "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+   "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "tests/test_estimators.py": "NOT IN ANY COMMIT",
+   "tests/test_measurement_model_safety_diagnostics.py": "NOT IN ANY COMMIT",
+   "tests/test_measurements.py": "NOT IN ANY COMMIT",
+   "tests/test_observability.py": "NOT IN ANY COMMIT",
+   "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+   "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+  },
+  "unique_files": [
+   "tests/test_estimators.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_p0b2c1_validate_20260714",
+  "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+  "branch": "HEAD",
+  "modified": [
+   "lunar_od/__init__.py",
+   "lunar_od/measurements.py",
+   "lunar_od/radiometrics.py",
+   "tests/test_estimators.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py"
+  ],
+  "untracked": [
+   "lunar_od/history_domain.py",
+   "tests/test_history_domain.py"
+  ],
+  "content_status": {
+   "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+   "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/radiometrics.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "tests/test_estimators.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_measurement_model_safety_diagnostics.py": "NOT IN ANY COMMIT",
+   "tests/test_measurements.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_observability.py": "760ac0f test: qualify posterior and observability force parity",
+   "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+   "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+  },
+  "unique_files": [
+   "tests/test_measurement_model_safety_diagnostics.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_p0b2c3_validate_20260714_230333",
+  "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+  "branch": "HEAD",
+  "modified": [
+   "lunar_od/__init__.py",
+   "lunar_od/filters.py",
+   "lunar_od/measurements.py",
+   "lunar_od/radiometrics.py",
+   "tests/test_estimators.py",
+   "tests/test_filters.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py"
+  ],
+  "untracked": [
+   "lunar_od/history_domain.py",
+   "tests/test_history_domain.py"
+  ],
+  "content_status": {
+   "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+   "lunar_od/filters.py": "NOT IN ANY COMMIT",
+   "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/radiometrics.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "tests/test_estimators.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_filters.py": "NOT IN ANY COMMIT",
+   "tests/test_measurement_model_safety_diagnostics.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_measurements.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_observability.py": "760ac0f test: qualify posterior and observability force parity",
+   "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+   "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+  },
+  "unique_files": [
+   "lunar_od/filters.py",
+   "tests/test_filters.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_p0b2d1_validate_20260714_235625",
+  "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+  "branch": "HEAD",
+  "modified": [
+   "lunar_od/__init__.py",
+   "lunar_od/filters.py",
+   "lunar_od/measurements.py",
+   "lunar_od/radiometrics.py",
+   "lunar_od/reporting.py",
+   "lunar_od/scenarios.py",
+   "tests/test_estimators.py",
+   "tests/test_filters.py",
+   "tests/test_measurement_model_safety_diagnostics.py",
+   "tests/test_measurements.py",
+   "tests/test_observability.py",
+   "tests/test_reporting.py",
+   "tests/test_scenarios.py"
+  ],
+  "untracked": [
+   "lunar_od/history_domain.py",
+   "tests/test_history_domain.py"
+  ],
+  "content_status": {
+   "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+   "lunar_od/filters.py": "NOT IN ANY COMMIT",
+   "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/radiometrics.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+   "lunar_od/reporting.py": "9a8e40f feat: enforce and report force-model parity",
+   "lunar_od/scenarios.py": "543b6b9 fix: enforce force-model parity in scenarios and UKF",
+   "tests/test_estimators.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_filters.py": "NOT IN ANY COMMIT",
+   "tests/test_measurement_model_safety_diagnostics.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_measurements.py": "d03a913 test: qualify the R3 exact event-epoch station transform",
+   "tests/test_observability.py": "760ac0f test: qualify posterior and observability force parity",
+   "tests/test_reporting.py": "9a8e40f feat: enforce and report force-model parity",
+   "tests/test_scenarios.py": "NOT IN ANY COMMIT",
+   "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+   "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+  },
+  "unique_files": [
+   "lunar_od/filters.py",
+   "tests/test_filters.py",
+   "tests/test_scenarios.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_phase17r0",
+  "base_commit": "595f5b9853048bcb74ee622688821d237095a24b",
+  "branch": "feature/phase17-r-k-srp-estimation",
+  "modified": [],
+  "untracked": [
+   "examples/phase17_r1od_fd_convergence.py",
+   "examples/phase17_r1od_qualification.py"
+  ],
+  "content_status": {
+   "examples/phase17_r1od_fd_convergence.py": "NOT IN ANY COMMIT",
+   "examples/phase17_r1od_qualification.py": "NOT IN ANY COMMIT"
+  },
+  "unique_files": [
+   "examples/phase17_r1od_fd_convergence.py",
+   "examples/phase17_r1od_qualification.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ },
+ {
+  "worktree": "python_port_r1_r4_phase1_complete_20260810_090000",
+  "base_commit": "a347397e89f0c7b921eaa66c3f94909f75113bd7",
+  "branch": "fix/r1-r4-long-arc-time-conditioning",
+  "modified": [
+   "lunar_od/radiometrics.py",
+   "lunar_od/two_way_range.py",
+   "tests/test_od_contracts.py"
+  ],
+  "untracked": [
+   "tests/test_q1_f08_update_conditioning.py"
+  ],
+  "content_status": {
+   "lunar_od/radiometrics.py": "NOT IN ANY COMMIT",
+   "lunar_od/two_way_range.py": "NOT IN ANY COMMIT",
+   "tests/test_od_contracts.py": "NOT IN ANY COMMIT",
+   "tests/test_q1_f08_update_conditioning.py": "NOT IN ANY COMMIT"
+  },
+  "unique_files": [
+   "lunar_od/radiometrics.py",
+   "lunar_od/two_way_range.py",
+   "tests/test_od_contracts.py",
+   "tests/test_q1_f08_update_conditioning.py"
+  ],
+  "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+ }
+]
