@@ -1,0 +1,60 @@
+{
+ "code_path": [
+  "phase17_geo_grid: case(f'G5_k{k}', ..., k_srp=k)",
+  "phase17_geo_campaign.run_case: G.build_geo_range_arc(..., k_srp=case['k_srp'])",
+  "phase17_geo_core.build_geo_range_arc: nom48 = propagate48(t_grid, x0, et0, k_srp)",
+  "phase17_geo_campaign: G.information_metrics(..., k_truth=case['k_srp'])"
+ ],
+ "artifact_rows": [
+  {
+   "id": "G0_consistent",
+   "k": 0.01,
+   "f_perp": 0.09150755457311016,
+   "k_column_norm": 4302.023784934325,
+   "sigma_k_abs": 0.0025402136377136,
+   "alt_mean_km": 99.85671641518124
+  },
+  {
+   "id": "G5_k0.0025",
+   "k": 0.0025,
+   "f_perp": 0.0915052774628014,
+   "k_column_norm": 4302.018414410091,
+   "sigma_k_abs": 0.0025402800221843093,
+   "alt_mean_km": 99.85681824531883
+  },
+  {
+   "id": "G5_k0.005",
+   "k": 0.005,
+   "f_perp": 0.09150604606972758,
+   "k_column_norm": 4302.01989671134,
+   "sigma_k_abs": 0.0025402578097798575,
+   "alt_mean_km": 99.85678429520127
+  },
+  {
+   "id": "G5_k0.02",
+   "k": 0.02,
+   "f_perp": 0.09151057965189491,
+   "k_column_norm": 4302.032414159326,
+   "sigma_k_abs": 0.0025401245703800686,
+   "alt_mean_km": 99.85658063153596
+  },
+  {
+   "id": "G5_k0.04",
+   "k": 0.04,
+   "f_perp": 0.09151661861778901,
+   "k_column_norm": 4302.048723246755,
+   "sigma_k_abs": 0.0025399473245594885,
+   "alt_mean_km": 99.85630905921752
+  }
+ ],
+ "f_perp_min": 0.0915052774628014,
+ "f_perp_max": 0.09151661861778901,
+ "f_perp_rel_spread": 0.0001239345671746186,
+ "sigma_k_abs_rel_spread": 0.0001309748255170723,
+ "k_column_norm_rel_spread": 7.045242873245529e-06,
+ "rerun_nom48_differs_between_k": true,
+ "rerun_h_k_differs_between_k": true,
+ "rerun_matches_artifact_bitwise": true,
+ "implementation_class": "PHYSICAL_K_TRUTH_TRAJECTORY_SWEEP",
+ "report_wording_note": "GEO s28 prints f_perp = 0.091508 and ||b_K|| = 4302 for every K and calls the invariance exact; the committed values differ in the 5th-6th significant digit because each K has its own propagated nominal trajectory. The linearity interpretation holds to ~1e-4 relative, not exactly."
+}
