@@ -331,14 +331,17 @@ def test_archived_orphans_are_not_importable():
 
 
 def test_no_direct_calls_to_the_unchecked_range_generator():
-    """Structural guard: the frozen generator is reached only through the contract layer."""
-    import re
-    pat = re.compile(r"\bgenerate_two_way_range_measurements\s*\(")
+    """Structural guard: the frozen generator is reached only through the contract layer.
+    AST-based, so only real call sites count (not strings or comments)."""
+    import ast
     offenders = []
     for path in sorted(EXAMPLES.glob("phase17_*.py")) + [ROOT / "lunar_od" / "scenarios.py"]:
-        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if pat.search(line) and not line.lstrip().startswith(("def ", "#")):
-                offenders.append("%s:%d" % (path.name, n))
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Call):
+                f = node.func
+                name = f.id if isinstance(f, ast.Name) else getattr(f, "attr", None)
+                if name == "generate_two_way_range_measurements":
+                    offenders.append("%s:%d" % (path.name, node.lineno))
     assert offenders == []
 
 

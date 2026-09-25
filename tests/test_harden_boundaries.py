@@ -252,6 +252,17 @@ def test_range_jacobian_root_cause_evidence_is_consistent():
     assert min(corr.values()) > 0.7
     ctrl = next(e for e in pred if e["shadow"] == "NO_SHADOW")
     assert max(v["predicted_rel"] for v in ctrl["columns"].values()) < 1e-9
+    # closure: with the FD oracle integrated at rtol 3e-15 the prediction explains
+    # every column; the looser-rtol residual scaled with rtol (oracle, not physics)
+    conv = json.loads((ARTIFACTS / "phase17_harden_range_jacobian_oracle_convergence.json").read_text())
+    tight = conv["oracle_tolerance_study_h10_dt1"]["rtol_3e-15"]["columns"]
+    assert min(v["correlation"] for v in tight.values()) > 0.98
+    assert max(v["residual_after_prediction_rel"] for v in tight.values()) < 2e-7
+    loose = conv["oracle_tolerance_study_h10_dt1"]["rtol_1e-13"]["columns"]
+    assert loose["y0"]["residual_after_prediction_rel"] > 20 * tight["y0"]["residual_after_prediction_rel"]
+    quad = conv["quadrature_study_rtol_1e-14_h10"]
+    assert abs(quad["dt_0.1"]["columns"]["y0"]["residual_after_prediction_rel"]
+               - quad["dt_1.0"]["columns"]["y0"]["residual_after_prediction_rel"]) < 5e-8
 
 
 # ======================================================================
