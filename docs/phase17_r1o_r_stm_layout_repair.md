@@ -1,5 +1,12 @@
 # PHASE 17-R1O-R — SCIENTIFIC ERRATUM, STM LAYOUT REPAIR, AND HISTORICAL R1O REQUALIFICATION
 
+> ### ERRATUM 3 (Phase 17-R1O-D2 / Phase 17-HARDEN): lunar occultation
+>
+> The ΔDOR-like 0.3203 and Earth-LOS 0.0920 values below are still superseded: their rows were accepted on elevation only.
+> On the production elevation + occultation contract the values are ΔDOR-like 5 nrad **0.1722**
+> (1 nrad 0.1381) and Earth LOS **0.0919**; 230 of 590 Earth-LOS rows were occulted. Production ΔDOR is **0.172351**.
+> The current numbers are in `docs/phase17_authoritative_status.md`.
+
 > ### ERRATUM (Phase 17-FXR) — STM repair VALID, baseline numbers SUPERSEDED
 >
 > The column-major STM finding does not depend on the Earth geometry. FXR re-verified it on the

@@ -62,9 +62,9 @@
       "effect": "range-Jacobian state columns relative error 2e-6..1e-5 over 4 orbits at rtol 1e-13; the event (light-time) derivative itself is exact (LIN error 1e-8..9e-8, falling with h)",
       "status": "ROOT_CAUSE_KNOWN_DOCUMENTED_APPROXIMATION",
       "klass": "RECOMMENDED_FOLLOWUP",
-      "repair": "none in HARDEN (dynamics.py is R2-protected; adding the gradient is a model change); first-order prediction from the omitted gradient reproduces the observed error (corr >= 0.999 on 4/6 columns); NO_SHADOW and K=0 controls agree to the integrator floor",
+      "repair": "none in HARDEN (dynamics.py is R2-protected; adding the gradient is a model change). CLOSED as a mathematically understood, bounded approximation: NO_SHADOW and K=0 controls drop the error to the integrator floor; the first-order prediction from the omitted gradient reproduces all six columns (corr >= 0.986, residual <= 1.0e-7) once the FD oracle is integrated at rtol 3e-15. The partial fit at rtol 1e-14 (y0 0.908, vx0 0.737) was oracle integration error at the non-smooth penumbra RHS: it scaled with rtol and did not change with quadrature dt",
       "regression": "tests/test_harden_boundaries.py::test_omitted_srp_position_gradient_is_the_range_jacobian_root_cause, ::test_range_jacobian_root_cause_evidence_is_consistent",
-      "reproduction": "examples/phase17_harden_range_jacobian.py [--predict]"
+      "reproduction": "examples/phase17_harden_range_jacobian.py [--predict]; artifacts/phase17_harden_range_jacobian_oracle_convergence.json"
     },
     {
       "id": "HARDEN-D06",

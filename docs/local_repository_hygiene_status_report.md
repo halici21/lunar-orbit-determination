@@ -472,6 +472,8 @@ LOCAL_REPOSITORY_HYGIENE_GATE = PASS
    - *What they are:* first-draft R1O-D qualification and FD-convergence scripts written against the pre-rewrite `delta_dor` API. They no longer run.
    - *Why uncertain:* the manifest calls them deliberately uncommitted, but `fd_convergence.py` documents a first-pass FD non-convergence finding that appears nowhere else.
    - *Recommended:* commit both unchanged under an archival location, e.g. to the `archive/worktree-snapshots-2026-09-24` branch, then delete locally. Alternatively, keep them as they are.
+   - **Resolved (Phase 17-HARDEN, HARDEN-D11):** both are archived byte-for-byte in `archive/phase17_orphans/`,
+     with a README and a SHA-256 manifest that matches the hashes above.
    - *Risk if removed:* loss of the only record of the first FD sweep's failure mode.
 2. **R1/R1G figures without a producer** (`artifacts/phase17r1_*.png` ×6, `artifacts/phase17r1g_*.png` ×8)
    - *What they are:* committed phase evidence whose plotting code was never committed.
