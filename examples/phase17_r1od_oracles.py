@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/artifacts")
+ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
 
 from lunar_od.delta_dor import (
     QuasarDirection,

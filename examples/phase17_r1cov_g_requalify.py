@@ -30,9 +30,9 @@ from phase17_r1cov_core import (  # noqa: E402
 )
 
 ARTIFACTS = REPO / "artifacts"
-SCRATCH = Path(r"C:/Users/erayh/AppData/Local/Temp/claude/"
-               r"c--Users-erayh-Documents-Python-Grad/"
-               r"31d33312-f3ed-4a57-8c4f-99d981791301/scratchpad")
+# HARDEN-D10: was one session's scratchpad literal; PHASE17_SCRATCH overrides.
+SCRATCH = Path(__import__("os").environ.get(
+    "PHASE17_SCRATCH", Path(__import__("tempfile").gettempdir()) / "phase17_r1cov_g"))
 BASELINE_REF = "HEAD"   # the pre-R1COV commit; nothing is committed yet
 
 

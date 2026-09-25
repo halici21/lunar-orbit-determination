@@ -14,7 +14,7 @@ import csv
 import re
 from pathlib import Path
 
-REPO = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0")
+REPO = Path(__file__).resolve().parents[1]   # HARDEN-D10: was a machine-specific literal
 ARTIFACTS = REPO / "artifacts"
 HELPERS = ("_safe_covariance_from_information", "_sqrt_information_from_information")
 

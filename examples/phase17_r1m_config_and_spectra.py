@@ -39,7 +39,7 @@ from phase17_r1m_multi_arc_study import (  # noqa: E402
     model_b_information,
 )
 
-REPO = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0")
+REPO = Path(__file__).resolve().parents[1]   # HARDEN-D10: was a machine-specific literal
 ARTIFACTS = REPO / "artifacts"
 SINGLE_CASES = (("G0", 1.3), ("G1", 2.0), ("G2", 3.0), ("G3", 5.0))
 

@@ -17,3 +17,12 @@ for _path in (_ROOT / "desktop_app", _ROOT):        # inserted in reverse: ROOT 
     if _entry in sys.path:
         sys.path.remove(_entry)
     sys.path.insert(0, _entry)
+
+# HARDEN-D12: import the external campaign module through the guarded loader
+# (it prepends a sibling checkout to sys.path before importing lunar_od).
+try:
+    from lunar_od.project_paths import import_campaign_module as _import_campaign
+
+    _import_campaign()
+except ModuleNotFoundError:
+    pass

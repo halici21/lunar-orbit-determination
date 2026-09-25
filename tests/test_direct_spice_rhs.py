@@ -22,13 +22,11 @@ import spiceypy as spice
 from lunar_od import dynamics as dyn
 from lunar_od import lunar_frames as lf
 from lunar_od.gravity_model_loader import load_lunar_gravity_model
+from lunar_od.project_paths import gravity_data_root
 from lunar_od.spice_loader import load_spice_kernels
 
 ET0 = 820497669.18392
-GL1800F_TAB = (
-    "C:/Users/erayh/Documents/Python/Grad/python_port/data/gravity/"
-    "gl1800f/jggrx_1800f_sha.tab"
-)
+GL1800F_TAB = str(gravity_data_root() / "gl1800f" / "jggrx_1800f_sha.tab")  # HARDEN-D10
 MU_MOON = 4902.800066e9
 
 

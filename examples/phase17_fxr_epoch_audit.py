@@ -33,9 +33,10 @@ sys.path.insert(0, str(HERE))
 ROOT = HERE.parent
 ARTIFACTS = ROOT / "artifacts"
 GEO_CACHE = ROOT / "results" / "phase17_geo_cache"
-PHASE7_MANIFEST = Path(r"C:/Users/erayh/Documents/Python/Grad/od_covariance_campaign/"
-                       r"08_manifests/phase7_measurement_geometry_manifest.json")
-EPHEMERIS_MAT = Path(r"C:/Users/erayh/Documents/Python/Grad/ephemeris_data.mat")
+from lunar_od.project_paths import campaign_root, ephemeris_mat  # noqa: E402  (HARDEN-D10)
+
+PHASE7_MANIFEST = campaign_root() / "08_manifests" / "phase7_measurement_geometry_manifest.json"
+EPHEMERIS_MAT = ephemeris_mat()
 
 DSN3 = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 W15_ORBITS = 15.0

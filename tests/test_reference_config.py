@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+from lunar_od.project_paths import campaign_root
 from lunar_od.reference_config import (
     DEFAULT_REFERENCE_CONFIGURATION,
     Derivation,
@@ -42,10 +43,8 @@ from lunar_od.reference_config import (
     verify_fingerprint,
 )
 
-PHASE14_DOCUMENT = Path(
-    "C:/Users/erayh/Documents/Python/Grad/od_covariance_campaign/03_data/"
-    "phase14_reference_spacecraft_configuration_v1.json"
-)
+PHASE14_DOCUMENT = (campaign_root() / "03_data"  # HARDEN-D10
+                    / "phase14_reference_spacecraft_configuration_v1.json")
 PHASE14_ANCESTOR_FINGERPRINT = (
     "775e4231bb556819067d60d289c0737a66ae0e6bd562e0e817b55c7f526368df"
 )
