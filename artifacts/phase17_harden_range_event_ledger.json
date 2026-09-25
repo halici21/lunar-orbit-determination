@@ -1,0 +1,382 @@
+{
+ "contract": "t3 fixed (grid receive tag); t2d, t2u, t1 solved; station at t1/t3 via exact sxform at pass_geo.et0_s + t and Hermite Earth; spacecraft at t2u/t2d by Hermite state interpolation; all local times share origin pass_geo.et0_s",
+ "et0_s": 857806356.99998,
+ "rows": [
+  {
+   "obs_index": 0,
+   "station": "Goldstone DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 87.42388890426118,
+     "et_s": 857806444.4238689,
+     "station_state_epoch_et": 857806444.4238689,
+     "earth_ephemeris_epoch_et": 857806444.4238689,
+     "earth_orientation_epoch_et": 857806444.4238689,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 88.71194490788167,
+     "et_s": 857806445.7119249,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857806445.7119249,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857806445.7119249,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 88.71194490788167,
+     "et_s": 857806445.7119249,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857806445.7119249,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857806445.7119249,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 90.0,
+     "et_s": 857806446.99998,
+     "station_state_epoch_et": 857806446.99998,
+     "earth_ephemeris_epoch_et": 857806446.99998,
+     "earth_orientation_epoch_et": 857806446.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.576111095738824,
+   "converged": true
+  },
+  {
+   "obs_index": 42,
+   "station": "Goldstone DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 6567.423858161875,
+     "et_s": 857812924.4238381,
+     "station_state_epoch_et": 857812924.4238381,
+     "earth_ephemeris_epoch_et": 857812924.4238381,
+     "earth_orientation_epoch_et": 857812924.4238381,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 6568.711928803374,
+     "et_s": 857812925.7119088,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857812925.7119088,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857812925.7119088,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 6568.711928803374,
+     "et_s": 857812925.7119088,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857812925.7119088,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857812925.7119088,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 6570.0,
+     "et_s": 857812926.99998,
+     "station_state_epoch_et": 857812926.99998,
+     "earth_ephemeris_epoch_et": 857812926.99998,
+     "earth_orientation_epoch_et": 857812926.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.576141838125295,
+   "converged": true
+  },
+  {
+   "obs_index": 84,
+   "station": "Goldstone DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 8637.414146935507,
+     "et_s": 857814994.4141269,
+     "station_state_epoch_et": 857814994.4141269,
+     "earth_ephemeris_epoch_et": 857814994.4141269,
+     "earth_orientation_epoch_et": 857814994.4141269,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 8638.707072990383,
+     "et_s": 857814995.707053,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857814995.707053,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857814995.707053,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 8638.707072990383,
+     "et_s": 857814995.707053,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857814995.707053,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857814995.707053,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 8640.0,
+     "et_s": 857814996.99998,
+     "station_state_epoch_et": 857814996.99998,
+     "earth_ephemeris_epoch_et": 857814996.99998,
+     "earth_orientation_epoch_et": 857814996.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.585853064492767,
+   "converged": true
+  },
+  {
+   "obs_index": 126,
+   "station": "Canberra DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 13227.411150994907,
+     "et_s": 857819584.411131,
+     "station_state_epoch_et": 857819584.411131,
+     "earth_ephemeris_epoch_et": 857819584.411131,
+     "earth_orientation_epoch_et": 857819584.411131,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 13228.705576873066,
+     "et_s": 857819585.7055569,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857819585.7055569,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857819585.7055569,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 13228.705576873066,
+     "et_s": 857819585.7055569,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857819585.7055569,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857819585.7055569,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 13230.0,
+     "et_s": 857819586.99998,
+     "station_state_epoch_et": 857819586.99998,
+     "earth_ephemeris_epoch_et": 857819586.99998,
+     "earth_orientation_epoch_et": 857819586.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.588849005092925,
+   "converged": true
+  },
+  {
+   "obs_index": 168,
+   "station": "Canberra DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 15117.414848961485,
+     "et_s": 857821474.4148289,
+     "station_state_epoch_et": 857821474.4148289,
+     "earth_ephemeris_epoch_et": 857821474.4148289,
+     "earth_orientation_epoch_et": 857821474.4148289,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 15118.707425733508,
+     "et_s": 857821475.7074057,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857821475.7074057,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857821475.7074057,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 15118.707425733508,
+     "et_s": 857821475.7074057,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857821475.7074057,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857821475.7074057,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 15120.0,
+     "et_s": 857821476.99998,
+     "station_state_epoch_et": 857821476.99998,
+     "earth_ephemeris_epoch_et": 857821476.99998,
+     "earth_orientation_epoch_et": 857821476.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.5851510385145957,
+   "converged": true
+  },
+  {
+   "obs_index": 210,
+   "station": "Goldstone DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 19797.399168079854,
+     "et_s": 857826154.3991481,
+     "station_state_epoch_et": 857826154.3991481,
+     "earth_ephemeris_epoch_et": 857826154.3991481,
+     "earth_orientation_epoch_et": 857826154.3991481,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 19798.699582702666,
+     "et_s": 857826155.6995627,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857826155.6995627,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857826155.6995627,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 19798.699582702666,
+     "et_s": 857826155.6995627,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857826155.6995627,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857826155.6995627,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 19800.0,
+     "et_s": 857826156.99998,
+     "station_state_epoch_et": 857826156.99998,
+     "earth_ephemeris_epoch_et": 857826156.99998,
+     "earth_orientation_epoch_et": 857826156.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.6008319201464474,
+   "converged": true
+  },
+  {
+   "obs_index": 252,
+   "station": "Canberra DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 21777.427027293368,
+     "et_s": 857828134.4270073,
+     "station_state_epoch_et": 857828134.4270073,
+     "earth_ephemeris_epoch_et": 857828134.4270073,
+     "earth_orientation_epoch_et": 857828134.4270073,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 21778.7135142429,
+     "et_s": 857828135.7134942,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857828135.7134942,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857828135.7134942,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 21778.7135142429,
+     "et_s": 857828135.7134942,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857828135.7134942,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857828135.7134942,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 21780.0,
+     "et_s": 857828136.99998,
+     "station_state_epoch_et": 857828136.99998,
+     "earth_ephemeris_epoch_et": 857828136.99998,
+     "earth_orientation_epoch_et": 857828136.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.5729727066318446,
+   "converged": true
+  },
+  {
+   "obs_index": 294,
+   "station": "Canberra DSN",
+   "frame": "J2000 axes",
+   "origin": "Moon centre",
+   "units": "s, m",
+   "events": {
+    "t1_uplink_transmit": {
+     "t_local_s": 28257.43055837841,
+     "et_s": 857834614.4305383,
+     "station_state_epoch_et": 857834614.4305383,
+     "earth_ephemeris_epoch_et": 857834614.4305383,
+     "earth_orientation_epoch_et": 857834614.4305383,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2u_uplink_spacecraft": {
+     "t_local_s": 28258.71527905411,
+     "et_s": 857834615.7152591,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857834615.7152591,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857834615.7152591,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t2d_downlink_spacecraft": {
+     "t_local_s": 28258.71527905411,
+     "et_s": 857834615.7152591,
+     "station_state_epoch_et": null,
+     "earth_ephemeris_epoch_et": 857834615.7152591,
+     "earth_orientation_epoch_et": null,
+     "spacecraft_state_epoch_et": 857834615.7152591,
+     "earth_pos_matches_spice_m": 0.0
+    },
+    "t3_receive": {
+     "t_local_s": 28260.0,
+     "et_s": 857834616.99998,
+     "station_state_epoch_et": 857834616.99998,
+     "earth_ephemeris_epoch_et": 857834616.99998,
+     "earth_orientation_epoch_et": 857834616.99998,
+     "spacecraft_state_epoch_et": null,
+     "earth_pos_matches_spice_m": 0.0
+    }
+   },
+   "round_trip_s": 2.5694416215883393,
+   "converged": true
+  }
+ ]
+}

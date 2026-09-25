@@ -1,0 +1,21 @@
+{
+ "at_grid_nodes": {
+  "range_vs_doppler_pos_m": 0.0,
+  "range_vs_doppler_vel_mps": 0.0,
+  "range_vs_ddor_pos_m": 0.0,
+  "range_vs_ddor_vel_mps": 0.0
+ },
+ "at_mid_nodes": {
+  "range_vs_doppler_pos_m": 2.6194351527369277,
+  "range_vs_doppler_vel_mps": 6.845280096901691e-06,
+  "range_vs_ddor_pos_m": 2.5208904386611515e-05,
+  "range_vs_ddor_vel_mps": 2.0062786575617764e-09
+ },
+ "earth_interp_error_mid_node_m": {
+  "linear_doppler": 2.619435154478277,
+  "hermite_range_ddor": 6.68025159851808e-08
+ },
+ "orientation_transform_same_epoch": true,
+ "spacecraft_nominal_same": true,
+ "linear_earth_count_rate_error_x_component_max_mps": 1.4821688334147136e-06
+}
