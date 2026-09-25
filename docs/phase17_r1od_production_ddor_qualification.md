@@ -1,5 +1,34 @@
 # PHASE 17-R1O-D — PRODUCTION ΔDOR MEASUREMENT MODEL DESIGN, PHYSICS QUALIFICATION, AND K_SRP VALIDATION
 
+> ### ERRATUM (Phase 17-R1O-D2, enforced by Phase 17-HARDEN): lunar occultation
+>
+> **0.3204 is superseded.** The range + production ΔDOR 5 nrad value 0.3204 (and its surrogate twin 0.3203) is labelled
+> **`EPOCH_CORRECTED_BUT_ELEVATION_ONLY_HISTORICAL_INTERMEDIATE`**. FXR corrected its Earth epoch, but
+> its ΔDOR rows were still accepted on station elevation alone, without a lunar-occultation test. As a result,
+> **93 of 263 rows (35%) had the spacecraft behind the Moon** for at least one station.
+>
+> **Authoritative values** (Phase 17-R1O-D2, canonical Goldstone–Canberra, 5 nrad, both stations visible under the
+> production elevation + occultation contract):
+>
+> | quantity | value |
+> |---|---:|
+> | range-only `f_perp` | **0.091508** |
+> | range + ΔDOR `f_perp` | **0.172351** |
+> | gain Δ`f_perp` | **+0.0808** (STRONG_DIRECTION_GAIN) |
+> | σ_K/K | **7.46%** |
+>
+> **R1O surrogates under the same contract** (Phase 17-HARDEN, `artifacts/phase17_harden_visibility_requalification.json`):
+>
+> | surrogate | 5 nrad `f_perp` | 1 nrad `f_perp` | rows |
+> |---|---:|---:|---|
+> | ΔDOR-like | 0.1722 | 0.1381 | 170 kept of 263 |
+> | Earth LOS | 0.0919 | — | 360 kept; 230 of 590 were occulted |
+>
+> The R1O-D-era bridge surrogate uses an Earth frozen at t = 0 and is historical only. On the legacy (elevation-only) path, every FXR number
+> still reproduces bitwise. The single current status is in `docs/phase17_authoritative_status.md`. The defect is
+> HARDEN-D04 in `docs/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
+
+
 > ### ERRATUM (Phase 17-FXR) — relative classification CHANGED
 >
 > The range arc of this campaign was built on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. The ΔDOR stations were also placed on an
