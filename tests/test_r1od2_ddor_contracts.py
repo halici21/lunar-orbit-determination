@@ -68,13 +68,33 @@ def test_historical_rows_and_weights_reproduce_r1od_campaign(canon):
     ref = M.build_range_arc(0.0, scn.duration_s, label="ref", station_filter=D2.DSN3, cadence_s=90.0)
     by = D2.stations_by_name()
     sa, sb = by["Goldstone DSN"], by["Canberra DSN"]
-    hist = OD.build_ddor_rows(ref, sa, sb, QuasarDirection(2.1, -0.3),
-                              earth_anchor=OD.EARTH_ANCHOR_MEASUREMENT_EPOCH)
+    # Phase 17-HARDEN: the R1O-D builder now defaults to the production
+    # visibility rule, so the historical rows must be requested by name.
+    with pytest.warns(M.SupersededVisibilityWarning):
+        hist = OD.build_ddor_rows(ref, sa, sb, QuasarDirection(2.1, -0.3),
+                                  earth_anchor=OD.EARTH_ANCHOR_MEASUREMENT_EPOCH,
+                                  row_rule=M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
     np.testing.assert_array_equal(rows_hist.h_x0, hist["h_x0"])
     np.testing.assert_array_equal(rows_hist.h_k, hist["h_k"])
     np.testing.assert_array_equal(D2.ddor_weights(rows_hist, D2.SEMANTICS_ANGULAR, 5e-9),
                                   OD.ddor_delay_weights(ref, hist, sa, sb, 5e-9))
     assert rows_hist.n == 263
+
+
+def test_r1od_builder_default_is_the_d2_visibility_contract(canon):
+    """HARDEN: the R1O-D builder's DEFAULT rows are D2's visibility-correct rows."""
+    D2, scn, rb, _, rows = canon
+    import phase17_r1od_campaign as OD
+    from lunar_od.delta_dor import QuasarDirection
+    ref = M.build_range_arc(0.0, scn.duration_s, label="ref", station_filter=D2.DSN3, cadence_s=90.0)
+    by = D2.stations_by_name()
+    vis = OD.build_ddor_rows(ref, by["Goldstone DSN"], by["Canberra DSN"], QuasarDirection(2.1, -0.3))
+    np.testing.assert_array_equal(rows.h_x0, vis["h_x0"])
+    np.testing.assert_array_equal(rows.h_k, vis["h_k"])
+    assert rows.n == 170
+    with pytest.raises(ValueError, match="MEASUREMENT_EPOCH"):
+        OD.build_ddor_rows(ref, by["Goldstone DSN"], by["Canberra DSN"], QuasarDirection(2.1, -0.3),
+                           earth_anchor=OD.EARTH_ANCHOR_FROZEN_ARC_START)
 
 
 def test_reference_rows_need_both_stations_to_see_the_spacecraft(canon):

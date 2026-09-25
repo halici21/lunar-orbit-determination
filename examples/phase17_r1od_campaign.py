@@ -23,7 +23,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import (  # noqa: E402
+    DDOR_ROW_RULE_VISIBLE, require_row_rule, station_visibility_mask,
     EARTH_FIXTURE_CANONICAL, build_range_arc, campaign_epoch, earth_position_mci,
     earth_velocity_mci,
 )
@@ -42,7 +44,7 @@ from lunar_od.measurements import _station_relative_state_j2000_at_receive_epoch
 
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 DDOR_PAIR = ("Goldstone DSN", "Canberra DSN")
-ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/artifacts")
+ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
 #: R1O-D as published: Earth centre frozen at the arc start (t = 0).
 EARTH_ANCHOR_FROZEN_ARC_START = "FROZEN_ARC_START"
 #: Epoch-consistent: Earth centre at each measurement-grid epoch (FXR).
@@ -75,8 +77,16 @@ def earth_center_history(t_grid, earth_fixture=EARTH_FIXTURE_CANONICAL,
 
 def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0, *,
                     earth_fixture=EARTH_FIXTURE_CANONICAL,
-                    earth_anchor=EARTH_ANCHOR_MEASUREMENT_EPOCH):
-    """Production ΔDOR design rows: h_x0 (M,6), h_k (M,), D_S (M,), used t (M,)."""
+                    earth_anchor=EARTH_ANCHOR_MEASUREMENT_EPOCH,
+                    row_rule=DDOR_ROW_RULE_VISIBLE):
+    """Production ΔDOR design rows: h_x0 (M,6), h_k (M,), D_S (M,), used t (M,).
+
+    ``row_rule`` (Phase 17-HARDEN): by default a row needs BOTH stations
+    visible under the production contract (elevation AND lunar occultation),
+    which is only defined for the MEASUREMENT_EPOCH Earth anchor.  R1O-D/FXR
+    used the elevation-only rule; pass DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY to
+    reproduce them (warns).
+    """
     from lunar_od.visibility import sample_j2000_to_itrf93_transforms
     from lunar_od.geometry import ecef2razel_sez
 
@@ -85,6 +95,16 @@ def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0, *
     t_local = t_grid - t_grid[0]
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid[0], t_local)
     earth_pos_hist, earth_vel_hist = earth_center_history(t_grid, earth_fixture, earth_anchor)
+    require_row_rule(row_rule)
+    if row_rule == DDOR_ROW_RULE_VISIBLE:
+        if earth_anchor != EARTH_ANCHOR_MEASUREMENT_EPOCH:
+            raise ValueError("the production visibility rule requires the "
+                             "MEASUREMENT_EPOCH Earth anchor, got %r" % (earth_anchor,))
+        both_visible = station_visibility_mask(
+            t_local, arc.nom48[:, :3], (station_a, station_b), earth_pos_hist, xf,
+            min_elevation_deg).all(axis=1)
+    else:
+        both_visible = np.ones(len(t_grid), dtype=bool)
 
     def station_hist(station):
         rows = []
@@ -121,6 +141,8 @@ def build_ddor_rows(arc, station_a, station_b, quasar, min_elevation_deg=10.0, *
         el_a = elevation_deg(station_a, r_sc_i, earth_pos_hist[i], xf[i])
         el_b = elevation_deg(station_b, r_sc_i, earth_pos_hist[i], xf[i])
         if el_a < min_elevation_deg or el_b < min_elevation_deg:
+            continue
+        if not both_visible[i]:
             continue
         n_dual_visible += 1
         n_attempted += 1
@@ -192,7 +214,7 @@ def main() -> None:
     station_a, station_b = by_name[DDOR_PAIR[0]], by_name[DDOR_PAIR[1]]
     quasar = QuasarDirection(ra_rad=2.1, dec_rad=-0.3)
 
-    ddor = build_ddor_rows(arc, station_a, station_b, quasar)
+    ddor = build_ddor_rows(arc, station_a, station_b, quasar, row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
     print("  dual-visible (10deg mask) epochs: %d" % ddor["n_dual_visible"])
     print("  common-event solves converged:    %d" % ddor["n_converged"])
     print("  event-matrix condition: min=%.3e max=%.3e"
@@ -334,4 +356,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _M.require_legacy_reproduction_opt_in(
+        __file__, 'R1O-D campaign as published: elevation-only ΔDOR rows (superseded by R1O-D2)')
     main()

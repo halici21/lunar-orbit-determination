@@ -46,9 +46,11 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import (  # noqa: E402
     EARTH_FIXTURE_CANONICAL, K_TRUTH, build_range_arc, campaign_epoch,
-    earth_position_mci,
+    earth_position_mci, DDOR_ROW_RULE_VISIBLE, DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY,
+    require_row_rule,
 )
 from phase17_r1o_core import (  # noqa: E402
     build_ddor_arc, build_landmark_arc, chain_to_augmented_columns,
@@ -119,11 +121,26 @@ def _assert_historical_equivalence(nom48: np.ndarray, hist48: np.ndarray) -> dic
 # s19 -- Earth-center LOS negative control (R1O's own construction)
 # ======================================================================
 def earth_los_rows(nom48: np.ndarray, t_grid: np.ndarray, *,
-                   earth_fixture: str = EARTH_FIXTURE_CANONICAL) -> tuple:
+                   earth_fixture: str = EARTH_FIXTURE_CANONICAL,
+                   row_rule: str = DDOR_ROW_RULE_VISIBLE) -> tuple:
+    """Earth line-of-sight direction rows (R1O surrogate), every 4th epoch.
+
+    Phase 17-HARDEN: under the default rule a row exists only when the
+    spacecraft->Earth line of sight is NOT blocked by the Moon (production
+    `is_occulted_by_moon`).  R1O/FXR never gated these rows; pass
+    DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY to reproduce them (warns).
+    """
+    from lunar_od.constants import R_MOON_M
+    from lunar_od.visibility import is_occulted_by_moon
+
+    require_row_rule(row_rule)
     rows_x0, rows_k, max_conv = [], [], 0.0
     for i in range(0, t_grid.size, 4):      # R1O sampled every 4th epoch
         r_sc = nom48[i, :3]
         r_earth = np.asarray(earth_position_mci(t_grid[i], earth_fixture), float).reshape(3)
+        if row_rule == DDOR_ROW_RULE_VISIBLE and bool(
+                is_occulted_by_moon(r_sc, r_earth, np.zeros(3), R_MOON_M)[0]):
+            continue
         e1 = np.array([0.0, 1.0, 0.0])
         e2 = np.array([0.0, 0.0, 1.0])
 
@@ -149,7 +166,11 @@ def bridge_reduced_rows(nom48: np.ndarray, t_grid: np.ndarray, et0: float,
                         earth_fixture: str = EARTH_FIXTURE_CANONICAL):
     """R1O-D's `reduced_simultaneous_ddor_rows`, re-run through whichever
     nom48 it is handed.  Production ΔDOR is NOT touched by this phase.
+
+    HISTORICAL ONLY (Phase 17-HARDEN): Earth frozen at t = 0 and elevation-only
+    visibility (no lunar occultation).  Always warns; never current science.
     """
+    require_row_rule(DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
     from lunar_od.geometry import ecef2razel_sez
     from lunar_od.measurements import _station_relative_state_j2000_at_receive_epoch
     from lunar_od.visibility import sample_j2000_to_itrf93_transforms
@@ -285,9 +306,9 @@ def main() -> None:
     for nrad in (DDOR_HEADLINE_NRAD, DDOR_PRODUCTION_NRAD):
         sig = nrad * 1e-9
         d_hist = build_ddor_arc(nom_historical, w15.t_grid, et0, DDOR_PAIR,
-                                sigma_angle_rad=sig, label="ddor_hist")
+                                sigma_angle_rad=sig, label="ddor_hist", row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
         d_corr = build_ddor_arc(nom_corrected, w15.t_grid, et0, DDOR_PAIR,
-                                sigma_angle_rad=sig, label="ddor_corr")
+                                sigma_angle_rad=sig, label="ddor_corr", row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
         m_h = combined_metrics([range_block, (d_hist.h_x0, d_hist.h_k, d_hist.w)])
         m_c = combined_metrics([range_block, (d_corr.h_x0, d_corr.h_k, d_corr.w)])
         k_same = bool(np.array_equal(d_hist.h_k, d_corr.h_k))
@@ -307,8 +328,8 @@ def main() -> None:
 
     # ------------------------------------------------------------------
     hdr("s19 -- EARTH-CENTER LOS NEGATIVE CONTROL: HISTORICAL vs CORRECTED")
-    e_hx_h, e_hk_h, conv_h = earth_los_rows(nom_historical, w15.t_grid)
-    e_hx_c, e_hk_c, conv_c = earth_los_rows(nom_corrected, w15.t_grid)
+    e_hx_h, e_hk_h, conv_h = earth_los_rows(nom_historical, w15.t_grid, row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
+    e_hx_c, e_hk_c, conv_c = earth_los_rows(nom_corrected, w15.t_grid, row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
     w_e = np.full(e_hk_h.size, 1.0 / (EARTH_LOS_URAD * 1e-6) ** 2)
     m_e_h = combined_metrics([range_block, (e_hx_h, e_hk_h, w_e)])
     m_e_c = combined_metrics([range_block, (e_hx_c, e_hk_c, w_e)])
@@ -360,4 +381,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _M.require_legacy_reproduction_opt_in(
+        __file__, 'R1O-R: elevation-only ΔDOR/bridge rows, ungated Earth-LOS rows')
     main()

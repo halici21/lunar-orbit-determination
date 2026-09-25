@@ -51,6 +51,7 @@ from phase17_r1m_core import (  # noqa: E402
     ArcFixture, SCALE_POS, SCALE_VEL, SCALE_K, build_range_arc, campaign_epoch,
     campaign_initial_state, earth_position_mci, information_matrix,
     orthogonal_decomposition, schur_conditional, spectrum, whitened,
+    DDOR_ROW_RULE_VISIBLE, require_row_rule, station_visibility_mask,
 )
 
 C_LIGHT_MPS = 299792458.0
@@ -204,6 +205,7 @@ def build_ddor_arc(
     min_elevation_deg: float = DDOR_MIN_ELEVATION_DEG,
     label: str = "ddor",
     earth_fixture: str = EARTH_FIXTURE_CANONICAL,
+    row_rule: str = DDOR_ROW_RULE_VISIBLE,
 ) -> DdorArc:
     """Build the design rows for a DDOR-like differenced one-way range.
 
@@ -223,6 +225,11 @@ def build_ddor_arc(
     when the baseline happens to be poorly oriented relative to the source.
 
     ``earth_fixture`` must match the range arc it is combined with (FXR).
+
+    ``row_rule`` (Phase 17-HARDEN): the default is the production visibility
+    contract (elevation AND lunar occultation, `phase17_r1m_core.
+    station_visibility_mask`).  R1O published with the elevation-only rule;
+    pass ``DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY`` to reproduce it (warns).
     """
     import od_gravity_covariance_campaign as C  # noqa: N811
     from lunar_od.visibility import sample_j2000_to_itrf93_transforms
@@ -230,6 +237,15 @@ def build_ddor_arc(
     station_a, station_b = _pair_stations(station_pair_names, C.STATIONS)
     t_local = t_grid_s - t_grid_s[0]
     xf = sample_j2000_to_itrf93_transforms(et0 + t_grid_s[0], t_local)
+    require_row_rule(row_rule)
+    if row_rule == DDOR_ROW_RULE_VISIBLE:
+        earth_hist = np.asarray(earth_position_mci(t_grid_s, earth_fixture),
+                                float).reshape(t_grid_s.size, 3)
+        both_visible = station_visibility_mask(
+            t_local, nom48[:, :3], (station_a, station_b), earth_hist, xf,
+            min_elevation_deg).all(axis=1)
+    else:
+        both_visible = np.ones(t_grid_s.size, dtype=bool)
 
     rows_x0, rows_k, t_used, b_perp_used = [], [], [], []
     max_conv_err = 0.0
@@ -242,6 +258,8 @@ def build_ddor_arc(
         el_a = station_elevation_deg(station_a, r_sc, earth_pos, xfi)
         el_b = station_elevation_deg(station_b, r_sc, earth_pos, xfi)
         if el_a < min_elevation_deg or el_b < min_elevation_deg:
+            continue
+        if not both_visible[i]:
             continue
 
         def g_fn(r, _ra=r_a, _rb=r_b):

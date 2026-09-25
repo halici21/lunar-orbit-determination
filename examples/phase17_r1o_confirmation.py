@@ -24,10 +24,11 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from lunar_od.constants import R_MOON_M  # noqa: E402
+import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
 from phase17_r1o_core import build_ddor_arc, build_landmark_arc, combined_metrics  # noqa: E402
 
-ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/artifacts")
+ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 
 
@@ -51,7 +52,7 @@ def main() -> None:
     for nrad in (2.0, 10.0):
         ddor = build_ddor_arc(w15_shifted.nom48, w15_shifted.t_grid, et0,
                               ("Goldstone DSN", "Canberra DSN"),
-                              sigma_angle_rad=nrad * 1e-9, label="confirm_ddor")
+                              sigma_angle_rad=nrad * 1e-9, label="confirm_ddor", row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
         m_range = combined_metrics([(w15_shifted.h_x0, w15_shifted.h_k, w15_shifted.w)])
         m_comb = combined_metrics([
             (w15_shifted.h_x0, w15_shifted.h_k, w15_shifted.w), (ddor.h_x0, ddor.h_k, ddor.w)])
@@ -93,4 +94,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _M.require_legacy_reproduction_opt_in(
+        __file__, 'R1O confirmation: elevation-only ΔDOR surrogate rows')
     main()

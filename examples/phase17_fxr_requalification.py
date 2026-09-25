@@ -35,6 +35,14 @@ from pathlib import Path
 
 import numpy as np
 
+#: Phase 17-HARDEN: FXR requalified R1O/R1O-D with the elevation-only ΔDOR /
+#: Earth-LOS row rule (lunar occultation untested).  The row builders now
+#: default to the production visibility contract, so reproducing the published
+#: FXR artifacts requires naming the superseded rule explicitly.  The
+#: authoritative corrected numbers are Phase 17-R1O-D2's (see
+#: docs/phase17_authoritative_status.md).
+_LEGACY_RULE = "ELEVATION_ONLY_HISTORICAL_R1OD"
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 ROOT = HERE.parent
@@ -284,9 +292,10 @@ def task_r1o(fx_name: str) -> dict:
     out["landmark_rows_sha"] = _sha(np.hstack([lm.h_x0, lm.h_k[:, None]]))
     for nrad in (1.0, 5.0):
         d = build_ddor_arc(nom, w15.t_grid, et0, DDOR_PAIR, sigma_angle_rad=nrad * 1e-9,
-                           label="ddor", earth_fixture=fx)
+                           label="ddor", earth_fixture=fx,
+                           row_rule=_LEGACY_RULE)   # FXR as published (HARDEN)
         out["ddor_surrogate_%gnrad" % nrad] = combined_metrics([rb, (d.h_x0, d.h_k, d.w)])
-    ex, ek, _ = earth_los_rows(nom, w15.t_grid, earth_fixture=fx)
+    ex, ek, _ = earth_los_rows(nom, w15.t_grid, earth_fixture=fx, row_rule=_LEGACY_RULE)
     # weight expressions copied verbatim from phase17_r1o_r_requalification (bitwise)
     w_e = np.full(ek.size, 1.0 / (1.0 * 1e-6) ** 2)
     out["earth_los_1urad"] = combined_metrics([rb, (ex, ek, w_e)])
@@ -321,7 +330,8 @@ def task_r1od(args) -> dict:
     by = {s.name: s for s in C.STATIONS}
     sa, sb = by[DDOR_PAIR[0]], by[DDOR_PAIR[1]]
     ddor = D.build_ddor_rows(arc, sa, sb, QuasarDirection(ra_rad=2.1, dec_rad=-0.3),
-                             earth_fixture=fx, earth_anchor=anchor_const)
+                             earth_fixture=fx, earth_anchor=anchor_const,
+                             row_rule=_LEGACY_RULE)   # FXR as published (HARDEN)
     rb = (arc.h_x0, arc.h_k, arc.w)
     m_r = combined_metrics([rb])
     noise = []

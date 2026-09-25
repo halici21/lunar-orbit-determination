@@ -52,8 +52,9 @@ PAIRS = {
     "GM": ("Goldstone DSN", "Madrid DSN"),     # DSN standard
     "MC": ("Madrid DSN", "Canberra DSN"),      # physically possible, not a DSN ΔDOR baseline
 }
-ROW_RULE_ELEVATION_ONLY = "ELEVATION_ONLY_HISTORICAL_R1OD"
-ROW_RULE_PRODUCTION_VISIBILITY = "PRODUCTION_VISIBILITY_ELEVATION_AND_OCCULTATION"
+# The shared Phase-17 visibility contract (phase17_r1m_core, Phase 17-HARDEN).
+ROW_RULE_ELEVATION_ONLY = M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY       # superseded; warns
+ROW_RULE_PRODUCTION_VISIBILITY = M.DDOR_ROW_RULE_VISIBLE
 SEMANTICS_ANGULAR = "ANGULAR_SIGMA_PROJECTED_BY_BPERP"   # R1O-D/FXR convention
 SEMANTICS_DELAY = "CONSTANT_DELAY_SIGMA"                 # DSN-210 error-budget units
 SCALE = np.diag([1e6, 1e6, 1e6, 1e3, 1e3, 1e3, 1e-2])
@@ -258,6 +259,7 @@ def build_ddor_rows(scn: Scenario, rb: RangeBlock, pair: str, row_rule: str,
     from lunar_od.measurements import _station_relative_state_j2000_at_receive_epoch
     from lunar_od.radiometrics import _interp_state
 
+    M.require_row_rule(row_rule)
     by = stations_by_name()
     na, nb = PAIRS[pair]
     sa, sb = by[na], by[nb]

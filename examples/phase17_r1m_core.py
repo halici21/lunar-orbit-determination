@@ -60,7 +60,18 @@ from pathlib import Path
 import numpy as np
 
 # --- campaign data (read-only, outside the repo; the R1/R1G arc) ----------
-CAMPAIGN_ROOT = Path(r"C:/Users/erayh/Documents/Python/Grad/od_covariance_campaign")
+# HARDEN-D10: resolved by lunar_od.project_paths (LUNAR_OD_CAMPAIGN_ROOT overrides).
+from lunar_od.project_paths import campaign_root as _campaign_root  # noqa: E402
+
+CAMPAIGN_ROOT = _campaign_root()
+
+# HARDEN-D12: the external campaign module prepends a sibling checkout to
+# sys.path; import it once through the guarded loader so it cannot rebind lunar_od.
+try:
+    from lunar_od.project_paths import import_campaign_module as _import_campaign  # noqa: E402
+    _import_campaign()
+except ModuleNotFoundError:      # campaign scripts not on PYTHONPATH: callers fail later
+    pass
 
 K_TRUTH = 0.01          # SYNTHETIC_CAMPAIGN_TRUTH
 K_WRONG = 0.015
@@ -176,6 +187,12 @@ class EarthEphemeris:
     def vel(self, t) -> np.ndarray:
         return self._column(t, slice(3, 6))
 
+    @property
+    def legacy_reproduction_only(self) -> bool:
+        """Read by `lunar_od.ephemeris.require_ephemeris_contract` (Phase 17-HARDEN):
+        every non-canonical fixture is accepted by production only with a warning."""
+        return self.fixture != EARTH_FIXTURE_CANONICAL
+
     def describe(self) -> dict:
         return dict(fixture=self.fixture, et_origin=self.et_origin, t_min_s=self.t_min_s,
                     t_max_s=self.t_max_s, clamp_after_s=self.clamp_after_s,
@@ -243,6 +260,85 @@ def earth_position_mci(t_abs_s, earth_fixture: str = EARTH_FIXTURE_CANONICAL) ->
 def earth_velocity_mci(t_abs_s, earth_fixture: str = EARTH_FIXTURE_CANONICAL) -> np.ndarray:
     """Earth velocity (n, 3) [m/s]; same contract as `earth_position_mci`."""
     return _earth_state_abs(t_abs_s, earth_fixture, slice(3, 6))
+
+
+# ======================================================================
+# Station visibility contract (Phase 17-HARDEN)
+# ======================================================================
+#: THE Phase-17 radio visibility contract: a station sees the spacecraft iff the
+#: production `lunar_od.visibility` test passes -- elevation >= mask AND the
+#: station->spacecraft line of sight is not blocked by the Moon.  Every range,
+#: ΔDOR and surrogate row generator uses it by default.
+DDOR_ROW_RULE_VISIBLE = "PRODUCTION_VISIBILITY_ELEVATION_AND_OCCULTATION"
+#: SUPERSEDED (Phase 17-D2).  The R1O / R1O-D / FXR rule: elevation only, lunar
+#: occultation NOT tested -- 93 of 263 canonical FXR ΔDOR rows were behind the Moon.
+DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY = "ELEVATION_ONLY_HISTORICAL_R1OD"
+_ROW_RULES = (DDOR_ROW_RULE_VISIBLE, DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
+
+
+class SupersededVisibilityWarning(UserWarning):
+    """The superseded elevation-only visibility rule was explicitly selected."""
+
+
+def require_row_rule(row_rule: str) -> str:
+    """Validate a row rule; the legacy rule is accepted only with a warning."""
+    if row_rule not in _ROW_RULES:
+        raise ValueError("unknown row rule %r" % (row_rule,))
+    if row_rule == DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY:
+        warnings.warn("row rule %s: lunar occultation NOT tested -- historical reproduction "
+                      "only (Phase 17-D2/HARDEN)" % row_rule, SupersededVisibilityWarning,
+                      stacklevel=3)
+    return row_rule
+
+
+def station_visibility_mask(t_local: np.ndarray, positions_mci: np.ndarray, stations,
+                            earth_pos_hist_m: np.ndarray, xf: np.ndarray,
+                            min_elevation_deg: float = 10.0) -> np.ndarray:
+    """(N, M) production visibility (elevation + lunar occultation) of the
+    spacecraft from each station, on the grid ``t_local`` whose Earth positions
+    ``earth_pos_hist_m`` (N, 3, Moon-centred J2000, m) and J2000->ITRF93
+    transforms ``xf`` were evaluated at the SAME epochs by the caller."""
+    from lunar_od.constants import R_MOON_M
+    from lunar_od.visibility import VisibilityConfig, analyze_visibility_gap_with_transforms
+
+    t_local = np.asarray(t_local, float)
+    earth = np.asarray(earth_pos_hist_m, float).reshape(t_local.size, 3)
+    cfg = VisibilityConfig(r_moon_mean_m=R_MOON_M, earth_rotation_rad_s=7.292115e-5,
+                           epoch_utc="UNUSED_BY_THE_TRANSFORM_PATH",
+                           min_elevation_deg=min_elevation_deg)
+
+    def earth_on_grid(t):
+        if np.asarray(t, float).shape != t_local.shape:
+            raise ValueError("visibility Earth history requested on a different grid")
+        return earth
+
+    _, _, vis, _ = analyze_visibility_gap_with_transforms(
+        t_local, np.asarray(positions_mci, float)[:, :3], tuple(stations), earth_on_grid, xf,
+        0.0, cfg)
+    return np.asarray(vis, dtype=bool).reshape(t_local.size, len(stations))
+
+
+# ======================================================================
+# Historical-only scripts (Phase 17-HARDEN quarantine)
+# ======================================================================
+LEGACY_REPRODUCTION_ENV = "PHASE17_LEGACY_REPRODUCTION"
+
+
+class LegacyReproductionRequired(RuntimeError):
+    """A historical-only script was run without the explicit reproduction opt-in."""
+
+
+def require_legacy_reproduction_opt_in(script: str, reason: str) -> None:
+    """Refuse to run a script whose physics is known-superseded unless the
+    caller sets PHASE17_LEGACY_REPRODUCTION=1 (historical reproduction only)."""
+    import os
+
+    if os.environ.get(LEGACY_REPRODUCTION_ENV) != "1":
+        raise LegacyReproductionRequired(
+            "%s is LEGACY_REPRODUCTION_ONLY (%s). Set %s=1 to reproduce the historical "
+            "result; it is not valid current science." % (script, reason, LEGACY_REPRODUCTION_ENV))
+    warnings.warn("%s: running as LEGACY_REPRODUCTION_ONLY (%s)" % (script, reason),
+                  SupersededVisibilityWarning, stacklevel=2)
 
 
 @dataclass(frozen=True)

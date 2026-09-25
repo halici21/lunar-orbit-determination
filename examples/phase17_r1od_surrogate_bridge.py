@@ -34,6 +34,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import (  # noqa: E402
     build_range_arc, campaign_epoch, earth_position_mci,
 )
@@ -130,7 +131,7 @@ def main() -> None:
     # via calling it directly below for the AUTHORITATIVE comparison.)
 
     r1o_original = build_ddor_arc(arc.nom48, arc.t_grid, et0, DDOR_PAIR,
-                                  sigma_angle_rad=sigma_angle_rad, label="r1o_original")
+                                  sigma_angle_rad=sigma_angle_rad, label="r1o_original", row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
     print("  R1O's ORIGINAL surrogate (same station pair, same epoch, same 15-orbit "
           "trajectory as this campaign, called directly, unmodified): n=%d"
           % r1o_original.n_obs)
@@ -180,4 +181,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _M.require_legacy_reproduction_opt_in(
+        __file__, 'R1O-D surrogate bridge: elevation-only rows, Earth frozen at t=0')
     main()

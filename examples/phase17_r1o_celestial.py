@@ -28,6 +28,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import (  # noqa: E402
     build_range_arc, campaign_epoch, earth_position_mci,
 )
@@ -36,7 +37,7 @@ from phase17_r1o_core import (  # noqa: E402
     position_jacobian_fd,
 )
 
-ARTIFACTS = Path(r"C:/Users/erayh/Documents/Python/Grad/python_port_phase17r0/artifacts")
+ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
 W15_ORBITS = 15.0
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 NOISE_SWEEP_URAD = (10.0, 100.0, 1000.0)
@@ -129,4 +130,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _M.require_legacy_reproduction_opt_in(
+        __file__, 'R1O celestial study on the superseded Earth fixture')
     main()

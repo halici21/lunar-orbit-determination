@@ -17,6 +17,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 sys.path.insert(0, str(HERE))
 from lunar_od.constants import R_MOON_M  # noqa: E402
+import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
 from phase17_r1o_core import (  # noqa: E402
     build_ddor_arc, build_landmark_arc, information_matrix, scale_matrix, spectrum,
@@ -316,7 +317,7 @@ def main() -> None:
 
     spec_baseline = spec_of(w15.h_x0, w15.h_k, w15.w)
     ddor2 = build_ddor_arc(w15.nom48, w15.t_grid, et0,
-                          ("Goldstone DSN", "Canberra DSN"), sigma_angle_rad=2e-9)
+                          ("Goldstone DSN", "Canberra DSN"), sigma_angle_rad=2e-9, row_rule=_M.DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY)
     spec_ddor = spec_of(np.vstack([w15.h_x0, ddor2.h_x0]),
                         np.concatenate([w15.h_k, ddor2.h_k]),
                         np.concatenate([w15.w, ddor2.w]))
@@ -342,4 +343,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    _M.require_legacy_reproduction_opt_in(
+        __file__, 'R1O comparison: elevation-only ΔDOR surrogate rows (lunar occultation untested)')
     main()
