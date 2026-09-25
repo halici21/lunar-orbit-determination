@@ -911,7 +911,9 @@ def test_r2_historical_identity_declares_the_filtered_checkout_representation():
 def test_r2_current_tree_protection_holds_for_paths_r3_must_not_change():
     """The ten historical paths R3 may not touch are still byte-identical."""
     for relative_path in campaign.R2_CURRENT_TREE_PROTECTED_PATHS:
-        expected = campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+        # Phase 17-HARDEN: the gate's single resolution point (authorized re-freezes
+        # included); the historical table itself is tested separately above.
+        expected = campaign.expected_current_tree_sha256(relative_path)
         actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
         assert actual == expected, relative_path
 
