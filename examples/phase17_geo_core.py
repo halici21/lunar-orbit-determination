@@ -342,7 +342,7 @@ def build_geo_range_arc(x0: np.ndarray, et0: float, duration_s: float, *,
     import od_gravity_covariance_campaign as C  # noqa: N811
     from lunar_od.estimators import _two_way_range_k_srp_column, _two_way_range_weight_diagonal
     from lunar_od.two_way_range import (
-        TwoWayRangeConfig, generate_two_way_range_measurements,
+        TwoWayRangeConfig,
         two_way_range_nominal_and_initial_jacobian,
     )
     from lunar_od.visibility import (
@@ -366,7 +366,8 @@ def build_geo_range_arc(x0: np.ndarray, et0: float, duration_s: float, *,
         t_grid, x_true, stations, earth_pos, xf, 0.0, vis_cfg)
     vis = np.asarray(vis, dtype=bool).reshape(t_grid.size, len(stations))
     tight = TwoWayRangeConfig(tolerance_s=1e-13, equation_tolerance_s=1e-14, max_iter=200)
-    obs, pass_geo = generate_two_way_range_measurements(
+    from lunar_od.measurement_contracts import generate_two_way_range_measurements_checked  # HARDEN
+    obs, pass_geo = generate_two_way_range_measurements_checked(
         t_grid, x_true, stations, vis, earth_pos, earth_vel, et0,
         noise=False, rng=None, config=tight)
     if obs.shape[0] == 0:

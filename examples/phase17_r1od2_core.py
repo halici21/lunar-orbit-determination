@@ -149,7 +149,7 @@ def build_range_block(scn: Scenario, nom48: np.ndarray) -> RangeBlock:
     import spiceypy as spice
 
     from lunar_od.estimators import _two_way_range_k_srp_column, _two_way_range_weight_diagonal
-    from lunar_od.two_way_range import (TwoWayRangeConfig, generate_two_way_range_measurements,
+    from lunar_od.two_way_range import (TwoWayRangeConfig,
                                         two_way_range_nominal_and_initial_jacobian)
     from lunar_od.visibility import (VisibilityConfig, analyze_visibility_gap_with_transforms,
                                      sample_j2000_to_itrf93_transforms)
@@ -167,7 +167,8 @@ def build_range_block(scn: Scenario, nom48: np.ndarray) -> RangeBlock:
         t_grid, x_true, stations, earth.pos, xf, 0.0, vis_cfg)
     vis = np.asarray(vis, dtype=bool).reshape(t_grid.size, len(stations))
     tight = TwoWayRangeConfig(tolerance_s=1e-13, equation_tolerance_s=1e-14, max_iter=200)
-    obs, pass_geo = generate_two_way_range_measurements(
+    from lunar_od.measurement_contracts import generate_two_way_range_measurements_checked  # HARDEN
+    obs, pass_geo = generate_two_way_range_measurements_checked(
         t_grid, x_true, stations, vis, earth.pos, earth.vel, scn.et0,
         noise=False, rng=None, config=tight)
     _, h_x0 = two_way_range_nominal_and_initial_jacobian(obs, pass_geo, nom48[:, :42])

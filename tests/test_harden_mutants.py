@@ -79,7 +79,8 @@ def _small_arc(et0):
 # ======================================================================
 def test_mutant_a_epoch_offset_rejected_by_production_generator(spice, stations):
     from lunar_od.ephemeris import EphemerisEpochMismatchError
-    from lunar_od.two_way_range import generate_two_way_range_measurements
+    from lunar_od.measurement_contracts import (
+        generate_two_way_range_measurements_checked as generate_two_way_range_measurements)
     et0 = spice
     t, x = _small_arc(et0)
     st = (stations["Goldstone DSN"],)
@@ -94,8 +95,11 @@ def test_mutant_a_epoch_offset_rejected_by_production_generator(spice, stations)
 
 def test_mutant_a_would_have_failed_before_the_repair(spice):
     """YES: the offset Earth is physically wrong by far more than the oracle tolerance,
-    and the pre-repair generator had no epoch check (an untagged callable is still
-    accepted, which is why every Phase-17 science builder passes TAGGED providers)."""
+    and the pre-repair path had no epoch check.  (The byte-frozen generator itself still
+    has none; the contract lives in lunar_od.measurement_contracts, which every
+    production / Phase-17 caller must use -- see the structural test below.  An
+    untagged callable is still accepted there, which is why every Phase-17 science
+    builder passes TAGGED providers.)"""
     from lunar_od.ephemeris import require_ephemeris_contract
     et0 = spice
     t = np.array([0.0, 300.0, 600.0])
@@ -256,7 +260,8 @@ def test_mutants_e_f_metadata_mismatch_rejected(spice, field, value, match):
 
 def test_mutant_f_km_provider_rejected_even_untagged(spice, stations):
     from lunar_od.ephemeris import EphemerisContractError
-    from lunar_od.two_way_range import generate_two_way_range_measurements
+    from lunar_od.measurement_contracts import (
+        generate_two_way_range_measurements_checked as generate_two_way_range_measurements)
     et0 = spice
     t, x = _small_arc(et0)
     good = M.EarthEphemeris(M.EARTH_FIXTURE_CANONICAL, et0, 0.0, 600.0)
@@ -323,3 +328,21 @@ def test_archived_orphans_are_not_importable():
     manifest = (ROOT / "archive" / "phase17_orphans" / "MANIFEST.sha256").read_text(encoding="utf-8")
     assert "f48fd6de0254ab55c31c0c02626a1a8e3ce70363d1234108da0d99967d21bbb6" in manifest
     assert "ec36d2327ba7ec56a9f9caa3116815e7e6d60d237bd0286956b83f980e04f13f" in manifest
+
+
+def test_no_direct_calls_to_the_unchecked_range_generator():
+    """Structural guard: the frozen generator is reached only through the contract layer."""
+    import re
+    pat = re.compile(r"\bgenerate_two_way_range_measurements\s*\(")
+    offenders = []
+    for path in sorted(EXAMPLES.glob("phase17_*.py")) + [ROOT / "lunar_od" / "scenarios.py"]:
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if pat.search(line) and not line.lstrip().startswith(("def ", "#")):
+                offenders.append("%s:%d" % (path.name, n))
+    assert offenders == []
+
+
+def test_frozen_range_module_is_untouched_by_harden():
+    import hashlib
+    frozen = "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995"
+    assert hashlib.sha256((ROOT / "lunar_od" / "two_way_range.py").read_bytes()).hexdigest() == frozen

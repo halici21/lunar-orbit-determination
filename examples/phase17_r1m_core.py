@@ -403,7 +403,6 @@ def build_range_arc(
     from lunar_od.srp import SRPOptions
     from lunar_od.two_way_range import (
         TwoWayRangeConfig,
-        generate_two_way_range_measurements,
         two_way_range_nominal_and_initial_jacobian,
     )
     from lunar_od.visibility import (
@@ -470,7 +469,8 @@ def build_range_arc(
 
     tight = TwoWayRangeConfig(tolerance_s=1e-13, equation_tolerance_s=1e-14,
                               max_iter=200)
-    obs, pass_geo = generate_two_way_range_measurements(
+    from lunar_od.measurement_contracts import generate_two_way_range_measurements_checked  # HARDEN
+    obs, pass_geo = generate_two_way_range_measurements_checked(
         t_local, x_true, stations, vis_used, earth.pos, earth.vel,
         et0 + t_grid[0], noise=False, rng=None, config=tight)
 
