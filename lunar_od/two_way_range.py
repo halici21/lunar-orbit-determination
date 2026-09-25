@@ -691,8 +691,17 @@ def generate_two_way_range_measurements(
     if vis_mask_raw.shape != (n_steps, len(stations)):
         raise ValueError("vis_mask_raw must have shape (N, num_stations).")
 
+    # Phase 17-HARDEN: an epoch-tagged Earth provider must share et0's origin,
+    # frame (J2000), centre (Moon) and units (m); any provider must give a
+    # physically plausible Moon-Earth distance.  (Phase 17-FXR: an untagged
+    # table 504000 s early passed here silently.)
+    from .ephemeris import require_ephemeris_contract, require_moon_earth_distance
+
+    require_ephemeris_contract(get_earth_pos, et0, "get_earth_pos")
+    require_ephemeris_contract(get_earth_vel, et0, "get_earth_vel")
     r_earth_mci = np.asarray(get_earth_pos(t_pass_s), dtype=float).reshape(n_steps, 3)
     v_earth_mci = np.asarray(get_earth_vel(t_pass_s), dtype=float).reshape(n_steps, 3)
+    require_moon_earth_distance(r_earth_mci, "get_earth_pos(t_pass_s)")
     xforms = np.zeros((n_steps, 6, 6), dtype=float)
     for k, t_s in enumerate(t_pass_s):
         xforms[k, :, :] = np.asarray(

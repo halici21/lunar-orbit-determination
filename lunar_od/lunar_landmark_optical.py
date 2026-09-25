@@ -267,7 +267,12 @@ def landmark_optical_state_and_k_sensitivity(
     negligible or applied as an explicit, non-implicit correction).
     """
     dg_dr = np.asarray(dg_dr, dtype=float).reshape(2, 3)
-    phi = np.asarray(phi, dtype=float).reshape(6, 6)
+    phi = np.asarray(phi, dtype=float)
+    if phi.shape != (6, 6):
+        # Phase 17-HARDEN: a flat 36-vector (an augmented-history row [6:42])
+        # would be silently C-order reshaped into Phi^T.  Callers must unpack
+        # with order="F" themselves.
+        raise ValueError(f"phi must be an already-unpacked (6, 6) STM, got shape {phi.shape}")
     s_k = np.asarray(s_k, dtype=float).reshape(6)
     d_x0 = dg_dr @ phi[:3, :]
     d_k = dg_dr @ s_k[:3]
@@ -368,7 +373,7 @@ def optical_one_way_light_time_s(range_m: float, light_speed_mps: float = 299792
     so, unlike the two-body spacecraft<->ground-station light-time solves
     elsewhere in this repository, there is no moving-target fixed-point
     iteration here -- only the question (tested in
-    ``examples/phase17_r1o_opt_light_time.py``) of whether the SPACECRAFT's
+    ``examples/phase17_r1o_opt_oracles.py``, ``OPTICAL_LIGHT_TIME_SIGNIFICANCE``) of whether the SPACECRAFT's
     own motion during this light time is significant enough to need a
     light-time-corrected spacecraft position rather than the shutter-time
     position.

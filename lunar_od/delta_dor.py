@@ -402,6 +402,15 @@ def delta_dor_spacecraft_sensitivity_full(
     c = float(light_speed_mps)
 
     t_tx = common_event.transmit_time_s
+    # Phase 17-HARDEN: the spacecraft state, Phi and S_K at the transmit event
+    # must come from INSIDE the propagated history (FA-03B policy shared by the
+    # range and Doppler light-time paths).  Outside it the Hermite helpers
+    # extrapolate linearly and silently; a row needing that is not a valid row.
+    if not (t_grid[0] <= t_tx <= t_grid[-1]):
+        raise DeltaDorEventError(
+            f"DDOR transmit event t_tx={t_tx!r} s lies outside the propagated history "
+            f"[{t_grid[0]!r}, {t_grid[-1]!r}] s (insufficient pre-roll)."
+        )
     states = x_aug[:, :6]
     # Phi is stored column-major flattened (order="F"), matching the exact
     # reshape two_way_range_event_sensitivity uses for the same 42-column
