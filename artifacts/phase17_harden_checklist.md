@@ -33,7 +33,7 @@ Class: **R** = REQUIRED_FOR_CORRECTNESS (blocks closure) · **F** = RECOMMENDED_
 | 25 | final diff inspection | R | [x] | see closure report |
 | 26 | authoritative documentation (errata, status doc, stale docstring) | R | [x] | `docs/phase17_authoritative_status.md`; 6 errata blocks; D06 |
 | 27 | closure report | R | [x] | `docs/phase17_harden_closure_report.md` |
-| F1 | add SRP position gradient to the variational equations | F | [ ] | D05; `dynamics.py` is R2-protected; needs its own authorised phase |
+| F1 | add SRP position gradient to the variational equations | F | [x] | done in Phase 17-F1 (`docs/phase17_f1_srp_variational_gradient_qualification.md`) |
 | F2 | bound the extrapolation helpers (`accelerated`, `radiometrics`, `filters`) | F | [ ] | D18, D19 |
 | F3 | reject untagged Earth providers once all callers are tagged | F | [ ] | D14 |
 | F4 | Hermite Earth interpolation in counted Doppler | F | [ ] | D23 (documented design R3-P22) |
