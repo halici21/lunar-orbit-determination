@@ -1,0 +1,590 @@
+{
+ "response": "delta_f_perp, C1 nominal, ALL_FEASIBLE_SESSIONS, per epoch",
+ "candidates": {
+  "ddor_only_f_perp": {
+   "rho_gc": 0.29913043478260865,
+   "rho_gm": 0.47058823529411764,
+   "rho_pooled": 0.38710801393728234,
+   "strength": "WEAK"
+  },
+  "range_f_perp": {
+   "rho_gc": 0.15043478260869564,
+   "rho_gm": 0.16666666666666669,
+   "rho_pooled": 0.1447735191637631,
+   "strength": "NONE"
+  },
+  "projected_baseline_km": {
+   "rho_gc": 0.08695652173913042,
+   "rho_gm": -0.2303921568627451,
+   "rho_pooled": -0.15609756097560978,
+   "strength": "NONE"
+  },
+  "sun_moon_earth_deg": {
+   "rho_gc": -0.3,
+   "rho_gm": -0.6323529411764707,
+   "rho_pooled": -0.47003484320557504,
+   "strength": "WEAK"
+  },
+  "earth_los_vs_srp_direction_deg": {
+   "rho_gc": 0.3,
+   "rho_gm": 0.6323529411764707,
+   "rho_pooled": 0.4630662020905924,
+   "strength": "WEAK"
+  },
+  "n_feasible_sessions": {
+   "rho_gc": 0.10956521739130433,
+   "rho_gm": 0.22303921568627455,
+   "rho_pooled": 0.16916376306620215,
+   "strength": "NONE"
+  },
+  "n_normal_points": {
+   "rho_gc": 0.10956521739130433,
+   "rho_gm": 0.22303921568627455,
+   "rho_pooled": 0.16916376306620215,
+   "strength": "NONE"
+  },
+  "abs_cos_baseline_vs_k": {
+   "rho_gc": -0.4726143421795596,
+   "rho_gm": 0.6483516483516484,
+   "rho_pooled": -0.12483912483912483,
+   "strength": "NONE"
+  }
+ },
+ "best_by_abs_pooled_rho": "sun_moon_earth_deg",
+ "BEST_SUPPORTED_PREDICTOR": "NONE_ADEQUATE",
+ "PREDICTOR_STRENGTH": "WEAK",
+ "data": {
+  "GC": [
+   {
+    "response": 0.03276363298330183,
+    "ddor_only_f_perp": 0.13398599583301768,
+    "range_f_perp": 0.0915024012983624,
+    "projected_baseline_km": 10311.682752486106,
+    "sun_moon_earth_deg": 167.48400861266717,
+    "earth_los_vs_srp_direction_deg": 12.515991387332853,
+    "n_feasible_sessions": 5,
+    "n_normal_points": 15,
+    "abs_cos_baseline_vs_k": 0.8900841043932944
+   },
+   {
+    "response": -0.010492339193643146,
+    "ddor_only_f_perp": 0.0984616112571741,
+    "range_f_perp": 0.13515698782073488,
+    "projected_baseline_km": 10444.066796980538,
+    "sun_moon_earth_deg": 152.90817065909644,
+    "earth_los_vs_srp_direction_deg": 27.09182934090356,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": NaN
+   },
+   {
+    "response": -0.04322978424084074,
+    "ddor_only_f_perp": 0.00895193109855291,
+    "range_f_perp": 0.16681337266193927,
+    "projected_baseline_km": 10280.036482324347,
+    "sun_moon_earth_deg": 137.9409696732131,
+    "earth_los_vs_srp_direction_deg": 42.05903032678693,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.9378203932080277
+   },
+   {
+    "response": -0.021067029785262897,
+    "ddor_only_f_perp": 0.01154411070118721,
+    "range_f_perp": 0.21339978976249427,
+    "projected_baseline_km": 10322.098300954804,
+    "sun_moon_earth_deg": 122.66144269765391,
+    "earth_los_vs_srp_direction_deg": 57.33855730234609,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.9834399284662134
+   },
+   {
+    "response": 0.0012156471240207245,
+    "ddor_only_f_perp": 0.019253001157508835,
+    "range_f_perp": 0.27122018088641064,
+    "projected_baseline_km": 10401.60038959843,
+    "sun_moon_earth_deg": 107.0878533982179,
+    "earth_los_vs_srp_direction_deg": 72.9121466017821,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.9066711962011642
+   },
+   {
+    "response": 0.048595284969025154,
+    "ddor_only_f_perp": 0.02269658254923913,
+    "range_f_perp": 0.25036446213814423,
+    "projected_baseline_km": 10480.463092345195,
+    "sun_moon_earth_deg": 91.22758042348109,
+    "earth_los_vs_srp_direction_deg": 88.77241957651891,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.8280490837079487
+   },
+   {
+    "response": 0.023738893299962704,
+    "ddor_only_f_perp": 0.13969752723986417,
+    "range_f_perp": 0.24761171019337458,
+    "projected_baseline_km": 10372.940687635031,
+    "sun_moon_earth_deg": 75.09561837664033,
+    "earth_los_vs_srp_direction_deg": 104.90438162335968,
+    "n_feasible_sessions": 5,
+    "n_normal_points": 15,
+    "abs_cos_baseline_vs_k": 0.7420702228294133
+   },
+   {
+    "response": 0.00929505024234456,
+    "ddor_only_f_perp": 0.00835375857120728,
+    "range_f_perp": 0.21718034626241536,
+    "projected_baseline_km": 10291.788780419462,
+    "sun_moon_earth_deg": 58.735519984880746,
+    "earth_los_vs_srp_direction_deg": 121.26448001511928,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.6975737191934926
+   },
+   {
+    "response": 0.027489391466532204,
+    "ddor_only_f_perp": 0.011080018516342752,
+    "range_f_perp": 0.19934143896366047,
+    "projected_baseline_km": 10401.243088170198,
+    "sun_moon_earth_deg": 42.24076688061216,
+    "earth_los_vs_srp_direction_deg": 137.75923311938786,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.6781913417334674
+   },
+   {
+    "response": 0.015648022874239054,
+    "ddor_only_f_perp": 0.019216204444791406,
+    "range_f_perp": 0.1578896577323678,
+    "projected_baseline_km": 10268.497414086103,
+    "sun_moon_earth_deg": 25.778536058195407,
+    "earth_los_vs_srp_direction_deg": 154.22146394180461,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.6788150245535788
+   },
+   {
+    "response": 0.0027528380852083617,
+    "ddor_only_f_perp": 0.024984599231004705,
+    "range_f_perp": 0.10152564323780862,
+    "projected_baseline_km": 10392.214160771808,
+    "sun_moon_earth_deg": 9.770252349232104,
+    "earth_los_vs_srp_direction_deg": 170.2297476507679,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.6642712843004215
+   },
+   {
+    "response": 0.010278673115130754,
+    "ddor_only_f_perp": 0.13700029552475199,
+    "range_f_perp": 0.09802116051973823,
+    "projected_baseline_km": 10314.443226970261,
+    "sun_moon_earth_deg": 7.713338845384372,
+    "earth_los_vs_srp_direction_deg": 172.28666115461564,
+    "n_feasible_sessions": 5,
+    "n_normal_points": 15,
+    "abs_cos_baseline_vs_k": 0.5952181117906967
+   },
+   {
+    "response": 0.01041631429666054,
+    "ddor_only_f_perp": 0.010126324434298608,
+    "range_f_perp": 0.13466266847351074,
+    "projected_baseline_km": 10418.675560347694,
+    "sun_moon_earth_deg": 22.771020831535974,
+    "earth_los_vs_srp_direction_deg": 157.22897916846404,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.38834296230086435
+   },
+   {
+    "response": 0.0131684459033522,
+    "ddor_only_f_perp": 0.019909604897538853,
+    "range_f_perp": 0.18542482280477085,
+    "projected_baseline_km": 10297.990213579766,
+    "sun_moon_earth_deg": 37.717688079723395,
+    "earth_los_vs_srp_direction_deg": 142.2823119202766,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.20505892444104387
+   },
+   {
+    "response": 0.02971527301213353,
+    "ddor_only_f_perp": 0.009893622748792017,
+    "range_f_perp": 0.226883197439423,
+    "projected_baseline_km": 10399.49164651777,
+    "sun_moon_earth_deg": 52.171939127272886,
+    "earth_los_vs_srp_direction_deg": 127.82806087272714,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.203880471707292
+   },
+   {
+    "response": 0.023240918302155716,
+    "ddor_only_f_perp": 0.04004387275475285,
+    "range_f_perp": 0.24503545965914772,
+    "projected_baseline_km": 10509.91034989701,
+    "sun_moon_earth_deg": 66.15719924778946,
+    "earth_los_vs_srp_direction_deg": 113.84280075221054,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.401438680501824
+   },
+   {
+    "response": 0.01841130133714597,
+    "ddor_only_f_perp": 0.13760350723668985,
+    "range_f_perp": 0.2750049412990784,
+    "projected_baseline_km": 10382.203585084884,
+    "sun_moon_earth_deg": 79.7764399964735,
+    "earth_los_vs_srp_direction_deg": 100.22356000352652,
+    "n_feasible_sessions": 4,
+    "n_normal_points": 12,
+    "abs_cos_baseline_vs_k": 0.575979033657548
+   },
+   {
+    "response": 0.00420453463247164,
+    "ddor_only_f_perp": 0.009840616058967765,
+    "range_f_perp": 0.23107087334445173,
+    "projected_baseline_km": 10490.715733288409,
+    "sun_moon_earth_deg": 93.16952683104755,
+    "earth_los_vs_srp_direction_deg": 86.83047316895245,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.6987757864650189
+   },
+   {
+    "response": -0.011313492311990414,
+    "ddor_only_f_perp": 0.013424593881751911,
+    "range_f_perp": 0.23691497617589544,
+    "projected_baseline_km": 10406.311241922482,
+    "sun_moon_earth_deg": 106.49053144940426,
+    "earth_los_vs_srp_direction_deg": 73.50946855059574,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.7299343409584592
+   },
+   {
+    "response": -0.013362994537530398,
+    "ddor_only_f_perp": 0.01747778695920234,
+    "range_f_perp": 0.23028310012949066,
+    "projected_baseline_km": 10316.17603623736,
+    "sun_moon_earth_deg": 119.89029556674636,
+    "earth_los_vs_srp_direction_deg": 60.10970443325363,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.7947117235542276
+   },
+   {
+    "response": 0.01441382300752872,
+    "ddor_only_f_perp": 0.03297422336556132,
+    "range_f_perp": 0.20364710814664477,
+    "projected_baseline_km": 10436.457348920127,
+    "sun_moon_earth_deg": 133.49980782502405,
+    "earth_los_vs_srp_direction_deg": 46.500192174975965,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.811873682737268
+   },
+   {
+    "response": -0.008454715886711706,
+    "ddor_only_f_perp": 0.15556700535286147,
+    "range_f_perp": 0.1633263063814769,
+    "projected_baseline_km": 10358.72371362735,
+    "sun_moon_earth_deg": 147.40722600883007,
+    "earth_los_vs_srp_direction_deg": 32.59277399116993,
+    "n_feasible_sessions": 4,
+    "n_normal_points": 12,
+    "abs_cos_baseline_vs_k": 0.848679433644565
+   },
+   {
+    "response": 0.025252953178152224,
+    "ddor_only_f_perp": 0.12678581307936226,
+    "range_f_perp": 0.10538157307599368,
+    "projected_baseline_km": 10357.014016173935,
+    "sun_moon_earth_deg": 161.58634579142318,
+    "earth_los_vs_srp_direction_deg": 18.413654208576816,
+    "n_feasible_sessions": 4,
+    "n_normal_points": 12,
+    "abs_cos_baseline_vs_k": NaN
+   },
+   {
+    "response": -0.021943723307608597,
+    "ddor_only_f_perp": 0.011759228247839829,
+    "range_f_perp": 0.06416991328828638,
+    "projected_baseline_km": 10420.390030956269,
+    "sun_moon_earth_deg": 174.7111207952349,
+    "earth_los_vs_srp_direction_deg": 5.288879204765116,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.9380367988839807
+   }
+  ],
+  "GM": [
+   {
+    "response": -0.007896818388995697,
+    "ddor_only_f_perp": 0.012857302846211628,
+    "range_f_perp": 0.0915024012983624,
+    "projected_baseline_km": 8136.6405846399175,
+    "sun_moon_earth_deg": 167.48400861266717,
+    "earth_los_vs_srp_direction_deg": 12.515991387332853,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.6571233580644301
+   },
+   {
+    "response": -0.0060642320797021365,
+    "ddor_only_f_perp": 0.014206023145663334,
+    "range_f_perp": 0.13515698782073488,
+    "projected_baseline_km": 8122.064156437994,
+    "sun_moon_earth_deg": 152.90817065909644,
+    "earth_los_vs_srp_direction_deg": 27.09182934090356,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.7220013321460655
+   },
+   {
+    "response": 0.01499638569198794,
+    "ddor_only_f_perp": 0.017483793911070078,
+    "range_f_perp": 0.16681337266193927,
+    "projected_baseline_km": 7865.041662142975,
+    "sun_moon_earth_deg": 137.9409696732131,
+    "earth_los_vs_srp_direction_deg": 42.05903032678693,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.7457768638145923
+   },
+   {
+    "response": 0.03466183637624776,
+    "ddor_only_f_perp": 0.029055437513966203,
+    "range_f_perp": 0.21339978976249427,
+    "projected_baseline_km": 7816.494554335034,
+    "sun_moon_earth_deg": 122.66144269765391,
+    "earth_los_vs_srp_direction_deg": 57.33855730234609,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.7931943667324625
+   },
+   {
+    "response": -0.007942490574673888,
+    "ddor_only_f_perp": 0.10797694629606629,
+    "range_f_perp": 0.27122018088641064,
+    "projected_baseline_km": 7930.870175168476,
+    "sun_moon_earth_deg": 107.0878533982179,
+    "earth_los_vs_srp_direction_deg": 72.9121466017821,
+    "n_feasible_sessions": 5,
+    "n_normal_points": 15,
+    "abs_cos_baseline_vs_k": NaN
+   },
+   {
+    "response": 0.0074559255361593135,
+    "ddor_only_f_perp": 0.0901799931955697,
+    "range_f_perp": 0.25036446213814423,
+    "projected_baseline_km": 7696.304389694423,
+    "sun_moon_earth_deg": 91.22758042348109,
+    "earth_los_vs_srp_direction_deg": 88.77241957651891,
+    "n_feasible_sessions": 4,
+    "n_normal_points": 12,
+    "abs_cos_baseline_vs_k": NaN
+   },
+   {
+    "response": 0.05026912470096412,
+    "ddor_only_f_perp": 0.013849841002311312,
+    "range_f_perp": 0.24761171019337458,
+    "projected_baseline_km": 7862.2707566310055,
+    "sun_moon_earth_deg": 75.09561837664033,
+    "earth_los_vs_srp_direction_deg": 104.90438162335968,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.7981989572266962
+   },
+   {
+    "response": 0.047794013504375094,
+    "ddor_only_f_perp": 0.03162801514793476,
+    "range_f_perp": 0.21718034626241536,
+    "projected_baseline_km": 7829.551314146812,
+    "sun_moon_earth_deg": 58.735519984880746,
+    "earth_los_vs_srp_direction_deg": 121.26448001511928,
+    "n_feasible_sessions": 3,
+    "n_normal_points": 9,
+    "abs_cos_baseline_vs_k": 0.7538213518771499
+   },
+   {
+    "response": 0.04446617266696376,
+    "ddor_only_f_perp": 0.03746933106746656,
+    "range_f_perp": 0.19934143896366047,
+    "projected_baseline_km": 8140.295051151573,
+    "sun_moon_earth_deg": 42.24076688061216,
+    "earth_los_vs_srp_direction_deg": 137.75923311938786,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.7560154470201585
+   },
+   {
+    "response": 0.07844569454337844,
+    "ddor_only_f_perp": 0.32351852235813416,
+    "range_f_perp": 0.1578896577323678,
+    "projected_baseline_km": 7952.785522611491,
+    "sun_moon_earth_deg": 25.778536058195407,
+    "earth_los_vs_srp_direction_deg": 154.22146394180461,
+    "n_feasible_sessions": 4,
+    "n_normal_points": 12,
+    "abs_cos_baseline_vs_k": 0.7520735600900434
+   },
+   {
+    "response": 0.08546172235901102,
+    "ddor_only_f_perp": 0.3781863628546935,
+    "range_f_perp": 0.10152564323780862,
+    "projected_baseline_km": 8276.396733524698,
+    "sun_moon_earth_deg": 9.770252349232104,
+    "earth_los_vs_srp_direction_deg": 170.2297476507679,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": NaN
+   },
+   {
+    "response": 0.002205646322379018,
+    "ddor_only_f_perp": 0.0008867873081002071,
+    "range_f_perp": 0.09802116051973823,
+    "projected_baseline_km": 8329.73710591946,
+    "sun_moon_earth_deg": 7.713338845384372,
+    "earth_los_vs_srp_direction_deg": 172.28666115461564,
+    "n_feasible_sessions": 1,
+    "n_normal_points": 3,
+    "abs_cos_baseline_vs_k": 0.5138370347147557
+   },
+   {
+    "response": 0.0110839824357091,
+    "ddor_only_f_perp": 6.379838433912613e-06,
+    "range_f_perp": 0.13466266847351074,
+    "projected_baseline_km": 8381.277424792359,
+    "sun_moon_earth_deg": 22.771020831535974,
+    "earth_los_vs_srp_direction_deg": 157.22897916846404,
+    "n_feasible_sessions": 1,
+    "n_normal_points": 3,
+    "abs_cos_baseline_vs_k": 0.5801704261502381
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": 4.122618738781156e-09,
+    "range_f_perp": 0.18542482280477085,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 37.717688079723395,
+    "earth_los_vs_srp_direction_deg": 142.2823119202766,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": 0.5745491201519302
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": null,
+    "range_f_perp": 0.226883197439423,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 52.171939127272886,
+    "earth_los_vs_srp_direction_deg": 127.82806087272714,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": null
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": null,
+    "range_f_perp": 0.24503545965914772,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 66.15719924778946,
+    "earth_los_vs_srp_direction_deg": 113.84280075221054,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": null
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": null,
+    "range_f_perp": 0.2750049412990784,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 79.7764399964735,
+    "earth_los_vs_srp_direction_deg": 100.22356000352652,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": null
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": null,
+    "range_f_perp": 0.23107087334445173,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 93.16952683104755,
+    "earth_los_vs_srp_direction_deg": 86.83047316895245,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": null
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": null,
+    "range_f_perp": 0.23691497617589544,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 106.49053144940426,
+    "earth_los_vs_srp_direction_deg": 73.50946855059574,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": null
+   },
+   {
+    "response": null,
+    "ddor_only_f_perp": 9.470586034605909e-08,
+    "range_f_perp": 0.23028310012949066,
+    "projected_baseline_km": null,
+    "sun_moon_earth_deg": 119.89029556674636,
+    "earth_los_vs_srp_direction_deg": 60.10970443325363,
+    "n_feasible_sessions": 0,
+    "n_normal_points": 0,
+    "abs_cos_baseline_vs_k": 0.988628415580907
+   },
+   {
+    "response": 0.0015646340747050291,
+    "ddor_only_f_perp": 0.011687406731074969,
+    "range_f_perp": 0.20364710814664477,
+    "projected_baseline_km": 8372.844667438882,
+    "sun_moon_earth_deg": 133.49980782502405,
+    "earth_los_vs_srp_direction_deg": 46.500192174975965,
+    "n_feasible_sessions": 1,
+    "n_normal_points": 3,
+    "abs_cos_baseline_vs_k": 0.6499134820965158
+   },
+   {
+    "response": -0.009961135350819272,
+    "ddor_only_f_perp": 0.002758985573946051,
+    "range_f_perp": 0.1633263063814769,
+    "projected_baseline_km": 8221.608910710454,
+    "sun_moon_earth_deg": 147.40722600883007,
+    "earth_los_vs_srp_direction_deg": 32.59277399116993,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.7130628520920961
+   },
+   {
+    "response": 0.006244815293498046,
+    "ddor_only_f_perp": 0.011629986434681105,
+    "range_f_perp": 0.10538157307599368,
+    "projected_baseline_km": 8373.41175678939,
+    "sun_moon_earth_deg": 161.58634579142318,
+    "earth_los_vs_srp_direction_deg": 18.413654208576816,
+    "n_feasible_sessions": 1,
+    "n_normal_points": 3,
+    "abs_cos_baseline_vs_k": 0.7100624522222521
+   },
+   {
+    "response": -0.005001888817745041,
+    "ddor_only_f_perp": 0.01732938403581969,
+    "range_f_perp": 0.06416991328828638,
+    "projected_baseline_km": 8125.038927836229,
+    "sun_moon_earth_deg": 174.7111207952349,
+    "earth_los_vs_srp_direction_deg": 5.288879204765116,
+    "n_feasible_sessions": 2,
+    "n_normal_points": 6,
+    "abs_cos_baseline_vs_k": 0.6678758343355001
+   }
+  ]
+ }
+}

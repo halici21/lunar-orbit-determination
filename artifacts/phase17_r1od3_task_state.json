@@ -1,14 +1,43 @@
 {
  "phase": "17-R1O-D3 predeclared DeltaDOR tracking-design characterization",
- "entering_state": {"branch": "feature/phase17-r-k-srp-estimation", "head": "d071d4c09d511de9eaa6e36b6ee32ba9b4056ba5",
-   "tree": "b7d573ba9dc5ef6ca15eb1784b099a4049f2670f", "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
-   "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b", "verified": true,
-   "entry_suite": "1406 collected / 1377 passed / 0 failed / 0 errors / 29 skipped (verified)",
-   "v2_instructions": "ABSENT (not blocking)"},
+ "entering_state": {
+  "branch": "feature/phase17-r-k-srp-estimation",
+  "head": "d071d4c09d511de9eaa6e36b6ee32ba9b4056ba5",
+  "tree": "b7d573ba9dc5ef6ca15eb1784b099a4049f2670f",
+  "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "verified": true,
+  "entry_suite": "1406 collected / 1377 passed / 0 failed / 0 errors / 29 skipped (verified)",
+  "v2_instructions": "ABSENT (not blocking)"
+ },
  "grid_sha256": "a651c4ded63d0fac7a375ee7b6c2bc20c84eabefbb6958e9846ab323c8720003",
- "checklist": {"verify_state": "DONE", "literature_rev_f": "DONE", "predeclared_grid": "DONE",
-   "core_infrastructure": "TODO", "infrastructure_tests": "TODO", "stage_A": "TODO", "stage_B": "TODO",
-   "stage_C": "TODO", "real_source_overlay": "TODO", "predictors": "TODO", "independent_rebuild": "TODO",
-   "full_suite": "TODO", "report": "TODO", "final_diff": "TODO"},
- "notes": ["D2 systematic RSS 0.033 ns is an arithmetic slip; correct 0.0317 ns (Rev E = Rev F tables)"]
+ "checklist": {
+  "verify_state": "DONE",
+  "literature_rev_f": "DONE",
+  "predeclared_grid": "DONE",
+  "core_infrastructure": "TODO",
+  "infrastructure_tests": "TODO",
+  "stage_A": "TODO",
+  "stage_B": "TODO",
+  "stage_C": "TODO",
+  "real_source_overlay": "TODO",
+  "predictors": "TODO",
+  "independent_rebuild": "TODO",
+  "full_suite": "TODO",
+  "report": "TODO",
+  "final_diff": "TODO"
+ },
+ "notes": [
+  "D2 systematic RSS 0.033 ns is an arithmetic slip; correct 0.0317 ns (Rev E = Rev F tables)"
+ ],
+ "implementation_bug_fixes": [
+  {
+   "id": "D3-IBF-01",
+   "kind": "IMPLEMENTATION_BUG_FIX (grid unchanged)",
+   "defect": "run_geometry diagnostics: D2.pair_geometry() 'n_sessions' (raw dual-visibility windows incl. < 20 min) overwrote the qualifying-session count",
+   "effect": "predeclared predictor 'number of feasible sessions' and epoch_geometry.csv gc/gm_sessions columns used raw window counts; no schedule, metric, class, window or decision depended on it (schedules use the session lists)",
+   "detected": "report cross-check: GM listed 1 session at k=13/19 while GM_ONLY was infeasible there",
+   "fix": "do not let pair_geometry overwrite n_sessions / keys already set; campaign re-run end to end"
+  }
+ ]
 }
