@@ -1,0 +1,49 @@
+{
+  "phase": "17-F1 SRP position-gradient variational closure",
+  "entering_state": {
+    "branch": "feature/phase17-r-k-srp-estimation",
+    "head": "1025f4abf8ecc726a09c20ab09d103875751d01f",
+    "tree": "e63be848a0579290979eb678eb954148ddf69298",
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "verified": true,
+    "v2_instructions_file": "ABSENT (not blocking per brief)"
+  },
+  "protection": {
+    "lunar_od/dynamics.py": {
+      "sha256_worktree": "b369899a45a8cc645e65c6065771a9dff3fcd61d65b58a0f62bde90215f15fdb",
+      "git_blob": "c973822f6426dc4208319ca53115acef876bb912",
+      "gate": "R2 current-tree gate (examples/r2_measurement_fidelity_validation.py expected_current_tree_sha256; tests/test_r2_measurement_fidelity.py)",
+      "current_expected": "PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256 (authorised by Phase 17-HARDEN s57, content from 0e785f6)"
+    },
+    "lunar_od/accelerated.py": {"sha256_worktree": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b", "gate": "R2 closure re-freeze", "f1_change": "NONE (contains no SRP code)"},
+    "lunar_od/srp.py": {"sha256_worktree": "d9ba4c225e5e48e18a0b7b4274643f338b7c2ed05a8fb50dd15b875c855bf43f", "gate": "none (value parity with Phase 13 oracle only)"}
+  },
+  "srp_variational_paths": [
+    "propagate_augmented_state (42-state; numba _ode42_rhs_fast or ode_fun_v3) + _with_srp_acceleration wrapper",
+    "_propagate_augmented_with_harmonics (42-state, f3body_moon srp=)",
+    "propagate_state_with_k_sensitivity (48-state; Phase-17 science path)"
+  ],
+  "checklist": {
+    "repository_protection_state_verification": "DONE",
+    "authoritative_source_inspection": "DONE",
+    "srp_dependency_derivation": "DONE",
+    "missing_gradient_decomposition": "DONE",
+    "implementation_design": "DONE",
+    "local_gradient_oracle": "TODO",
+    "shadow_regime_qualification": "TODO",
+    "stm_oracle": "TODO",
+    "k_sensitivity_oracle": "TODO",
+    "accelerated_reference_parity": "TODO",
+    "measurement_derivative_requalification": "TODO",
+    "science_materiality": "TODO",
+    "protected_provenance_update": "TODO",
+    "targeted_tests": "TODO",
+    "relevant_slow_tests": "TODO",
+    "full_suite": "TODO",
+    "documentation_status": "TODO",
+    "final_diff_review": "TODO",
+    "closure_report": "TODO"
+  },
+  "findings": []
+}
