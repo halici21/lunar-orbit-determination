@@ -205,13 +205,15 @@ def test_srp_is_linear_in_k_and_vanishes_at_k_zero():
     assert np.all(srp_acceleration(pos[i], sun, 0.0, nu[i]) == 0.0)
 
 
-def test_omitted_srp_position_gradient_is_the_range_jacobian_root_cause():
-    """The variational A matrix omits d(a_SRP)/dr (documented Phase 13/16
-    approximation).  That gradient is negligible in full light and large only in
-    penumbra, which is where the range-Jacobian STM error comes from."""
+def test_srp_position_gradient_root_cause_and_its_f1_closure():
+    """HARDEN-D05: the pre-F1 variational A matrix omitted d(a_SRP)/dr; that
+    gradient is negligible in full light and large only in penumbra, which is
+    where the range-Jacobian STM error came from.  Phase 17-F1 closed it: A now
+    takes ``srp`` and adds exactly that gradient (tests/test_f1_srp_variational_gradient.py
+    holds the STM / S_K qualification)."""
     from lunar_od.dynamics import dynamics_jacobian_a_matrix
-    params = inspect.signature(dynamics_jacobian_a_matrix).parameters
-    assert not any("srp" in p.lower() or "k_" in p.lower() for p in params)
+    from lunar_od.srp import srp_acceleration_position_gradient
+    assert "srp" in inspect.signature(dynamics_jacobian_a_matrix).parameters
     rho, pos, nu, _, sun, opts = _shadow_scan()
     from lunar_od.srp import srp_acceleration_kernel
 
@@ -229,6 +231,9 @@ def test_omitted_srp_position_gradient_is_the_range_jacobian_root_cause():
     assert 1e-13 < g_pen < 1e-9
     assert g_pen > 1e4 * g_full
     assert g_pen < 1e-3 * g_grav                              # small, but secular
+    # F1: the production analytic gradient is that same quantity
+    g_an = srp_acceleration_position_gradient(pos[pen], sun, opts)
+    assert np.linalg.norm(grad(pos[pen]) - g_an) / np.linalg.norm(g_an) < 1e-4   # 2nd-order FD, 0.5 m
 
 
 def test_range_jacobian_root_cause_evidence_is_consistent():
