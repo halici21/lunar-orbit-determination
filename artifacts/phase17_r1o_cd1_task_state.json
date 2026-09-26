@@ -1,0 +1,51 @@
+{
+ "phase": "17-R1O-CD1 production counted-Doppler K_SRP complementarity characterization",
+ "entering_state": {
+  "branch": "feature/phase17-r-k-srp-estimation",
+  "head": "cfa1ce7293c60024c9ee04dfeca801ef7ba72c5d",
+  "tree": "d9bfc226dce6d6514f5f848f9cfd92894fafdc29",
+  "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "git_verified": true,
+  "suite": "1430 collected / 1401 passed / 0 failed / 0 errors / 29 skipped (verified)"
+ },
+ "skills": [
+  "lunar-od-measurement-physics",
+  "lunar-od-literature-review",
+  "lunar-od-campaign-design",
+  "lunar-od-estimator-engineering"
+ ],
+ "checklist": {
+  "verify_suite": "DONE",
+  "gates": "DONE",
+  "literature": "DONE (202E current; Moyer s10.2.3.1.2/s13.3)",
+  "production_inspection": "DONE (R3 default == R4 four-event at 0 delay; mps_equivalent; midpoint visibility rule)",
+  "derivative_evidence": "DONE (HARDEN/F1 Doppler state<=1.3e-6, K 2.2e-4 -> 8.7e-6)",
+  "noise_semantics": "DONE (thermal PARAMETRIC; structural 1e-4 + bracket; 202E scintillation lower bound)",
+  "predeclaration": "DONE sha bbaa5cee8687926699465de6fe75185fde87b10df840be652ba390ff7af3571a",
+  "campaign_code": "TODO",
+  "tests": "TODO",
+  "campaign": "TODO",
+  "fd_spot": "TODO",
+  "rebuild": "TODO",
+  "fidelity_decomp": "TODO",
+  "time_localization": "TODO",
+  "full_suite": "TODO",
+  "report": "TODO",
+  "final_diff": "TODO"
+ },
+ "implementation_bug_fixes": [],
+ "gates": "HARDEN PASS, F1 PASS (SRP_VARIATIONAL_MODEL_STATUS QUALIFIED), D3 PASS, D4 PASS (from committed reports)",
+ "pre_metric_feasibility": {
+  "simplified_cell_s": 13,
+  "doppler_rows_canon_k0_tc60": 911,
+  "r3_vs_r4_state_rel": 1.86e-14,
+  "r3_vs_r4_k_rel_colmax": 2.66e-15,
+  "range_k_rebuild_rel_colmax": 2.73e-09,
+  "fd_case_rows_2orb": [
+   138,
+   99
+  ],
+  "note": "canonical epoch k0 has SEP 5.5-19.8 deg (near new Moon); arc starts in eclipse (dx/dK = 0 until exit)"
+ }
+}

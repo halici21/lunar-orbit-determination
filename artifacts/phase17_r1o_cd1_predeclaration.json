@@ -1,0 +1,288 @@
+{
+ "arc": {
+  "duration": "15 canonical orbits",
+  "grid_s": 90.0,
+  "k_srp": 0.01,
+  "shadow": "CONICAL_PENUMBRA"
+ },
+ "blocks": {
+  "PRIMARY": [
+   "RANGE_ONLY",
+   "DOPPLER_ONLY",
+   "RANGE_PLUS_DOPPLER"
+  ],
+  "secondary_RANGE_PLUS_DOPPLER_PLUS_DDOR": "NOT evaluated (no DeltaDOR search in CD1)"
+ },
+ "bug_policy": "IMPLEMENTATION_BUG_FIX logged, preregistration preserved, affected results re-run and decision fields compared; a change of the experiment definition => PREDECLARATION_INVALIDATED",
+ "canonical_sha256": "bbaa5cee8687926699465de6fe75185fde87b10df840be652ba390ff7af3571a",
+ "classes": {
+  "FIDELITY_EFFECT": "POP(D0) differs HF vs SIMPLIFIED -> FIDELITY_CHANGES_POPULATION_VERDICT; else RMS over cells of (delta_HF - delta_SIMP) > 0.02 -> FIDELITY_MATERIAL_VERDICT_STABLE; else FIDELITY_NEGLIGIBLE",
+  "NUISANCE_RETENTION": "cells with delta_D0 > 0.02: median delta_D1FREE / delta_D0 >= 0.75 RETAINED; >= 0.25 PARTIALLY_RETAINED; else LOST; no such cell -> NOT_APPLICABLE_NO_IDEAL_GAIN",
+  "decomposition": "per cell: d(range f), d(Doppler-only f), d(combined f), d(delta), HF - SIMPLIFIED, D0"
+ },
+ "count_interval": {
+  "PRIMARY_CADENCE_S": 90.0,
+  "PRIMARY_S": 60.0,
+  "justification": "60 s = production default and HARDEN/F1-qualified value; Moyer M2 'e.g. 60 s or 600 s'; 202E figures use 5/60/1000 s",
+  "rule": "cadence >= Tc so counts never overlap (independent white noise per count); 540 s = 6 grid steps, midpoints on every 6th node",
+  "sensitivity": {
+   "10": 90.0,
+   "540": 540.0
+  }
+ },
+ "decision_tree": {
+  "A": "COUNTED_DOPPLER_ROBUSTLY_ADDS_K_SRP_DIRECTION: POP(D0) and POP(D1 FREE) and ABS",
+  "B": "COUNTED_DOPPLER_ROBUSTLY_IMPROVES_DIRECTION_BUT_K_REMAINS_WEAK: POP(D0) and POP(D1 FREE) and not ABS",
+  "C": "COUNTED_DOPPLER_GAIN_IS_GEOMETRY_DEPENDENT: not POP(D0) and fraction_D0(delta > 0.02) >= 0.10",
+  "D": "COUNTED_DOPPLER_K_INFORMATION_IS_SYSTEMATICALLY_FRAGILE: POP(D0) and not POP(D1 FREE)",
+  "E": "COUNTED_DOPPLER_ADDS_INFORMATION_MAGNITUDE_WITHOUT_BREAKING_K_STATE_DEGENERACY: not POP(D0) and fraction_D0(delta > 0.02) < 0.10",
+  "alternative_parameterization": "justified as the next characterization for C, D or E",
+  "nonlinear_confirmation": "may become justified only for A or B (never started automatically)",
+  "order": [
+   "A",
+   "B",
+   "C",
+   "D",
+   "E"
+  ]
+ },
+ "doppler_schedule": {
+  "PRIMARY": "ALL_VISIBLE: one row per (90 s grid node, DSN3 station visible there) - the production candidate rule - kept only if every grid node from floor(t_mid - Tc/2) to ceil(t_mid + Tc/2) is in the same visibility window; HistoryDomainError candidates dropped (production)",
+  "SECONDARY": "REGULAR_SESSION: per station pass lasting >= 3600 s, the rows within the centred 3600 s",
+  "not_used": "no K-informed selection, no schedule search; DeltaDOR not included in any primary block"
+ },
+ "dynamics": {
+  "CONTROL": "SIMPLIFIED: phase17_r1od2_core.propagate_nom48, same cells, decomposition only; never decides",
+  "PRIMARY": "HIGH_FIDELITY: phase17_r1od2_fidelity.propagate_fidelity (GL1800F 50x50 MOON_PA_DE440, Earth + Sun third body, production SRP + F1 position gradient, harmonic STM opt-in, rtol 1e-12) for EVERY orbit x epoch cell",
+  "fallback": "none needed (feasibility measured: simplified cell ~13 s, HF ~330 s)",
+  "matrix": "FULL 5 orbits x 24 epochs x {HF, SIMPLIFIED}; one propagation per cell reused by all schedules"
+ },
+ "entering_head": "cfa1ce7293c60024c9ee04dfeca801ef7ba72c5d",
+ "epoch_grid": {
+  "canonical_epoch_included": "k = 0 exactly",
+  "et0": "canonical_et0 + k * synodic_month_s / 24 (phase17_r1od3_core.epoch_et)",
+  "k": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   21,
+   22,
+   23
+  ],
+  "source": "phase17_r1od3_predeclared_grid.json (D3), canonical_sha256 a651c4ded63d0fac7a375ee7b6c2bc20c84eabefbb6958e9846ab323c8720003",
+  "spacing_deg": 15.0
+ },
+ "fd_spot_checks": {
+  "analytic": "production Jacobian on the HF propagation at rtol 1e-12",
+  "arc": "2 canonical orbits (FD tractability), same x0 / epoch / HF force model",
+  "cases": [
+   [
+    "CANON",
+    0
+   ],
+   [
+    "O2_FULL_SUN_HIGH_BETA",
+    12
+   ]
+  ],
+  "gates": {
+   "COUNTED_DOPPLER_K_FD_GATE": "K column <= 1e-3 in both cases",
+   "COUNTED_DOPPLER_STATE_FD_GATE": "every state column <= 1e-5 in both cases"
+  },
+  "metric": "per column min over steps of ||fd - an|| / ||an|| over the 6 rows",
+  "oracle": "central differences of the production observable on repropagated HF trajectories at rtol 1e-13, atol 1e-14; steps x {10, 100} m, v {0.01, 0.1} m/s, K {1e-3, 3e-3} m^2/kg",
+  "rows": "6 Doppler rows per case, evenly spaced over the ALL_VISIBLE Tc 60 rows"
+ },
+ "forbidden": [
+  "nonlinear K estimation",
+  "BLS/SRIF/SRUKF K recovery",
+  "Monte Carlo",
+  "K reparameterization",
+  "stochastic K / empirical accelerations",
+  "schedule optimisation or K-informed row selection",
+  "DeltaDOR epoch / baseline / session / phase < 60 deg search",
+  "threshold changes after results",
+  "production physics or measurement changes",
+  "rank(H^T W H) as an observability gate"
+ ],
+ "hypotheses": {
+  "H1": "counted Doppler adds a more robust K-specific direction than DeltaDOR did",
+  "H2": "range + Doppler gain persists across epoch and orbit under HF dynamics",
+  "H3": "the direction survives Doppler nuisance freedom"
+ },
+ "implementation": "phase17_r1od2_core.info_metrics (QR projector f_perp, R1COV QR sigma_K, SVD); rank(H^T W H) is NOT an observability gate",
+ "independent_rebuild": {
+  "doppler_rows": "every HF cell, 12 rows: R4 four-event module (M3 3x3 implicit sensitivity) at zero delay vs production R3 rows; state rel <= 1e-9, K abs / max|h_K| <= 1e-9",
+  "f_perp": "every HF primary cell: lstsq route (phase17_r1o_cd1_core.independent_f_perp) for DOPPLER_ONLY D0, RANGE_PLUS_DOPPLER D0, D1 FREE, D2 FREE and D1 prior 1e-4: |diff| <= 1e-10",
+  "nuisance_ownership": "each nuisance column non-zero only on its own pass's Doppler rows; range rows zero",
+  "range_k_column": "every HF cell, 12 range rows: dx/dK-in-STM-slot (event-epoch interpolation) through two_way_range_nominal_and_initial_jacobian vs production _two_way_range_k_srp_column (H_x0 Phi(t3)^-1 S_K(t3) at the receive-tag node, Phase 17A-R qualified to 4.9e-8); abs / max|h_K| <= 1e-7 (pre-measured before any metric: 2.7e-9, CANON k0 SIMPLIFIED)",
+  "whitening": "Doppler w == 1/sigma^2 exactly; range w == 1/5^2 exactly"
+ },
+ "literature": {
+  "contract": "docs/phase17_r1o_cd1_literature_contract.md",
+  "dsn_module": "810-005 Module 202 Rev. E (2022-07-19), sha256 29a66259...4708",
+  "moyer": "DESCANSO Monograph 2, s10.2.3.1.2 / s13.3"
+ },
+ "metrics": [
+  "observation counts",
+  "range f_perp",
+  "Doppler-only f_perp",
+  "combined f_perp",
+  "Delta f_perp",
+  "theta_K",
+  "I(K|x) (state-projected orthogonal K energy)",
+  "I_kk",
+  "sigma_K",
+  "sigma_K/K",
+  "||b_K||",
+  "scaled design singular values",
+  "condition number",
+  "weakest right-singular vector and its K component",
+  "K-bias correlation",
+  "K-drift correlation",
+  "sigma_K inflation vs D0",
+  "f_perp loss vs D0"
+ ],
+ "noise": {
+  "OPERATIONAL_LOWER_BOUND": "per row: 202E Eq (30) X/X (C_band 2.7e-6) at the midpoint Sun-Earth-spacecraft angle, T = 60 s, RSS 2.12e-6 m/s H-maser floor; thermal PARAMETRIC and excluded -> optimistic lower bound",
+  "PRIMARY": "STRUCTURAL_REFERENCE sigma_D = 1.0e-4 m/s at Tc = 60 s, white, per row (repository DSN sigma_range_rate_mps; inside 202E X/X scintillation span at 60 s)",
+  "bracket_60s_mps": [
+   1e-05,
+   3e-05,
+   0.0001,
+   0.0003,
+   0.001
+  ],
+  "labels": "SYNTHETIC_CAMPAIGN_TRUTH; not DSN flight performance",
+  "range_sigma_m": 5.0,
+  "tc_scalings": {
+   "SCINT_T^-0.175": "sigma(T) = sigma60 (60/T)^0.175 (202E Eq 30)",
+   "WHITE_PHASE_T^-1": "sigma(T) = sigma60 (60/T) (202E Eq 25/26 thermal)"
+  }
+ },
+ "nuisance": {
+  "PRIMARY": "D1_SESSION_CONSTANT_BIAS, FREE (no operational prior is claimed)",
+  "design_unit": "nuisance parameters in units of 1e-4 m/s for the scaled SVD; f_perp invariant",
+  "models": {
+   "D0_IDEAL": "none",
+   "D1_SESSION_CONSTANT_BIAS": "one constant range-rate bias per station pass (frequency / slowly varying media offset over a pass)",
+   "D2_SESSION_BIAS_PLUS_LINEAR_DRIFT": "D1 plus a linear drift per pass, regressor (t - t_mid)/half_span in [-1, 1]"
+  },
+  "priors_mps": [
+   "FREE",
+   1e-05,
+   0.0001,
+   0.001
+  ],
+  "range": "no range nuisance (unchanged D2-D4 baseline)"
+ },
+ "observable": {
+  "earth": "canonical FXR fixture, linear interpolation inside the counted path (R3-P22 / HARDEN-D23)",
+  "function": "lunar_od.radiometrics.two_way_counted_doppler_observable / _initial_state_jacobian (production default R3 exact-station model == R4 four-event at zero delay)",
+  "k_column": "production Jacobian with dx/dK placed in the first STM column (HARDEN/F1 construction)",
+  "production_code_changed": false,
+  "turnaround_ratio": "880/749",
+  "units": "mps_equivalent (rate of change of one-way range, m/s)",
+  "uplink_hz": 7200000000.0
+ },
+ "orbits": {
+  "set": {
+   "CANON": {
+    "source": "campaign epoch + campaign x0 (FXR canonical, GEO G0_consistent)",
+    "x0_sha256": "67eb16f8272484bcd55447e5a27666de035236f20607aa44753643e1a88ddb00"
+   },
+   "O1_LOW_BETA_ECLIPSE_RICH": {
+    "source": "GEO predeclared case G1_b00",
+    "x0_sha256": "39043e68c7a448a41c0176e5f0c0ac4a79d79ae2ef8b8a8399e09fb518c2263c"
+   },
+   "O2_FULL_SUN_HIGH_BETA": {
+    "source": "GEO predeclared case G1_b80",
+    "x0_sha256": "63600c7794c4481b6036c7e6d6f704d255266567448272fbd690fc94362481bd"
+   },
+   "O3_HIGH_ALTITUDE_500KM": {
+    "source": "GEO predeclared case G2_alt500_b20_fixD",
+    "x0_sha256": "d5402f6b4bd6054aa9b3327294c54bafe326c993a966cf47b53c64f6bad9ebfe"
+   },
+   "O5_FAVOURABLE_GEO_MAX_FPERP": {
+    "source": "GEO predeclared case G3_i26.7_bcan",
+    "x0_sha256": "66ff0abd227d1617c60167230e1315b9f8bcf84b64e3e6b201a2f48ca420aaad"
+   }
+  },
+  "source": "artifacts/phase17_r1od2_predeclared_grid.json (D4 set, unchanged)"
+ },
+ "phase": "17-R1O-CD1 production counted-Doppler K_SRP complementarity characterization",
+ "population": {
+  "ABS": "fraction(combined f_perp under D1 FREE >= 0.35) >= 0.50",
+  "POP(X)": "fraction(delta_X > 0) >= 0.75 AND fraction(delta_X > 0.02) >= 0.50 over feasible cells",
+  "cells": "HF, RANGE_PLUS_DOPPLER, ALL_VISIBLE, Tc 60 s, sigma 1e-4 m/s; 5 orbits x 24 epochs = 120; feasible = >= 7 Doppler rows",
+  "headline_nuisance": "D1_SESSION_CONSTANT_BIAS FREE (D0 reported alongside)"
+ },
+ "production_defect_policy": "a real production correctness defect stops the science campaign; isolate and recommend a repair; no silent production repair",
+ "range_baseline": {
+  "anchors": [
+   "CANON SIMPLIFIED range f_perp, all 24 k, vs artifacts/phase17_r1od3_primary_results.csv (1e-12)",
+   "all orbits HF and SIMPLIFIED range f_perp at k = 4..11 vs artifacts/phase17_r1od4_raw_results.json (1e-12)"
+  ],
+  "definition": "phase17_r1od2_core.build_range_block on the SAME propagation (orbit, epoch, dynamics, visibility), production two-way range, DSN3, sigma 5 m (station.sigma_range_m), no range bias"
+ },
+ "representative_cells": {
+  "cells": [
+   [
+    "CANON",
+    0
+   ],
+   [
+    "CANON",
+    6
+   ],
+   [
+    "CANON",
+    12
+   ],
+   [
+    "CANON",
+    18
+   ]
+  ],
+  "dynamics": "HF",
+  "signature": "corr(Doppler h_K, LOS . dv/dK), corr(range h_K, LOS . dr/dK); share of Doppler-row orthogonal energy within +-1 h of eclipse transitions and within +-10 min of pass start/end, vs the row fraction",
+  "time_localization": "cumulative range+Doppler and Doppler-only f_perp and I(K|x) using rows with t <= tau, tau = 10..100% of the arc; LOCALIZED if one 10% slice adds > 50% of the final combined I(K|x), else BROAD",
+  "use": "time localization + physical signature (interpretation only)"
+ },
+ "thresholds": {
+  "absolute": {
+   "MODERATE_K_SEPARATION": "f >= 0.35",
+   "STRONG_K_SEPARATION": "f >= 0.50",
+   "WEAK_K_SEPARATION": "otherwise",
+   "implementation": "phase17_r1od2_core.absolute_class"
+  },
+  "delta": "f_perp(range + Doppler) - f_perp(range), same propagation",
+  "relative": {
+   "DIRECTION_LOSS": "delta < -0.02",
+   "MAGNITUDE_ONLY": "-0.02 <= delta <= 0.02",
+   "MODEST_DIRECTION_GAIN": "0.02 < delta <= 0.05",
+   "STRONG_DIRECTION_GAIN": "delta > 0.05",
+   "implementation": "phase17_r1od2_core.relative_gain_class"
+  }
+ },
+ "truth_level": "SYNTHETIC_CAMPAIGN_TRUTH (K_truth = 0.01 m^2/kg, constant scalar K; no reparameterization)",
+ "written_before_any_cd1_k_metric": true
+}
