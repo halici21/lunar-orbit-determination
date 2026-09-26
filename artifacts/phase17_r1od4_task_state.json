@@ -1,15 +1,51 @@
 {
  "phase": "17-R1O-D4 GM narrow-window confirmatory robustness qualification",
- "entering_state": {"branch": "feature/phase17-r-k-srp-estimation", "head": "89942a618731ab44151a4b9c3396540f1949105a",
-  "tree": "9e55303a5f12d089222a61eb713aa69d02f9fd65", "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
-  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b", "verified": true,
+ "entering_state": {
+  "branch": "feature/phase17-r-k-srp-estimation",
+  "head": "89942a618731ab44151a4b9c3396540f1949105a",
+  "tree": "9e55303a5f12d089222a61eb713aa69d02f9fd65",
+  "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "verified": true,
   "entry_suite": "1417 collected / 1388 passed / 0 failed / 0 errors / 29 skipped (verified)",
-  "gates": "HARDEN PASS, F1 PASS, D3 PASS, D3 PRIMARY_CLASS narrow windows (verified from artifacts)"},
+  "gates": "HARDEN PASS, F1 PASS, D3 PASS, D3 PRIMARY_CLASS narrow windows (verified from artifacts)"
+ },
  "literature": "D3_CONTRACT_RECONFIRMED_NO_REVISION (210F CL 26-2234, 107F sha256 3a8da003 identical)",
  "feasibility": "one HF propagation 257 s -> full HF matrix chosen before predeclaration",
- "checklist": {"verify": "DONE", "literature": "DONE", "predeclaration": "DONE", "campaign_code": "TODO",
-  "tests": "TODO", "d3_anchors": "TODO", "canonical_simplified": "TODO", "canonical_hf": "TODO",
-  "orbit_robustness": "TODO", "calibration_robustness": "TODO", "fidelity": "TODO", "mechanism": "TODO",
-  "overlays": "TODO", "independent_rebuild": "TODO", "full_suite": "TODO", "report": "TODO", "final_diff": "TODO"},
- "implementation_bug_fixes": []
+ "checklist": {
+  "verify": "DONE",
+  "literature": "DONE",
+  "predeclaration": "DONE",
+  "campaign_code": "DONE",
+  "tests": "DONE (13 focused pass)",
+  "d3_anchors": "DONE 50/50 exact",
+  "canonical_simplified": "DONE window 85-115",
+  "canonical_hf": "DONE no window (longest 5 pts 60-80, lower-edge censored)",
+  "orbit_robustness": "DONE 0/5",
+  "calibration_robustness": "DONE NO_WINDOW_ANY_CALIBRATION",
+  "fidelity": "DONE FIDELITY_CHANGES_EXISTENCE",
+  "mechanism": "DONE NO_SYSTEMATIC_DIFFERENCE",
+  "overlays": "DONE",
+  "independent_rebuild": "DONE 2200 cells max 1.35e-14",
+  "full_suite": "DONE 1430/1401/0/0/29",
+  "report": "DONE (42 sections)",
+  "final_diff": "CLEAN (only D4 files)"
+ },
+ "implementation_bug_fixes": [],
+ "predeclaration_commit": "91e899d (sha256 3a48bc21...9084)",
+ "campaign": "COMPLETE: 220 geometries, 2344 s, full predeclared matrix (no fallback)",
+ "decision": {
+  "PRIMARY_CLASS": "GM_WINDOW_IS_DYNAMICS_FIDELITY_FRAGILE",
+  "order_applied": "A,B,C (stopped at C)",
+  "NONLINEAR_ESTIMATOR_CONFIRMATION_JUSTIFIED": "NO"
+ },
+ "added_during_run_before_results": [
+  "r2_status fate labels (names predeclared; operational definition coded, unit-tested)",
+  "--analyse-only re-entry; FIRST vs ALL decomposition figure"
+ ],
+ "added_after_results_descriptive_only": [
+  "HF-vs-SIMPLIFIED range/combined f_perp decomposition (R3_fidelity.descriptive_decomposition...; not a decision input)"
+ ],
+ "status": "CLOSED - PHASE17_R1O_D4_GATE = PASS; hard stop after D4",
+ "temporary_files_removed": true
 }
