@@ -138,7 +138,10 @@ def main() -> None:
                    weakest_rule_selection=dict(case=weakest[0], pair=weakest[1], delta=weakest[2]),
                    cases=out, PRODUCTION_FIDELITY_DYNAMICS_EFFECT=effect)
     print("PRODUCTION_FIDELITY_DYNAMICS_EFFECT =", effect)
-    (ARTIFACTS / "phase17_r1od2_fidelity.json").write_text(json.dumps(summary, indent=1, default=float))
+    # Phase 17-F1: ``--out NAME`` re-runs the SAME predeclared cases after the SRP
+    # variational correction without overwriting the D2 evidence.
+    name = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else "phase17_r1od2_fidelity.json"
+    (ARTIFACTS / name).write_text(json.dumps(summary, indent=1, default=float))
 
 
 if __name__ == "__main__":

@@ -13,6 +13,15 @@ estimated state).  K columns: re-propagation with K +/- dK.
 
 Outputs: artifacts/phase17_harden_{range,doppler,ddor,optical}_event_ledger.json,
 artifacts/phase17_harden_derivatives.json, artifacts/phase17_harden_cross_measurement.json
+
+``--f1`` (Phase 17-F1 requalification): identical checks plus a two-way range
+block, written ONLY to artifacts/phase17_f1_measurement_derivatives.json under a
+run tag; the HARDEN artifacts (the pre-F1 evidence) are left untouched.
+  --rtol X            analytic (48-state) AND oracle (6-state) tolerance
+                      (default: science analytic 1e-12, oracle 1e-13)
+  --old-variational   ANALYSIS-ONLY negative control: the SRP position gradient
+                      is zeroed in-process, reproducing the pre-F1 variational
+                      equations in every path (no production switch exists)
 """
 from __future__ import annotations
 
@@ -27,6 +36,19 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 ARTIFACTS = HERE.parent / "artifacts"
 RTOL_ORACLE = 1e-13
+F1_MODE = "--f1" in sys.argv
+RTOL_ANALYTIC = None                    # None = the science default of propagate_nom48
+if "--rtol" in sys.argv:
+    RTOL_ORACLE = RTOL_ANALYTIC = float(sys.argv[sys.argv.index("--rtol") + 1])
+OLD_VARIATIONAL = "--old-variational" in sys.argv
+RUN_TAG = "%s_%s" % ("OLD" if OLD_VARIATIONAL else "NEW",
+                     "science_config" if RTOL_ANALYTIC is None else "rtol%g" % RTOL_ANALYTIC)
+
+
+def _write(name: str, text: str) -> None:
+    """HARDEN evidence files are never rewritten by an F1 requalification run."""
+    if not F1_MODE:
+        (ARTIFACTS / name).write_text(text)
 
 
 def _init() -> None:
@@ -35,6 +57,14 @@ def _init() -> None:
     warnings.simplefilter("ignore")
     import phase17_r1od2_core as D2
     D2.install_legacy_earth_guard()
+    if OLD_VARIATIONAL:
+        import lunar_od.srp as srp_mod
+        srp_mod.srp_acceleration_position_gradient = lambda *_a, **_k: np.zeros((3, 3))
+    if RTOL_ANALYTIC is not None:
+        import phase17_geo_core as G
+        D2.propagate_nom48 = lambda scn: G.propagate48(scn.t_grid, scn.x0_array, scn.et0, scn.k_srp,
+                                                       rtol=RTOL_ANALYTIC, atol=0.1 * RTOL_ANALYTIC,
+                                                       shadow_model=scn.shadow_model)
 
 
 def _prop6(scn, t_grid, x0, k):
@@ -120,7 +150,7 @@ def main() -> None:
                                  origin="Moon centre", units="s, m", events=ev,
                                  round_trip_s=sol.t3_s - sol.t1_s,
                                  converged=bool(sol.converged)))
-    (ARTIFACTS / "phase17_harden_range_event_ledger.json").write_text(json.dumps(dict(
+    _write("phase17_harden_range_event_ledger.json", json.dumps(dict(
         contract="t3 fixed (grid receive tag); t2d, t2u, t1 solved; station at t1/t3 via exact sxform "
                  "at pass_geo.et0_s + t and Hermite Earth; spacecraft at t2u/t2d by Hermite state "
                  "interpolation; all local times share origin pass_geo.et0_s",
@@ -172,7 +202,7 @@ def main() -> None:
                                station_state_method=prov.station_state_method, endpoints=eps,
                                distinct_endpoint_events=eps["count_start"]["transmit_local_s"]
                                != eps["count_end"]["transmit_local_s"]))
-    (ARTIFACTS / "phase17_harden_doppler_event_ledger.json").write_text(json.dumps(dict(
+    _write("phase17_harden_doppler_event_ledger.json", json.dumps(dict(
         contract="two endpoints receive at t_mid -/+ Tc/2; each solves its own transponder and transmit "
                  "events; one provider shared by both endpoints (exact event-epoch sxform, LINEAR Earth "
                  "interpolation by the documented R3-P22 design)", et0_s=pg.et0_s, rows=dop_ledger), indent=1))
@@ -215,7 +245,7 @@ def main() -> None:
         e1 = np.interp(tm + 30.0, rb.t_grid, pg.earth_pos_mci_m[:, 0]) - M._spice_earth_state_mci(pg.et0_s + tm + 30.0)[0]
         return abs(e1 - e0) / 60.0
     cross["linear_earth_count_rate_error_x_component_max_mps"] = float(max(rr_err(t) for t in rb.t_grid[100:160]))
-    (ARTIFACTS / "phase17_harden_cross_measurement.json").write_text(json.dumps(cross, indent=1))
+    _write("phase17_harden_cross_measurement.json", json.dumps(cross, indent=1))
 
     # ------------------------------------------------------------------ ΔDOR ledger + light FD
     from lunar_od.delta_dor import solve_common_transmit_event
@@ -237,7 +267,7 @@ def main() -> None:
             quasar_frame_contract="fixed J2000 unit vector; D_Q independent of spacecraft",
             both_stations_visible=bool(rb.vis[rows_gc.idx[n], 0] and rb.vis[rows_gc.idx[n], 2]),
             d_s_s=c.spacecraft_differential_delay_s))
-    (ARTIFACTS / "phase17_harden_ddor_event_ledger.json").write_text(json.dumps(dict(
+    _write("phase17_harden_ddor_event_ledger.json", json.dumps(dict(
         pair="GC", row_rule=rows_gc.row_rule, rows=ddor_ledger), indent=1))
     sel = np.unique(np.linspace(0, rows_gc.n - 1, 12).round().astype(int))
 
@@ -294,13 +324,36 @@ def main() -> None:
                        light_time_applied=False,
                        light_time_s=float(np.linalg.norm(r_lm - nom30[i, :3]) / 299792458.0))
                   for i, r_lm, c_ci in pairs]
-    (ARTIFACTS / "phase17_harden_optical_event_ledger.json").write_text(json.dumps(dict(
+    _write("phase17_harden_optical_event_ledger.json", json.dumps(dict(
         contract="instantaneous: spacecraft, landmark and camera frame all at the shutter epoch; no light "
                  "time (documented R1O-OPT limitation)", rows=opt_ledger), indent=1))
 
-    derivs["n_rows"] = dict(counted_doppler=len(dop_rows), ddor=int(sel.size), optical=int(arc.n_rows))
-    (ARTIFACTS / "phase17_harden_derivatives.json").write_text(json.dumps(derivs, indent=1))
-    for m in ("counted_doppler", "ddor", "optical"):
+    # ------------------------------------------------------------------ two-way range
+    from lunar_od.two_way_range import two_way_range_nominal_and_initial_jacobian
+
+    def rng(x6):
+        hist = nom[:, :42].copy()
+        hist[:, :6] = x6
+        z, _ = two_way_range_nominal_and_initial_jacobian(rb.obs, rb.pass_geo, hist)
+        return np.asarray(z, float).reshape(-1)
+
+    an_r = np.hstack([rb.h_x0, rb.h_k[:, None]])
+    fdr = _fd_columns(scn, rb.t_grid, rng)
+    derivs["range"] = {names[j]: dict(steps=list(s), rel_err=[_rel(f, an_r[:, j]) for f in fds])
+                       for j, (s, fds) in fdr.items()}
+
+    derivs["n_rows"] = dict(counted_doppler=len(dop_rows), ddor=int(sel.size), optical=int(arc.n_rows),
+                            range=int(rb.n_obs))
+    if F1_MODE:
+        f1_path = ARTIFACTS / "phase17_f1_measurement_derivatives.json"
+        store = json.loads(f1_path.read_text()) if f1_path.exists() else {}
+        store = store if "runs" in store else {"runs": {}}
+        derivs["oracle_rtol"], derivs["analytic_rtol"] = RTOL_ORACLE, RTOL_ANALYTIC or 1e-12
+        store["runs"][RUN_TAG] = derivs
+        f1_path.write_text(json.dumps(store, indent=1))
+    else:
+        (ARTIFACTS / "phase17_harden_derivatives.json").write_text(json.dumps(derivs, indent=1))
+    for m in ("range", "counted_doppler", "ddor", "optical"):
         print(m, {k: ["%.1e" % e for e in v["rel_err"]] for k, v in derivs[m].items()})
     print(json.dumps(cross, indent=1))
 
