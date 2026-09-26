@@ -273,3 +273,19 @@ def test_42_state_fast_and_reference_paths_carry_the_same_gradient(eclipse_orbit
     scale = np.max(np.abs(k48[:, 6:42]))
     assert np.max(np.abs(fast[:, 6:42] - k48[:, 6:42])) / scale < 1e-8
     assert np.max(np.abs(ref[:, 6:42] - k48[:, 6:42])) / scale < 1e-8
+
+
+def test_f1_refreeze_is_additive_and_history_is_preserved():
+    """The protected dynamics.py hash moved only through an additive, documented
+    F1 re-freeze; earlier provenance records are untouched."""
+    import hashlib
+    examples = ROOT / "examples"
+    if str(examples) not in sys.path:
+        sys.path.insert(0, str(examples))
+    import r2_measurement_fidelity_validation as r2
+    path = "lunar_od/dynamics.py"
+    assert r2.PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256[path].startswith("b369899a")
+    assert r2.CLOSURE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("d0f7ab02")
+    new = r2.PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert r2.expected_current_tree_sha256(path) == new
+    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == new
