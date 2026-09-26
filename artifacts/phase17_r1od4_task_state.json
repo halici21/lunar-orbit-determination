@@ -1,0 +1,15 @@
+{
+ "phase": "17-R1O-D4 GM narrow-window confirmatory robustness qualification",
+ "entering_state": {"branch": "feature/phase17-r-k-srp-estimation", "head": "89942a618731ab44151a4b9c3396540f1949105a",
+  "tree": "9e55303a5f12d089222a61eb713aa69d02f9fd65", "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b", "verified": true,
+  "entry_suite": "1417 collected / 1388 passed / 0 failed / 0 errors / 29 skipped (verified)",
+  "gates": "HARDEN PASS, F1 PASS, D3 PASS, D3 PRIMARY_CLASS narrow windows (verified from artifacts)"},
+ "literature": "D3_CONTRACT_RECONFIRMED_NO_REVISION (210F CL 26-2234, 107F sha256 3a8da003 identical)",
+ "feasibility": "one HF propagation 257 s -> full HF matrix chosen before predeclaration",
+ "checklist": {"verify": "DONE", "literature": "DONE", "predeclaration": "DONE", "campaign_code": "TODO",
+  "tests": "TODO", "d3_anchors": "TODO", "canonical_simplified": "TODO", "canonical_hf": "TODO",
+  "orbit_robustness": "TODO", "calibration_robustness": "TODO", "fidelity": "TODO", "mechanism": "TODO",
+  "overlays": "TODO", "independent_rebuild": "TODO", "full_suite": "TODO", "report": "TODO", "final_diff": "TODO"},
+ "implementation_bug_fixes": []
+}
