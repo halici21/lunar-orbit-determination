@@ -79,6 +79,27 @@ def w15(spice_loaded):
     return arcs
 
 
+@pytest.fixture(scope="module")
+def w15_pre_f1(spice_loaded):
+    """The same arcs under the PRE-F1 variational equations (SRP position gradient
+    omitted), reproduced for the historical-value checks only.  ANALYSIS-ONLY: the
+    gradient is zeroed in-process for the build; production has no such switch."""
+    import lunar_od.srp as srp_mod
+    original = srp_mod.srp_acceleration_position_gradient
+    srp_mod.srp_acceleration_position_gradient = lambda *_a, **_k: np.zeros((3, 3))
+    try:
+        _, t_orbit = M.campaign_epoch()
+        arcs = {}
+        for fx in (M.EARTH_FIXTURE_CANONICAL, M.EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", M.SupersededEarthFixtureWarning)
+                arcs[fx] = M.build_range_arc(0.0, 15.0 * t_orbit, label="W15", station_filter=DSN3,
+                                             cadence_s=90.0, earth_fixture=fx)
+    finally:
+        srp_mod.srp_acceleration_position_gradient = original
+    return arcs
+
+
 def _metrics(arc):
     from phase17_r1cov_core import scale_matrix, square_root_covariance
     a_x, b_k = M.whitened(arc.h_x0, arc.h_k, arc.w)
@@ -172,26 +193,40 @@ def test_legacy_fixture_reproduces_the_offset_and_the_clamp(w15):
     assert arc.earth.clamp_after_s == LEGACY_TABLE_END_S
 
 
-def test_legacy_fixture_reproduces_published_range_baseline(w15):
-    """R1O / R1O-D / R1O-R / GEO-G0 published: 782 obs, f_perp 0.2523, sigma_K/K 9.27%."""
+def test_legacy_fixture_reproduces_published_range_baseline(w15, w15_pre_f1):
+    """R1O / R1O-D / R1O-R / GEO-G0 published: 782 obs, f_perp 0.2523, sigma_K/K 9.27%.
+
+    The published digits were computed before Phase 17-F1 added the SRP position
+    gradient to the variational equations; they reproduce exactly under that
+    (analysis-only) pre-F1 model.  With the corrected STM the same arc moves in
+    the 5th significant digit."""
     arc = w15[M.EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED]
     assert arc.n_obs == 782
     assert _schedule_sha(arc.obs) == (
         "7358d8d3b70fd6ef985cbb412be491dcef77d85911bc51760a7a4720fd8d415f")
-    f_perp, sig = _metrics(arc)
+    f_perp, sig = _metrics(w15_pre_f1[M.EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED])
     assert f_perp == pytest.approx(0.2522919965229832, rel=1e-9)
     assert sig == pytest.approx(0.09273513250655349, rel=1e-9)
+    f_perp, sig = _metrics(arc)                  # post-F1
+    assert f_perp == pytest.approx(0.25228239732530355, rel=1e-9)
+    assert sig == pytest.approx(0.0927353425945735, rel=1e-9)
 
 
-def test_canonical_fixture_gives_the_fxr_range_baseline(w15):
-    """FXR / GEO-G0 consistent: 960 obs, f_perp 0.0915, sigma_K/K 25.4%."""
+def test_canonical_fixture_gives_the_fxr_range_baseline(w15, w15_pre_f1):
+    """FXR / GEO-G0 consistent: 960 obs, f_perp 0.0915, sigma_K/K 25.4%.
+
+    FXR's 0.091508 reproduces exactly under the pre-F1 variational model; the
+    authoritative post-F1 value (docs/phase17_authoritative_status.md) is 0.091502."""
     arc = w15[M.EARTH_FIXTURE_CANONICAL]
     assert arc.n_obs == 960
     assert _schedule_sha(arc.obs) == (
         "40c6434121c6d533dadda3b58d9f62fa8bb9790bffb80c0f867d27dc8cdc2542")
-    f_perp, sig = _metrics(arc)
+    f_perp, sig = _metrics(w15_pre_f1[M.EARTH_FIXTURE_CANONICAL])
     assert f_perp == pytest.approx(0.09150755457311016, rel=1e-9)
     assert sig == pytest.approx(0.25402136377136003, rel=1e-9)
+    f_perp, sig = _metrics(arc)                  # post-F1, authoritative
+    assert f_perp == pytest.approx(0.0915024012983624, rel=1e-9)
+    assert sig == pytest.approx(0.2540230025569859, rel=1e-9)
 
 
 def test_truth_trajectory_does_not_depend_on_earth_fixture(w15):

@@ -4,9 +4,11 @@
 with this page, this page wins. Every phase report keeps its historical text and carries erratum blocks
 that point here.
 
-- **Issued by:** Phase 17-HARDEN (2026-09-26).
+- **Issued by:** Phase 17-HARDEN (2026-09-26). **Updated by:** Phase 17-F1 (2026-09-26): SRP position gradient in
+  the variational equations; canonical numbers below re-qualified, every class preserved.
 - **Truth level:** every number is `SYNTHETIC_CAMPAIGN_TRUTH`. K_truth = 0.01 m²/kg is a campaign value, not a spacecraft property.
 - **Dynamics:** the inherited simplified model (Moon point mass, lunar J2 and cannonball SRP) unless a row says otherwise.
+  Since F1 the STM and dx/dK linearise the SRP force exactly (distance, direction and penumbra terms).
 
 ## 1. Canonical K_SRP baseline (current)
 
@@ -15,11 +17,19 @@ Canonical arc: 15 orbits, DSN-3, 90 s cadence, 960 range observations. Earth at 
 
 | quantity | authoritative value | source |
 |---|---:|---|
-| range-only `f_perp` / θ_K / σ_K/K | **0.091508** / 5.25° / **25.40%** | FXR; bitwise = GEO `G0_consistent` |
-| range + production ΔDOR, Goldstone–Canberra, 5 nrad: `f_perp` | **0.172351** | R1O-D2 `artifacts/phase17_r1od2_summary.json` (CANON/GC) |
-| gain Δ`f_perp` | **+0.0808** (STRONG_DIRECTION_GAIN under the R1O-D threshold) | R1O-D2 |
-| σ_K/K (range + ΔDOR) | **7.46%** | R1O-D2 |
+| range-only `f_perp` / θ_K / σ_K/K | **0.091502** / 5.25° / **25.40%** | F1 re-qualification of FXR/GEO `G0_consistent` |
+| range + production ΔDOR, Goldstone–Canberra, 5 nrad: `f_perp` | **0.172343** | F1 re-qualification of R1O-D2 CANON/GC |
+| gain Δ`f_perp` | **+0.0808** (+0.080841; STRONG_DIRECTION_GAIN under the R1O-D threshold) | F1 / R1O-D2 |
+| σ_K/K (range + ΔDOR) | **7.46%** (7.4565%) | F1 / R1O-D2 |
 | ΔDOR rows (both stations visible) | 170 (of 263 elevation-only rows) | R1O-D2; HARDEN |
+
+Source of every F1 number: `artifacts/phase17_f1_science_materiality.json` (`comparison`).
+
+**Superseded digits (pre-F1, omitted SRP gradient):** range-only 0.091508, combined 0.172351, gain +0.080843.
+They appear in the FXR, R1O-D2, HARDEN and GEO documents and in the erratum blocks of six reports; those
+blocks point here, and the values in this table replace them. The change is in the 5th–6th significant digit.
+It moves no class in the D2 primary population (18 cells), the 5 frozen GEO spot cases or the D2 high-fidelity
+cases (`docs/phase17_f1_srp_variational_gradient_qualification.md`).
 
 **Historical intermediate (do not cite as current):** `f_perp` **0.3204**, σ_K/K 3.97%, labelled
 `EPOCH_CORRECTED_BUT_ELEVATION_ONLY_HISTORICAL_INTERMEDIATE`. Its Earth epoch is correct (FXR), but 93 of its 263
@@ -52,12 +62,14 @@ See `docs/phase17_r1od2_ddor_robustness_qualification.md`.
 | FXR | Earth-epoch repair VALID. Its R1O-D ΔDOR number is the historical intermediate | 0.3204 | FXR report + erratum blocks |
 | R1O-D2 | **current ΔDOR science** | — | D2 report |
 | HARDEN | infrastructure and contracts; no new science | — | `docs/phase17_harden_*` |
+| F1 | SRP position gradient in the variational equations QUALIFIED; `NUMERICAL_BASELINES_UPDATED_CLASSES_PRESERVED` | canonical 6-digit values (§1) | `docs/phase17_f1_srp_variational_gradient_qualification.md` |
 
 ## 4. Known approximations that remain (documented, quantified)
 
+The STM's former omission of the SRP position gradient (HARDEN-D05) is **fixed** by Phase 17-F1.
+
 | item | size | ledger |
 |---|---|---|
-| STM omits the SRP position gradient (range-Jacobian state columns) | relative error 2e-6 to 1e-5 over 4 orbits; concentrated in penumbra | HARDEN-D05 |
 | counted Doppler interpolates the Earth linearly | 2.62 m at mid-nodes; ~1.5e-6 m/s count rate | HARDEN-D23 |
 | station B receive up to ~0.03 s past the last grid node (ΔDOR) | ~1e-5 m | HARDEN-D16 |
 

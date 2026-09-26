@@ -23,6 +23,7 @@ MITIGATED = "MITIGATED_RESIDUAL_DOCUMENTED"
 ROOT_CAUSE = "ROOT_CAUSE_KNOWN_DOCUMENTED_APPROXIMATION"
 FOLLOWUP = "OPEN_RECOMMENDED_FOLLOWUP"
 KNOWN_APPROX = "KNOWN_DOCUMENTED_APPROXIMATION"
+FIXED_F1 = "FIXED_IN_PHASE17_F1"
 
 DEFECTS = [
     dict(id="HARDEN-D01", title="STM unpacked in C order (Phi^T used for Phi)",
@@ -62,9 +63,9 @@ DEFECTS = [
          location="lunar_od/dynamics.py dynamics_jacobian_a_matrix (variational equations)",
          discovered="Phase 17-R1O-D2 / HARDEN", root_cause="the variational A matrix omits the SRP position gradient K*dg/dr (documented Phase 13/16 approximation, mean 4.02e-13 of the gravity gradient); the gradient is concentrated in penumbra (max 1.09e-11 s^-2, median 7.7e-19) and its effect accumulates secularly",
          effect="range-Jacobian state columns relative error 2e-6..1e-5 over 4 orbits at rtol 1e-13; the event (light-time) derivative itself is exact (LIN error 1e-8..9e-8, falling with h)",
-         status=ROOT_CAUSE, klass="RECOMMENDED_FOLLOWUP",
-         repair="none in HARDEN (dynamics.py is R2-protected; adding the gradient is a model change). CLOSED as a mathematically understood, bounded approximation: NO_SHADOW and K=0 controls drop the error to the integrator floor; the first-order prediction from the omitted gradient reproduces all six columns (corr >= 0.986, residual <= 1.0e-7) once the FD oracle is integrated at rtol 3e-15. The partial fit at rtol 1e-14 (y0 0.908, vx0 0.737) was oracle integration error at the non-smooth penumbra RHS: it scaled with rtol and did not change with quadrature dt",
-         regression="tests/test_harden_boundaries.py::test_omitted_srp_position_gradient_is_the_range_jacobian_root_cause, ::test_range_jacobian_root_cause_evidence_is_consistent",
+         status=FIXED_F1, klass="RECOMMENDED_FOLLOWUP",
+         repair="Phase 17-F1 (commit 9a0e786, authorised protected change, additive R2 re-freeze 434b9c3): the exact position gradient of the production SRP force (distance, direction and penumbra-illumination terms) now enters the A matrix of every SRP-active variational path; the acceleration is unchanged (bitwise). Qualified: local gradient <= 1.5e-7 vs independent oracles in every regime; STM max best-resolved error 9.9e-8 (pre-F1 model 1.2e-6; fixed-step RK4 cross-check 2.2e-8 vs 3.4e-6); S_K 8.7e-7; all Phase-17 classes preserved (docs/phase17_f1_srp_variational_gradient_qualification.md). HARDEN history: none in HARDEN (dynamics.py was R2-protected). CLOSED as a mathematically understood, bounded approximation: NO_SHADOW and K=0 controls drop the error to the integrator floor; the first-order prediction from the omitted gradient reproduces all six columns (corr >= 0.986, residual <= 1.0e-7) once the FD oracle is integrated at rtol 3e-15. The partial fit at rtol 1e-14 (y0 0.908, vx0 0.737) was oracle integration error at the non-smooth penumbra RHS: it scaled with rtol and did not change with quadrature dt",
+         regression="tests/test_f1_srp_variational_gradient.py; tests/test_harden_boundaries.py::test_srp_position_gradient_root_cause_and_its_f1_closure, ::test_range_jacobian_root_cause_evidence_is_consistent",
          reproduction="examples/phase17_harden_range_jacobian.py [--predict]; artifacts/phase17_harden_range_jacobian_oracle_convergence.json"),
     dict(id="HARDEN-D06", title="Stale optical docstring references a nonexistent script",
          location="lunar_od/lunar_landmark_optical.py", discovered="Phase 17-HARDEN",
@@ -185,7 +186,7 @@ CONTRACTS = [
     ("PC-07", "STM storage", "lunar_od.dynamics (augmented state)", "every Jacobian chain", "t0 of the propagation", "MCI", "MOON", "SI",
      "propagated grid", "column-major (order='F') in [6:42]; K sensitivity in [42:48]", "test_r1o_stm_layout; mutant D"),
     ("PC-08", "Variational A matrix", "dynamics_jacobian_a_matrix", "STM", "n/a", "MCI", "MOON", "s^-2", "n/a",
-     "gravity gradients only; SRP position gradient omitted (documented approximation)", "test_omitted_srp_position_gradient_is_the_range_jacobian_root_cause"),
+     "gravity gradients + (Phase 17-F1) the exact SRP position gradient when SRP is active", "test_f1_srp_variational_gradient; test_srp_position_gradient_root_cause_and_its_f1_closure"),
     ("PC-09", "SRP acceleration", "lunar_od.srp", "dynamics", "t (Sun at et0+t)", "MCI", "MOON", "m/s^2", "n/a",
      "a = K*P*nu*u; linear in K; nu in [0,1]; umbra -> 0", "test_srp_is_linear_in_k_and_vanishes_at_k_zero; shadow tests"),
     ("PC-10", "Third-body acceleration", "third_body_acceleration", "dynamics", "et0 + t", "J2000", "MOON", "m/s^2", "n/a",
