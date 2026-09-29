@@ -23,18 +23,28 @@
   "derivative_evidence": "DONE (HARDEN/F1 Doppler state<=1.3e-6, K 2.2e-4 -> 8.7e-6)",
   "noise_semantics": "DONE (thermal PARAMETRIC; structural 1e-4 + bracket; 202E scintillation lower bound)",
   "predeclaration": "DONE sha bbaa5cee8687926699465de6fe75185fde87b10df840be652ba390ff7af3571a",
-  "campaign_code": "TODO",
-  "tests": "TODO",
-  "campaign": "TODO",
-  "fd_spot": "TODO",
-  "rebuild": "TODO",
-  "fidelity_decomp": "TODO",
-  "time_localization": "TODO",
-  "full_suite": "TODO",
-  "report": "TODO",
-  "final_diff": "TODO"
+  "campaign_code": "DONE",
+  "tests": "DONE (18 focused CD1 pass; targeted regression 403 pass: counted-Doppler, measurement, F1, HARDEN, SRP, D2/D3/D4)",
+  "campaign": "DONE",
+  "fd_spot": "DONE PASS/PASS (state <= 7.2e-7, K <= 7.0e-6; oracle wrapper bitwise == propagate_fidelity)",
+  "rebuild": "STRICT FAIL 1/720 (O2 k6 RPD|D2|FREE 1.46e-10 > 1e-10; adjudicated: wrapper == SVD projector == pivoted QR; lstsq route round-off at cond 1.4e11; non-decision config)",
+  "fidelity_decomp": "DONE FIDELITY_CHANGES_POPULATION_VERDICT",
+  "time_localization": "DONE (BROAD x4)",
+  "full_suite": "DONE 1449/1420/0/0/29",
+  "report": "DONE (48 sections)",
+  "final_diff": "CLEAN (CD1 files only)"
  },
- "implementation_bug_fixes": [],
+ "implementation_bug_fixes": [
+  {
+   "id": "CD1-IBF-01",
+   "symptom": "INDEPENDENT_REBUILD_GATE FAIL: RPD|D2|FREE wrapper vs lstsq differed up to 1.26e-5 in 13/120 HF cells; all other configs <= 1e-14",
+   "cause": "a single-row pass produced an all-zero D2 drift column; numpy QR returns an arbitrary orthonormal column for it, so the wrapper projector removed a spurious direction (wrapper f_perp slightly low)",
+   "fix": "phase17_r1o_cd1_core.nuisance_columns: no drift column for a pass whose half-span is zero (drift undefined); regression test test_regression_single_row_pass_gets_no_drift_column_and_wrapper_matches_lstsq",
+   "experiment_definition_changed": false,
+   "predeclaration_unchanged": true,
+   "decision_fields_affected": "none expected: decision uses RPD|D0 and RPD|D1|FREE (rebuild <= 1e-14); only RPD|D2|* reruns"
+  }
+ ],
  "gates": "HARDEN PASS, F1 PASS (SRP_VARIATIONAL_MODEL_STATUS QUALIFIED), D3 PASS, D4 PASS (from committed reports)",
  "pre_metric_feasibility": {
   "simplified_cell_s": 13,
@@ -47,5 +57,25 @@
    99
   ],
   "note": "canonical epoch k0 has SEP 5.5-19.8 deg (near new Moon); arc starts in eclipse (dx/dK = 0 until exit)"
- }
+ },
+ "infrastructure_events": [
+  "first full run: BrokenProcessPool / MemoryError with 15 workers loading GL1800F concurrently; no results produced; relaunched with 8 workers (not an experiment-definition change)",
+  "second launch killed externally (exit 4, empty log) during a session restart; third launch detached (Start-Process) with explicit miniforge python",
+  "host slept 00:28-12:55 on 2026-09-29; workers throttled before sleep; resumed at full speed; temporary keep-awake (SetThreadExecutionState, tied to the campaign PID) added, no power settings changed"
+ ],
+ "post_predeclaration_code_changes": [
+  "campaign decision logic refactored into population/decision/nuisance_retention_class/fidelity_class (same rules; unit-tested; analyse-only rerun must reproduce)",
+  "N_WORKERS 15 -> 8 + --workers option (memory)"
+ ],
+ "ibf01_rerun": "13 HF cells recomputed; only RPD|D2|* changed; all decision fields identical (artifacts/phase17_r1o_cd1_ibf01_rerun.json)",
+ "decision": {
+  "PRIMARY_CLASS": "COUNTED_DOPPLER_K_INFORMATION_IS_SYSTEMATICALLY_FRAGILE",
+  "POP_D0": true,
+  "POP_D1FREE": false,
+  "ABS": false,
+  "NONLINEAR_ESTIMATOR_CONFIRMATION_JUSTIFIED": "NO",
+  "ALTERNATIVE_K_PARAMETERIZATION_JUSTIFIED": "YES"
+ },
+ "status": "CLOSED - hard stop after CD1; PHASE17_R1O_CD1_GATE not PASS on the single strict rebuild-tolerance criterion pending user decision",
+ "temporary_files_removed": true
 }

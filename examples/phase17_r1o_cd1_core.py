@@ -260,18 +260,25 @@ def nuisance_columns(n_range: int, rows: DopplerRows, model: str) -> np.ndarray 
     """
     if model == "D0_IDEAL":
         return None
+    if model not in ("D1_SESSION_CONSTANT_BIAS", "D2_SESSION_BIAS_PLUS_LINEAR_DRIFT"):
+        raise ValueError(model)
     q1 = rows.n_sessions
-    cols = np.zeros((n_range + rows.n, q1 if model == "D1_SESSION_CONSTANT_BIAS" else 2 * q1))
+    bias = np.zeros((n_range + rows.n, q1))
+    drift = []
     for j in range(q1):
         sel = np.where(rows.session == j)[0]
-        cols[n_range + sel, j] = 1.0
+        bias[n_range + sel, j] = 1.0
         if model == "D2_SESSION_BIAS_PLUS_LINEAR_DRIFT":
             t = rows.t_mid[sel]
             mid, half = 0.5 * (t.min() + t.max()), 0.5 * (t.max() - t.min())
-            cols[n_range + sel, q1 + j] = (t - mid) / half if half > 0 else 0.0
-    if model not in ("D1_SESSION_CONSTANT_BIAS", "D2_SESSION_BIAS_PLUS_LINEAR_DRIFT"):
-        raise ValueError(model)
-    return cols
+            # IMPLEMENTATION_BUG_FIX CD1-IBF-01: a drift is undefined on a single-row
+            # pass (half == 0).  The former all-zero column made the wrapper's QR
+            # projector remove a spurious direction; such passes carry no drift column.
+            if half > 0:
+                col = np.zeros(n_range + rows.n)
+                col[n_range + sel] = (t - mid) / half
+                drift.append(col)
+    return np.column_stack([bias] + drift) if drift else bias
 
 
 def metrics(D2, rb, rows: DopplerRows, w_d: np.ndarray, model: str, prior_mps, *, with_range: bool = True) -> dict:
@@ -309,6 +316,7 @@ def nuisance_correlations(D2, blocks, nu, prior, model, q1) -> dict:
     out = dict(max_abs_k_bias_corr=float(np.max(corr[:q1])),
                bias_sigma_mps_median=float(np.median(sd[7:7 + q1])) * DOPPLER_NUIS_UNIT_MPS)
     out["max_abs_k_drift_corr"] = float(np.max(corr[q1:])) if q > q1 else float("nan")
+    out["n_drift_columns"] = int(q - q1) if model == "D2_SESSION_BIAS_PLUS_LINEAR_DRIFT" else 0
     return out
 
 
