@@ -6,6 +6,8 @@ that point here.
 
 - **Issued by:** Phase 17-HARDEN (2026-09-26). **Updated by:** Phase 17-F1 (2026-09-26): SRP position gradient in
   the variational equations; canonical numbers below re-qualified, every class preserved.
+- **Updated by:** the Phase 17-R1O-CD1 closure (2026-10-04). It adds the D3, D4 and CD1 status rows (§3) and corrects
+  the HARDEN-D23 size (§4). No §1 number changed: D3, D4 and CD1 answer different questions with their own configurations.
 - **Truth level:** every number is `SYNTHETIC_CAMPAIGN_TRUTH`. K_truth = 0.01 m²/kg is a campaign value, not a spacecraft property.
 - **Dynamics:** the inherited simplified model (Moon point mass, lunar J2 and cannonball SRP) unless a row says otherwise.
   Since F1 the STM and dx/dK linearise the SRP force exactly (distance, direction and penumbra terms).
@@ -63,6 +65,9 @@ See `docs/phase17_r1od2_ddor_robustness_qualification.md`.
 | R1O-D2 | **current ΔDOR science** | — | D2 report |
 | HARDEN | infrastructure and contracts; no new science | — | `docs/phase17_harden_*` |
 | F1 | SRP position gradient in the variational equations QUALIFIED; `NUMERICAL_BASELINES_UPDATED_CLASSES_PRESERVED` | canonical 6-digit values (§1) | `docs/phase17_f1_srp_variational_gradient_qualification.md` |
+| R1O-D3 | **current ΔDOR tracking-design science**: `DDOR_TRACKING_GAIN_REMAINS_CONFINED_TO_NARROW_GEOMETRIC_WINDOWS`. Under one-hour operational sessions the canonical GC gain is MODEST (Δ`f_perp` +0.0328), not the dense §1 value. Nonlinear confirmation NOT justified | — (§1 stays the dense/ideal D2 configuration) | `docs/phase17_r1od3_tracking_design_characterization.md` |
+| R1O-D4 | D3's exploratory GM FIRST_SESSION window **not confirmed**: `GM_WINDOW_IS_DYNAMICS_FIDELITY_FRAGILE`. It exists in simplified dynamics (85°–115°) but no high-fidelity orbit has the required 30° window (0/5); the shift follows the range-only baseline (r = 0.976). Nonlinear confirmation NOT justified; the ΔDOR scheduling branch has no remaining hypothesis | D3 secondary hypothesis | `docs/phase17_r1od4_gm_window_confirmatory_qualification.md` |
+| R1O-CD1 | **current counted-Doppler science**: `COUNTED_DOPPLER_K_INFORMATION_IS_SYSTEMATICALLY_FRAGILE` (Case D). Over 120 high-fidelity cells, ideal Doppler passes the population rule (76.7 % positive); one free bias per pass fails it (median Δ`f_perp` −0.006, retention LOST); every cell is WEAK in absolute separation; σ_K/K ≈ 0.5 % is magnitude, not direction. `ALTERNATIVE_K_PARAMETERIZATION_JUSTIFIED = YES`, nonlinear confirmation NOT justified. Gate PASS after closure (D23 immaterial; one bounded rebuild numerical-floor exception) | — | `docs/phase17_r1o_cd1_counted_doppler_characterization.md` §1, §49–§50 |
 
 ## 4. Known approximations that remain (documented, quantified)
 
@@ -70,7 +75,7 @@ The STM's former omission of the SRP position gradient (HARDEN-D05) is **fixed**
 
 | item | size | ledger |
 |---|---|---|
-| counted Doppler interpolates the Earth linearly | 2.62 m at mid-nodes; ~1.5e-6 m/s count rate | HARDEN-D23 |
+| counted Doppler interpolates the Earth linearly | Earth position ≤ 2.80 m between nodes; **observable value ≈ 1.7–1.8e-3 m/s near-constant offset** (current, CD1 closure §49.1). Superseded quantification: ~1.5e-6 m/s (HARDEN; receive endpoints only). Immaterial to information metrics (f_perp ≤ 4e-10); **material for any use of Doppler values** | HARDEN-D23 |
 | station B receive up to ~0.03 s past the last grid node (ΔDOR) | ~1e-5 m | HARDEN-D16 |
 
 ## 5. How to reproduce a historical number

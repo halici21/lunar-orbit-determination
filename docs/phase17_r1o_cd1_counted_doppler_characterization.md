@@ -6,6 +6,12 @@ claimed.
 Artifacts: `artifacts/phase17_r1o_cd1_*`. Code: `examples/phase17_r1o_cd1_{core,predeclare,campaign}.py`. Tests:
 `tests/test_r1o_cd1_counted_doppler.py`. Literature: `docs/phase17_r1o_cd1_literature_contract.md`.
 
+> **Closure (2026-10-04, §49–§50).** HARDEN-D23 was measured over the full primary population and moves no CD1
+> decision. The §32 rebuild exceedance was adjudicated against an exact rational oracle and is the rebuild route's own
+> float error. `PHASE17_R1O_CD1_GATE = PASS`. The scientific verdict is unchanged. Closure code, artifacts and tests:
+> `examples/phase17_r1o_cd1_closure.py`, `artifacts/phase17_r1o_cd1_closure{,_raw}.json`,
+> `tests/test_r1o_cd1_closure.py`.
+
 ## 1. Executive Summary
 
 **Counted Doppler adds a real K_SRP direction in the ideal case, but that gain does not survive a free per-pass
@@ -520,6 +526,8 @@ keep-awake helpers) are removed at closure.
 - Doppler noise is structural, since the thermal term is PARAMETRIC. The operational lower bound is optimistic.
 - DSN3 stations only, a 15-orbit arc, and five representative orbits.
 - No ramps, media or relativistic terms in the observable. Linear Earth interpolation (HARDEN-D23, ~1.5e-6 m/s).
+  **Erratum (closure §49.1):** the end-to-end four-event effect on the observable *value* is ~1.7–1.8e-3 m/s, not
+  ~1.5e-6 m/s. It is immaterial to every CD1 metric, because those use only the partials.
 - The nuisance priors are a synthetic bracket, not DSN values.
 
 ## 41. Remaining Unknowns
@@ -574,7 +582,7 @@ The predeclared order is A→E.
 **Phase gate.** Every strict pass criterion of the brief is met except one: "independent rebuild passes". By the
 predeclared 1e-10 tolerance, 1 of 720 comparisons fails at 1.46e-10 (§32). So **`PHASE17_R1O_CD1_GATE` is not
 reported as PASS**. It stands as FAIL on that single criterion until the user accepts the adjudicated exception or
-requests a remedy. The scientific verdict does not depend on it.
+requests a remedy. The scientific verdict does not depend on it. *(Resolved in §49.2: the gate is PASS.)*
 
 ## 46. Whether Nonlinear Confirmation Is Justified
 
@@ -601,4 +609,124 @@ test systematics jointly, including a per-pass Doppler bias.
     reference nuisance.
   - Predeclare its own population rule.
 - **Before that, for the user to decide:** accept or remediate the strict rebuild-gate exceedance in §32 (1/720 at
-  1.46e-10, in a non-decision configuration, adjudicated as rebuild-route round-off).
+  1.46e-10, in a non-decision configuration, adjudicated as rebuild-route round-off). *(Resolved in §49.2.)*
+
+## 49. Closure (2026-10-04)
+
+This section is analysis only. The predeclaration (`bbaa5cee…`), decision tree, thresholds, noise and nuisance models
+are unchanged and hash-checked. No production code changed. Script: `examples/phase17_r1o_cd1_closure.py`.
+
+### 49.1 HARDEN-D23 materiality, measured
+
+- **Method.** Every primary cell (5 orbits × 24 epochs × {HIGH_FIDELITY, SIMPLIFIED} = 240) was rebuilt twice on
+  the same propagation.
+  - The first build is exactly as in CD1.
+  - The second uses a reference station-state provider: production state − linear Earth + SPICE Earth at the exact
+    event epoch.
+  - SPICE Earth here is `spkezr EARTH / J2000 / NONE / MOON`, the source the 90 s grid was sampled from.
+  - Only the D23 term changes. The exact `sxform` station term is untouched.
+  - The provider is injected through the production `station_state_provider` seam.
+- **Control.** An identity substitution (− linear + linear) reproduces production bitwise. Reference and linear Earth
+  agree to 0.0 m at grid nodes. The closure's production rows reproduce every committed CD1 f_perp exactly
+  (max |diff| 0.0) over 1,561,143 station-state events.
+
+| quantity (240 cells) | max |
+|---|---:|
+| Earth position, linear vs exact | 2.80 m |
+| Earth velocity, linear vs exact | 8.2e-6 m/s |
+| counted-Doppler observable value | **1.83e-3 m/s** (per-cell max 1.67–1.83e-3 in every cell; per-cell RMS ≈ max, a near-constant offset) |
+| state partials, relative | 2.4e-7 |
+| K partial / column max | 2.4e-9 |
+| f_perp, any decision configuration | **4.0e-10** (median 1.4e-11) |
+| closest decision-threshold margin | 4.65e-5 (115,000× the perturbation) |
+
+- **Decision.**
+  - Class or sign changes: none.
+  - Every decision field is identical with the reference Earth: PRIMARY_CLASS (Case D), POP(D0) = PASS (0.7667),
+    POP(D1 FREE) = FAIL, ABS = FAIL, NUISANCE_RETENTION = LOST, simplified POP(D0) = FAIL,
+    FIDELITY_CHANGES_POPULATION_VERDICT.
+  - `HARDEN_D23_CD1_MATERIALITY_GATE = PASS`.
+- **Correction to the HARDEN quantification (REPOSITORY_RESULT).** HARDEN's ~1.5e-6 m/s
+  (`phase17_harden_events_and_derivatives.py`) differenced only the symmetric receive endpoints t_mid ± 30 s, and only
+  the x component.
+  - At those endpoints the parabolic linear-interpolation error cancels.
+  - The four-event observable also uses the uplink transmit epochs at t_mid ± 30 s − τ (τ ≈ 2.57 s). These sit
+    asymmetrically inside their grid intervals. In the canonical example the errors are 2.456 m and 2.254 m.
+  - The ~0.2 m imbalance over a 60 s count is a ~1.7e-3 m/s near-constant offset in the observable value.
+- **Consequence.**
+  - For CD1 this is immaterial: the metrics use only the partials.
+  - For any later phase that uses counted-Doppler *values* (residuals, nonlinear estimation) it is about 17× the CD1
+    structural σ (1e-4 m/s). It needs a separately authorised production-model qualification first.
+
+### 49.2 The §32 numerical floor, adjudicated exactly
+
+The f_perp of the identical float64 design was computed with zero arithmetic error. The method uses the exact Gram
+matrix of the whitened [state | nuisance | K] design and integer Bareiss elimination:
+f² = det(G) / (det(G_AA)·G_bb).
+
+| cell (`RPD|D2|FREE`) | cond | CD1 metric − exact | SVD projector − exact | `lstsq` rebuild − exact |
+|---|---:|---:|---:|---:|
+| O2 k = 6 (§32 exceedance) | 1.4e11 | 5.6e-17 | 9.7e-17 | **1.46e-10** |
+| O5 k = 14 (2nd largest) | 9.8e10 | 8.3e-16 | 8.3e-16 | 3.6e-11 |
+| O5 k = 21 (3rd largest) | 2.0e11 | 1.7e-15 | 1.7e-15 | 3.2e-11 |
+
+- **Interpretation.**
+  - The CD1 headline metric is exact to ≤ 1.7e-15.
+  - The whole 1.46e-10 is the error of the *check* route: `lstsq` forms its residual from coefficients solved on a
+    cond ≈ 1e11 design.
+  - It is not a bookkeeping or model discrepancy, so nothing needs fixing.
+  - The three largest of 720 comparisons form one continuous distribution in the same ill-conditioned nuisance-
+    sensitivity configuration. No decision input is involved.
+- **Status.**
+  - The nominal rebuild rule stays 1e-10. This one comparison is recorded as a bounded numerical-floor exception.
+  - With that, `INDEPENDENT_REBUILD_GATE = PASS_WITH_DOCUMENTED_NUMERICAL_FLOOR_EXCEPTION`, and every strict pass
+    criterion of the brief is met.
+
+## 50. Final Status
+
+```text
+PHASE17_R1O_CD1_GATE = PASS
+PRIMARY_CLASS = COUNTED_DOPPLER_K_INFORMATION_IS_SYSTEMATICALLY_FRAGILE (Case D)
+
+ROBUST_COMPLEMENTARITY_FOUND = NO
+
+NONLINEAR_ESTIMATOR_CONFIRMATION_JUSTIFIED = NO
+ALTERNATIVE_K_PARAMETERIZATION_JUSTIFIED = YES
+
+HARDEN_D23_CD1_MATERIALITY_GATE = PASS (max f_perp change 4.0e-10 vs 4.65e-5 closest margin; 0 class changes;
+                                  observable-value effect 1.8e-3 m/s recorded, not 1.5e-6)
+
+NUMERICAL_FLOOR_EXCEPTION_STATUS = ACCEPTED_BOUNDED (1/720 at 1.46e-10 > 1e-10; exact oracle places it entirely in
+                                   the lstsq check route; CD1 metric exact to 5.6e-17; nominal 1e-10 rule retained)
+
+PRODUCTION_CODE_CHANGED = NO
+MEASUREMENT_MODEL_CHANGED = NO
+PHYSICAL_MODEL_CHANGED = NO
+ESTIMATOR_CHANGED = NO
+K_PARAMETERIZATION_CHANGED = NO
+
+TOTAL_TESTS_COLLECTED = 1460
+TESTS_PASSED = 1431
+TESTS_FAILED = 0
+TESTS_ERRORS = 0
+TESTS_SKIPPED = 29 (the same opt-in/data-dependent set as at entry)
+
+NEW_SCIENTIFIC_REGRESSIONS = 0
+UNKNOWN_NONPASSES = 0
+
+FINAL_HEAD = the closure commit that adds this section (a commit cannot record its own hash); its parent is
+             the import-isolation commit, on CD1 campaign commit 6d805d5
+FINAL_TREE = the tree of that closure commit (`git rev-parse <closure-commit>^{tree}`)
+
+PUSH = NONE
+MERGE = NONE
+MAIN_CHANGED = NO
+ORIGIN_MAIN_CHANGED = NO
+
+NEXT_ACTION = hard stop. Recommended, separately authorised: an alternative K_SRP parameterization
+              characterization (§47-§48). Before any phase that uses counted-Doppler VALUES, separately qualify
+              or repair HARDEN-D23 (§49.1).
+```
+
+The suite counts are from the supported plain invocation (`python -m pytest -o addopts="" -p no:cacheprovider`, no
+PYTHONPATH) on the final tree.
