@@ -20,9 +20,18 @@ for _path in (_ROOT / "desktop_app", _ROOT):        # inserted in reverse: ROOT 
 
 # HARDEN-D12: import the external campaign module through the guarded loader
 # (it prepends a sibling checkout to sys.path before importing lunar_od).
-try:
-    from lunar_od.project_paths import import_campaign_module as _import_campaign
+# The module lives in <campaign>/06_scripts and itself imports
+# phase6_scenario_comparison from this worktree's examples/, so both are made
+# importable first, APPENDED so neither can shadow this worktree.  Without this
+# the guard ran only when the caller exported PYTHONPATH; otherwise it failed
+# with a swallowed ModuleNotFoundError and a later direct import left the stale
+# sibling entries on sys.path.  A missing campaign is the only quiet skip.
+from lunar_od.project_paths import campaign_root as _campaign_root  # noqa: E402
+from lunar_od.project_paths import import_campaign_module as _import_campaign  # noqa: E402
 
+_CAMPAIGN_SCRIPTS = _campaign_root() / "06_scripts"
+if (_CAMPAIGN_SCRIPTS / "od_gravity_covariance_campaign.py").is_file():
+    for _path in (_CAMPAIGN_SCRIPTS, _ROOT / "examples"):
+        if str(_path) not in sys.path:
+            sys.path.append(str(_path))
     _import_campaign()
-except ModuleNotFoundError:
-    pass
