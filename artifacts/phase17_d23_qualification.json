@@ -1,0 +1,306 @@
+{
+ "phase": "17-HARDEN-D23",
+ "acceptance_sha256": "2d1cb37028c8486cd0b6acaf0f5c30c2e2fe01c248e36a133a0e1f055f04b7af",
+ "value": {
+  "rows": 239265,
+  "cells": 240,
+  "prod_minus_oracleS_max": 7.639619070687331e-08,
+  "prod_minus_oracleS_rms": 1.5806261500568e-08,
+  "prod_minus_oracleS_p50": 8.259121386799961e-09,
+  "prod_minus_oracleS_p99": 4.623346626431156e-08,
+  "worst_cell": {
+   "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "k": 13,
+   "dynamics": "HIGH_FIDELITY"
+  },
+  "prod_minus_oracleF_max": 7.040773652988719e-08,
+  "oracleS_minus_oracleF_max": 0.0,
+  "mutant_minus_oracleS_max": 0.0018322859115187384,
+  "mutant_minus_oracleS_rms_median": 0.0017125940558720084,
+  "solver_floor_max": 9.908944775816053e-10,
+  "production_earth_method": [
+   "cubic_hermite_grid_interpolation"
+  ],
+  "rows_total": 239265,
+  "oracle_convergence_failures": [],
+  "reduction_factor": 23983.99572760228,
+  "SECONDARY_POSTHOC_et_exact_oracle": {
+   "label": "post-hoc diagnostic, not a frozen gate: model S with ET-exact Earth (two-sum), site as production",
+   "max": 5.356241672416218e-09,
+   "rms": 1.1935619621485882e-09,
+   "p99": 3.134573489660397e-09
+  }
+ },
+ "epochs": {
+  "n": 6000,
+  "transmit_los_diff_m_abs_max": 0.21984601921037528,
+  "receive_los_diff_m_abs_max": 6.869977235492672e-05,
+  "linear_pos_err_max_m": 2.8005130641479843,
+  "hermite_pos_err_max_m": 6.389510365159623e-05,
+  "hermite_vel_err_max_mps": 3.2079979819688443e-09,
+  "implied_vs_mutant_corr": -0.9999968193308891,
+  "transmit_frac_start_median": 0.6384502883199579,
+  "transmit_frac_end_median": 0.3051160646499031
+ },
+ "cd1": {
+  "f_perp_abs_diff_max": 4.01431776708705e-10,
+  "class_or_sign_changes": [],
+  "PRIMARY_CLASS": "COUNTED_DOPPLER_K_INFORMATION_IS_SYSTEMATICALLY_FRAGILE",
+  "POP_D0": true,
+  "POP_D1FREE": false,
+  "ABS": false,
+  "POP_D0_SIMPLIFIED": false,
+  "decision_identical": true
+ },
+ "kp1": {
+  "metric_abs_diff_max": 1.0443449993680076e-09,
+  "per_model_class": {
+   "M1_TWO_SEGMENT": "PARTIAL",
+   "M2_LINEAR_DRIFT": "NO_NEW_INFORMATION",
+   "M3_THREE_SEGMENT": "DISTINGUISHABLE"
+  },
+  "classes_identical": true,
+  "per_cell_var_flips": 0
+ },
+ "fd": {
+  "cases": {
+   "CANON_k00": {
+    "rows": [
+     [
+      90.0,
+      0
+     ],
+     [
+      5400.0,
+      0
+     ],
+     [
+      7470.0,
+      0
+     ],
+     [
+      8640.0,
+      2
+     ],
+     [
+      12870.0,
+      0
+     ],
+     [
+      14040.0,
+      2
+     ]
+    ],
+    "oracle": "HF repropagation rtol 1e-13 atol 1e-14, central differences",
+    "analytic": "production Jacobian, HF rtol 1e-12 (propagate_fidelity)",
+    "fd_wrapper_bitwise_equals_propagate_fidelity": true,
+    "columns": {
+     "x0": {
+      "steps": [
+       10.0,
+       100.0
+      ],
+      "rel_err": [
+       4.3451990150321535e-07,
+       5.71499317065606e-07
+      ],
+      "best": 4.3451990150321535e-07
+     },
+     "y0": {
+      "steps": [
+       10.0,
+       100.0
+      ],
+      "rel_err": [
+       2.1271716840318822e-06,
+       3.8278362225928727e-07
+      ],
+      "best": 3.8278362225928727e-07
+     },
+     "z0": {
+      "steps": [
+       10.0,
+       100.0
+      ],
+      "rel_err": [
+       2.2881275722950235e-06,
+       1.3021843740044648e-07
+      ],
+      "best": 1.3021843740044648e-07
+     },
+     "vx0": {
+      "steps": [
+       0.01,
+       0.1
+      ],
+      "rel_err": [
+       2.7835173659542545e-06,
+       3.838481065233977e-07
+      ],
+      "best": 3.838481065233977e-07
+     },
+     "vy0": {
+      "steps": [
+       0.01,
+       0.1
+      ],
+      "rel_err": [
+       4.2462315632970584e-07,
+       5.655983686865641e-07
+      ],
+      "best": 4.2462315632970584e-07
+     },
+     "vz0": {
+      "steps": [
+       0.01,
+       0.1
+      ],
+      "rel_err": [
+       3.205094671421957e-07,
+       4.585149418833133e-07
+      ],
+      "best": 3.205094671421957e-07
+     },
+     "K_SRP": {
+      "steps": [
+       0.001,
+       0.003
+      ],
+      "rel_err": [
+       3.4517914629530237e-05,
+       3.42015693276289e-06
+      ],
+      "best": 3.42015693276289e-06
+     }
+    }
+   },
+   "O2_FULL_SUN_HIGH_BETA_k12": {
+    "rows": [
+     [
+      90.0,
+      2
+     ],
+     [
+      1890.0,
+      2
+     ],
+     [
+      6210.0,
+      2
+     ],
+     [
+      7920.0,
+      2
+     ],
+     [
+      12240.0,
+      2
+     ],
+     [
+      14040.0,
+      2
+     ]
+    ],
+    "oracle": "HF repropagation rtol 1e-13 atol 1e-14, central differences",
+    "analytic": "production Jacobian, HF rtol 1e-12 (propagate_fidelity)",
+    "fd_wrapper_bitwise_equals_propagate_fidelity": true,
+    "columns": {
+     "x0": {
+      "steps": [
+       10.0,
+       100.0
+      ],
+      "rel_err": [
+       1.253049962185908e-06,
+       1.396692234722913e-07
+      ],
+      "best": 1.396692234722913e-07
+     },
+     "y0": {
+      "steps": [
+       10.0,
+       100.0
+      ],
+      "rel_err": [
+       5.491924695960328e-07,
+       5.889307418155073e-07
+      ],
+      "best": 5.491924695960328e-07
+     },
+     "z0": {
+      "steps": [
+       10.0,
+       100.0
+      ],
+      "rel_err": [
+       1.2559234127862858e-06,
+       1.5023244579904093e-07
+      ],
+      "best": 1.5023244579904093e-07
+     },
+     "vx0": {
+      "steps": [
+       0.01,
+       0.1
+      ],
+      "rel_err": [
+       5.919773467714452e-06,
+       5.037141248765268e-07
+      ],
+      "best": 5.037141248765268e-07
+     },
+     "vy0": {
+      "steps": [
+       0.01,
+       0.1
+      ],
+      "rel_err": [
+       7.804998381106351e-07,
+       2.9727242344531906e-07
+      ],
+      "best": 2.9727242344531906e-07
+     },
+     "vz0": {
+      "steps": [
+       0.01,
+       0.1
+      ],
+      "rel_err": [
+       3.5871696621363974e-07,
+       7.203282235754986e-07
+      ],
+      "best": 3.5871696621363974e-07
+     },
+     "K_SRP": {
+      "steps": [
+       0.001,
+       0.003
+      ],
+      "rel_err": [
+       4.121441545264278e-05,
+       7.686177178881435e-06
+      ],
+      "best": 7.686177178881435e-06
+     }
+    }
+   }
+  },
+  "COUNTED_DOPPLER_STATE_FD_GATE": "PASS",
+  "COUNTED_DOPPLER_K_FD_GATE": "PASS",
+  "gates": {
+   "state": "every state column best rel err <= 1e-5",
+   "k": "K best rel err <= 1e-3"
+  }
+ },
+ "gates": {
+  "DIRECT_SPICE_VALUE_ORACLE": "PASS",
+  "REDUCTION": "PASS",
+  "HISTORICAL_D23_MUTANT_REPRODUCED": "PASS",
+  "SOLVER_FLOOR": "PASS",
+  "EARTH_EPOCH_CONTRACT": "FAIL",
+  "CD1_INFORMATION": "PASS",
+  "KP1_INFORMATION": "PASS",
+  "CD1_FD_ORACLE": "PASS",
+  "PHASE17_HARDEN_D23_REPAIR_GATE": "FAIL"
+ }
+}

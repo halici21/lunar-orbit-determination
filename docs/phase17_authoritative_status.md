@@ -9,6 +9,8 @@ that point here.
 - **Updated by:** the Phase 17-R1O-CD1 closure (2026-10-04). It adds the D3, D4 and CD1 status rows (§3) and corrects
   the HARDEN-D23 size (§4). No §1 number changed: D3, D4 and CD1 answer different questions with their own configurations.
 - **Updated by:** Phase 17-KP1 (2026-10-04). It adds the KP1 row (§3). No §1 number changed.
+- **Updated by:** Phase 17-HARDEN-D23 (2026-10-07). The counted-Doppler Earth interpolation is repaired (§3, §4). No §1
+  number changed.
 - **Truth level:** every number is `SYNTHETIC_CAMPAIGN_TRUTH`. K_truth = 0.01 m²/kg is a campaign value, not a spacecraft property.
 - **Dynamics:** the inherited simplified model (Moon point mass, lunar J2 and cannonball SRP) unless a row says otherwise.
   Since F1 the STM and dx/dK linearise the SRP force exactly (distance, direction and penumbra terms).
@@ -70,6 +72,7 @@ See `docs/phase17_r1od2_ddor_robustness_qualification.md`.
 | R1O-D4 | D3's exploratory GM FIRST_SESSION window **not confirmed**: `GM_WINDOW_IS_DYNAMICS_FIDELITY_FRAGILE`. It exists in simplified dynamics (85°–115°) but no high-fidelity orbit has the required 30° window (0/5); the shift follows the range-only baseline (r = 0.976). Nonlinear confirmation NOT justified; the ΔDOR scheduling branch has no remaining hypothesis | D3 secondary hypothesis | `docs/phase17_r1od4_gm_window_confirmatory_qualification.md` |
 | R1O-CD1 | **current counted-Doppler science**: `COUNTED_DOPPLER_K_INFORMATION_IS_SYSTEMATICALLY_FRAGILE` (Case D). Over 120 high-fidelity cells, ideal Doppler passes the population rule (76.7 % positive); one free bias per pass fails it (median Δ`f_perp` −0.006, retention LOST); every cell is WEAK in absolute separation; σ_K/K ≈ 0.5 % is magnitude, not direction. `ALTERNATIVE_K_PARAMETERIZATION_JUSTIFIED = YES`, nonlinear confirmation NOT justified. Gate PASS after closure (D23 immaterial; one bounded rebuild numerical-floor exception) | — | `docs/phase17_r1o_cd1_counted_doppler_characterization.md` §1, §49–§50 |
 | KP1 | **current K-parameterization science**: `ALTERNATIVE_K_PARAMETERIZATION_ADDS_DISTINGUISHABLE_DIRECTIONS`, for the *variation* of K only. Under range + counted Doppler with a free bias per pass (high fidelity, 120 cells), the three-segment model's variation directions separate from state and constant K at MODERATE+ in 57.5 % of cells, with internal correlations ≤ 0.90 everywhere. Two halves give PARTIAL (25.8 %), linear drift NO_NEW_INFORMATION. The **K level stays WEAK**: every block's weakest, common-mode-like combination (≈ 0.085) is below the scalar f_perp (0.133). Orbit-dependent (the 500 km orbit: 0/24); fidelity-robust. Linear and local at a constant truth; the next K-fitting phase needs a HARDEN-D23 repair first | — | `docs/phase17_kp1_alternative_k_parameterization_characterization.md` |
+| HARDEN-D23 | counted-Doppler Earth **repaired**: the production station provider uses the same cubic-Hermite Earth as range and ΔDOR (R3-P22's linear policy superseded). Against a direct-SPICE oracle (frozen model S solver, 239,265 CD1/KP1 rows) production values agree to max 7.6e-8 m/s, rms 1.6e-8 (ET-exact oracle: max 5.4e-9); the historical offset (1.83e-3 m/s) is reproduced and removed 2.4e4×. CD1 and KP1 re-qualified **unchanged** (f_perp ≤ 4e-10, principal sines ≤ 1e-9, 0 class flips). Counted-Doppler **values are qualified for estimation at the 1e-7 m/s level**. Gate: PASS on 8 of 9 frozen criteria; the epoch-contract diagnostic measured the oracle's ET rounding (6.4e-5 m) and awaits owner acceptance of the adjudication (exact-epoch scan 2.4e-7 m ≤ 1e-6) | — | `docs/phase17_harden_d23_repair_qualification.md` |
 
 ## 4. Known approximations that remain (documented, quantified)
 
@@ -77,7 +80,8 @@ The STM's former omission of the SRP position gradient (HARDEN-D05) is **fixed**
 
 | item | size | ledger |
 |---|---|---|
-| counted Doppler interpolates the Earth linearly | Earth position ≤ 2.80 m between nodes; **observable value ≈ 1.7–1.8e-3 m/s near-constant offset** (current, CD1 closure §49.1). Superseded quantification: ~1.5e-6 m/s (HARDEN; receive endpoints only). Immaterial to information metrics (f_perp ≤ 4e-10); **material for any use of Doppler values** | HARDEN-D23 |
+| ~~counted Doppler interpolates the Earth linearly~~ **FIXED (HARDEN-D23, 2026-10-07)** | historical: 1.67–1.83e-3 m/s value offset (superseded quantification ~1.5e-6 m/s). Now cubic Hermite: Earth ≤ 2.4e-7 m, values vs direct SPICE ≤ 7.6e-8 m/s | HARDEN-D23 |
+| exact station transform at rounded absolute ET (counted Doppler, range, ΔDOR) | counted-Doppler value rms ≤ 1.0e-7 m/s (max 3.6e-7); ~20× below the optimistic operational noise floor | HARDEN-D24 |
 | station B receive up to ~0.03 s past the last grid node (ΔDOR) | ~1e-5 m | HARDEN-D16 |
 
 ## 5. How to reproduce a historical number

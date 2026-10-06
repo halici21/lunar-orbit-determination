@@ -728,5 +728,8 @@ NEXT_ACTION = hard stop. Recommended, separately authorised: an alternative K_SR
               or repair HARDEN-D23 (§49.1).
 ```
 
+*(Later status: KP1 completed the parameterization step, and Phase 17-HARDEN-D23 repaired the Earth interpolation.
+CD1's results re-qualify unchanged on the repaired path: `docs/phase17_harden_d23_repair_qualification.md` §6.)*
+
 The suite counts are from the supported plain invocation (`python -m pytest -o addopts="" -p no:cacheprovider`, no
 PYTHONPATH) on the final tree.

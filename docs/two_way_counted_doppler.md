@@ -57,6 +57,10 @@ spacecraft state/STM cubic-Hermite interpolation inside closed support
 Earth state and 6x6 transform linear interpolation inside closed support
 ```
 
+*(Pre-R3 assumption list. The exact event-epoch path evaluates the transform by
+`sxform` (R3) and, since Phase 17-HARDEN-D23, the Earth by cubic Hermite; only
+the opt-in legacy interpolated-transform-grid mode keeps the linear Earth.)*
+
 Single-bounce note: the legacy solver keeps **one** spacecraft bounce state,
 so `r_sc(t2)` is used for both the downlink and uplink legs. P0A rejects every
 nonzero `transponder_delay_s` for this profile; representing delay requires
@@ -300,6 +304,13 @@ deliberate opt-in, never a degradation path.
 * the Earth ephemeris stays on **linear** grid interpolation, so the exact
   production path reproduces the accepted R2 model S exactly and the S−L
   difference isolates the site transform alone;
+  **superseded by Phase 17-HARDEN-D23 (2026-10):** the exact path now uses the
+  same cubic-Hermite Earth as M3 range and ΔDOR. Linear interpolation is not
+  symmetric about the count interval at the uplink transmit epochs, and left a
+  near-constant ~1.7–1.8e-3 m/s value offset
+  (`docs/phase17_harden_d23_repair_qualification.md`). The byte-frozen model S
+  keeps the linear policy; R3-P04/P05 now compare event arithmetic with a
+  shared station provider;
 * the spacecraft state and STM stay on **cubic Hermite** interpolation;
 * the event model stays **single-bounce**; a nonzero transponder delay is still
   rejected at configuration construction;
@@ -365,6 +376,9 @@ the Earth-centre ephemeris with cubic Hermite while counted Doppler requires
 **linear**; R4 injects the accepted R3 `CountedDopplerStationStateProvider`
 instead. M3's `two_way_range_measurement_metadata` is likewise not composed, as
 it would emit `cubic_hermite_grid_interpolation` for an R4 run.
+*(Phase 17-HARDEN-D23: the injected R3 provider now uses cubic-Hermite Earth
+too, so R4 inherits the repair through the same provider; the provider and
+metadata are still R3/R4's own, not M3's.)*
 
 ### The constant-delay sensitivity is NOT zero
 

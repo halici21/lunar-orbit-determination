@@ -211,6 +211,10 @@ equation residuals. Receive tags whose chain precedes the grid are dropped, not 
 `artifacts/phase17_harden_doppler_event_ledger.json` records the count-interval events. Counted Doppler
 interpolates the Earth linearly (documented design R3-P22). That gives 2.62 m at mid-nodes and a ~1.5e-6 m/s count-rate error (D23).
 
+> **Erratum (2026-10):** the ~1.5e-6 m/s count-rate figure differenced only the symmetric receive endpoints. The
+> asymmetric uplink transmit epochs give a 1.67–1.83e-3 m/s value offset (CD1 closure §49.1). D23 is **FIXED** by
+> Phase 17-HARDEN-D23 (cubic-Hermite Earth): see `docs/phase17_harden_d23_repair_qualification.md`.
+
 ## 19. ΔDOR Event Audit
 
 `artifacts/phase17_harden_ddor_event_ledger.json` records the common transmit event. Both light-time equations

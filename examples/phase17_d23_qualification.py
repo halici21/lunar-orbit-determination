@@ -22,7 +22,8 @@ Acceptance criteria are frozen in artifacts/phase17_d23_acceptance.json
 (hash-pinned) before the repaired run.
 
     python examples/phase17_d23_qualification.py
-    python examples/phase17_d23_qualification.py --analyse-only
+    python examples/phase17_d23_qualification.py --analyse-only   # needs the uncommitted 18.8 MB per-row raw;
+                                                                  # artifacts/phase17_d23_cells.json is the compact record
 """
 from __future__ import annotations
 
@@ -83,6 +84,60 @@ def direct_spice_provider(station, et0: float):
                                           _sxform_counter=counter)
 
 
+def et_exact_spice_provider(station, et0: float, correct_site: bool = True):
+    """POST-HOC DIAGNOSTIC oracle (not the frozen acceptance oracle).
+
+    fl(et0 + t) is quantised to ulp(8.6e8 s) = 1.19e-7 s, i.e. ~5e-5 m of Earth
+    motion: a floor of the frozen oracle, not of production (production's
+    Hermite works in exact scenario seconds and its grid nodes et0 + 90 k are
+    exact).  Here the rounding remainder d = (et0 + t) - fl(et0 + t) is
+    recovered by an error-free two-sum and applied to first order with the SPICE
+    velocity (second-order term ~ 3e-18 m).  ``correct_site`` applies the same
+    correction to the station site, whose sxform production also evaluates at
+    fl(et0 + t)."""
+    import spiceypy as spice
+    from lunar_od.two_way_counted_doppler_reference import ExactEventStationStateProvider
+    ecef = np.concatenate([np.asarray(station.r_ecef_m, float).reshape(3), np.zeros(3)])
+    e0 = float(et0)
+
+    def state_fn(t: float) -> np.ndarray:
+        t = float(t)
+        s = e0 + t
+        bb = s - e0
+        d = (e0 - (s - bb)) + (t - bb)
+        earth = np.asarray(spice.spkezr("EARTH", s, "J2000", "NONE", "MOON")[0], float) * 1e3
+        earth[:3] += earth[3:] * d
+        site = np.linalg.solve(np.asarray(spice.sxform("J2000", "ITRF93", s), float), ecef)
+        if correct_site:
+            site[:3] += site[3:] * d
+        return earth + site
+
+    return ExactEventStationStateProvider(state_fn=state_fn, station_state_method="et_exact_spice_diagnostic",
+                                          earth_ephemeris_method="direct_spice_spkezr_two_sum")
+
+
+def et_exact_diagnostic(spec: dict) -> dict:
+    """Production vs the ET-exact oracle (Earth only, and Earth + site) on one cell."""
+    from lunar_od.two_way_counted_doppler_reference import (CountedDopplerReferenceConfig,
+                                                            exact_station_single_bounce_counted_doppler_reference)
+    scn = K.scenario(spec["orbit"], spec["x0"], spec["k"])
+    nom = D2.propagate_nom48(scn)
+    rb = D2.build_range_block(scn, nom)
+    pg = rb.pass_geo
+    st = K.stations()
+    rows = CD.build_doppler_rows(scn, rb, 60.0, st, with_values=True)
+    rcfg = CountedDopplerReferenceConfig.from_legacy(CD.doppler_config(60.0))   # R2 convention: production tolerances
+    x6 = rb.nom48[:, :6]
+    out = {}
+    for label, cs in (("earth_only", False), ("earth_and_site", True)):
+        prov = {s: et_exact_spice_provider(st[s], pg.et0_s, cs) for s in range(len(st))}
+        d = np.array([rows.y[i] - exact_station_single_bounce_counted_doppler_reference(
+            float(rows.t_mid[i]), prov[int(rows.station[i])], rb.t_grid, x6, rcfg).observable
+            for i in range(rows.n)])
+        out[label] = dict(max=float(np.max(np.abs(d))), rms=float(np.sqrt(np.mean(d ** 2))))
+    return K._clean(dict(orbit=spec["orbit"], k=spec["k"], n_rows=int(rows.n), **out))
+
+
 def historical_linear_provider(station, et0: float, t_grid, earth_pos, earth_vel):
     """The pre-repair production provider (linear Earth, exact sxform), rebuilt verbatim."""
     import spiceypy as spice
@@ -124,9 +179,10 @@ def run_cell(spec: dict) -> dict:
     rows = CD.build_doppler_rows(scn, rb, 60.0, st, with_values=True)       # repaired PRODUCTION values
     x6 = rb.nom48[:, :6]
     cfg = CD.doppler_config(60.0)
-    rcfg = CountedDopplerReferenceConfig(count_interval_s=60.0)
+    rcfg = CountedDopplerReferenceConfig.from_legacy(CD.doppler_config(60.0))   # R2 convention: production tolerances
     prod_meta = {}
     oracle = {s: direct_spice_provider(st[s], pg.et0_s) for s in range(len(st))}
+    oracle_et = {s: et_exact_spice_provider(st[s], pg.et0_s, False) for s in range(len(st))}   # SECONDARY, post-hoc
     linear = {s: historical_linear_provider(st[s], pg.et0_s, rb.t_grid, pg.earth_pos_mci_m, pg.earth_vel_mci_mps)
               for s in range(len(st))}
     ref_linear = {s: make_exact_event_station_state_provider(st[s], pg.et0_s, rb.t_grid, pg.earth_pos_mci_m,
@@ -136,22 +192,35 @@ def run_cell(spec: dict) -> dict:
                  for s in range(len(st))}
     prod_meta["earth_ephemeris_method"] = prod_prov[0].earth_ephemeris_method
     y_s, y_mut, y_floor_p, y_floor_s, f_idx, y_f, diag = [], [], [], [], [], [], []
+    y_s_et = []
     hist = np.hstack([pg.earth_pos_mci_m, pg.earth_vel_mci_mps])
     diag_idx = set(np.unique(np.linspace(0, max(rows.n - 1, 0), DIAG_ROWS).round().astype(int)).tolist())
+    from lunar_od.two_way_range import TwoWayEventConvergenceError
+    kept, failures = [], []
     for i in range(rows.n):
         t, s = float(rows.t_mid[i]), int(rows.station[i])
-        rs = exact_station_single_bounce_counted_doppler_reference(t, oracle[s], rb.t_grid, x6, rcfg)
+        try:
+            rs = exact_station_single_bounce_counted_doppler_reference(t, oracle[s], rb.t_grid, x6, rcfg)
+            ys_et = exact_station_single_bounce_counted_doppler_reference(t, oracle_et[s], rb.t_grid, x6,
+                                                                          rcfg).observable
+            yf_s = exact_station_single_bounce_counted_doppler_reference(t, ref_linear[s], rb.t_grid, x6,
+                                                                         rcfg).observable
+            yf_f = (exact_station_four_event_counted_doppler_reference(t, oracle[s], rb.t_grid, x6, rcfg).observable
+                    if i % F_STRIDE == 0 else None)
+        except TwoWayEventConvergenceError as exc:      # oracle-side convergence floor: counted, never hidden
+            failures.append(dict(i=i, t_mid=t, station=s, error=str(exc)[:240]))
+            continue
+        kept.append(i)
         y_s.append(rs.observable)
         y_mut.append(two_way_counted_doppler_observable(t, st[s], rb.t_grid, x6, pg.earth_pos_mci_m,
                                                         pg.earth_vel_mci_mps, pg.x_j2000_to_itrf93, cfg,
                                                         et0_s=pg.et0_s, station_state_provider=linear[s]))
-        y_floor_s.append(exact_station_single_bounce_counted_doppler_reference(t, ref_linear[s], rb.t_grid, x6,
-                                                                               rcfg).observable)
+        y_floor_s.append(yf_s)
+        y_s_et.append(ys_et)
         y_floor_p.append(y_mut[-1])
-        if i % F_STRIDE == 0:
-            f_idx.append(i)
-            y_f.append(exact_station_four_event_counted_doppler_reference(t, oracle[s], rb.t_grid, x6,
-                                                                          rcfg).observable)
+        if yf_f is not None:
+            f_idx.append(len(kept) - 1)
+            y_f.append(yf_f)
         if i in diag_idx:
             ev = {"t3s": rs.start_solution.t3_s, "t1s": rs.start_solution.t1_s,
                   "t3e": rs.end_solution.t3_s, "t1e": rs.end_solution.t1_s}
@@ -174,19 +243,21 @@ def run_cell(spec: dict) -> dict:
             diag.append(dict(i=i, events=row, transmit_los_diff_m=float(asym_lin), receive_los_diff_m=float(sym_lin),
                              implied_offset_mps=float((asym_lin + sym_lin) / (2 * 60.0)),
                              mutant_minus_oracle_mps=float(y_mut[-1] - y_s[-1])))
-    y_p = np.asarray(rows.y, float)
+    y_p = np.asarray(rows.y, float)[kept]
     y_s, y_mut = np.asarray(y_s), np.asarray(y_mut)
-    out = dict(orbit=orbit, k=k, dynamics=dyn, n_rows=int(rows.n), prod=prod_meta,
-               value=dict(prod_minus_oracleS_max=float(np.max(np.abs(y_p - y_s))) if rows.n else 0.0,
-                          prod_minus_oracleS_rms=float(np.sqrt(np.mean((y_p - y_s) ** 2))) if rows.n else 0.0,
+    out = dict(orbit=orbit, k=k, dynamics=dyn, n_rows=int(len(kept)), n_rows_total=int(rows.n),
+               oracle_failures=failures, prod=prod_meta,
+               value=dict(prod_minus_oracleS_max=float(np.max(np.abs(y_p - y_s))) if kept else 0.0,
+                          prod_minus_oracleS_rms=float(np.sqrt(np.mean((y_p - y_s) ** 2))) if kept else 0.0,
                           prod_minus_oracleF_max=float(np.max(np.abs(y_p[f_idx] - np.asarray(y_f)))) if f_idx else 0.0,
                           oracleS_minus_oracleF_max=float(np.max(np.abs(y_s[f_idx] - np.asarray(y_f)))) if f_idx else 0.0,
-                          mutant_minus_oracleS_max=float(np.max(np.abs(y_mut - y_s))) if rows.n else 0.0,
-                          mutant_minus_oracleS_rms=float(np.sqrt(np.mean((y_mut - y_s) ** 2))) if rows.n else 0.0,
-                          mutant_minus_oracleS_mean=float(np.mean(y_mut - y_s)) if rows.n else 0.0,
+                          mutant_minus_oracleS_max=float(np.max(np.abs(y_mut - y_s))) if kept else 0.0,
+                          mutant_minus_oracleS_rms=float(np.sqrt(np.mean((y_mut - y_s) ** 2))) if kept else 0.0,
+                          mutant_minus_oracleS_mean=float(np.mean(y_mut - y_s)) if kept else 0.0,
                           solver_floor_max=float(np.max(np.abs(np.asarray(y_floor_p) - np.asarray(y_floor_s))))
-                          if rows.n else 0.0,
-                          prod_minus_oracleS_abs=np.abs(y_p - y_s).tolist()),
+                          if kept else 0.0,
+                          prod_minus_oracleS_abs=np.abs(y_p - y_s).tolist(),
+                          prod_minus_oracleET_abs=np.abs(y_p - np.asarray(y_s_et)).tolist()),
                diagnostics=diag)
     # ---------------- CD1 requalification (repaired production partials)
     if rows.n >= 7:
@@ -231,8 +302,15 @@ def analyse(acc: dict, cells: list, fd: dict | None) -> dict:
                  mutant_minus_oracleS_max=float(max(v("mutant_minus_oracleS_max"))),
                  mutant_minus_oracleS_rms_median=float(np.median(v("mutant_minus_oracleS_rms"))),
                  solver_floor_max=float(max(v("solver_floor_max"))),
-                 production_earth_method=sorted({c["prod"]["earth_ephemeris_method"] for c in cells}))
+                 production_earth_method=sorted({c["prod"]["earth_ephemeris_method"] for c in cells}),
+                 rows_total=int(sum(c["n_rows_total"] for c in cells)),
+                 oracle_convergence_failures=[dict(orbit=c["orbit"], k=c["k"], dynamics=c["dynamics"], **f)
+                                              for c in cells for f in c["oracle_failures"]])
     value["reduction_factor"] = value["mutant_minus_oracleS_max"] / max(value["prod_minus_oracleS_max"], 1e-300)
+    et_abs = np.concatenate([np.asarray(c["value"]["prod_minus_oracleET_abs"]) for c in cells if c["n_rows"]])
+    value["SECONDARY_POSTHOC_et_exact_oracle"] = dict(
+        label="post-hoc diagnostic, not a frozen gate: model S with ET-exact Earth (two-sum), site as production",
+        max=float(et_abs.max()), rms=float(np.sqrt(np.mean(et_abs ** 2))), p99=float(np.percentile(et_abs, 99)))
     diag = [d for c in cells for d in c["diagnostics"]]
     epochs = dict(
         n=len(diag),
@@ -301,7 +379,8 @@ def analyse(acc: dict, cells: list, fd: dict | None) -> dict:
                classes_identical=bool(classes == kp_sum["per_model_class"]), per_cell_var_flips=var_flip)
     # gates (criteria frozen in the acceptance file)
     gates = dict(
-        DIRECT_SPICE_VALUE_ORACLE="PASS" if (value["prod_minus_oracleS_max"] <= a["value_max_abs_mps"]
+        DIRECT_SPICE_VALUE_ORACLE="PASS" if (not value["oracle_convergence_failures"]   # stricter: every row
+                                             and value["prod_minus_oracleS_max"] <= a["value_max_abs_mps"]
                                              and value["prod_minus_oracleF_max"] <= a["value_max_abs_mps"]
                                              and value["prod_minus_oracleS_rms"] <= a["value_rms_mps"]) else "FAIL",
         REDUCTION="PASS" if value["reduction_factor"] >= a["min_reduction_factor"] else "FAIL",
@@ -329,8 +408,66 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--analyse-only", action="store_true")
     ap.add_argument("--workers", type=int, default=K.N_WORKERS)
+    ap.add_argument("--reuse-fd", action="store_true",
+                    help="reuse artifacts/phase17_d23_cd1_fd_rerun.json (computed on the same repaired production)")
+    ap.add_argument("--epoch-scan", action="store_true",
+                    help="post-hoc: production Hermite Earth vs ET-exact and raw SPICE at 7 points in EVERY grid "
+                         "interval of all 24 epochs (the Earth grid depends on the epoch only, not the orbit)")
+    ap.add_argument("--et-exact-diagnostic", action="store_true",
+                    help="post-hoc diagnostic: production vs ET-exact SPICE oracle on SIMPLIFIED cells "
+                         "(5 orbits x k = 0, 6, 12, 18); never part of the frozen gate")
     args = ap.parse_args()
     acc = load_acceptance()
+    if args.epoch_scan:
+        K._init()
+        from lunar_od.radiometrics import _interp_state
+        from phase17_r1m_core import EARTH_FIXTURE_CANONICAL, _spice_earth_state_mci, measurement_earth_ephemeris
+        g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+        x0 = [x["x0"] for x in g["geometries"] if x["case_id"] == "CANON"][0]
+        fracs = (0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95)
+        rows = []
+        for k in K.EPOCHS:
+            scn = K.scenario("CANON", x0, k)
+            et0 = float(scn.et0)
+            tg = scn.t_grid
+            earth = measurement_earth_ephemeris(EARTH_FIXTURE_CANONICAL, et0, float(tg[-1]))
+            hist = np.hstack([earth.pos(tg), earth.vel(tg)])
+            e_exact, e_raw, d_max = 0.0, 0.0, 0.0
+            for i in range(tg.size - 1):
+                for f in fracs:
+                    t = float(tg[i] + f * (tg[i + 1] - tg[i]))
+                    h = _interp_state(tg, hist, t)[:3]
+                    s = et0 + t
+                    bb = s - et0
+                    d = (et0 - (s - bb)) + (t - bb)
+                    sp = _spice_earth_state_mci(s)
+                    e_raw = max(e_raw, float(np.linalg.norm(h - sp[:3])))
+                    e_exact = max(e_exact, float(np.linalg.norm(h - (sp[:3] + sp[3:] * d))))
+                    d_max = max(d_max, abs(d))
+            rows.append(dict(k=k, et0=et0, n_points=int((tg.size - 1) * len(fracs)), hermite_vs_et_exact_max_m=e_exact,
+                             hermite_vs_raw_spice_max_m=e_raw, et_rounding_max_s=d_max))
+            print(k, "%.3g %.3g" % (e_exact, e_raw), flush=True)
+        out = dict(label="POST-HOC epoch-contract scan (frozen criterion: earth_epoch_pos_err_max_m <= 1e-6)",
+                   epochs=rows, hermite_vs_et_exact_max_m=max(r["hermite_vs_et_exact_max_m"] for r in rows),
+                   hermite_vs_raw_spice_max_m=max(r["hermite_vs_raw_spice_max_m"] for r in rows),
+                   et_rounding_max_s=max(r["et_rounding_max_s"] for r in rows),
+                   points=int(sum(r["n_points"] for r in rows)))
+        (ARTIFACTS / "phase17_d23_epoch_scan.json").write_text(json.dumps(K._clean(out), indent=1), encoding="utf-8")
+        print(json.dumps({k: v for k, v in out.items() if k != "epochs"}, indent=1))
+        return
+    if args.et_exact_diagnostic:
+        g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+        x0s = {x["case_id"]: x["x0"] for x in g["geometries"] if x["case_id"] in K.ORBITS}
+        specs = [dict(orbit=o, x0=x0s[o], k=k) for o in K.ORBITS for k in (0, 6, 12, 18)]
+        with ProcessPoolExecutor(max_workers=args.workers, initializer=K._init) as ex:
+            res = list(ex.map(et_exact_diagnostic, specs))
+        summ = {lab: dict(max=max(r[lab]["max"] for r in res), rms_max=max(r[lab]["rms"] for r in res))
+                for lab in ("earth_only", "earth_and_site")}
+        (ARTIFACTS / "phase17_d23_et_exact_diagnostic.json").write_text(json.dumps(K._clean(dict(
+            label="POST-HOC DIAGNOSTIC (not the frozen acceptance oracle)", cells=res, summary=summ)), indent=1),
+            encoding="utf-8")
+        print(json.dumps(summ, indent=1))
+        return
     fd_path = ARTIFACTS / "phase17_d23_cd1_fd_rerun.json"
     if args.analyse_only:
         cells = json.loads(RAW_PATH.read_text(encoding="utf-8"))
@@ -346,8 +483,11 @@ def main() -> None:
                  for o in K.ORBITS for k in K.EPOCHS]
         t0 = time.time()
         with ProcessPoolExecutor(max_workers=args.workers, initializer=K._init) as ex:
-            fd = K.run_fd(ex, x0s)
-            fd_path.write_text(json.dumps(K._clean(fd), indent=1), encoding="utf-8")
+            if args.reuse_fd and fd_path.exists():
+                fd = json.loads(fd_path.read_text(encoding="utf-8"))
+            else:
+                fd = K.run_fd(ex, x0s)
+                fd_path.write_text(json.dumps(K._clean(fd), indent=1), encoding="utf-8")
             print("CD1 FD rerun: state %s K %s (%.0f s)" % (fd["COUNTED_DOPPLER_STATE_FD_GATE"],
                                                          fd["COUNTED_DOPPLER_K_FD_GATE"], time.time() - t0), flush=True)
             cells = []

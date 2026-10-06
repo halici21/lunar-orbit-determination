@@ -39,10 +39,16 @@ STATION_STATE_METHODS = (
 )
 DEFAULT_STATION_STATE_METHOD = EXACT_EVENT_EPOCH_STATION_METHOD
 
-# Provenance labels for the two policies R3 deliberately does NOT change.
-# Earth ephemeris stays linear so the exact production path reproduces R2
-# model S exactly and S-L isolates the site transform alone (R3-P22).
-COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD = "linear_grid_interpolation"
+# Earth-centre ephemeris policy of the exact counted-Doppler path.
+# Phase 17-HARDEN-D23 repair: cubic Hermite on the position/velocity grid, the
+# SAME interpolation M3 two-way range and DeltaDOR use (``_interp_state``).
+# R3 had kept it LINEAR (R3-P22) only so the exact path reproduced the R2
+# model S reference and S-L isolated the site transform.  Linear interpolation
+# is not symmetric about the count interval at the uplink TRANSMIT epochs
+# (t_mid +/- Tc/2 - tau), so it left a near-constant ~1.7-1.8e-3 m/s value
+# offset (docs/phase17_harden_d23_repair_qualification.md).  The legacy
+# interpolated-transform-grid path (opt-in) is unchanged.
+COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD = "cubic_hermite_grid_interpolation"
 # R4 (CD-4): counted-Doppler event model selector. ``single_bounce_exact_station``
 # is the accepted R3 model and stays the default, so a stored scenario without
 # the field keeps its R3 behaviour and its R3 provenance (owner decision Q4).
@@ -289,9 +295,10 @@ class CountedDopplerStationStateProvider:
 
     * production ``radiometrics`` must not depend on ``two_way_range`` (M3) or
       on the R2 reference module;
-    * M3's provider interpolates the Earth ephemeris with cubic Hermite, while
-      counted Doppler and R2 model S both require LINEAR Earth interpolation so
-      that the S-L difference isolates the site transform alone (R3-P22).
+    * since Phase 17-HARDEN-D23 it applies the same cubic-Hermite Earth
+      interpolation as M3 (``_interp_state``) without sharing M3's provider;
+      R3-P22's LINEAR Earth policy, kept so the exact path reproduced R2 model
+      S, is superseded (the frozen R2 reference module stays linear).
 
     The cache is keyed on the exact IEEE-754 float64 event epoch: no tolerance
     and no rounding, so it is provably result-neutral (R3-P19a). It lives for
@@ -351,8 +358,10 @@ def make_exact_counted_doppler_station_state_provider(
     """Build the exact event-epoch counted-Doppler station-state provider.
 
     The site transform is evaluated with ``spice.sxform`` at the true event
-    epoch ``et0_s + t_s``. The Earth ephemeris keeps the LEGACY linear grid
-    interpolation on purpose (R3-P22). ``sxform_fn`` exists only for
+    epoch ``et0_s + t_s``. The Earth-centre state is cubic-Hermite
+    interpolated from the position/velocity grid with ``_interp_state``, the
+    same interpolation M3 two-way range and DeltaDOR use (Phase 17-HARDEN-D23;
+    R3-P22's linear policy is superseded). ``sxform_fn`` exists only for
     deterministic SPICE-free fixtures and must obey the same J2000-to-ITRF93
     state-transform convention.
     """
@@ -387,26 +396,27 @@ def make_exact_counted_doppler_station_state_provider(
         sxform_fn = spice.sxform
 
     station_ecef_state = np.concatenate([r_ecef.reshape(3), np.zeros(3)])
+    earth_state_history = np.hstack([earth_pos, earth_vel])
     counter = [0]
     et0 = float(et0_s)
 
     def state_fn(t_s: float) -> np.ndarray:
         t = float(t_s)
-        earth_pos_t = _interp_vector(t_grid, earth_pos, t)
-        earth_vel_t = _interp_vector(t_grid, earth_vel, t)
+        earth_state = _interp_state(t_grid, earth_state_history, t)
         # F06: a non-finite Earth history must fail closed, never silently
-        # produce a station state.
-        if not np.all(np.isfinite(earth_pos_t)):
-            raise StationStateEvaluationError(
-                f"Earth position history is non-finite at t={t:.16g} s "
-                f"(station {station_name!r}); no legacy fallback was used."
-            )
-        if not np.all(np.isfinite(earth_vel_t)):
+        # produce a station state.  Hermite mixes position and velocity, so the
+        # failing history is named from the bracketing grid nodes.
+        if not np.all(np.isfinite(earth_state)):
+            i1 = int(np.clip(np.searchsorted(t_grid, t, side="right"), 1, t_grid.size - 1))
+            if not np.all(np.isfinite(earth_pos[i1 - 1:i1 + 1])):
+                raise StationStateEvaluationError(
+                    f"Earth position history is non-finite at t={t:.16g} s "
+                    f"(station {station_name!r}); no legacy fallback was used."
+                )
             raise StationStateEvaluationError(
                 f"Earth velocity history is non-finite at t={t:.16g} s "
                 f"(station {station_name!r}); no legacy fallback was used."
             )
-        earth_state = np.concatenate([earth_pos_t, earth_vel_t])
         try:
             raw_xform = sxform_fn(
                 STATION_STATE_SOURCE_FRAME, STATION_STATE_TARGET_FRAME, et0 + t
