@@ -28,6 +28,8 @@
 - **The same criterion measured exactly.** The same frozen 1e-6 m criterion, evaluated at exactly representable
   epochs over every grid interval of all 24 epochs (197,904 points), gives **2.42e-7 m**: PASS.
 - **Status.** The exception is adjudicated, not relabelled. It stands until the owner accepts it.
+- **Owner decision (2026-10-07): ACCEPTED.** The frozen result above is not rewritten; with the adjudicated
+  exception accepted, `PHASE17_HARDEN_D23_REPAIR_GATE = PASS` and `EARTH_EPOCH_CONTRACT = QUALIFIED`.
 
 ## 2. Root Cause (confirmed)
 
@@ -148,6 +150,8 @@ PUSH = NONE
 MERGE = NONE
 MAIN_CHANGED = NO
 ORIGIN_MAIN_CHANGED = NO
+
+OWNER_ADJUDICATION (2026-10-07) = ACCEPTED -> PHASE17_HARDEN_D23_REPAIR_GATE = PASS
 
 NEXT_ACTION = hard stop. Owner: accept or reject the §5 adjudication. A value-based phase (nonlinear / M3 / stochastic
               K) may then proceed; HARDEN-D24 is optional below 1e-7 m/s.
