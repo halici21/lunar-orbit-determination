@@ -312,6 +312,19 @@
       "repair": "none (outside D23); first-order two-sum correction demonstrated in examples/phase17_d23_qualification.py et_exact_spice_provider",
       "regression": "none",
       "reproduction": "examples/phase17_d23_qualification.py --et-exact-diagnostic"
+    },
+    {
+      "id": "HARDEN-D25",
+      "title": "BLS-LM K_SRP posterior design omits the lunar harmonic field",
+      "location": "lunar_od/estimators.py _two_way_range_posterior_design_with_k (called by estimate_two_way_range_bls_lm when solve_for_k_srp=True)",
+      "discovered": "Phase 17-KP2 production BLS cross-check (warm-start stationarity)",
+      "root_cause": "the posterior-design propagation receives no harmonic_model / harmonic_epoch_et0, while the solve iterations do: the reported covariance is linearised on a different force model",
+      "effect": "with harmonics opt-in, the estimate is unaffected (warm-started production BLS agrees with the KP2 solution to <= 8e-4 sigma) but the posterior sigma differs from the QR covariance on the solve's own dynamics: K +9 %, z +3 % (CANON k0, 15-orbit range-only arc)",
+      "status": "OPEN_RECOMMENDED_FOLLOWUP",
+      "klass": "REQUIRED_FOR_CORRECTNESS",
+      "repair": "none in KP2 (estimator change out of scope); pass the harmonic model through to the posterior design and re-qualify Phase 17-R's posterior tests",
+      "regression": "none yet",
+      "reproduction": "examples/phase17_kp2_campaign.py --posthoc-verification (bls_stationarity)"
     }
   ]
 }

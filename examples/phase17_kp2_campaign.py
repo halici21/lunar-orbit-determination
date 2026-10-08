@@ -176,6 +176,74 @@ def job_bls(spec: dict) -> dict:
                          k_mine=float(th[6]), k_prod=float(prod[6])))
 
 
+def posthoc_basin(orbit: str = "O2_FULL_SUN_HIGH_BETA", k: int = 12, truth: str = "T2_MIDDLE") -> dict:
+    """POST-HOC DIAGNOSTIC (not part of the frozen decision): re-solve one failed trial with the SAME data,
+    noise and a priori but a longer stage-1 initialisation (10 evaluations) and 20 stage-2 evaluations, to
+    separate estimator basin behaviour from identifiability."""
+    xs = x0s()
+    ci = CELLS.index((orbit, k))
+    ti = TRUTH_NAMES.index(truth)
+    x0 = np.asarray(xs[orbit], float)
+    scn = K.scenario(orbit, x0.tolist(), k)
+    f_true = np.asarray(K2.TRUTHS[truth])
+    X, PHI, S = K2.propagate_segmented(scn, x0, K2.K0 * (1 + f_true), HF)
+    fx, zr, zd = K2.build_fixed(scn, X, PHI, S, K.stations())
+    rng = np.random.default_rng([ci, ti, 0])                      # identical draws to the frozen trial
+    dx = rng.normal(0.0, K2.PRIOR_SD)
+    nr = rng.normal(0.0, K2.SIGMA_RANGE_M, zr.size)
+    b_true = rng.normal(0.0, K2.SIGMA_BIAS_TRUTH_MPS, fx.nuis.shape[1])
+    nd = rng.normal(0.0, K2.SIGMA_DOPPLER_MPS, zd.size)
+    sol = K2.solve(fx, zr + nr, zd + fx.nuis @ b_true + nd, x0 + dx, dyn=HF, model="M3", bias_mode="FREE",
+                   stage1_evals=10, max_evals=20)
+    return K._clean(dict(label="POST-HOC basin diagnostic; frozen trial result unchanged", orbit=orbit, k=k,
+                         truth=truth, solve=_strip(sol), metrics=K2.recovery_metrics(sol, x0, f_true)))
+
+
+def posthoc_fd_tight(orbit: str = "O2_FULL_SUN_HIGH_BETA", k: int = 12) -> dict:
+    """POST-HOC: the frozen FD job with nominal AND perturbed propagations at rtol 1e-13 / atol 1e-14
+    (the KP1 FD-oracle tolerance) to separate the oracle's integration floor from a sensitivity error."""
+    K2.HF_TOL = (1e-13, 1e-14)
+    xs = x0s()
+    out = job_fd(dict(orbit=orbit, k=k, x0=xs[orbit]))
+    out["label"] = "POST-HOC FD at rtol 1e-13 / atol 1e-14; frozen FD result unchanged"
+    return out
+
+
+def posthoc_bls_stationarity() -> dict:
+    """POST-HOC: production BLS started FROM the KP2 range-only scalar-K solution (same data as the frozen
+    BLS job).  If both minimise the same objective, production must stay there and report the same sigma."""
+    import od_gravity_covariance_campaign as C  # noqa: N811
+    import phase17_geo_core as G
+    from lunar_od.constants import MU_EARTH_M3S2, MU_MOON_M3S2, MU_SUN_M3S2
+    from lunar_od.estimators import estimate_two_way_range_bls_lm
+    from lunar_od.srp import SRPOptions
+    from phase17_r1od2_fidelity import NMAX
+    xs = x0s()
+    x0 = np.asarray(xs["CANON"], float)
+    scn = K.scenario("CANON", x0.tolist(), 0)
+    X, PHI, S = K2.propagate_segmented(scn, x0, np.full(3, K2.K0), HF)
+    fx, zr, zd = K2.build_fixed(scn, X, PHI, S, K.stations())
+    rng = np.random.default_rng([98, 0, 0])
+    dx = rng.normal(0.0, K2.PRIOR_SD)
+    z_r = zr + rng.normal(0.0, K2.SIGMA_RANGE_M, zr.size)
+    mine = K2.solve(fx, z_r, zd, x0 + dx, dyn=HF, model="M0", bias_mode="NONE", use_doppler=False, prior_sd=None)
+    th, sd = np.asarray(mine["theta"]), np.asarray(mine["sd"])
+    obs = np.array(fx.rb.obs, float, copy=True)
+    obs[:, 1] = z_r
+    x_best, status, stats = estimate_two_way_range_bls_lm(
+        scn.t_grid, obs, th[:6], fx.rb.pass_geo, MU_MOON_M3S2, MU_EARTH_M3S2, MU_SUN_M3S2,
+        lambda t: G.earth_state_mci(scn.et0 + float(t))[:3], lambda t: G.sun_mci(scn.et0 + float(t)),
+        rtol=1e-12, atol=1e-13, j2_moon=0.0, harmonic_model=C._M[NMAX], harmonic_epoch_et0=scn.et0,
+        srp=SRPOptions(k_srp_m2_per_kg=float(th[6]), shadow_model=scn.shadow_model), solve_for_k_srp=True,
+        k_srp_initial=float(th[6]), return_posterior=True)
+    prod = np.concatenate([np.asarray(x_best, float), [float(stats.k_srp_estimate)]])
+    pcov = np.asarray(stats.posterior_covariance, float)
+    return K._clean(dict(label="POST-HOC production BLS warm-started at the KP2 solution; frozen BLS result unchanged",
+                         status=str(status), mine_converged=mine["converged"], k_mine=float(th[6]),
+                         k_prod=float(prod[6]), diff_over_sigma=((th - prod) / sd).tolist(),
+                         sigma_ratio=(sd / np.sqrt(np.diag(pcov))).tolist()))
+
+
 def run_job(spec: dict) -> dict:
     t0 = time.time()
     fn = {"MAIN": job_main, "FD": job_fd, "NOISE_FREE": job_noise_free, "BLS": job_bls}[spec["kind"]]
@@ -274,8 +342,27 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--analyse-only", action="store_true")
     ap.add_argument("--workers", type=int, default=K.N_WORKERS)
+    ap.add_argument("--posthoc-basin", action="store_true", help="post-hoc O2 k12 T2 basin diagnostic")
+    ap.add_argument("--posthoc-verification", action="store_true", help="post-hoc FD (tight) and BLS warm start")
+    ap.add_argument("--resume", action="store_true",
+                    help="keep the completed jobs in the raw file and run only the missing ones")
     args = ap.parse_args()
     pre = K2.load_predeclaration(PREDECLARATION_SHA256)
+    if args.posthoc_verification:
+        K._init()
+        with ProcessPoolExecutor(max_workers=2, initializer=K._init) as ex:
+            f1, f2 = ex.submit(posthoc_fd_tight), ex.submit(posthoc_bls_stationarity)
+            out = dict(fd_tight=f1.result(), bls_stationarity=f2.result())
+        (ARTIFACTS / "phase17_kp2_posthoc_verification.json").write_text(json.dumps(K._clean(out), indent=1),
+                                                                           encoding="utf-8")
+        print(json.dumps(K._clean(out), indent=1))
+        return
+    if args.posthoc_basin:
+        K._init()
+        out = posthoc_basin()
+        (ARTIFACTS / "phase17_kp2_posthoc_basin.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+        print(out["metrics"])
+        return
     if args.analyse_only:
         results = json.loads(RAW_PATH.read_text(encoding="utf-8"))
     else:
@@ -288,6 +375,13 @@ def main() -> None:
         specs += [dict(kind="FD", orbit=o, k=k, x0=xs[o]) for o, k in (("CANON", 0), ("O2_FULL_SUN_HIGH_BETA", 12))]
         t0 = time.time()
         results = []
+        if args.resume and RAW_PATH.exists():
+            def key(d):
+                return (d.get("kind"), d.get("orbit"), d.get("k"), d.get("truth"))
+            results = [r for r in json.loads(RAW_PATH.read_text(encoding="utf-8")) if "error" not in r]
+            done = {key(r) for r in results}
+            specs = [sp for sp in specs if key(sp) not in done]
+            print("resume: %d done, %d to run" % (len(results), len(specs)), flush=True)
         with ProcessPoolExecutor(max_workers=args.workers, initializer=K._init) as ex:
             for i, r in enumerate(ex.map(run_job, specs)):
                 results.append(r)

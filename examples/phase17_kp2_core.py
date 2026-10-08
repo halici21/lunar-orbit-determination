@@ -69,10 +69,14 @@ def load_predeclaration(pinned: str, path: Path = PRE_PATH) -> dict:
 # ======================================================================
 # segmented propagation
 # ======================================================================
+#: (rtol, atol) of the high-fidelity segment propagation (as phase17_r1od2_fidelity.propagate_fidelity)
+HF_TOL = (1e-12, 1e-13)
+
+
 def _prop_segment(scn, t_slice, x_start, k, dyn):
     if dyn == "HIGH_FIDELITY":
         import phase17_kp1_campaign as KPC
-        return KPC._propagate(scn, t_slice, x_start, float(k), 1e-12, 1e-13)
+        return KPC._propagate(scn, t_slice, x_start, float(k), *HF_TOL)
     import phase17_geo_core as G
     return G.propagate48(t_slice, x_start, scn.et0, float(k), shadow_model=scn.shadow_model)
 
