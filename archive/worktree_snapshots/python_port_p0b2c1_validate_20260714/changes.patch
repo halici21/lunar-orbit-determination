@@ -1,0 +1,2061 @@
+diff --git a/lunar_od/__init__.py b/lunar_od/__init__.py
+index 0a1e33a..06afddb 100644
+--- a/lunar_od/__init__.py
++++ b/lunar_od/__init__.py
+@@ -48,6 +48,13 @@ from .accelerated import (
+     position_observables,
+     visibility_mask_ecef,
+ )
++from .history_domain import (
++    HistoryDomainDropRecord,
++    HistoryDomainError,
++    MAX_BOUNDARY_ULPS,
++    normalize_supported_epoch,
++    summarize_history_domain_drops,
++)
+ from .measurements import (
+     C_LIGHT_MPS,
+     ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
+@@ -298,6 +305,11 @@ __all__ = [
+     "PassGeometry",
+     "LightTimeSolution",
+     "LightTimeConvergenceError",
++    "HistoryDomainDropRecord",
++    "HistoryDomainError",
++    "MAX_BOUNDARY_ULPS",
++    "normalize_supported_epoch",
++    "summarize_history_domain_drops",
+     "MeasurementJacobianError",
+     "OneWayLightTimeInitialStateSensitivity",
+     "OneWayLightTimeSensitivity",
+diff --git a/lunar_od/measurements.py b/lunar_od/measurements.py
+index 20768b3..6a3ebf3 100644
+--- a/lunar_od/measurements.py
++++ b/lunar_od/measurements.py
+@@ -9,6 +9,12 @@ from numpy.typing import ArrayLike
+ 
+ from .geometry import ecef2razel_sez, ecef2sez_dcm, wrap_to_pi
+ from .accelerated import apply_stm_to_jacobian, geometric_range_rate_observables, position_observables
++from .history_domain import (
++    HistoryDomainDropRecord,
++    HistoryDomainError,
++    normalize_supported_epoch,
++    summarize_history_domain_drops,
++)
+ from .radiometrics import (
+     RangeRatePhysicsConfig,
+     _interp_state_transition_position,
+@@ -44,6 +50,14 @@ JACOBIAN_MODELS = (
+ # defaults (1e-10 s / 20), which belong to the range-rate measurement family.
+ ONE_WAY_LIGHT_TIME_TOLERANCE_S = 1e-12
+ ONE_WAY_LIGHT_TIME_MAX_ITERATIONS = 10
++# FA-03B (P0B-2B): every one-way PRODUCTION history lookup — solver probes,
++# final state re-queries, and STM interpolation — passes through the shared
++# closed-support guard. The metadata policy label below names the contract:
++# closed interval, exact endpoints accepted, at most MAX_BOUNDARY_ULPS
++# representable steps normalized onto an endpoint, everything farther raises
++# HistoryDomainError before any extrapolation. Raw solvers stay generic.
++HISTORY_DOMAIN_POLICY = "strict_closed_support_two_ulp_endpoint"
++
+ # FA-03A dual convergence criterion: the fixed-point update tolerance alone
+ # can be satisfied by a stalled or trivially-looping iterate, so the solver
+ # additionally requires the light-time equation residual
+@@ -290,6 +304,15 @@ def measurement_model_metadata(
+             if pass_geo.measurement_type == "position"
+             else float(rr.light_time_equation_tolerance_s)
+         ),
++        # FA-03B (P0B-2): history-domain policy and per-pass drop aggregates.
++        # Defaults describe a no-drop pass; generators overwrite the dynamic
++        # fields when candidates were dropped for unsupported history epochs.
++        "history_domain_policy": HISTORY_DOMAIN_POLICY,
++        "history_domain_dropped_measurements": 0,
++        "history_domain_drop_records": (),
++        "history_domain_required_pre_roll_s": 0.0,
++        "history_domain_required_post_roll_s": 0.0,
++        "history_domain_all_candidates_dropped": False,
+         "count_interval_s": float(rr.count_interval_s),
+         "uplink_frequency_hz": float(rr.uplink_frequency_hz),
+         "turnaround_ratio": float(rr.turnaround_ratio),
+@@ -465,6 +488,46 @@ def _require_one_way_light_time_convergence(
+     )
+ 
+ 
++def _one_way_history_support(t_grid_s: ArrayLike) -> tuple[float, float]:
++    t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
++    return float(t_grid[0]), float(t_grid[-1])
++
++
++def _guarded_spacecraft_state_lookup(
++    t_grid_s: ArrayLike,
++    state_history_mci: ArrayLike,
++    *,
++    consumer: str,
++    observation_index: int | None = None,
++):
++    """Strict FA-03B production wrapper around ``interp_state_history``.
++
++    Every evaluation — including intermediate solver probes and final
++    re-queries — is domain-checked first, so the first unsupported probe
++    raises :class:`HistoryDomainError` before any extrapolation happens and
++    without touching the solver's event variable. The raw
++    ``interp_state_history`` helper keeps its generic (M3/diagnostic)
++    behavior; only production one-way consumers route through this wrapper.
++    """
++    t_grid = np.asarray(t_grid_s, dtype=float)
++    support_start_s, support_end_s = _one_way_history_support(t_grid)
++
++    def lookup(epoch_s: float) -> np.ndarray:
++        normalized = normalize_supported_epoch(
++            epoch_s,
++            support_start_s,
++            support_end_s,
++            history_name="spacecraft_state",
++            model_context="one_way_light_time",
++            consumer=consumer,
++            event_label="transmit",
++            observation_index=observation_index,
++        )
++        return interp_state_history(t_grid, state_history_mci, normalized)
++
++    return lookup
++
++
+ def one_way_light_time_range_sensitivity(
+     receive_time_s: float,
+     station,
+@@ -497,10 +560,15 @@ def one_way_light_time_range_sensitivity(
+     station_rel_state_j2000 = np.linalg.solve(x_rx, station_ecef_state)
+     station_mci_rx = earth_pos_mci_rx + station_rel_state_j2000[:3]
+ 
++    state_lookup = _guarded_spacecraft_state_lookup(
++        t_grid_s,
++        state_history_mci,
++        consumer="one_way_light_time_range_sensitivity",
++    )
+     solution = solve_one_way_light_time(
+         receive_time_s,
+         station_mci_rx,
+-        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
++        lambda t: state_lookup(t)[:3],
+         light_speed_mps=light_speed_mps,
+         tolerance_s=tolerance_s,
+         max_iter=max_iter,
+@@ -515,7 +583,7 @@ def one_way_light_time_range_sensitivity(
+         context="sensitivity solve",
+     )
+ 
+-    state_tx = interp_state_history(t_grid_s, state_history_mci, solution.transmit_time_s)
++    state_tx = state_lookup(solution.transmit_time_s)
+     rho_vec = state_tx[:3] - station_mci_rx
+     range_m = float(np.linalg.norm(rho_vec))
+     if range_m <= 0.0:
+@@ -625,11 +693,22 @@ def one_way_light_time_initial_state_sensitivity(
+         max_iter=max_iter,
+         equation_tolerance_s=equation_tolerance_s,
+     )
+-    phi_r_tx = _interp_state_transition_position(
+-        t_grid_s, phi_history, solution.transmit_time_s
++    # FA-03B + T009 contract: the spacecraft state and the STM position block
++    # must share one identical normalized transmit epoch (both histories live
++    # on the same grid, so a single closed-support normalization serves both).
++    support_start_s, support_end_s = _one_way_history_support(t_grid_s)
++    normalized_tx = normalize_supported_epoch(
++        solution.transmit_time_s,
++        support_start_s,
++        support_end_s,
++        history_name="spacecraft_state",
++        model_context="one_way_light_time",
++        consumer="one_way_light_time_initial_state_sensitivity",
++        event_label="transmit",
+     )
++    phi_r_tx = _interp_state_transition_position(t_grid_s, phi_history, normalized_tx)
+     spacecraft_state_tx = interp_state_history(
+-        t_grid_s, state_history_mci, solution.transmit_time_s
++        t_grid_s, state_history_mci, normalized_tx
+     )
+     station_position_rx = _station_position_mci_at_receive_epoch(
+         station, earth_pos_mci_rx, x_j2k_itrf_rx
+@@ -836,9 +915,11 @@ def one_way_light_time_position_local_state_jacobian(
+         max_iter=max_iter,
+         equation_tolerance_s=equation_tolerance_s,
+     )
+-    spacecraft_state_tx = interp_state_history(
+-        t_grid_s, state_history_mci, solution.transmit_time_s
+-    )
++    spacecraft_state_tx = _guarded_spacecraft_state_lookup(
++        t_grid_s,
++        state_history_mci,
++        consumer="one_way_light_time_position_local_state_jacobian",
++    )(solution.transmit_time_s)
+     station_position_rx = _station_position_mci_at_receive_epoch(
+         station, earth_pos_mci_rx, x_j2k_itrf_rx
+     )
+@@ -1125,6 +1206,7 @@ def _apparent_position_observable(
+     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
+     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
+     equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
++    observation_index: int | None = None,
+ ) -> tuple[np.ndarray, float, float, int]:
+     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
+ 
+@@ -1132,9 +1214,12 @@ def _apparent_position_observable(
+     the Earth centre, station, and topocentric SEZ frame are evaluated at the
+     receive time ``t_r``. ``earth_pos_mci_rx`` and ``x_j2k_itrf_rx`` are the
+     receive-epoch values (already indexed, not interpolated). The transmit-time
+-    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``;
+-    linear extrapolation is used when ``t_t`` falls just before the grid start
+-    (e.g. at the first receive epoch).
++    spacecraft state is cubic-Hermite interpolated from ``state_history_mci``
++    strictly inside its support (FA-03B): a ``t_t`` outside the propagated
++    history raises :class:`~lunar_od.history_domain.HistoryDomainError`
++    instead of extrapolating (generation drops such candidates with a
++    structured record; a small caller-owned pre-roll of the propagation is
++    the supported way to serve early receive epochs).
+ 
+     When ``apply_stellar`` is set, the converged-light-time inertial line of
+     sight is additionally rotated by the reception-case stellar aberration
+@@ -1157,10 +1242,16 @@ def _apparent_position_observable(
+     station_rel_j2000 = station_rel_state_j2000[:3]
+     station_mci_rx = earth_pos_mci_rx + station_rel_j2000
+ 
++    state_lookup = _guarded_spacecraft_state_lookup(
++        t_grid_s,
++        state_history_mci,
++        consumer="_apparent_position_observable",
++        observation_index=observation_index,
++    )
+     solution = solve_one_way_light_time(
+         receive_time_s,
+         station_mci_rx,
+-        lambda t: interp_state_history(t_grid_s, state_history_mci, t)[:3],
++        lambda t: state_lookup(t)[:3],
+         light_speed_mps=light_speed_mps,
+         tolerance_s=tolerance_s,
+         max_iter=max_iter,
+@@ -1175,7 +1266,7 @@ def _apparent_position_observable(
+         context="observable solve",
+     )
+     transmit_time_s = solution.transmit_time_s
+-    r_sc_tt = interp_state_history(t_grid_s, state_history_mci, transmit_time_s)[:3]
++    r_sc_tt = state_lookup(transmit_time_s)[:3]
+ 
+     if apply_stellar:
+         if observer_earth_vel_rx is None:
+@@ -1264,9 +1355,15 @@ def _apparent_position_rowwise(
+                 earth_vel[time_idx] if (use_stellar and earth_vel is not None) else None
+             ),
+             apply_stellar=use_stellar,
++            observation_index=i,
+         )
+         h_meas[i] = z
+-        r_tx[i] = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]
++        r_tx[i] = _guarded_spacecraft_state_lookup(
++            pass_geo.t_s,
++            state_history_mci,
++            consumer="_apparent_position_rowwise",
++            observation_index=i,
++        )(transmit_time_s)[:3]
+     return h_meas, r_tx
+ 
+ 
+@@ -1343,6 +1440,8 @@ def generate_position_measurements(
+     rng = rng or np.random.default_rng()
+ 
+     obs_counter = 0
++    candidate_counter = 0
++    drop_records: list[HistoryDomainDropRecord] = []
+     for k, t_s in enumerate(t_pass_s):
+         x_j2k_itrf = np.asarray(spice.sxform("J2000", "ITRF93", float(et0 + t_s)), dtype=float)
+         xforms[k, :, :] = x_j2k_itrf
+@@ -1363,29 +1462,11 @@ def generate_position_measurements(
+ 
+         for station_col in active_station_cols:
+             station = stations[station_col]
+-            if apply_light_time:
+-                if apply_stellar_aberration:
+-                    obs_earth_vel = (
+-                        v_earth_ssb_j2000[k]
+-                        if stellar_aberration_model == "spice_ssb"
+-                        else v_earth_mci[k]
+-                    )
+-                else:
+-                    obs_earth_vel = None
+-                z_clean, _t_t, _lt, _it = _apparent_position_observable(
+-                    float(t_s), station, t_pass_s, state_history_mci,
+-                    r_earth_mci[k], x_j2k_itrf,
+-                    observer_earth_vel_rx=obs_earth_vel,
+-                    apply_stellar=apply_stellar_aberration,
+-                )
+-            else:
+-                rho_vec_ecef = r_sat_ecef - station.r_ecef_m
+-                az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+-                z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
+-
+-            bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
+-            if bias_vec.size != 3:
+-                bias_vec = np.zeros(3)
++            # FA-03B RNG contract: each visible candidate owns one potential
++            # observation row and consumes its noise draws BEFORE the model
++            # evaluation, so a dropped candidate leaves later surviving noisy
++            # rows bit-identical to a pre-rolled run where every candidate
++            # had valid history. Physics calls never consume RNG.
+             if noise:
+                 noise_vec = np.array(
+                     [
+@@ -1397,6 +1478,45 @@ def generate_position_measurements(
+                 )
+             else:
+                 noise_vec = np.zeros(3)
++
++            try:
++                if apply_light_time:
++                    if apply_stellar_aberration:
++                        obs_earth_vel = (
++                            v_earth_ssb_j2000[k]
++                            if stellar_aberration_model == "spice_ssb"
++                            else v_earth_mci[k]
++                        )
++                    else:
++                        obs_earth_vel = None
++                    z_clean, _t_t, _lt, _it = _apparent_position_observable(
++                        float(t_s), station, t_pass_s, state_history_mci,
++                        r_earth_mci[k], x_j2k_itrf,
++                        observer_earth_vel_rx=obs_earth_vel,
++                        apply_stellar=apply_stellar_aberration,
++                        observation_index=candidate_counter,
++                    )
++                else:
++                    rho_vec_ecef = r_sat_ecef - station.r_ecef_m
++                    az_rad, el_rad, range_m = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
++                    z_clean = np.array([range_m, az_rad, el_rad], dtype=float)
++            except HistoryDomainError as domain_error:
++                drop_records.append(
++                    HistoryDomainDropRecord.from_error(
++                        domain_error,
++                        arc_id=arc_id,
++                        station_index=int(station_col),
++                        time_index=int(k),
++                        candidate_ordinal=candidate_counter,
++                    )
++                )
++                candidate_counter += 1
++                continue
++            candidate_counter += 1
++
++            bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
++            if bias_vec.size != 3:
++                bias_vec = np.zeros(3)
+             z_noisy = z_clean + noise_vec + bias_vec
+ 
+             station_id_1based = station_col + 1
+@@ -1425,11 +1545,15 @@ def generate_position_measurements(
+         companion_geometry="instantaneous",
+         jacobian_model=jacobian_model,
+     )
+-    object.__setattr__(
+-        pass_geo,
+-        "measurement_metadata",
+-        measurement_model_metadata(pass_geo, noise_enabled=noise, noise_seed=noise_seed),
++    metadata = measurement_model_metadata(
++        pass_geo, noise_enabled=noise, noise_seed=noise_seed
+     )
++    if drop_records:
++        metadata.update(summarize_history_domain_drops(drop_records))
++        metadata["history_domain_all_candidates_dropped"] = bool(
++            candidate_counter > 0 and obs_counter == 0
++        )
++    object.__setattr__(pass_geo, "measurement_metadata", metadata)
+     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
+ 
+ 
+@@ -1597,6 +1721,8 @@ def generate_range_rate_measurements(
+     rng = rng or np.random.default_rng()
+ 
+     obs_counter = 0
++    candidate_counter = 0
++    drop_records: list[HistoryDomainDropRecord] = []
+     for k, t_s in enumerate(t_pass_s):
+         active_station_cols = np.where(vis_mask_raw[k, :])[0]
+         if active_station_cols.size == 0:
+@@ -1614,39 +1740,9 @@ def generate_range_rate_measurements(
+             rho_vec_ecef = r_sat_ecef - station.r_ecef_m
+             rho_dot_ecef = v_sat_ecef
+ 
+-            if companion_geometry == "instantaneous":
+-                range_ideal = float(np.linalg.norm(rho_vec_ecef))
+-                az_ideal, el_ideal, _ = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
+-            else:
+-                range_ideal, az_ideal, el_ideal = _range_rate_companion_observable(
+-                    float(t_s),
+-                    station,
+-                    t_pass_s,
+-                    state_history_mci,
+-                    r_earth_mci[k],
+-                    xforms[k, :, :],
+-                    companion_geometry=companion_geometry,
+-                )
+-            if rr_physics.mode == "geometric_instantaneous":
+-                rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
+-            else:
+-                rr_ideal = two_way_counted_doppler_observable(
+-                    float(t_s),
+-                    station,
+-                    t_pass_s,
+-                    state_history_mci,
+-                    r_earth_mci,
+-                    v_earth_mci,
+-                    xforms,
+-                    rr_physics,
+-                )
+-
+-            station_bias = np.asarray(getattr(station, "bias", []), dtype=float).reshape(-1)
+-            if station_bias.size == 4:
+-                bias_vec = station_bias
+-            else:
+-                bias_vec = np.array([bias_range_m, bias_rr_mps, bias_az_rad, bias_el_rad], dtype=float)
+-
++            # FA-03B RNG contract (see the position generator): four draws
++            # per candidate, consumed before the model evaluation, in
++            # range/range-rate/azimuth/elevation order.
+             if noise:
+                 noise_vec = np.array(
+                     [
+@@ -1660,6 +1756,53 @@ def generate_range_rate_measurements(
+             else:
+                 noise_vec = np.zeros(4)
+ 
++            try:
++                if companion_geometry == "instantaneous":
++                    range_ideal = float(np.linalg.norm(rho_vec_ecef))
++                    az_ideal, el_ideal, _ = ecef2razel_sez(rho_vec_ecef, station.lat_rad, station.lon_rad)
++                else:
++                    range_ideal, az_ideal, el_ideal = _range_rate_companion_observable(
++                        float(t_s),
++                        station,
++                        t_pass_s,
++                        state_history_mci,
++                        r_earth_mci[k],
++                        xforms[k, :, :],
++                        companion_geometry=companion_geometry,
++                    )
++                if rr_physics.mode == "geometric_instantaneous":
++                    rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
++                else:
++                    rr_ideal = two_way_counted_doppler_observable(
++                        float(t_s),
++                        station,
++                        t_pass_s,
++                        state_history_mci,
++                        r_earth_mci,
++                        v_earth_mci,
++                        xforms,
++                        rr_physics,
++                    )
++            except HistoryDomainError as domain_error:
++                drop_records.append(
++                    HistoryDomainDropRecord.from_error(
++                        domain_error,
++                        arc_id=arc_id,
++                        station_index=int(station_col),
++                        time_index=int(k),
++                        candidate_ordinal=candidate_counter,
++                    )
++                )
++                candidate_counter += 1
++                continue
++            candidate_counter += 1
++
++            station_bias = np.asarray(getattr(station, "bias", []), dtype=float).reshape(-1)
++            if station_bias.size == 4:
++                bias_vec = station_bias
++            else:
++                bias_vec = np.array([bias_range_m, bias_rr_mps, bias_az_rad, bias_el_rad], dtype=float)
++
+             z = np.array([range_ideal, rr_ideal, az_ideal, el_ideal], dtype=float) + bias_vec + noise_vec
+             station_id_1based = station_col + 1
+             time_index_1based = k + 1
+@@ -1681,11 +1824,15 @@ def generate_range_rate_measurements(
+         companion_geometry=companion_geometry,
+         jacobian_model=jacobian_model,
+     )
+-    object.__setattr__(
+-        pass_geo,
+-        "measurement_metadata",
+-        measurement_model_metadata(pass_geo, noise_enabled=noise, noise_seed=noise_seed),
++    metadata = measurement_model_metadata(
++        pass_geo, noise_enabled=noise, noise_seed=noise_seed
+     )
++    if drop_records:
++        metadata.update(summarize_history_domain_drops(drop_records))
++        metadata["history_domain_all_candidates_dropped"] = bool(
++            candidate_counter > 0 and obs_counter == 0
++        )
++    object.__setattr__(pass_geo, "measurement_metadata", metadata)
+     return obs_data[:obs_counter, :], pass_geo
+ 
+ 
+diff --git a/lunar_od/radiometrics.py b/lunar_od/radiometrics.py
+index 8869081..63dff58 100644
+--- a/lunar_od/radiometrics.py
++++ b/lunar_od/radiometrics.py
+@@ -8,6 +8,8 @@ from typing import Literal
+ import numpy as np
+ from numpy.typing import ArrayLike
+ 
++from .history_domain import normalize_supported_epoch
++
+ C_LIGHT_MPS = 299792458.0
+ DEFAULT_X_BAND_UPLINK_HZ = 7.2e9
+ DEFAULT_X_BAND_TURNAROUND_RATIO = 880.0 / 749.0
+@@ -212,6 +214,7 @@ def two_way_counted_doppler_observable(
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
+         cfg,
++        endpoint_label="count-start endpoint",
+     )
+     _require_round_trip_light_time_convergence(
+         start_solution, cfg, endpoint_label="count-start endpoint"
+@@ -225,6 +228,7 @@ def two_way_counted_doppler_observable(
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
+         cfg,
++        endpoint_label="count-end endpoint",
+     )
+     _require_round_trip_light_time_convergence(
+         end_solution, cfg, endpoint_label="count-end endpoint"
+@@ -312,6 +316,7 @@ def round_trip_light_time_initial_state_jacobian(
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
+         cfg,
++        endpoint_label=endpoint_label,
+     )
+     _require_round_trip_light_time_convergence(
+         solution, cfg, endpoint_label=endpoint_label
+@@ -327,6 +332,9 @@ def round_trip_light_time_initial_state_jacobian(
+         earth_pos_mci_m,
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
++        endpoint_label=endpoint_label,
++        event_label="downlink",
++        consumer="round_trip_light_time_initial_state_jacobian",
+     )
+     station_tx_state, station_tx_slope = _station_state_mci_with_time_slope(
+         t1,
+@@ -335,10 +343,27 @@ def round_trip_light_time_initial_state_jacobian(
+         earth_pos_mci_m,
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
++        endpoint_label=endpoint_label,
++        event_label="uplink",
++        consumer="round_trip_light_time_initial_state_jacobian",
++    )
++    sc_t2_state = _guarded_spacecraft_state(
++        t_grid_s,
++        x_aug[:, :6],
++        t2,
++        endpoint_label=endpoint_label,
++        event_label="downlink",
++        consumer="round_trip_light_time_initial_state_jacobian",
+     )
+-    sc_t2_state = _interp_state(t_grid_s, x_aug[:, :6], t2)
+     phi_history = np.array([row.reshape((6, 6), order="F") for row in x_aug[:, 6:]], dtype=float)
+-    phi_position_t2 = _interp_state_transition_position(t_grid_s, phi_history, t2)
++    phi_position_t2 = _guarded_spacecraft_stm_position(
++        t_grid_s,
++        phi_history,
++        t2,
++        endpoint_label=endpoint_label,
++        event_label="downlink",
++        consumer="round_trip_light_time_initial_state_jacobian",
++    )
+ 
+     r2 = sc_t2_state[:3]
+     v2 = sc_t2_state[3:6]
+@@ -377,6 +402,8 @@ def solve_two_way_light_time(
+     earth_vel_mci_mps: ArrayLike,
+     x_j2000_to_itrf93: ArrayLike,
+     config: RangeRatePhysicsConfig | str | None = None,
++    *,
++    endpoint_label: str = "round-trip endpoint",
+ ) -> RoundTripLightTimeSolution:
+     """Solve station-spacecraft-station geometric round-trip light-time."""
+     cfg = range_rate_physics_config(config)
+@@ -388,9 +415,19 @@ def solve_two_way_light_time(
+         earth_pos_mci_m,
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
++        endpoint_label=endpoint_label,
++        event_label="downlink",
++        consumer="solve_two_way_light_time",
+     )
+ 
+-    sc_rx_state = _interp_state(t_grid_s, state_history_mci, receive_time_s)
++    sc_rx_state = _guarded_spacecraft_state(
++        t_grid_s,
++        state_history_mci,
++        receive_time_s,
++        endpoint_label=endpoint_label,
++        event_label="downlink",
++        consumer="solve_two_way_light_time",
++    )
+     downlink_lt = float(np.linalg.norm(sc_rx_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
+     downlink_converged = False
+     iteration_count = 0
+@@ -398,7 +435,14 @@ def solve_two_way_light_time(
+     t2 = receive_time_s - downlink_lt
+ 
+     for iteration_count in range(1, cfg.light_time_max_iter + 1):
+-        sc_t2_state = _interp_state(t_grid_s, state_history_mci, t2)
++        sc_t2_state = _guarded_spacecraft_state(
++            t_grid_s,
++            state_history_mci,
++            t2,
++            endpoint_label=endpoint_label,
++            event_label="downlink",
++            consumer="solve_two_way_light_time",
++        )
+         new_downlink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
+         new_t2 = receive_time_s - new_downlink_lt
+         downlink_update_residual_s = abs(new_t2 - t2)
+@@ -410,7 +454,14 @@ def solve_two_way_light_time(
+         t2 = new_t2
+         downlink_lt = new_downlink_lt
+ 
+-    sc_t2_state = _interp_state(t_grid_s, state_history_mci, t2)
++    sc_t2_state = _guarded_spacecraft_state(
++        t_grid_s,
++        state_history_mci,
++        t2,
++        endpoint_label=endpoint_label,
++        event_label="downlink",
++        consumer="solve_two_way_light_time",
++    )
+     t1 = t2 - cfg.transponder_delay_s - downlink_lt
+     uplink_converged = False
+     uplink_update_residual_s = float("inf")
+@@ -422,6 +473,9 @@ def solve_two_way_light_time(
+             earth_pos_mci_m,
+             earth_vel_mci_mps,
+             x_j2000_to_itrf93,
++            endpoint_label=endpoint_label,
++            event_label="uplink",
++            consumer="solve_two_way_light_time",
+         )
+         uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
+         new_t1 = t2 - cfg.transponder_delay_s - uplink_lt
+@@ -451,6 +505,9 @@ def solve_two_way_light_time(
+         earth_pos_mci_m,
+         earth_vel_mci_mps,
+         x_j2000_to_itrf93,
++        endpoint_label=endpoint_label,
++        event_label="uplink",
++        consumer="solve_two_way_light_time",
+     )
+     uplink_equation_residual_s = abs(
+         (t2 - cfg.transponder_delay_s - t1)
+@@ -492,14 +549,42 @@ def _station_state_mci(
+     earth_pos_mci_m: ArrayLike,
+     earth_vel_mci_mps: ArrayLike,
+     x_j2000_to_itrf93: ArrayLike,
++    *,
++    endpoint_label: str = "round-trip endpoint",
++    event_label: str,
++    consumer: str,
+ ) -> np.ndarray:
++    earth_pos_epoch = _normalize_counted_history_epoch(
++        t_grid_s,
++        t_s,
++        history_name="earth_position_mci",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    earth_vel_epoch = _normalize_counted_history_epoch(
++        t_grid_s,
++        t_s,
++        history_name="earth_velocity_mci",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    transform_epoch = _normalize_counted_history_epoch(
++        t_grid_s,
++        t_s,
++        history_name="j2000_to_itrf93_state_transform",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
+     earth_state = np.concatenate(
+         [
+-            _interp_vector(t_grid_s, earth_pos_mci_m, t_s),
+-            _interp_vector(t_grid_s, earth_vel_mci_mps, t_s),
++            _interp_vector(t_grid_s, earth_pos_mci_m, earth_pos_epoch),
++            _interp_vector(t_grid_s, earth_vel_mci_mps, earth_vel_epoch),
+         ]
+     )
+-    xform = _interp_matrix(t_grid_s, x_j2000_to_itrf93, t_s)
++    xform = _interp_matrix(t_grid_s, x_j2000_to_itrf93, transform_epoch)
+     station_ecef_state = np.concatenate([np.asarray(station.r_ecef_m, dtype=float).reshape(3), np.zeros(3)])
+     station_rel_j2000 = np.linalg.solve(xform, station_ecef_state)
+     return earth_state + station_rel_j2000
+@@ -520,10 +605,44 @@ def _station_state_mci_with_time_slope(
+     earth_pos_mci_m: ArrayLike,
+     earth_vel_mci_mps: ArrayLike,
+     x_j2000_to_itrf93: ArrayLike,
++    *,
++    endpoint_label: str = "round-trip endpoint",
++    event_label: str,
++    consumer: str,
+ ) -> tuple[np.ndarray, np.ndarray]:
+-    earth_pos, earth_pos_slope = _interp_array_and_slope(t_grid_s, earth_pos_mci_m, t_s)
+-    earth_vel, earth_vel_slope = _interp_array_and_slope(t_grid_s, earth_vel_mci_mps, t_s)
+-    xform, xform_slope = _interp_array_and_slope(t_grid_s, x_j2000_to_itrf93, t_s)
++    earth_pos_epoch = _normalize_counted_history_epoch(
++        t_grid_s,
++        t_s,
++        history_name="earth_position_mci",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    earth_vel_epoch = _normalize_counted_history_epoch(
++        t_grid_s,
++        t_s,
++        history_name="earth_velocity_mci",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    transform_epoch = _normalize_counted_history_epoch(
++        t_grid_s,
++        t_s,
++        history_name="j2000_to_itrf93_state_transform",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    earth_pos, earth_pos_slope = _interp_array_and_slope(
++        t_grid_s, earth_pos_mci_m, earth_pos_epoch
++    )
++    earth_vel, earth_vel_slope = _interp_array_and_slope(
++        t_grid_s, earth_vel_mci_mps, earth_vel_epoch
++    )
++    xform, xform_slope = _interp_array_and_slope(
++        t_grid_s, x_j2000_to_itrf93, transform_epoch
++    )
+     station_ecef_state = np.concatenate([np.asarray(station.r_ecef_m, dtype=float).reshape(3), np.zeros(3)])
+     station_rel_j2000 = np.linalg.solve(xform, station_ecef_state)
+     station_rel_slope = -np.linalg.solve(xform, xform_slope @ station_rel_j2000)
+@@ -533,6 +652,71 @@ def _station_state_mci_with_time_slope(
+     )
+ 
+ 
++def _normalize_counted_history_epoch(
++    t_grid_s: ArrayLike,
++    requested_epoch_s: float,
++    *,
++    history_name: str,
++    endpoint_label: str,
++    event_label: str,
++    consumer: str,
++) -> float:
++    """Normalize one counted production lookup onto closed history support."""
++    t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
++    if t_grid.size == 0:
++        raise ValueError("t_grid_s must contain at least one history epoch.")
++    return normalize_supported_epoch(
++        requested_epoch_s,
++        float(t_grid[0]),
++        float(t_grid[-1]),
++        history_name=history_name,
++        model_context="two_way_counted_doppler",
++        consumer=consumer,
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++    )
++
++
++def _guarded_spacecraft_state(
++    t_grid_s: ArrayLike,
++    state_history_mci: ArrayLike,
++    requested_epoch_s: float,
++    *,
++    endpoint_label: str,
++    event_label: str,
++    consumer: str,
++) -> np.ndarray:
++    normalized = _normalize_counted_history_epoch(
++        t_grid_s,
++        requested_epoch_s,
++        history_name="spacecraft_state",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    return _interp_state(t_grid_s, state_history_mci, normalized)
++
++
++def _guarded_spacecraft_stm_position(
++    t_grid_s: ArrayLike,
++    phi_history: ArrayLike,
++    requested_epoch_s: float,
++    *,
++    endpoint_label: str,
++    event_label: str,
++    consumer: str,
++) -> np.ndarray:
++    normalized = _normalize_counted_history_epoch(
++        t_grid_s,
++        requested_epoch_s,
++        history_name="spacecraft_stm",
++        endpoint_label=endpoint_label,
++        event_label=event_label,
++        consumer=consumer,
++    )
++    return _interp_state_transition_position(t_grid_s, phi_history, normalized)
++
++
+ def _interp_state(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> np.ndarray:
+     t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
+     states = np.asarray(state_history, dtype=float)
+diff --git a/tests/test_estimators.py b/tests/test_estimators.py
+index b33517d..47baf73 100644
+--- a/tests/test_estimators.py
++++ b/tests/test_estimators.py
+@@ -190,9 +190,22 @@ class EstimatorTests(unittest.TestCase):
+                     ),
+                     jacobian_model="implicit_light_time",
+                 )
+-                obs_data = _build_clean_position_observations(
+-                    t_pass_s, x_truth, pass_geo
++                # P0B-2B (FA-03B): the first receive tag's transmit epoch
++                # precedes the propagated history and is no longer silently
++                # extrapolated; scenario/test construction owns pre-roll, so
++                # this parity fixture builds its clean observations for the
++                # supported nodes only (time_index_1based >= 2).
++                rows = []
++                for time_idx, t_s in enumerate(t_pass_s, start=1):
++                    if time_idx == 1:
++                        continue
++                    for station_id in range(1, len(stations) + 1):
++                        rows.append([t_s, 0.0, 0.0, 0.0, station_id, time_idx])
++                obs_data = np.asarray(rows, dtype=float)
++                _, h_meas, _ = compute_position_residuals_analytic(
++                    x_truth, obs_data, pass_geo
+                 )
++                obs_data[:, 1:4] = h_meas
+ 
+                 srif_blocks = []
+                 with patch.object(
+@@ -752,7 +765,8 @@ class EstimatorTests(unittest.TestCase):
+         mu_moon = 4902.800066e9
+         r0norm = 1737.4e3 + 100e3
+         x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
+-        t_pass_s = np.arange(0.0, 241.0, 60.0)
++        # Counted-Doppler endpoints need 10 s of pre-roll for this fixture.
++        t_pass_s = np.arange(-60.0, 301.0, 60.0)
+ 
+         get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+         get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+@@ -770,6 +784,7 @@ class EstimatorTests(unittest.TestCase):
+             atol=1e-13,
+         )
+         x_truth = x_aug_truth[:, :6]
++        x_arc0 = x_truth[0].copy()
+         stations = (
+             _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
+             _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
+@@ -788,9 +803,11 @@ class EstimatorTests(unittest.TestCase):
+                 count_interval_s=20.0,
+             ),
+         )
+-        obs_data = _build_clean_rr_observations_from_model(t_pass_s, x_truth, pass_geo)
++        obs_data = _build_clean_rr_observations_from_model(
++            t_pass_s[1:-1], x_truth, pass_geo, first_time_index=2
++        )
+ 
+-        x_guess = x_true0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
++        x_guess = x_arc0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
+         initial_rms = _rr_residual_rms_from_model(
+             t_pass_s,
+             obs_data,
+@@ -832,7 +849,8 @@ class EstimatorTests(unittest.TestCase):
+         mu_moon = 4902.800066e9
+         r0norm = 1737.4e3 + 100e3
+         x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
+-        t_pass_s = np.arange(0.0, 241.0, 60.0)
++        # Counted-Doppler endpoints need 10 s of pre-roll for this fixture.
++        t_pass_s = np.arange(-60.0, 301.0, 60.0)
+ 
+         get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+         get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+@@ -849,6 +867,7 @@ class EstimatorTests(unittest.TestCase):
+             rtol=1e-12,
+             atol=1e-13,
+         )
++        x_arc0 = x_aug_truth[0, :6].copy()
+         stations = (
+             _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
+             _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
+@@ -867,9 +886,11 @@ class EstimatorTests(unittest.TestCase):
+                 count_interval_s=20.0,
+             ),
+         )
+-        obs_data = _build_clean_rr_observations_from_model(t_pass_s, x_aug_truth[:, :6], pass_geo)
++        obs_data = _build_clean_rr_observations_from_model(
++            t_pass_s[1:-1], x_aug_truth[:, :6], pass_geo, first_time_index=2
++        )
+ 
+-        x_guess = x_true0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
++        x_guess = x_arc0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
+         initial_rms = _rr_residual_rms_from_model(
+             t_pass_s,
+             obs_data,
+@@ -911,7 +932,8 @@ class EstimatorTests(unittest.TestCase):
+         mu_moon = 4902.800066e9
+         r0norm = 1737.4e3 + 100e3
+         x0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
+-        t_pass_s = np.arange(0.0, 241.0, 60.0)
++        # Counted-Doppler endpoints need 10 s of pre-roll for this fixture.
++        t_pass_s = np.arange(-60.0, 301.0, 60.0)
+ 
+         get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+         get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+@@ -927,6 +949,7 @@ class EstimatorTests(unittest.TestCase):
+             rtol=1e-12,
+             atol=1e-13,
+         )
++        x_arc0 = x_aug_hist[0, :6].copy()
+         stations = (
+             _synthetic_station(0.0, 0.0, 0.0, include_rr=True),
+             _synthetic_station(0.0, 90.0, 0.0, include_rr=True),
+@@ -943,12 +966,14 @@ class EstimatorTests(unittest.TestCase):
+                 count_interval_s=20.0,
+             ),
+         )
+-        obs_data = _build_clean_rr_observations_from_model(t_pass_s, x_aug_hist[:, :6], pass_geo)
++        obs_data = _build_clean_rr_observations_from_model(
++            t_pass_s[1:-1], x_aug_hist[:, :6], pass_geo, first_time_index=2
++        )
+ 
+         _, h_analytic = estimator_helpers._range_rate_nominal_and_initial_jacobian(
+             t_pass_s,
+             obs_data,
+-            x0,
++            x_arc0,
+             pass_geo,
+             mu_moon,
+             0.0,
+@@ -962,7 +987,7 @@ class EstimatorTests(unittest.TestCase):
+         h_numerical = estimator_helpers._range_rate_numerical_initial_jacobian(
+             t_pass_s,
+             obs_data,
+-            x0,
++            x_arc0,
+             pass_geo,
+             mu_moon,
+             0.0,
+@@ -1556,9 +1581,11 @@ def _build_clean_rr_observations(t_pass_s, x_truth, pass_geo):
+     return obs_data
+ 
+ 
+-def _build_clean_rr_observations_from_model(t_pass_s, x_truth, pass_geo):
++def _build_clean_rr_observations_from_model(
++    t_pass_s, x_truth, pass_geo, *, first_time_index=1
++):
+     rows = []
+-    for time_idx, t_s in enumerate(t_pass_s, start=1):
++    for time_idx, t_s in enumerate(t_pass_s, start=first_time_index):
+         for station_id in range(1, len(pass_geo.stations) + 1):
+             rows.append([t_s, 0.0, 0.0, 0.0, 0.0, station_id, time_idx])
+     obs_data = np.asarray(rows, dtype=float)
+diff --git a/tests/test_measurement_model_safety_diagnostics.py b/tests/test_measurement_model_safety_diagnostics.py
+index 7301338..94c4ec7 100644
+--- a/tests/test_measurement_model_safety_diagnostics.py
++++ b/tests/test_measurement_model_safety_diagnostics.py
+@@ -667,32 +667,26 @@ def test_p0b1_equation_tolerances_must_be_finite_and_positive(bad_tolerance):
+         RangeRatePhysicsConfig(light_time_equation_tolerance_s=bad_tolerance)
+ 
+ 
+-def test_fa03b_history_domain_matrix_documents_current_behavior():
+-    """FA-03B matrix: legacy paths continue across unsupported history bounds."""
++def test_fa03b_one_way_boundary_matrix_enforces_domain():
++    """T006 (P0B-2B): one-way nominal and sensitivity enforce closed support.
++
++    Exact endpoints and at-most-two-ULP representation excursions are served
++    with endpoint samples; anything farther outside raises
++    ``HistoryDomainError`` from BOTH the apparent observable and the
++    sensitivity path, before any extrapolation. The solver's returned event
++    variable is never clipped by the guard.
++    """
++    from lunar_od.history_domain import HistoryDomainError
++
+     t_grid = np.array([0.0, 10.0])
+-    range_m = 0.25 * C_LIGHT_MPS
++    light_time_s = 0.25  # static target at exactly 0.25 s light time
++    range_m = light_time_s * C_LIGHT_MPS
+     states = _linear_state_history(t_grid, np.array([range_m, 0.0, 0.0]), np.zeros(3))
+-    augmented = _augmented_identity_history(states)
+-    earth = np.zeros((t_grid.size, 3), dtype=float)
+-    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
+     station = _OriginStation()
++    ulp_one = np.nextafter(1.0, np.inf) - 1.0  # policy scale S = 1 here
+ 
+-    matrix = {
+-        "One-way observable": {},
+-        "One-way Jacobian": {},
+-        "Counted observable": {},
+-        "Counted Jacobian": {},
+-        "UKF counted local history": {},
+-    }
+-
+-    one_way_cases = {
+-        "Before start": 0.20,
+-        "Exact start": 0.25,
+-        "Exact end": 10.25,
+-        "After end": 10.30,
+-    }
+-    for label, receive_time_s in one_way_cases.items():
+-        z, transmit_time_s, _light_time, _iterations = measurements_module._apparent_position_observable(
++    def run_both(receive_time_s: float):
++        z, transmit_time_s, _lt, _it = measurements_module._apparent_position_observable(
+             receive_time_s, station, t_grid, states, np.zeros(3), np.eye(6)
+         )
+         solution, sensitivity = one_way_light_time_range_sensitivity(
+@@ -700,70 +694,191 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
+         )
+         assert np.isfinite(z).all()
+         assert np.isfinite(sensitivity.d_range_d_state).all()
+-        assert transmit_time_s == pytest.approx(solution.transmit_time_s, abs=1.0e-14)
+-        if label == "Before start":
+-            assert transmit_time_s < t_grid[0]
+-        elif label == "Exact start":
+-            assert transmit_time_s == pytest.approx(t_grid[0], abs=1.0e-14)
+-        elif label == "Exact end":
+-            assert transmit_time_s == pytest.approx(t_grid[-1], abs=1.0e-14)
+-        else:
+-            assert transmit_time_s > t_grid[-1]
+-        classification = "silent extrapolation" if label in {"Before start", "After end"} else "interpolation"
+-        if label == "Exact end":
+-            classification = "silent extrapolation"
+-        matrix["One-way observable"][label] = classification
+-        matrix["One-way Jacobian"][label] = classification
++        return z, transmit_time_s, solution
++
++    # Accepted: transmit exactly at start; 1- and 2-ULP below start
++    # (endpoint sample; raw solver event stays outside and unclipped);
++    # interior; receive exactly at end; receive 2 ULP after end.
++    accepted_cases = {
++        "transmit exact start": 0.25,
++        "transmit 1 ULP below start": 0.25 - 1.0 * ulp_one,
++        "transmit 2 ULP below start": 0.25 - 2.0 * ulp_one,
++        "interior": 5.0,
++        "receive exact end": 10.0,
++        "receive 2 ULP after end": 10.0 + 2.0 * (np.nextafter(10.0, np.inf) - 10.0),
++    }
++    for label, receive_time_s in accepted_cases.items():
++        z, transmit_time_s, solution = run_both(receive_time_s)
++        if label == "transmit 2 ULP below start":
++            assert solution.transmit_time_s < t_grid[0]  # guard never clips events
++        print(f"[FA-03B one-way] accepted {label}: t_tx={transmit_time_s:.18f}")
++
++    # Rejected symmetrically: 3-ULP excursions and clearly unsupported
++    # epochs, from BOTH the nominal observable and the sensitivity path.
++    # (A receive tag beyond the history end fails on the solver's very first
++    # receive-epoch probe — the D1 refinement — so 'transmit at end' driven
++    # by an out-of-support receive tag is a rejection case by design.)
++    rejected_cases = {
++        "transmit before start": 0.20,
++        "transmit 3 ULP below start": 0.25 - 3.0 * ulp_one,
++        "receive 3 ULP after end": 10.0 + 3.0 * (np.nextafter(10.0, np.inf) - 10.0),
++        "receive after end (transmit would hit end)": 10.25,
++        "receive far after end": 10.30,
++    }
++    for label, receive_time_s in rejected_cases.items():
++        with pytest.raises(HistoryDomainError) as nominal_error:
++            measurements_module._apparent_position_observable(
++                receive_time_s, station, t_grid, states, np.zeros(3), np.eye(6)
++            )
++        with pytest.raises(HistoryDomainError) as sensitivity_error:
++            one_way_light_time_range_sensitivity(
++                receive_time_s, station, t_grid, states, np.zeros(3), np.eye(6)
++            )
++        for err in (nominal_error.value, sensitivity_error.value):
++            assert err.history_name == "spacecraft_state"
++            assert err.support_start_s == 0.0 and err.support_end_s == 10.0
++            assert err.outside_distance_s > 0.0
++        print(
++            f"[FA-03B one-way] rejected {label}: outside="
++            f"{nominal_error.value.outside_distance_s:.3e} s, pre-roll="
++            f"{nominal_error.value.required_pre_roll_s:.3e} s, post-roll="
++            f"{nominal_error.value.required_post_roll_s:.3e} s"
++        )
+ 
+-    counted_config = RangeRatePhysicsConfig(
++
++def test_fa03b_counted_boundary_matrix_enforces_domain():
++    """T013 (P0B-2C1): counted nominal and Jacobian paths enforce support.
++
++    The lower boundary is driven by the count-start uplink event and the
++    upper boundary by the count-end receive event. Exact and one/two policy
++    ULP excursions are served with endpoint samples; three policy ULP and
++    larger excursions raise before an extrapolator is reached.
++    """
++    from lunar_od.history_domain import HistoryDomainError
++
++    t_grid = np.array([0.0, 10.0])
++    light_time_s = 0.25
++    range_m = light_time_s * C_LIGHT_MPS
++    states = _linear_state_history(
++        t_grid, np.array([range_m, 0.0, 0.0]), np.zeros(3)
++    )
++    augmented = _augmented_identity_history(states)
++    earth = np.zeros((t_grid.size, 3), dtype=float)
++    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
++    station = _OriginStation()
++    config = RangeRatePhysicsConfig(
+         mode="two_way_counted_doppler",
+-        count_interval_s=0.2,
++        count_interval_s=0.5,
+         light_time_tolerance_s=1.0e-13,
+-        light_time_max_iter=20,
+     )
+-    counted_cases = {
+-        "Before start": 0.50,
+-        "Exact start": 0.60,
+-        "Exact end": 9.90,
+-        "After end": 10.00,
+-    }
+-    for label, midpoint_s in counted_cases.items():
++    lower_policy_ulp = np.nextafter(1.0, np.inf) - 1.0
++    upper_policy_ulp = np.nextafter(10.0, np.inf) - 10.0
++
++    def run_both(midpoint_s: float):
+         value = two_way_counted_doppler_observable(
+-            midpoint_s, station, t_grid, states, earth, earth, xforms, counted_config
++            midpoint_s,
++            station,
++            t_grid,
++            states,
++            earth,
++            earth,
++            xforms,
++            config,
+         )
+         jacobian = two_way_counted_doppler_initial_state_jacobian(
+-            midpoint_s, station, t_grid, augmented, earth, earth, xforms, counted_config
++            midpoint_s,
++            station,
++            t_grid,
++            augmented,
++            earth,
++            earth,
++            xforms,
++            config,
+         )
+-        half_count = 0.5 * counted_config.count_interval_s
+-        endpoint_solutions = [
+-            solve_two_way_light_time(
+-                midpoint_s + sign * half_count,
++        assert np.isfinite(value)
++        assert np.isfinite(jacobian).all()
++
++    accepted_cases = {
++        "count-start uplink exact lower bound": 0.75,
++        "count-start uplink 1 policy ULP below": 0.75 - lower_policy_ulp,
++        "count-start uplink 2 policy ULP below": 0.75 - 2.0 * lower_policy_ulp,
++        "interior": 5.0,
++        "count-end receive exact upper bound": 9.75,
++        "count-end receive 1 policy ULP above": 9.75 + upper_policy_ulp,
++        "count-end receive 2 policy ULP above": 9.75 + 2.0 * upper_policy_ulp,
++    }
++    for label, midpoint_s in accepted_cases.items():
++        run_both(midpoint_s)
++        print(f"[FA-03B counted] accepted {label}: midpoint={midpoint_s:.18f}")
++
++    rejected_cases = {
++        "count-start uplink 3 policy ULP below": (
++            0.75 - 3.0 * lower_policy_ulp,
++            "count-start",
++            "uplink",
++        ),
++        "count-start uplink clearly before": (0.70, "count-start", "uplink"),
++        "count-end receive 3 policy ULP above": (
++            9.75 + 3.0 * upper_policy_ulp,
++            "count-end",
++            "downlink",
++        ),
++        "count-end receive clearly after": (9.80, "count-end", "downlink"),
++    }
++    for label, (midpoint_s, endpoint_fragment, event_label) in rejected_cases.items():
++        with pytest.raises(HistoryDomainError) as nominal_error:
++            two_way_counted_doppler_observable(
++                midpoint_s,
+                 station,
+                 t_grid,
+                 states,
+                 earth,
+                 earth,
+                 xforms,
+-                counted_config,
++                config,
+             )
+-            for sign in (-1.0, 1.0)
+-        ]
+-        event_min = min(solution.transmit_time_s for solution in endpoint_solutions)
+-        event_max = max(solution.receive_time_s for solution in endpoint_solutions)
+-        assert np.isfinite(value)
+-        assert np.isfinite(jacobian).all()
+-        if label == "Before start":
+-            assert event_min < t_grid[0]
+-        elif label == "Exact start":
+-            assert event_min == pytest.approx(t_grid[0], abs=1.0e-13)
+-        elif label == "Exact end":
+-            assert event_max == pytest.approx(t_grid[-1], abs=1.0e-13)
+-        else:
+-            assert event_max > t_grid[-1]
+-        classification = "silent extrapolation" if label in {"Before start", "After end"} else "interpolation"
+-        matrix["Counted observable"][label] = classification
+-        matrix["Counted Jacobian"][label] = classification
++        with pytest.raises(HistoryDomainError) as jacobian_error:
++            two_way_counted_doppler_initial_state_jacobian(
++                midpoint_s,
++                station,
++                t_grid,
++                augmented,
++                earth,
++                earth,
++                xforms,
++                config,
++            )
++        for error in (nominal_error.value, jacobian_error.value):
++            assert endpoint_fragment in error.endpoint_label
++            assert error.event_label == event_label
++            assert error.support_start_s == 0.0
++            assert error.support_end_s == 10.0
++            assert error.outside_distance_s > 0.0
++        print(
++            f"[FA-03B counted] rejected {label}: outside="
++            f"{nominal_error.value.outside_distance_s:.3e} s"
++        )
++
+ 
++def test_fa03b_history_domain_matrix_documents_current_behavior():
++    """FA-03B matrix (remaining OPEN path): counted UKF local histories
++    still continue across unsupported bounds. One-way was resolved by
++    P0B-2B and counted nominal/Jacobian by P0B-2C1; UKF enforcement remains
++    P0B-2C2 scope."""
++    t_grid = np.array([0.0, 10.0])
++    range_m = 0.25 * C_LIGHT_MPS
++    states = _linear_state_history(t_grid, np.array([range_m, 0.0, 0.0]), np.zeros(3))
++    xforms = np.repeat(np.eye(6)[None, :, :], t_grid.size, axis=0)
++    station = _OriginStation()
++
++    matrix = {"UKF counted local history": {}}
++
++    counted_config = RangeRatePhysicsConfig(
++        mode="two_way_counted_doppler",
++        count_interval_s=0.2,
++        light_time_tolerance_s=1.0e-13,
++        light_time_max_iter=20,
++    )
+     pass_geo = PassGeometry(
+         t_s=t_grid,
+         earth_pos_mci_m=np.column_stack([t_grid, 2.0 * t_grid, 3.0 * t_grid]),
+@@ -820,30 +935,6 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
+         )
+ 
+     assert matrix == {
+-        "One-way observable": {
+-            "Before start": "silent extrapolation",
+-            "Exact start": "interpolation",
+-            "Exact end": "silent extrapolation",
+-            "After end": "silent extrapolation",
+-        },
+-        "One-way Jacobian": {
+-            "Before start": "silent extrapolation",
+-            "Exact start": "interpolation",
+-            "Exact end": "silent extrapolation",
+-            "After end": "silent extrapolation",
+-        },
+-        "Counted observable": {
+-            "Before start": "silent extrapolation",
+-            "Exact start": "interpolation",
+-            "Exact end": "interpolation",
+-            "After end": "silent extrapolation",
+-        },
+-        "Counted Jacobian": {
+-            "Before start": "silent extrapolation",
+-            "Exact start": "interpolation",
+-            "Exact end": "interpolation",
+-            "After end": "silent extrapolation",
+-        },
+         "UKF counted local history": {
+             "Before start": "silent extrapolation",
+             "Exact start": "interpolation",
+diff --git a/tests/test_measurements.py b/tests/test_measurements.py
+index 581a384..4c5f36b 100644
+--- a/tests/test_measurements.py
++++ b/tests/test_measurements.py
+@@ -28,8 +28,10 @@ from lunar_od import (
+     instantaneous_geometric_range_rate,
+     load_spice_kernels,
+     range_rate_stations,
++    round_trip_light_time_initial_state_jacobian,
+     solve_one_way_light_time,
+     solve_two_way_light_time,
++    two_way_counted_doppler_initial_state_jacobian,
+     two_way_counted_doppler_observable,
+ )
+ 
+@@ -984,9 +986,25 @@ class MeasurementTests(unittest.TestCase):
+     def test_position_light_time_creates_physical_correction(self):
+         fx = self._position_light_time_fixture()
+         _, clean_inst = self._generate_position_clean(fx, apply_light_time=False)
+-        _, clean_lt = self._generate_position_clean(fx, apply_light_time=True)
+-        self.assertEqual(clean_inst.shape, clean_lt.shape)
+-        range_diff = np.abs(clean_lt[:, 1] - clean_inst[:, 1])
++        pass_geo_lt, clean_lt = self._generate_position_clean(fx, apply_light_time=True)
++        # P0B-2B (FA-03B): the light-time run may drop leading candidates
++        # whose transmit epoch precedes the frozen fixture history; those
++        # drops must be structured metadata, and the physical-correction
++        # comparison runs on the common (station, time-index) rows.
++        metadata = pass_geo_lt.measurement_metadata
++        dropped = metadata["history_domain_dropped_measurements"]
++        self.assertEqual(clean_inst.shape[0], clean_lt.shape[0] + dropped)
++        for record in metadata["history_domain_drop_records"]:
++            self.assertEqual(record["history_name"], "spacecraft_state")
++            self.assertGreater(record["required_pre_roll_s"], 0.0)
++        keys_inst = {tuple(row[4:6]): i for i, row in enumerate(clean_inst)}
++        matched = [
++            (keys_inst[tuple(row[4:6])], j) for j, row in enumerate(clean_lt)
++        ]
++        self.assertEqual(len(matched), clean_lt.shape[0])
++        range_diff = np.abs(
++            np.array([clean_lt[j, 1] - clean_inst[i, 1] for i, j in matched])
++        )
+         self.assertGreater(float(np.max(range_diff)), 100.0)
+ 
+     def test_position_light_time_model_mismatch_is_biased(self):
+@@ -1432,5 +1450,660 @@ def _constant_acceleration_states(t_grid):
+     return states
+ 
+ 
++class _SpyRng:
++    """Counts standard_normal draws; returns a deterministic stream."""
++
++    def __init__(self) -> None:
++        self.calls = 0
++        self._inner = np.random.default_rng(0)
++
++    def standard_normal(self):
++        self.calls += 1
++        return self._inner.standard_normal()
++
++
++class HistoryDomainCountedTests(unittest.TestCase):
++    """P0B-2C1 tests T014-T017 for legacy counted event histories."""
++
++    @staticmethod
++    def _static_counted_fixture(
++        t_start: float,
++        t_end: float,
++        light_time_s: float,
++    ):
++        t_grid = np.array([t_start, t_end], dtype=float)
++        states = np.zeros((2, 6), dtype=float)
++        states[:, 0] = light_time_s * C_LIGHT_MPS
++        earth = np.zeros((2, 3), dtype=float)
++        xforms = np.repeat(np.eye(6)[None, :, :], 2, axis=0)
++        return t_grid, states, earth, xforms
++
++    @staticmethod
++    def _config():
++        return RangeRatePhysicsConfig(
++            mode="two_way_counted_doppler",
++            count_interval_s=0.5,
++            light_time_tolerance_s=1.0e-13,
++        )
++
++    def test_counted_intermediate_downlink_probe_rejected_immediately(self):
++        """T014: the first unsupported spacecraft t2 probe never reaches
++        the low-level state interpolator and no solution object is returned."""
++        from unittest import mock
++
++        import lunar_od.radiometrics as radiometrics_module
++        from lunar_od.history_domain import HistoryDomainError
++
++        t_grid, states, earth, xforms = self._static_counted_fixture(
++            5.0, 10.0, 0.5
++        )
++        probes: list[float] = []
++        raw_interp = radiometrics_module._interp_state
++
++        def spy_interp(grid, history, epoch_s):
++            probes.append(float(epoch_s))
++            return raw_interp(grid, history, epoch_s)
++
++        with mock.patch.object(
++            radiometrics_module, "_interp_state", side_effect=spy_interp
++        ):
++            with self.assertRaises(HistoryDomainError) as ctx:
++                solve_two_way_light_time(
++                    5.3,
++                    _DummyStation(),
++                    t_grid,
++                    states,
++                    earth,
++                    earth,
++                    xforms,
++                    self._config(),
++                    endpoint_label="T014 count-start endpoint",
++                )
++
++        error = ctx.exception
++        self.assertEqual(probes, [5.3])
++        self.assertEqual(error.history_name, "spacecraft_state")
++        self.assertEqual(error.endpoint_label, "T014 count-start endpoint")
++        self.assertEqual(error.event_label, "downlink")
++        self.assertAlmostEqual(error.requested_epoch_s, 4.8, delta=1.0e-14)
++        self.assertAlmostEqual(error.required_pre_roll_s, 0.2, delta=1.0e-14)
++
++    def test_counted_intermediate_uplink_probe_rejected_immediately(self):
++        """T015: an unsupported station t1 probe is rejected before any
++        Earth ephemeris or transform interpolation at that epoch."""
++        from unittest import mock
++
++        import lunar_od.radiometrics as radiometrics_module
++        from lunar_od.history_domain import HistoryDomainError
++
++        t_grid, states, earth, xforms = self._static_counted_fixture(
++            5.0, 10.0, 0.4
++        )
++        probes: list[float] = []
++        raw_interp = radiometrics_module._interp_vector
++
++        def spy_interp(grid, history, epoch_s):
++            probes.append(float(epoch_s))
++            return raw_interp(grid, history, epoch_s)
++
++        with mock.patch.object(
++            radiometrics_module, "_interp_vector", side_effect=spy_interp
++        ):
++            with self.assertRaises(HistoryDomainError) as ctx:
++                solve_two_way_light_time(
++                    5.7,
++                    _DummyStation(),
++                    t_grid,
++                    states,
++                    earth,
++                    earth,
++                    xforms,
++                    self._config(),
++                    endpoint_label="T015 count-end endpoint",
++                )
++
++        error = ctx.exception
++        # The receive-epoch station query legitimately evaluates all three
++        # station histories (Earth position, Earth velocity, and sxform).
++        # The important contract is that no uplink-epoch interpolation at
++        # 4.9 s occurs before the domain guard raises.
++        self.assertEqual(probes, [5.7, 5.7, 5.7])
++        self.assertEqual(error.history_name, "earth_position_mci")
++        self.assertEqual(error.endpoint_label, "T015 count-end endpoint")
++        self.assertEqual(error.event_label, "uplink")
++        self.assertAlmostEqual(error.requested_epoch_s, 4.9, delta=1.0e-14)
++        self.assertAlmostEqual(error.required_pre_roll_s, 0.1, delta=1.0e-14)
++
++    def test_counted_start_end_and_leg_diagnostics(self):
++        """T016: endpoint and uplink/downlink labels survive every failure."""
++        from lunar_od.history_domain import HistoryDomainError
++
++        observed = set()
++        for endpoint_label in ("count-start endpoint", "count-end endpoint"):
++            for event_label, receive_time_s, light_time_s in (
++                ("downlink", 5.3, 0.5),
++                ("uplink", 5.7, 0.4),
++            ):
++                t_grid, states, earth, xforms = self._static_counted_fixture(
++                    5.0, 10.0, light_time_s
++                )
++                with self.assertRaises(HistoryDomainError) as ctx:
++                    solve_two_way_light_time(
++                        receive_time_s,
++                        _DummyStation(),
++                        t_grid,
++                        states,
++                        earth,
++                        earth,
++                        xforms,
++                        self._config(),
++                        endpoint_label=endpoint_label,
++                    )
++                observed.add((ctx.exception.endpoint_label, ctx.exception.event_label))
++                self.assertEqual(ctx.exception.event_label, event_label)
++
++        self.assertEqual(
++            observed,
++            {
++                ("count-start endpoint", "downlink"),
++                ("count-start endpoint", "uplink"),
++                ("count-end endpoint", "downlink"),
++                ("count-end endpoint", "uplink"),
++            },
++        )
++
++    def test_counted_five_guarded_histories_report_exact_names(self):
++        """T017: nominal/Jacobian wiring covers all five named histories."""
++        from unittest import mock
++
++        import lunar_od.radiometrics as radiometrics_module
++        from lunar_od.history_domain import HistoryDomainError
++
++        t_grid, states, earth, earth_vel, xforms, station = _linear_two_way_fixture(0.0)
++        phi_flat = np.eye(6).reshape(-1, order="F")
++        augmented = np.column_stack(
++            [states, np.repeat(phi_flat[None, :], t_grid.size, axis=0)]
++        )
++        original_normalize = radiometrics_module.normalize_supported_epoch
++        expected_names = (
++            "spacecraft_state",
++            "spacecraft_stm",
++            "earth_position_mci",
++            "earth_velocity_mci",
++            "j2000_to_itrf93_state_transform",
++        )
++
++        for target_name in expected_names:
++            def selective_normalize(
++                requested_epoch_s,
++                support_start_s,
++                support_end_s,
++                *,
++                history_name,
++                model_context,
++                consumer,
++                endpoint_label=None,
++                event_label=None,
++                observation_index=None,
++            ):
++                if history_name == target_name:
++                    raise HistoryDomainError.from_violation(
++                        history_name=history_name,
++                        requested_epoch_s=float(support_start_s) - 1.0,
++                        support_start_s=support_start_s,
++                        support_end_s=support_end_s,
++                        model_context=model_context,
++                        consumer=consumer,
++                        endpoint_label=endpoint_label,
++                        event_label=event_label,
++                        observation_index=observation_index,
++                    )
++                return original_normalize(
++                    requested_epoch_s,
++                    support_start_s,
++                    support_end_s,
++                    history_name=history_name,
++                    model_context=model_context,
++                    consumer=consumer,
++                    endpoint_label=endpoint_label,
++                    event_label=event_label,
++                    observation_index=observation_index,
++                )
++
++            with self.subTest(history_name=target_name):
++                with mock.patch.object(
++                    radiometrics_module,
++                    "normalize_supported_epoch",
++                    side_effect=selective_normalize,
++                ):
++                    with self.assertRaises(HistoryDomainError) as ctx:
++                        round_trip_light_time_initial_state_jacobian(
++                            0.0,
++                            station,
++                            t_grid,
++                            augmented,
++                            earth,
++                            earth_vel,
++                            xforms,
++                            self._config(),
++                            endpoint_label="T017 Jacobian endpoint",
++                        )
++                self.assertEqual(ctx.exception.history_name, target_name)
++                self.assertEqual(
++                    ctx.exception.endpoint_label, "T017 Jacobian endpoint"
++                )
++
++
++class HistoryDomainOneWayTests(unittest.TestCase):
++    """P0B-2B tests T007-T012 plus the range-rate generation portions of
++    T018/T019/T028 (drops driven through the one-way apparent companion)."""
++
++    @staticmethod
++    def _static_history(t_start: float, t_end: float, light_time_s: float = 0.25):
++        t_grid = np.array([t_start, t_end], dtype=float)
++        states = np.zeros((2, 6), dtype=float)
++        states[:, 0] = light_time_s * C_LIGHT_MPS
++        return t_grid, states
++
++    @staticmethod
++    def _station():
++        class _Station:
++            name = "history-domain station"
++            lat_rad = 0.0
++            lon_rad = 0.0
++            sigma_range_m = 5.0
++            sigma_angle_rad = 1.0e-5
++            sigma_range_rate_mps = 1.0e-4
++            bias = ()
++            r_ecef_m = np.zeros(3)
++
++        return _Station()
++
++    def test_one_way_intermediate_probe_rejected_immediately(self):
++        """T007: the FIRST unsupported probe raises; no later evaluation, no
++        solution object, and the guard never feeds the extrapolator."""
++        from lunar_od.history_domain import (
++            HistoryDomainError,
++            guarded_history_callback,
++        )
++        from lunar_od.measurements import solve_one_way_light_time as raw_solver
++
++        probes: list[float] = []
++
++        def spy_target(t_s: float) -> np.ndarray:
++            probes.append(float(t_s))
++            # A hypothetical converged root would be inside support (static
++            # geometry, light time 0.5 s from receive 5.3 -> t_t = 4.8), but
++            # the guard must reject the first outside trial regardless.
++            return np.array([0.5 * C_LIGHT_MPS, 0.0, 0.0])
++
++        guarded = guarded_history_callback(
++            spy_target,
++            5.0,
++            10.0,
++            history_name="spacecraft_state",
++            model_context="one_way_light_time",
++            consumer="T007",
++        )
++        with self.assertRaises(HistoryDomainError) as ctx:
++            raw_solver(5.3, np.zeros(3), guarded)
++        # First probe is the receive epoch 5.3 (inside, evaluated); the next
++        # probe is the transmit trial 4.8 (outside) and must never reach the
++        # spy. No solution/convergence object exists after the raise.
++        self.assertEqual(probes, [5.3])
++        self.assertEqual(ctx.exception.requested_epoch_s, 5.3 - 0.5)
++        self.assertEqual(ctx.exception.required_pre_roll_s, 5.0 - 4.8)
++
++    def test_one_way_raw_solver_generic_callback_compatibility(self):
++        """T008: the raw solver keeps working with analytic callbacks that
++        have no repository history at all."""
++        solution = solve_one_way_light_time(
++            0.0,
++            np.zeros(3),
++            lambda t: np.array([0.25 * C_LIGHT_MPS, 0.0, 0.0]),
++        )
++        self.assertTrue(solution.converged)
++        self.assertAlmostEqual(solution.light_time_s, 0.25, delta=1e-12)
++        self.assertAlmostEqual(solution.transmit_time_s, -0.25, delta=1e-12)
++
++    def test_one_way_state_and_stm_share_normalized_epoch(self):
++        """T009: at a 2-ULP-below-start transmit epoch the state and the STM
++        position block use the exact same snapped endpoint sample."""
++        ulp_one = np.nextafter(1.0, np.inf) - 1.0
++        t_grid, states = self._static_history(0.0, 10.0)
++        # Distinguishable STM node values: start node scaled, end node identity.
++        phi_start = np.eye(6)
++        phi_start[:3, :3] *= 3.0
++        phi_history = np.stack([phi_start, np.eye(6)])
++        receive_time_s = 0.25 - 2.0 * ulp_one  # transmit lands 2 ULP below 0
++        solution, _sens, initial = one_way_light_time_initial_state_sensitivity(
++            receive_time_s,
++            self._station(),
++            t_grid,
++            states,
++            phi_history,
++            np.zeros(3),
++            np.eye(6),
++        )
++        self.assertLess(solution.transmit_time_s, t_grid[0])  # event unclipped
++        np.testing.assert_array_equal(initial.phi_r_tx, phi_start[:3, :])
++        np.testing.assert_array_equal(
++            initial.spacecraft_position_tx_m, states[0, :3]
++        )
++
++    def _generate_position(self, t_grid, states, *, noise, rng, profile="one_way_light_time"):
++        from unittest import mock
++
++        vis = np.ones((t_grid.size, 1), dtype=bool)
++        sample = lambda tt: np.zeros((np.size(np.atleast_1d(tt)), 3))
++        with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
++            return generate_position_measurements(
++                t_grid,
++                states,
++                (self._station(),),
++                vis,
++                sample,
++                sample,
++                0.0,
++                noise=noise,
++                rng=rng,
++                measurement_model_profile=profile,
++            )
++
++    def test_position_generation_drops_candidate_and_preserves_rng(self):
++        """T010: a dropped first candidate consumes its RNG slot so later
++        noisy rows are bit-identical to a pre-rolled reference run."""
++        light_time_s = 0.25
++        t_enforced = np.linspace(0.0, 4.0, 5)
++        states_enforced = np.zeros((5, 6))
++        states_enforced[:, 0] = light_time_s * C_LIGHT_MPS
++        # Pre-rolled P0B-1-equivalent reference: same receive tags, but the
++        # history extends early enough that every candidate is supported.
++        t_reference = np.concatenate([[-1.0], t_enforced])
++        states_reference = np.zeros((6, 6))
++        states_reference[:, 0] = light_time_s * C_LIGHT_MPS
++        vis_reference = np.ones((6, 1), dtype=bool)
++        vis_reference[0, 0] = False  # same visible candidates as enforced run
++
++        from unittest import mock
++
++        sample = lambda tt: np.zeros((np.size(np.atleast_1d(tt)), 3))
++        obs_enforced, pass_geo, clean_enforced = self._generate_position(
++            t_enforced, states_enforced, noise=True, rng=np.random.default_rng(42)
++        )
++        with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
++            obs_reference, _, clean_reference = generate_position_measurements(
++                t_reference,
++                states_reference,
++                (self._station(),),
++                vis_reference,
++                sample,
++                sample,
++                0.0,
++                noise=True,
++                rng=np.random.default_rng(42),
++                measurement_model_profile="one_way_light_time",
++            )
++
++        metadata = pass_geo.measurement_metadata
++        self.assertEqual(metadata["history_domain_dropped_measurements"], 1)
++        self.assertEqual(len(metadata["history_domain_drop_records"]), 1)
++        record = metadata["history_domain_drop_records"][0]
++        self.assertEqual(record["station_index"], 0)
++        self.assertEqual(record["time_index"], 0)
++        self.assertEqual(record["candidate_ordinal"], 0)
++        self.assertFalse(metadata["history_domain_all_candidates_dropped"])
++        # Candidate 0 (t=0, transmit -0.25 s) dropped; rows 1.. survive and
++        # must match the reference run rows at the same receive tags bitwise.
++        # (The reference grid has one extra leading node, so its 1-based
++        # time-index column is shifted by exactly +1; every physical and
++        # noise column must be bit-identical.)
++        self.assertEqual(obs_enforced.shape[0], 4)
++        np.testing.assert_array_equal(obs_enforced[:, :5], obs_reference[1:, :5])
++        np.testing.assert_array_equal(clean_enforced[:, :5], clean_reference[1:, :5])
++        np.testing.assert_array_equal(obs_enforced[:, 5], obs_reference[1:, 5] - 1.0)
++        self.assertEqual(obs_enforced.shape[0], clean_enforced.shape[0])
++
++    def test_position_generation_noise_false_consumes_no_rng(self):
++        """T011: with noise=False the generator makes zero RNG calls even
++        when a candidate is dropped."""
++        t_grid = np.linspace(0.0, 4.0, 5)
++        states = np.zeros((5, 6))
++        states[:, 0] = 0.25 * C_LIGHT_MPS
++        spy = _SpyRng()
++        obs, pass_geo, _clean = self._generate_position(
++            t_grid, states, noise=False, rng=spy
++        )
++        self.assertEqual(spy.calls, 0)
++        self.assertEqual(
++            pass_geo.measurement_metadata["history_domain_dropped_measurements"], 1
++        )
++        self.assertEqual(obs.shape[0], 4)
++
++    def test_one_way_drop_metadata_reports_geometry_dependent_preroll(self):
++        """T012: the maximum required pre-roll follows the solved/probed
++        light-time geometry; it is not a fixed duration."""
++        required = {}
++        for light_time_s in (0.25, 0.75):
++            t_grid = np.linspace(0.0, 4.0, 5)
++            states = np.zeros((5, 6))
++            states[:, 0] = light_time_s * C_LIGHT_MPS
++            _obs, pass_geo, _clean = self._generate_position(
++                t_grid, states, noise=False, rng=None
++            )
++            required[light_time_s] = pass_geo.measurement_metadata[
++                "history_domain_required_pre_roll_s"
++            ]
++        self.assertGreater(required[0.75], required[0.25])
++        self.assertAlmostEqual(required[0.25], 0.25, delta=1e-2)
++        self.assertAlmostEqual(required[0.75], 0.75, delta=1e-2)
++
++    def _generate_range_rate(self, t_grid, states, *, noise, rng):
++        from unittest import mock
++
++        vis = np.ones((t_grid.size, 1), dtype=bool)
++        sample = lambda tt: np.zeros((np.size(np.atleast_1d(tt)), 3))
++        with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
++            return generate_range_rate_measurements(
++                t_grid,
++                states,
++                (self._station(),),
++                vis,
++                sample,
++                sample,
++                0.0,
++                noise=noise,
++                rng=rng,
++                companion_geometry="apparent_one_way",
++            )
++
++    def _generate_counted_range_rate(
++        self,
++        t_grid,
++        states,
++        visibility,
++        *,
++        noise,
++        rng,
++    ):
++        from unittest import mock
++
++        sample = lambda tt: np.zeros((np.size(np.atleast_1d(tt)), 3))
++        config = RangeRatePhysicsConfig(
++            mode="two_way_counted_doppler",
++            count_interval_s=0.5,
++            light_time_tolerance_s=1.0e-13,
++        )
++        with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
++            return generate_range_rate_measurements(
++                t_grid,
++                states,
++                (self._station(),),
++                visibility,
++                sample,
++                sample,
++                0.0,
++                noise=noise,
++                rng=rng,
++                range_rate_physics=config,
++                companion_geometry="instantaneous",
++            )
++
++    def test_range_rate_generation_drops_candidate_and_preserves_rng(self):
++        """T018: apparent and counted drops preserve four-draw RNG slots."""
++        from unittest import mock
++
++        light_time_s = 0.25
++        t_enforced = np.linspace(0.0, 4.0, 5)
++        states_enforced = np.zeros((5, 6))
++        states_enforced[:, 0] = light_time_s * C_LIGHT_MPS
++        t_reference = np.concatenate([[-1.0], t_enforced])
++        states_reference = np.zeros((6, 6))
++        states_reference[:, 0] = light_time_s * C_LIGHT_MPS
++        vis_reference = np.ones((6, 1), dtype=bool)
++        vis_reference[0, 0] = False
++        sample = lambda tt: np.zeros((np.size(np.atleast_1d(tt)), 3))
++
++        obs_enforced, pass_geo = self._generate_range_rate(
++            t_enforced, states_enforced, noise=True, rng=np.random.default_rng(7)
++        )
++        with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
++            obs_reference, _ = generate_range_rate_measurements(
++                t_reference,
++                states_reference,
++                (self._station(),),
++                vis_reference,
++                sample,
++                sample,
++                0.0,
++                noise=True,
++                rng=np.random.default_rng(7),
++                companion_geometry="apparent_one_way",
++            )
++        metadata = pass_geo.measurement_metadata
++        self.assertEqual(metadata["history_domain_dropped_measurements"], 1)
++        self.assertEqual(obs_enforced.shape[0], 4)
++        # Physical/noise columns bit-identical; the reference time-index
++        # column is shifted by the extra pre-rolled leading node.
++        np.testing.assert_array_equal(obs_enforced[:, :6], obs_reference[1:, :6])
++        np.testing.assert_array_equal(obs_enforced[:, 6], obs_reference[1:, 6] - 1.0)
++
++        # Counted C1 path: the first midpoint's count-start/downlink query is
++        # unsupported on [0, 5], while the same physical candidate is valid
++        # against a pre-rolled [-1, 5] history. Later noisy rows must remain
++        # bit-identical despite the dropped candidate consuming its RNG slot.
++        counted_t_enforced = np.arange(0.0, 6.0)
++        counted_states_enforced = np.zeros((6, 6))
++        counted_states_enforced[:, 0] = light_time_s * C_LIGHT_MPS
++        counted_vis_enforced = np.ones((6, 1), dtype=bool)
++        counted_vis_enforced[-1, 0] = False
++
++        counted_t_reference = np.arange(-1.0, 6.0)
++        counted_states_reference = np.zeros((7, 6))
++        counted_states_reference[:, 0] = light_time_s * C_LIGHT_MPS
++        counted_vis_reference = np.ones((7, 1), dtype=bool)
++        counted_vis_reference[0, 0] = False
++        counted_vis_reference[-1, 0] = False
++
++        counted_enforced, counted_pass_geo = self._generate_counted_range_rate(
++            counted_t_enforced,
++            counted_states_enforced,
++            counted_vis_enforced,
++            noise=True,
++            rng=np.random.default_rng(11),
++        )
++        counted_reference, _ = self._generate_counted_range_rate(
++            counted_t_reference,
++            counted_states_reference,
++            counted_vis_reference,
++            noise=True,
++            rng=np.random.default_rng(11),
++        )
++
++        counted_metadata = counted_pass_geo.measurement_metadata
++        self.assertEqual(counted_metadata["history_domain_dropped_measurements"], 1)
++        self.assertEqual(counted_enforced.shape[0], 4)
++        counted_record = counted_metadata["history_domain_drop_records"][0]
++        self.assertEqual(counted_record["endpoint_label"], "count-start endpoint")
++        self.assertEqual(counted_record["event_label"], "downlink")
++        np.testing.assert_array_equal(
++            counted_enforced[:, :6], counted_reference[1:, :6]
++        )
++        np.testing.assert_array_equal(
++            counted_enforced[:, 6], counted_reference[1:, 6] - 1.0
++        )
++
++    def test_range_rate_generation_noise_false_consumes_no_rng(self):
++        """T019: apparent and counted drops consume no RNG when noise=False."""
++        t_grid = np.linspace(0.0, 4.0, 5)
++        states = np.zeros((5, 6))
++        states[:, 0] = 0.25 * C_LIGHT_MPS
++        spy = _SpyRng()
++        obs, pass_geo = self._generate_range_rate(t_grid, states, noise=False, rng=spy)
++        self.assertEqual(spy.calls, 0)
++        self.assertEqual(
++            pass_geo.measurement_metadata["history_domain_dropped_measurements"], 1
++        )
++        self.assertEqual(obs.shape[0], 4)
++
++        counted_t = np.arange(0.0, 6.0)
++        counted_states = np.zeros((6, 6))
++        counted_states[:, 0] = 0.25 * C_LIGHT_MPS
++        counted_vis = np.ones((6, 1), dtype=bool)
++        counted_vis[-1, 0] = False
++        counted_spy = _SpyRng()
++        counted_obs, counted_pass_geo = self._generate_counted_range_rate(
++            counted_t,
++            counted_states,
++            counted_vis,
++            noise=False,
++            rng=counted_spy,
++        )
++        self.assertEqual(counted_spy.calls, 0)
++        self.assertEqual(
++            counted_pass_geo.measurement_metadata[
++                "history_domain_dropped_measurements"
++            ],
++            1,
++        )
++        self.assertEqual(counted_obs.shape[0], 4)
++
++    def test_metadata_structured_drop_record_order_is_deterministic(self):
++        """T028 (P0B-2B portion): drop records follow candidate order and are
++        identical across identical runs (multiple stations, multiple drops)."""
++        from unittest import mock
++
++        t_grid = np.linspace(0.0, 4.0, 5)
++        states = np.zeros((5, 6))
++        states[:, 0] = 0.25 * C_LIGHT_MPS
++        vis = np.ones((5, 2), dtype=bool)
++        sample = lambda tt: np.zeros((np.size(np.atleast_1d(tt)), 3))
++        stations = (self._station(), self._station())
++
++        def run():
++            with mock.patch("spiceypy.sxform", return_value=np.eye(6)):
++                _obs, pass_geo, _clean = generate_position_measurements(
++                    t_grid,
++                    states,
++                    stations,
++                    vis,
++                    sample,
++                    sample,
++                    0.0,
++                    noise=False,
++                    measurement_model_profile="one_way_light_time",
++                )
++            return pass_geo.measurement_metadata["history_domain_drop_records"]
++
++        first = run()
++        second = run()
++        self.assertEqual(first, second)
++        # Both stations drop at time index 0, in candidate order.
++        self.assertEqual(
++            [(r["station_index"], r["time_index"], r["candidate_ordinal"]) for r in first],
++            [(0, 0, 0), (1, 0, 1)],
++        )
++
++
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/tests/test_observability.py b/tests/test_observability.py
+index 665533d..3da0dc9 100644
+--- a/tests/test_observability.py
++++ b/tests/test_observability.py
+@@ -38,6 +38,11 @@ class ObservabilityTests(unittest.TestCase):
+             measurement_model_profile="one_way_light_time",
+             jacobian_model="implicit_light_time",
+         )
++        # P0B-2B (FA-03B): the first receive tag's transmit epoch precedes
++        # the propagated history and is no longer silently extrapolated;
++        # this shared-block parity fixture excludes the unsupported first
++        # node (time_index_1based == 1) instead of relying on extrapolation.
++        arc = replace(arc, obs_data=arc.obs_data[arc.obs_data[:, 5] > 1.0])
+         x0 = np.asarray(arc.truth_state_history_mci[0, :6], dtype=float)
+         x_aug0 = np.concatenate([x0, np.eye(6).reshape(-1, order="F")])
+         x_aug_hist = propagate_augmented_state(
+@@ -232,7 +237,7 @@ class ObservabilityTests(unittest.TestCase):
+             _synthetic_rr_station(45.0, -30.0, 500.0),
+             _synthetic_rr_station(-35.0, 150.0, 600.0),
+         )
+-        arc = _build_two_way_range_rate_arc(1, 0, 12, t_all_s, x_truth, stations)
++        arc = _build_two_way_range_rate_arc(1, 1, 13, t_all_s, x_truth, stations)
+ 
+         h_initial = build_initial_state_jacobian(
+             "range_rate",
+@@ -358,7 +363,8 @@ class ObservabilityTests(unittest.TestCase):
+ def _truth_history(mu_moon):
+     r0norm = 1737.4e3 + 100e3
+     x_true0 = np.array([r0norm, 30e3, -20e3, -15.0, math.sqrt(mu_moon / r0norm), 4.0])
+-    t_all_s = np.arange(0.0, 901.0, 60.0)
++    # Keep one pre-roll node so counted-Doppler event epochs remain in-domain.
++    t_all_s = np.arange(-60.0, 901.0, 60.0)
+     get_earth_pos = lambda t: np.tile(np.array([384400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+     get_sun_pos = lambda t: np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
+ 
+@@ -461,8 +467,9 @@ def _build_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, stations
+ 
+ 
+ def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth, stations):
+-    t_pass_s = np.asarray(t_all_s[start_idx : end_idx + 1], dtype=float)
+-    x_pass = np.asarray(x_truth[start_idx : end_idx + 1, :], dtype=float)
++    history_start_idx = max(0, start_idx - 1)
++    t_pass_s = np.asarray(t_all_s[history_start_idx : end_idx + 2], dtype=float)
++    x_pass = np.asarray(x_truth[history_start_idx : end_idx + 2, :], dtype=float)
+     pass_geo = PassGeometry(
+         t_s=t_pass_s,
+         earth_pos_mci_m=np.zeros((t_pass_s.size, 3)),
+@@ -473,7 +480,11 @@ def _build_two_way_range_rate_arc(arc_id, start_idx, end_idx, t_all_s, x_truth,
+         range_rate_physics=RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=20.0),
+     )
+     rows = []
+-    for time_idx, t_s in enumerate(t_pass_s, start=1):
++    measurement_times = (
++        t_pass_s[1:-1] if start_idx > history_start_idx else t_pass_s
++    )
++    first_time_index = 2 if start_idx > history_start_idx else 1
++    for time_idx, t_s in enumerate(measurement_times, start=first_time_index):
+         for station_id in range(1, len(stations) + 1):
+             rows.append([t_s, 0.0, 0.0, 0.0, 0.0, station_id, time_idx, arc_id])
+     obs_data = np.asarray(rows, dtype=float)

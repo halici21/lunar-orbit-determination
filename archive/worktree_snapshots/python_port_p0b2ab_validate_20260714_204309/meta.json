@@ -1,0 +1,34 @@
+{
+ "worktree": "python_port_p0b2ab_validate_20260714_204309",
+ "base_commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+ "branch": "HEAD",
+ "modified": [
+  "lunar_od/__init__.py",
+  "lunar_od/measurements.py",
+  "tests/test_estimators.py",
+  "tests/test_measurement_model_safety_diagnostics.py",
+  "tests/test_measurements.py",
+  "tests/test_observability.py"
+ ],
+ "untracked": [
+  "lunar_od/history_domain.py",
+  "tests/test_history_domain.py"
+ ],
+ "content_status": {
+  "lunar_od/__init__.py": "ea3661f feat: add immutable force-model contracts",
+  "lunar_od/measurements.py": "ef3b468 feat: evaluate the counted-Doppler station transform at the exact event epoch",
+  "tests/test_estimators.py": "NOT IN ANY COMMIT",
+  "tests/test_measurement_model_safety_diagnostics.py": "NOT IN ANY COMMIT",
+  "tests/test_measurements.py": "NOT IN ANY COMMIT",
+  "tests/test_observability.py": "NOT IN ANY COMMIT",
+  "lunar_od/history_domain.py": "da28e5a fix: enforce strict history-domain safety",
+  "tests/test_history_domain.py": "da28e5a fix: enforce strict history-domain safety"
+ },
+ "unique_files": [
+  "tests/test_estimators.py",
+  "tests/test_measurement_model_safety_diagnostics.py",
+  "tests/test_measurements.py",
+  "tests/test_observability.py"
+ ],
+ "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+}

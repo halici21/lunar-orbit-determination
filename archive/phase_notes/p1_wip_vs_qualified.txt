@@ -1,0 +1,29 @@
+GIT PHASE P1 WIP-MINUS-QUALIFIED DIFFERENCE MANIFEST
+
+QUALIFIED_BRANCH=feature/phase14-17ar-qualified
+QUALIFIED_COMMIT=0e785f624a4e512177b3e7b5c0adc00d2c809e34
+WIP_BRANCH=wip/phase17-r-estimator-integration
+WIP_COMMIT=13e75f111dbb13bd6ee57d405a66e15c4d909f7
+
+The comparison is commit-to-commit and therefore excludes ignored bytecode,
+pytest caches, and other transient working-tree products.
+
+PHASE17R_PRODUCTION_DIFFS=
+  lunar_od/estimators.py (current solve-for-K_SRP augmentation; qualified SHA256 94146c... replaced by WIP SHA256 93e9f15...)
+  lunar_od/filters.py (current solve-for-K_SRP augmentation; qualified SHA256 43dc95... replaced by WIP SHA256 1e5f9ca...)
+
+PHASE17R_TESTS=
+  tests/test_k_srp_bls_solve_for.py
+  tests/test_k_srp_srif_solve_for.py
+  tests/test_k_srp_srukf_solve_for.py
+
+OTHER_DIFFERENCE=
+  08_manifests/phase14_17ar_reconstruction_manifest.txt exists only on the
+  qualified branch because it documents the later reconstruction and is not
+  part of the WIP preservation snapshot.
+
+INTERPRETATION=
+  The WIP branch preserves the complete mixed dirty state.  The qualified
+  branch retains the Phase 14-17A-R overlay and explicitly excludes every
+  identified Phase 17-R solve-for production/test addition.  No claim is made
+  that Phase 17-R has passed qualification.

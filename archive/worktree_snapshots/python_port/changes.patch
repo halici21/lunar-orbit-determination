@@ -1,0 +1,14 @@
+diff --git a/PYQT5_DESKTOP_APP_README.md b/PYQT5_DESKTOP_APP_README.md
+index 6cc64f9..efe1ed9 100644
+--- a/PYQT5_DESKTOP_APP_README.md
++++ b/PYQT5_DESKTOP_APP_README.md
+@@ -6,8 +6,7 @@ framework is **PyQt5**. The application must run locally as a desktop program;
+ it must not be implemented as a website, browser dashboard, Flask app, or
+ Electron wrapper.
+ 
+-The goal ios to provide enough project context for another coding assistant or
+-developer to understand what has been implemented, what can be visualized, what
++developer to understand what has s to provide enough project context for another coding assistant or
+ simulation settings should be exposed, and how the UI should be organized into
+ modular `.ui` files and Python controllers.
+ 

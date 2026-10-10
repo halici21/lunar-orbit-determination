@@ -1,0 +1,20 @@
+{
+ "worktree": "python_port",
+ "base_commit": "632560d72d51b3d77b401365b1839908c2c8e85f",
+ "branch": "feature/lunar-j2-force-models",
+ "modified": [
+  "PYQT5_DESKTOP_APP_README.md"
+ ],
+ "untracked": [
+  "docs/measurement_models_physics_derivatives_and_gaps.md"
+ ],
+ "content_status": {
+  "PYQT5_DESKTOP_APP_README.md": "NOT IN ANY COMMIT",
+  "docs/measurement_models_physics_derivatives_and_gaps.md": "NOT IN ANY COMMIT"
+ },
+ "unique_files": [
+  "PYQT5_DESKTOP_APP_README.md",
+  "docs/measurement_models_physics_derivatives_and_gaps.md"
+ ],
+ "restore": "git worktree add <dir> <base_commit>  (or checkout it), then `git apply changes.patch` and copy untracked/ back"
+}
