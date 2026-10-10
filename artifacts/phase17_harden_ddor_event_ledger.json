@@ -1,0 +1,96 @@
+{
+ "pair": "GC",
+ "row_rule": "PRODUCTION_VISIBILITY_ELEVATION_AND_OCCULTATION",
+ "rows": [
+  {
+   "t_obs_local_s": 6930.0,
+   "station_a_receive_et": 857813286.99998,
+   "common_transmit_local_s": 6928.712317351692,
+   "common_transmit_et": 857813285.7122973,
+   "station_b_receive_local_s": 6930.012580075088,
+   "station_b_receive_et": 857813287.01256,
+   "station_a_state_epoch": "t_obs (Hermite of exact-sxform station history on the grid)",
+   "station_b_state_epoch": "t_B",
+   "earth_orientation_epochs_et": [
+    857813286.99998,
+    857813287.01256
+   ],
+   "baseline_construction_epoch": "grid epoch t_obs (weights / diagnostics only)",
+   "quasar_frame_contract": "fixed J2000 unit vector; D_Q independent of spacecraft",
+   "both_stations_visible": true,
+   "d_s_s": 0.012580075088565179
+  },
+  {
+   "t_obs_local_s": 9180.0,
+   "station_a_receive_et": 857815536.99998,
+   "common_transmit_local_s": 9178.704190080558,
+   "common_transmit_et": 857815535.7041701,
+   "station_b_receive_local_s": 9180.008764792834,
+   "station_b_receive_et": 857815537.0087447,
+   "station_a_state_epoch": "t_obs (Hermite of exact-sxform station history on the grid)",
+   "station_b_state_epoch": "t_B",
+   "earth_orientation_epochs_et": [
+    857815536.99998,
+    857815537.0087447
+   ],
+   "baseline_construction_epoch": "grid epoch t_obs (weights / diagnostics only)",
+   "quasar_frame_contract": "fixed J2000 unit vector; D_Q independent of spacecraft",
+   "both_stations_visible": true,
+   "d_s_s": 0.008764792833936053
+  },
+  {
+   "t_obs_local_s": 14220.0,
+   "station_a_receive_et": 857820576.99998,
+   "common_transmit_local_s": 14218.708535263517,
+   "common_transmit_et": 857820575.7085153,
+   "station_b_receive_local_s": 14220.000097496755,
+   "station_b_receive_et": 857820577.0000775,
+   "station_a_state_epoch": "t_obs (Hermite of exact-sxform station history on the grid)",
+   "station_b_state_epoch": "t_B",
+   "earth_orientation_epochs_et": [
+    857820576.99998,
+    857820577.0000775
+   ],
+   "baseline_construction_epoch": "grid epoch t_obs (weights / diagnostics only)",
+   "quasar_frame_contract": "fixed J2000 unit vector; D_Q independent of spacecraft",
+   "both_stations_visible": true,
+   "d_s_s": 9.749675434567173e-05
+  },
+  {
+   "t_obs_local_s": 19260.0,
+   "station_a_receive_et": 857825616.99998,
+   "common_transmit_local_s": 19258.69743528667,
+   "common_transmit_et": 857825615.6974152,
+   "station_b_receive_local_s": 19259.991477918185,
+   "station_b_receive_et": 857825616.9914579,
+   "station_a_state_epoch": "t_obs (Hermite of exact-sxform station history on the grid)",
+   "station_b_state_epoch": "t_B",
+   "earth_orientation_epochs_et": [
+    857825616.99998,
+    857825616.9914579
+   ],
+   "baseline_construction_epoch": "grid epoch t_obs (weights / diagnostics only)",
+   "quasar_frame_contract": "fixed J2000 unit vector; D_Q independent of spacecraft",
+   "both_stations_visible": true,
+   "d_s_s": -0.008522081812096571
+  },
+  {
+   "t_obs_local_s": 21510.0,
+   "station_a_receive_et": 857827866.99998,
+   "common_transmit_local_s": 21508.701534799635,
+   "common_transmit_et": 857827865.7015147,
+   "station_b_receive_local_s": 21509.98768030905,
+   "station_b_receive_et": 857827866.9876603,
+   "station_a_state_epoch": "t_obs (Hermite of exact-sxform station history on the grid)",
+   "station_b_state_epoch": "t_B",
+   "earth_orientation_epochs_et": [
+    857827866.99998,
+    857827866.9876603
+   ],
+   "baseline_construction_epoch": "grid epoch t_obs (weights / diagnostics only)",
+   "quasar_frame_contract": "fixed J2000 unit vector; D_Q independent of spacecraft",
+   "both_stations_visible": true,
+   "d_s_s": -0.012319690953373152
+  }
+ ]
+}

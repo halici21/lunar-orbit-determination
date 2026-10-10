@@ -1,0 +1,15 @@
+{
+  "point_estimate_invariance_gate": "PASS",
+  "prior_diagnostic_post_repair_gate": "PASS",
+  "requalification_matches_oracle": "PASS",
+  "g0_qualified_sigma_k": 0.9040175567876826,
+  "g1_qualified_sigma_k": 0.019394564345071103,
+  "best_existing_sigma_k": 0.0045163182446048035,
+  "best_existing_fractional": 0.45163182446048034,
+  "best_existing_old_sigma_k": 0.00045031135701307633,
+  "best_existing_observations": 295,
+  "pre_repair_k_estimate": 0.0010384107820214663,
+  "repaired_k_estimate": 0.0010384107820214663,
+  "pre_repair_sigma_k": 0.0016447674033591437,
+  "repaired_sigma_k": 0.019392789142317377
+}

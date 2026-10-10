@@ -1,0 +1,17 @@
+{
+  "gates": {
+    "SPACECRAFT_DOR_EVENT_ORACLE_GATE": "PASS",
+    "DDOR_COMMON_TRANSMIT_EVENT_GATE": "PASS",
+    "zero_baseline_zero_ddor": "PASS",
+    "station_swap_sign_reversal": "PASS",
+    "QUASAR_DELAY_ORACLE_GATE": "PASS",
+    "quasar_direction_roundtrip": "PASS",
+    "perpendicular_baseline_zero_quasar_delay": "PASS",
+    "DDOR_GEOMETRIC_ORACLE_GATE": "PASS",
+    "DDOR_LOCAL_DELAY_NUMERICAL_CONDITIONING_GATE": "PASS"
+  },
+  "all_pass": true,
+  "max_relative_step_across_binades": 1.377114342021941e-10,
+  "spacecraft_event_oracle_rel_ttx": 0.0,
+  "spacecraft_event_oracle_rel_ds": 0.0
+}

@@ -336,12 +336,21 @@ def dynamics_jacobian_a_matrix(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    srp: "SRPOptions | None" = None,
 ) -> np.ndarray:
     """Build the 6x6 variational A matrix used by `odeFun_v3.m`.
 
     The Earth-J2 indirect term ``-a_J2(Moon rel Earth)`` is state-independent, so
     only the spacecraft term contributes to the gravity gradient (the same
     gradient applies for ``'indirect'`` and ``'direct'`` modes).
+
+    ``srp`` (Phase 17-F1): when the trajectory carries the opt-in cannonball SRP,
+    its exact position gradient ``d a_SRP / d r``
+    (:func:`lunar_od.srp.srp_acceleration_position_gradient`, including the
+    penumbra illumination term) joins the acceleration-vs-position block, so the
+    variational equations linearise the force the trajectory actually feels.
+    SRP has no velocity dependence, so no other block changes.  ``srp=None``
+    (default) or an inactive configuration leaves A exactly as before.
     """
     state_mci = _state6(state_mci)
     r_sc_m = state_mci[:3]
@@ -360,6 +369,9 @@ def dynamics_jacobian_a_matrix(
         g_total = g_total + body_j2_gravity_gradient(
             r_sc_m, mu_moon_m3_s2, MOON_R_M, j2_moon, _MCI_TO_MOON_BF
         )
+    if srp is not None and srp.is_active:
+        from .srp import srp_acceleration_position_gradient
+        g_total = g_total + srp_acceleration_position_gradient(r_sc_m, r_moon_sun_m, srp)
 
     return np.block(
         [
@@ -617,17 +629,19 @@ def _with_srp_acceleration(
     perturbation to leak into a default path through a wrapper that forgot to
     check a flag.
 
-    Only elements 3:6 are touched — the velocity derivative. For the 42-state
-    augmented path that leaves elements 6:42, the variational block, untouched,
-    which is the Phase 13 STM policy expressed in one line: the trajectory gets
-    ``a_SRP``, the A-matrix does not get its position gradient. Phase 13 measured
-    that gradient at 4.02e-13 of the gravity gradient on the reference arc, so
-    omitting it is an approximation with a measured size, not an oversight.
+    Elements 3:6 get ``a_SRP``.  For the 42-state augmented path (Phase 17-F1)
+    the variational block also gets the SRP position gradient: the base RHS
+    (numba or reference) builds ``Phi_dot = A_grav Phi`` without SRP, and this
+    adds ``G_SRP @ Phi[0:3, :]`` to rows 3:6 of ``Phi_dot`` -- exactly
+    ``(A_grav + [[0, 0], [G_SRP, 0]]) Phi``.  Before F1 the gradient was omitted
+    (Phase 13 policy, measured at 4.02e-13 of the gravity gradient on the
+    reference arc on average); Phase 17-HARDEN D05 showed it is concentrated in
+    penumbra and accumulates secularly in the STM, so it is now included.
     """
     if srp is None or not srp.is_active:
         return rhs
 
-    from .srp import srp_acceleration_with_lunar_shadow
+    from .srp import srp_acceleration_position_gradient, srp_acceleration_with_lunar_shadow
 
     def rhs_with_srp(t_s: float, state: np.ndarray) -> np.ndarray:
         out = np.array(rhs(t_s, state), dtype=float, copy=True)
@@ -635,11 +649,14 @@ def _with_srp_acceleration(
             raise ValueError(
                 f"SRP needs at least a 6-element derivative; got {out.size}"
             )
-        out[3:6] += srp_acceleration_with_lunar_shadow(
-            np.asarray(state, dtype=float)[:3],
-            get_sun_pos(float(t_s)),
-            srp,
-        )
+        state = np.asarray(state, dtype=float)
+        r_sun = get_sun_pos(float(t_s))
+        out[3:6] += srp_acceleration_with_lunar_shadow(state[:3], r_sun, srp)
+        if state_size == 42:
+            phi = state[6:42].reshape((6, 6), order="F")
+            phi_dot_srp = np.zeros((6, 6))
+            phi_dot_srp[3:6, :] = srp_acceleration_position_gradient(state[:3], r_sun, srp) @ phi[0:3, :]
+            out[6:42] += phi_dot_srp.reshape(-1, order="F")
         return out
 
     rhs_with_srp.__doc__ = (
@@ -815,10 +832,9 @@ def _propagate_augmented_with_harmonics(
     The same ``harmonic_model`` supplies both, so trajectory and variational
     fidelity cannot diverge, and the same rotation is applied to both.
 
-    ``srp`` enters the trajectory derivative through ``f3body_moon`` and is
-    deliberately absent from ``dynamics_jacobian_a_matrix``: matched fidelity is
-    a requirement for GRAVITY, where the gradient is large, and an explicit
-    approximation for SRP, whose gradient Phase 13 measured at 4.02e-13 of it.
+    ``srp`` enters the trajectory derivative through ``f3body_moon`` and, since
+    Phase 17-F1, its position gradient enters ``dynamics_jacobian_a_matrix``:
+    trajectory and variational fidelity are matched for SRP as for gravity.
     """
     from scipy.integrate import solve_ivp
     from .gravity_harmonics import spherical_harmonic_gravity_gradient
@@ -857,6 +873,7 @@ def _propagate_augmented_with_harmonics(
         a_matrix = dynamics_jacobian_a_matrix(
             x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+            srp=srp,
         )
         # Same analytic Pines gradient either way; the fast branch is the
         # qualified Numba twin.  The inertial assembly C^T G_bf C mirrors
@@ -964,12 +981,11 @@ def propagate_augmented_state(
     behaves exactly as before.
 
     Solar radiation pressure (Phase 16, opt-in, default-off): passing ``srp``
-    adds ``a_SRP`` to the TRAJECTORY derivative only.  The variational block is
-    left alone, which is the qualified Phase 13 policy — the SRP position
-    gradient measured 4.02e-13 of the gravity gradient on the reference arc, so
-    the STM omits it.  That is an explicit approximation, not an exact result,
-    and an estimator that later solves for K_SRP will need its own sensitivity
-    path rather than this one.
+    adds ``a_SRP`` to the trajectory derivative and (Phase 17-F1) its exact
+    position gradient to the variational block, so the STM linearises the force
+    the trajectory feels.  Before F1 the gradient was omitted (Phase 13 policy);
+    Phase 17-HARDEN D05 traced a 1e-6..1e-5 STM error to that omission.  A
+    K_SRP solve-for uses ``propagate_state_with_k_sensitivity``.
     """
     from scipy.integrate import solve_ivp
 
@@ -1186,12 +1202,12 @@ def propagate_state_with_k_sensitivity(
     where ``g`` is the K-independent SRP kernel — evaluated directly, never as
     ``a/K``, so ``K = 0`` is a legal starting point for a solve-for.
 
-    ``A(t)`` is the SAME matrix that drives the STM, which is the point: Phase 16
-    omits the SRP position gradient from ``A`` as a measured approximation, and
-    this uses that same ``A`` rather than a partially-corrected one. A
+    ``A(t)`` is the SAME matrix that drives the STM, which is the point: a
     sensitivity propagated against a different Jacobian from the STM beside it
-    would be internally inconsistent, and mixing in only the illumination
-    derivative would be worse still.
+    would be internally inconsistent.  Since Phase 17-F1 that ``A`` includes the
+    complete SRP position gradient (distance, direction and penumbra
+    illumination terms), so both the STM and ``dx/dK`` linearise the force the
+    trajectory actually feels.
 
     ``dx/dK(t0) = 0`` by default: the initial Cartesian state is parameterised
     independently of the coefficient, so perturbing K does not move it.
@@ -1267,6 +1283,7 @@ def propagate_state_with_k_sensitivity(
         a_matrix = dynamics_jacobian_a_matrix(
             x_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+            srp=srp,
         )
         if _h_ctx is not None:
             if _HARMONIC_GRADIENT_FAST and _pines_gradient_bf_fast is not None:

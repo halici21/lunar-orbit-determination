@@ -1,0 +1,4 @@
+case,measurement_family,observations,rank,scaled_condition,conditional_k_information,weakest_k_component,estimator_run
+G0,two-way range,82,6,6.791689298722062e+18,1.5212283447235677,0.9999999998485365,BLS sweep
+G6,four-event counted Doppler,57,6,3.817235916671105e+17,247.5280534075864,0.999999999999999,information-only directional characterization
+G7,range + four-event counted Doppler,117,6,3.669735485316046e+17,260.78087551972567,0.999999999999999,information-only directional characterization

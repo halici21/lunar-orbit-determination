@@ -1,0 +1,39 @@
+{
+ "fd_tight": {
+  "kind": "FD",
+  "orbit": "O2_FULL_SUN_HIGH_BETA",
+  "k": 12,
+  "best_rel_err_per_segment": [
+   5.2218906439278255e-06,
+   6.7696171965260495e-06,
+   1.8559161867495935e-05
+  ],
+  "worst": 1.8559161867495935e-05,
+  "label": "POST-HOC FD at rtol 1e-13 / atol 1e-14; frozen FD result unchanged"
+ },
+ "bls_stationarity": {
+  "label": "POST-HOC production BLS warm-started at the KP2 solution; frozen BLS result unchanged",
+  "status": "Converged",
+  "mine_converged": true,
+  "k_mine": 0.005411017977882337,
+  "k_prod": 0.00541296377014452,
+  "diff_over_sigma": [
+   -4.354514712203389e-05,
+   -2.2053522358166203e-05,
+   1.938154154676004e-05,
+   -0.00011631534066600598,
+   -2.662012936641958e-06,
+   -2.6688760501268132e-06,
+   -0.000827735738237444
+  ],
+  "sigma_ratio": [
+   0.9975963562422877,
+   1.0006475916096242,
+   0.9721672219945883,
+   0.9990803911169663,
+   1.0056871502401676,
+   1.000176889465709,
+   0.917095790416743
+  ]
+ }
+}

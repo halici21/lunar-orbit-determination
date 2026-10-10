@@ -301,13 +301,79 @@ CLOSURE_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# --------------------------------------------------------------------------
+# Phase 17-HARDEN re-freeze (authorized by the owner's Phase 17-HARDEN brief,
+# s57: "formally re-freeze/update provenance metadata with documentation")
+# --------------------------------------------------------------------------
+# lunar_od/dynamics.py changed AFTER the closure re-freeze above, in commit
+# 0e785f6 (2026-09-14, "phase: version qualified Phase 14-17A-R overlay"):
+# Phase 16 explicit SRP (_with_srp_acceleration, _share_sun_lookup,
+# _direct_de440_preflight) and Phase 17A K-sensitivity
+# (propagate_state_with_k_sensitivity, K_SENSITIVITY_STATE_SIZE = 48).  That
+# content (git blob c973822f6426dc4208319ca53115acef876bb912) is the dynamics
+# every Phase 16/17 result was computed with, and it has not changed since.
+# The gate was never re-frozen for it, so it failed on every checkout.
+#
+#   old (closure, fc13cc4) d0f7ab029912ecfe986b11e3e5b1361c9051d6bdbb2bbd8026f599028465648e
+#   new (0e785f6 = HEAD)   b369899a45a8cc645e65c6065771a9dff3fcd61d65b58a0f62bde90215f15fdb
+#     = sha256(git cat-file --filters 0e785f6:lunar_od/dynamics.py), the SAME
+#       filtered-checkout (core.autocrlf=true) representation as the tables above
+#
+# Both earlier tables are left untouched as truthful historical records.  An
+# unauthorized future edit to dynamics.py still fails the gate.
+PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "b369899a45a8cc645e65c6065771a9dff3fcd61d65b58a0f62bde90215f15fdb",
+}
+
+
+# --------------------------------------------------------------------------
+# Phase 17-F1 re-freeze (authorized by the owner's Phase 17-F1 brief:
+# "explicitly authorizes a narrowly scoped change to protected dynamics /
+# variational code for the purpose of adding the qualified SRP position
+# gradient"; provenance "additive ... old hash, new hash, F1 authorizing phase,
+# exact reason, exact file scope")
+# --------------------------------------------------------------------------
+# lunar_od/dynamics.py, commit 9a0e786 (git blob 44cf92ca642765310c1480370bc477a7366f6c38):
+#   dynamics_jacobian_a_matrix(..., srp=None)    adds lunar_od.srp.
+#       srp_acceleration_position_gradient to the acceleration-vs-position block
+#       when SRP is active (no other block, no change for srp=None / inactive)
+#   _with_srp_acceleration (42-state only)       adds G_SRP @ Phi[0:3, :] to rows
+#       3:6 of Phi-dot; the 6-state path is untouched
+#   _propagate_augmented_with_harmonics,
+#   propagate_state_with_k_sensitivity           pass srp= to the A matrix
+#   docstrings of the four functions above       updated
+# Reason: Phase 17-HARDEN D05 -- the omitted SRP position gradient produced a
+# 1e-6..1e-5 STM / range-Jacobian error concentrated in penumbra.  Qualified in
+# Phase 17-F1 (docs/phase17_f1_srp_variational_gradient_qualification.md,
+# artifacts/phase17_f1_*.json) BEFORE this re-freeze: local gradient, STM and
+# S_K oracles, measurement derivatives, bitwise state-only / acceleration parity.
+# The acceleration model, shadow law and K semantics are unchanged.
+#
+#   old (HARDEN re-freeze, content of 0e785f6) b369899a45a8cc645e65c6065771a9dff3fcd61d65b58a0f62bde90215f15fdb
+#   new (Phase 17-F1, 9a0e786)                c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921
+#     = sha256(git cat-file --filters 9a0e786:lunar_od/dynamics.py), the same
+#       filtered-checkout representation as every table above
+#
+# All earlier tables are left untouched as truthful historical records.  An
+# unauthorized future edit to dynamics.py still fails the gate.
+PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
+}
+
+
 def expected_current_tree_sha256(relative_path: str) -> str:
     """Expected CURRENT-tree hash for a protected path.
 
     The R2-era historical hash, unless the path was re-frozen by an authorized
-    later campaign.  Single resolution point so the gate and its test can never
-    disagree.
+    later campaign (newest authorization first).  Single resolution point so
+    the gate and its test can never disagree.
     """
+    if relative_path in PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256:
+        return PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256:
+        return PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in CLOSURE_REFROZEN_CURRENT_TREE_SHA256:
         return CLOSURE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     return R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
@@ -1828,7 +1894,9 @@ def build_r2_current_tree_protection_rows(
     """
     rows: list[dict[str, object]] = []
     for relative_path in R2_CURRENT_TREE_PROTECTED_PATHS:
-        expected_hash = R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+        # Phase 17-HARDEN: resolve through the single resolution point (the
+        # historical table was read directly here, bypassing every re-freeze).
+        expected_hash = expected_current_tree_sha256(relative_path)
         actual_hash = hashlib.sha256(
             (repository_root / relative_path).read_bytes()
         ).hexdigest()
@@ -1842,7 +1910,11 @@ def build_r2_current_tree_protection_rows(
                 "evidence": "SHA-256 of current working-tree bytes",
             }
         )
-    for relative_path, expected_hash in CLOSURE_CURRENT_TREE_SHA256.items():
+    # Phase 17-HARDEN: `CLOSURE_CURRENT_TREE_SHA256` never existed (NameError in
+    # every campaign run); the closure paths are checked at their newest
+    # authorized freeze through the same resolution point.
+    for relative_path in CLOSURE_REFROZEN_CURRENT_TREE_SHA256:
+        expected_hash = expected_current_tree_sha256(relative_path)
         actual_hash = hashlib.sha256(
             (repository_root / relative_path).read_bytes()
         ).hexdigest()

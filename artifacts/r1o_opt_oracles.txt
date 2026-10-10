@@ -1,0 +1,66 @@
+
+========================================================================================
+S1 - PINHOLE PROJECTION: BORESIGHT-CENTERED LANDMARK (hand-verifiable)
+========================================================================================
+  BORESIGHT_LANDS_AT_PRINCIPAL_POINT                      PASS  u=1024.000000000 (expect 1024.0), v=1024.000000000 (expect 1024.0)
+
+========================================================================================
+S2 - PINHOLE PROJECTION: KNOWN OFF-AXIS ANGLE (hand-verifiable, exact tan())
+========================================================================================
+  OFFAXIS_PROJECTION_MATCHES_EXACT_TAN                    PASS  expected du=222.223079px, actual du=222.223079px, rel_err=0.000e+00
+
+========================================================================================
+S3 - CAMERA ATTITUDE FRAME GATE: nadir-pointing orthonormality + boresight convention
+========================================================================================
+  CAMERA_ATTITUDE_FRAME_GATE                              PASS  orthonorm_err=1.110e-16, det_err=0.000e+00, boresight_err=0.000e+00
+
+========================================================================================
+S4 - SMALL-ANGLE ROTATION: orthogonality to second order + first-order angle recovery
+========================================================================================
+  SMALL_ANGLE_ROTATION_SELF_CONSISTENT                    PASS  orthonorm_err2=8.900e-09 (|a|^2=9.800e-09 expected), first_order_err=0.000e+00
+
+========================================================================================
+S5 - ANALYTIC JACOBIAN vs CONVERGENCE-CHECKED CENTRAL FD (R1O-OPT s73 hard block)
+========================================================================================
+    step= 1000.00 m   analytic-vs-FD rel_err = 1.690e-04
+    step=  100.00 m   analytic-vs-FD rel_err = 1.690e-06
+    step=   10.00 m   analytic-vs-FD rel_err = 1.689e-08
+    step=    1.00 m   analytic-vs-FD rel_err = 1.697e-10
+    step=    0.10 m   analytic-vs-FD rel_err = 9.534e-10
+    step=    0.01 m   analytic-vs-FD rel_err = 1.338e-09
+  CAMERA_PROJECTION_ORACLE_GATE                           PASS  best rel_err=1.697e-10 at step=1.0 m, quadratic ratio(1000m/100m)=100.0 (expect ~100)
+
+========================================================================================
+S6 - VISIBILITY GATE: hand-verifiable near-side / far-side / outside-FOV
+========================================================================================
+  VISIBILITY_GATE_THREE_CASES                             PASS  near=VISIBLE, far=OCCULTED_FAR_SIDE, edge=OUTSIDE_FOV
+
+========================================================================================
+S7 - OPTICAL LIGHT-TIME / TIME-TAG / ABERRATION (R1O-OPT s24-26: tested, not assumed)
+========================================================================================
+  v_sc(MCI) ~= 1631.078 m/s, tau(300 km slant) = 1000.692 us
+  GSD at 105.47 km = 16.574 m/px,  IFOV = 157.143 urad/px
+
+  (1) landmark retardation  = 4.6276 mm  -> 2.792e-04 px
+  (2) time-tag error cost   = 1.6322 m   -> 9.848e-02 px   (cost of the WRONG convention)
+  (3) stellar aberration    = 5.4407 urad -> 3.462e-02 px
+
+  against the finest centroiding precision tested (0.1 px):
+    OPTICAL_LIGHT_TIME_SIGNIFICANCE   = NEGLIGIBLE  (2.79e-03 of it)
+    OPTICAL_ABERRATION_SIGNIFICANCE   = SIGNIFICANT  (3.46e-01 of it)
+    OPTICAL_TIME_TAG_CONTRACT         = SHUTTER_RECEPTION_EPOCH  (wrong choice costs 0.098 px)
+  OPTICAL_LIGHT_TIME_AND_TIMETAG_TESTED                   PASS  retardation 2.79e-04 px, aberration 3.46e-02 px, time-tag 0.098 px
+
+========================================================================================
+SUMMARY
+========================================================================================
+  BORESIGHT_LANDS_AT_PRINCIPAL_POINT: PASS
+  OFFAXIS_PROJECTION_MATCHES_EXACT_TAN: PASS
+  CAMERA_ATTITUDE_FRAME_GATE: PASS
+  SMALL_ANGLE_ROTATION_SELF_CONSISTENT: PASS
+  CAMERA_PROJECTION_ORACLE_GATE: PASS
+  VISIBILITY_GATE_THREE_CASES: PASS
+  OPTICAL_LIGHT_TIME_AND_TIMETAG_TESTED: PASS
+
+  ALL_ORACLES_PASS = True
+  OPTICAL_LIGHT_TIME_SIGNIFICANCE = NEGLIGIBLE

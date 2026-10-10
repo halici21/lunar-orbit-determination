@@ -1,0 +1,150 @@
+{
+  "phase": "PHASE 17-R1COV",
+  "title": "SQUARE-ROOT COVARIANCE QUALIFICATION AND K_SRP FORMAL-UNCERTAINTY REPAIR",
+  "date": "2026-09-15",
+  "scope": "COVARIANCE_METHOD_ONLY_K_SOLVE_FOR_PATHS",
+  "git": {
+    "start_branch": "feature/phase17-r-k-srp-estimation",
+    "start_head": "f0ee0fac0f07db8ad3da60ef7434749eaa5438a4",
+    "start_tree": "c646b86d9281d4053155a686c80fa1e7bfbbf737",
+    "r1m_content_commit": "f2af3045e44860b0892fe84b788ab7b75c7c63a2",
+    "r1m_content_commit_reachable": true,
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "main_changed": false,
+    "origin_main_changed": false,
+    "push": "NONE",
+    "merge": "NONE",
+    "force_push": "NONE",
+    "history_rewrite": "NONE",
+    "final_head_note": "the commit adding this manifest; a commit cannot embed its own hash"
+  },
+  "gates": {
+    "r1m_covariance_defect_reproduced": "YES",
+    "normal_matrix_condition_squaring_gate": "PASS",
+    "high_precision_oracle_convergence_gate": "PASS",
+    "qr_covariance_oracle_gate": "PASS",
+    "qr_covariance_scaling_invariance_gate": "PASS",
+    "qr_prior_response_gate": "PASS",
+    "srif_r_factor_covariance_gate": "PASS",
+    "bls_srif_covariance_consistency_gate": "PASS",
+    "srukf_affected_by_normal_matrix_floor": "NO",
+    "weak_direction_retention_gate": "PASS",
+    "true_rank_deficiency_semantics_gate": "PASS",
+    "point_estimate_invariance_gate": "PASS",
+    "prior_diagnostic_post_repair_gate": "PASS",
+    "report_completeness_gate": "PASS",
+    "phase17_r1cov_gate": "PASS"
+  },
+  "sigma_k": {
+    "g0": {
+      "old": 0.0034688695056,
+      "oracle": 0.90401755679,
+      "qr": 0.90401755679,
+      "srif": 0.90401755679,
+      "overconfidence": 260.6
+    },
+    "g1": {
+      "old": 0.0016448102377,
+      "oracle": 0.019394564345,
+      "qr": 0.019394564345,
+      "srif": 0.019394564345,
+      "overconfidence": 11.8
+    },
+    "g3": {
+      "old": 0.00052401571115,
+      "oracle": 0.005329810002,
+      "qr": 0.005329810002,
+      "overconfidence": 10.2
+    },
+    "best_existing_linked_span": {
+      "old": 0.0004503114,
+      "qualified": 0.004516318,
+      "k_truth": 0.01,
+      "fractional_uncertainty": 0.452,
+      "sigma_separation": 2.21
+    }
+  },
+  "oracle": {
+    "method": "exact rational (fractions.Fraction)",
+    "convergence": "Decimal 50/80/120/200 digits, all bit-identical to exact",
+    "mpmath_available": false
+  },
+  "production_change": {
+    "files": [
+      "lunar_od/estimators.py"
+    ],
+    "call_sites_total": 28,
+    "call_sites_modified": 2,
+    "call_sites_protected": 26,
+    "point_estimate_behavior_changed": false,
+    "default_6state_behavior_changed": false,
+    "srukf_modified": false,
+    "scenarios_duplicate_helper_modified": false,
+    "safe_covariance_from_information_modified": false
+  },
+  "tests": {
+    "targeted": {
+      "collected": 344,
+      "passed": 332,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 12
+    },
+    "full_suite": {
+      "collected": 1264,
+      "passed": 1223,
+      "failed": 2,
+      "errors": 10,
+      "skipped": 29
+    },
+    "r1m_baseline_full_suite": {
+      "collected": 1245,
+      "passed": 1204,
+      "failed": 2,
+      "errors": 10,
+      "skipped": 29
+    },
+    "new_tests_added": 19,
+    "r1cov_introduced_nonpasses": 0,
+    "new_scientific_regressions": 0,
+    "unknown_nonpasses": 0
+  },
+  "estimator_sigma_k_trust_status_after_r1cov": "QUALIFIED_FOR_K_SOLVE_FOR_PATHS_ONLY",
+  "next_action": "PHASE_17_R1O_ADDITIONAL_OBSERVABLE_FEASIBILITY; secondary and unbundled: extend square-root path to default six-state estimators, Monte Carlo consistency check. Neither automatic.",
+  "scripts": [
+    "phase17_r1cov_abc.py",
+    "phase17_r1cov_core.py",
+    "phase17_r1cov_d_srif.py",
+    "phase17_r1cov_e_rank.py",
+    "phase17_r1cov_f_callsites.py",
+    "phase17_r1cov_g_requalify.py",
+    "phase17_r1cov_h_artifacts.py"
+  ],
+  "new_test_file": "tests/test_k_srp_square_root_covariance.py",
+  "report": "docs/phase17_r1cov_square_root_covariance.md",
+  "artifact_sha256": {
+    "r1cov_abc_results.json": "4d6bf393b464ec56eb3c5337e3c82f7dbb300df450f9977fb9ec1a2368b5bceb",
+    "r1cov_callsite_inventory.csv": "6231d7ea331b0a17ec911a8cff018332f7ac1ff1c3672aa183779154deea42e7",
+    "r1cov_config.json": "0d1e79143899ed77305f98f5fe315067da80f9c62d9fc0040e619e9ef2e82af5",
+    "r1cov_defect_reproduction.csv": "a2aacd62dac7c643b83ce898c47e0f36e71ce9175a7156253819c2872bb12153",
+    "r1cov_design_singular_spectrum.png": "ec74475c28bd09c3111e69c16c4cc0280d2187aa40c5cb268b29b3229cd01427",
+    "r1cov_eigenvalues_vs_floor.png": "e3f5bead2bb0b7d29960cd04f97870e4977969457d5ddeb0583654b757b96f97",
+    "r1cov_high_precision_oracle.csv": "c5f2a9e369c81058047490e05fd3cd06a7c84820029e794086a6bd91ff8059da",
+    "r1cov_historical_correction_table.csv": "23f2b4438ef2f3e618c6651e6a636092b4815998b9eba587196ea5708fee2a01",
+    "r1cov_old_vs_qualified_sigma_k.png": "37cb0dd049596ddedc256d8fe9ab9b90fc83ed0354943c12ee49a49fd39a2fa2",
+    "r1cov_oracle_prior_cases.csv": "f2eefaac179c121637ac8d7040694ab7f5cc402fc6861d8aa9b1ca99f94540b4",
+    "r1cov_pinv_characterization.csv": "83652f97ae411d332088206087c93a1cd8ea10f533d808df4963eb7c24149a1d",
+    "r1cov_posterior_vs_prior.png": "e1eb3973a66dfbd8dde4c829b8a7325f3d2e5f8f00f34e417e4778659b929200",
+    "r1cov_prior_response.csv": "382750b4d0c1f446efa583caa16fd5bc111020081cdde9373b52888f353744d9",
+    "r1cov_prior_sweep.csv": "712a6a4ad8ab9a6e8336ed677179d78606bbc6e4cae4505c64d67e110a163e7d",
+    "r1cov_qr_vs_oracle.csv": "3216e7a20419283602054716dc08b23c90df704372c33e94cb0af10d15961930",
+    "r1cov_qr_vs_oracle_error.png": "3379e5a15e4d41c37cceeeca8f39e9d010f57161492443641c56e512569b95ad",
+    "r1cov_rank_controls.csv": "e05937b58ff15f709cde024e9b1e94be6f4c59898f3ad0085b0c8604526927e5",
+    "r1cov_requalification.csv": "86e0c9196b982b4cc948cd4cd59bdd7d0b11050f0ce50bd891ea615bcc8719f8",
+    "r1cov_requalification.json": "f0a32eb4a6f23f57e3e45b379349e3836cdc3902e3e0c62eb31a5961db3f71da",
+    "r1cov_scaling_invariance.csv": "cc656e17787dac126c69c59a07b09a59cd29ab24fe26d6360463ffc55889c930",
+    "r1cov_sigma_k_vs_scaling.png": "5a899bc91debbda3bd3a8939f1297342e38bcf89e1549ffef8639775de135ebd",
+    "r1cov_srif_covariance.csv": "75f343a9d155841de60d07072faeafa740440f91de2b2463f3ccab82a64491e5"
+  }
+}

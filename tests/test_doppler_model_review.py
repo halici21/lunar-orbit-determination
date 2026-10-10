@@ -291,35 +291,46 @@ class R3ExactStationStateUnitParity(unittest.TestCase):
         self.assertEqual(provider.source_frame, "J2000")
         self.assertEqual(provider.target_frame, "ITRF93")
         self.assertEqual(provider.center, "moon")
-        self.assertEqual(provider.earth_ephemeris_method, "linear_grid_interpolation")
+        self.assertEqual(provider.earth_ephemeris_method, "cubic_hermite_grid_interpolation")
         self.assertEqual(provider.state(0.0).shape, (6,))
 
 
 class R3EarthEphemerisPolicyInvariance(unittest.TestCase):
-    """R3-P22: R3 changed the site transform only, never the Earth policy."""
+    """R3-P22 (SUPERSEDED by Phase 17-HARDEN-D23): the Earth policy.
 
-    def test_p22_earth_history_is_linearly_interpolated(self):
+    R3 kept the Earth LINEAR so the exact path reproduced R2 model S. That left
+    a ~1.7-1.8e-3 m/s counted-Doppler value offset from the asymmetric uplink
+    transmit epochs (docs/phase17_harden_d23_repair_qualification.md). The
+    exact path now uses the same cubic-Hermite Earth as M3 range and DeltaDOR;
+    the site-transform contract of R3 is unchanged.
+    """
+
+    def test_d23_earth_history_is_cubic_hermite_interpolated(self):
+        # Uniformly accelerating Earth: cubic Hermite reproduces it exactly,
+        # while the linear mean of the neighbours is off by a h^2 / 8.
         case = _r3_case()
+        accel = 2.5e-3
+        case["earth_pos"][:, 2] = 0.5 * accel * case["t_grid"] ** 2
+        case["earth_vel"][:, 2] = accel * case["t_grid"]
         provider = _r3_provider(case)
         fixed = np.concatenate([case["station"].r_ecef_m, np.zeros(3)])
-        # Midpoint between two grid nodes: linear interpolation is the exact
-        # mean of the neighbours; a cubic-Hermite Earth would not be.
         left, right = case["t_grid"][3], case["t_grid"][4]
         mid = 0.5 * (left + right)
         state = provider.state(mid)
         earth_site = state[:3] - np.linalg.solve(
             case["sxform_fn"]("J2000", "ITRF93", mid), fixed
         )[:3]
-        expected_linear = 0.5 * (case["earth_pos"][3] + case["earth_pos"][4])
-        self.assertLessEqual(
-            float(np.max(np.abs(earth_site - expected_linear))), 1e-9
-        )
+        exact = np.array([3.8e8, 12.0 * mid, 0.5 * accel * mid ** 2])
+        self.assertLessEqual(float(np.max(np.abs(earth_site - exact))), 1e-6)
+        linear_mean = 0.5 * (case["earth_pos"][3] + case["earth_pos"][4])
+        h = right - left
+        self.assertAlmostEqual(float(linear_mean[2] - exact[2]), accel * h ** 2 / 8.0, delta=1e-6)
         self.assertEqual(
-            provider.earth_ephemeris_method, "linear_grid_interpolation"
+            provider.earth_ephemeris_method, "cubic_hermite_grid_interpolation"
         )
 
-    def test_p22_metadata_reports_the_unchanged_policies(self):
-        self.assertEqual(COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD, "linear_grid_interpolation")
+    def test_d23_metadata_reports_the_repaired_earth_policy(self):
+        self.assertEqual(COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD, "cubic_hermite_grid_interpolation")
         self.assertEqual(COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD, "cubic_hermite")
 
 

@@ -1,0 +1,280 @@
+{
+  "range_only": {
+    "n_obs": 782,
+    "raw_i_kk": 18268566.025090486,
+    "conditional_k_information": 1162817.0907819087,
+    "orthogonal_fraction": 0.2522919965229832,
+    "theta_k_deg": 14.613182283011557,
+    "smallest_scaled_singular_value": 116.28170840871176,
+    "scaled_condition": 9325336632734080.0,
+    "rank": 6,
+    "weakest_mode_k_component": 0.9999999967347587,
+    "qualified_sigma_k": 0.0009273513250655349,
+    "fractional_sigma_k": 0.09273513250655349,
+    "rank_margin": 6662381.157463631
+  },
+  "historical_equivalence": {
+    "max_abs_state_diff": 0.0,
+    "max_abs_k_diff": 0.0,
+    "bitwise": true
+  },
+  "k_column_invariance": {
+    "landmark_k_bitwise_identical": true,
+    "landmark_state_columns_changed": true,
+    "max_abs_k_diff": 0.0
+  },
+  "landmark": {
+    "historical": {
+      "n_obs": 7350,
+      "raw_i_kk": 3467225031.4585485,
+      "conditional_k_information": 2658847864.284467,
+      "orthogonal_fraction": 0.8757007657422435,
+      "theta_k_deg": 61.12801981208624,
+      "smallest_scaled_singular_value": 265884.78642717155,
+      "scaled_condition": 130575289313147.23,
+      "rank": 7,
+      "weakest_mode_k_component": 0.9999999999975968,
+      "qualified_sigma_k": 1.9393368774176112e-05,
+      "fractional_sigma_k": 0.001939336877417611,
+      "rank_margin": 56302961.11921724
+    },
+    "corrected": {
+      "n_obs": 7350,
+      "raw_i_kk": 3467225031.4585485,
+      "conditional_k_information": 221870657.0487675,
+      "orthogonal_fraction": 0.2529641165726124,
+      "theta_k_deg": 14.652982920765192,
+      "smallest_scaled_singular_value": 22187.065704382327,
+      "scaled_condition": 1.069984415165254e+16,
+      "rank": 6,
+      "weakest_mode_k_component": 0.9999999999878999,
+      "qualified_sigma_k": 6.71351657142759e-05,
+      "fractional_sigma_k": 0.00671351657142759,
+      "rank_margin": 6219751.141797851
+    },
+    "delta_f_perp_stm": -0.6227366491696311,
+    "n_rows": 6568
+  },
+  "ddor": {
+    "1nrad": {
+      "historical": {
+        "n_obs": 925,
+        "raw_i_kk": 341836263.7495383,
+        "conditional_k_information": 66752593.266068056,
+        "orthogonal_fraction": 0.4419010206113976,
+        "theta_k_deg": 26.22523676973311,
+        "smallest_scaled_singular_value": 6675.259326536551,
+        "scaled_condition": 819165755242423.4,
+        "rank": 6,
+        "weakest_mode_k_component": 0.9999999999947731,
+        "qualified_sigma_k": 0.0001223956347341163,
+        "fractional_sigma_k": 0.012239563473411631,
+        "rank_margin": 22478940.626713756
+      },
+      "corrected": {
+        "n_obs": 925,
+        "raw_i_kk": 341836263.7495383,
+        "conditional_k_information": 1681883.7827453183,
+        "orthogonal_fraction": 0.0701437410716681,
+        "theta_k_deg": 4.022243268635391,
+        "smallest_scaled_singular_value": 168.18837827212897,
+        "scaled_condition": 1.2125104576643437e+17,
+        "rank": 6,
+        "weakest_mode_k_component": 0.9999999999854168,
+        "qualified_sigma_k": 0.0007710845626571834,
+        "fractional_sigma_k": 0.07710845626571834,
+        "rank_margin": 1847646.94392084
+      },
+      "k_bitwise": true,
+      "n_rows": 143
+    },
+    "5nrad": {
+      "historical": {
+        "n_obs": 925,
+        "raw_i_kk": 31211273.93406838,
+        "conditional_k_information": 4119143.7280133893,
+        "orthogonal_fraction": 0.36328521665697683,
+        "theta_k_deg": 21.30209004731932,
+        "smallest_scaled_singular_value": 411.9143727906763,
+        "scaled_condition": 2849328625498103.5,
+        "rank": 6,
+        "weakest_mode_k_component": 0.9999999999865599,
+        "qualified_sigma_k": 0.0004927158430502488,
+        "fractional_sigma_k": 0.049271584305024874,
+        "rank_margin": 12052869.765279215
+      },
+      "corrected": {
+        "n_obs": 925,
+        "raw_i_kk": 31211273.93406838,
+        "conditional_k_information": 1337111.610509038,
+        "orthogonal_fraction": 0.20697985685777934,
+        "theta_k_deg": 11.945422596047027,
+        "smallest_scaled_singular_value": 133.71116104697137,
+        "scaled_condition": 1.3885928442745762e+16,
+        "rank": 6,
+        "weakest_mode_k_component": 0.9999999999872864,
+        "qualified_sigma_k": 0.0008648009739219573,
+        "fractional_sigma_k": 0.08648009739219573,
+        "rank_margin": 5459769.0595818525
+      },
+      "k_bitwise": true,
+      "n_rows": 143
+    }
+  },
+  "earth_los": {
+    "historical": {
+      "n_obs": 1372,
+      "raw_i_kk": 18268927.215727527,
+      "conditional_k_information": 1250870.372136077,
+      "orthogonal_fraction": 0.2616674066794974,
+      "theta_k_deg": 15.169023185229467,
+      "smallest_scaled_singular_value": 125.08703718357049,
+      "scaled_condition": 8668938223647946.0,
+      "rank": 6,
+      "weakest_mode_k_component": 0.999999999933149,
+      "qualified_sigma_k": 0.0008941159597207914,
+      "fractional_sigma_k": 0.08941159597207914,
+      "rank_margin": 6910011.6644099755
+    },
+    "corrected": {
+      "n_obs": 1372,
+      "raw_i_kk": 18268927.215727527,
+      "conditional_k_information": 1214442.9379920284,
+      "orthogonal_fraction": 0.25782916025274866,
+      "theta_k_deg": 14.941291093371206,
+      "smallest_scaled_singular_value": 121.44429381451175,
+      "scaled_condition": 8929203273615115.0,
+      "rank": 6,
+      "weakest_mode_k_component": 0.9999999989706021,
+      "qualified_sigma_k": 0.0009074264688352,
+      "fractional_sigma_k": 0.09074264688351999,
+      "rank_margin": 6808561.726503202
+    },
+    "n_rows": 590,
+    "fd_conv_hist": 1.6288923298736903e-09,
+    "fd_conv_corr": 1.6288923298736903e-09
+  },
+  "r1od_bridge_surrogate": {
+    "historical": {
+      "n_obs": 925,
+      "raw_i_kk": 18268580.676036227,
+      "conditional_k_information": 1242472.9417430707,
+      "orthogonal_fraction": 0.26079007909722524,
+      "theta_k_deg": 15.11694779787645,
+      "smallest_scaled_singular_value": 124.24729413942184,
+      "scaled_condition": 8727483288591675.0,
+      "rank": 6,
+      "weakest_mode_k_component": 0.9999999998637384,
+      "qualified_sigma_k": 0.0008971323766323245,
+      "fractional_sigma_k": 0.08971323766323246,
+      "rank_margin": 6886796.04785981
+    },
+    "corrected": {
+      "n_obs": 925,
+      "raw_i_kk": 18268580.676036227,
+      "conditional_k_information": 1163836.923849349,
+      "orthogonal_fraction": 0.2524025057143515,
+      "theta_k_deg": 14.619725761561746,
+      "smallest_scaled_singular_value": 116.38369172251905,
+      "scaled_condition": 9317173339584276.0,
+      "rank": 6,
+      "weakest_mode_k_component": 0.9999999967910588,
+      "qualified_sigma_k": 0.0009269449318677098,
+      "fractional_sigma_k": 0.09269449318677098,
+      "rank_margin": 6665299.159723915
+    },
+    "n_rows": 143
+  },
+  "table": [
+    {
+      "case": "range only (production two-way range)",
+      "conditional_k_information": 1162817.0907819087,
+      "f_perp": 0.2522919965229832,
+      "theta_k_deg": 14.613182283011557,
+      "sigma_k_frac": 0.09273513250655349,
+      "n_obs": 782,
+      "state_jacobian_source": "production (order=F, always correct)",
+      "classification": "baseline"
+    },
+    {
+      "case": "landmark surrogate 1 urad -- HISTORICAL",
+      "conditional_k_information": 2658847864.284467,
+      "f_perp": 0.8757007657422435,
+      "theta_k_deg": 61.12801981208624,
+      "sigma_k_frac": 0.001939336877417611,
+      "n_obs": 7350,
+      "state_jacobian_source": "R1O surrogate (Phi^T -- DEFECTIVE)",
+      "classification": "superseded"
+    },
+    {
+      "case": "landmark surrogate 1 urad -- CORRECTED",
+      "conditional_k_information": 221870657.0487675,
+      "f_perp": 0.2529641165726124,
+      "theta_k_deg": 14.652982920765192,
+      "sigma_k_frac": 0.00671351657142759,
+      "n_obs": 7350,
+      "state_jacobian_source": "R1O surrogate (Phi, order=F)",
+      "classification": "corrected"
+    },
+    {
+      "case": "DDOR surrogate 1 nrad -- HISTORICAL",
+      "conditional_k_information": 66752593.266068056,
+      "f_perp": 0.4419010206113976,
+      "theta_k_deg": 26.22523676973311,
+      "sigma_k_frac": 0.012239563473411631,
+      "n_obs": 925,
+      "state_jacobian_source": "R1O surrogate (Phi^T -- DEFECTIVE)",
+      "classification": "superseded"
+    },
+    {
+      "case": "DDOR surrogate 1 nrad -- CORRECTED",
+      "conditional_k_information": 1681883.7827453183,
+      "f_perp": 0.0701437410716681,
+      "theta_k_deg": 4.022243268635391,
+      "sigma_k_frac": 0.07710845626571834,
+      "n_obs": 925,
+      "state_jacobian_source": "R1O surrogate (Phi, order=F)",
+      "classification": "corrected"
+    },
+    {
+      "case": "DDOR surrogate 5 nrad -- HISTORICAL",
+      "conditional_k_information": 4119143.7280133893,
+      "f_perp": 0.36328521665697683,
+      "theta_k_deg": 21.30209004731932,
+      "sigma_k_frac": 0.049271584305024874,
+      "n_obs": 925,
+      "state_jacobian_source": "R1O surrogate (Phi^T -- DEFECTIVE)",
+      "classification": "superseded"
+    },
+    {
+      "case": "DDOR surrogate 5 nrad -- CORRECTED",
+      "conditional_k_information": 1337111.610509038,
+      "f_perp": 0.20697985685777934,
+      "theta_k_deg": 11.945422596047027,
+      "sigma_k_frac": 0.08648009739219573,
+      "n_obs": 925,
+      "state_jacobian_source": "R1O surrogate (Phi, order=F)",
+      "classification": "corrected"
+    },
+    {
+      "case": "Earth-center LOS 1 urad -- HISTORICAL",
+      "conditional_k_information": 1250870.372136077,
+      "f_perp": 0.2616674066794974,
+      "theta_k_deg": 15.169023185229467,
+      "sigma_k_frac": 0.08941159597207914,
+      "n_obs": 1372,
+      "state_jacobian_source": "R1O surrogate (Phi^T -- DEFECTIVE)",
+      "classification": "superseded"
+    },
+    {
+      "case": "Earth-center LOS 1 urad -- CORRECTED",
+      "conditional_k_information": 1214442.9379920284,
+      "f_perp": 0.25782916025274866,
+      "theta_k_deg": 14.941291093371206,
+      "sigma_k_frac": 0.09074264688351999,
+      "n_obs": 1372,
+      "state_jacobian_source": "R1O surrogate (Phi, order=F)",
+      "classification": "corrected"
+    }
+  ]
+}

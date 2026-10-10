@@ -41,7 +41,8 @@ from .radiometrics import (
     RangeRatePhysicsConfig,
     range_rate_physics_config,
 )
-from .two_way_range import TwoWayRangeConfig, generate_two_way_range_measurements
+from .measurement_contracts import generate_two_way_range_measurements_checked
+from .two_way_range import TwoWayRangeConfig
 
 MeasurementType = Literal["position", "range_rate", "two_way_range"]
 StartMode = Literal["cold", "hot", "formal", "sqrt_formal"]
@@ -365,7 +366,7 @@ def build_measurement_arcs(
                 jacobian_model=jacobian_model,
             )
         elif measurement_type == "two_way_range":
-            obs_data, pass_geo = generate_two_way_range_measurements(
+            obs_data, pass_geo = generate_two_way_range_measurements_checked(
                 t_pass_s,
                 x_pass,
                 stations,

@@ -1,0 +1,34 @@
+{
+ "canonical_sha256": "2d1cb37028c8486cd0b6acaf0f5c30c2e2fe01c248e36a133a0e1f055f04b7af",
+ "criteria": {
+  "cd1_f_perp_max": 1e-08,
+  "cd1_fd": "CD1 predeclared FD gates rerun on the repaired path: state <= 1e-5, K <= 1e-3",
+  "earth_epoch_pos_err_max_m": 1e-06,
+  "kp1_metric_max": 1e-08,
+  "min_reduction_factor": 1000.0,
+  "mutant_reproduction_mps": [
+   0.001,
+   0.003
+  ],
+  "production_earth_method": "cubic_hermite_grid_interpolation",
+  "solver_floor_max_mps": 1e-08,
+  "value_max_abs_mps": 1e-07,
+  "value_rms_mps": 2e-08
+ },
+ "derivation": {
+  "floating_point_floor": "rho ~ 3.8e8 m, eps*rho ~ 8.5e-8 m per range, difference / 60 s ~ 2e-9 m/s",
+  "hermite_earth_position_error": "cubic Hermite with exact node velocities: |e| <= h^4/384 max|r''''|; h = 90 s, r''''  ~ r_EM w^4 (r_EM 3.84e8 m, w 2.66e-6 rad/s) ~ 2e-14 m/s^4, x3 for eccentricity and solar perturbation -> ~1e-8 m",
+  "historical_defect": "CD1 closure: 1.67-1.83e-3 m/s per-cell max, near-constant offset",
+  "light_time_floor": "update tolerance 1e-10 s with contraction ratio ~ v/c ~ 1e-5 -> residual ~ 1e-15 s, c/(2 Tc) * 1e-15 ~ 2.5e-9 m/s",
+  "operational_context": "CD1 structural sigma 1e-4 m/s; CD1 optimistic operational lower bound (H-maser) 2.1e-6 m/s",
+  "predicted_total_floor": "a few 1e-9 m/s",
+  "value_effect_of_hermite_error": "y = (rho_end - rho_start)/Tc: <= 2e-8 m / 60 s ~ 3e-10 m/s"
+ },
+ "entering_head": "0e2a96ebf36319ff7718146d2fd1280a07bcd807",
+ "oracle": "frozen R2 model S single-bounce solver (every row) and M3 four-event model F (every 10th row), station states evaluated directly from SPICE spkezr(EARTH)/sxform at every requested event epoch",
+ "phase": "17-HARDEN-D23 counted-Doppler Earth ephemeris repair: frozen value-level acceptance criteria",
+ "population": "CD1/KP1: 5 orbits x 24 D3 epochs x {HIGH_FIDELITY, SIMPLIFIED}; every ALL_VISIBLE Tc 60 s row",
+ "rationale_value_gate": "1e-7 m/s: ~30x the predicted floor, 1/20 of the most optimistic operational noise floor, 1e-3 of the CD1 structural sigma, and >= 1e4 below the historical defect",
+ "repair": "production counted-Doppler station provider: Earth position/velocity by the SAME cubic-Hermite interpolation (radiometrics._interp_state) that M3 two-way range and DeltaDOR already use, instead of linear (R3-P22); event model, site transform, frequencies and units unchanged",
+ "written_before_repaired_results": true
+}

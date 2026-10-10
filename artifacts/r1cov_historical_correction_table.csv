@@ -1,0 +1,9 @@
+historical_claim,old_basis,r1cov_status,correct_interpretation
+R1/R1G G0 formal sigma_K = 3.47e-03 m^2/kg,floored normal-matrix inverse,SUPERSEDED,qualified sigma_K = 9.0402e-01 (261x larger); K is unconstrained on this arc (9040% of K_truth)
+R1G G1 formal sigma_K = 1.64e-03 m^2/kg,floored normal-matrix inverse,SUPERSEDED,qualified sigma_K = 1.9395e-02 (11.8x larger); 194% of K_truth
+R1G G3 formal sigma_K = 5.24e-04 m^2/kg,floored normal-matrix inverse,SUPERSEDED,qualified sigma_K = 5.3298e-03 (10.2x larger); 53% of K_truth
+augmented problem is 'rank 6/7',numerical rank of H^T W H in float64,REINTERPRETED,"rank deficiency is an artifact of forming the normal matrix (cond(I)=cond(A)^2 exactly). The design matrix is full rank with ~5 orders of margin; K is WEAK_BUT_RESOLVABLE, not absent from the data"
+broad (sigma=1.0) and moderate (sigma=0.01) K priors give identical posterior sigma_K,both reported the floor value,RESOLVED,"neither prior was reaching the answer. Qualified posteriors are 6.7061e-01 and 9.9994e-03 for G0, a 6607% difference"
+prior classified DIAGNOSTIC_UNCERTAIN / PRIOR_INFLUENCED / PRIOR_DOMINATED (R1G s10),inference from an uninterpretable reported sigma,SUPERSEDED,"the posterior now responds correctly to the prior and matches an exact oracle, so prior influence can be read directly rather than inferred"
+R1M: estimator sigma_K is NOT_RELIABLE_IN_NEAR_SINGULAR_REGIME,R1M covariance audit,CONFIRMED_AND_REPAIRED,"confirmed independently here, and repaired for the K solve-for path; the default six-state path still uses the floored helper and is unchanged"
+"R1M: best radiometric case M3 Model B, sigma_K ~ 4.52e-03 from 1/sqrt(I(K|x))",information-domain proxy (data-only Schur),CONFIRMED,"the qualified covariance reproduces the data-only Schur value, so R1M's information-domain conclusion stands; see r1cov_requalification.json"

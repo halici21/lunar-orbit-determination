@@ -1,0 +1,275 @@
+{
+ "label": "POST-HOC DIAGNOSTIC (not the frozen acceptance oracle)",
+ "cells": [
+  {
+   "orbit": "CANON",
+   "k": 0,
+   "n_rows": 911,
+   "earth_only": {
+    "max": 4.392177288536914e-09,
+    "rms": 1.3446540745005007e-09
+   },
+   "earth_and_site": {
+    "max": 3.5611265047919005e-07,
+    "rms": 1.0067200088211252e-07
+   }
+  },
+  {
+   "orbit": "CANON",
+   "k": 6,
+   "n_rows": 980,
+   "earth_only": {
+    "max": 3.9235601434484124e-09,
+    "rms": 1.2293414093758048e-09
+   },
+   "earth_and_site": {
+    "max": 3.0403953132918105e-07,
+    "rms": 9.274425460668685e-08
+   }
+  },
+  {
+   "orbit": "CANON",
+   "k": 12,
+   "n_rows": 782,
+   "earth_only": {
+    "max": 3.6520759749691933e-09,
+    "rms": 1.2508054118151606e-09
+   },
+   "earth_and_site": {
+    "max": 3.5066443615505705e-07,
+    "rms": 8.769387307169555e-08
+   }
+  },
+  {
+   "orbit": "CANON",
+   "k": 18,
+   "n_rows": 750,
+   "earth_only": {
+    "max": 4.728804015030619e-09,
+    "rms": 1.2344447445970258e-09
+   },
+   "earth_and_site": {
+    "max": 3.132406618533423e-07,
+    "rms": 9.380746999456341e-08
+   }
+  },
+  {
+   "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+   "k": 0,
+   "n_rows": 906,
+   "earth_only": {
+    "max": 5.3512394515564665e-09,
+    "rms": 1.2793830192078848e-09
+   },
+   "earth_and_site": {
+    "max": 3.128665184704005e-07,
+    "rms": 1.0159882494647716e-07
+   }
+  },
+  {
+   "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+   "k": 6,
+   "n_rows": 1384,
+   "earth_only": {
+    "max": 4.560888555715792e-09,
+    "rms": 1.1575757475438286e-09
+   },
+   "earth_and_site": {
+    "max": 3.2764626212156145e-07,
+    "rms": 9.5601174091501e-08
+   }
+  },
+  {
+   "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+   "k": 12,
+   "n_rows": 812,
+   "earth_only": {
+    "max": 4.1874415046549984e-09,
+    "rms": 1.1902995823528225e-09
+   },
+   "earth_and_site": {
+    "max": 3.3912965591298416e-07,
+    "rms": 8.773015448505468e-08
+   }
+  },
+  {
+   "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+   "k": 18,
+   "n_rows": 806,
+   "earth_only": {
+    "max": 5.252994483839757e-09,
+    "rms": 1.1804082309075253e-09
+   },
+   "earth_and_site": {
+    "max": 3.074394498980837e-07,
+    "rms": 9.225944568955579e-08
+   }
+  },
+  {
+   "orbit": "O2_FULL_SUN_HIGH_BETA",
+   "k": 0,
+   "n_rows": 1304,
+   "earth_only": {
+    "max": 4.5198476072982885e-09,
+    "rms": 1.3062254834899586e-09
+   },
+   "earth_and_site": {
+    "max": 3.280888449808117e-07,
+    "rms": 9.93809949535172e-08
+   }
+  },
+  {
+   "orbit": "O2_FULL_SUN_HIGH_BETA",
+   "k": 6,
+   "n_rows": 1028,
+   "earth_only": {
+    "max": 5.087485988042317e-09,
+    "rms": 1.1429867215088182e-09
+   },
+   "earth_and_site": {
+    "max": 3.216939603589708e-07,
+    "rms": 9.649163571610652e-08
+   }
+  },
+  {
+   "orbit": "O2_FULL_SUN_HIGH_BETA",
+   "k": 12,
+   "n_rows": 845,
+   "earth_only": {
+    "max": 4.569528755382635e-09,
+    "rms": 1.2068529087461606e-09
+   },
+   "earth_and_site": {
+    "max": 3.111769046881818e-07,
+    "rms": 9.197596153719688e-08
+   }
+  },
+  {
+   "orbit": "O2_FULL_SUN_HIGH_BETA",
+   "k": 18,
+   "n_rows": 802,
+   "earth_only": {
+    "max": 5.304627848090604e-09,
+    "rms": 1.226001702757317e-09
+   },
+   "earth_and_site": {
+    "max": 3.1493952690198057e-07,
+    "rms": 9.367056927835028e-08
+   }
+  },
+  {
+   "orbit": "O3_HIGH_ALTITUDE_500KM",
+   "k": 0,
+   "n_rows": 1070,
+   "earth_only": {
+    "max": 4.982211976312101e-09,
+    "rms": 1.2838161009397051e-09
+   },
+   "earth_and_site": {
+    "max": 3.5051215263592894e-07,
+    "rms": 9.78124720871547e-08
+   }
+  },
+  {
+   "orbit": "O3_HIGH_ALTITUDE_500KM",
+   "k": 6,
+   "n_rows": 1679,
+   "earth_only": {
+    "max": 4.984400447938242e-09,
+    "rms": 1.2019525570923776e-09
+   },
+   "earth_and_site": {
+    "max": 3.280506177816278e-07,
+    "rms": 9.485668825284884e-08
+   }
+  },
+  {
+   "orbit": "O3_HIGH_ALTITUDE_500KM",
+   "k": 12,
+   "n_rows": 978,
+   "earth_only": {
+    "max": 4.063394953846e-09,
+    "rms": 1.1565925435335818e-09
+   },
+   "earth_and_site": {
+    "max": 3.360678419994656e-07,
+    "rms": 9.027793319377242e-08
+   }
+  },
+  {
+   "orbit": "O3_HIGH_ALTITUDE_500KM",
+   "k": 18,
+   "n_rows": 1257,
+   "earth_only": {
+    "max": 4.907974471279886e-09,
+    "rms": 1.2055467166104464e-09
+   },
+   "earth_and_site": {
+    "max": 3.2006710171117447e-07,
+    "rms": 8.986214290577954e-08
+   }
+  },
+  {
+   "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "k": 0,
+   "n_rows": 915,
+   "earth_only": {
+    "max": 4.090907168574631e-09,
+    "rms": 1.353679600826836e-09
+   },
+   "earth_and_site": {
+    "max": 3.2768355140433414e-07,
+    "rms": 9.84714718011147e-08
+   }
+  },
+  {
+   "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "k": 6,
+   "n_rows": 998,
+   "earth_only": {
+    "max": 4.622052074410021e-09,
+    "rms": 1.1396854244379357e-09
+   },
+   "earth_and_site": {
+    "max": 2.950786921473991e-07,
+    "rms": 9.087928359625983e-08
+   }
+  },
+  {
+   "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "k": 12,
+   "n_rows": 797,
+   "earth_only": {
+    "max": 4.812022780242842e-09,
+    "rms": 1.2198936351763983e-09
+   },
+   "earth_and_site": {
+    "max": 2.871076958399499e-07,
+    "rms": 9.07342683082826e-08
+   }
+  },
+  {
+   "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "k": 18,
+   "n_rows": 733,
+   "earth_only": {
+    "max": 4.847379386774264e-09,
+    "rms": 1.1553287024671063e-09
+   },
+   "earth_and_site": {
+    "max": 3.032209860975854e-07,
+    "rms": 9.285845085556019e-08
+   }
+  }
+ ],
+ "summary": {
+  "earth_only": {
+   "max": 5.3512394515564665e-09,
+   "rms_max": 1.353679600826836e-09
+  },
+  "earth_and_site": {
+   "max": 3.5611265047919005e-07,
+   "rms_max": 1.0159882494647716e-07
+  }
+ }
+}

@@ -911,7 +911,9 @@ def test_r2_historical_identity_declares_the_filtered_checkout_representation():
 def test_r2_current_tree_protection_holds_for_paths_r3_must_not_change():
     """The ten historical paths R3 may not touch are still byte-identical."""
     for relative_path in campaign.R2_CURRENT_TREE_PROTECTED_PATHS:
-        expected = campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[relative_path]
+        # Phase 17-HARDEN: the gate's single resolution point (authorized re-freezes
+        # included); the historical table itself is tested separately above.
+        expected = campaign.expected_current_tree_sha256(relative_path)
         actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
         assert actual == expected, relative_path
 
@@ -1066,6 +1068,26 @@ def _r3_reference_provider(fixture):
     )
 
 
+def _r3_shared_production_provider(fixture):
+    """A PRODUCTION station provider carrying model S's station states.
+
+    R3-P04/P05/P11 compare the EVENT arithmetic of production and the frozen
+    model S with the station-state source held fixed (see the Addendum-07
+    independence note). Since Phase 17-HARDEN-D23 production's own provider
+    interpolates the Earth with cubic Hermite, while byte-frozen model S keeps
+    the linear policy, so the controlled comparison now injects the shared
+    source explicitly instead of relying on the two policies coinciding.
+    Earth-policy accuracy is qualified separately against direct SPICE
+    (tests/test_harden_d23_counted_doppler_earth.py).
+    """
+    reference = _r3_reference_provider(fixture)
+    return radiometrics_module.CountedDopplerStationStateProvider(
+        state_fn=reference.state_fn,
+        earth_ephemeris_method=reference.earth_ephemeris_method,
+        station_name=str(getattr(fixture.station, 'name', '<unnamed>')),
+    )
+
+
 def _r3_relative(produced, reference):
     denominator = abs(float(reference))
     if denominator <= 1e-300:
@@ -1190,14 +1212,7 @@ def _r3_endpoint_round_trip_light_times(fixture, interval_s):
 
     production = {}
     for label, raw in (("start", mid - half), ("end", mid + half)):
-        provider = campaign.resolve_counted_doppler_station_state_provider(
-            exact_cfg,
-            fixture.station,
-            fixture.t_grid_s,
-            fixture.earth_pos_mci_m,
-            fixture.earth_vel_mci_mps,
-            et0_s=fixture.et0_s,
-        )
+        provider = _r3_shared_production_provider(fixture)
         solution = campaign.solve_two_way_light_time(
             campaign._clock_corrected_receive_time(raw, exact_cfg),
             fixture.station,
@@ -1429,6 +1444,7 @@ def test_r3_p04b_observable_difference_stays_inside_the_ulp_budget(real_fixture,
         fixture.x_j2000_to_itrf93,
         _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
         et0_s=fixture.et0_s,
+        station_state_provider=_r3_shared_production_provider(fixture),
     )
     reference = exact_station_single_bounce_counted_doppler_reference(
         fixture.spec.receive_mid_time_s,
@@ -1477,6 +1493,7 @@ def test_r3_p04b_a07_observable_matches_the_independent_oracle(real_fixture, int
         fixture.x_j2000_to_itrf93,
         _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
         et0_s=fixture.et0_s,
+        station_state_provider=_r3_shared_production_provider(fixture),
     )
     truth = _r3_independent_observable(fixture, provider, interval_s)
     mid = float(fixture.spec.receive_mid_time_s)
@@ -1504,6 +1521,7 @@ def test_r3_p04b_a07_production_is_no_worse_than_model_s_against_truth(
             fixture.x_j2000_to_itrf93,
             _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
             et0_s=fixture.et0_s,
+            station_state_provider=_r3_shared_production_provider(fixture),
         )
     )
     reference = float(
@@ -1620,6 +1638,7 @@ def test_r3_p05_production_exact_jacobian_equals_accepted_model_s(real_fixture, 
         fixture.x_j2000_to_itrf93,
         _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
         et0_s=fixture.et0_s,
+        station_state_provider=_r3_shared_production_provider(fixture),
     )
     reference = exact_station_single_bounce_counted_doppler_jacobian(
         fixture.spec.receive_mid_time_s,
@@ -1832,6 +1851,7 @@ def test_r3_p11_production_exact_jacobian_equals_the_s_jacobian_column(real_fixt
         fixture.x_j2000_to_itrf93,
         _r3_production_config(fixture, R3_EXACT_METHOD, interval_s),
         et0_s=fixture.et0_s,
+        station_state_provider=_r3_shared_production_provider(fixture),
     )
     for column in range(6):
         assert (

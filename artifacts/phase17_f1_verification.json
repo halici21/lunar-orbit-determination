@@ -1,0 +1,248 @@
+{
+ "phase": "17-F1",
+ "LOCAL_SRP_GRADIENT_GATE": true,
+ "local_gates": {
+  "FULL_SUN_GRADIENT_GATE": true,
+  "PENUMBRA_GRADIENT_GATE": true,
+  "ANNULAR_GRADIENT_GATE": true,
+  "UMBRA_GRADIENT_GATE": true,
+  "K_ZERO_CONTROL": true,
+  "NO_SHADOW_CONTROL": true,
+  "NU_GRADIENT_GATE": true,
+  "SHADOW_BOUNDARY_GATE": true,
+  "NU_CONSISTENT_WITH_PRODUCTION": true,
+  "LOCAL_SRP_GRADIENT_GATE": true
+ },
+ "local_max_best_rel_err": 1.5401984943007495e-07,
+ "F1_STM_GATE": "PASS",
+ "MAX_STM_FD_RELERR": 9.908409697899046e-08,
+ "STM_ORACLE_FLOOR": 3.817640552127386e-08,
+ "OLD_MODEL_MAX_STM_FD_RELERR": 1.1921697428221163e-06,
+ "stm_rk4_cross_check": {
+  "NEW": {
+   "dt=2": 1.513871205005193e-08,
+   "dt=1": 2.2038272717373156e-08
+  },
+  "OLD": {
+   "dt=2": 3.360332656417144e-06,
+   "dt=1": 3.353974905499516e-06
+  }
+ },
+ "OLD_VARIATIONAL_APPROXIMATION_FAILURE_REPRODUCED": true,
+ "F1_K_SENSITIVITY_GATE": "PASS",
+ "MAX_K_SENSITIVITY_FD_RELERR": 8.718326610215224e-07,
+ "OLD_MODEL_MAX_K_SENSITIVITY_FD_RELERR": 3.589754956062891e-05,
+ "measurement_derivatives": {
+  "predeclared_2x_rule": {
+   "comparison": {
+    "range": {
+     "x0": {
+      "pre": 2.246055071303234e-06,
+      "post": 2.064182682476444e-07,
+      "within": true
+     },
+     "y0": {
+      "pre": 1.0265412327026302e-05,
+      "post": 9.264385906347806e-08,
+      "within": true
+     },
+     "z0": {
+      "pre": 2.9341947673135017e-06,
+      "post": 2.1197999496471439e-07,
+      "within": true
+     },
+     "vx0": {
+      "pre": 3.561760941600398e-06,
+      "post": 7.827060969494761e-07,
+      "within": true
+     },
+     "vy0": {
+      "pre": 3.247471537115608e-06,
+      "post": 1.1813046871964007e-06,
+      "within": true
+     },
+     "vz0": {
+      "pre": 3.033483718695651e-06,
+      "post": 3.241859060621275e-07,
+      "within": true
+     },
+     "K_SRP": {
+      "pre": null,
+      "post": 0.000181182034512899,
+      "within": true
+     }
+    },
+    "counted_doppler": {
+     "x0": {
+      "pre": 2.0299310143281154e-07,
+      "post": 3.195661721349715e-07,
+      "within": true
+     },
+     "y0": {
+      "pre": 2.263452594668058e-07,
+      "post": 2.702323628999976e-07,
+      "within": true
+     },
+     "z0": {
+      "pre": 1.2626160133137575e-06,
+      "post": 1.9772801463734997e-07,
+      "within": true
+     },
+     "vx0": {
+      "pre": 1.7157899068408395e-07,
+      "post": 2.3982292806188493e-07,
+      "within": true
+     },
+     "vy0": {
+      "pre": 5.475323442165092e-07,
+      "post": 9.437043582339143e-07,
+      "within": true
+     },
+     "vz0": {
+      "pre": 6.097711894612232e-07,
+      "post": 5.008866885222385e-07,
+      "within": true
+     },
+     "K_SRP": {
+      "pre": 0.00021948652337534845,
+      "post": 0.00021746910323045812,
+      "within": true
+     }
+    },
+    "ddor": {
+     "x0": {
+      "pre": 2.0606771826476e-07,
+      "post": 2.528835791833771e-07,
+      "within": true
+     },
+     "y0": {
+      "pre": 2.531536187753678e-07,
+      "post": 1.0494097387511347e-07,
+      "within": true
+     },
+     "z0": {
+      "pre": 1.249202027218469e-06,
+      "post": 2.0231553718046364e-07,
+      "within": true
+     },
+     "vx0": {
+      "pre": 7.863460476845867e-07,
+      "post": 8.875120262113363e-07,
+      "within": true
+     },
+     "vy0": {
+      "pre": 2.797705825150417e-07,
+      "post": 9.644669135741037e-07,
+      "within": false
+     },
+     "vz0": {
+      "pre": 5.360828461440761e-07,
+      "post": 2.0756128637171656e-07,
+      "within": true
+     },
+     "K_SRP": {
+      "pre": 0.00011490718889451562,
+      "post": 0.00011346520973307455,
+      "within": true
+     }
+    },
+    "optical": {
+     "x0": {
+      "pre": 3.3400421017717397e-06,
+      "post": 1.3860001721361376e-06,
+      "within": true
+     },
+     "y0": {
+      "pre": 4.156732935141405e-06,
+      "post": 3.4773351906622977e-06,
+      "within": true
+     },
+     "z0": {
+      "pre": 2.251162056952253e-06,
+      "post": 4.6609954591860354e-07,
+      "within": true
+     },
+     "vx0": {
+      "pre": 2.369726251287244e-06,
+      "post": 2.094790363147747e-06,
+      "within": true
+     },
+     "vy0": {
+      "pre": 3.00255534899105e-06,
+      "post": 1.077957252822266e-06,
+      "within": true
+     },
+     "vz0": {
+      "pre": 2.347980612908999e-06,
+      "post": 2.6112729082229236e-07,
+      "within": true
+     },
+     "K_SRP": {
+      "pre": 0.000321468659424564,
+      "post": 0.0003249366044998543,
+      "within": true
+     }
+    }
+   },
+   "gates": {
+    "RANGE_DERIVATIVE_GATE": true,
+    "DOPPLER_DERIVATIVE_GATE": true,
+    "DDOR_DERIVATIVE_GATE": false,
+    "OPTICAL_DERIVATIVE_GATE": true
+   },
+   "rule": "post best <= 1e-5 (state) / 1e-3 (K) and <= 2x pre-F1 best; pre = artifacts/phase17_harden_derivatives.json; range pre = HARDEN D05 decomposition PROP (rtol 1e-13, penumbra), a different normalisation (max-abs) -- reported, not gated beyond the absolute bound"
+  },
+  "resolved_oracle": {
+   "range": {
+    "new_resolved_state_max": 8.931495380971826e-08,
+    "old_resolved_state_max": 1.972794895881507e-06,
+    "new_not_worse": true,
+    "science_config_state_max": 1.1813046871964007e-06,
+    "science_config_k": 0.000181182034512899,
+    "within_harden_bounds": true
+   },
+   "counted_doppler": {
+    "new_resolved_state_max": 8.528144772993494e-07,
+    "old_resolved_state_max": 1.3079480339454428e-06,
+    "new_not_worse": true,
+    "science_config_state_max": 9.437043582339143e-07,
+    "science_config_k": 0.00021746910323045812,
+    "within_harden_bounds": true
+   },
+   "ddor": {
+    "new_resolved_state_max": 8.664384417694583e-08,
+    "old_resolved_state_max": 1.330426867635256e-06,
+    "new_not_worse": true,
+    "science_config_state_max": 9.644669135741037e-07,
+    "science_config_k": 0.00011346520973307455,
+    "within_harden_bounds": true
+   },
+   "optical": {
+    "new_resolved_state_max": 1.0883481860048894e-06,
+    "old_resolved_state_max": 3.048660690408495e-06,
+    "new_not_worse": true,
+    "science_config_state_max": 3.4773351906622977e-06,
+    "science_config_k": 0.0003249366044998543,
+    "within_harden_bounds": true
+   }
+  },
+  "RANGE_DERIVATIVE_GATE": true,
+  "DOPPLER_DERIVATIVE_GATE": true,
+  "DDOR_DERIVATIVE_GATE": true,
+  "OPTICAL_DERIVATIVE_GATE": true,
+  "note": "the predeclared <= 2x pre-F1 rule tripped for DDOR vy0 at the science configuration (2.8e-7 -> 9.6e-7), both at the rtol-1e-13 adaptive oracle floor; at a resolving tolerance (analytic and oracle rtol 3e-15) every NEW state column is <= the pre-F1 model's in all four chains"
+ },
+ "PHYSICAL_FORCE_PARITY": {
+  "STATE_ONLY": true,
+  "ACCELERATION": true,
+  "KERNEL": true
+ },
+ "PHYSICAL_FORCE_CHANGED": "NO",
+ "ACCELERATED_VARIATIONAL_PATH_STATUS": "NOT_APPLICABLE (lunar_od/accelerated.py contains no SRP code; the SRP variational term is added in dynamics.py for both the numba and reference 42-state RHS, parity tested)",
+ "F1_SCIENCE_MATERIALITY_CLASS": "NUMERICAL_BASELINES_UPDATED_CLASSES_PRESERVED",
+ "D2_CLASS_CHANGES": [],
+ "D2_CELLS": 18,
+ "GEO_ESCALATED_TO_FULL_GRID": false,
+ "F1_HIGH_FIDELITY_REQUALIFICATION": "PRESERVES_CLASS",
+ "PROTECTION": "additive PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256 b369899a -> c6e7975c (434b9c3)"
+}

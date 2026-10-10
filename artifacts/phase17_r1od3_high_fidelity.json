@@ -1,0 +1,54 @@
+{
+ "cases": {
+  "HF1": {
+   "strategy": "GC_ONLY",
+   "k": 0,
+   "delta_C1_simplified": 0.03276363298330183,
+   "delta_C1_fidelity": 0.026622612913167698,
+   "class_simplified": "MODEST",
+   "class_fidelity": "MODEST",
+   "preserved": true,
+   "range_f_simplified": 0.0915024012983624,
+   "range_f_fidelity": 0.09432396248645196,
+   "delta_C0_fidelity": 0.051327439742427775
+  },
+  "HF2": {
+   "strategy": "GC_ONLY",
+   "k": 5,
+   "delta_C1_simplified": 0.048595284969025154,
+   "delta_C1_fidelity": 0.08519508694940386,
+   "class_simplified": "MODEST",
+   "class_fidelity": "STRONG",
+   "preserved": false,
+   "range_f_simplified": 0.25036446213814423,
+   "range_f_fidelity": 0.21182734886671062,
+   "delta_C0_fidelity": 0.08814317210083011
+  },
+  "HF3": {
+   "strategy": "GC_ONLY",
+   "k": 2,
+   "delta_C1_simplified": -0.04322978424084074,
+   "delta_C1_fidelity": -0.0311310242986019,
+   "class_simplified": "DIRECTION_LOSS",
+   "class_fidelity": "DIRECTION_LOSS",
+   "preserved": true,
+   "range_f_simplified": 0.16681337266193927,
+   "range_f_fidelity": 0.15616944201017668,
+   "delta_C0_fidelity": -0.029930041763903126
+  },
+  "HF4": {
+   "strategy": "GC_PLUS_GM",
+   "k": 0,
+   "delta_C1_simplified": 0.027720006406815337,
+   "delta_C1_fidelity": 0.02240872720170016,
+   "class_simplified": "MODEST",
+   "class_fidelity": "MODEST",
+   "preserved": true,
+   "range_f_simplified": 0.0915024012983624,
+   "range_f_fidelity": 0.09432396248645196,
+   "delta_C0_fidelity": 0.046900696849057746
+  }
+ },
+ "TRACKING_DESIGN_HIGH_FIDELITY_CLASS": "CHANGES_PRIMARY_INTERPRETATION",
+ "force_model": "D2 fidelity path: GL1800F 50x50 MOON_PA_DE440 + Earth/Sun point-mass third body (SPICE) + same SRP, harmonic STM opt-in (F1-qualified variational equations)"
+}

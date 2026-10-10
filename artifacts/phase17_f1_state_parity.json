@@ -1,0 +1,69 @@
+{
+ "STATE_ONLY": {
+  "bitwise_equal": true,
+  "max_abs_pos_m": 0.0,
+  "max_abs": 0.0,
+  "max_rel": 0.0
+ },
+ "ACCELERATION": {
+  "bitwise_equal": true,
+  "max_abs_pos_m": null,
+  "max_abs": 0.0,
+  "max_rel": 0.0
+ },
+ "KERNEL": {
+  "bitwise_equal": true,
+  "max_abs_pos_m": null,
+  "max_abs": 0.0,
+  "max_rel": 0.0
+ },
+ "AUG42_FAST": {
+  "bitwise_equal": false,
+  "max_abs_pos_m": 0.02359840895223897,
+  "max_abs": 0.02359840895223897,
+  "max_rel": 6.278367957662087e-05
+ },
+ "AUG42_REF": {
+  "bitwise_equal": false,
+  "max_abs_pos_m": 0.011445114403613843,
+  "max_abs": 0.011445114403613843,
+  "max_rel": 2.9793636672858884e-05
+ },
+ "AUG48": {
+  "bitwise_equal": false,
+  "max_abs_pos_m": 2.2949243430048227e-05,
+  "max_abs": 2.2949243430048227e-05,
+  "max_rel": 6.283307663535555e-08
+ },
+ "augmented_integrator_convergence": {
+  "1e-11": {
+   "state_only_m": 0.09718890112422336,
+   "aug42_adams_m": 0.038325661118685635,
+   "aug48_adams_m": 0.00018432647004599424,
+   "aug42_dop853_m": 0.034969085745411056,
+   "phi42_vs_phi48_rel": 2.1657474789391206e-06
+  },
+  "1e-12": {
+   "state_only_m": 0.005472641052035044,
+   "aug42_adams_m": 0.023122986169862594,
+   "aug48_adams_m": 8.937844642334527e-05,
+   "aug42_dop853_m": 0.024902250926779577,
+   "phi42_vs_phi48_rel": 9.662351661250236e-07
+  },
+  "1e-13": {
+   "state_only_m": 0.000977624256701571,
+   "aug42_adams_m": 3.887208957133151e-06,
+   "aug48_adams_m": 3.6737673988962134e-06,
+   "aug42_dop853_m": 0.013061181584068346,
+   "phi42_vs_phi48_rel": 2.01706940018753e-10
+  },
+  "1e-14": {
+   "state_only_m": 8.358401489646063e-05,
+   "aug42_adams_m": 5.499922510207972e-06,
+   "aug48_adams_m": 5.013487975652594e-06,
+   "aug42_dop853_m": 4.887771532474732e-06,
+   "phi42_vs_phi48_rel": 1.2785598825177338e-10
+  }
+ },
+ "note": "pre = captured on the entering dynamics (HEAD 1025f4a + predeclaration bfc98e4, lunar_od unmodified) by examples/phase17_f1_parity.py --capture; post = --compare after 9a0e786.  STATE_ONLY / ACCELERATION / KERNEL bitwise equal = PHYSICAL_FORCE_PARITY.  Augmented state parts move at the integrator-tolerance level and converge with rtol (augmented_integrator_convergence)."
+}

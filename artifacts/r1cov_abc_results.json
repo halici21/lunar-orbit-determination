@@ -1,0 +1,11 @@
+{
+  "defect_reproduced": true,
+  "squaring_gate": "PASS",
+  "oracle_control_agreement": 7.008907606921526e-14,
+  "oracle_control_entrywise": 1.4605925166796214e-12,
+  "oracle_control_threshold": 2.2204460492509516e-12,
+  "oracle_convergence_gate": "PASS",
+  "qr_oracle_gate": "PASS",
+  "qr_scaling_gate": "PASS",
+  "qr_prior_gate": "PASS"
+}

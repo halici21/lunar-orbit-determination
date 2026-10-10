@@ -597,8 +597,10 @@ class ProvenanceTruthfulness(unittest.TestCase):
         self.assertEqual(
             metadata["earth_ephemeris_method"], COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD
         )
-        self.assertEqual(metadata["earth_ephemeris_method"], "linear_grid_interpolation")
-        self.assertNotIn("cubic_hermite_grid_interpolation", str(metadata))
+        # Phase 17-HARDEN-D23: the counted-Doppler Earth policy is now cubic
+        # Hermite (it was linear under R3-P22).  The label coincides with M3's,
+        # so "M3 metadata not composed" is carried by the R4-specific fields.
+        self.assertEqual(metadata["earth_ephemeris_method"], "cubic_hermite_grid_interpolation")
         self.assertEqual(metadata["physical_event_count"], 8)
         self.assertIs(metadata["transponder_delay_is_solve_for"], False)
         self.assertEqual(metadata["transponder_delay_model"], "constant_scalar")
@@ -640,9 +642,10 @@ class DispatchAndCacheNeutrality(unittest.TestCase):
         provider.state(np.nextafter(epoch, np.inf))
         self.assertEqual(len(provider._cache), 2)
 
-    def test_p11_provider_declares_the_linear_earth_policy(self):
+    def test_p11_provider_declares_the_repaired_earth_policy(self):
+        # Phase 17-HARDEN-D23 supersedes the linear policy (R3-P22).
         adapter = FourEventStationStateAdapter(_provider(), T_GRID)
-        self.assertEqual(adapter.earth_ephemeris_method, "linear_grid_interpolation")
+        self.assertEqual(adapter.earth_ephemeris_method, "cubic_hermite_grid_interpolation")
         self.assertEqual(adapter.station_state_method, "exact_event_epoch_sxform")
 
 

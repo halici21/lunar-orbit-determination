@@ -1,0 +1,25 @@
+{
+  "gates": {
+    "DDOR_STATE_JACOBIAN_GATE": "PASS",
+    "DDOR_K_COMPOSITION_SENSITIVITY_GATE": "PASS",
+    "DDOR_K_E2E_SENSITIVITY_GATE": "PASS",
+    "DIRECT_MEASUREMENT_K_DEPENDENCE_NO": "PASS"
+  },
+  "d_spacecraft_delay_dx0": [
+    1.8205872676541564e-09,
+    3.6244431002094386e-10,
+    -5.658424461274598e-10,
+    2.4481702477233554e-07,
+    1.6729162483178383e-06,
+    1.4804048490253718e-06
+  ],
+  "d_spacecraft_delay_dk": 3.747483269440075e-09,
+  "event_matrix_condition_number": 2.6180280082340537,
+  "state_jacobian_max_relative_error": 6.775543813828657e-06,
+  "k_e2e_best_relative_error": 8.210764270018159e-05,
+  "k_e2e_same_sign": true,
+  "k_e2e_same_order_of_magnitude": true,
+  "t_obs_s": 53010.0,
+  "transmit_time_s": 53008.644392572365,
+  "spacecraft_differential_delay_s": 0.007345237349219769
+}

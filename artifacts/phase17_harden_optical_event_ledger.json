@@ -1,0 +1,225 @@
+{
+ "contract": "instantaneous: spacecraft, landmark and camera frame all at the shutter epoch; no light time (documented R1O-OPT limitation)",
+ "rows": [
+  {
+   "grid_index": 0,
+   "shutter_local_s": 0.0,
+   "shutter_et": 857806356.99998,
+   "spacecraft_state_epoch_et": 857806356.99998,
+   "landmark_transform_epoch_et": 857806356.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003518103486208237
+  },
+  {
+   "grid_index": 47,
+   "shutter_local_s": 1410.0,
+   "shutter_et": 857807766.99998,
+   "spacecraft_state_epoch_et": 857807766.99998,
+   "landmark_transform_epoch_et": 857807766.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00036898980499250913
+  },
+  {
+   "grid_index": 93,
+   "shutter_local_s": 2790.0,
+   "shutter_et": 857809146.99998,
+   "spacecraft_state_epoch_et": 857809146.99998,
+   "landmark_transform_epoch_et": 857809146.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00033939800213133415
+  },
+  {
+   "grid_index": 141,
+   "shutter_local_s": 4230.0,
+   "shutter_et": 857810586.99998,
+   "spacecraft_state_epoch_et": 857810586.99998,
+   "landmark_transform_epoch_et": 857810586.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00030186009340698797
+  },
+  {
+   "grid_index": 188,
+   "shutter_local_s": 5640.0,
+   "shutter_et": 857811996.99998,
+   "spacecraft_state_epoch_et": 857811996.99998,
+   "landmark_transform_epoch_et": 857811996.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003141105254806549
+  },
+  {
+   "grid_index": 236,
+   "shutter_local_s": 7080.0,
+   "shutter_et": 857813436.99998,
+   "spacecraft_state_epoch_et": 857813436.99998,
+   "landmark_transform_epoch_et": 857813436.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00035542636350338657
+  },
+  {
+   "grid_index": 283,
+   "shutter_local_s": 8490.0,
+   "shutter_et": 857814846.99998,
+   "spacecraft_state_epoch_et": 857814846.99998,
+   "landmark_transform_epoch_et": 857814846.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00036487541291922005
+  },
+  {
+   "grid_index": 329,
+   "shutter_local_s": 9870.0,
+   "shutter_et": 857816226.99998,
+   "spacecraft_state_epoch_et": 857816226.99998,
+   "landmark_transform_epoch_et": 857816226.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003358968228707136
+  },
+  {
+   "grid_index": 424,
+   "shutter_local_s": 12720.0,
+   "shutter_et": 857819076.99998,
+   "spacecraft_state_epoch_et": 857819076.99998,
+   "landmark_transform_epoch_et": 857819076.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00031267249284628327
+  },
+  {
+   "grid_index": 470,
+   "shutter_local_s": 14100.0,
+   "shutter_et": 857820456.99998,
+   "spacecraft_state_epoch_et": 857820456.99998,
+   "landmark_transform_epoch_et": 857820456.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003541721367286142
+  },
+  {
+   "grid_index": 519,
+   "shutter_local_s": 15570.0,
+   "shutter_et": 857821926.99998,
+   "spacecraft_state_epoch_et": 857821926.99998,
+   "landmark_transform_epoch_et": 857821926.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00036872529900959993
+  },
+  {
+   "grid_index": 565,
+   "shutter_local_s": 16950.0,
+   "shutter_et": 857823306.99998,
+   "spacecraft_state_epoch_et": 857823306.99998,
+   "landmark_transform_epoch_et": 857823306.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003344548123753221
+  },
+  {
+   "grid_index": 660,
+   "shutter_local_s": 19800.0,
+   "shutter_et": 857826156.99998,
+   "spacecraft_state_epoch_et": 857826156.99998,
+   "landmark_transform_epoch_et": 857826156.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003146596151767326
+  },
+  {
+   "grid_index": 706,
+   "shutter_local_s": 21180.0,
+   "shutter_et": 857827536.99998,
+   "spacecraft_state_epoch_et": 857827536.99998,
+   "landmark_transform_epoch_et": 857827536.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003512873442140788
+  },
+  {
+   "grid_index": 706,
+   "shutter_local_s": 21180.0,
+   "shutter_et": 857827536.99998,
+   "spacecraft_state_epoch_et": 857827536.99998,
+   "landmark_transform_epoch_et": 857827536.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003545493073981999
+  },
+  {
+   "grid_index": 801,
+   "shutter_local_s": 24030.0,
+   "shutter_et": 857830386.99998,
+   "spacecraft_state_epoch_et": 857830386.99998,
+   "landmark_transform_epoch_et": 857830386.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00033516267722553467
+  },
+  {
+   "grid_index": 848,
+   "shutter_local_s": 25440.0,
+   "shutter_et": 857831796.99998,
+   "spacecraft_state_epoch_et": 857831796.99998,
+   "landmark_transform_epoch_et": 857831796.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.00030176976835898377
+  },
+  {
+   "grid_index": 896,
+   "shutter_local_s": 26880.0,
+   "shutter_et": 857833236.99998,
+   "spacecraft_state_epoch_et": 857833236.99998,
+   "landmark_transform_epoch_et": 857833236.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003198658582865198
+  },
+  {
+   "grid_index": 942,
+   "shutter_local_s": 28260.0,
+   "shutter_et": 857834616.99998,
+   "spacecraft_state_epoch_et": 857834616.99998,
+   "landmark_transform_epoch_et": 857834616.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003548640687952455
+  },
+  {
+   "grid_index": 942,
+   "shutter_local_s": 28260.0,
+   "shutter_et": 857834616.99998,
+   "spacecraft_state_epoch_et": 857834616.99998,
+   "landmark_transform_epoch_et": 857834616.99998,
+   "moon_orientation_frame": "MOON_PA_DE440 (moon_pa_de440_rotation_at_et)",
+   "camera_attitude": "nadir frame from the NOMINAL position at the shutter epoch; frozen as an independently measured input",
+   "light_time_applied": false,
+   "light_time_s": 0.0003516048566446542
+  }
+ ]
+}

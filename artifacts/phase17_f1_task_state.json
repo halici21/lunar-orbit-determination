@@ -1,0 +1,83 @@
+{
+  "phase": "17-F1 SRP position-gradient variational closure",
+  "entering_state": {
+    "branch": "feature/phase17-r-k-srp-estimation",
+    "head": "1025f4abf8ecc726a09c20ab09d103875751d01f",
+    "tree": "e63be848a0579290979eb678eb954148ddf69298",
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "verified": true,
+    "v2_instructions_file": "ABSENT (not blocking per brief)"
+  },
+  "protection": {
+    "lunar_od/dynamics.py": {
+      "sha256_worktree": "b369899a45a8cc645e65c6065771a9dff3fcd61d65b58a0f62bde90215f15fdb",
+      "git_blob": "c973822f6426dc4208319ca53115acef876bb912",
+      "gate": "R2 current-tree gate (examples/r2_measurement_fidelity_validation.py expected_current_tree_sha256; tests/test_r2_measurement_fidelity.py)",
+      "current_expected": "PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256 (authorised by Phase 17-HARDEN s57, content from 0e785f6)"
+    },
+    "lunar_od/accelerated.py": {
+      "sha256_worktree": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
+      "gate": "R2 closure re-freeze",
+      "f1_change": "NONE (contains no SRP code)"
+    },
+    "lunar_od/srp.py": {
+      "sha256_worktree": "d9ba4c225e5e48e18a0b7b4274643f338b7c2ed05a8fb50dd15b875c855bf43f",
+      "gate": "none (value parity with Phase 13 oracle only)"
+    }
+  },
+  "srp_variational_paths": [
+    "propagate_augmented_state (42-state; numba _ode42_rhs_fast or ode_fun_v3) + _with_srp_acceleration wrapper",
+    "_propagate_augmented_with_harmonics (42-state, f3body_moon srp=)",
+    "propagate_state_with_k_sensitivity (48-state; Phase-17 science path)"
+  ],
+  "checklist": {
+    "repository_protection_state_verification": "DONE",
+    "authoritative_source_inspection": "DONE",
+    "srp_dependency_derivation": "DONE",
+    "missing_gradient_decomposition": "DONE",
+    "implementation_design": "DONE",
+    "local_gradient_oracle": "DONE",
+    "shadow_regime_qualification": "DONE",
+    "stm_oracle": "DONE",
+    "k_sensitivity_oracle": "DONE",
+    "accelerated_reference_parity": "DONE",
+    "measurement_derivative_requalification": "DONE",
+    "science_materiality": "DONE",
+    "protected_provenance_update": "DONE",
+    "targeted_tests": "DONE",
+    "relevant_slow_tests": "DONE",
+    "full_suite": "DONE",
+    "documentation_status": "DONE",
+    "final_diff_review": "DONE",
+    "closure_report": "DONE"
+  },
+  "findings": [
+    {
+      "id": "F1-OBS-01",
+      "klass": "OPTIONAL_CLEANUP",
+      "text": "production nu can exceed 1 by ~1.8e-8 at exact external tangency (lens-area cancellation); no effect; SRP model out of scope"
+    },
+    {
+      "id": "F1-OBS-02",
+      "klass": "RECOMMENDED_FOLLOWUP",
+      "text": "adaptive K-FD oracle is noise-limited (~5e-5 m step-pattern noise vs a few-metre K signal); a larger-signal K oracle would be needed to qualify S_K below ~1e-6"
+    },
+    {
+      "id": "F1-OBS-03",
+      "klass": "REQUIRED_FOR_CORRECTNESS (resolved)",
+      "text": "two FXR tests pinned pre-F1 historical values; now reproduced bitwise under an analysis-only pre-F1 model plus post-F1 pins"
+    },
+    {
+      "id": "F1-OBS-04",
+      "klass": "RECOMMENDED_FOLLOWUP",
+      "text": "the coupled 42-state integration's state part moves ~1-2 cm at rtol 1e-12 when the variational RHS changes (converges; same class as the truth propagator's own tolerance error); callers needing cm-level nominal state should use rtol <= 1e-13"
+    }
+  ],
+  "final": {
+    "PHASE17_F1_GATE": "PASS",
+    "SRP_VARIATIONAL_MODEL_STATUS": "QUALIFIED",
+    "F1_SCIENCE_MATERIALITY_CLASS": "NUMERICAL_BASELINES_UPDATED_CLASSES_PRESERVED",
+    "full_suite": "1406 collected / 1377 passed / 0 failed / 0 errors / 29 skipped"
+  }
+}

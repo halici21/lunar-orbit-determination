@@ -1,0 +1,19 @@
+{
+  "phase": "PHASE17_R1G",
+  "truth_label": "SYNTHETIC_CAMPAIGN_TRUTH",
+  "K_truth_m2_per_kg": 0.01,
+  "K_wrong_m2_per_kg": 0.015,
+  "K_initial_m2_per_kg": 0.012,
+  "measurement_covariance": "frozen R from R1 campaign",
+  "process_noise": "frozen R0/R1 Q; Q_K=0",
+  "cadence_s": 60,
+  "holdout_policy": "predetermined 0.7 orbit holdout for baseline; longer sweeps use fixed qualified campaign horizon",
+  "station_schedules": ["Canberra DSN", "Goldstone DSN,Madrid DSN,Canberra DSN"],
+  "measurement_families": ["two-way range", "four-event counted Doppler", "range + counted Doppler"],
+  "physical_scaling": {"position_m": 1000000.0, "velocity_m_per_s": 1000.0, "K_m2_per_kg": 0.01},
+  "prior_families": {"broad": {"sigma_K": 1.0}, "moderate": {"sigma_K": 0.01}},
+  "production_code_changed": false,
+  "estimator_retuned": false,
+  "screening_envelope_used_as_prior": false,
+  "noise_seed": "deterministic-qualified-campaign-seed"
+}

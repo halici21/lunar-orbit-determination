@@ -1,0 +1,51 @@
+{
+ "rows": [
+  {
+   "mode": "PUBLISHED",
+   "n_obs": 782,
+   "f_perp": 0.2522919965229832,
+   "theta_k_deg": 14.613182283011557,
+   "conditional_k_information": 1162817.0907819087,
+   "sigma_k_frac": 0.09273513250655349,
+   "k_column_norm": 4274.174309160833
+  },
+  {
+   "mode": "CAMPAIGN_TABLE",
+   "n_obs": 782,
+   "f_perp": 0.2522919965229832,
+   "theta_k_deg": 14.613182283011557,
+   "conditional_k_information": 1162817.0907819087,
+   "sigma_k_frac": 0.09273513250655349,
+   "k_column_norm": 4274.174309160833
+  },
+  {
+   "mode": "OFFSET_ONLY",
+   "n_obs": 768,
+   "f_perp": 0.20666667767140529,
+   "theta_k_deg": 11.927082200170153,
+   "conditional_k_information": 729048.0216476062,
+   "sigma_k_frac": 0.11711753742428338,
+   "k_column_norm": 4131.49860061956
+  },
+  {
+   "mode": "CLAMP_ONLY",
+   "n_obs": 968,
+   "f_perp": 0.08572751954170586,
+   "theta_k_deg": 4.917861379244694,
+   "conditional_k_information": 123353.98045028113,
+   "sigma_k_frac": 0.2847235670712773,
+   "k_column_norm": 4096.909080538379
+  },
+  {
+   "mode": "CONSISTENT",
+   "n_obs": 960,
+   "f_perp": 0.09150755457311016,
+   "theta_k_deg": 5.250341535432847,
+   "conditional_k_information": 154974.2393435186,
+   "sigma_k_frac": 0.25402136377136003,
+   "k_column_norm": 4302.023784934325
+  }
+ ],
+ "builder_reproduces_published_bitwise": true,
+ "builder_max_rel_diff": 0.0
+}
