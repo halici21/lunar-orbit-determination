@@ -1,0 +1,57 @@
+
+======================================================================================
+PHASE 17-R - FINAL SYNTHESIS
+======================================================================================
+  arc epoch = phase7_et0 = 857806356.99998
+  K_TRUTH = 0.0100 m^2/kg (SYNTHETIC_CAMPAIGN_TRUTH)
+  holdout split declared: 1.3 orbits estimate, 0.7 orbits predict
+  estimation arc: 154 epochs (0 .. 9180 s)
+  holdout arc   : 83 epochs (9240 .. 14160 s)
+  estimation observations: 82 (station Canberra DSN)
+
+======================================================================================
+s41  AUGMENTED OBSERVABILITY [r, v, K]
+======================================================================================
+  rank = 6 / 7, condition = 6.792e+18
+  singular values: [8.310e+14 1.971e+13 3.176e+11 1.151e+11 8.925e+10 9.860e+04 1.224e-04]
+  weakest right singular vector: [-5.275e-06  5.887e-06 -1.433e-05  3.929e-06  2.713e-06 -3.510e-06
+  1.000e+00]
+
+======================================================================================
+CASE A/B/C - fixed-truth, wrong-fixed, and solve-for K (BLS + SRIF)
+======================================================================================
+  [BLS] A(fixed truth K)   x_err=3.9535e+00 m  cost=2.0044e-01  stop=MaxIter
+  [BLS] B(fixed wrong K)   x_err=3.9676e+00 m  cost=2.0201e-01  stop=MaxIter
+  [BLS] C(solved K=0.011996) x_err=4.0567e+00 m  cost=2.0117e-01  stop=MaxIter
+  [SRIF] A(fixed truth K)   x_err=3.9532e+00 m  cost=5.5278e-03  stop=MaxIter
+  [SRIF] B(fixed wrong K)   x_err=3.9666e+00 m  cost=5.6461e-03  stop=MaxIter
+  [SRIF] C(solved K=0.011996) x_err=3.9585e+00 m  cost=5.5646e-03  stop=MaxIter
+
+======================================================================================
+s42  K-STATE RTN CORRELATIONS
+======================================================================================
+  sigma_R=2.1555e+00 m  sigma_T=3.6445e+00 m  sigma_N=8.9144e+00 m  sigma_K=3.4688e-03
+  corr(K,R)=+0.0113  corr(K,T)=-0.0014  corr(K,N)=+0.0010
+  interpretation: along-track (T) correlation is expected to dominate
+  -- SRP is primarily an along-track perturbation over one arc.
+
+======================================================================================
+s43  COVARIANCE INFLATION  (fixed-truth-K vs solved-K)
+======================================================================================
+  fixed-K   sigma_R=2.1554e+00 sigma_T=3.6445e+00 sigma_N=8.9144e+00
+  solve-K   sigma_R=2.1555e+00 sigma_T=3.6445e+00 sigma_N=8.9144e+00
+  inflation sigma_R 1.000x  sigma_T 1.000x  sigma_N 1.000x
+
+======================================================================================
+s48-50  HOLDOUT PREDICTION
+======================================================================================
+  [A_fixed_truth ] K=0.010000  holdout pos error: final=4.017e+00 m  max=4.017e+00 m  mean=2.915e+00 m
+  [B_fixed_wrong ] K=0.015000  holdout pos error: final=4.022e+00 m  max=4.301e+00 m  mean=3.127e+00 m
+  [C_solved      ] K=0.011996  holdout pos error: final=4.115e+00 m  max=4.211e+00 m  mean=3.065e+00 m
+
+  DESIRED: prediction(solve K) approx prediction(correct fixed K) << prediction(wrong fixed K)
+  wrong-K is 1.0x worse than truth-K at holdout end
+  solved-K is 1.0x of wrong-K's error (want << 1)
+  solved-K is 1.0x of truth-K's error (want approx 1)
+
+checkpoint: 09_checkpoints/phase17r_final_synthesis.json

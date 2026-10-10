@@ -32,6 +32,7 @@ from lunar_od.constants import (
     SPEED_OF_LIGHT_M_S,
 )
 from lunar_od.dynamics import f3body_moon, propagate_state
+from lunar_od.project_paths import campaign_root
 from lunar_od.srp import (
     SRPConfigurationError,
     SRPOptions,
@@ -42,14 +43,9 @@ from lunar_od.srp import (
     srp_acceleration_with_lunar_shadow,
 )
 
-PHASE13_REFERENCE = Path(
-    "C:/Users/erayh/Documents/Python/Grad/od_covariance_campaign/06_scripts/"
-    "phase13_srp_reference.py"
-)
-PHASE14_DOCUMENT = Path(
-    "C:/Users/erayh/Documents/Python/Grad/od_covariance_campaign/03_data/"
-    "phase14_reference_spacecraft_configuration_v1.json"
-)
+PHASE13_REFERENCE = campaign_root() / "06_scripts" / "phase13_srp_reference.py"  # HARDEN-D10
+PHASE14_DOCUMENT = (campaign_root() / "03_data"
+                    / "phase14_reference_spacecraft_configuration_v1.json")
 
 #: Phase 13's parametric screening value. Used here ONLY to reproduce Phase 13,
 #: never as a production default. Nothing in lunar_od/ contains this number.
@@ -683,10 +679,8 @@ def test_default_source_label_says_the_caller_supplied_it():
 # ======================================================================
 # Group I - default invariance against the actual pre-Phase-16 code
 # ======================================================================
-PRE_PHASE16_DYNAMICS = Path(
-    "C:/Users/erayh/Documents/Python/Grad/od_covariance_campaign/00_recovery/"
-    "phase14_base_snapshot/worktree_files/lunar_od/dynamics.py"
-)
+PRE_PHASE16_DYNAMICS = (campaign_root() / "00_recovery" / "phase14_base_snapshot"
+                        / "worktree_files" / "lunar_od" / "dynamics.py")
 #: The Phase 13 freeze recorded this hash for lunar_od/dynamics.py, so the
 #: snapshot below is provably the module as it stood before SRP existed.
 PRE_PHASE16_DYNAMICS_SHA256 = (

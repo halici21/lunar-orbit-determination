@@ -1,0 +1,23 @@
+{
+  "worktree": "temporary-claude-worktree/bls1v",
+  "base_commit": "46e21c80c7ee2ff3caf2b650d2c5e8fc3fc01fc7",
+  "status": [
+    " M lunar_od/estimators.py",
+    "?? examples/phase17_bls1_qualification.py",
+    "?? tests/test_harden_bls1_k_srp_recovery.py"
+  ],
+  "patch_sha256": "56f3decfbebb3798de968b01de9e57f56fbeff66721f68b7402c722bf962ccb4",
+  "untracked_preserved": [
+    {
+      "path": "examples/phase17_bls1_qualification.py",
+      "sha256": "4fbb07a163146cf642503bc995163baabf8635629f8f56a7385e4317b2da90d0",
+      "bytes": 9824
+    },
+    {
+      "path": "tests/test_harden_bls1_k_srp_recovery.py",
+      "sha256": "852a3b29248ef9104ad4e2d7521b0de1609ae53ec55b53138f3bece67ba9958f",
+      "bytes": 8683
+    }
+  ],
+  "purpose": "preservation only; uncommitted scientific changes are not activated"
+}

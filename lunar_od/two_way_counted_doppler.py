@@ -108,7 +108,8 @@ class FourEventStationStateAdapter:
     M3's solver needs ``state(t)``, ``station_state_method`` and
     ``earth_ephemeris_method``.  The accepted R3
     :class:`~lunar_od.radiometrics.CountedDopplerStationStateProvider` already
-    supplies all three and carries ``linear_grid_interpolation``.  This adapter
+    supplies all three and carries ``cubic_hermite_grid_interpolation`` (linear
+    before Phase 17-HARDEN-D23).  This adapter
     adds the two R3 policies that live in ``radiometrics._counted_station_state``
     and that M3 knows nothing about:
 

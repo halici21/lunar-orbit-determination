@@ -218,7 +218,8 @@ class BoundedQualificationSlice(unittest.TestCase):
         for row in observations:
             self.assertEqual(row["model_version"],
                              "r4.counted-doppler.four-event-delay.v1")
-            self.assertEqual(row["earth_ephemeris_method"], "linear_grid_interpolation")
+            # Phase 17-HARDEN-D23: was "linear_grid_interpolation" (R3-P22).
+            self.assertEqual(row["earth_ephemeris_method"], "cubic_hermite_grid_interpolation")
             self.assertEqual(row["spacecraft_interpolation_method"], "cubic_hermite")
             self.assertEqual(row["station_state_method"], "exact_event_epoch_sxform")
         self.assertEqual(len({r["model_version"] for r in observations}), 1,

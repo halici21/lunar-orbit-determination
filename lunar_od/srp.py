@@ -63,6 +63,7 @@ __all__ = [
     "solar_pressure_at",
     "srp_acceleration",
     "srp_acceleration_kernel",
+    "srp_acceleration_position_gradient",
     "srp_acceleration_with_lunar_shadow",
     "srp_partial_wrt_k_srp",
 ]
@@ -396,6 +397,108 @@ def srp_acceleration_kernel(
 
 #: Alias naming the quantity by what it is used for. Same function.
 srp_partial_wrt_k_srp = srp_acceleration_kernel
+
+
+def _illumination_and_gradient(
+    r_sc: np.ndarray, r_sun: np.ndarray, options: SRPOptions
+) -> tuple[float, np.ndarray]:
+    """``nu`` and its spacecraft-position gradient (1/m) under ``options``.
+
+    Mirrors :func:`_illumination_for` branch for branch -- same early exit, same
+    regime tests on the same ``apparent_radii_and_separation`` quantities -- so
+    the gradient always belongs to the ``nu`` the acceleration actually used.
+
+    ``nu`` is constant (0 or 1) in NO_SHADOW, on the sunward side, in full light
+    and in umbra, so its gradient is zero there.  In the annular and penumbral
+    regimes ``nu`` depends on the Sun's and the occultor's apparent radii
+    ``a_s``, ``a_o`` and on their separation ``gamma``:
+
+        grad a  = R / (d sqrt(d^2 - R^2)) e          (e = unit vector sc -> body)
+        grad gamma = [(e_o - c e_s)/d_s + (e_s - c e_o)/d_o] / sin(gamma),  c = e_s.e_o
+
+    and, for the lens area L(r1 = a_s, r2 = a_o, d = gamma) of
+    :func:`_circle_overlap_area`, the exact partials dL/dr_i = 2 r_i theta_i (the
+    boundary arc of disk i inside the other) and dL/dd = -2 h (the common chord).
+    Both vanish at external and internal tangency, so ``grad nu`` is continuous
+    across both penumbra contacts even though ``nu`` is not twice differentiable
+    there.
+    """
+    zero = np.zeros(3)
+    if options.shadow_model == "NO_SHADOW":
+        return 1.0, zero
+    if float(np.dot(r_sc, r_sun)) > 0.0:
+        return 1.0, zero
+    r_occ = float(options.occulting_body_radius_m)
+    a_s, a_o, gamma, d_s, d_o = apparent_radii_and_separation(r_sc, r_sun, _MOON_CENTRE, r_occ)
+    if gamma >= a_s + a_o:
+        return 1.0, zero
+    if a_o >= a_s and gamma <= a_o - a_s:
+        return 0.0, zero
+
+    e_s = (r_sun - r_sc) / d_s
+    e_o = (_MOON_CENTRE - r_sc) / d_o
+    grad_as = (R_SUN_M / (d_s * math.sqrt(max(d_s * d_s - R_SUN_M * R_SUN_M, 0.0)))) * e_s
+    grad_ao = (r_occ / (d_o * math.sqrt(max(d_o * d_o - r_occ * r_occ, 0.0)))) * e_o \
+        if d_o > r_occ else zero
+    if a_s > a_o and gamma <= a_s - a_o:
+        ratio = a_o / a_s
+        return 1.0 - ratio * ratio, -2.0 * ratio * (grad_ao * a_s - a_o * grad_as) / (a_s * a_s)
+
+    lens = _circle_overlap_area(a_s, a_o, gamma)
+    nu = 1.0 - lens / (math.pi * a_s * a_s)
+    if nu <= 0.0:                        # the max(0, .) guard of illumination_fraction
+        return 0.0, zero
+    c = float(np.dot(e_s, e_o))
+    sin_g = math.sin(gamma)
+    grad_gamma = ((e_o - c * e_s) / d_s + (e_s - c * e_o) / d_o) / sin_g if sin_g > 0.0 else zero
+    d1 = (gamma * gamma + a_s * a_s - a_o * a_o) / (2.0 * gamma)
+    d2 = gamma - d1
+    chord_half = math.sqrt(max(a_s * a_s - d1 * d1, 0.0))
+    dl_das = 2.0 * a_s * _safe_acos(d1 / a_s)
+    dl_dao = 2.0 * a_o * _safe_acos(d2 / a_o)
+    dl_dgamma = -2.0 * chord_half
+    grad_lens = dl_das * grad_as + dl_dao * grad_ao + dl_dgamma * grad_gamma
+    area_sun = math.pi * a_s * a_s
+    return nu, -grad_lens / area_sun + (2.0 * lens / (area_sun * a_s)) * grad_as
+
+
+def srp_acceleration_position_gradient(
+    r_sc_m: ArrayLike,
+    r_moon_sun_m: ArrayLike,
+    options: SRPOptions,
+) -> np.ndarray:
+    """``d a_SRP / d r_sc`` (3x3, s^-2) of :func:`srp_acceleration_with_lunar_shadow`.
+
+    Phase 17-F1.  With ``q = r_sc - r_sun``, ``d = |q|``, ``u = q/d`` and
+    ``P(d) = P_1AU (AU/d)^2`` the production force is ``a = K P(d) nu u
+    = K P_1AU AU^2 nu q / d^3``, so, exactly,
+
+        d a / d r = K [ (P(d) nu / d) (I - 3 u u^T) + P(d) u (grad nu)^T ]
+
+    The first term is the solar-distance and direction dependence, the second
+    the illumination (penumbra) dependence; there is no velocity dependence.
+    Zero whenever the acceleration is identically zero nearby: SRP inactive,
+    ``K = 0``, or umbra.  Consumed by the variational equations
+    (:func:`lunar_od.dynamics.dynamics_jacobian_a_matrix`); the acceleration
+    itself is not touched.
+    """
+    if not options.is_active:
+        return np.zeros((3, 3))
+    k = options.require_k()
+    if k == 0.0:
+        return np.zeros((3, 3))
+    r_sc = np.asarray(r_sc_m, dtype=float).reshape(3)
+    r_sun = np.asarray(r_moon_sun_m, dtype=float).reshape(3)
+    nu, grad_nu = _illumination_and_gradient(r_sc, r_sun, options)
+    if nu == 0.0:
+        return np.zeros((3, 3))
+    rel = r_sc - r_sun
+    d = float(np.linalg.norm(rel))
+    if d <= 0.0:
+        raise SRPConfigurationError("spacecraft and Sun are coincident")
+    u = rel / d
+    p = solar_pressure_at(d)
+    return k * ((p * nu / d) * (np.eye(3) - 3.0 * np.outer(u, u)) + p * np.outer(u, grad_nu))
 
 
 def srp_acceleration_with_lunar_shadow(

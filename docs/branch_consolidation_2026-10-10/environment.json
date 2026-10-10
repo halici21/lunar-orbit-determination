@@ -1,0 +1,22 @@
+{
+  "python": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+  "packages": {
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "numba": "0.65.1",
+    "llvmlite": "0.47.0",
+    "spiceypy": "8.2.0",
+    "PyQt5": "5.15.11",
+    "pytest": "9.1.1",
+    "matplotlib": "3.10.7",
+    "h5py": "3.16.0"
+  },
+  "platform": "Windows x86_64",
+  "git_core_autocrlf": "true",
+  "qt_platform": "offscreen",
+  "external_fixtures": "Existing project data, external GRAIL coefficients, SPICE kernels and historical covariance campaign",
+  "notes": [
+    "Matched NumPy/SciPy/Numba versions to the research environment.",
+    "Initial audit under NumPy 2.3.4 / SciPy 1.18.1 / Numba 0.68.0 failed six numerical reference tests. Numerical tolerances were not changed."
+  ]
+}

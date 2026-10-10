@@ -1,0 +1,296 @@
+{
+ "purpose": "Phase 17-HARDEN: closes the first-order prediction residual. Quadrature refinement (dt) leaves it unchanged; tightening the FD oracle's integrator tolerance removes it, so the residual was oracle integration error at the non-smooth penumbra RHS, not unexplained physics.",
+ "quadrature_study_rtol_1e-14_h10": {
+  "dt_1.0": {
+   "orbits": 4.0,
+   "dt": 1.0,
+   "rtol": 1e-14,
+   "h_pos": 10.0,
+   "h_vel": 0.01,
+   "shadow": "CONICAL_PENUMBRA",
+   "g_srp_norm_max": 1.0891765073624372e-11,
+   "g_srp_norm_median": 7.658380892282057e-19,
+   "columns": {
+    "x0": {
+     "observed_rel": 2.426467654070424e-06,
+     "predicted_rel": 2.3504315237911327e-06,
+     "residual_after_prediction_rel": 7.742252408446483e-08,
+     "correlation": 0.99993482629728
+    },
+    "y0": {
+     "observed_rel": 1.925097784876789e-06,
+     "predicted_rel": 9.244294464523774e-07,
+     "residual_after_prediction_rel": 1.0012932743171732e-06,
+     "correlation": 0.9075290476950553
+    },
+    "z0": {
+     "observed_rel": 3.499628556690584e-06,
+     "predicted_rel": 3.080178904527826e-06,
+     "residual_after_prediction_rel": 4.2168649432485773e-07,
+     "correlation": 0.9994977425003859
+    },
+    "vx0": {
+     "observed_rel": 3.747795332150009e-07,
+     "predicted_rel": 4.938827942250991e-07,
+     "residual_after_prediction_rel": 2.2328016089350882e-07,
+     "correlation": 0.7366506833788533
+    },
+    "vy0": {
+     "observed_rel": 2.0993947596612086e-06,
+     "predicted_rel": 2.2748072746212395e-06,
+     "residual_after_prediction_rel": 1.7541251496003108e-07,
+     "correlation": 0.999876723216413
+    },
+    "vz0": {
+     "observed_rel": 2.766495867420961e-06,
+     "predicted_rel": 2.472781590129168e-06,
+     "residual_after_prediction_rel": 2.9371427729179296e-07,
+     "correlation": 0.9988776201237424
+    }
+   }
+  },
+  "dt_0.25": {
+   "orbits": 4.0,
+   "dt": 0.25,
+   "rtol": 1e-14,
+   "h_pos": 10.0,
+   "h_vel": 0.01,
+   "shadow": "CONICAL_PENUMBRA",
+   "g_srp_norm_max": 1.0898359017566505e-11,
+   "g_srp_norm_median": 7.658379042632411e-19,
+   "columns": {
+    "x0": {
+     "observed_rel": 2.4264677321361235e-06,
+     "predicted_rel": 2.3632742478700013e-06,
+     "residual_after_prediction_rel": 6.5612203825248e-08,
+     "correlation": 0.9999354742485076
+    },
+    "y0": {
+     "observed_rel": 1.9250976608634705e-06,
+     "predicted_rel": 9.35839977784777e-07,
+     "residual_after_prediction_rel": 9.899283298031808e-07,
+     "correlation": 0.909980894030192
+    },
+    "z0": {
+     "observed_rel": 3.49962862198396e-06,
+     "predicted_rel": 3.093997747179937e-06,
+     "residual_after_prediction_rel": 4.0792084871279445e-07,
+     "correlation": 0.9995088127005987
+    },
+    "vx0": {
+     "observed_rel": 3.7477938119500393e-07,
+     "predicted_rel": 5.027545948838629e-07,
+     "residual_after_prediction_rel": 2.2106480680514914e-07,
+     "correlation": 0.7456975718235531
+    },
+    "vy0": {
+     "observed_rel": 2.099394675359865e-06,
+     "predicted_rel": 2.287559491362834e-06,
+     "residual_after_prediction_rel": 1.8816481600296905e-07,
+     "correlation": 0.99987693123089
+    },
+    "vz0": {
+     "observed_rel": 2.7664959406004365e-06,
+     "predicted_rel": 2.485768023537249e-06,
+     "residual_after_prediction_rel": 2.807279170631874e-07,
+     "correlation": 0.9988681783724378
+    }
+   }
+  },
+  "dt_0.1": {
+   "orbits": 4.0,
+   "dt": 0.1,
+   "rtol": 1e-14,
+   "h_pos": 10.0,
+   "h_vel": 0.01,
+   "shadow": "CONICAL_PENUMBRA",
+   "g_srp_norm_max": 1.0898650495441043e-11,
+   "g_srp_norm_median": 7.658378299393594e-19,
+   "columns": {
+    "x0": {
+     "observed_rel": 2.4264678076068417e-06,
+     "predicted_rel": 2.362743632338259e-06,
+     "residual_after_prediction_rel": 6.611722723101483e-08,
+     "correlation": 0.9999351708377886
+    },
+    "y0": {
+     "observed_rel": 1.925097696089043e-06,
+     "predicted_rel": 9.363472223519713e-07,
+     "residual_after_prediction_rel": 9.894215807449199e-07,
+     "correlation": 0.9102385841382841
+    },
+    "z0": {
+     "observed_rel": 3.4996289782992396e-06,
+     "predicted_rel": 3.0929899613345642e-06,
+     "residual_after_prediction_rel": 4.089223030065861e-07,
+     "correlation": 0.999510348446901
+    },
+    "vx0": {
+     "observed_rel": 3.747790827016983e-07,
+     "predicted_rel": 5.033417991332614e-07,
+     "residual_after_prediction_rel": 2.2077235938441022e-07,
+     "correlation": 0.7466428178866643
+    },
+    "vy0": {
+     "observed_rel": 2.0993951289988342e-06,
+     "predicted_rel": 2.2871103140626673e-06,
+     "residual_after_prediction_rel": 1.8771518506383298e-07,
+     "correlation": 0.9998774147410953
+    },
+    "vz0": {
+     "observed_rel": 2.7664963757105495e-06,
+     "predicted_rel": 2.4851851070554877e-06,
+     "residual_after_prediction_rel": 2.813112686550622e-07,
+     "correlation": 0.9988676748241863
+    }
+   }
+  }
+ },
+ "oracle_tolerance_study_h10_dt1": {
+  "rtol_1e-13": {
+   "orbits": 4.0,
+   "dt": 1.0,
+   "rtol": 1e-13,
+   "h_pos": 10.0,
+   "h_vel": 0.01,
+   "shadow": "CONICAL_PENUMBRA",
+   "g_srp_norm_max": 1.0891739377280394e-11,
+   "g_srp_norm_median": 7.658382876588613e-19,
+   "columns": {
+    "x0": {
+     "observed_rel": 2.2524272491966974e-06,
+     "predicted_rel": 2.3504326107912057e-06,
+     "residual_after_prediction_rel": 1.8838759068416625e-07,
+     "correlation": 0.9969488664521934
+    },
+    "y0": {
+     "observed_rel": 1.038333013838426e-05,
+     "predicted_rel": 9.244309752297901e-07,
+     "residual_after_prediction_rel": 9.464307876182281e-06,
+     "correlation": 0.9452342353014522
+    },
+    "z0": {
+     "observed_rel": 2.9304790721621493e-06,
+     "predicted_rel": 3.0801795886434907e-06,
+     "residual_after_prediction_rel": 5.420495690560294e-06,
+     "correlation": -0.8463452767264874
+    },
+    "vx0": {
+     "observed_rel": 3.6184655089816853e-06,
+     "predicted_rel": 4.938855596195821e-07,
+     "residual_after_prediction_rel": 4.1122962588656314e-06,
+     "correlation": -0.7206523731963556
+    },
+    "vy0": {
+     "observed_rel": 3.7854433604464926e-06,
+     "predicted_rel": 2.2748083893881656e-06,
+     "residual_after_prediction_rel": 1.5106349710583268e-06,
+     "correlation": 0.9951193589108493
+    },
+    "vz0": {
+     "observed_rel": 3.0466313627293214e-06,
+     "predicted_rel": 2.4727823759594893e-06,
+     "residual_after_prediction_rel": 5.740586614554113e-07,
+     "correlation": 0.9971007887798468
+    }
+   }
+  },
+  "rtol_1e-14": {
+   "orbits": 4.0,
+   "dt": 1.0,
+   "rtol": 1e-14,
+   "h_pos": 10.0,
+   "h_vel": 0.01,
+   "shadow": "CONICAL_PENUMBRA",
+   "g_srp_norm_max": 1.0891765073624372e-11,
+   "g_srp_norm_median": 7.658380892282057e-19,
+   "columns": {
+    "x0": {
+     "observed_rel": 2.426467654070424e-06,
+     "predicted_rel": 2.3504315237911327e-06,
+     "residual_after_prediction_rel": 7.742252408446483e-08,
+     "correlation": 0.99993482629728
+    },
+    "y0": {
+     "observed_rel": 1.925097784876789e-06,
+     "predicted_rel": 9.244294464523774e-07,
+     "residual_after_prediction_rel": 1.0012932743171732e-06,
+     "correlation": 0.9075290476950553
+    },
+    "z0": {
+     "observed_rel": 3.499628556690584e-06,
+     "predicted_rel": 3.080178904527826e-06,
+     "residual_after_prediction_rel": 4.2168649432485773e-07,
+     "correlation": 0.9994977425003859
+    },
+    "vx0": {
+     "observed_rel": 3.747795332150009e-07,
+     "predicted_rel": 4.938827942250991e-07,
+     "residual_after_prediction_rel": 2.2328016089350882e-07,
+     "correlation": 0.7366506833788533
+    },
+    "vy0": {
+     "observed_rel": 2.0993947596612086e-06,
+     "predicted_rel": 2.2748072746212395e-06,
+     "residual_after_prediction_rel": 1.7541251496003108e-07,
+     "correlation": 0.999876723216413
+    },
+    "vz0": {
+     "observed_rel": 2.766495867420961e-06,
+     "predicted_rel": 2.472781590129168e-06,
+     "residual_after_prediction_rel": 2.9371427729179296e-07,
+     "correlation": 0.9988776201237424
+    }
+   }
+  },
+  "rtol_3e-15": {
+   "orbits": 4.0,
+   "dt": 1.0,
+   "rtol": 3e-15,
+   "h_pos": 10.0,
+   "h_vel": 0.01,
+   "shadow": "CONICAL_PENUMBRA",
+   "g_srp_norm_max": 1.0891761200693763e-11,
+   "g_srp_norm_median": 7.658380885852288e-19,
+   "columns": {
+    "x0": {
+     "observed_rel": 2.31753593046506e-06,
+     "predicted_rel": 2.3504445274581693e-06,
+     "residual_after_prediction_rel": 3.3101088245581455e-08,
+     "correlation": 0.9999732160459913
+    },
+    "y0": {
+     "observed_rel": 9.541993937813484e-07,
+     "predicted_rel": 9.244426920138719e-07,
+     "residual_after_prediction_rel": 3.771649944589906e-08,
+     "correlation": 0.9991773573313784
+    },
+    "z0": {
+     "observed_rel": 3.181553010426198e-06,
+     "predicted_rel": 3.0801917595094505e-06,
+     "residual_after_prediction_rel": 1.0155271572138296e-07,
+     "correlation": 0.9999802411511185
+    },
+    "vx0": {
+     "observed_rel": 4.5421406713277345e-07,
+     "predicted_rel": 4.938950929344421e-07,
+     "residual_after_prediction_rel": 6.533202164095395e-08,
+     "correlation": 0.986202111124645
+    },
+    "vy0": {
+     "observed_rel": 2.3787716163532677e-06,
+     "predicted_rel": 2.2748200664689098e-06,
+     "residual_after_prediction_rel": 1.0395154988435766e-07,
+     "correlation": 0.9998441963961437
+    },
+    "vz0": {
+     "observed_rel": 2.4456793991524715e-06,
+     "predicted_rel": 2.4727942661213286e-06,
+     "residual_after_prediction_rel": 2.711486696885743e-08,
+     "correlation": 0.9999820834102157
+    }
+   }
+  }
+ },
+ "script": "examples/phase17_harden_range_jacobian.py::predict_omitted_srp_gradient(dt, rtol, h_pos=10, h_vel=0.01)"
+}

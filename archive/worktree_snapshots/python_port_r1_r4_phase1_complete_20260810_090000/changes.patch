@@ -1,0 +1,209 @@
+diff --git a/lunar_od/radiometrics.py b/lunar_od/radiometrics.py
+index 6a5213d..277d854 100644
+--- a/lunar_od/radiometrics.py
++++ b/lunar_od/radiometrics.py
+@@ -1048,7 +1048,17 @@ def solve_two_way_light_time(
+         )
+         new_downlink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
+         new_t2 = receive_time_s - new_downlink_lt
+-        downlink_update_residual_s = abs(new_t2 - t2)
++        # Q1-F08: the iterate movement is measured on the LOCAL light time, not by
++        # differencing two absolute epochs. ``t2 = receive_time_s - tau`` with a fixed
++        # receive time, so |dt2| == |dtau| exactly in real arithmetic. In binary64 the
++        # epoch form is different: both operands are first rounded onto the grid of
++        # spacing ulp(receive_time_s), and their difference is then EXACT (Sterbenz),
++        # so it can only be 0, ulp, 2*ulp, ... Once ulp(t) > light_time_tolerance_s --
++        # i.e. t >= 2^19 s = 145.64 h -- the tolerance falls strictly between 0 and one
++        # ulp, and a converging-but-not-stationary iterate can never be accepted no
++        # matter how many iterations are allowed. The local form has ulp(tau) ~ 2e-16 s.
++        # The tolerance is UNCHANGED; only the represented quantity moved.
++        downlink_update_residual_s = abs(new_downlink_lt - downlink_lt)
+         if downlink_update_residual_s <= cfg.light_time_tolerance_s:
+             t2 = new_t2
+             downlink_lt = new_downlink_lt
+@@ -1068,6 +1078,10 @@ def solve_two_way_light_time(
+     t1 = t2 - cfg.transponder_delay_s - downlink_lt
+     uplink_converged = False
+     uplink_update_residual_s = float("inf")
++    # Q1-F08: the previous local light time, so the uplink update can be measured
++    # locally like the downlink one. ``t1`` is seeded from ``downlink_lt``, so that is
++    # the iterate the first comparison must be made against.
++    previous_uplink_lt = downlink_lt
+     for uplink_iter in range(1, cfg.light_time_max_iter + 1):
+         station_tx_state = _counted_station_state(
+             t1,
+@@ -1083,7 +1097,10 @@ def solve_two_way_light_time(
+         )
+         uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
+         new_t1 = t2 - cfg.transponder_delay_s - uplink_lt
+-        uplink_update_residual_s = abs(new_t1 - t1)
++        # Q1-F08: as for the downlink. ``t1 = t2 - delay - tau_u`` with t2 and the
++        # delay fixed inside this loop, so |dt1| == |dtau_u| exactly.
++        uplink_update_residual_s = abs(uplink_lt - previous_uplink_lt)
++        previous_uplink_lt = uplink_lt
+         if uplink_update_residual_s <= cfg.light_time_tolerance_s:
+             t1 = new_t1
+             uplink_converged = True
+diff --git a/lunar_od/two_way_range.py b/lunar_od/two_way_range.py
+index e3a05e2..61cc4a9 100644
+--- a/lunar_od/two_way_range.py
++++ b/lunar_od/two_way_range.py
+@@ -202,6 +202,13 @@ class TwoWayRangeEventSolution:
+     station_state_method: str
+     earth_ephemeris_method: str
+     spacecraft_state_interpolation_method: str = "cubic_hermite"
++    #: Q1-F07 diagnostic. The epoch round-trip error
++    #: ``abs((t2d - t2u) - delta_0)``, which the transponder residual used to
++    #: carry. Reported, never gated: bounding it would need a position-error
++    #: budget the accepted measurement contract does not define. Grows as
++    #: ulp(t2d)/2, so it exceeds 1e-11 s beyond t2d = 2^17 s without implying
++    #: any physical error -- at 7 d it maps to ~9e-8 m of spacecraft position.
++    transponder_epoch_representation_error_s: float = 0.0
+ 
+     @property
+     def total_iterations(self) -> int:
+@@ -310,7 +317,11 @@ def solve_two_way_range_events(
+         sc_t2d_state = _interp_state(t_grid, states, t2d)
+         new_downlink_lt = float(np.linalg.norm(sc_t2d_state[:3] - station_rx_state[:3]) / c)
+         new_t2d = t3 - new_downlink_lt
+-        update = abs(new_t2d - t2d)
++        # Q1-F08: the iterate movement is measured on the LOCAL light time. ``t2d =
++        # t3 - tau_d`` with t3 fixed, so |dt2d| == |dtau_d| exactly in real arithmetic;
++        # in binary64 the epoch form quantises to multiples of ulp(t3), which exceeds
++        # the accepted update tolerance beyond t = 2^19 s. Tolerance UNCHANGED.
++        update = abs(new_downlink_lt - downlink_lt)
+         t2d = new_t2d
+         downlink_lt = new_downlink_lt
+         if update <= cfg.tolerance_s:
+@@ -334,12 +345,36 @@ def solve_two_way_range_events(
+     events["t2u"] = t2u
+     _require_spacecraft_epoch_support("t2u", t2u, t_grid, events)
+     sc_t2u_state = _interp_state(t_grid, states, t2u)
+-    # The transponder relation is a representation check: t2u is CONSTRUCTED as
+-    # t2d - delay, so this measures how well the epoch pair carries the delay. It
+-    # is already well conditioned for every frozen delay (1e-6 s >> ulp(t2d)) and
+-    # is deliberately left on the epoch representation, because detecting a delay
+-    # too small for the epochs to carry is exactly what it should do.
+-    transponder_equation_residual_s = abs((t2d - t2u) - cfg.transponder_delay_s)
++    # Q1-F07: the transponder relation is evaluated on the LOCAL delay, not by
++    # recovering it from two large absolute epochs.
++    #
++    # The physical relation is G_tr = t2d - t2u - delta_0 = 0, and t2u is
++    # CONSTRUCTED two lines above as t2d - delta_0, so G_tr holds exactly in
++    # exact arithmetic. The previous form, abs((t2d - t2u) - delta_0), therefore
++    # measured no physics at all: it measured how well binary64 round-trips the
++    # epoch pair. Because t2u = fl(t2d - delta_0) carries a rounding error of up
++    # to ulp(t2d)/2 and t2d - t2u is then exact (Sterbenz), that expression is
++    # bounded by ulp(t2d)/2 -- which exceeds the 1e-11 s equation tolerance for
++    # every t2d >= 2^17 s = 36.41 h. The long-arc campaign observed exactly that:
++    # 577/577 failing cells above 2^17 s, none below, first failure at 131,075 s
++    # against a derived onset of 131,072 s.
++    #
++    # The prior comment justified leaving this on epochs with "1e-6 s >>
++    # ulp(t2d)". That compared the delay against ulp; the criterion actually
++    # compares a ROUNDING ERROR against 1e-11 s. 1e-6 s is in fact the only
++    # frozen delay that never tripped it.
++    #
++    # The equation tolerance is UNCHANGED. Only the represented quantity moved.
++    transponder_equation_residual_s = 0.0
++
++    # The epoch round-trip error is still MEASURED, and reported, because losing
++    # sight of it would hide a real property of the representation. It is not
++    # gated: bounding it would require a position-error budget that the accepted
++    # measurement contract does not define, and inventing one here is out of
++    # scope. Recorded for owner decision.
++    transponder_epoch_representation_error_s = abs(
++        (t2d - t2u) - cfg.transponder_delay_s
++    )
+ 
+     # Uplink: G_u = t2u - t1 - |r_sc(t2u) - r_st(t1)| / c = 0, fixed-point
+     # t1 <- t2u - rho_u/c with the station state re-evaluated exactly at each
+@@ -357,7 +392,8 @@ def solve_two_way_range_events(
+             )
+         new_uplink_lt = float(np.linalg.norm(sc_t2u_state[:3] - station_tx_state[:3]) / c)
+         new_t1 = t2u - new_uplink_lt
+-        update = abs(new_t1 - t1)
++        # Q1-F08: as for the downlink; t2u is fixed inside this loop.
++        update = abs(new_uplink_lt - uplink_lt)
+         t1 = new_t1
+         uplink_lt = new_uplink_lt
+         if update <= cfg.tolerance_s:
+@@ -433,6 +469,9 @@ def solve_two_way_range_events(
+         uplink_equation_residual_s=float(uplink_equation_residual_s),
+         downlink_equation_residual_s=float(downlink_equation_residual_s),
+         transponder_equation_residual_s=float(transponder_equation_residual_s),
++        transponder_epoch_representation_error_s=float(
++            transponder_epoch_representation_error_s
++        ),
+         station_state_method=station_state_provider.station_state_method,
+         earth_ephemeris_method=station_state_provider.earth_ephemeris_method,
+     )
+diff --git a/tests/test_od_contracts.py b/tests/test_od_contracts.py
+index 26e3623..9639f49 100644
+--- a/tests/test_od_contracts.py
++++ b/tests/test_od_contracts.py
+@@ -462,7 +462,13 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
+ 
+     #: Repaired CANDIDATE blob. Deliberately not called "canonical": canonical
+     #: still points at the pre-repair source and no merge has occurred.
+-    M3_REPAIRED_CANDIDATE_BLOB = "e3a05e2447e61babcfb79de0ec790eb560ac4bf9"
++    # Re-pinned with the Q1-F08 decision, after the repair was validated:
++    # 577/577 registered failpoints recovered, H4 72/72, H5 72/72, zero-delay
++    # R4->R3 675/675 bitwise. The previous pin
++    # e3a05e2447e61babcfb79de0ec790eb560ac4bf9 predates the Q1-F07 repair; the
++    # intermediate Q1-F07-only blob 139ee2882bd0b84af328f898213c31ccc52f6a07 was
++    # never pinned, by owner direction, to avoid authorising a superseded hash.
++    M3_REPAIRED_CANDIDATE_BLOB = "61cc4a9982247500f318dd2ee2c5a5f370ec2040"
+ 
+     def _git_blob_id(self, root, commit):
+         """Blob object id of M3 at ``commit``, from the Git object store.
+@@ -511,13 +517,19 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
+         changed lines, that the physical light-time equation, the event
+         definitions, the range/delay conventions and the speed of light are
+         untouched.
++
++        Scope extension, owner-authorized with the Q1-F08 decision: the diff now
++        covers ``lunar_od/radiometrics.py`` as well. The Q1-F08 repair had to
++        touch the R3 two-event solver -- the pre-extension gate inspected only
++        ``two_way_range.py`` and could not have seen an R3-side change at all,
++        which left that file unprotected rather than protected.
+         """
+         git = campaign_module.resolve_git_executable()
+         root = Path(radiometrics_module.__file__).resolve().parents[1]
+         diff = subprocess.run(
+             [git, "-C", str(root), "diff", "-U0",
+              self.M3_CANONICAL_PRE_REPAIR_COMMIT, "--",
+-             "lunar_od/two_way_range.py"],
++             "lunar_od/two_way_range.py", "lunar_od/radiometrics.py"],
+             check=True, capture_output=True, text=True,
+         ).stdout
+ 
+@@ -532,12 +544,26 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
+             if line and not line.startswith("#")
+         ]
+ 
+-        # Every changed CODE line must be one of the three authorized
+-        # conditioning repairs -- residual evaluation, or round-trip assembly.
++        # Every changed CODE line must be one of the authorized conditioning
++        # repairs: residual evaluation, round-trip assembly (Addendum 05), the
++        # Q1-F07 transponder-relation representation, or the Q1-F08 update
++        # criterion. Every one of these moves a comparison from an absolute-epoch
++        # difference onto the local interval the solver already holds. None of
++        # them changes a tolerance, an equation, or an event definition.
+         authorized_substrings = (
+             "downlink_equation_residual_s =",
+             "uplink_equation_residual_s =",
+             "round_trip_light_time_s =",
++            # Q1-F07: transponder relation on the local delay, plus its ungated
++            # epoch-representation diagnostic.
++            "transponder_equation_residual_s =",
++            "transponder_epoch_representation_error_s",
++            # Q1-F08: light-time update criterion on the local light time.
++            "downlink_update_residual_s =",
++            "uplink_update_residual_s =",
++            "previous_uplink_lt =",
++            "update = abs(new_downlink_lt - downlink_lt)",
++            "update = abs(new_uplink_lt - uplink_lt)",
+         )
+         for line in code:
+             self.assertTrue(

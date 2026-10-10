@@ -1,0 +1,155 @@
+{
+ "broken_markdown_links": [
+  {
+   "file": "docs/phase17_r1o_r_stm_layout_repair.md",
+   "line": 80,
+   "target": "t"
+  },
+  {
+   "file": "docs/phase17_r1o_r_stm_layout_repair.md",
+   "line": 81,
+   "target": "t"
+  }
+ ],
+ "missing_path_mentions": [
+  {
+   "file": ".claude/skills/graphify/references/extraction-spec.md",
+   "line": 61,
+   "target": "tests/test_foo.py"
+  },
+  {
+   "file": ".claude/skills/graphify/references/extraction-spec.md",
+   "line": 61,
+   "target": "docs/v1/api/README.md"
+  },
+  {
+   "file": "PROJECT_CONTEXT.md",
+   "line": 419,
+   "target": "results/phase13g/phase13g_sensitivity_report.md"
+  },
+  {
+   "file": "PROJECT_CONTEXT.md",
+   "line": 543,
+   "target": "results/phase13g/phase13g_sensitivity_report.md"
+  },
+  {
+   "file": "docs/phase17_r1m_multi_arc_identifiability.md",
+   "line": 741,
+   "target": "artifacts/r1m_holdout.csv"
+  },
+  {
+   "file": "examples/phase12b_real_grail_validation.py",
+   "line": 43,
+   "target": "results/phase12b/phase12b_real_grail_metadata.json"
+  },
+  {
+   "file": "examples/phase12b_real_grail_validation.py",
+   "line": 44,
+   "target": "results/phase12b/phase12b_real_grail_inventory.md"
+  },
+  {
+   "file": "examples/phase12b_real_grail_validation.py",
+   "line": 45,
+   "target": "results/phase12b/phase12b_real_grail_truncation_sweep.csv"
+  },
+  {
+   "file": "examples/phase12b_real_grail_validation.py",
+   "line": 46,
+   "target": "results/phase12b/phase12b_real_grail_sweep_report.md"
+  },
+  {
+   "file": "examples/phase13g_gravity_orbit_effects.py",
+   "line": 61,
+   "target": "results/phase13g/phase13g_store.json"
+  },
+  {
+   "file": "examples/phase13g_gravity_orbit_effects.py",
+   "line": 62,
+   "target": "results/phase13g/phase13g_runs.csv"
+  },
+  {
+   "file": "examples/phase13g_gravity_orbit_effects.py",
+   "line": 63,
+   "target": "results/phase13g/phase13g_comparisons.csv"
+  },
+  {
+   "file": "examples/phase13g_gravity_orbit_effects.py",
+   "line": 64,
+   "target": "results/phase13g/phase13g_element_drift.csv"
+  },
+  {
+   "file": "examples/phase13g_gravity_orbit_effects.py",
+   "line": 65,
+   "target": "results/phase13g/phase13g_report.md"
+  },
+  {
+   "file": "examples/phase13g_synthesis_report.py",
+   "line": 3,
+   "target": "results/phase13g/phase13g_store.json"
+  },
+  {
+   "file": "examples/phase13g_synthesis_report.py",
+   "line": 31,
+   "target": "results/phase13g/phase13g_synthesis_report.md"
+  },
+  {
+   "file": "examples/phase13g_synthesis_report.py",
+   "line": 32,
+   "target": "results/phase13g/phase13g_model_recommendations.json"
+  },
+  {
+   "file": "examples/phase13g_synthesis_report.py",
+   "line": 33,
+   "target": "results/phase13g/phase13g_recommendation_tables.csv"
+  },
+  {
+   "file": "examples/phase8_final_report.py",
+   "line": 5,
+   "target": "results/phase6/phase6_final_report.md"
+  },
+  {
+   "file": "examples/phase8_final_report.py",
+   "line": 284,
+   "target": "results/phase6/phase6_final_report.md"
+  },
+  {
+   "file": "lunar_od/lunar_landmark_optical.py",
+   "line": 371,
+   "target": "examples/phase17_r1o_opt_light_time.py"
+  }
+ ],
+ "absolute_grad_path_lines": 42,
+ "absolute_grad_path_files": [
+  "PROJECT_CONTEXT.md",
+  "PYQT5_DESKTOP_APP_README.md",
+  "docs/frame_architecture_contracts_and_inconsistencies.md",
+  "docs/frame_validation_results_and_test_gaps.md",
+  "docs/git_phase_p2_canonical_integration_report.md",
+  "docs/phase17_r1m_multi_arc_identifiability.md",
+  "examples/phase17_r1cov_abc.py",
+  "examples/phase17_r1cov_d_srif.py",
+  "examples/phase17_r1cov_e_rank.py",
+  "examples/phase17_r1cov_f_callsites.py",
+  "examples/phase17_r1m_addendum.py",
+  "examples/phase17_r1m_config_and_spectra.py",
+  "examples/phase17_r1m_core.py",
+  "examples/phase17_r1m_covariance_diagnostic.py",
+  "examples/phase17_r1m_figures2.py",
+  "examples/phase17_r1m_multi_arc_study.py",
+  "examples/phase17_r1o_baseline.py",
+  "examples/phase17_r1o_celestial.py",
+  "examples/phase17_r1o_confirmation.py",
+  "examples/phase17_r1o_crosscheck.py",
+  "examples/phase17_r1o_ddor.py",
+  "examples/phase17_r1o_landmark.py",
+  "examples/phase17_r1o_opt_bridge.py",
+  "examples/phase17_r1o_opt_campaign.py",
+  "examples/phase17_r1od_campaign.py",
+  "examples/phase17_r1od_jacobian_and_k.py",
+  "examples/phase17_r1od_oracles.py",
+  "tests/test_direct_spice_rhs.py",
+  "tests/test_pines_gradient_numba_parity.py",
+  "tests/test_reference_config.py",
+  "tests/test_srp_production.py"
+ ]
+}

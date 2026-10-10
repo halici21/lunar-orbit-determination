@@ -1,0 +1,6 @@
+{
+  "status": "CHARACTERIZED_NEGLIGIBLE_GAIN",
+  "max_f_perp_gain": 0.008281279442348077,
+  "max_fd_convergence_error": 1.6288923298736903e-09,
+  "direct_measurement_k_dependence": "NO"
+}

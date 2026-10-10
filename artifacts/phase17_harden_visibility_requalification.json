@@ -1,0 +1,80 @@
+{
+  "phase": "17-HARDEN",
+  "fixture": "CANONICAL",
+  "legacy": {
+    "ddor_surrogate_1nrad": {
+      "n_obs": 1223,
+      "orthogonal_fraction": 0.36185261056444334,
+      "conditional_k_information": 144414939.66503972,
+      "fractional_sigma_k": 0.00832135286259991,
+      "n_ddor_rows": 263
+    },
+    "ddor_surrogate_5nrad": {
+      "n_obs": 1223,
+      "orthogonal_fraction": 0.3203109003257972,
+      "conditional_k_information": 6349280.915081362,
+      "fractional_sigma_k": 0.039686036627759366,
+      "n_ddor_rows": 263
+    },
+    "earth_los_1urad": {
+      "n_obs": 1550,
+      "orthogonal_fraction": 0.09201133386131741,
+      "conditional_k_information": 156693.685792603,
+      "fractional_sigma_k": 0.25262379319288825,
+      "n_los_rows": 590
+    },
+    "bridge_surrogate_5nrad": {
+      "n_obs": 1266,
+      "orthogonal_fraction": 0.09151339743314568,
+      "conditional_k_information": 154994.60487117877,
+      "fractional_sigma_k": 0.2540046746451115
+    }
+  },
+  "visible": {
+    "ddor_surrogate_1nrad": {
+      "n_obs": 1130,
+      "orthogonal_fraction": 0.13814244582667073,
+      "conditional_k_information": 20507382.541428532,
+      "fractional_sigma_k": 0.022082329384799128,
+      "n_ddor_rows": 170
+    },
+    "ddor_surrogate_5nrad": {
+      "n_obs": 1130,
+      "orthogonal_fraction": 0.17217753737320762,
+      "conditional_k_information": 1800999.8085176048,
+      "fractional_sigma_k": 0.07451490750089561,
+      "n_ddor_rows": 170
+    },
+    "earth_los_1urad": {
+      "n_obs": 1320,
+      "orthogonal_fraction": 0.09187606989032199,
+      "conditional_k_information": 156233.01819386036,
+      "fractional_sigma_k": 0.2529959614378361,
+      "n_los_rows": 360
+    }
+  },
+  "legacy_reproduces_fxr_bitwise": {
+    "ddor_surrogate_1nrad": true,
+    "ddor_surrogate_5nrad": true,
+    "earth_los_1urad": true,
+    "bridge_surrogate_5nrad": true
+  },
+  "bridge_note": "bridge_reduced_rows is HISTORICAL ONLY (Earth frozen at t=0, elevation-only); it has no visibility-correct variant by design",
+  "range_only": {
+    "n_obs": 960,
+    "orthogonal_fraction": 0.09150755457311016,
+    "conditional_k_information": 154974.2393435186,
+    "fractional_sigma_k": 0.25402136377136003
+  },
+  "production_ddor_authoritative": {
+    "source": "artifacts/phase17_r1od2_summary.json primary_population CANON/GC",
+    "range_only_f_perp": 0.09150755457311016,
+    "combined_f_perp": 0.17235083799960207,
+    "delta_f_perp": 0.08084328342649191,
+    "sigma_k_over_k": 0.07456524657775926,
+    "historical_intermediate_f_perp": 0.3203109003257972,
+    "historical_intermediate_production_f_perp": 0.3204398422766736,
+    "historical_intermediate_label": "EPOCH_CORRECTED_BUT_ELEVATION_ONLY_HISTORICAL_INTERMEDIATE"
+  },
+  "visible_surrogate_minus_production_f_perp": -0.00017330062639445143
+}

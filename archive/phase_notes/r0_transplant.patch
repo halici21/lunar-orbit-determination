@@ -1,0 +1,1696 @@
+diff --git a/lunar_od/estimators.py b/lunar_od/estimators.py
+index 3fc90c6..f43cdb4 100644
+--- a/lunar_od/estimators.py
++++ b/lunar_od/estimators.py
+@@ -2,6 +2,7 @@
+ 
+ from __future__ import annotations
+ 
++import math
+ import warnings
+ from collections.abc import Callable
+ from dataclasses import dataclass, replace
+@@ -10,7 +11,11 @@ import numpy as np
+ from numpy.typing import ArrayLike
+ 
+ from .accelerated import apply_stm_to_jacobian
+-from .dynamics import propagate_augmented_state, propagate_state
++from .dynamics import (
++    propagate_augmented_state,
++    propagate_state,
++    propagate_state_with_k_sensitivity,
++)
+ from .geometry import wrap_to_pi
+ from .measurements import (
+     PassGeometry,
+@@ -56,6 +61,11 @@ class EstimatorStats:
+     posterior_covariance: np.ndarray | None = None
+     posterior_sqrt_information: np.ndarray | None = None
+     termination_detail: str = ""
++    #: Phase 17-R (opt-in K_SRP solve-for). None unless solve_for_k_srp=True
++    #: was passed to the estimator; existing callers are unaffected.
++    k_srp_estimate: float | None = None
++    k_srp_prior_status: str | None = None
++    k_srp_negative_step_rejections: int = 0
+ 
+ 
+ def estimate_position_srif(
+@@ -1741,6 +1751,46 @@ def _position_bias_jacobian(obs_data: np.ndarray, bias_cfg: dict) -> np.ndarray:
+ 
+ _TWO_WAY_RANGE_NO_BIAS_CFG: dict = {"size": 0, "mode": None}
+ 
++#: Phase 17-R.  K_SRP solve-for is a separate opt-in mechanism from the M3
++#: bias states above: it is activated by srp=/solve_for_k_srp=, never by
++#: bias_mode, and x_nominal0 always stays a 6-vector (K is tracked alongside,
++#: not concatenated into it).  See estimate_two_way_range_bls_lm.
++
++
++def _two_way_range_k_srp_column(
++    obs_data: np.ndarray,
++    x_aug_hist: np.ndarray,
++    h_initial: np.ndarray,
++) -> np.ndarray:
++    """K_SRP design-matrix column for the two-way range Jacobian.
++
++    Reuses the Phase-17A-R-qualified composition, rather than re-deriving the
++    event-solver mathematics (out of Phase 17-R's scope):
++
++        H_K(t3_i) = H_x0(t3_i) . Phi(t3_i)^-1 . S_K(t3_i)
++
++    ``H_x0`` is the already-qualified range Jacobian returned by
++    ``two_way_range_nominal_and_initial_jacobian``; ``Phi`` and ``S_K`` are the
++    already-qualified STM and trajectory sensitivity from
++    ``propagate_state_with_k_sensitivity``.  ``obs_data`` column 3 is the
++    1-based grid index used to GENERATE each receive tag, so ``Phi``/``S_K``
++    are read at the exact epoch, not interpolated.  Phase 17A-R independently
++    validated this composition against the production observable evaluated at
++    perturbed inputs (never against this same formula) to a best relative
++    error of about 4.6e-09 (measurement composition) and 4.9e-08 (full
++    end-to-end), with a resolved plateau-then-roundoff convergence structure
++    across 14 finite-difference steps.
++    """
++    time_idx = np.asarray(obs_data[:, 3], dtype=int) - 1
++    phi_all = x_aug_hist[:, 6:42]
++    s_k_all = x_aug_hist[:, 42:48]
++    h_k = np.zeros(obs_data.shape[0], dtype=float)
++    for i, row in enumerate(time_idx):
++        phi_i = phi_all[row].reshape((6, 6), order="F")
++        v_i = np.linalg.solve(phi_i, s_k_all[row])
++        h_k[i] = float(h_initial[i] @ v_i)
++    return h_k
++
+ 
+ def _two_way_range_bias_prior_and_scale(bias_cfg: dict) -> tuple[list[float], list[float]]:
+     raise ValueError("two_way_range estimation does not support bias solve-for states.")
+@@ -1801,6 +1851,36 @@ def _two_way_range_posterior_information(
+     return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+ 
+ 
++def _two_way_range_posterior_information_with_k(
++    t_pass_s: np.ndarray,
++    obs_data: np.ndarray,
++    x_dyn: np.ndarray,
++    k_srp: float,
++    srp,
++    pass_geo: PassGeometry,
++    mu_moon_m3_s2: float,
++    mu_earth_m3_s2: float,
++    mu_sun_m3_s2: float,
++    get_earth_pos: Callable[[float], ArrayLike],
++    get_sun_pos: Callable[[float], ArrayLike],
++    prior_inv: np.ndarray,
++    w_diag: np.ndarray,
++    rtol: float,
++    atol: float,
++    j2_moon: float,
++) -> np.ndarray:
++    """Phase 17-R.  (7,7) posterior information at the converged (x0, K)."""
++    x_aug_hist = propagate_state_with_k_sensitivity(
++        t_pass_s, x_dyn, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
++        get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_srp),
++        rtol=rtol, atol=atol, j2_moon=j2_moon,
++    )
++    _, h_x0 = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
++    h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
++    h_full = np.hstack([h_x0, h_k[:, None]])
++    return _symmetrize(h_full.T @ (w_diag[:, None] * h_full) + prior_inv)
++
++
+ def estimate_two_way_range_bls_lm(
+     t_pass_s: ArrayLike,
+     obs_data: ArrayLike,
+@@ -1828,6 +1908,11 @@ def estimate_two_way_range_bls_lm(
+     return_posterior: bool = False,
+     harmonic_model=None,
+     harmonic_epoch_et0: float | None = None,
++    srp=None,
++    solve_for_k_srp: bool = False,
++    k_srp_initial: float | None = None,
++    k_srp_prior_sigma: float | None = None,
++    k_srp_scale: float = 1e-2,
+ ) -> tuple[np.ndarray, str, EstimatorStats]:
+     """Two-way range batch least-squares with LM damping.
+ 
+@@ -1839,6 +1924,31 @@ def estimate_two_way_range_bls_lm(
+     ``harmonic_stm_opt_in=True`` so the variational equations use the MATCHED
+     analytic Pines gradient rather than a lower-order one. Leaving the model
+     ``None`` keeps the historical central/J2 behaviour bit-for-bit.
++
++    Phase 17-R (opt-in K_SRP solve-for).  Three independent switches (s13):
++
++    - ``srp=None`` (default): SRP off, identical to every prior phase.
++    - ``srp=SRPOptions(...)``, ``solve_for_k_srp=False``: SRP on with a FIXED
++      coefficient; the estimator still solves the 6-state orbit only.
++    - ``srp=SRPOptions(...)``, ``solve_for_k_srp=True``: K_SRP becomes a 7th
++      solve-for scalar.  ``x_nominal0`` stays a 6-vector always; K is tracked
++      alongside it and returned in ``stats.k_srp_estimate`` /
++      ``stats.posterior_covariance`` (7x7), never concatenated into the
++      returned state.  This keeps ``x_best`` a 6-vector in every mode, so
++      existing callers are structurally unaffected.
++
++    ``k_srp_initial`` sets the solve's starting K (distinct from
++    ``srp.k_srp_m2_per_kg``, which stays the FIXED value when
++    ``solve_for_k_srp=False``); if omitted, the solve starts from
++    ``srp.k_srp_m2_per_kg``.  ``k_srp_prior_sigma`` is an explicit
++    QUALIFICATION_PRIOR sigma on K -- omit it for a data-only solve (s23).
++    ``k_srp_scale`` is a NUMERICAL scale factor only (s19/s20); it carries no
++    prior information and must not change the physical estimate.
++
++    Production SRP rejects negative K (fail-closed).  A trial LM step whose
++    candidate K would go negative is REJECTED without evaluating the
++    observable -- not clipped to zero, which would bias the estimate low (s18)
++    -- via the same damping-increase path already used for a rejected step.
+     """
+     _harm = (
+         {} if harmonic_model is None
+@@ -1850,21 +1960,60 @@ def estimate_two_way_range_bls_lm(
+     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
+     _validate_two_way_range_solve_for(x_nominal, bias_mode)
+ 
++    if solve_for_k_srp:
++        if srp is None or not srp.enabled:
++            raise ValueError(
++                "solve_for_k_srp=True requires an active srp=SRPOptions(...). "
++                "SRP-enabled and K-solve-for-enabled are independent switches "
++                "(Phase 17-R s13); solving for K without an active SRP force "
++                "has no meaning."
++            )
++        k_current = (float(k_srp_initial) if k_srp_initial is not None
++                     else float(srp.k_srp_m2_per_kg))
++        if k_current < 0.0:
++            raise ValueError(f"k_srp_initial/srp.k_srp_m2_per_kg must be non-negative; got {k_current}.")
++        if k_srp_prior_sigma is not None and not (
++            math.isfinite(k_srp_prior_sigma) and k_srp_prior_sigma > 0.0
++        ):
++            raise ValueError("k_srp_prior_sigma must be a finite positive number.")
++        if not (math.isfinite(k_srp_scale) and k_srp_scale > 0.0):
++            raise ValueError("k_srp_scale must be a finite positive number.")
++    else:
++        if k_srp_initial is not None or k_srp_prior_sigma is not None:
++            raise ValueError(
++                "k_srp_initial/k_srp_prior_sigma require solve_for_k_srp=True."
++            )
++        k_current = None
++
+     nx = 6
+-    na = 6
++    na = 7 if solve_for_k_srp else 6
+     has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
++    k_prior_active = solve_for_k_srp and k_srp_prior_sigma is not None
++    prior_active = has_explicit_prior or k_prior_active
+     x_prior = x_nominal.copy()
+-    prior_inv, _, scale, prior_inv_scaled, _ = _prior_information_and_scale(
++    k_prior_mean = k_current  # the solve's own starting point IS the prior mean
++    prior_inv6, _, scale6, _, _ = _prior_information_and_scale(
+         nx,
+         _TWO_WAY_RANGE_NO_BIAS_CFG,
+         _two_way_range_bias_prior_and_scale,
+         prior_covariance,
+         prior_sqrt_information,
+     )
++    if solve_for_k_srp:
++        prior_inv = np.zeros((7, 7), dtype=float)
++        prior_inv[:6, :6] = prior_inv6
++        if k_prior_active:
++            prior_inv[6, 6] = 1.0 / float(k_srp_prior_sigma) ** 2
++        prior_inv = _symmetrize(prior_inv)
++        scale = np.diag(list(np.diag(scale6)) + [float(k_srp_scale)])
++    else:
++        prior_inv, scale = prior_inv6, scale6
++    prior_inv_scaled = scale.T @ prior_inv @ scale
+     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
+     w_curr_diag = w_diag.copy()
+ 
+     x_best = x_nominal.copy()
++    k_best = k_current
+     best_cost = np.inf
+     stop_reason = "MaxIter"
+     termination_detail = "MAX_ITER"
+@@ -1874,8 +2023,16 @@ def estimate_two_way_range_bls_lm(
+     last_rank = 0
+     max_rejected_components = 0
+     min_active_weight_fraction = 1.0
++    negative_k_rejections = 0
++
++    def _active_srp(k_state):
++        if srp is None:
++            return None
++        if not srp.enabled:
++            return srp
++        return replace(srp, k_srp_m2_per_kg=k_state if k_state is not None else srp.k_srp_m2_per_kg)
+ 
+-    def _acceptance_residual(x_state):
++    def _acceptance_residual(x_state, k_state=None):
+         """Residual used ONLY for the LM accept/reject comparison.
+ 
+         PHASE 6.2 repair.  Previously the current state was scored from the
+@@ -1898,12 +2055,12 @@ def estimate_two_way_range_bls_lm(
+         hist = propagate_state(
+             t_pass_s, x_state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+             get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+-            **_harm,
++            srp=_active_srp(k_state), **_harm,
+         )
+         res, _ = compute_two_way_range_residuals(hist, obs_data, pass_geo)
+         return np.asarray(res, dtype=float)
+ 
+-    def _acceptance_cost(x_state, residual_vec, weight_diag):
++    def _acceptance_cost(x_state, k_state, residual_vec, weight_diag):
+         """Accept/reject scalar: the objective _lm_step actually minimises.
+ 
+         PHASE 6.2 repair.  The LM normal equations carry both the
+@@ -1920,32 +2077,52 @@ def estimate_two_way_range_bls_lm(
+         The returned scalar is 2 * J_MAP: the measurement term keeps the
+         factor of two it already carried and the prior term is given the
+         same one, so only the objective changes, not its scaling.
++
++        Phase 17-R: extended to the 7-parameter [x0, K] state.  When K carries
++        no explicit prior, prior_inv's K row/column is exactly zero, so this
++        reduces algebraically to the original 6-state formula -- no
++        special-casing, and default invariance follows from that identity
++        rather than from a separate code path.
+         """
+         cost = float(np.dot(weight_diag * residual_vec, residual_vec))
+-        if has_explicit_prior:
+-            delta_prior = np.asarray(x_state, dtype=float) - x_prior
+-            cost += float(delta_prior @ prior_inv @ delta_prior)
++        if prior_active:
++            delta = np.asarray(x_state, dtype=float) - x_prior
++            if solve_for_k_srp:
++                delta = np.concatenate([delta, [k_state - k_prior_mean]])
++            cost += float(delta @ prior_inv @ delta)
+         return cost
+ 
+     for iteration in range(1, max_iter + 1):
+         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+-        x_aug0 = np.concatenate([x_nominal, _IDENTITY_6_COL])
+-        x_aug_hist = propagate_augmented_state(
+-            t_pass_s,
+-            x_aug0,
+-            mu_moon_m3_s2,
+-            mu_earth_m3_s2,
+-            mu_sun_m3_s2,
+-            get_earth_pos,
+-            get_sun_pos,
+-            rtol=_atol_r,
+-            atol=_atol_a,
+-            j2_moon=j2_moon,
+-            **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
+-        )
+-        h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
+-            obs_data, pass_geo, x_aug_hist
+-        )
++        if solve_for_k_srp:
++            x_aug_hist = propagate_state_with_k_sensitivity(
++                t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
++                get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
++                rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
++                **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
++            )
++            h_nom, h_x0 = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
++            h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
++            h_initial = np.hstack([h_x0, h_k[:, None]])
++        else:
++            x_aug0 = np.concatenate([x_nominal, _IDENTITY_6_COL])
++            x_aug_hist = propagate_augmented_state(
++                t_pass_s,
++                x_aug0,
++                mu_moon_m3_s2,
++                mu_earth_m3_s2,
++                mu_sun_m3_s2,
++                get_earth_pos,
++                get_sun_pos,
++                rtol=_atol_r,
++                atol=_atol_a,
++                j2_moon=j2_moon,
++                srp=srp,
++                **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
++            )
++            h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
++                obs_data, pass_geo, x_aug_hist
++            )
+         residual = _two_way_range_residual_from_h(obs_data, h_nom)
+         w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
+             w_diag,
+@@ -1957,22 +2134,46 @@ def estimate_two_way_range_bls_lm(
+         )
+         max_rejected_components = max(max_rejected_components, rejected)
+         min_active_weight_fraction = min(min_active_weight_fraction, active_fraction)
+-        _acc_residual = _acceptance_residual(x_nominal)
+-        current_cost = _acceptance_cost(x_nominal, _acc_residual, w_curr_diag)
++        _acc_residual = _acceptance_residual(x_nominal, k_current)
++        current_cost = _acceptance_cost(x_nominal, k_current, _acc_residual, w_curr_diag)
+ 
+         if iteration == 1:
+             best_cost = current_cost
+             x_best = x_nominal.copy()
+-
++            k_best = k_current
++
++        x_prior_full = (np.concatenate([x_prior, [k_prior_mean]]) if solve_for_k_srp
++                        else x_prior)
++        x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
++                          else x_nominal)
++        prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior_full - x_current_full)
++                            if prior_active else np.zeros(na))
+         step, last_condition_number, last_rank, singular = _lm_step(
+-            h_initial,
+-            residual,
+-            w_curr_diag,
+-            scale,
+-            prior_inv_scaled,
+-            scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na),
+-            lambda_damping,
++            h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
++            prior_rhs_scaled, lambda_damping,
+         )
++        if singular and solve_for_k_srp:
++            # K's information content is routinely ~1e13-1e16x smaller than
++            # the orbital state's in atwa units (range is extremely sensitive
++            # to position, only weakly and indirectly to K), so lambda0's
++            # damping can leave the matrix singular on the very FIRST attempt,
++            # before the escalation loop below ever gets a chance to run (a
++            # "singular" result breaks immediately, unlike a rejected step).
++            # LM damping resolves any conditioning for a large enough lambda
++            # whenever the diagonal is nonzero (diagonally-dominant limit), so
++            # retry with escalating lambda before concluding genuine failure.
++            # The na=6 path above is untouched: this retry is unreachable
++            # there, so default behaviour keeps its original single-attempt
++            # semantics exactly.
++            retry_lambda = lambda_damping
++            while singular and retry_lambda <= 1e12:
++                retry_lambda *= 10.0
++                step, last_condition_number, last_rank, singular = _lm_step(
++                    h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
++                    prior_rhs_scaled, retry_lambda,
++                )
++            if not singular:
++                lambda_damping = retry_lambda
+         if singular:
+             stop_reason = "Singular"
+             termination_detail = "MATRIX_SINGULAR"
+@@ -1981,14 +2182,35 @@ def estimate_two_way_range_bls_lm(
+         step = _limit_step(step, pos_limit_m=20000.0)
+         last_step = step
+ 
+-        x_candidate = x_nominal + step
+-        residual_candidate = _acceptance_residual(x_candidate)
+-        candidate_cost = _acceptance_cost(x_candidate, residual_candidate, w_curr_diag)
++        x_candidate = x_nominal + step[:6]
++        if solve_for_k_srp:
++            k_candidate = k_current + step[6]
++            if k_candidate < 0.0:
++                # s18: domain-infeasible trial point. REJECT without ever
++                # calling propagate() with a negative K (which SRPOptions
++                # would raise on) -- never clip toward zero, which would bias
++                # the estimate low. Same LM safeguard as a worse-cost step.
++                negative_k_rejections += 1
++                x_nominal = x_best.copy()
++                k_current = k_best
++                lambda_damping *= 10.0
++                if lambda_damping > 1e12:
++                    stop_reason = "DampingLimit"
++                    termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
++                    break
++                continue
++        else:
++            k_candidate = None
++        residual_candidate = _acceptance_residual(x_candidate, k_candidate)
++        candidate_cost = _acceptance_cost(x_candidate, k_candidate, residual_candidate, w_curr_diag)
+ 
+         if candidate_cost < current_cost:
+             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+             x_nominal = x_candidate
++            if solve_for_k_srp:
++                k_current = k_candidate
+             x_best = x_nominal.copy()
++            k_best = k_current
+             best_cost = candidate_cost
+             lambda_damping = max(lambda_damping / 5.0, 1e-12)
+ 
+@@ -2003,6 +2225,7 @@ def estimate_two_way_range_bls_lm(
+                 break
+         else:
+             x_nominal = x_best.copy()
++            k_current = k_best
+             lambda_damping *= 10.0
+             if lambda_damping > 1e12:
+                 # PHASE 6.2: damping exhaustion, NOT a singular linear solve.
+@@ -2014,23 +2237,44 @@ def estimate_two_way_range_bls_lm(
+ 
+     posterior_information, posterior_covariance = (None, None)
+     if return_posterior:
+-        posterior_information = _two_way_range_posterior_information(
+-            t_pass_s,
+-            obs_data,
+-            x_best,
+-            pass_geo,
+-            mu_moon_m3_s2,
+-            mu_earth_m3_s2,
+-            mu_sun_m3_s2,
+-            get_earth_pos,
+-            get_sun_pos,
+-            prior_inv,
+-            w_curr_diag,
+-            rtol,
+-            atol,
+-            j2_moon,
+-        )
+-        posterior_covariance = _safe_covariance_from_information(posterior_information)
++        if solve_for_k_srp:
++            posterior_information = _two_way_range_posterior_information_with_k(
++                t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
++                mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
++                get_earth_pos, get_sun_pos, prior_inv, w_curr_diag, rtol, atol, j2_moon,
++            )
++            # K's information content differs from the orbital state's by up
++            # to ~1e13-1e16x in atwa units (measured: s23 of the campaign
++            # report), so the RAW 7x7 information matrix carries a dynamic
++            # range that trips the eigenvalue floor inside
++            # _safe_covariance_from_information (max_eig * 1e-14 exceeds a
++            # genuinely small-but-real eigenvalue, clipping it).  Condition on
++            # the SAME scale already used for the LM solve -- exactly the
++            # scale-invariant transform verified in s20 -- invert there, then
++            # map back.  This branch is unreachable for solve_for_k_srp=False,
++            # so the six-state path below keeps its original, unconditioned
++            # call exactly as before.
++            info_scaled = scale.T @ posterior_information @ scale
++            cov_scaled = _safe_covariance_from_information(info_scaled)
++            posterior_covariance = scale @ cov_scaled @ scale.T
++        else:
++            posterior_information = _two_way_range_posterior_information(
++                t_pass_s,
++                obs_data,
++                x_best,
++                pass_geo,
++                mu_moon_m3_s2,
++                mu_earth_m3_s2,
++                mu_sun_m3_s2,
++                get_earth_pos,
++                get_sun_pos,
++                prior_inv,
++                w_curr_diag,
++                rtol,
++                atol,
++                j2_moon,
++            )
++            posterior_covariance = _safe_covariance_from_information(posterior_information)
+ 
+     stats = EstimatorStats(
+         iterations=iteration,
+@@ -2044,6 +2288,12 @@ def estimate_two_way_range_bls_lm(
+         posterior_information=posterior_information,
+         posterior_covariance=posterior_covariance,
+         termination_detail=termination_detail,
++        k_srp_estimate=k_best if solve_for_k_srp else None,
++        k_srp_prior_status=(
++            ("QUALIFICATION_PRIOR" if k_prior_active else "DATA_ONLY")
++            if solve_for_k_srp else None
++        ),
++        k_srp_negative_step_rejections=negative_k_rejections,
+     )
+     return x_best, stop_reason, stats
+ 
+@@ -2072,56 +2322,136 @@ def estimate_two_way_range_srif(
+     prior_covariance: ArrayLike | None = None,
+     prior_sqrt_information: ArrayLike | None = None,
+     return_posterior: bool = False,
++    srp=None,
++    solve_for_k_srp: bool = False,
++    k_srp_initial: float | None = None,
++    k_srp_prior_sigma: float | None = None,
++    k_srp_scale: float = 1e-2,
+ ) -> tuple[np.ndarray, str, EstimatorStats]:
+-    """Two-way range square-root information filter estimator."""
++    """Two-way range square-root information filter estimator.
++
++    Phase 17-R (opt-in K_SRP solve-for): same three independent switches as
++    ``estimate_two_way_range_bls_lm`` (s13), and the same contract -- K is
++    tracked alongside the 6-vector state, never concatenated into it.
++
++    Unlike BLS-LM, this SRIF carries no Levenberg-Marquardt damping: a
++    rejected step is simply retried at the same linearization next
++    iteration. K's information content is routinely orders of magnitude
++    smaller than the orbital state's (measured in the Phase 17-R campaign
++    report), so an UNREGULARIZED K column here would frequently leave
++    ``r_hat`` singular with no escape.  ``k_srp_prior_sigma`` is therefore
++    REQUIRED (not optional) when solving for K -- exactly the s31 SRIF prior
++    semantics: "sequential filtering requires an initial uncertainty."
++    """
+     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
+     obs_data = np.asarray(obs_data, dtype=float)
+     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
+     _validate_two_way_range_solve_for(x_nominal, bias_mode)
+ 
++    if solve_for_k_srp:
++        if srp is None or not srp.enabled:
++            raise ValueError(
++                "solve_for_k_srp=True requires an active srp=SRPOptions(...) "
++                "(Phase 17-R s13)."
++            )
++        if k_srp_prior_sigma is None or not (
++            math.isfinite(k_srp_prior_sigma) and k_srp_prior_sigma > 0.0
++        ):
++            raise ValueError(
++                "k_srp_prior_sigma is required for SRIF K_SRP solve-for (s31): "
++                "sequential filtering requires an initial uncertainty; this "
++                "estimator carries no LM damping to fall back on."
++            )
++        k_current = (float(k_srp_initial) if k_srp_initial is not None
++                     else float(srp.k_srp_m2_per_kg))
++        if k_current < 0.0:
++            raise ValueError(f"k_srp_initial/srp.k_srp_m2_per_kg must be non-negative; got {k_current}.")
++        if not (math.isfinite(k_srp_scale) and k_srp_scale > 0.0):
++            raise ValueError("k_srp_scale must be a finite positive number.")
++    else:
++        if k_srp_initial is not None or k_srp_prior_sigma is not None:
++            raise ValueError(
++                "k_srp_initial/k_srp_prior_sigma require solve_for_k_srp=True."
++            )
++        k_current = None
++
+     nx = 6
+-    na = 6
++    na = 7 if solve_for_k_srp else 6
+     has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
+     x_prior = x_nominal.copy()
+-    prior_inv, prior_sqrt_info, scale, _, prior_sqrt_scaled = _prior_information_and_scale(
++    k_prior_mean = k_current
++    prior_inv6, prior_sqrt_info6, scale6, _, prior_sqrt_scaled6 = _prior_information_and_scale(
+         nx,
+         _TWO_WAY_RANGE_NO_BIAS_CFG,
+         _two_way_range_bias_prior_and_scale,
+         prior_covariance,
+         prior_sqrt_information,
+     )
+-    r_bar = prior_sqrt_scaled
++    if solve_for_k_srp:
++        prior_inv = np.zeros((7, 7), dtype=float)
++        prior_inv[:6, :6] = prior_inv6
++        prior_inv[6, 6] = 1.0 / float(k_srp_prior_sigma) ** 2
++        prior_inv = _symmetrize(prior_inv)
++        prior_sqrt_info = np.zeros((7, 7), dtype=float)
++        prior_sqrt_info[:6, :6] = prior_sqrt_info6
++        prior_sqrt_info[6, 6] = 1.0 / float(k_srp_prior_sigma)
++        scale = np.diag(list(np.diag(scale6)) + [float(k_srp_scale)])
++        r_bar = prior_sqrt_info @ scale
++    else:
++        prior_inv, scale = prior_inv6, scale6
++        prior_sqrt_info = prior_sqrt_info6
++        r_bar = prior_sqrt_scaled6
+ 
+     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
+     w_curr_diag = w_diag.copy()
+ 
+     x_best = x_nominal.copy()
++    k_best = k_current
+     best_cost = np.inf
+     stop_reason = "MaxIter"
+-    last_step = np.zeros(6)
++    last_step = np.zeros(na)
+     last_condition_number = float("nan")
+     last_rank = 0
+     max_rejected_components = 0
+     min_active_weight_fraction = 1.0
++    negative_k_rejections = 0
++
++    def _active_srp(k_state):
++        if srp is None:
++            return None
++        if not srp.enabled:
++            return srp
++        return replace(srp, k_srp_m2_per_kg=k_state if k_state is not None else srp.k_srp_m2_per_kg)
+ 
+     for iteration in range(1, max_iter + 1):
+         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+-        x_aug0 = np.concatenate([x_nominal, _IDENTITY_6_COL])
+-        x_aug_hist = propagate_augmented_state(
+-            t_pass_s,
+-            x_aug0,
+-            mu_moon_m3_s2,
+-            mu_earth_m3_s2,
+-            mu_sun_m3_s2,
+-            get_earth_pos,
+-            get_sun_pos,
+-            rtol=_atol_r,
+-            atol=_atol_a,
+-            j2_moon=j2_moon,
+-        )
+-        h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
+-            obs_data, pass_geo, x_aug_hist
+-        )
++        if solve_for_k_srp:
++            x_aug_hist = propagate_state_with_k_sensitivity(
++                t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
++                get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
++                rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
++            )
++            h_nom, h_x0 = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
++            h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
++            h_initial = np.hstack([h_x0, h_k[:, None]])
++        else:
++            x_aug0 = np.concatenate([x_nominal, _IDENTITY_6_COL])
++            x_aug_hist = propagate_augmented_state(
++                t_pass_s,
++                x_aug0,
++                mu_moon_m3_s2,
++                mu_earth_m3_s2,
++                mu_sun_m3_s2,
++                get_earth_pos,
++                get_sun_pos,
++                rtol=_atol_r,
++                atol=_atol_a,
++                j2_moon=j2_moon,
++                srp=srp,
++            )
++            h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
++                obs_data, pass_geo, x_aug_hist
++            )
+         residual = _two_way_range_residual_from_h(obs_data, h_nom)
+         w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
+             w_diag,
+@@ -2139,11 +2469,17 @@ def estimate_two_way_range_srif(
+         if iteration == 1:
+             best_cost = current_cost
+             x_best = x_nominal.copy()
++            k_best = k_current
+ 
+         h_scaled = h_initial @ scale
+         weighted_h = h_scaled * w_sqrt[:, None]
+         weighted_r = residual * w_sqrt
+-        z_bar = prior_sqrt_info @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na)
++        x_prior_full = (np.concatenate([x_prior, [k_prior_mean]]) if solve_for_k_srp
++                        else x_prior)
++        x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
++                          else x_nominal)
++        z_bar = (prior_sqrt_info @ (x_prior_full - x_current_full)
++                 if (has_explicit_prior or solve_for_k_srp) else np.zeros(na))
+         combined = np.vstack(
+             [
+                 np.column_stack([r_bar, z_bar]),
+@@ -2165,12 +2501,34 @@ def estimate_two_way_range_srif(
+         pos_step_norm = float(np.linalg.norm(step[:3]))
+         if pos_step_norm > 20000.0:
+             step *= 20000.0 / pos_step_norm
++
++        if solve_for_k_srp:
++            # s18: no LM damping to lean on here, so an infeasible trial K is
++            # handled by backtracking ALONG THE SAME QR-computed direction
++            # (halving magnitude, never flipping sign or clipping toward
++            # zero) until the domain is respected -- a standard trust-region
++            # safeguard, not a change to what the step means statistically.
++            attempts = 0
++            while k_current + step[6] < 0.0 and attempts < 40:
++                step = step * 0.5
++                attempts += 1
++            if k_current + step[6] < 0.0:
++                stop_reason = "NegativeKDomainLimit"
++                break
++            if attempts > 0:
++                negative_k_rejections += 1
+         last_step = step
+ 
+-        x_candidate = x_nominal + step
++        x_candidate = x_nominal + step[:6]
++        k_candidate = k_current + step[6] if solve_for_k_srp else None
++        if solve_for_k_srp:
++            hist_srp = replace(srp, k_srp_m2_per_kg=k_candidate)
++        else:
++            hist_srp = srp
+         x_hist_candidate = propagate_state(
+             t_pass_s, x_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
++            srp=hist_srp,
+         )
+         residual_candidate, _ = compute_two_way_range_residuals(
+             x_hist_candidate, obs_data, pass_geo
+@@ -2180,7 +2538,10 @@ def estimate_two_way_range_srif(
+         if candidate_cost < current_cost:
+             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+             x_nominal = x_candidate
++            if solve_for_k_srp:
++                k_current = k_candidate
+             x_best = x_nominal.copy()
++            k_best = k_current
+             best_cost = candidate_cost
+ 
+             if relative_improvement < tol_cost_stability:
+@@ -2191,33 +2552,47 @@ def estimate_two_way_range_srif(
+                 break
+         else:
+             x_nominal = x_best.copy()
++            k_current = k_best
+ 
+     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
+     if return_posterior:
+-        posterior_information = _two_way_range_posterior_information(
+-            t_pass_s,
+-            obs_data,
+-            x_best,
+-            pass_geo,
+-            mu_moon_m3_s2,
+-            mu_earth_m3_s2,
+-            mu_sun_m3_s2,
+-            get_earth_pos,
+-            get_sun_pos,
+-            prior_inv,
+-            w_curr_diag,
+-            rtol,
+-            atol,
+-            j2_moon,
+-        )
+-        posterior_covariance = _safe_covariance_from_information(posterior_information)
++        if solve_for_k_srp:
++            posterior_information = _two_way_range_posterior_information_with_k(
++                t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
++                mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
++                get_earth_pos, get_sun_pos, prior_inv, w_curr_diag, rtol, atol, j2_moon,
++            )
++            # Same conditioning as the BLS branch (see its comment): condition
++            # on scale before the shared eigenvalue-floor-safe inverse, then
++            # map back.  Unreachable for solve_for_k_srp=False.
++            info_scaled = scale.T @ posterior_information @ scale
++            cov_scaled = _safe_covariance_from_information(info_scaled)
++            posterior_covariance = scale @ cov_scaled @ scale.T
++        else:
++            posterior_information = _two_way_range_posterior_information(
++                t_pass_s,
++                obs_data,
++                x_best,
++                pass_geo,
++                mu_moon_m3_s2,
++                mu_earth_m3_s2,
++                mu_sun_m3_s2,
++                get_earth_pos,
++                get_sun_pos,
++                prior_inv,
++                w_curr_diag,
++                rtol,
++                atol,
++                j2_moon,
++            )
++            posterior_covariance = _safe_covariance_from_information(posterior_information)
+         posterior_sqrt_information = _sqrt_information_from_information(posterior_information)
+ 
+     stats = EstimatorStats(
+         iterations=iteration,
+         final_cost=best_cost,
+         position_step_norm_m=float(np.linalg.norm(last_step[:3])),
+-        velocity_step_norm_mps=float(np.linalg.norm(last_step[3:])),
++        velocity_step_norm_mps=float(np.linalg.norm(last_step[3:6])),
+         condition_number=last_condition_number,
+         rank=last_rank,
+         rejected_components=max_rejected_components,
+@@ -2225,5 +2600,8 @@ def estimate_two_way_range_srif(
+         posterior_information=posterior_information,
+         posterior_covariance=posterior_covariance,
+         posterior_sqrt_information=posterior_sqrt_information,
++        k_srp_estimate=k_best if solve_for_k_srp else None,
++        k_srp_prior_status="QUALIFICATION_PRIOR" if solve_for_k_srp else None,
++        k_srp_negative_step_rejections=negative_k_rejections,
+     )
+     return x_best, stop_reason, stats
+diff --git a/lunar_od/filters.py b/lunar_od/filters.py
+index 35eed4b..781b759 100644
+--- a/lunar_od/filters.py
++++ b/lunar_od/filters.py
+@@ -3,7 +3,7 @@
+ from __future__ import annotations
+ 
+ from collections.abc import Callable, Mapping, Sequence
+-from dataclasses import dataclass
++from dataclasses import dataclass, replace
+ from math import erf, sqrt
+ from time import perf_counter
+ from typing import Literal
+@@ -791,6 +791,8 @@ def run_lunar_ukf(
+     fast_sigma_propagator: Callable | None = None,
+     use_stm_linearization: bool = False,
+     j2_moon: float = 0.0,
++    srp=None,
++    solve_for_k_srp: bool = False,
+ ) -> LunarUKFResult:
+     """Run a sequential UKF over one prepared lunar OD arc.
+ 
+@@ -803,6 +805,26 @@ def run_lunar_ukf(
+     standard and square-root forms use the same process function). A caller
+     supplying ``fast_sigma_propagator`` owns that propagator's force model and
+     must build it with the same ``j2_moon`` (R0A).
++
++    Phase 17-R (opt-in K_SRP solve-for). Same three independent switches as
++    the BLS/SRIF two-way range estimators (s13):
++
++    - ``srp=None`` (default): SRP off, identical to every prior phase.
++    - ``srp=SRPOptions(...)``, ``solve_for_k_srp=False``: SRP on with a FIXED
++      coefficient; the state stays 6-dimensional.
++    - ``srp=SRPOptions(...)``, ``solve_for_k_srp=True``: ``x0_mci``/``p0`` must
++      be 7-dimensional (state + K at index 6) and ``bias_mode`` must be
++      ``None``/``"none"`` -- K and measurement bias are not combined in this
++      phase. K propagates as a constant (Q_K = 0 unless the caller's
++      ``process_noise`` says otherwise) while EACH sigma point's orbital
++      state propagates under THAT point's own K-dependent SRP acceleration
++      (s35): the existing bias-state pattern (dynamics on ``x[:6]``, the
++      remainder carried through unchanged) already gives this for free, K
++      simply also feeds ``propagate_state``'s ``srp=`` for its own point.
++      ``final_state[6]`` is the K estimate; ``final_covariance[6, 6]`` its
++      variance. Two-way range measurements remain unsupported (unchanged from
++      before this phase); counted-Doppler range-rate is the qualified path
++      for K sensitivity (Phase 17A-R).
+     """
+     start_time = perf_counter()
+     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
+@@ -813,6 +835,28 @@ def run_lunar_ukf(
+         )
+     if measurement_type not in {"position", "range_rate"}:
+         raise ValueError("measurement_type must be 'position' or 'range_rate'.")
++    if solve_for_k_srp:
++        if srp is None or not srp.enabled:
++            raise ValueError(
++                "solve_for_k_srp=True requires an active srp=SRPOptions(...) "
++                "(Phase 17-R s13)."
++            )
++        if bias_mode not in (None, "none"):
++            raise ValueError(
++                "K_SRP solve-for is not combined with UKF measurement-bias "
++                "states in this phase (minimal scope, s71)."
++            )
++        if fast_sigma_propagator is not None:
++            raise ValueError(
++                "solve_for_k_srp is incompatible with a caller-supplied "
++                "fast_sigma_propagator, which owns its own force model and "
++                "has no K dependence."
++            )
++        if use_stm_linearization:
++            raise ValueError(
++                "solve_for_k_srp requires the unscented (sigma-point) process "
++                "path; use_stm_linearization bypasses it."
++            )
+     # FA-01 runtime defense-in-depth: one check per arc, before any sigma-point
+     # work, covering callers that bypass scenario-config validation.
+     validate_ukf_measurement_support(
+@@ -838,6 +882,14 @@ def run_lunar_ukf(
+     if x0.size < 6:
+         raise ValueError("x0_mci must contain at least the 6 dynamic state elements.")
+     nx = x0.size
++    if solve_for_k_srp:
++        if nx != 7:
++            raise ValueError(
++                f"solve_for_k_srp=True requires a 7-element state (6-state + "
++                f"K_SRP at index 6); got {nx} elements."
++            )
++        if x0[6] < 0.0:
++            raise ValueError(f"x0_mci[6] (K_SRP) must be non-negative; got {x0[6]}.")
+     frozen_indices = _validate_state_constraints(
+         nx,
+         frozen_state_indices,
+@@ -848,7 +900,28 @@ def run_lunar_ukf(
+     state = UKFState(x0, _symmetrize(np.asarray(p0, dtype=float)))
+     if state.p.shape != (nx, nx):
+         raise ValueError("p0 must be an NxN covariance matrix matching x0_mci.")
+-    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx, len(pass_geo.stations), bias_mode)
++    # K occupies index 6 but is not a measurement-bias state; size the bias
++    # config off the dynamics+bias portion only (nx-1), so bias_mode=None
++    # still resolves to "none" instead of raising on the extra dimension.
++    nx_for_bias = nx - 1 if solve_for_k_srp else nx
++    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx_for_bias, len(pass_geo.stations), bias_mode)
++
++    if solve_for_k_srp:
++        # s36: verify EVERY initial sigma point respects the K >= 0 domain.
++        # Do not clip -- a covariance that produces an infeasible sigma point
++        # is a scientifically invalid Gaussian representation of this
++        # parameter for THIS prior, and must be reported as such, not masked.
++        probe_points, _, _ = sigma_points(x0, state.p, config or UnscentedTransformConfig())
++        k_col = probe_points[:, 6]
++        if np.any(k_col < 0.0):
++            raise ValueError(
++                "solve_for_k_srp: the initial covariance produces sigma "
++                f"points with negative K_SRP (min={k_col.min():.6g}, "
++                f"max={k_col.max():.6g}). This is a direct-K Gaussian "
++                "representation limitation (s36), not a numerical bug -- "
++                "choose a covariance whose spread keeps K >= 0 for all "
++                "sigma points, or classify this qualification as blocked."
++            )
+ 
+     if process_noise_model not in {"discrete", "continuous_white_acceleration"}:
+         raise ValueError("process_noise_model must be 'discrete' or 'continuous_white_acceleration'.")
+@@ -907,7 +980,30 @@ def run_lunar_ukf(
+             if fast_sigma_propagator is not None:
+                 unique_dynamic_propagations += 1
+                 return np.concatenate([fast_sigma_propagator(t0, t1, x[:6]), x[6:]])
+-            key = np.ascontiguousarray(x[:6]).tobytes()
++            point_srp = srp
++            if solve_for_k_srp:
++                k_point = float(x[6])
++                if k_point < 0.0:
++                    # s18/s36: a sigma point drifted negative during the
++                    # sequential run (not caught by the s36 initial-point
++                    # check, which only covers t=0). Refuse rather than
++                    # clip: the correct response is a smaller/better-chosen
++                    # covariance, classified as a limitation, not a silent
++                    # bias toward K=0.
++                    raise ValueError(
++                        f"solve_for_k_srp: a sigma point's K went negative "
++                        f"({k_point:.6g}) during propagation at t={t0:.3f}s. "
++                        "This is a direct-K Gaussian representation "
++                        "limitation (s36); it is not clipped."
++                    )
++                point_srp = replace(srp, k_srp_m2_per_kg=k_point)
++                # The cache key must include K: sigma points that perturb ONLY
++                # the K dimension share the SAME x[:6] as the mean point, so a
++                # key based on position/velocity alone would silently reuse a
++                # K-independent trajectory for a K-dependent one.
++                key = np.ascontiguousarray(x[:7]).tobytes()
++            else:
++                key = np.ascontiguousarray(x[:6]).tobytes()
+             if key in propagation_cache:
+                 dynamic_propagation_cache_hits += 1
+                 return np.concatenate([propagation_cache[key], x[6:]])
+@@ -922,6 +1018,7 @@ def run_lunar_ukf(
+                 rtol=rtol,
+                 atol=atol,
+                 j2_moon=j2_moon,
++                srp=point_srp,
+             )[-1, :]
+             unique_dynamic_propagations += 1
+             propagation_cache[key] = propagated_dyn
+diff --git a/tests/test_k_srp_bls_solve_for.py b/tests/test_k_srp_bls_solve_for.py
+new file mode 100644
+index 0000000..8ef9c90
+--- /dev/null
++++ b/tests/test_k_srp_bls_solve_for.py
+@@ -0,0 +1,297 @@
++"""Phase 17-R - permanent guards for K_SRP solve-for in the two-way range BLS.
++
++These pin the hard-scope requirements that must hold for every future change
++to this code path, not just today's implementation:
++
++  - default invariance (s12): solve_for_k_srp defaults to False and must not
++    change six-state behaviour at all -- checked bitwise, not to tolerance.
++  - explicit opt-in (s13): SRP-enabled and K-solve-for-enabled are independent
++    switches; enabling one must never silently enable the other.
++  - negative-K non-clipping (s18): a trial step that would drive K negative
++    must be rejected outright, never clamped to zero (clamping would bias the
++    estimate low).
++  - numerical-only scaling (s19/s20): k_srp_scale must not change the physical
++    estimate.
++  - reference configuration untouched (s14): this module must never assign a
++    value to LTB-IRIS-DSN34X-v1's K_SRP.
++"""
++
++from __future__ import annotations
++
++import math
++
++import numpy as np
++import pytest
++
++pytest.importorskip("spiceypy")
++
++from lunar_od.config import Station
++from lunar_od.dynamics import propagate_augmented_state
++from lunar_od.estimators import estimate_two_way_range_bls_lm
++from lunar_od.radiometrics import _interp_state
++from lunar_od.srp import SRPOptions
++from lunar_od.two_way_range import compute_two_way_range_residuals, generate_two_way_range_measurements
++
++_MU_MOON = 4902.800066e9
++_ET_UTC = "2027-03-02 00:00:00"
++_STATION = Station(
++    name="Goldstone DSN", lat_deg=35.30, lon_deg=-116.81, alt_m=969.67,
++    color_rgb=(0.85, 0.325, 0.098), sigma_range_m=5.0,
++    sigma_angle_rad=math.radians(0.001),
++)
++
++
++def setup_module(_module):
++    from lunar_od.spice_loader import load_spice_kernels
++
++    load_spice_kernels()
++
++
++def _fixture(duration_s: float = 6000.0, step_s: float = 60.0):
++    """A short LLO pass with real Earth ephemeris and illuminated SRP geometry."""
++    import spiceypy as spice
++
++    et0 = float(spice.str2et(_ET_UTC))
++    t_pass = np.arange(0.0, duration_s + 0.5 * step_s, step_s)
++    earth_states = np.array([
++        np.asarray(spice.spkezr("EARTH", et0 + t, "J2000", "NONE", "MOON")[0],
++                   dtype=float) * 1e3
++        for t in t_pass
++    ])
++    earth_pos, earth_vel = earth_states[:, :3], earth_states[:, 3:]
++
++    def get_earth_pos(t):
++        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
++        return np.array([_interp_state(t_pass, earth_states, float(ti))[:3]
++                         for ti in t_arr])
++
++    def get_earth_vel(t):
++        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
++        return np.array([_interp_state(t_pass, earth_states, float(ti))[3:]
++                         for ti in t_arr])
++
++    def get_sun_pos(t):
++        # A real Sun direction, fixed magnitude, at a geometry that keeps the
++        # spacecraft mostly illuminated over this short pass -- SRP sensitivity
++        # requires the geometry to actually see sunlight.
++        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
++        return np.tile(np.array([1.4e11, 6.0e10, 0.0]), (t_arr.size, 1))
++
++    r0 = 1737.4e3 + 100e3
++    x_true0 = np.array([r0, 30e3, -20e3, -15.0, math.sqrt(_MU_MOON / r0), 4.0])
++    x_aug0 = np.concatenate([x_true0, np.eye(6).reshape(-1, order="F")])
++    x_aug_truth = propagate_augmented_state(
++        t_pass, x_aug0, _MU_MOON, 0.0, 0.0, get_earth_pos, get_sun_pos,
++        rtol=1e-12, atol=1e-13,
++    )
++    vis = np.ones((t_pass.size, 1), dtype=bool)
++    obs, pass_geo = generate_two_way_range_measurements(
++        t_pass, x_aug_truth[:, :6], (_STATION,), vis, get_earth_pos, get_earth_vel,
++        et0, noise=False,
++    )
++    return dict(et0=et0, t_pass=t_pass, gep=get_earth_pos, gev=get_earth_vel,
++                gsp=get_sun_pos, x_true0=x_true0, obs=obs, pass_geo=pass_geo)
++
++
++@pytest.fixture(scope="module")
++def fx():
++    return _fixture()
++
++
++# ======================================================================
++# s12 - default invariance, checked bitwise
++# ======================================================================
++def test_default_six_state_bls_is_bitwise_unaffected_by_new_kwargs(fx):
++    """Passing the new kwargs at their defaults must be indistinguishable
++    from a call site that has never heard of K_SRP."""
++    x_guess = fx["x_true0"] + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
++    args = (fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"])
++    kw = dict(max_iter=6, rtol=1e-12, atol=1e-13, return_posterior=True)
++
++    x_old, stop_old, stats_old = estimate_two_way_range_bls_lm(*args, **kw)
++    x_new, stop_new, stats_new = estimate_two_way_range_bls_lm(
++        *args, **kw, srp=None, solve_for_k_srp=False)
++
++    assert np.array_equal(x_old, x_new)
++    assert stop_old == stop_new
++    assert stats_old.final_cost == stats_new.final_cost
++    assert stats_old.iterations == stats_new.iterations
++    assert np.array_equal(stats_old.posterior_covariance, stats_new.posterior_covariance)
++    assert stats_new.k_srp_estimate is None
++    assert stats_new.k_srp_prior_status is None
++
++
++def test_default_x_best_stays_a_six_vector_in_every_mode(fx):
++    """x_best must never grow to 7 elements; K always comes back via stats."""
++    x_guess = fx["x_true0"] + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    x_est, _, stats = estimate_two_way_range_bls_lm(
++        fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], max_iter=4, rtol=1e-12, atol=1e-13,
++        srp=srp, solve_for_k_srp=True, return_posterior=True,
++    )
++    assert x_est.shape == (6,)
++    assert stats.k_srp_estimate is not None
++    assert stats.posterior_covariance.shape == (7, 7)
++
++
++# ======================================================================
++# s13 - explicit opt-in; the three modes stay distinct
++# ======================================================================
++def test_solve_for_k_without_srp_is_rejected(fx):
++    x_guess = fx["x_true0"].copy()
++    with pytest.raises(ValueError, match="solve_for_k_srp"):
++        estimate_two_way_range_bls_lm(
++            fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"], max_iter=1, solve_for_k_srp=True,
++        )
++
++
++def test_srp_enabled_fixed_k_does_not_silently_solve_for_k(fx):
++    """SRP ON does not imply K solve-for ON (s13)."""
++    x_guess = fx["x_true0"] + np.array([10.0, -5.0, 3.0, 0.0, 0.0, 0.0])
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    _, _, stats = estimate_two_way_range_bls_lm(
++        fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], max_iter=3, rtol=1e-12, atol=1e-13,
++        srp=srp, solve_for_k_srp=False,
++    )
++    assert stats.k_srp_estimate is None
++
++
++def test_k_srp_initial_requires_solve_for_k_srp(fx):
++    x_guess = fx["x_true0"].copy()
++    with pytest.raises(ValueError):
++        estimate_two_way_range_bls_lm(
++            fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"], max_iter=1, k_srp_initial=0.02,
++        )
++
++
++# ======================================================================
++# s18 - negative K is rejected, never clipped
++# ======================================================================
++def test_negative_k_trial_steps_are_rejected_not_clipped(fx):
++    """Start K very close to zero so an early LM step is likely to try a
++    negative trial value; the estimate must never be clamped to zero and the
++    negative-K rejection counter must be consistent with the final estimate.
++    """
++    x_guess = fx["x_true0"].copy()
++    srp = SRPOptions(k_srp_m2_per_kg=0.001)
++    x_est, stop_reason, stats = estimate_two_way_range_bls_lm(
++        fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], max_iter=15, rtol=1e-12, atol=1e-13,
++        srp=srp, solve_for_k_srp=True, k_srp_initial=0.0005,
++    )
++    assert stats.k_srp_estimate is not None
++    assert stats.k_srp_estimate >= 0.0
++    assert np.isfinite(stats.k_srp_estimate)
++    # A K estimate of exactly 0.0 with rejections recorded would be the
++    # clipping signature this guard exists to catch.
++    if stats.k_srp_negative_step_rejections > 0:
++        assert stats.k_srp_estimate != 0.0
++
++
++# ======================================================================
++# s19/s20 - k_srp_scale is numerical-only
++# ======================================================================
++def test_k_scale_choice_does_not_change_the_physical_estimate(fx):
++    """Two reasonable scale choices (s20 requires >= 2) must agree.
++
++    A moderately informative state prior (sigma_pos=10 m, sigma_vel=0.01 m/s
++    -- a realistic "already have a decent orbit" starting point, not an
++    unconstrained guess) is used to keep the augmented information matrix's
++    eigenvalue spread inside double-precision range.  Without it, this
++    fixture's single 5.5-hour single-station pass gives K's information
++    content in atwa units roughly 1e13-1e16x smaller than the orbital
++    state's (measured directly: see the campaign report), which pushes the
++    shared _safe_covariance_from_information eigenvalue floor (max_eig*1e-14)
++    to engage differently at different scales -- a genuine, documented
++    LIMITATION of that shared safety net on severely ill-conditioned systems,
++    not something Phase 17-R may fix (it is used by every estimator in this
++    module). In the well-posed regime tested here, both scale choices
++    reproduce the SAME K estimate AND the same K variance to machine
++    precision.
++    """
++    x_guess = fx["x_true0"] + np.array([5.0, -3.0, 2.0, 0.0, 0.0, 0.0])
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    prior_cov = np.diag([10.0 ** 2] * 3 + [0.01 ** 2] * 3)
++    results = {}
++    for scale in (1e-2, 2e-2):
++        _, _, stats = estimate_two_way_range_bls_lm(
++            fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"], max_iter=15, rtol=1e-12, atol=1e-13,
++            srp=srp, solve_for_k_srp=True, k_srp_initial=0.012,
++            k_srp_prior_sigma=0.005, prior_covariance=prior_cov,
++            k_srp_scale=scale, return_posterior=True,
++        )
++        results[scale] = stats
++    a, b = results[1e-2], results[2e-2]
++    assert a.k_srp_estimate == b.k_srp_estimate
++    assert a.final_cost == b.final_cost
++    assert a.posterior_covariance[6, 6] == pytest.approx(
++        b.posterior_covariance[6, 6], rel=1e-9)
++
++
++# ======================================================================
++# s14 - reference configuration must never be mutated by this module
++# ======================================================================
++def test_estimators_module_never_imports_reference_config():
++    """The reference spacecraft's K_SRP stays UNKNOWN by never being touched:
++    ``estimators.py`` must not import ``lunar_od.reference_config`` at all,
++    so a solve-for run has no path to write into it."""
++    import inspect
++
++    from lunar_od import estimators
++
++    src = inspect.getsource(estimators)
++    assert "reference_config" not in src
++
++
++# ======================================================================
++# Response responsiveness / zero-sensitivity controls (s55/s56)
++# ======================================================================
++def test_k_correction_is_nonzero_for_an_informative_arc_with_wrong_initial_k(fx):
++    x_guess = fx["x_true0"].copy()
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    _, _, stats = estimate_two_way_range_bls_lm(
++        fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], max_iter=15, rtol=1e-12, atol=1e-13,
++        srp=srp, solve_for_k_srp=True, k_srp_initial=0.02,
++    )
++    assert stats.k_srp_estimate != pytest.approx(0.02, rel=1e-9)
++
++
++def test_k_information_is_negligible_for_the_earliest_available_observation(fx):
++    """Zero-sensitivity control (s56): S_K(t0) = 0 exactly (pinned separately
++    in test_srp_k_sensitivity.py), so the EARLIEST observation this fixture
++    can generate -- one grid step later, since the receive tag at t = t_grid0
++    itself is dropped for want of pre-roll -- must still carry only a tiny
++    fraction of the K information a well-informed later observation carries.
++    This guards against the estimator inventing K information from nothing.
++    """
++    from lunar_od.estimators import _two_way_range_posterior_information_with_k
++
++    # pass_geo.t_s (fixed at fixture-build time) must match the grid passed
++    # here; only the OBSERVATION subset varies between the two cases.
++    obs_early = fx["obs"][fx["obs"][:, 3] == 2.0]
++    obs_late = fx["obs"][fx["obs"][:, 3] == float(fx["obs"][:, 3].max())]
++    assert obs_early.shape[0] > 0 and obs_late.shape[0] > 0
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    prior_inv = np.diag([0.0] * 6 + [1.0 / 0.005**2])
++
++    info_early = _two_way_range_posterior_information_with_k(
++        fx["t_pass"], obs_early, fx["x_true0"], 0.01, srp, fx["pass_geo"],
++        _MU_MOON, 0.0, 0.0, fx["gep"], fx["gsp"],
++        prior_inv, np.ones(obs_early.shape[0]), 1e-12, 1e-13, 0.0,
++    )
++    info_late = _two_way_range_posterior_information_with_k(
++        fx["t_pass"], obs_late, fx["x_true0"], 0.01, srp, fx["pass_geo"],
++        _MU_MOON, 0.0, 0.0, fx["gep"], fx["gsp"],
++        prior_inv, np.ones(obs_late.shape[0]), 1e-12, 1e-13, 0.0,
++    )
++    data_info_early = info_early[6, 6] - prior_inv[6, 6]
++    data_info_late = info_late[6, 6] - prior_inv[6, 6]
++    assert data_info_early >= 0.0 and data_info_late >= 0.0
++    assert data_info_early < 1e-3 * max(data_info_late, 1e-300)
+diff --git a/tests/test_k_srp_srif_solve_for.py b/tests/test_k_srp_srif_solve_for.py
+new file mode 100644
+index 0000000..8e8c8a4
+--- /dev/null
++++ b/tests/test_k_srp_srif_solve_for.py
+@@ -0,0 +1,185 @@
++"""Phase 17-R - permanent guards for K_SRP solve-for in the two-way range SRIF.
++
++Mirrors test_k_srp_bls_solve_for.py's guards (default invariance, explicit
++opt-in, negative-K non-clipping, numerical-only scaling) and adds the gate
++this estimator exists to prove: SRIF and BLS-LM must reach the SAME posterior
++on the SAME linear-Gaussian problem (s32 -- "one of the most important
++gates").
++
++SRIF has no LM damping, so s31 makes k_srp_prior_sigma REQUIRED here (BLS
++allows a data-only solve; SRIF does not) -- checked directly below.
++"""
++
++from __future__ import annotations
++
++import math
++
++import numpy as np
++import pytest
++
++pytest.importorskip("spiceypy")
++
++from lunar_od.config import Station
++from lunar_od.dynamics import propagate_augmented_state
++from lunar_od.estimators import estimate_two_way_range_bls_lm, estimate_two_way_range_srif
++from lunar_od.radiometrics import _interp_state
++from lunar_od.srp import SRPOptions
++from lunar_od.two_way_range import generate_two_way_range_measurements
++
++_MU_MOON = 4902.800066e9
++_ET_UTC = "2027-03-02 00:00:00"
++_STATION = Station(
++    name="Goldstone DSN", lat_deg=35.30, lon_deg=-116.81, alt_m=969.67,
++    color_rgb=(0.85, 0.325, 0.098), sigma_range_m=5.0,
++    sigma_angle_rad=math.radians(0.001),
++)
++
++
++def setup_module(_module):
++    from lunar_od.spice_loader import load_spice_kernels
++
++    load_spice_kernels()
++
++
++def _fixture(duration_s: float = 6000.0, step_s: float = 60.0):
++    import spiceypy as spice
++
++    et0 = float(spice.str2et(_ET_UTC))
++    t_pass = np.arange(0.0, duration_s + 0.5 * step_s, step_s)
++    earth_states = np.array([
++        np.asarray(spice.spkezr("EARTH", et0 + t, "J2000", "NONE", "MOON")[0],
++                   dtype=float) * 1e3
++        for t in t_pass
++    ])
++
++    def get_earth_pos(t):
++        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
++        return np.array([_interp_state(t_pass, earth_states, float(ti))[:3]
++                         for ti in t_arr])
++
++    def get_earth_vel(t):
++        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
++        return np.array([_interp_state(t_pass, earth_states, float(ti))[3:]
++                         for ti in t_arr])
++
++    def get_sun_pos(t):
++        t_arr = np.atleast_1d(np.asarray(t, dtype=float))
++        return np.tile(np.array([1.4e11, 6.0e10, 0.0]), (t_arr.size, 1))
++
++    r0 = 1737.4e3 + 100e3
++    x_true0 = np.array([r0, 30e3, -20e3, -15.0, math.sqrt(_MU_MOON / r0), 4.0])
++    x_aug0 = np.concatenate([x_true0, np.eye(6).reshape(-1, order="F")])
++    x_aug_truth = propagate_augmented_state(
++        t_pass, x_aug0, _MU_MOON, 0.0, 0.0, get_earth_pos, get_sun_pos,
++        rtol=1e-12, atol=1e-13,
++    )
++    vis = np.ones((t_pass.size, 1), dtype=bool)
++    obs, pass_geo = generate_two_way_range_measurements(
++        t_pass, x_aug_truth[:, :6], (_STATION,), vis, get_earth_pos, get_earth_vel,
++        et0, noise=False,
++    )
++    return dict(et0=et0, t_pass=t_pass, gep=get_earth_pos, gev=get_earth_vel,
++                gsp=get_sun_pos, x_true0=x_true0, obs=obs, pass_geo=pass_geo)
++
++
++@pytest.fixture(scope="module")
++def fx():
++    return _fixture()
++
++
++# ======================================================================
++# default invariance, checked bitwise
++# ======================================================================
++def test_default_six_state_srif_is_bitwise_unaffected_by_new_kwargs(fx):
++    x_guess = fx["x_true0"] + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
++    args = (fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"])
++    kw = dict(max_iter=6, rtol=1e-12, atol=1e-13, return_posterior=True)
++
++    x_old, stop_old, stats_old = estimate_two_way_range_srif(*args, **kw)
++    x_new, stop_new, stats_new = estimate_two_way_range_srif(
++        *args, **kw, srp=None, solve_for_k_srp=False)
++
++    assert np.array_equal(x_old, x_new)
++    assert stop_old == stop_new
++    assert stats_old.final_cost == stats_new.final_cost
++    assert np.array_equal(stats_old.posterior_covariance, stats_new.posterior_covariance)
++    assert stats_new.k_srp_estimate is None
++
++
++# ======================================================================
++# s13 explicit opt-in / s31 prior is required for SRIF
++# ======================================================================
++def test_solve_for_k_without_srp_is_rejected(fx):
++    with pytest.raises(ValueError, match="solve_for_k_srp"):
++        estimate_two_way_range_srif(
++            fx["t_pass"], fx["obs"], fx["x_true0"].copy(), fx["pass_geo"],
++            _MU_MOON, 0.0, 0.0, fx["gep"], fx["gsp"], max_iter=1,
++            solve_for_k_srp=True,
++        )
++
++
++def test_srif_k_prior_sigma_is_mandatory_not_optional(fx):
++    """s31: SRIF carries no LM damping, so an unregularized K column would
++    routinely leave r_hat singular. Unlike BLS, a data-only SRIF K solve-for
++    must be refused, not silently attempted."""
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    with pytest.raises(ValueError, match="k_srp_prior_sigma"):
++        estimate_two_way_range_srif(
++            fx["t_pass"], fx["obs"], fx["x_true0"].copy(), fx["pass_geo"],
++            _MU_MOON, 0.0, 0.0, fx["gep"], fx["gsp"], max_iter=1,
++            srp=srp, solve_for_k_srp=True,
++        )
++
++
++# ======================================================================
++# s18 - negative K is rejected, never clipped
++# ======================================================================
++def test_negative_k_trial_steps_are_backtracked_not_clipped(fx):
++    x_guess = fx["x_true0"].copy()
++    srp = SRPOptions(k_srp_m2_per_kg=0.001)
++    x_est, stop_reason, stats = estimate_two_way_range_srif(
++        fx["t_pass"], fx["obs"], x_guess, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], max_iter=15, rtol=1e-12, atol=1e-13,
++        srp=srp, solve_for_k_srp=True, k_srp_initial=0.0005,
++        k_srp_prior_sigma=0.01,
++    )
++    assert stats.k_srp_estimate is not None
++    assert stats.k_srp_estimate >= 0.0
++    assert np.isfinite(stats.k_srp_estimate)
++
++
++# ======================================================================
++# s32 - BLS-SRIF common Gaussian posterior (the most important gate)
++# ======================================================================
++def test_bls_srif_common_posterior_on_the_same_linear_gaussian_problem(fx):
++    """SRIF and BLS-LM must reach the same posterior mean, K estimate, and
++    covariance on the same linearized problem (s32). A well-posed state
++    prior is used for the same reason the BLS oracle needs one: the raw
++    single-pass problem's eigenvalue spread trips the shared
++    eigenvalue-floor safety net differently for slightly different
++    convergence paths (documented in the campaign report), which is a
++    property of that shared helper, not of either estimator's correctness.
++    """
++    x_guess = fx["x_true0"] + np.array([5.0, -3.0, 2.0, 0.0, 0.0, 0.0])
++    srp = SRPOptions(k_srp_m2_per_kg=0.01)
++    prior_cov = np.diag([10.0 ** 2] * 3 + [0.01 ** 2] * 3)
++    common_kw = dict(
++        max_iter=20, rtol=1e-12, atol=1e-13, srp=srp, solve_for_k_srp=True,
++        k_srp_initial=0.012, k_srp_prior_sigma=0.005,
++        prior_covariance=prior_cov, return_posterior=True,
++    )
++    x_bls, _, stats_bls = estimate_two_way_range_bls_lm(
++        fx["t_pass"], fx["obs"], x_guess.copy(), fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], **common_kw)
++    x_srif, _, stats_srif = estimate_two_way_range_srif(
++        fx["t_pass"], fx["obs"], x_guess.copy(), fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"], **common_kw)
++
++    assert np.max(np.abs(x_bls - x_srif)) < 1e-2, "state posterior mean disagrees"
++    assert abs(stats_bls.k_srp_estimate - stats_srif.k_srp_estimate) < 1e-6, (
++        "K posterior mean disagrees between BLS and SRIF"
++    )
++    sigma_bls = math.sqrt(stats_bls.posterior_covariance[6, 6])
++    sigma_srif = math.sqrt(stats_srif.posterior_covariance[6, 6])
++    assert sigma_bls == pytest.approx(sigma_srif, rel=1e-3)
+diff --git a/tests/test_k_srp_srukf_solve_for.py b/tests/test_k_srp_srukf_solve_for.py
+new file mode 100644
+index 0000000..2ee077e
+--- /dev/null
++++ b/tests/test_k_srp_srukf_solve_for.py
+@@ -0,0 +1,221 @@
++"""Phase 17-R - permanent guards for K_SRP solve-for in the SR-UKF.
++
++The two-way-range UKF path remains unsupported (unchanged from before this
++phase: run_lunar_ukf explicitly rejects measurement_type="two_way_range").
++K_SRP is integrated through the qualified counted-Doppler range_rate path
++instead (Phase 17A-R's own qualified observable).
++
++K occupies state index 6 (x0_mci/p0 must be 7-dimensional): each sigma point
++propagates its OWN K through propagate_state's srp= kwarg (s35), and a
++negative-K sigma point is refused, never clipped (s18/s36).
++"""
++
++from __future__ import annotations
++
++import math
++
++import numpy as np
++import pytest
++
++pytest.importorskip("spiceypy")
++
++from lunar_od.config import Station
++from lunar_od.dynamics import propagate_state_with_k_sensitivity
++from lunar_od.filters import (
++    UnscentedTransformConfig,
++    _range_rate_measurement_from_state,
++    run_lunar_ukf,
++)
++from lunar_od.measurements import PassGeometry
++from lunar_od.radiometrics import RangeRatePhysicsConfig
++from lunar_od.srp import SRPOptions
++
++_MU_MOON = 4902.800066e9
++_ET_UTC = "2027-03-02 00:00:00"
++
++
++def setup_module(_module):
++    from lunar_od.spice_loader import load_spice_kernels
++
++    load_spice_kernels()
++
++
++def _station(lat, lon, alt):
++    return Station(name="S", lat_deg=lat, lon_deg=lon, alt_m=alt,
++                  color_rgb=(0.0, 0.0, 0.0), sigma_range_m=1.0,
++                  sigma_angle_rad=1e-5, sigma_range_rate_mps=1e-4)
++
++
++def _fixture(k_truth=0.01, duration_s=600.0, step_s=60.0):
++    import spiceypy as spice
++
++    et0 = float(spice.str2et(_ET_UTC))
++
++    def get_earth_pos(t):
++        return np.tile(np.array([384_400e3, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
++
++    def get_sun_pos(t):
++        return np.tile(np.array([149.6e9, 0.0, 0.0]), (np.size(np.asarray(t)), 1))
++
++    t_pass = np.arange(0.0, duration_s + 1.0, step_s)
++    r0 = 1737.4e3 + 100e3
++    x_true0 = np.array([r0, 30e3, -20e3, -15.0, math.sqrt(_MU_MOON / r0), 4.0])
++    srp = SRPOptions(k_srp_m2_per_kg=k_truth)
++    nom = propagate_state_with_k_sensitivity(
++        t_pass, x_true0, _MU_MOON, 0.0, 0.0, get_earth_pos, get_sun_pos,
++        srp=srp, rtol=1e-12, atol=1e-13)
++    x_truth = nom[:, :6]
++
++    stations = (_station(0.0, 0.0, 0.0), _station(0.0, 90.0, 0.0),
++               _station(45.0, -30.0, 500.0))
++    pass_geo = PassGeometry(
++        t_s=t_pass, earth_pos_mci_m=np.zeros((t_pass.size, 3)),
++        earth_vel_mci_mps=np.zeros((t_pass.size, 3)),
++        x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t_pass.size, axis=0),
++        stations=stations, measurement_type="range_rate",
++        range_rate_physics=RangeRatePhysicsConfig(
++            mode="two_way_counted_doppler", count_interval_s=20.0,
++            counted_doppler_model="four_event_delay"),
++        et0_s=et0,
++    )
++    pre_margin, post_margin = 12.5, 10.5
++    rows = []
++    for time_idx, t_s in enumerate(t_pass, start=1):
++        if t_s < t_pass[0] + pre_margin or t_s > t_pass[-1] - post_margin:
++            continue
++        for sid in range(1, len(stations) + 1):
++            rows.append([t_s, 0.0, 0.0, 0.0, 0.0, sid, time_idx])
++    obs = np.asarray(rows, dtype=float)
++    for i, row in enumerate(obs):
++        ti = int(row[6]) - 1
++        h = _range_rate_measurement_from_state(
++            x_truth[ti], row, pass_geo, _MU_MOON, 0.0, 0.0, get_earth_pos,
++            get_sun_pos, 1e-12, 1e-13)
++        obs[i, 1:5] = h
++    return dict(t_pass=t_pass, x_true0=x_true0, x_truth=x_truth, obs=obs,
++                pass_geo=pass_geo, gep=get_earth_pos, gsp=get_sun_pos,
++                srp=srp, k_truth=k_truth)
++
++
++@pytest.fixture(scope="module")
++def fx():
++    return _fixture()
++
++
++# ======================================================================
++# default invariance, checked bitwise
++# ======================================================================
++def test_default_srukf_is_bitwise_unaffected_by_new_kwargs(fx):
++    x0 = fx["x_true0"] + np.array([20.0, -15.0, 10.0, 0.01, -0.008, 0.005])
++    p0 = np.diag([80.0 ** 2] * 3 + [0.08 ** 2] * 3)
++    args = (fx["t_pass"], fx["obs"], x0, p0, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"])
++    kw = dict(config=UnscentedTransformConfig(alpha=0.35), rtol=1e-12, atol=1e-13)
++
++    r_old = run_lunar_ukf(*args, **kw)
++    r_new = run_lunar_ukf(*args, **kw, srp=None, solve_for_k_srp=False)
++
++    assert np.array_equal(r_old.final_state, r_new.final_state)
++    assert np.array_equal(r_old.final_covariance, r_new.final_covariance)
++
++
++# ======================================================================
++# s13 explicit opt-in / dimension requirement
++# ======================================================================
++def test_solve_for_k_without_srp_is_rejected(fx):
++    x0 = np.concatenate([fx["x_true0"], [0.01]])
++    p0 = np.diag([80.0 ** 2] * 3 + [0.08 ** 2] * 3 + [0.005 ** 2])
++    with pytest.raises(ValueError, match="solve_for_k_srp"):
++        run_lunar_ukf(fx["t_pass"], fx["obs"], x0, p0, fx["pass_geo"], _MU_MOON,
++                     0.0, 0.0, fx["gep"], fx["gsp"], solve_for_k_srp=True)
++
++
++def test_solve_for_k_requires_a_seven_dimensional_state(fx):
++    with pytest.raises(ValueError, match="7-element"):
++        run_lunar_ukf(
++            fx["t_pass"], fx["obs"], fx["x_true0"].copy(),
++            np.diag([80.0 ** 2] * 3 + [0.08 ** 2] * 3), fx["pass_geo"],
++            _MU_MOON, 0.0, 0.0, fx["gep"], fx["gsp"],
++            srp=fx["srp"], solve_for_k_srp=True,
++        )
++
++
++def test_two_way_range_measurement_type_remains_unsupported_with_k(fx):
++    """K_SRP integration must not silently open the pre-existing UKF
++    two-way-range restriction; it goes through counted Doppler only."""
++    x0 = np.concatenate([fx["x_true0"], [0.01]])
++    p0 = np.diag([80.0 ** 2] * 3 + [0.08 ** 2] * 3 + [0.005 ** 2])
++    with pytest.raises(ValueError, match="two_way_range"):
++        run_lunar_ukf(
++            fx["t_pass"], fx["obs"], x0, p0, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"], measurement_type="two_way_range",
++            srp=fx["srp"], solve_for_k_srp=True,
++        )
++
++
++# ======================================================================
++# s36 - negative-K sigma points are refused, never clipped
++# ======================================================================
++def test_a_covariance_producing_negative_k_sigma_points_is_refused(fx):
++    x0 = np.concatenate([fx["x_true0"], [0.001]])
++    # UnscentedTransformConfig's default alpha=1e-3 makes the sigma spread
++    # ~ alpha*sqrt(n)*sigma -- negligible unless alpha is large enough to be
++    # a meaningful spread choice; alpha=0.5 with sigma_K=0.01 against
++    # K0=0.001 pushes a sigma point well past zero.
++    p0 = np.diag([80.0 ** 2] * 3 + [0.08 ** 2] * 3 + [0.01 ** 2])
++    with pytest.raises(ValueError, match="negative K_SRP"):
++        run_lunar_ukf(
++            fx["t_pass"], fx["obs"], x0, p0, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++            fx["gep"], fx["gsp"], srp=fx["srp"], solve_for_k_srp=True,
++            config=UnscentedTransformConfig(alpha=0.5),
++        )
++
++
++# ======================================================================
++# basic recovery
++# ======================================================================
++def test_srukf_recovers_k_from_a_wrong_initial_value(fx):
++    x0 = np.concatenate([
++        fx["x_true0"] + np.array([20.0, -15.0, 10.0, 0.01, -0.008, 0.005]),
++        [1.2 * fx["k_truth"]],
++    ])
++    p0 = np.diag([80.0 ** 2] * 3 + [0.08 ** 2] * 3 + [0.005 ** 2])
++    result = run_lunar_ukf(
++        fx["t_pass"], fx["obs"], x0, p0, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"],
++        process_noise=np.diag([0.01 ** 2] * 3 + [1e-5 ** 2] * 3 + [0.0]),
++        config=UnscentedTransformConfig(alpha=0.35), rtol=1e-12, atol=1e-13,
++        srp=fx["srp"], solve_for_k_srp=True,
++    )
++    assert result.final_state[6] != pytest.approx(1.2 * fx["k_truth"], rel=1e-9)
++    assert result.final_state[6] >= 0.0
++    assert abs(result.final_state[6] - fx["k_truth"]) < abs(
++        1.2 * fx["k_truth"] - fx["k_truth"])
++    assert np.all(np.linalg.eigvalsh(result.final_covariance) > 0.0)
++
++
++# ======================================================================
++# Near-truth convergence, the regime where the counted-Doppler observable
++# is closest to linear in the state and in K (s63's spirit: a UKF that
++# cannot approach truth in the EASY near-linear regime cannot be trusted in
++# the nonlinear one). A true common BLS/SRIF-vs-UKF Gaussian oracle would
++# require a BLS/SRIF estimator built for the counted-Doppler observable,
++# which this phase does not add (BLS/SRIF K_SRP solve-for was integrated for
++# two-way range only); the campaign report's BLS-SRIF common-posterior test
++# already discharges s32 on that observable.
++# ======================================================================
++def test_srukf_converges_closely_starting_near_truth(fx):
++    x0_orbit = fx["x_true0"] + np.array([2.0, -1.0, 1.0, 0.001, -0.001, 0.0005])
++    x0 = np.concatenate([x0_orbit, [1.05 * fx["k_truth"]]])
++    p0 = np.diag([50.0 ** 2] * 3 + [0.05 ** 2] * 3 + [0.003 ** 2])
++    result = run_lunar_ukf(
++        fx["t_pass"], fx["obs"], x0, p0, fx["pass_geo"], _MU_MOON, 0.0, 0.0,
++        fx["gep"], fx["gsp"],
++        process_noise=np.diag([0.001 ** 2] * 3 + [1e-6 ** 2] * 3 + [0.0]),
++        config=UnscentedTransformConfig(alpha=0.35), rtol=1e-12, atol=1e-13,
++        srp=fx["srp"], solve_for_k_srp=True,
++    )
++    assert abs(result.final_state[6] - fx["k_truth"]) < abs(
++        1.05 * fx["k_truth"] - fx["k_truth"]), (
++        "SR-UKF failed to move K closer to truth from a near-truth start"
++    )

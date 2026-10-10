@@ -1,0 +1,418 @@
+{
+ "A_predeclaration_hash": "3a48bc212f2b5b0b26f15953dfd6c2e2cc230a2fdf042cb9cd1e77772c8b9084",
+ "B_phase_to_et_max_abs_diff_s": 0.0,
+ "C_contracts_all_pass": true,
+ "DE_ownership_all_pass": true,
+ "F_rebuild": {
+  "n": 2200,
+  "max_abs_f_perp_diff": 1.354472090042691e-14,
+  "gate": true
+ },
+ "G_d3_anchors": {
+  "n": 50,
+  "max_abs_diff": 0.0,
+  "reproduced": true,
+  "rows": [
+   {
+    "phase": 75.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C0_IDEAL",
+    "d3": 0.060905653472573595,
+    "d4": 0.060905653472573595,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_HALF",
+    "d3": 0.059038656589997074,
+    "d4": 0.059038656589997074,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_NOMINAL",
+    "d3": 0.054746584931397224,
+    "d4": 0.054746584931397224,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_DOUBLE",
+    "d3": 0.04641887687512114,
+    "d4": 0.04641887687512114,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C2_FREE",
+    "d3": 0.034514709974665825,
+    "d4": 0.034514709974665825,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C0_IDEAL",
+    "d3": 0.009664252556599362,
+    "d4": 0.009664252556599362,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_HALF",
+    "d3": 0.00897779430554535,
+    "d4": 0.00897779430554535,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_NOMINAL",
+    "d3": 0.0074559255361593135,
+    "d4": 0.0074559255361593135,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_DOUBLE",
+    "d3": 0.00412132563670653,
+    "d4": 0.00412132563670653,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 75.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C2_FREE",
+    "d3": -0.004028560820622917,
+    "d4": -0.004028560820622917,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C0_IDEAL",
+    "d3": 0.06694923449438456,
+    "d4": 0.06694923449438456,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_HALF",
+    "d3": 0.0661363163133315,
+    "d4": 0.0661363163133315,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_NOMINAL",
+    "d3": 0.06395066379079556,
+    "d4": 0.06395066379079556,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_DOUBLE",
+    "d3": 0.05780150954275248,
+    "d4": 0.05780150954275248,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C2_FREE",
+    "d3": 0.03800041423313594,
+    "d4": 0.03800041423313594,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C0_IDEAL",
+    "d3": 0.05254002471754393,
+    "d4": 0.05254002471754393,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_HALF",
+    "d3": 0.0518904725273564,
+    "d4": 0.0518904725273564,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_NOMINAL",
+    "d3": 0.05026912470096412,
+    "d4": 0.05026912470096412,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_DOUBLE",
+    "d3": 0.04616453215609834,
+    "d4": 0.04616453215609834,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 90.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C2_FREE",
+    "d3": 0.03535977575782667,
+    "d4": 0.03535977575782667,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C0_IDEAL",
+    "d3": 0.05521663875539343,
+    "d4": 0.05521663875539343,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_HALF",
+    "d3": 0.05444858260416466,
+    "d4": 0.05444858260416466,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_NOMINAL",
+    "d3": 0.05256987579059266,
+    "d4": 0.05256987579059266,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_DOUBLE",
+    "d3": 0.048403038099278456,
+    "d4": 0.048403038099278456,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C2_FREE",
+    "d3": 0.04087466657159208,
+    "d4": 0.04087466657159208,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C0_IDEAL",
+    "d3": 0.04932119373895413,
+    "d4": 0.04932119373895413,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_HALF",
+    "d3": 0.04889256204638712,
+    "d4": 0.04889256204638712,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_NOMINAL",
+    "d3": 0.047794013504375094,
+    "d4": 0.047794013504375094,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_DOUBLE",
+    "d3": 0.04494363480992672,
+    "d4": 0.04494363480992672,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 105.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C2_FREE",
+    "d3": 0.03735162516395493,
+    "d4": 0.03735162516395493,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C0_IDEAL",
+    "d3": 0.01933692970696363,
+    "d4": 0.01933692970696363,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_HALF",
+    "d3": 0.019189179907099313,
+    "d4": 0.019189179907099313,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_NOMINAL",
+    "d3": 0.0188379786957531,
+    "d4": 0.0188379786957531,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_DOUBLE",
+    "d3": 0.01810722166774545,
+    "d4": 0.01810722166774545,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C2_FREE",
+    "d3": 0.016934195195403928,
+    "d4": 0.016934195195403928,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C0_IDEAL",
+    "d3": 0.12029312866599051,
+    "d4": 0.12029312866599051,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_HALF",
+    "d3": 0.10428025495139259,
+    "d4": 0.10428025495139259,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_NOMINAL",
+    "d3": 0.07844569454337844,
+    "d4": 0.07844569454337844,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_DOUBLE",
+    "d3": 0.04821529082850026,
+    "d4": 0.04821529082850026,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 135.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C2_FREE",
+    "d3": 0.020388642260279755,
+    "d4": 0.020388642260279755,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C0_IDEAL",
+    "d3": 0.02493806513692444,
+    "d4": 0.02493806513692444,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_HALF",
+    "d3": 0.023824111211067686,
+    "d4": 0.023824111211067686,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_NOMINAL",
+    "d3": 0.021285468930447055,
+    "d4": 0.021285468930447055,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C1_DOUBLE",
+    "d3": 0.0164438503353833,
+    "d4": 0.0164438503353833,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "FIRST_SESSION",
+    "cal": "C2_FREE",
+    "d3": 0.009698967905686945,
+    "d4": 0.009698967905686945,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C0_IDEAL",
+    "d3": 0.13201719838986292,
+    "d4": 0.13201719838986292,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_HALF",
+    "d3": 0.11481909095208541,
+    "d4": 0.11481909095208541,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_NOMINAL",
+    "d3": 0.08546172235901102,
+    "d4": 0.08546172235901102,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C1_DOUBLE",
+    "d3": 0.049548559824676056,
+    "d4": 0.049548559824676056,
+    "abs_diff": 0.0
+   },
+   {
+    "phase": 150.0,
+    "schedule": "ALL_FEASIBLE_SESSIONS",
+    "cal": "C2_FREE",
+    "d3": 0.019039018435892785,
+    "d4": 0.019039018435892785,
+    "abs_diff": 0.0
+   }
+  ]
+ }
+}

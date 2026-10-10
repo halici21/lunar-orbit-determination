@@ -1,0 +1,236 @@
+{
+  "cadence_family": [
+    {
+      "cadence_s": 90.0,
+      "traj_samples": 1179,
+      "visible_obs": 8,
+      "mean_off_boresight_deg": 1.0672170578144923e-07,
+      "f_perp_range_only": 0.29548600839218875,
+      "f_perp_combined": 0.2601512306673155,
+      "sigma_k_frac_combined": 0.013263240904498767
+    },
+    {
+      "cadence_s": 30.0,
+      "traj_samples": 3535,
+      "visible_obs": 22,
+      "mean_off_boresight_deg": 4.895689597831537,
+      "f_perp_range_only": 0.29521536695668976,
+      "f_perp_combined": 0.26375662268758043,
+      "sigma_k_frac_combined": 0.00858684492011016
+    },
+    {
+      "cadence_s": 10.0,
+      "traj_samples": 10602,
+      "visible_obs": 50,
+      "mean_off_boresight_deg": 6.8172281917308855,
+      "f_perp_range_only": 0.29498986564008106,
+      "f_perp_combined": 0.263609102525533,
+      "sigma_k_frac_combined": 0.005825257364085771
+    }
+  ],
+  "range_only": {
+    "n_obs": 3934.0,
+    "raw_i_kk": 94054698.14179453,
+    "conditional_k_information": 8184547.736793388,
+    "orthogonal_fraction": 0.29498986564008106,
+    "theta_k_deg": 17.156929672304972,
+    "smallest_scaled_singular_value": 818.4547808189109,
+    "scaled_condition": 6921720258568912.0,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.9999999878101308,
+    "qualified_sigma_k": 0.00034954464805957034,
+    "fractional_sigma_k": 0.034954464805957035,
+    "rank_margin": 7733119.220244813
+  },
+  "noise_sweep": [
+    {
+      "sigma_px": 0.1,
+      "source": "dedicated-camera best case",
+      "f_perp": 0.31930825488106934,
+      "theta_k_deg": 18.621096238492417,
+      "sigma_k_frac": 0.029745905757358086,
+      "n_rows": 100
+    },
+    {
+      "sigma_px": 0.25,
+      "source": "LONEStar best in-flight",
+      "f_perp": 0.32527195880995247,
+      "theta_k_deg": 18.98205234034133,
+      "sigma_k_frac": 0.03125697291134408,
+      "n_rows": 100
+    },
+    {
+      "sigma_px": 1.0,
+      "source": "LONEStar worst in-flight",
+      "f_perp": 0.3245797873150507,
+      "theta_k_deg": 18.94011848106345,
+      "sigma_k_frac": 0.031739562038025505,
+      "n_rows": 100
+    },
+    {
+      "sigma_px": 2.5,
+      "source": "Federici et al. 2025 nominal",
+      "f_perp": 0.31786172570612875,
+      "theta_k_deg": 18.53366030029259,
+      "sigma_k_frac": 0.03243467072685244,
+      "n_rows": 100
+    }
+  ],
+  "unreachable_limit": {
+    "n_obs": 4034.0,
+    "raw_i_kk": 168020566205.35114,
+    "conditional_k_information": 11514470987.811647,
+    "orthogonal_fraction": 0.26178259772363244,
+    "theta_k_deg": 15.175861512989004,
+    "smallest_scaled_singular_value": 1151447.0987510695,
+    "scaled_condition": 1.137066518106567e+16,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.9999999999860392,
+    "qualified_sigma_k": 9.31918654166183e-06,
+    "fractional_sigma_k": 0.000931918654166183,
+    "rank_margin": 6033492.799011267
+  },
+  "optical_only": {
+    "n_obs": 100.0,
+    "raw_i_kk": 2686824.184115351,
+    "conditional_k_information": 184061.39507216148,
+    "orthogonal_fraction": 0.2617349569857872,
+    "theta_k_deg": 15.173033289022289,
+    "smallest_scaled_singular_value": 18.40613950673629,
+    "scaled_condition": 1.137625135674605e+16,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.9999999999860364,
+    "qualified_sigma_k": 0.0023308731831227485,
+    "fractional_sigma_k": 0.23308731831227486,
+    "rank_margin": 6032011.278947505
+  },
+  "information_class": "MARGINAL_DIRECTION_GAIN",
+  "improvement_factor": 1.175101712857089,
+  "f_perp_best_combined": 0.32527195880995247,
+  "attitude_random_sweep": [
+    {
+      "sigma_att_rad": 3.878509448876288e-05,
+      "source": "BCT XACT in-orbit (MinXSS)",
+      "sigma_px_effective": 0.35130793886503026,
+      "f_perp": 0.3256898065934853,
+      "sigma_k_frac": 0.03143306539905525
+    },
+    {
+      "sigma_att_rad": 4.84813681109536e-05,
+      "source": "Apollo sextant RMS sighting",
+      "sigma_px_effective": 0.39709347905593145,
+      "f_perp": 0.3257385923968139,
+      "sigma_k_frac": 0.03147716725498887
+    },
+    {
+      "sigma_att_rad": 0.0001939254724438144,
+      "source": "compact tracker pixel scale",
+      "sigma_px_effective": 1.2591392686037142,
+      "f_perp": 0.32365378966853836,
+      "sigma_k_frac": 0.03184085027094572
+    },
+    {
+      "sigma_att_rad": 0.0005817764173314432,
+      "source": "coarse tracker, 3-sigma roll",
+      "sigma_px_effective": 3.7106448603523168,
+      "f_perp": 0.31223401959942526,
+      "sigma_k_frac": 0.03302184824908343
+    },
+    {
+      "sigma_att_rad": 0.0005,
+      "source": "R1O conservative 0.5 mrad floor",
+      "sigma_px_effective": 3.191624498926646,
+      "f_perp": 0.3145240409114104,
+      "sigma_k_frac": 0.03278067179398792
+    }
+  ],
+  "attitude_bias": [
+    {
+      "bias_arcsec": 1.0,
+      "k_shift": -5.6412945988156205e-06,
+      "k_shift_frac": -0.000564129459881562,
+      "sigma_k_frac_solved": 0.031261164826470234
+    },
+    {
+      "bias_arcsec": 8.0,
+      "k_shift": -4.5130356790524964e-05,
+      "k_shift_frac": -0.004513035679052496,
+      "sigma_k_frac_solved": 0.03126706122738137
+    },
+    {
+      "bias_arcsec": 40.0,
+      "k_shift": -0.00022565178395262918,
+      "k_shift_frac": -0.022565178395262918,
+      "sigma_k_frac_solved": 0.03126770446075692
+    },
+    {
+      "bias_arcsec": 120.0,
+      "k_shift": -0.0006769553518579122,
+      "k_shift_frac": -0.06769553518579122,
+      "sigma_k_frac_solved": 0.03126774785936135
+    }
+  ],
+  "map_random_sweep": [
+    {
+      "map_sigma_m": 50.0,
+      "sigma_px_effective": 3.1285392899108375,
+      "f_perp": 0.3148171033434807,
+      "sigma_k_frac": 0.03275003945674466
+    },
+    {
+      "map_sigma_m": 200.0,
+      "sigma_px_effective": 12.476643355336117,
+      "f_perp": 0.2980468893680881,
+      "sigma_k_frac": 0.034595743531968405
+    }
+  ],
+  "map_bias": [
+    {
+      "map_sigma_m": 50.0,
+      "k_shift": -0.00037093686906166566,
+      "k_shift_frac": -0.037093686906166566,
+      "sigma_k_frac_solved": 0.03409413502905902
+    },
+    {
+      "map_sigma_m": 200.0,
+      "k_shift": -0.0014837474762466627,
+      "k_shift_frac": -0.14837474762466626,
+      "sigma_k_frac_solved": 0.03479199588960255
+    }
+  ],
+  "camera_calibration": [
+    {
+      "focal_rel_error": 0.0001,
+      "f_perp": 0.32527175971323136,
+      "sigma_k_frac": 0.03125690522880324,
+      "n_rows": 100
+    },
+    {
+      "focal_rel_error": 0.001,
+      "f_perp": 0.32526996631863003,
+      "sigma_k_frac": 0.03125629587059677,
+      "n_rows": 100
+    },
+    {
+      "focal_rel_error": 0.01,
+      "f_perp": 0.3252518818622557,
+      "sigma_k_frac": 0.03125018096012199,
+      "n_rows": 100
+    }
+  ],
+  "combined_realistic": {
+    "n_obs": 4034.0,
+    "raw_i_kk": 94071689.69381091,
+    "conditional_k_information": 9319236.531954143,
+    "orthogonal_fraction": 0.31474634457336015,
+    "theta_k_deg": 18.34550153116622,
+    "smallest_scaled_singular_value": 931.9236531440717,
+    "scaled_condition": 6080368513029526.0,
+    "rank": 6.0,
+    "weakest_mode_k_component": 0.9999999982576459,
+    "qualified_sigma_k": 0.00032757430829551424,
+    "fractional_sigma_k": 0.032757430829551425,
+    "rank_margin": 8250813.738968387,
+    "sigma_px_effective": 3.143714573498133
+  }
+}

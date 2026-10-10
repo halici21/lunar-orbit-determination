@@ -1,0 +1,81 @@
+{
+  "mid-arc": {
+    "index": 59,
+    "t_s": 3540.0,
+    "phi_symmetric": false,
+    "fd_step_halving": 1.3109711373025229e-05,
+    "fd_precision_floor": 1.3109711373025229e-05,
+    "f_order_rel_err": 8.8784263695512e-06,
+    "c_order_rel_err": 1.0000000304549483,
+    "f_order_err_over_floor": 0.6772404149049083,
+    "c_over_f_separation": 112632.575732618,
+    "f_order_matches": true,
+    "c_order_matches": false,
+    "per_component": {
+      "x": {
+        "f_order": 5.192939051407462e-07,
+        "c_order": 0.9689969067367303
+      },
+      "y": {
+        "f_order": 0.00018514219339016544,
+        "c_order": 2.1672228953982438
+      },
+      "z": {
+        "f_order": 7.011158499670985e-06,
+        "c_order": 5.37498559698027
+      },
+      "vx": {
+        "f_order": 1.5561941175110726e-05,
+        "c_order": 1.0000006407519182
+      },
+      "vy": {
+        "f_order": 4.952262329922516e-07,
+        "c_order": 1.0000000304549483
+      },
+      "vz": {
+        "f_order": 3.222686771161566e-06,
+        "c_order": 1.000000142317301
+      }
+    }
+  },
+  "end-arc": {
+    "index": 118,
+    "t_s": 7080.0,
+    "phi_symmetric": false,
+    "fd_step_halving": 3.579854046596343e-05,
+    "fd_precision_floor": 3.579854046596343e-05,
+    "f_order_rel_err": 2.5901783473528806e-05,
+    "c_order_rel_err": 1.000000033612368,
+    "f_order_err_over_floor": 0.7235430030494044,
+    "c_over_f_separation": 38607.38140423232,
+    "f_order_matches": true,
+    "c_order_matches": false,
+    "per_component": {
+      "x": {
+        "f_order": 1.6767833274536656e-05,
+        "c_order": 0.9842166109435662
+      },
+      "y": {
+        "f_order": 0.0016664358234887429,
+        "c_order": 6.823150683157203
+      },
+      "z": {
+        "f_order": 3.2124579111455384e-05,
+        "c_order": 2.7058293149800283
+      },
+      "vx": {
+        "f_order": 0.00022509340807554698,
+        "c_order": 1.0000017877201899
+      },
+      "vy": {
+        "f_order": 4.661301967464722e-06,
+        "c_order": 1.000000033612368
+      },
+      "vz": {
+        "f_order": 5.255793006592902e-06,
+        "c_order": 0.9999999343836204
+      }
+    }
+  },
+  "gate": "PASS"
+}

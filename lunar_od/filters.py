@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import erf, sqrt
 from time import perf_counter
 from typing import Literal
@@ -791,6 +791,8 @@ def run_lunar_ukf(
     fast_sigma_propagator: Callable | None = None,
     use_stm_linearization: bool = False,
     j2_moon: float = 0.0,
+    srp=None,
+    solve_for_k_srp: bool = False,
 ) -> LunarUKFResult:
     """Run a sequential UKF over one prepared lunar OD arc.
 
@@ -803,6 +805,26 @@ def run_lunar_ukf(
     standard and square-root forms use the same process function). A caller
     supplying ``fast_sigma_propagator`` owns that propagator's force model and
     must build it with the same ``j2_moon`` (R0A).
+
+    Phase 17-R (opt-in K_SRP solve-for). Same three independent switches as
+    the BLS/SRIF two-way range estimators (s13):
+
+    - ``srp=None`` (default): SRP off, identical to every prior phase.
+    - ``srp=SRPOptions(...)``, ``solve_for_k_srp=False``: SRP on with a FIXED
+      coefficient; the state stays 6-dimensional.
+    - ``srp=SRPOptions(...)``, ``solve_for_k_srp=True``: ``x0_mci``/``p0`` must
+      be 7-dimensional (state + K at index 6) and ``bias_mode`` must be
+      ``None``/``"none"`` -- K and measurement bias are not combined in this
+      phase. K propagates as a constant (Q_K = 0 unless the caller's
+      ``process_noise`` says otherwise) while EACH sigma point's orbital
+      state propagates under THAT point's own K-dependent SRP acceleration
+      (s35): the existing bias-state pattern (dynamics on ``x[:6]``, the
+      remainder carried through unchanged) already gives this for free, K
+      simply also feeds ``propagate_state``'s ``srp=`` for its own point.
+      ``final_state[6]`` is the K estimate; ``final_covariance[6, 6]`` its
+      variance. Two-way range measurements remain unsupported (unchanged from
+      before this phase); counted-Doppler range-rate is the qualified path
+      for K sensitivity (Phase 17A-R).
     """
     start_time = perf_counter()
     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
@@ -813,6 +835,28 @@ def run_lunar_ukf(
         )
     if measurement_type not in {"position", "range_rate"}:
         raise ValueError("measurement_type must be 'position' or 'range_rate'.")
+    if solve_for_k_srp:
+        if srp is None or not srp.enabled:
+            raise ValueError(
+                "solve_for_k_srp=True requires an active srp=SRPOptions(...) "
+                "(Phase 17-R s13)."
+            )
+        if bias_mode not in (None, "none"):
+            raise ValueError(
+                "K_SRP solve-for is not combined with UKF measurement-bias "
+                "states in this phase (minimal scope, s71)."
+            )
+        if fast_sigma_propagator is not None:
+            raise ValueError(
+                "solve_for_k_srp is incompatible with a caller-supplied "
+                "fast_sigma_propagator, which owns its own force model and "
+                "has no K dependence."
+            )
+        if use_stm_linearization:
+            raise ValueError(
+                "solve_for_k_srp requires the unscented (sigma-point) process "
+                "path; use_stm_linearization bypasses it."
+            )
     # FA-01 runtime defense-in-depth: one check per arc, before any sigma-point
     # work, covering callers that bypass scenario-config validation.
     validate_ukf_measurement_support(
@@ -838,6 +882,14 @@ def run_lunar_ukf(
     if x0.size < 6:
         raise ValueError("x0_mci must contain at least the 6 dynamic state elements.")
     nx = x0.size
+    if solve_for_k_srp:
+        if nx != 7:
+            raise ValueError(
+                f"solve_for_k_srp=True requires a 7-element state (6-state + "
+                f"K_SRP at index 6); got {nx} elements."
+            )
+        if x0[6] < 0.0:
+            raise ValueError(f"x0_mci[6] (K_SRP) must be non-negative; got {x0[6]}.")
     frozen_indices = _validate_state_constraints(
         nx,
         frozen_state_indices,
@@ -848,7 +900,28 @@ def run_lunar_ukf(
     state = UKFState(x0, _symmetrize(np.asarray(p0, dtype=float)))
     if state.p.shape != (nx, nx):
         raise ValueError("p0 must be an NxN covariance matrix matching x0_mci.")
-    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx, len(pass_geo.stations), bias_mode)
+    # K occupies index 6 but is not a measurement-bias state; size the bias
+    # config off the dynamics+bias portion only (nx-1), so bias_mode=None
+    # still resolves to "none" instead of raising on the extra dimension.
+    nx_for_bias = nx - 1 if solve_for_k_srp else nx
+    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx_for_bias, len(pass_geo.stations), bias_mode)
+
+    if solve_for_k_srp:
+        # s36: verify EVERY initial sigma point respects the K >= 0 domain.
+        # Do not clip -- a covariance that produces an infeasible sigma point
+        # is a scientifically invalid Gaussian representation of this
+        # parameter for THIS prior, and must be reported as such, not masked.
+        probe_points, _, _ = sigma_points(x0, state.p, config or UnscentedTransformConfig())
+        k_col = probe_points[:, 6]
+        if np.any(k_col < 0.0):
+            raise ValueError(
+                "solve_for_k_srp: the initial covariance produces sigma "
+                f"points with negative K_SRP (min={k_col.min():.6g}, "
+                f"max={k_col.max():.6g}). This is a direct-K Gaussian "
+                "representation limitation (s36), not a numerical bug -- "
+                "choose a covariance whose spread keeps K >= 0 for all "
+                "sigma points, or classify this qualification as blocked."
+            )
 
     if process_noise_model not in {"discrete", "continuous_white_acceleration"}:
         raise ValueError("process_noise_model must be 'discrete' or 'continuous_white_acceleration'.")
@@ -907,7 +980,30 @@ def run_lunar_ukf(
             if fast_sigma_propagator is not None:
                 unique_dynamic_propagations += 1
                 return np.concatenate([fast_sigma_propagator(t0, t1, x[:6]), x[6:]])
-            key = np.ascontiguousarray(x[:6]).tobytes()
+            point_srp = srp
+            if solve_for_k_srp:
+                k_point = float(x[6])
+                if k_point < 0.0:
+                    # s18/s36: a sigma point drifted negative during the
+                    # sequential run (not caught by the s36 initial-point
+                    # check, which only covers t=0). Refuse rather than
+                    # clip: the correct response is a smaller/better-chosen
+                    # covariance, classified as a limitation, not a silent
+                    # bias toward K=0.
+                    raise ValueError(
+                        f"solve_for_k_srp: a sigma point's K went negative "
+                        f"({k_point:.6g}) during propagation at t={t0:.3f}s. "
+                        "This is a direct-K Gaussian representation "
+                        "limitation (s36); it is not clipped."
+                    )
+                point_srp = replace(srp, k_srp_m2_per_kg=k_point)
+                # The cache key must include K: sigma points that perturb ONLY
+                # the K dimension share the SAME x[:6] as the mean point, so a
+                # key based on position/velocity alone would silently reuse a
+                # K-independent trajectory for a K-dependent one.
+                key = np.ascontiguousarray(x[:7]).tobytes()
+            else:
+                key = np.ascontiguousarray(x[:6]).tobytes()
             if key in propagation_cache:
                 dynamic_propagation_cache_hits += 1
                 return np.concatenate([propagation_cache[key], x[6:]])
@@ -922,6 +1018,7 @@ def run_lunar_ukf(
                 rtol=rtol,
                 atol=atol,
                 j2_moon=j2_moon,
+                srp=point_srp,
             )[-1, :]
             unique_dynamic_propagations += 1
             propagation_cache[key] = propagated_dyn

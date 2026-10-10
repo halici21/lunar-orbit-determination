@@ -2018,7 +2018,8 @@ class R3GenerationEvaluationParity(unittest.TestCase):
             metadata["counted_doppler_model_version"],
             "r3.counted-doppler.exact-station.v1",
         )
-        self.assertEqual(metadata["earth_ephemeris_method"], "linear_grid_interpolation")
+        # Phase 17-HARDEN-D23: was "linear_grid_interpolation" (R3-P22).
+        self.assertEqual(metadata["earth_ephemeris_method"], "cubic_hermite_grid_interpolation")
         self.assertEqual(
             metadata["spacecraft_state_interpolation_method"], "cubic_hermite"
         )

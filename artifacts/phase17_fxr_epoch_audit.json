@@ -1,0 +1,389 @@
+{
+ "phase": "17-FXR",
+ "configuration": {
+  "orbits": 15.0,
+  "stations": [
+   "Goldstone DSN",
+   "Madrid DSN",
+   "Canberra DSN"
+  ],
+  "cadence_s": 90.0
+ },
+ "epoch_reconstruction": {
+  "scenario_et": 857806356.99998,
+  "scenario_et_source": "phase7_measurement_geometry_manifest.json:phase7_et0 (phase17_r1m_core.campaign_epoch)",
+  "historical_earth_table_start_et": 857302356.99998,
+  "earth_table_source": "ephemeris_data.mat:first_jd -> od_gravity_covariance_campaign.ET0",
+  "campaign_module_et0": 857302356.99998,
+  "campaign_module_et0_matches_mat": true,
+  "manifest_canonical_et0": 857302356.99998,
+  "manifest_offset_s": 504000.0,
+  "delta_et_seconds": 504000.0,
+  "delta_et_days": 5.833333333333333,
+  "delta_matches_manifest_offset": true,
+  "orbit_period_s": 7067.459765661043,
+  "spacecraft_x0_equals_manifest_x0_truth_phase7": true,
+  "x0_truth_provenance": "canonical X_TRUE0 propagated from the canonical ET0 to PHASE7_ET0 with the qualified G100 path at rtol 1e-13, harmonic epoch held at the canonical ET0 for that leg",
+  "scenario_utc": "2027-03-08T19:31:27.814"
+ },
+ "runtime_audit": {
+  "A_LEGACY_OFFSET_CLAMPED": {
+   "rotation_et_origin": 857806356.99998,
+   "earth_et_origin": 857302356.99998,
+   "earth_minus_rotation_origin_s": -504000.0,
+   "max_abs_earth_pos_diff_vs_spice_at_measurement_et_m": 388922420.0625129,
+   "max_abs_earth_pos_diff_vs_spice_at_table_et_m_before_clamp": 0.9696499109268188,
+   "max_abs_earth_vel_diff_vs_spice_at_measurement_et_mps": 1115.1709420898478
+  },
+  "D_CANONICAL": {
+   "rotation_et_origin": 857806356.99998,
+   "earth_et_origin": 857806356.99998,
+   "earth_minus_rotation_origin_s": 0.0,
+   "max_abs_earth_pos_diff_vs_spice_at_measurement_et_m": 0.0,
+   "max_abs_earth_pos_diff_vs_spice_at_table_et_m_before_clamp": 366404331.4066355,
+   "max_abs_earth_vel_diff_vs_spice_at_measurement_et_mps": 0.0
+  },
+  "moon_to_earth_direction_error_deg": {
+   "at_t0": 70.79148958591152,
+   "at_clamp": 71.08101656132412,
+   "at_arc_end": 82.62442035589248,
+   "max": 82.62442035589248
+  },
+  "sun_moon_earth_angle_deg": {
+   "correct_epoch": 174.39279850571506,
+   "legacy_table_epoch": 114.24548007729796,
+   "note": "angle at the Moon between the Moon->Sun and Moon->Earth directions; 180 deg = Earth exactly anti-sunward"
+  },
+  "epoch_table": [
+   {
+    "quantity": "spacecraft initial state / propagation t=0",
+    "et": 857806356.99998,
+    "source": "phase8_X_ext at T_ext=0, propagated to phase7_et0 (manifest x0_truth_provenance)"
+   },
+   {
+    "quantity": "Sun position (SRP)",
+    "et": "et0 + t",
+    "source": "build_range_arc.sun_at: spkezr(SUN, et0 + t)"
+   },
+   {
+    "quantity": "Earth rotation (ITRF93, sxform) for stations and visibility",
+    "et": "pass_geo.et0_s + t = et0 + t_start + t_local",
+    "source": "generate_two_way_range_measurements / sample_j2000_to_itrf93_transforms"
+   },
+   {
+    "quantity": "Earth inertial position/velocity (station centre, light time)",
+    "et_legacy": "campaign ET0 + t_local  (= et0 - 504000 s - t_start + ...)",
+    "et_canonical": "pass_geo.et0_s + t_local",
+    "source": "build_range_arc -> EarthEphemeris.pos/vel"
+   },
+   {
+    "quantity": "range receive tag t3",
+    "et": "pass_geo.et0_s + obs[:,0]",
+    "source": "production two-way range; t1/t2u/t2d solved from t3 through the same providers"
+   },
+   {
+    "quantity": "dynamics Earth third body",
+    "et": "n/a",
+    "source": "mu_earth = 0; constant placeholder vector never used as a force"
+   }
+  ]
+ },
+ "clamp": {
+  "table_duration_s": 28260.0,
+  "table_nodes": 472,
+  "table_cadence_s": 60.0,
+  "table_nominal_span": "0 .. 4 * T_ORBIT (T_END), sampled with arange(0, T_END + 30, 60)",
+  "table_duration_orbits": 3.998607836058441,
+  "arc_duration_s": 106011.89648491565,
+  "arc_grid_end_s": 106020.0,
+  "arc_duration_orbits": 15.0,
+  "clamp_start_scenario_t_s": 28260.0,
+  "clamp_start_et_table_epoch": 857330616.99998,
+  "clamp_start_et_scenario_epoch": 857834616.99998,
+  "clamp_start_orbit_number": 3.998607836058441,
+  "interpolation_method": "numpy.interp (piecewise linear) per component",
+  "out_of_range_behaviour_after_end": "HELD_CONSTANT (last node), not extrapolated, not repeated",
+  "out_of_range_behaviour_before_start": "HELD_CONSTANT (first node)",
+  "held_constant_after_end_verified": true,
+  "held_constant_before_start_verified": true,
+  "velocity_also_held_not_zeroed_mps": 967.1014397411675,
+  "position_velocity_inconsistent_after_clamp": true,
+  "hermite_wobble_of_frozen_earth_between_nodes_m": 8375.13624557327,
+  "w15_legacy_obs_total": 782,
+  "w15_legacy_obs_after_clamp": 590,
+  "w15_legacy_fraction_after_clamp": 0.7544757033248082,
+  "arc_fraction_after_clamp": 0.733446519524618
+ },
+ "attribution": {
+  "total_repair_delta_f_perp": -0.160784441949873,
+  "epoch_repair_given_no_clamp_delta_f_perp": -0.11515912309829512,
+  "epoch_repair_given_clamp_delta_f_perp": -0.1665644769812773,
+  "clamp_repair_given_correct_epoch_delta_f_perp": 0.005780035031404299,
+  "clamp_repair_given_offset_epoch_delta_f_perp": -0.04562531885157789,
+  "interaction_delta_f_perp": 0.051405353882982174,
+  "epoch_main_effect_shapley_delta_f_perp": -0.1408618000397862,
+  "clamp_main_effect_shapley_delta_f_perp": -0.019922641910086795,
+  "total_repair_ratio_sigma_k_frac": 2.7392138977469904,
+  "epoch_repair_given_no_clamp_ratio_sigma_k_frac": 2.1689438606543887,
+  "clamp_repair_given_correct_epoch_ratio_sigma_k_frac": 0.8921683806657589
+ },
+ "arms": {
+  "A_LEGACY_OFFSET_CLAMPED": {
+   "fixture": "LEGACY_OFFSET_CLAMPED_TABLE_SUPERSEDED_BY_PHASE17_FXR",
+   "earth": {
+    "fixture": "LEGACY_OFFSET_CLAMPED_TABLE_SUPERSEDED_BY_PHASE17_FXR",
+    "et_origin": 857302356.99998,
+    "t_min_s": 0.0,
+    "t_max_s": 28260.0,
+    "clamp_after_s": 28260.0,
+    "frame": "J2000",
+    "center": "MOON",
+    "units": "m, m/s"
+   },
+   "n_obs": 782,
+   "bitwise_vs_geo_cache": true,
+   "geo_cache": "FIXTURE_PUBLISHED",
+   "nom48_sha256": "42a17f936b5512da6e8eeaaebdbe6093742fcaad4baf0f0bb4209d35c13548d6",
+   "metrics": {
+    "n_obs": 782,
+    "k_column_norm": 4274.174309160833,
+    "f_perp": 0.2522919965229832,
+    "theta_k_deg": 14.613182283011557,
+    "raw_k_information": 18268566.025090486,
+    "conditional_k_information": 1162817.0907819087,
+    "sigma_k": 0.0009273513250655349,
+    "sigma_k_frac": 0.09273513250655349,
+    "design_singular_values": [
+     1041328994.6701102,
+     13214452.563928274,
+     1579078.5555405808,
+     1114386.8894548868,
+     1045607.8504540893,
+     42049.952191127966,
+     10.783399664243646
+    ],
+    "smallest_design_sv": 10.783399664243646,
+    "design_condition": 96567782.6189659,
+    "weakest_mode_k_component": 0.9999999967347587,
+    "k_state_correlations": [
+     -0.300665415409832,
+     0.33736529092907436,
+     -0.2951416665190105,
+     0.28418892122233896,
+     0.29204087944564056,
+     -0.2949576218346165
+    ],
+    "max_abs_k_state_correlation": 0.33736529092907436,
+    "state_column_norms": [
+     654.7769311910378,
+     105.52768231234722,
+     191.56908670151472,
+     74286.07957470056,
+     578428.9772109314,
+     517570.6595999625
+    ],
+    "rank_margin": 6662381.157463631
+   }
+  },
+  "B_OFFSET_EPOCH_UNCLAMPED": {
+   "fixture": "DIAGNOSTIC_OFFSET_EPOCH_UNCLAMPED",
+   "earth": {
+    "fixture": "DIAGNOSTIC_OFFSET_EPOCH_UNCLAMPED",
+    "et_origin": 857302356.99998,
+    "t_min_s": 0.0,
+    "t_max_s": 106020.0,
+    "clamp_after_s": Infinity,
+    "frame": "J2000",
+    "center": "MOON",
+    "units": "m, m/s"
+   },
+   "n_obs": 768,
+   "bitwise_vs_geo_cache": true,
+   "geo_cache": "FIXTURE_OFFSET_ONLY",
+   "nom48_sha256": "42a17f936b5512da6e8eeaaebdbe6093742fcaad4baf0f0bb4209d35c13548d6",
+   "metrics": {
+    "n_obs": 768,
+    "k_column_norm": 4131.49860061956,
+    "f_perp": 0.20666667767140529,
+    "theta_k_deg": 11.927082200170153,
+    "raw_k_information": 17069280.686921384,
+    "conditional_k_information": 729048.0216476062,
+    "sigma_k": 0.0011711753742428338,
+    "sigma_k_frac": 0.11711753742428338,
+    "design_singular_values": [
+     1013044127.1967499,
+     12705741.155259555,
+     1678994.5018697926,
+     1160053.3445402286,
+     1071197.8018683274,
+     102924.63498525487,
+     8.538430884880974
+    ],
+    "smallest_design_sv": 8.538430884880974,
+    "design_condition": 118645233.63309649,
+    "weakest_mode_k_component": 0.9999999987047044,
+    "k_state_correlations": [
+     -0.5665036688512809,
+     0.5689406003097554,
+     -0.5083724313100951,
+     0.4787818336180277,
+     0.537919612453772,
+     -0.4722042439696973
+    ],
+    "max_abs_k_state_correlation": 0.5689406003097554,
+    "state_column_norms": [
+     637.0471851743265,
+     102.48002118698852,
+     186.47318704919275,
+     72102.48527281765,
+     562517.9111929737,
+     503682.9093248188
+    ],
+    "rank_margin": 5422648.307375171
+   }
+  },
+  "C_CORRECT_EPOCH_CLAMPED": {
+   "fixture": "DIAGNOSTIC_CORRECT_EPOCH_CLAMPED",
+   "earth": {
+    "fixture": "DIAGNOSTIC_CORRECT_EPOCH_CLAMPED",
+    "et_origin": 857806356.99998,
+    "t_min_s": 0.0,
+    "t_max_s": 106020.0,
+    "clamp_after_s": 28260.0,
+    "frame": "J2000",
+    "center": "MOON",
+    "units": "m, m/s"
+   },
+   "n_obs": 968,
+   "bitwise_vs_geo_cache": true,
+   "geo_cache": "FIXTURE_CLAMP_ONLY",
+   "nom48_sha256": "42a17f936b5512da6e8eeaaebdbe6093742fcaad4baf0f0bb4209d35c13548d6",
+   "metrics": {
+    "n_obs": 968,
+    "k_column_norm": 4096.909080538379,
+    "f_perp": 0.08572751954170586,
+    "theta_k_deg": 4.917861379244694,
+    "raw_k_information": 16784664.01419783,
+    "conditional_k_information": 123353.98045028113,
+    "sigma_k": 0.0028472356707127727,
+    "sigma_k_frac": 0.2847235670712773,
+    "design_singular_values": [
+     1121969085.5253656,
+     7183732.386149741,
+     5252129.488331009,
+     1198227.4756786115,
+     890676.0220156958,
+     52680.287460821535,
+     3.512178532583431
+    ],
+    "smallest_design_sv": 3.512178532583431,
+    "design_condition": 319451040.17821264,
+    "weakest_mode_k_component": 0.9999999999883188,
+    "k_state_correlations": [
+     0.39334805505479986,
+     0.1535421461392521,
+     0.17511715260220226,
+     -0.24647298643861723,
+     -0.025698205237872283,
+     0.01786303110214709
+    ],
+    "max_abs_k_state_correlation": 0.39334805505479986,
+    "state_column_norms": [
+     705.2907205061902,
+     114.15685818580292,
+     207.81525455594456,
+     79176.55429111588,
+     622108.9115113742,
+     558528.1177500611
+    ],
+    "rank_margin": 2013990.5475960379
+   }
+  },
+  "D_CANONICAL": {
+   "fixture": "CANONICAL_EPOCH_CONSISTENT_SPICE",
+   "earth": {
+    "fixture": "CANONICAL_EPOCH_CONSISTENT_SPICE",
+    "et_origin": 857806356.99998,
+    "t_min_s": 0.0,
+    "t_max_s": 106020.0,
+    "clamp_after_s": Infinity,
+    "frame": "J2000",
+    "center": "MOON",
+    "units": "m, m/s"
+   },
+   "n_obs": 960,
+   "bitwise_vs_geo_cache": true,
+   "geo_cache": "FIXTURE_CONSISTENT",
+   "nom48_sha256": "42a17f936b5512da6e8eeaaebdbe6093742fcaad4baf0f0bb4209d35c13548d6",
+   "metrics": {
+    "n_obs": 960,
+    "k_column_norm": 4302.023784934325,
+    "f_perp": 0.09150755457311016,
+    "theta_k_deg": 5.250341535432847,
+    "raw_k_information": 18507408.646140654,
+    "conditional_k_information": 154974.2393435186,
+    "sigma_k": 0.0025402136377136,
+    "sigma_k_frac": 0.25402136377136003,
+    "design_singular_values": [
+     1147902411.4630187,
+     7591682.324860908,
+     5083674.106472689,
+     1136793.5690193907,
+     948485.306809935,
+     123388.70650696426,
+     3.9366767622729726
+    ],
+    "smallest_design_sv": 3.9366767622729726,
+    "design_condition": 291591736.0713757,
+    "weakest_mode_k_component": 0.9999999998796024,
+    "k_state_correlations": [
+     0.6412964320314292,
+     0.5793234689976597,
+     0.6278400761552297,
+     -0.6458187491531462,
+     -0.3746301721999459,
+     0.36249124520863263
+    ],
+    "max_abs_k_state_correlation": 0.6458187491531462,
+    "state_column_norms": [
+     721.4945119786988,
+     116.7949260520143,
+     212.79049517472762,
+     80778.89100823828,
+     636639.4114743909,
+     571362.8277161199
+    ],
+    "rank_margin": 2206411.5533821504
+   }
+  }
+ },
+ "nominal_trajectory_identical_across_arms": true,
+ "published_reproduction": {
+  "n_obs": {
+   "reproduced": 782,
+   "published": 782
+  },
+  "f_perp": {
+   "reproduced": 0.2522919965229832,
+   "published": 0.2522919965229832
+  },
+  "theta_k_deg": {
+   "reproduced": 14.613182283011557,
+   "published": 14.613182283011557
+  },
+  "conditional_k_information": {
+   "reproduced": 1162817.0907819087,
+   "published": 1162817.0907819087
+  },
+  "sigma_k_frac": {
+   "reproduced": 0.09273513250655349,
+   "published": 0.09273513250655349
+  }
+ },
+ "gates": {
+  "EARTH_EPOCH_OFFSET_REPRODUCTION_GATE": "PASS",
+  "FXR_RUNTIME_EPOCH_AUDIT": "PASS",
+  "EARTH_TABLE_CLAMP_CHARACTERIZATION_GATE": "PASS",
+  "HISTORICAL_FIXTURE_REPRODUCTION_GATE": "PASS"
+ }
+}

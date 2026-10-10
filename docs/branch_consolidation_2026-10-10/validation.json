@@ -1,0 +1,168 @@
+{
+  "result": "pass with caveats",
+  "counts": {
+    "tests": 1774,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 1745
+  },
+  "elapsed_test_time_s": 292.498,
+  "command": "python -m pytest -p tests.desktop_preferences tests --durations=15 --junitxml=main-integration-tests.xml -q",
+  "environment": "environment.json",
+  "environment_variables": {
+    "QT_QPA_PLATFORM": "offscreen",
+    "LUNAR_OD_PROJECT_ROOT": "<project containing the external campaign, gravity and ephemeris data>"
+  },
+  "junit_sha256": "953774be48cf833b2e0a95724cae57896cc5c5f3f45305c5381d4c48cbb48b5e",
+  "skips": [
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_adaptive_q_reduces_dynamics_mismatch_error",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_adaptive_r_handles_underestimated_measurement_noise",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_position_seeded_monte_carlo_is_statistically_consistent",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_range_rate_global_bias_monte_carlo_is_consistent",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_range_rate_seeded_monte_carlo_is_statistically_consistent",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_range_rate_station_full_bias_recovery_synthetic_arc",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_two_way_range_rate_monte_carlo_is_consistent",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_lunar_ukf_two_way_range_rate_noise_free_synthetic_arc_reduces_error",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_square_root_station_bias_long_arc_with_mismatch_and_heavy_tails",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_square_root_ukf_34_state_ill_conditioned_station_bias_stress",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_filters.FilterTests::test_two_way_long_arc_noise_clock_and_model_mismatch_with_station_biases",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_phase13g_synthesis_report.RealStoreSmokeTests::test_real_store_synthesis_with_known_values",
+      "reason": "real Phase 13G store not available"
+    },
+    {
+      "test": "tests.test_r1_r4_long_arc_qualification.BoundedQualificationSlice::test_slow_day_horizon_slice_remains_bitwise_at_zero_delay",
+      "reason": "bounded slow long-arc slice"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_c20_j2_sanity",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_double_count_guard",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_label_file_present",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_loader_sanity",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_stm_guard",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_tesseral_coefficients_present",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_real_grail_optional.RealGrail660Tests::test_zonal_only_acceleration_finite",
+      "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_formal_range_rate_global_bias_recovery_regression",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_formal_start_preserves_augmented_bias_covariance",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_formal_start_propagates_covariance_handoff",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_hot_start_uses_previous_arc_solution",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_noisy_multi_station_batch_matrix_covers_measurement_and_start_modes",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_sqrt_formal_process_noise_matches_covariance_handoff",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_sqrt_formal_start_carries_square_root_information",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_ukf_arc_sequence_supports_cold_hot_and_formal_handoff",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    },
+    {
+      "test": "tests.test_scenarios.ScenarioTests::test_ukf_auto_bias_constraints_freeze_unobserved_station_states",
+      "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+    }
+  ],
+  "core_equal_to_science_tip": true,
+  "ui_equal_to_merged_pr7": true,
+  "all_original_branch_tips_included": true,
+  "numerical_tolerances_changed": false,
+  "limitations": [
+    "Validation performed on Windows with the recorded package versions.",
+    "The initial dependency combination failed six tight numerical regression checks; matching the research versions restored the unchanged tests.",
+    "Slow/manual long-arc and unregistered multi-day Monte Carlo baselines were not run; skip reasons are listed.",
+    "Uncommitted BLS1 physics snapshots are archived only, not active code."
+  ],
+  "real_desktop_workflows": [
+    {
+      "estimator": "bls",
+      "process_exit": 0,
+      "elapsed_s": 2.773460600001272,
+      "ui_timer_ticks": 258,
+      "states": 37,
+      "solutions": 1,
+      "operational_success": false,
+      "scope": "Real small desktop scenario, QProcess completion and recorded-result display; not a long-arc accuracy claim"
+    },
+    {
+      "estimator": "ukf",
+      "process_exit": 0,
+      "elapsed_s": 2.9695737000147346,
+      "ui_timer_ticks": 274,
+      "states": 37,
+      "solutions": 1,
+      "operational_success": true,
+      "scope": "Real small desktop scenario, QProcess completion and recorded-result display; not a long-arc accuracy claim"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "n_dual_visible_observations": 143,
+  "best_noise_nrad": 1.0,
+  "best_sigma_k": 0.00012239563473411628,
+  "best_fractional_sigma_k": 0.012239563473411628,
+  "best_conditional_k_information": 66752593.26606807,
+  "best_f_perp": 0.44190102061139763,
+  "best_theta_k_deg": 26.225236769733115,
+  "worst_tested_noise_nrad": 300.0,
+  "worst_tested_fractional_sigma_k": 0.08946171536226412,
+  "best_in_class_f_perp_gain": 0.18960902408841446,
+  "representative_f_perp_gain": 0.17226815608011392,
+  "historical_f_perp_gain": 0.016658725087924486,
+  "required_noise_nrad_for_50pct": null,
+  "required_noise_nrad_for_25pct": null,
+  "required_noise_nrad_for_10pct": null,
+  "information_direction_class": "STRONGLY_COMPLEMENTARY_AT_ACHIEVABLE_PRECISION",
+  "operational_plausibility": "CLEARLY_OPERATIONALLY_PLAUSIBLE",
+  "noise_robustness_class": "ROBUST_TO_REALISTIC_NOISE",
+  "max_fd_convergence_error": 4.0461491690681804e-08,
+  "baseline_pair": [
+    "Goldstone DSN",
+    "Canberra DSN"
+  ],
+  "direct_measurement_k_dependence": "NO",
+  "status": "DDOR_LIKE_INFORMATION_SURROGATE"
+}

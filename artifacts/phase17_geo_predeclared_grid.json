@@ -1,0 +1,2068 @@
+{
+ "phase": "17-GEO",
+ "written_before_any_k_metric": true,
+ "epoch_et": 857806356.99998,
+ "canonical_period_s": 7067.459765661043,
+ "fixed_duration_s": 106011.89648491565,
+ "canonical_semi_major_axis_m": 1837571.528506965,
+ "canonical_inclination_lme_deg": 26.711475080149885,
+ "canonical_beta_deg": 21.814121535332376,
+ "full_sun_boundary_beta_deg": 70.99444467339958,
+ "sun_earth_separation_from_moon_deg": 174.39279850571506,
+ "grid_version": 2,
+ "amendments": [
+  {
+   "id": "A1",
+   "when": "after v1 was written, before any K metric was computed",
+   "reason": "v1 geometry showed beta and Earth-view are collinear at the new-moon canonical epoch (Earth-view ~= 90 + beta for polar orbits; RAAN-root pairs differ by only ~10 deg). Added three polar cases at the nearest quarter-phase epoch (+6.85 d) where the beta -> Earth-view mapping flips. No existing case was moved or removed.",
+   "based_on": "geometry only (beta, Earth-view, Sun-Earth separation); no f_perp or sigma_K existed",
+   "v1_sha256": "40965dcae03eb68a94508598090da6d381cbe952f107af7e8125bdf43562d8e7"
+  }
+ ],
+ "quarter_epoch_et": 858398196.99998,
+ "thresholds": {
+  "reference": "G0 canonical-consistent range-only f_perp (f_ref)",
+  "delta": "d = f_perp(case) - f_ref, absolute units of f_perp",
+  "MAGNITUDE_ONLY": "|d| < 0.02",
+  "MARGINAL_DIRECTION_CHANGE": "0.02 <= |d| < 0.10 (sign reported: gain or loss)",
+  "MODERATE_DIRECTION_GAIN": "0.10 <= d < 0.25 and f_perp >= 0.35",
+  "STRONG_DIRECTION_GAIN": "d >= 0.25 and f_perp >= 0.50",
+  "DIRECTION_LOSS": "d <= -0.10",
+  "robustness": "A gain class is claimed only if it holds, to at most one class lower, under the matched-observation-count variant AND at its predeclared validation neighbours.",
+  "stage_effect_class": "class of the stage's best matched-count case, with the within-stage f_perp range (max - min) reported alongside"
+ },
+ "predictions": {
+  "G5_k_magnitude": "The force is exactly linear in K (a = K g, lunar_od/srp.py), and the K column is dz/dK, which depends on K only through the negligible K-induced change of the linearisation trajectory.  Predicted BEFORE running: ||b_K||, f_perp, theta_K, I_K|x and absolute sigma_K are invariant to <1e-3 relative; sigma_K/K scales as 1/K.  Classification: INFORMATION_MAGNITUDE_ONLY (relative precision), not a direction change.",
+  "H1": "f_perp(eclipse-rich) > f_perp(full-Sun) (literature contract C1)",
+  "H2": "f_perp falls as |beta| crosses the full-Sun boundary (C2)",
+  "H3": "matched-|beta| face-on vs edge-on pairs differ in f_perp (C3)"
+ },
+ "rules": {
+  "epoch": "campaign manifest epoch for Sun, Earth position AND Earth rotation (consistent fixture)",
+  "force_model": "Moon point mass + lunar J2 (mean pole) + cannonball SRP with conical penumbra; mu_earth = mu_sun = 0 exactly as the canonical fixture; frozen (s17)",
+  "tracking": "two-way range, 3 DSN stations unless stated, 10 deg mask, 90 s cadence, 5 m sigma",
+  "orbit_construction": "circular (e = 0) in the lunar mean-equator frame at the canonical semi-major axis unless stated; argument of latitude 0 at epoch",
+  "raan_root_rule": "each (inclination, beta) has two RAAN roots; the PRIMARY case takes the root with the smaller RAAN in [0,360); G4 adds the other root as the matched partner",
+  "fixed_duration": "D = 15 canonical revolutions (the published W15 span)",
+  "fixed_revolutions": "15 revolutions of the case's own Keplerian period",
+  "matched_count": "per stage: N_match = the minimum observation count over that stage's cases; each case keeps rows at round(linspace(0, N-1, N_match)) of its time-ordered rows",
+  "G6_interaction_rule": "run a 3x3 interaction surface of factor X with beta ONLY if stage X's effect class is MODERATE_DIRECTION_GAIN or stronger; otherwise G6 is empty",
+  "validation_neighbours": "for any case classed MODERATE or STRONG: beta +/-5 deg, or altitude x0.8 and x1.25, points not in this grid",
+  "eclipse_counterfactual": "ALWAYS run, analysis-only: identical orbits with the production shadow_model='NO_SHADOW' for G0-consistent, polar beta 0 and polar beta 20. Never a production default, never mission truth.",
+  "jacobian_fd_cases": [
+   "G2_alt30_b20_fixD",
+   "G2_alt1000_b20_fixD",
+   "G1_b00",
+   "G1_b88",
+   "G3_i26.7_b00",
+   "G0_consistent"
+  ],
+  "jacobian_fd_arc": "4 revolutions of each geometry (same builder), step sweeps, floor-aware",
+  "doppler_secondary_cases": [
+   "G0_consistent",
+   "G1_b00",
+   "G1_b88",
+   "G2_alt30_b20_fixD",
+   "G2_alt1000_b20_fixD"
+  ],
+  "physical_validity": "min altitude > 5 km over the arc, propagation success, finite states, period within 2% of Keplerian, finite illumination"
+ },
+ "cases": [
+  {
+   "id": "G0_published",
+   "stage": "G0",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "PUBLISHED_R1M",
+   "role": "exact reproduction of the published W15 baseline"
+  },
+  {
+   "id": "G0_consistent",
+   "stage": "G0",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT",
+   "role": "same orbit, epoch-consistent fixture = f_ref"
+  },
+  {
+   "id": "G1_b00",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794763.1232961933,
+    361755.1373235387,
+    156932.06892010706,
+    -0.057884621257694564,
+    -650.3028407849489,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 2.296437307895594e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 167.608417759,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": -3.945735557337143e-10,
+   "earth_view_deg_epoch": 94.84791481905881,
+   "fixture": "CONSISTENT",
+   "beta_target": 0,
+   "raan_roots": [
+    167.608417759,
+    347.608417759
+   ]
+  },
+  {
+   "id": "G1_b20",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1821393.728865114,
+    223159.66929744236,
+    96921.45701192901,
+    -0.05788462125768635,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069637,
+    "e": 3.3766252644563744e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 7068.449451451084
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "beta_target": 20,
+   "raan_roots": [
+    7.608417816,
+    147.608417701
+   ]
+  },
+  {
+   "id": "G1_b40",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1628337.368317355,
+    781158.1266326086,
+    339084.82495766087,
+    -0.057884621257719454,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 3.0246358312001146e-18,
+    "inc_deg": 90.0,
+    "raan_deg": 27.608417891000002,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 39.99999999960115,
+   "earth_view_deg_epoch": 125.09788122514078,
+   "fixture": "CONSISTENT",
+   "beta_target": 40,
+   "raan_roots": [
+    27.608417891,
+    127.608417626
+   ]
+  },
+  {
+   "id": "G1_b55",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1352448.2918541427,
+    1141148.9344535277,
+    495309.85214894864,
+    -0.05788462125774081,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069644,
+    "e": 3.1607060469762993e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 42.60841798500001,
+    "period_s": 7068.449451451087
+   },
+   "beta_deg_epoch": 55.000000000380105,
+   "earth_view_deg_epoch": 140.0639928837215,
+   "fixture": "CONSISTENT",
+   "beta_target": 55,
+   "raan_roots": [
+    42.608417985,
+    112.608417533
+   ]
+  },
+  {
+   "id": "G1_b65",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1115882.0593950995,
+    1339251.1121668366,
+    581276.8793436275,
+    -0.057884621257752567,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 2.4836055293058524e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 52.608418097999994,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 65.00000000001125,
+   "earth_view_deg_epoch": 150.02672930336286,
+   "fixture": "CONSISTENT",
+   "beta_target": 65,
+   "raan_roots": [
+    52.608418098,
+    102.608417419
+   ]
+  },
+  {
+   "id": "G1_b69",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1011322.3271600198,
+    1407395.374792548,
+    610847.388452803,
+    -0.05788462125775661,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 1.9862125067983028e-17,
+    "inc_deg": 90.0,
+    "raan_deg": 56.608418171,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 69.00000000012088,
+   "earth_view_deg_epoch": 154.00478816398507,
+   "fixture": "CONSISTENT",
+   "beta_target": 69,
+   "raan_roots": [
+    56.608418171,
+    98.608417346
+   ]
+  },
+  {
+   "id": "G1_b71",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    957162.0075598658,
+    1438915.7103481172,
+    624525.093312322,
+    -0.057884621257758485,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 1.137499246969409e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 58.608418218,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 70.99999999978274,
+   "earth_view_deg_epoch": 155.99130132367554,
+   "fixture": "CONSISTENT",
+   "beta_target": 71,
+   "raan_roots": [
+    58.608418218,
+    96.608417299
+   ]
+  },
+  {
+   "id": "G1_b73",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    901835.5331308213,
+    1468682.948835045,
+    637441.9105795185,
+    -0.05788462125776025,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 1.1545089258668886e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 60.608418276,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 72.99999999975908,
+   "earth_view_deg_epoch": 157.97552898662377,
+   "fixture": "CONSISTENT",
+   "beta_target": 73,
+   "raan_roots": [
+    60.608418276,
+    94.608417241
+   ]
+  },
+  {
+   "id": "G1_b80",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    699994.4381553683,
+    1558558.8263126728,
+    676440.1628036563,
+    -0.057884621257765584,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069637,
+    "e": 3.7481657299546157e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 67.608418656,
+    "period_s": 7068.449451451084
+   },
+   "beta_deg_epoch": 79.99999999987426,
+   "earth_view_deg_epoch": 164.88929807296668,
+   "fixture": "CONSISTENT",
+   "beta_target": 80,
+   "raan_roots": [
+    67.608418656,
+    87.608416861
+   ]
+  },
+  {
+   "id": "G1_b88",
+   "stage": "G1",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    456723.82014455926,
+    1632761.3143800432,
+    708634.5777309606,
+    -0.05788462125776998,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069637,
+    "e": 3.514690538966e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 75.60842229,
+    "period_s": 7068.449451451084
+   },
+   "beta_deg_epoch": 87.99999999950063,
+   "earth_view_deg_epoch": 172.59642371760893,
+   "fixture": "CONSISTENT",
+   "beta_target": 88,
+   "raan_roots": [
+    75.60842229,
+    79.608413227
+   ]
+  },
+  {
+   "id": "G2_alt30_b20_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1751839.983617814,
+    214637.84859398723,
+    93220.30759916297,
+    -0.05902254029142727,
+    -663.0867540964093,
+    1527.85284713778
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1767400.0000000005,
+    "e": 1.1444864896693908e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417815999999,
+    "period_s": 6667.454377773838
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 30.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 15.899905792877952
+  },
+  {
+   "id": "G2_alt30_b20_fixN",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1751839.983617814,
+    214637.84859398723,
+    93220.30759916297,
+    -0.05902254029142727,
+    -663.0867540964093,
+    1527.85284713778
+   ],
+   "duration_s": 100011.81566660752,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1767400.0000000005,
+    "e": 1.1444864896693908e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417815999999,
+    "period_s": 6667.454377773838
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 30.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_REVOLUTIONS",
+   "revolutions": 15.0
+  },
+  {
+   "id": "G2_alt30_b85_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    528276.8568488845,
+    1547167.6705316065,
+    671489.7778668449,
+    -0.05902254029151109,
+    -663.0867540964093,
+    1527.85284713778
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1767399.9999999998,
+    "e": 2.2936375634436873e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 72.608419567,
+    "period_s": 6667.454377773834
+   },
+   "beta_deg_epoch": 84.99999999950793,
+   "earth_view_deg_epoch": 169.75816129329036,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 30.0,
+   "beta_target": 85.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 15.899905792877952
+  },
+  {
+   "id": "G2_alt50_b20_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1771663.9055779567,
+    217066.7028272563,
+    94275.1939587778,
+    -0.05869139685524826,
+    -659.3665342422298,
+    1519.2808941300138
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1787399.9999999998,
+    "e": 2.8803210838868514e-17,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417815999999,
+    "period_s": 6780.94789272717
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 50.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 15.633787217067026
+  },
+  {
+   "id": "G2_alt50_b20_fixN",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1771663.9055779567,
+    217066.7028272563,
+    94275.1939587778,
+    -0.05869139685524826,
+    -659.3665342422298,
+    1519.2808941300138
+   ],
+   "duration_s": 101714.21839090758,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1787399.9999999998,
+    "e": 2.8803210838868514e-17,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417815999999,
+    "period_s": 6780.94789272717
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 50.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_REVOLUTIONS",
+   "revolutions": 15.0
+  },
+  {
+   "id": "G2_alt50_b85_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    534254.8681292839,
+    1564675.5088311608,
+    679088.3947941602,
+    -0.05869139685533161,
+    -659.3665342422299,
+    1519.2808941300138
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1787399.999999999,
+    "e": 3.3833037284002385e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 72.60841956699998,
+    "period_s": 6780.947892727167
+   },
+   "beta_deg_epoch": 84.99999999950793,
+   "earth_view_deg_epoch": 169.75816129329036,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 50.0,
+   "beta_target": 85.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 15.633787217067026
+  },
+  {
+   "id": "G2_alt100_b20_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1821393.728865114,
+    223159.66929744236,
+    96921.45701192901,
+    -0.05788462125768635,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069637,
+    "e": 3.3766252644563744e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 7068.449451451084
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 100.1715285069649,
+   "beta_target": 20.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 14.99789978170564
+  },
+  {
+   "id": "G2_alt100_b20_fixN",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1821393.728865114,
+    223159.66929744236,
+    96921.45701192901,
+    -0.05788462125768635,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106026.74177176635,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069637,
+    "e": 3.3766252644563744e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 7068.449451451084
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 100.1715285069649,
+   "beta_target": 20.0,
+   "normalization": "FIXED_REVOLUTIONS",
+   "revolutions": 15.0
+  },
+  {
+   "id": "G2_alt100_b85_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    549251.1662977593,
+    1608595.2592482318,
+    698150.1060832753,
+    -0.05788462125776855,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069644,
+    "e": 2.343227630099358e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 72.608419567,
+    "period_s": 7068.449451451087
+   },
+   "beta_deg_epoch": 84.99999999950793,
+   "earth_view_deg_epoch": 169.75816129329036,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 100.1715285069649,
+   "beta_target": 85.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 14.99789978170564
+  },
+  {
+   "id": "G2_alt200_b20_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1920343.320279027,
+    235283.10957677427,
+    102186.84165588906,
+    -0.05637358771165164,
+    -633.327184968988,
+    1459.2822684917264
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1937399.9999999995,
+    "e": 2.2894028817316013e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 7652.2071796071505
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 200.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 13.853767154584288
+  },
+  {
+   "id": "G2_alt200_b20_fixN",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1920343.320279027,
+    235283.10957677427,
+    102186.84165588906,
+    -0.05637358771165164,
+    -633.327184968988,
+    1459.2822684917264
+   ],
+   "duration_s": 114783.1076941073,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1937399.9999999995,
+    "e": 2.2894028817316013e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 7652.2071796071505
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 200.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_REVOLUTIONS",
+   "revolutions": 15.0
+  },
+  {
+   "id": "G2_alt200_b85_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    579089.9527322784,
+    1695984.2960778174,
+    736078.0217490242,
+    -0.0563735877117317,
+    -633.3271849689881,
+    1459.2822684917264
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1937399.9999999995,
+    "e": 2.2924447462159214e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 72.608419567,
+    "period_s": 7652.2071796071505
+   },
+   "beta_deg_epoch": 84.99999999950793,
+   "earth_view_deg_epoch": 169.75816129329036,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 200.0,
+   "beta_target": 85.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 13.853767154584288
+  },
+  {
+   "id": "G2_alt500_b20_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    2217702.149681168,
+    271715.92307581025,
+    118010.1370501116,
+    -0.05245821464251996,
+    -589.3400572264685,
+    1357.929228420215
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 2237399.9999999995,
+    "e": 2.288895195861811e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 9496.711118043331
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 500.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 11.1630116118303
+  },
+  {
+   "id": "G2_alt500_b20_fixN",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    2217702.149681168,
+    271715.92307581025,
+    118010.1370501116,
+    -0.05245821464251996,
+    -589.3400572264685,
+    1357.929228420215
+   ],
+   "duration_s": 142450.66677065002,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 2237399.9999999995,
+    "e": 2.288895195861811e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 9496.711118043331
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 500.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_REVOLUTIONS",
+   "revolutions": 15.0
+  },
+  {
+   "id": "G2_alt500_b85_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    668760.1219382677,
+    1958601.8705711311,
+    850057.2756587524,
+    -0.05245821464259445,
+    -589.3400572264685,
+    1357.929228420215
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 2237399.9999999995,
+    "e": 3.550219255214022e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 72.608419567,
+    "period_s": 9496.711118043331
+   },
+   "beta_deg_epoch": 84.99999999950793,
+   "earth_view_deg_epoch": 169.75816129329036,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 500.0,
+   "beta_target": 85.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 11.1630116118303
+  },
+  {
+   "id": "G2_alt1000_b20_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    2713300.1986847366,
+    332437.2789075368,
+    144382.29604048247,
+    -0.047425966608060685,
+    -532.8054350549743,
+    1227.6648506250626
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 2737400.0000000005,
+    "e": 2.2224982963659317e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417815999999,
+    "period_s": 12851.835885612567
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 1000.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 8.248774527505006
+  },
+  {
+   "id": "G2_alt1000_b20_fixN",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    2713300.1986847366,
+    332437.2789075368,
+    144382.29604048247,
+    -0.047425966608060685,
+    -532.8054350549743,
+    1227.6648506250626
+   ],
+   "duration_s": 192777.53828418846,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 2737400.0000000005,
+    "e": 2.2224982963659317e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417815999999,
+    "period_s": 12851.835885612567
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 1000.0,
+   "beta_target": 20.0,
+   "normalization": "FIXED_REVOLUTIONS",
+   "revolutions": 15.0
+  },
+  {
+   "id": "G2_alt1000_b85_fixD",
+   "stage": "G2",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    818210.4039482498,
+    2396297.8280599867,
+    1040022.6988416327,
+    -0.04742596660812804,
+    -532.8054350549743,
+    1227.6648506250624
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 2737399.9999999995,
+    "e": 3.5108403882364144e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 72.608419567,
+    "period_s": 12851.835885612561
+   },
+   "beta_deg_epoch": 84.99999999950788,
+   "earth_view_deg_epoch": 169.75816129329033,
+   "fixture": "CONSISTENT",
+   "altitude_nominal_km": 1000.0,
+   "beta_target": 85.0,
+   "normalization": "FIXED_DURATION",
+   "revolutions": 8.248774527505006
+  },
+  {
+   "id": "G3_i26.7_b00",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794704.8303517555,
+    361998.4350203677,
+    157037.6621524457,
+    -313.381423441156,
+    -1599.58648440175,
+    105.83862121354879
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 3.623761334980969e-16,
+    "inc_deg": 26.70000000000001,
+    "raan_deg": 167.59995065,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": 1.6509407356843421e-10,
+   "earth_view_deg_epoch": 94.6909753928874,
+   "fixture": "CONSISTENT",
+   "inc_target": 26.7,
+   "beta_target": 0.0,
+   "raan_roots": [
+    167.59995065,
+    347.616884867
+   ]
+  },
+  {
+   "id": "G3_i26.7_bcan",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1335890.4192658986,
+    1157444.861650701,
+    502381.6301691317,
+    -1002.027279063896,
+    680.983401426189,
+    1095.5772863531643
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 1.3152850784002739e-16,
+    "inc_deg": 26.699999999999996,
+    "raan_deg": 43.36561398199999,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.800000000069407,
+   "earth_view_deg_epoch": 113.08112978480658,
+   "fixture": "CONSISTENT",
+   "inc_target": 26.7,
+   "beta_target": 21.8,
+   "raan_roots": [
+    43.365613982,
+    111.851221535
+   ]
+  },
+  {
+   "id": "G3_i45.0_b00",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794733.8098998691,
+    361877.5042997474,
+    156985.17720953815,
+    -247.98004714516395,
+    -1494.656737889975,
+    610.4046063695143
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 4.477045915897361e-16,
+    "inc_deg": 45.0,
+    "raan_deg": 167.604159247,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": -1.2598414374991252e-10,
+   "earth_view_deg_epoch": 95.41871198689547,
+   "fixture": "CONSISTENT",
+   "inc_target": 45.0,
+   "beta_target": 0.0,
+   "raan_roots": [
+    167.604159247,
+    347.61267627
+   ]
+  },
+  {
+   "id": "G3_i45.0_bcan",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1734358.0569349662,
+    556964.375135039,
+    241789.0352241556,
+    -381.6866088372119,
+    540.186430182833,
+    1493.51953608241
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 3.734749183856724e-16,
+    "inc_deg": 45.00000000000001,
+    "raan_deg": 19.294687973999995,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": 21.79999999997972,
+   "earth_view_deg_epoch": 110.69643479892424,
+   "fixture": "CONSISTENT",
+   "inc_target": 45.0,
+   "beta_target": 21.8,
+   "raan_roots": [
+    19.294687974,
+    135.922147543
+   ]
+  },
+  {
+   "id": "G3_i60.0_b00",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794746.2004089372,
+    361825.78617263545,
+    156962.73111047948,
+    -175.34450236721273,
+    -1294.9143268907503,
+    980.0703254776209
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069642,
+    "e": 1.386846015893506e-17,
+    "inc_deg": 59.99999999999999,
+    "raan_deg": 167.605959106,
+    "period_s": 7068.449451451086
+   },
+   "beta_deg_epoch": -2.7511061589387577e-10,
+   "earth_view_deg_epoch": 95.60718819108459,
+   "fixture": "CONSISTENT",
+   "inc_target": 60.0,
+   "beta_target": 0.0,
+   "raan_roots": [
+    167.605959106,
+    347.610876412
+   ]
+  },
+  {
+   "id": "G3_i60.0_bcan",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1790447.6237204664,
+    379274.24560337694,
+    164673.84648191158,
+    -183.8228867189234,
+    166.80925461808044,
+    1614.4567105596925
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 2.2891066635133257e-16,
+    "inc_deg": 59.99999999999999,
+    "raan_deg": 13.003750833,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.799999999695395,
+   "earth_view_deg_epoch": 109.14710140274501,
+   "fixture": "CONSISTENT",
+   "inc_target": 60.0,
+   "beta_target": 21.8,
+   "raan_roots": [
+    13.003750833,
+    142.213084684
+   ]
+  },
+  {
+   "id": "G3_i90.0_b00",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794763.1232961933,
+    361755.1373235387,
+    156932.06892010706,
+    -0.057884621257694564,
+    -650.3028407849489,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 2.296437307895594e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 167.608417759,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": -3.945735557337143e-10,
+   "earth_view_deg_epoch": 94.84791481905881,
+   "fixture": "CONSISTENT",
+   "inc_target": 90.0,
+   "beta_target": 0.0,
+   "raan_roots": [
+    167.608417759,
+    347.608417759
+   ]
+  },
+  {
+   "id": "G3_i90.0_bcan",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1812852.8005783926,
+    275531.5108771973,
+    119650.45895537047,
+    -0.05788462125768945,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069644,
+    "e": 1.1474656929977893e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 9.408417822000002,
+    "period_s": 7068.449451451087
+   },
+   "beta_deg_epoch": 21.80000000009628,
+   "earth_view_deg_epoch": 106.9253101906753,
+   "fixture": "CONSISTENT",
+   "inc_target": 90.0,
+   "beta_target": 21.8,
+   "raan_roots": [
+    9.408417822,
+    145.808417695
+   ]
+  },
+  {
+   "id": "G3_i120.0_b00",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794780.042878564,
+    361684.4878083037,
+    156901.40644075887,
+    175.175783173741,
+    168.57056526258785,
+    1615.2349862777423
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 1.2432781990220226e-16,
+    "inc_deg": 119.99999999999999,
+    "raan_deg": 167.610876412,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": -4.083207392484656e-10,
+   "earth_view_deg_epoch": 92.78967918228145,
+   "fixture": "CONSISTENT",
+   "inc_target": 120.0,
+   "beta_target": 0.0,
+   "raan_roots": [
+    167.610876412,
+    347.605959106
+   ]
+  },
+  {
+   "id": "G3_i120.0_bcan",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1790486.896813227,
+    379118.20996028284,
+    164606.12867106433,
+    183.64702773028148,
+    -1293.1828261748183,
+    980.8356634378069
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 3.780063352584258e-17,
+    "inc_deg": 119.99999999999999,
+    "raan_deg": 12.998307665999999,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 21.799999999652897,
+   "earth_view_deg_epoch": 106.19776933085222,
+   "fixture": "CONSISTENT",
+   "inc_target": 120.0,
+   "beta_target": 21.8,
+   "raan_roots": [
+    12.998307666,
+    142.218527851
+   ]
+  },
+  {
+   "id": "G3_i150.0_b00",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794813.8721216482,
+    361543.1868086775,
+    156840.08062783384,
+    303.3526627709628,
+    942.2995155667375,
+    1299.282662214654
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 4.522008589269789e-16,
+    "inc_deg": 150.0,
+    "raan_deg": 167.615793717,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": 1.9639713456276067e-10,
+   "earth_view_deg_epoch": 89.98782484697091,
+   "fixture": "CONSISTENT",
+   "inc_target": 150.0,
+   "beta_target": 0.0,
+   "raan_roots": [
+    167.615793717,
+    347.6010418
+   ]
+  },
+  {
+   "id": "G3_i150.0_bcan",
+   "stage": "G3",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1494832.8278878352,
+    980342.7428878165,
+    425525.6108807952,
+    822.6810316059733,
+    -1380.778706965103,
+    291.08887647357756
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 2.3796729350904923e-16,
+    "inc_deg": 150.0,
+    "raan_deg": 35.56238052999999,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": 21.799999999995066,
+   "earth_view_deg_epoch": 107.38701037014815,
+   "fixture": "CONSISTENT",
+   "inc_target": 150.0,
+   "beta_target": 21.8,
+   "raan_roots": [
+    35.56238053,
+    119.654454987
+   ]
+  },
+  {
+   "id": "G4_b20_root2",
+   "stage": "G4",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1551657.595936557,
+    903036.9352247511,
+    391857.2711736977,
+    -0.057884621257726684,
+    -650.3028407849489,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 1.614922088687443e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 147.608417701,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 20.000000000004565,
+   "earth_view_deg_epoch": 114.82192173150732,
+   "fixture": "CONSISTENT",
+   "beta_target": 20,
+   "partner": "G1_b20",
+   "raan_roots": [
+    7.608417816,
+    147.608417701
+   ]
+  },
+  {
+   "id": "G4_b80_root2",
+   "stage": "G4",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    76679.80212148062,
+    1684195.0558723025,
+    730942.093534998,
+    -0.057884621257773036,
+    -650.3028407849489,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 2.3268013552050924e-17,
+    "inc_deg": 90.0,
+    "raan_deg": 87.608416861,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 80.00000000008508,
+   "earth_view_deg_epoch": 174.1400174943574,
+   "fixture": "CONSISTENT",
+   "beta_target": 80,
+   "partner": "G1_b80",
+   "raan_roots": [
+    67.608418656,
+    87.608416861
+   ]
+  },
+  {
+   "id": "G4_quarter_b00",
+   "stage": "G4",
+   "epoch_et": 858398196.99998,
+   "x0": [
+    -1828546.460023351,
+    166886.97631162452,
+    72358.15816518784,
+    -0.057884621257683004,
+    -650.3028407849489,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 1.1488132151320644e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 174.319080449,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": -2.724400472643664e-10,
+   "earth_view_deg_epoch": 175.73214622123416,
+   "fixture": "CONSISTENT",
+   "beta_target": 0,
+   "partner": "G1_b00",
+   "raan_roots": [
+    174.319080449,
+    354.319080449
+   ],
+   "role": "same beta as partner, quarter-phase epoch: Earth-view decoupled"
+  },
+  {
+   "id": "G4_quarter_b20",
+   "stage": "G4",
+   "epoch_et": 858398196.99998,
+   "x0": [
+    1780484.4670682633,
+    416876.27073483384,
+    180992.70650024558,
+    -0.05788462125769784,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069651,
+    "e": 2.5981701055439143e-18,
+    "inc_deg": 90.0,
+    "raan_deg": 14.319080793999996,
+    "period_s": 7068.449451451092
+   },
+   "beta_deg_epoch": 19.99999999955998,
+   "earth_view_deg_epoch": 20.561102307619638,
+   "fixture": "CONSISTENT",
+   "beta_target": 20,
+   "partner": "G1_b20",
+   "raan_roots": [
+    14.319080794,
+    154.319080103
+   ],
+   "role": "same beta as partner, quarter-phase epoch: Earth-view decoupled"
+  },
+  {
+   "id": "G4_quarter_b80",
+   "stage": "G4",
+   "epoch_et": 858398196.99998,
+   "x0": [
+    496658.3694689922,
+    1622920.0540122325,
+    704365.0223433569,
+    -0.0578846212577694,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.5285069644,
+    "e": 1.667717080063118e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 74.319085836,
+    "period_s": 7068.449451451087
+   },
+   "beta_deg_epoch": 80.00000000047697,
+   "earth_view_deg_epoch": 80.16010667197146,
+   "fixture": "CONSISTENT",
+   "beta_target": 80,
+   "partner": "G1_b80",
+   "raan_roots": [
+    74.319085836,
+    94.319075062
+   ],
+   "role": "same beta as partner, quarter-phase epoch: Earth-view decoupled"
+  },
+  {
+   "id": "G4_net_Goldstone",
+   "stage": "G4",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT",
+   "role": "identical dynamics, different measurement projection"
+  },
+  {
+   "id": "G4_net_Madrid",
+   "stage": "G4",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Madrid DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT",
+   "role": "identical dynamics, different measurement projection"
+  },
+  {
+   "id": "G4_net_Canberra",
+   "stage": "G4",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT",
+   "role": "identical dynamics, different measurement projection"
+  },
+  {
+   "id": "G5_k0.0025",
+   "stage": "G5",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.0025,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT"
+  },
+  {
+   "id": "G5_k0.005",
+   "stage": "G5",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.005,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT"
+  },
+  {
+   "id": "G5_k0.02",
+   "stage": "G5",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.02,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT"
+  },
+  {
+   "id": "G5_k0.04",
+   "stage": "G5",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.04,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "CONICAL_PENUMBRA",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT"
+  },
+  {
+   "id": "CF_noshadow_G0_consistent",
+   "stage": "CF",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1746513.5335792408,
+    -277083.98513177276,
+    518734.13974716066,
+    -138.53981552770264,
+    -1206.7373147449678,
+    -1085.0511650068934
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "NO_SHADOW",
+   "elements": {
+    "a_m": 1837571.528506965,
+    "e": 0.005335932778822172,
+    "inc_deg": 26.711475080149885,
+    "raan_deg": 43.38394933974347,
+    "period_s": 7068.44945145109
+   },
+   "beta_deg_epoch": 21.814121535332376,
+   "earth_view_deg_epoch": 113.0951353826364,
+   "fixture": "CONSISTENT",
+   "counterfactual_of": "G0_consistent"
+  },
+  {
+   "id": "CF_noshadow_G1_b00",
+   "stage": "CF",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    -1794763.1232961933,
+    361755.1373235387,
+    156932.06892010706,
+    -0.057884621257694564,
+    -650.3028407849489,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "NO_SHADOW",
+   "elements": {
+    "a_m": 1837571.5285069656,
+    "e": 2.296437307895594e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 167.608417759,
+    "period_s": 7068.449451451094
+   },
+   "beta_deg_epoch": -3.945735557337143e-10,
+   "earth_view_deg_epoch": 94.84791481905881,
+   "fixture": "CONSISTENT",
+   "counterfactual_of": "G1_b00"
+  },
+  {
+   "id": "CF_noshadow_G1_b20",
+   "stage": "CF",
+   "epoch_et": 857806356.99998,
+   "x0": [
+    1821393.728865114,
+    223159.66929744236,
+    96921.45701192901,
+    -0.05788462125768635,
+    -650.3028407849488,
+    1498.3967643102865
+   ],
+   "duration_s": 106011.89648491565,
+   "k_srp": 0.01,
+   "stations": [
+    "Goldstone DSN",
+    "Madrid DSN",
+    "Canberra DSN"
+   ],
+   "shadow_model": "NO_SHADOW",
+   "elements": {
+    "a_m": 1837571.5285069637,
+    "e": 3.3766252644563744e-16,
+    "inc_deg": 90.0,
+    "raan_deg": 7.608417816000001,
+    "period_s": 7068.449451451084
+   },
+   "beta_deg_epoch": 19.99999999979373,
+   "earth_view_deg_epoch": 105.1276476955742,
+   "fixture": "CONSISTENT",
+   "counterfactual_of": "G1_b20"
+  }
+ ]
+}

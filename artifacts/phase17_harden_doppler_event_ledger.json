@@ -1,0 +1,378 @@
+{
+ "contract": "two endpoints receive at t_mid -/+ Tc/2; each solves its own transponder and transmit events; one provider shared by both endpoints (exact event-epoch sxform, LINEAR Earth interpolation by the documented R3-P22 design)",
+ "et0_s": 857806356.99998,
+ "rows": [
+  {
+   "receive_mid_local_s": 90.0,
+   "station": "Goldstone DSN",
+   "count_interval_s": 60.0,
+   "uplink_frequency_hz": 7200000000.0,
+   "turnaround_ratio": 1.1748998664886516,
+   "earth_interpolation": "linear_grid_interpolation",
+   "station_state_method": "exact_event_epoch_sxform",
+   "endpoints": {
+    "count_start": {
+     "receive_local_s": 60.0,
+     "transponder_local_s": 58.71194879421061,
+     "transmit_local_s": 57.42389667127992,
+     "receive_et": 857806416.99998,
+     "transmit_et": 857806414.4238766,
+     "round_trip_s": 2.576103328720081,
+     "converged": true,
+     "station_state_receive": [
+      -384115229.2209602,
+      53251206.45668483,
+      6459529.122247145,
+      26.90105188039584,
+      -524.7616627421016,
+      -466.67822163320045
+     ],
+     "station_state_transmit": [
+      -384115298.50962377,
+      53252558.311204575,
+      6460731.333235087,
+      26.962455530453155,
+      -524.7825313814035,
+      -466.6783641054952
+     ]
+    },
+    "count_end": {
+     "receive_local_s": 120.0,
+     "transponder_local_s": 118.7119369855662,
+     "transmit_local_s": 117.42387306521425,
+     "receive_et": 857806476.99998,
+     "transmit_et": 857806474.423853,
+     "round_trip_s": 2.576126934785746,
+     "converged": true,
+     "station_state_receive": [
+      -384113658.0858445,
+      53219735.26515625,
+      6431528.52881554,
+      25.46975119704325,
+      -524.2792104730495,
+      -466.6748917416339
+     ],
+     "station_state_transmit": [
+      -384113723.88565844,
+      53221085.91644333,
+      6432730.743371478,
+      25.53124977697111,
+      -524.2997829643662,
+      -466.6750351970419
+     ]
+    }
+   },
+   "distinct_endpoint_events": true
+  },
+  {
+   "receive_mid_local_s": 6570.0,
+   "station": "Goldstone DSN",
+   "count_interval_s": 60.0,
+   "uplink_frequency_hz": 7200000000.0,
+   "turnaround_ratio": 1.1748998664886516,
+   "earth_interpolation": "linear_grid_interpolation",
+   "station_state_method": "exact_event_epoch_sxform",
+   "endpoints": {
+    "count_start": {
+     "receive_local_s": 6540.0,
+     "transponder_local_s": 6538.711871263764,
+     "transmit_local_s": 6537.423743077172,
+     "receive_et": 857812896.99998,
+     "transmit_et": 857812894.4237231,
+     "round_trip_s": 2.5762569228278878,
+     "converged": true,
+     "station_state_receive": [
+      -384458722.74033344,
+      49931452.001613215,
+      3436806.55776456,
+      -133.94513997239417,
+      -513.8398986925058,
+      -466.23587034821077
+     ],
+     "station_state_transmit": [
+      -384458377.6548662,
+      49932775.75800589,
+      3438007.701610972,
+      -133.88128756559473,
+      -513.8275310223082,
+      -466.23607237522464
+     ]
+    },
+    "count_end": {
+     "receive_local_s": 6600.0,
+     "transponder_local_s": 6598.711982612588,
+     "transmit_local_s": 6597.423965785717,
+     "receive_et": 857812956.99998,
+     "transmit_et": 857812954.4239458,
+     "round_trip_s": 2.5760342142825285,
+     "converged": true,
+     "station_state_receive": [
+      -384466804.04893935,
+      49900612.89061201,
+      3408832.546919031,
+      -135.4316147844774,
+      -514.1316642192731,
+      -466.2311583312153
+     ],
+     "station_state_transmit": [
+      -384466455.3622798,
+      49901937.30846192,
+      3410033.5743611064,
+      -135.3678193680977,
+      -514.1189908226518,
+      -466.2313609371023
+     ]
+    }
+   },
+   "distinct_endpoint_events": true
+  },
+  {
+   "receive_mid_local_s": 8640.0,
+   "station": "Goldstone DSN",
+   "count_interval_s": 60.0,
+   "uplink_frequency_hz": 7200000000.0,
+   "turnaround_ratio": 1.1748998664886516,
+   "earth_interpolation": "linear_grid_interpolation",
+   "station_state_method": "exact_event_epoch_sxform",
+   "endpoints": {
+    "count_start": {
+     "receive_local_s": 8610.0,
+     "transponder_local_s": 8608.707231986125,
+     "transmit_local_s": 8607.414464921161,
+     "receive_et": 857814966.99998,
+     "transmit_et": 857814964.4144449,
+     "round_trip_s": 2.585535078839161,
+     "converged": true,
+     "station_state_receive": [
+      -384788492.97059983,
+      48854594.91069251,
+      2471869.5310345627,
+      -184.33253017155926,
+      -527.9993929412091,
+      -466.0690703067313
+     ],
+     "station_state_transmit": [
+      -384788016.3609091,
+      48855960.031174004,
+      2473074.569667691,
+      -184.27100072704218,
+      -527.9765100296602,
+      -466.069283298753
+     ]
+    },
+    "count_end": {
+     "receive_local_s": 8670.0,
+     "transponder_local_s": 8668.706913295433,
+     "transmit_local_s": 8667.4138275514,
+     "receive_et": 857815026.99998,
+     "transmit_et": 857815024.4138075,
+     "round_trip_s": 2.5861724485996525,
+     "converged": true,
+     "station_state_receive": [
+      -384799595.7339735,
+      48822898.94328467,
+      2443905.535288605,
+      -185.7592058908603,
+      -528.5340066993789,
+      -466.0641221947859
+     ],
+     "station_state_transmit": [
+      -384799115.51629686,
+      48824265.80633797,
+      2445110.8572488157,
+      -185.6977588787294,
+      -528.5108213920419,
+      -466.0643357161738
+     ]
+    }
+   },
+   "distinct_endpoint_events": true
+  },
+  {
+   "receive_mid_local_s": 13230.0,
+   "station": "Canberra DSN",
+   "count_interval_s": 60.0,
+   "uplink_frequency_hz": 7200000000.0,
+   "turnaround_ratio": 1.1748998664886516,
+   "earth_interpolation": "linear_grid_interpolation",
+   "station_state_method": "exact_event_epoch_sxform",
+   "endpoints": {
+    "count_start": {
+     "receive_local_s": 13200.0,
+     "transponder_local_s": 13198.705432086608,
+     "transmit_local_s": 13197.410861418362,
+     "receive_et": 857819556.99998,
+     "transmit_et": 857819554.4108413,
+     "round_trip_s": 2.5891385816380224,
+     "converged": true,
+     "station_state_receive": [
+      -387217941.1075486,
+      38791917.703865044,
+      -7002906.840147877,
+      263.2628251063626,
+      -684.5810554935207,
+      -467.1376420629563
+     ],
+     "station_state_transmit": [
+      -387218622.68197423,
+      38793690.246062815,
+      -7001697.354898082,
+      263.2951102170293,
+      -684.6404874791142,
+      -467.1378120988716
+     ]
+    },
+    "count_end": {
+     "receive_local_s": 13260.0,
+     "transponder_local_s": 13258.705718893452,
+     "transmit_local_s": 13257.411435039241,
+     "receive_et": 857819616.99998,
+     "transmit_et": 857819614.411415,
+     "round_trip_s": 2.5885649607588377,
+     "converged": true,
+     "station_state_receive": [
+      -387202167.847838,
+      38750884.11671715,
+      -7030934.980032773,
+      262.5114834910673,
+      -683.2058432595738,
+      -467.1336847107025
+     ],
+     "station_state_transmit": [
+      -387202847.52654546,
+      38752652.727931924,
+      -7029725.775037026,
+      262.5440239575699,
+      -683.2650925009525,
+      -467.13385614383526
+     ]
+    }
+   },
+   "distinct_endpoint_events": true
+  },
+  {
+   "receive_mid_local_s": 15120.0,
+   "station": "Canberra DSN",
+   "count_interval_s": 60.0,
+   "uplink_frequency_hz": 7200000000.0,
+   "turnaround_ratio": 1.1748998664886516,
+   "earth_interpolation": "linear_grid_interpolation",
+   "station_state_method": "exact_event_epoch_sxform",
+   "endpoints": {
+    "count_start": {
+     "receive_local_s": 15090.0,
+     "transponder_local_s": 15088.707507922112,
+     "transmit_local_s": 15087.415013334767,
+     "receive_et": 857821446.99998,
+     "transmit_et": 857821444.4149933,
+     "round_trip_s": 2.5849866652327806,
+     "converged": true,
+     "station_state_receive": [
+      -386744510.03808516,
+      37537762.41115465,
+      -7885671.07047727,
+      236.76228730056172,
+      -643.2846214166088,
+      -466.99995414669075
+     ],
+     "station_state_transmit": [
+      -386745122.02602327,
+      37539425.352859996,
+      -7884463.880410319,
+      236.80239796254097,
+      -643.3380749870303,
+      -467.00016039366744
+     ]
+    },
+    "count_end": {
+     "receive_local_s": 15150.0,
+     "transponder_local_s": 15148.707340872821,
+     "transmit_local_s": 15147.414679244004,
+     "receive_et": 857821506.99998,
+     "transmit_et": 857821504.4146593,
+     "round_trip_s": 2.585320755996678,
+     "converged": true,
+     "station_state_receive": [
+      -386730332.28944314,
+      37499202.504963174,
+      -7913690.9236991,
+      235.8284193769524,
+      -642.0463786521058,
+      -466.9951507882777
+     ],
+     "station_state_transmit": [
+      -386730942.1421967,
+      37500862.48099001,
+      -7912483.592536919,
+      235.86877146205876,
+      -642.0996353312136,
+      -466.9953584275951
+     ]
+    }
+   },
+   "distinct_endpoint_events": true
+  },
+  {
+   "receive_mid_local_s": 19800.0,
+   "station": "Goldstone DSN",
+   "count_interval_s": 60.0,
+   "uplink_frequency_hz": 7200000000.0,
+   "turnaround_ratio": 1.1748998664886516,
+   "earth_interpolation": "linear_grid_interpolation",
+   "station_state_method": "exact_event_epoch_sxform",
+   "endpoints": {
+    "count_start": {
+     "receive_local_s": 19770.0,
+     "transponder_local_s": 19768.699468613147,
+     "transmit_local_s": 19767.398939899464,
+     "receive_et": 857826126.99998,
+     "transmit_et": 857826124.3989198,
+     "round_trip_s": 2.6010601005336786,
+     "converged": true,
+     "station_state_receive": [
+      -388098981.0914334,
+      42010072.10713324,
+      -2724199.928881326,
+      -381.70421822792207,
+      -729.5066183978165,
+      -465.1327051894142
+     ],
+     "station_state_transmit": [
+      -388097988.1953494,
+      42011969.50357413,
+      -2722990.088815833,
+      -381.6799870545405,
+      -729.4408796981033,
+      -465.13291144584406
+     ]
+    },
+    "count_end": {
+     "receive_local_s": 19830.0,
+     "transponder_local_s": 19828.699695525836,
+     "transmit_local_s": 19827.399393727457,
+     "receive_et": 857826186.99998,
+     "transmit_et": 857826184.3993737,
+     "round_trip_s": 2.6006062725418433,
+     "converged": true,
+     "station_state_receive": [
+      -388121900.0430092,
+      41966256.18446773,
+      -2752107.7483888753,
+      -382.25973790921347,
+      -731.024655132243,
+      -465.1279479677967
+     ],
+     "station_state_transmit": [
+      -388120906.0764537,
+      41968157.21636915,
+      -2750898.1354559865,
+      -382.2357963271225,
+      -730.9587945458827,
+      -465.1281541685225
+     ]
+    }
+   },
+   "distinct_endpoint_events": true
+  }
+ ]
+}

@@ -31,11 +31,9 @@ from lunar_od.gravity_harmonics import (
     spherical_harmonic_gravity_gradient,
 )
 from lunar_od.gravity_model_loader import load_lunar_gravity_model
+from lunar_od.project_paths import gravity_data_root
 
-GL1800F_TAB = (
-    "C:/Users/erayh/Documents/Python/Grad/python_port/data/gravity/"
-    "gl1800f/jggrx_1800f_sha.tab"
-)
+GL1800F_TAB = str(gravity_data_root() / "gl1800f" / "jggrx_1800f_sha.tab")  # HARDEN-D10
 #: Relative agreement required between the twin and the reference. Both run the
 #: identical recursion, so this is a floating-point-reassociation budget, not a
 #: physics budget.

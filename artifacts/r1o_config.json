@@ -1,0 +1,61 @@
+{
+  "phase": "PHASE 17-R1O",
+  "title": "ADDITIONAL OBSERVABLE FEASIBILITY FOR K_SRP IDENTIFIABILITY",
+  "scope": "ANALYSIS_ONLY_NO_PRODUCTION_OBSERVABLE",
+  "git": {
+    "head": "75d1b4699d4cfdf220df9faf7b0a90c989b30c1b",
+    "branch": "feature/phase17-r-k-srp-estimation",
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "r1cov_final_head": "75d1b4699d4cfdf220df9faf7b0a90c989b30c1b"
+  },
+  "window": {
+    "g1_continuity_orbits": 2.0,
+    "w15_common_campaign_orbits": 15.0,
+    "w15_cadence_s": 90.0,
+    "window_selection_probe": "artifacts/r1o_window_probe.csv"
+  },
+  "ddor": {
+    "baseline_pair": [
+      "Goldstone DSN",
+      "Canberra DSN"
+    ],
+    "min_elevation_deg": 10.0,
+    "noise_sweep_nrad": [
+      1,
+      2,
+      3,
+      5,
+      10,
+      20,
+      30,
+      50,
+      100,
+      300
+    ],
+    "literature_citations": [
+      "Bell et al., Delta-DOR: The One-Nanoradian Navigation Measurement System of the DSN, JPL IPN PR 42-193 (2013)",
+      "DSN Navigation System Accuracy, DESCANSO"
+    ]
+  },
+  "landmark": {
+    "n_landmarks": 8,
+    "epoch_fractions": "0,0.15,...,1.0 of arc",
+    "max_offnadir_deg": 30.0,
+    "noise_sweep_urad": [
+      1,
+      3,
+      10,
+      30,
+      100,
+      300,
+      500,
+      1000
+    ],
+    "literature_citations": [
+      "LONEStar: The Lunar Flashlight Optical Navigation Experiment (2024), IFOV ~36.6 arcsec/px, attitude stability ~15-20 arcsec/5s, LOS error 0.25-1 px",
+      "Optical Camera Characterization for Feature-Based Navigation in Lunar Orbit (Aerospace 2025), star-tracker attitude ~0.5 mrad 1-sigma"
+    ]
+  },
+  "methodology": "finite-difference position Jacobian (Richardson-verified), chained through the qualified Phi/S_K columns of nom48; covariance via R1COV's qualified QR square-root path, never the floored normal-matrix inverse"
+}

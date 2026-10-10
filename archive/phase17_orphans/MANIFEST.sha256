@@ -1,0 +1,6 @@
+# sha256 (on-disk bytes, CRLF)
+38d6c1251dc892c12576e0a93e8265738f4fba95a727593b49e9780e9fc45b3b *phase17_r1od_fd_convergence.py
+1e2906913d0ed77a37c9e212eac7fbf4be62213a29cc31aa02570771ad407cec *phase17_r1od_qualification.py
+# sha256 (LF-normalized; = docs/local_repository_hygiene_status_report.md §24)
+f48fd6de0254ab55c31c0c02626a1a8e3ce70363d1234108da0d99967d21bbb6  phase17_r1od_fd_convergence.py
+ec36d2327ba7ec56a9f9caa3116815e7e6d60d237bd0286956b83f980e04f13f  phase17_r1od_qualification.py

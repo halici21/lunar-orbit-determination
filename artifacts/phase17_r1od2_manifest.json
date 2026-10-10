@@ -1,0 +1,131 @@
+{
+ "phase": "17-R1O-D2",
+ "gate": "PASS",
+ "primary_class": "DDOR_K_INFORMATION_GAIN_IS_STRONGLY_GEOMETRY_DEPENDENT",
+ "outcome_rule": "B",
+ "start_head": "a4304fc35a27b212fcab1eaf6f936e3d45fe56c2",
+ "start_tree": "b6f5d9ef114ede86f029e2ed081d48447a391639",
+ "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+ "push": "NONE",
+ "merge": "NONE",
+ "main_changed": "NO",
+ "grid_sha256_lf": "2a99c50e95c49bc4c1837787c328bcc2537fa653a2e933bf5a9ea39221c07c11",
+ "grid_commit": "1ca5356",
+ "gates": {
+  "D2_INPUT_GATE": "PASS",
+  "D2_EARTH_FIXTURE_GATE": "PASS",
+  "D2_EPOCH_CONSISTENCY_GATE": "PASS",
+  "GRAPHIFY_DISCOVERY_GATE": "PASS",
+  "D2_LITERATURE_CONTRACT_GATE": "PASS",
+  "D2_GRID_PREDECLARED": "YES",
+  "D2_CANONICAL_REPRODUCTION_GATE": "PASS",
+  "DDOR_NOISE_SEMANTICS_GATE": "PASS",
+  "DDOR_STATE_JACOBIAN_FD_GATE": "PASS",
+  "DDOR_K_JACOBIAN_FD_GATE": "PASS_WITH_RESOLVING_ORACLE (predeclared oracle: FAIL_NOT_MATERIAL)"
+ },
+ "d0": {
+  "range": 0.09150755457311016,
+  "combined_5nrad": 0.3204398422766736,
+  "sigma_frac": 0.039736430164128034,
+  "one_nrad": 0.36220146341468623,
+  "hundred_nrad": 0.09921010694459087,
+  "surrogate": 0.3203109003257972,
+  "n_rows": 263,
+  "row_rule_effect_on_combined_f_perp": 0.14808900427707153
+ },
+ "class_counts": {
+  "STRONG_DIRECTION_GAIN": 6,
+  "MODEST_DIRECTION_GAIN": 2,
+  "MAGNITUDE_ONLY": 8,
+  "DIRECTION_LOSS": 2
+ },
+ "absolute_class_counts": {
+  "STRONG_K_SEPARATION": 1,
+  "MODERATE_K_SEPARATION": 0,
+  "WEAK_K_SEPARATION": 16
+ },
+ "combined_f_perp": {
+  "n": 17,
+  "min": 0.07138450720409151,
+  "median": 0.17235083799960207,
+  "max": 0.6049587500676602
+ },
+ "delta_f_perp": {
+  "n": 17,
+  "min": -0.08136360805746912,
+  "median": 0.011807273086658188,
+  "max": 0.3235566775038279
+ },
+ "strong_cases": [
+  [
+   "CANON",
+   "GC"
+  ],
+  [
+   "O1_LOW_BETA_ECLIPSE_RICH",
+   "GC"
+  ],
+  [
+   "O2_FULL_SUN_HIGH_BETA",
+   "GC"
+  ],
+  [
+   "O3_HIGH_ALTITUDE_500KM",
+   "GC"
+  ],
+  [
+   "O4_POLAR",
+   "GC"
+  ],
+  [
+   "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "GC"
+  ]
+ ],
+ "survives_b3_fraction": {
+  "dense": 0.0,
+  "ops": 0.05555555555555555
+ },
+ "fd": {
+  "state_gate": "PASS",
+  "k_gate_predeclared_oracle": "FAIL_NOT_MATERIAL",
+  "k_gate_refined_oracle": "PASS",
+  "max_state_relerr": 2.3862691222188018e-05,
+  "max_k_relerr_predeclared_oracle": 0.023606774084152952,
+  "max_k_relerr_refined_oracle": 0.00019606949267055788,
+  "max_f_perp_materiality": 0.00037405646622795663,
+  "quasar_invariance": {
+   "max_rel_diff_per_quasar": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "step_m": 100,
+   "invariant": true
+  }
+ },
+ "fidelity": {
+  "effect": "PRESERVES_CLASS",
+  "weakest": {
+   "case": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "pair": "GM",
+   "delta": -0.08136360805746912
+  }
+ },
+ "surrogate_max_abs_diff": 0.00028854305887099363,
+ "regression": {
+  "total": 1482,
+  "passed": 1441,
+  "passed_tests": 1295,
+  "passed_subtests": 146,
+  "failed": 2,
+  "errors": 10,
+  "skipped": 29,
+  "d2_introduced_nonpasses": 0,
+  "new_scientific_regressions": 0,
+  "unknown_nonpasses": 0
+ },
+ "production_code_changed": "NO",
+ "decision_tree_case": "B",
+ "next_action": "owner review; then predeclared \u0394DOR tracking-design characterization (GC vs GM vs joint, denser epochs, sessions, calibrated priors)"
+}

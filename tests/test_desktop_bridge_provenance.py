@@ -1,0 +1,38 @@
+"""Approved desktop bridge provenance and rejection of later edits."""
+from pathlib import Path
+import hashlib
+import subprocess
+
+from examples import r2_measurement_fidelity_validation as campaign
+
+
+ROOT = Path(__file__).resolve().parents[1]
+BRIDGE = "examples/run_scenario_config.py"
+APPROVED_COMMIT = "a9f9e56c2556b98a68493e3425ae42b836f34f8c"
+
+
+def test_refreeze_keeps_the_historical_record_and_protects_approved_bytes():
+    assert campaign.R2_HISTORICAL_FILTERED_CHECKOUT_SHA256[BRIDGE] == (
+        "f6cf74b69fa15a15148cb6ca59db56980b9afa3340b59fcaf4de8a2a2a533bac"
+    )
+    assert BRIDGE in campaign.R2_CURRENT_TREE_PROTECTED_PATHS
+    accepted = subprocess.check_output(
+        ["git", "cat-file", "--filters", APPROVED_COMMIT + ":" + BRIDGE],
+        cwd=ROOT,
+    )
+    assert campaign.expected_current_tree_sha256(BRIDGE) == hashlib.sha256(accepted).hexdigest()
+
+
+def test_a_later_bridge_edit_still_fails_the_provenance_gate(tmp_path):
+    protected = set(campaign.R2_CURRENT_TREE_PROTECTED_PATHS)
+    protected.update(campaign.CLOSURE_REFROZEN_CURRENT_TREE_SHA256)
+    for name in protected:
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / name).read_bytes())
+    assert all(row["pass"] for row in campaign.build_r2_current_tree_protection_rows(tmp_path))
+    path = tmp_path / BRIDGE
+    path.write_bytes(path.read_bytes() + b"\n# unauthorized later edit\n")
+    failed = [row["item"] for row in campaign.build_r2_current_tree_protection_rows(tmp_path)
+              if not row["pass"]]
+    assert failed == [BRIDGE]

@@ -1,0 +1,74 @@
+
+========================================================================================
+s34 -- DIRECT MEASUREMENT K DEPENDENCE (structural, not assumed)
+========================================================================================
+  DIRECT_MEASUREMENT_K_DEPENDENCE_IS_NO                PASS  no SRP/K token appears anywhere in the projection or its Jacobian; K can only enter through r_sc(t)
+
+========================================================================================
+s35 -- ANALYTIC IMAGE-PLANE JACOBIAN AT A REAL CAMPAIGN EPOCH
+========================================================================================
+  landmark #4 lat=16.5975 deg lon=-3.3713 deg
+  range=3568.894 km, off-boresight=0.4363 deg
+  (u, v) = (1021.3528, 1072.3857) px, in FOV=True
+  d(u,v)/dr      =
+[[ 2.713870237e-04 -1.762362155e-03 -2.084403318e-07]
+ [ 4.824095271e-04  7.408933937e-05  1.715093704e-03]]
+  d(u,v)/dx0 row u = [-1.715281e-01 -2.915180e-02  4.737512e-02 -2.277107e+01 -1.514904e+02
+ -1.338472e+02]
+  d(u,v)/dK        = [-0.191268511  0.167547413]  px per (m^2/kg)
+
+========================================================================================
+s36/s38 -- END-TO-END STATE JACOBIAN FD (re-propagated trajectories)
+========================================================================================
+  component | analytic d(u)/dx0  | best FD            | rel_err
+  x         | -1.715281343e-01 | -1.715298043e-01 | 9.736e-06  (step 3)
+  y         | -2.915180109e-02 | -2.915198442e-02 | 6.114e-06  (step 3)
+  z         | +4.737511599e-02 | +4.737569316e-02 | 1.207e-05  (step 30)
+  vx        | -2.277106670e+01 | -2.277105114e+01 | 7.549e-07  (step 0.001)
+  vy        | -1.514903745e+02 | -1.514918953e+02 | 1.004e-05  (step 0.003)
+  vz        | -1.338472390e+02 | -1.338486225e+02 | 1.034e-05  (step 0.003)
+  OPTICAL_STATE_JACOBIAN_GATE                          PASS  max rel err = 1.207e-05
+
+========================================================================================
+s37 -- K COMPOSITION CHAIN (dg/dK = dg/dr . S_K[:3])
+========================================================================================
+  S_K[:3] at midpoint = [-35.44246  103.059621 103.206941] m per (m^2/kg)
+  composition dg/dK   = [-0.191268511  0.167547413]
+  OPTICAL_K_COMPOSITION_SENSITIVITY_GATE               PASS  composition vs module rel err = 0.000e+00
+
+========================================================================================
+s39 -- END-TO-END K SENSITIVITY FD (re-propagate with perturbed K)
+========================================================================================
+  expected FD signal at the smallest step: |dg/dK|*h = 1.913e-07 px
+  (a) two near-identical propagations differ by 0.000e+00 px -> the integrator is deterministic; any residual below is SYSTEMATIC truncation, not random noise
+  (b) rtol=1e-12 (campaign default):
+        dK=1.000e-06  FD d(u)/dK=-4.256855846e-02  d(v)/dK=+2.280251010e-02  rel_err=7.774e-01
+        dK=1.000e-05  FD d(u)/dK=-1.974842519e-01  d(v)/dK=+1.735980618e-01  rel_err=3.250e-02
+        dK=1.000e-04  FD d(u)/dK=-1.908210618e-01  d(v)/dK=+1.671109669e-01  rel_err=2.339e-03
+        dK=3.000e-04  FD d(u)/dK=-1.908574723e-01  d(v)/dK=+1.671471534e-01  rel_err=2.149e-03
+        dK=1.000e-03  FD d(u)/dK=-1.911455345e-01  d(v)/dK=+1.674274391e-01  rel_err=6.430e-04
+        dK=3.000e-03  FD d(u)/dK=-1.913092198e-01  d(v)/dK=+1.675867349e-01  rel_err=2.128e-04
+        dK=1.000e-02  FD d(u)/dK=-1.912931858e-01  d(v)/dK=+1.675711173e-01  rel_err=1.290e-04
+        best rel_err = 1.290e-04 at dK=1.000e-02
+  (b) rtol=1e-13 (tightened):
+        dK=1.000e-06  FD d(u)/dK=-1.959959377e-01  d(v)/dK=+1.721656417e-01  rel_err=2.472e-02
+        dK=1.000e-05  FD d(u)/dK=-1.910283459e-01  d(v)/dK=+1.673109409e-01  rel_err=1.256e-03
+        dK=1.000e-04  FD d(u)/dK=-1.914260690e-01  d(v)/dK=+1.677006605e-01  rel_err=8.238e-04
+        dK=3.000e-04  FD d(u)/dK=-1.912800070e-01  d(v)/dK=+1.675583303e-01  rel_err=6.010e-05
+        dK=1.000e-03  FD d(u)/dK=-1.912657500e-01  d(v)/dK=+1.675443804e-01  rel_err=1.586e-05
+        dK=3.000e-03  FD d(u)/dK=-1.912850439e-01  d(v)/dK=+1.675632006e-01  rel_err=8.644e-05
+        dK=1.000e-02  FD d(u)/dK=-1.912867689e-01  d(v)/dK=+1.675648622e-01  rel_err=9.545e-05
+        best rel_err = 1.586e-05 at dK=1.000e-03
+  analytic            d(u)/dK=-1.912685115e-01  d(v)/dK=+1.675474133e-01
+  residual shrinks with integrator tolerance (1.290e-04 -> 1.586e-05): YES -> oracle-limited
+  OPTICAL_K_E2E_SENSITIVITY_GATE                       PASS  best rel err = 1.586e-05 at dK=1.000e-03 (tightened integrator), and the residual tracks the oracle's own tolerance
+
+========================================================================================
+SUMMARY
+========================================================================================
+  DIRECT_MEASUREMENT_K_DEPENDENCE_IS_NO: PASS
+  OPTICAL_STATE_JACOBIAN_GATE: PASS
+  OPTICAL_K_COMPOSITION_SENSITIVITY_GATE: PASS
+  OPTICAL_K_E2E_SENSITIVITY_GATE: PASS
+
+  ALL_JACOBIAN_GATES_PASS = True

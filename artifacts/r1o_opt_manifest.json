@@ -1,0 +1,134 @@
+{
+  "phase": "17-R1O-OPT",
+  "gate": "CHARACTERIZATION_COMPLETE",
+  "head_at_start": "1045898b779bce62e51a5cf01053d4bff5e50ea4",
+  "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+  "push": "NONE",
+  "merge": "NONE",
+  "main_changed": "NO",
+  "origin_main_changed": "NO",
+  "central_finding": {
+    "defect": "phase17_r1o_core.chain_to_augmented_columns unflattens the 6x6 STM with NumPy default C order; lunar_od.dynamics packs and propagates it column-major (order='F'), so every R1O surrogate state-design row used Phi^T.",
+    "evidence": "end-to-end re-propagated finite differences match order='F' to ~1e-5 and disagree with C order by factors of 1e2-1e8",
+    "r1o_published_f_perp_reproduced": 0.876626,
+    "r1o_f_perp_with_phi_corrected": 0.253154,
+    "phi_transposition_delta_f_perp": 0.623473,
+    "measurement_model_delta_f_perp": -0.006998,
+    "affected": [
+      "phase17_r1o_core.build_ddor_arc",
+      "phase17_r1o_core.build_landmark_arc",
+      "phase17_r1o_celestial",
+      "phase17_r1od_surrogate_bridge"
+    ],
+    "unaffected": [
+      "build_range_arc (production two-way range Jacobian)",
+      "lunar_od/delta_dor.py (uses order='F')",
+      "all K columns (S_K is a 6-vector needing no reshape)"
+    ],
+    "repaired_in_place": false,
+    "repair_recommendation": "separate phase, owner authorization required"
+  },
+  "primary_result": {
+    "optical_information_class": "MARGINAL_DIRECTION_GAIN",
+    "f_perp_range_only": 0.29499,
+    "f_perp_optical_alone": 0.261735,
+    "f_perp_best_combined": 0.325272,
+    "sigma_k_frac_range_only": 0.034954,
+    "sigma_k_frac_best_combined": 0.029746,
+    "sigma_k_frac_combined_realistic": 0.032757,
+    "operational_improvement_factor": 1.175
+  },
+  "bias_findings": {
+    "attitude_bias_120_arcsec_k_shift_frac": -0.067696,
+    "map_bias_200m_k_shift_frac": -0.148375,
+    "formal_covariance_detects_bias_risk": false
+  },
+  "light_time": {
+    "landmark_retardation_px": 0.000279,
+    "time_tag_error_px": 0.0985,
+    "stellar_aberration_px": 0.0346,
+    "OPTICAL_LIGHT_TIME_SIGNIFICANCE": "NEGLIGIBLE",
+    "OPTICAL_ABERRATION_SIGNIFICANCE": "SIGNIFICANT_NOT_IMPLEMENTED"
+  },
+  "regression": {
+    "total": 1460,
+    "passed": 1419,
+    "failures": 2,
+    "errors": 10,
+    "skipped": 29,
+    "baseline_without_new_tests": {
+      "total": 1433,
+      "passed": 1392
+    },
+    "new_failures": 0,
+    "new_permanent_tests": 27
+  },
+  "not_run_by_gate": [
+    "nonlinear BLS/SRIF/SR-UKF integration",
+    "holdout prediction study",
+    "geometry generalization (deferred by scope, hard block s76)"
+  ],
+  "files": {
+    "lunar_od/lunar_landmark_optical.py": {
+      "sha256": "1ea3ccdd10d9bbb73f80f5647f4b1f22f107baf6c622c9040511407a1fa9df23",
+      "bytes": 17133
+    },
+    "tests/test_lunar_landmark_optical.py": {
+      "sha256": "ba44f20ce0fd7d85c1ddb472b9bac0ba34e632a97d024306761533e80d232cb7",
+      "bytes": 11423
+    },
+    "examples/phase17_r1o_opt_core.py": {
+      "sha256": "c1b6103335ca53b43b5ae58d9e27cf52de55f46546cf8952c105d2c970a08509",
+      "bytes": 13021
+    },
+    "examples/phase17_r1o_opt_oracles.py": {
+      "sha256": "9f34655d1a30dcc5acc329d35db3da18135da1de08e3c52a1127abc0e1951c00",
+      "bytes": 13349
+    },
+    "examples/phase17_r1o_opt_jacobian_and_k.py": {
+      "sha256": "91bcfc39447ab03fc775b2433560388d1b0d0ac9539d8c8e673ab1d9dd47926a",
+      "bytes": 11810
+    },
+    "examples/phase17_r1o_opt_bridge.py": {
+      "sha256": "68f3f5dcac6bce65dafa21c7ece6d669873e38e3116a0e6eed9e121132e2715b",
+      "bytes": 10708
+    },
+    "examples/phase17_r1o_opt_campaign.py": {
+      "sha256": "d30986be2a1f87451df009bc0b21396ae24d9310b8f785084c2b9d083c6ceed9",
+      "bytes": 17539
+    },
+    "docs/phase17_r1o_opt_literature_contract.md": {
+      "sha256": "aef3362b4b014b3c9a1393c98f3229e6820789b7caea9a2eeeeea0dead7c3eec",
+      "bytes": 7591
+    },
+    "docs/phase17_r1o_opt_production_optical_qualification.md": {
+      "sha256": "424eeb984f3f11205e8b7410f6cf1313865b5d5f2e9bb13843d30d5908ee0356",
+      "bytes": 32776
+    },
+    "artifacts/r1o_opt_bridge.json": {
+      "sha256": "180167d4579b1f958b9e12c42556f9eba3e27f902aaad7cd44fe391cce9a4d87",
+      "bytes": 2371
+    },
+    "artifacts/r1o_opt_campaign.json": {
+      "sha256": "f4167c7fa2056091210baa23e2536ee275acc2162fc502d8dde679becd08bcbd",
+      "bytes": 7441
+    },
+    "artifacts/r1o_opt_oracles.txt": {
+      "sha256": "5e683accf8f73cc36f7464e831448a638423b594c5d8b74eddae499878a21f27",
+      "bytes": 4328
+    },
+    "artifacts/r1o_opt_bridge.txt": {
+      "sha256": "1debc692a9fb4260eff472fcc8ea1f3cdc33aea9e977b44cf3e208c71dd88cd2",
+      "bytes": 2644
+    },
+    "artifacts/r1o_opt_jacobian_and_k.txt": {
+      "sha256": "5203dd627a13fa92664ceae64c5f6aabddb09b7c5d451c2ea4f6e151ea462c9a",
+      "bytes": 5167
+    },
+    "artifacts/r1o_opt_campaign.txt": {
+      "sha256": "c2938303a7c16da769a2120d6bc7fdf6026311ade839d2af53db18db8f256d1a",
+      "bytes": 6385
+    }
+  }
+}

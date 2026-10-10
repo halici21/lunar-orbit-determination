@@ -1,0 +1,12 @@
+{
+  "path": "examples/run_scenario_config.py",
+  "historical_sha256": "f6cf74b69fa15a15148cb6ca59db56980b9afa3340b59fcaf4de8a2a2a533bac",
+  "accepted_current_sha256": "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
+  "accepted_commit": "a9f9e56c2556b98a68493e3425ae42b836f34f8c",
+  "authorization": "Owner merged PR #7 and requested branch consolidation on 2026-10-10",
+  "representation": "git cat-file --filters; core.autocrlf=true",
+  "scope": "opt-in desktop job options and recorded artifact callback; no lunar_od module modified",
+  "scientific_tolerances_changed": false,
+  "protected_path_removed": false,
+  "historical_hash_changed": false
+}

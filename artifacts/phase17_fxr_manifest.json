@@ -1,0 +1,164 @@
+{
+ "phase": "17-FXR",
+ "gate": "PASS",
+ "primary_class": "HISTORICAL_EARTH_EPOCH_FIXTURE_DEFECT_REPAIRED_AND_PRIOR_BASELINES_REQUALIFIED",
+ "start_head": "40bc1533fb3056b626b3132bbd71a153456c16da",
+ "start_tree": "121fe64ffb5b35399bd16c7427d0d3f7f0f42c56",
+ "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+ "push": "NONE",
+ "merge": "NONE",
+ "main_changed": "NO",
+ "gates": {
+  "EARTH_EPOCH_OFFSET_REPRODUCTION_GATE": "PASS",
+  "FXR_RUNTIME_EPOCH_AUDIT": "PASS",
+  "EARTH_TABLE_CLAMP_CHARACTERIZATION_GATE": "PASS",
+  "HISTORICAL_FIXTURE_REPRODUCTION_GATE": "PASS",
+  "FXR_INPUT_GATE": "PASS",
+  "GRAPHIFY_DISCOVERY_GATE": "PASS",
+  "EARTH_EPOCH_FIXTURE_REGRESSION_GATE": "PASS",
+  "FXR_VS_GEO_CANONICAL_BASELINE_GATE": "PASS"
+ },
+ "defect": {
+  "file": "examples/phase17_r1m_core.py",
+  "symbol": "build_range_arc",
+  "scenario_et": 857806356.99998,
+  "earth_table_start_et": 857302356.99998,
+  "delta_et_s": 504000.0,
+  "delta_et_days": 5.833333333333333,
+  "table_duration_s": 28260.0,
+  "clamp_start_orbit": 3.998607836058441,
+  "published_obs_after_clamp": 590
+ },
+ "four_way": {
+  "A_LEGACY_OFFSET_CLAMPED": {
+   "n_obs": 782,
+   "f_perp": 0.2522919965229832,
+   "theta_k_deg": 14.613182283011557,
+   "conditional_k_information": 1162817.0907819087,
+   "sigma_k_frac": 0.09273513250655349
+  },
+  "B_OFFSET_EPOCH_UNCLAMPED": {
+   "n_obs": 768,
+   "f_perp": 0.20666667767140529,
+   "theta_k_deg": 11.927082200170153,
+   "conditional_k_information": 729048.0216476062,
+   "sigma_k_frac": 0.11711753742428338
+  },
+  "C_CORRECT_EPOCH_CLAMPED": {
+   "n_obs": 968,
+   "f_perp": 0.08572751954170586,
+   "theta_k_deg": 4.917861379244694,
+   "conditional_k_information": 123353.98045028113,
+   "sigma_k_frac": 0.2847235670712773
+  },
+  "D_CANONICAL": {
+   "n_obs": 960,
+   "f_perp": 0.09150755457311016,
+   "theta_k_deg": 5.250341535432847,
+   "conditional_k_information": 154974.2393435186,
+   "sigma_k_frac": 0.25402136377136003
+  }
+ },
+ "attribution": {
+  "total_repair_delta_f_perp": -0.160784441949873,
+  "epoch_repair_given_no_clamp_delta_f_perp": -0.11515912309829512,
+  "epoch_repair_given_clamp_delta_f_perp": -0.1665644769812773,
+  "clamp_repair_given_correct_epoch_delta_f_perp": 0.005780035031404299,
+  "clamp_repair_given_offset_epoch_delta_f_perp": -0.04562531885157789,
+  "interaction_delta_f_perp": 0.051405353882982174,
+  "epoch_main_effect_shapley_delta_f_perp": -0.1408618000397862,
+  "clamp_main_effect_shapley_delta_f_perp": -0.019922641910086795,
+  "total_repair_ratio_sigma_k_frac": 2.7392138977469904,
+  "epoch_repair_given_no_clamp_ratio_sigma_k_frac": 2.1689438606543887,
+  "clamp_repair_given_correct_epoch_ratio_sigma_k_frac": 0.8921683806657589
+ },
+ "canonical_range_baseline": 0.09150755457311016,
+ "legacy_reproduction": {
+  "R1M": true,
+  "R1COV": true,
+  "R1O": true,
+  "R1OD": false,
+  "R1OOPT": true
+ },
+ "legacy_reproduction_r1od_max_abs_delta": 2.7755575615628914e-17,
+ "requalification": {
+  "R1M": {
+   "absolute": "SUPERSEDED",
+   "qualitative": "PARTIAL"
+  },
+  "R1COV": {
+   "algorithm": "UNCHANGED",
+   "numeric_baseline": "REQUALIFIED"
+  },
+  "R1O": "CHANGED",
+  "R1OD": {
+   "published": "MAGNITUDE_ONLY",
+   "corrected": "STRONG_DIRECTION_GAIN",
+   "corrected_range_f_perp": 0.09150755457311016,
+   "corrected_ddor_f_perp": 0.3204398422766736,
+   "attribution": {
+    "gains": {
+     "LEGACY": -0.045479560491055365,
+     "OFFSET_ONLY": -0.005183286273348797,
+     "CLAMP_ONLY": 0.26006387961966326,
+     "CANONICAL": 0.22893228770356344
+    },
+    "classes": {
+     "LEGACY": "MAGNITUDE_ONLY",
+     "OFFSET_ONLY": "MAGNITUDE_ONLY",
+     "CLAMP_ONLY": "STRONG_DIRECTION_GAIN",
+     "CANONICAL": "STRONG_DIRECTION_GAIN"
+    },
+    "ddor_only_f_perp": {
+     "LEGACY": 0.018806601054057577,
+     "OFFSET_ONLY": 0.01975203690427252,
+     "CLAMP_ONLY": 0.3848690006756084,
+     "CANONICAL": 0.35747800937153906
+    },
+    "range_f_perp": {
+     "LEGACY": 0.2522919965229832,
+     "OFFSET_ONLY": 0.20666667767140529,
+     "CLAMP_ONLY": 0.08572751954170586,
+     "CANONICAL": 0.09150755457311016
+    },
+    "epoch_repair_given_no_clamp": 0.23411557397691224,
+    "epoch_repair_given_clamp": 0.30554344011071866,
+    "clamp_repair_given_correct_epoch": -0.03113159191609982,
+    "clamp_repair_given_offset_epoch": 0.04029627421770657,
+    "frozen_anchor_effect_legacy": 0.005333627919296785,
+    "frozen_anchor_effect_canonical": 0.016125055089539375
+   }
+  },
+  "R1O_OPT": {
+   "published": "MARGINAL_DIRECTION_GAIN",
+   "corrected": "MARGINAL_DIRECTION_GAIN"
+  },
+  "R1O_R_STM": "VALID"
+ },
+ "geo_g5_implementation_class": "PHYSICAL_K_TRUTH_TRAJECTORY_SWEEP",
+ "range_jacobian": {
+  "status": "KNOWN_UNRESOLVED_SYSTEMATIC_DIFFERENCE",
+  "max_known_f_perp_materiality": 3.77e-06,
+  "jacobian_limited_classifications": 0
+ },
+ "dynamics_scope": "INHERITED_CANONICAL_SIMPLIFIED_DYNAMICS",
+ "provenance": "SYNTHETIC_CAMPAIGN_TRUTH",
+ "production_code_changed": "NO",
+ "regression": {
+  "total_collected": 1475,
+  "passed": 1434,
+  "passed_tests": 1288,
+  "passed_subtests": 146,
+  "failed": 2,
+  "errors": 10,
+  "skipped": 29,
+  "fxr_introduced_nonpasses": 0,
+  "new_scientific_regressions": 0,
+  "unknown_nonpasses": 0,
+  "nonpass_classes": {
+   "fa06": "KNOWN_PREEXISTING_ENVIRONMENT",
+   "r2_byte_gate_and_10_errors": "KNOWN_PREEXISTING_PROVENANCE"
+  }
+ },
+ "decision_tree_case": "B"
+}

@@ -1,0 +1,81 @@
+{
+  "phase": "17-F1",
+  "declared_before_any_post_F1_metric": true,
+  "declared_at_commit": "1025f4abf8ecc726a09c20ab09d103875751d01f (pre-implementation)",
+  "geo_spot_check": {
+    "source": "artifacts/phase17_geo_information_metrics.csv (pre-F1)",
+    "source_sha256_raw": "4b9e6680c7fc67d418bd8df7490ac40c81360783ad2e6683e808db8b9285948b",
+    "population": "valid CONSISTENT cases, stages G0-G4 (G5 K-sweep duplicates and CF counterfactuals excluded)",
+    "selection_rules": {
+      "canonical": "G0_consistent",
+      "min_f_perp": "argmin full_f_perp",
+      "max_f_perp": "argmax full_f_perp",
+      "closest_to_threshold": "argmin over |d| of distance to the nearest GEO class boundary (|d| = 0.02, 0.10, 0.25), G0 excluded",
+      "penumbra_rich": "argmax penumbra_fraction"
+    },
+    "selected": {
+      "canonical": "G0_consistent",
+      "min_f_perp": "G4_net_Madrid",
+      "max_f_perp": "G3_i26.7_bcan",
+      "closest_to_threshold": "G1_b40",
+      "penumbra_rich": "G1_b71"
+    },
+    "pre_f1_values": {
+      "G0_consistent": {
+        "full_f_perp": "0.09150755457311016",
+        "delta_f_perp_full": "0.0",
+        "class_full": "MAGNITUDE_ONLY",
+        "penumbra_fraction": "0.002544529262086514",
+        "eclipse_fraction": "0.38761662425784565",
+        "full_sigma_k_frac": "0.25402136377136003",
+        "threshold_margin": 0.02
+      },
+      "G4_net_Madrid": {
+        "full_f_perp": "0.03255873293348903",
+        "delta_f_perp_full": "-0.05894882163962113",
+        "class_full": "MARGINAL_DIRECTION_CHANGE_LOSS",
+        "penumbra_fraction": "0.002544529262086514",
+        "eclipse_fraction": "0.38761662425784565",
+        "full_sigma_k_frac": "1.4413364609287505",
+        "threshold_margin": 0.03894882163962113
+      },
+      "G3_i26.7_bcan": {
+        "full_f_perp": "0.2814020725638323",
+        "delta_f_perp_full": "0.18989451799072216",
+        "class_full": "MARGINAL_DIRECTION_CHANGE_GAIN",
+        "penumbra_fraction": "0.0016963528413910093",
+        "eclipse_fraction": "0.38676844783715014",
+        "full_sigma_k_frac": "0.2831759439942408",
+        "threshold_margin": 0.060105482009277844
+      },
+      "G1_b40": {
+        "full_f_perp": "0.11201617193457597",
+        "delta_f_perp_full": "0.02050861736146581",
+        "class_full": "MARGINAL_DIRECTION_CHANGE_GAIN",
+        "penumbra_fraction": "0.0016963528413910093",
+        "eclipse_fraction": "0.361323155216285",
+        "full_sigma_k_frac": "0.461808721378298",
+        "threshold_margin": 0.0005086173614658081
+      },
+      "G1_b71": {
+        "full_f_perp": "0.1227205163572889",
+        "delta_f_perp_full": "0.031212961784178733",
+        "class_full": "MARGINAL_DIRECTION_CHANGE_GAIN",
+        "penumbra_fraction": "0.04240882103477523",
+        "eclipse_fraction": "0.07548770144189991",
+        "full_sigma_k_frac": "0.9843778515730879",
+        "threshold_margin": 0.011212961784178733
+      }
+    },
+    "escalation_rule": "Escalate to the full GEO primary grid if ANY selected case changes class_full, OR |post-pre change of d| >= 0.5 x its pre-F1 threshold margin, OR |post-pre change of full_f_perp| >= 0.01 absolute."
+  },
+  "d2_primary": "9 geometries x {GC, GM}, 5 nrad, angular semantics, dense rows; classes cls (relative gain) and abs_cls recomputed with the D2 rules; pre = same script run at the entering HEAD",
+  "gates": {
+    "local_gradient": "relative error of analytic vs central-FD (production acceleration) <= 1e-6 on the FD plateau at every well-defined point; exact zero for K=0, umbra interior, NO_SHADOW illumination term",
+    "stm": "max best-resolved relative error over 6 STM state columns <= 1e-6 on the HARDEN D05 4-orbit case (or at a demonstrated oracle floor with a tolerance-convergence study)",
+    "k_sensitivity": "max best-resolved relative error of S_K vs K re-propagation <= 1e-6, or at a demonstrated floor with step and tolerance studies",
+    "old_approximation_negative_control": "old (gradient-omitting) model must fail the same oracle by >= 10x more than the new model on the penumbra-rich case",
+    "measurement_derivatives": "post-F1 errors must not exceed the HARDEN artifact values (phase17_harden_derivatives.json) by more than 2x on any column; state-column best errors <= 1e-5, K <= 1e-3 (existing HARDEN bounds)",
+    "materiality": "class change of any D2 primary cell => SCIENTIFIC_CLASSIFICATION_CHANGED; value change beyond the authoritative status precision (4-6 significant digits) with classes preserved => NUMERICAL_BASELINES_UPDATED_CLASSES_PRESERVED"
+  }
+}

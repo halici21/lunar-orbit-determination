@@ -1,0 +1,153 @@
+{
+  "phase": "PHASE 17-R1O-D",
+  "title": "PRODUCTION DELTA-DOR MEASUREMENT MODEL DESIGN, PHYSICS QUALIFICATION, AND K_SRP VALIDATION",
+  "date": "2026-09-19",
+  "scope": "NEW_PRODUCTION_MEASUREMENT_MODULE_STANDALONE_NOT_WIRED_INTO_ESTIMATORS",
+  "git": {
+    "start_branch": "feature/phase17-r-k-srp-estimation",
+    "start_head": "9f18d96407647150e6eb48fd2b967db152e89dc3",
+    "start_tree": "e18399d79e1600266d832b69fe2e7011403ea60c",
+    "main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "origin_main": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+    "main_changed": false,
+    "origin_main_changed": false,
+    "push": "NONE",
+    "merge": "NONE",
+    "force_push": "NONE",
+    "history_rewrite": "NONE",
+    "final_head_note": "the commit adding this manifest; a commit cannot embed its own hash"
+  },
+  "gates": {
+    "r1od_input_gate": "PASS",
+    "r1o_numeric_consistency_gate": "PASS",
+    "r1o_erratum_class": "DOCUMENTATION_TRANSCRIPTION_ONLY",
+    "ddor_literature_contract_gate": "PASS",
+    "reference_spacecraft_ddor_rf_capability": "UNKNOWN",
+    "ddor_common_transmit_event_gate": "PASS",
+    "ddor_geometric_oracle_gate": "PASS",
+    "spacecraft_dor_event_oracle_gate": "PASS",
+    "quasar_delay_oracle_gate": "PASS",
+    "ddor_local_delay_numerical_conditioning_gate": "PASS",
+    "ddor_state_jacobian_gate": "PASS",
+    "ddor_k_composition_sensitivity_gate": "PASS",
+    "ddor_k_e2e_sensitivity_gate": "PASS",
+    "r1cov_ddor_covariance_path_gate": "PASS",
+    "goldstone_canberra_dual_visibility_reproduction": "PASS",
+    "production_ddor_information_direction_gate": "FAIL",
+    "production_ddor_information_direction_class": "MAGNITUDE_ONLY",
+    "r1o_surrogate_did_not_generalize_to_production_ddor": true,
+    "bls_ddor_solve_for_gate": "NOT_RUN_BY_GATE",
+    "phase17_r1od_gate": "CHARACTERIZATION_COMPLETE"
+  },
+  "two_bugs_found_and_fixed": [
+    {
+      "location": "solve_common_transmit_event D_S formula",
+      "symptom": "1.265e-04 relative drift in D_S across epoch binades 2^0-2^36 s",
+      "cause": "t_b - t_obs_s subtracted two large absolute epochs; precision lost when t_b was CONSTRUCTED (t_tx + light_time_B), not at the final subtraction",
+      "fix": "D_S = forward.light_time_s - backward.light_time_s (two small local quantities)",
+      "result_after_fix": "1.377e-10 relative drift"
+    },
+    {
+      "location": "FD verification harness (Jacobian and K-sensitivity checks)",
+      "symptom": "state Jacobian max rel err 3.11e-04 (marginal fail); K-sensitivity E2E rel err 37.3 (sign unstable, catastrophic fail)",
+      "cause": "crude piecewise-linear position interpolation in the FD harness vs the qualified cubic-Hermite interpolator the analytic path uses; d(D_S)/dK's true signal (~3.5e-15 s at the tested FD step) sat far below the linear interpolant's own ~1e-7 s absolute truncation-error floor",
+      "fix": "rebuilt every position/velocity lookup in the FD harness on the same Hermite interpolator (_interp_state) the analytic path uses; station velocity taken from the qualified 6x6 J2000/ITRF93 transform directly",
+      "result_after_fix": "state Jacobian rel err 6.78e-06; K-sensitivity E2E rel err 8.21e-05"
+    }
+  ],
+  "anchor_convention_reconciliation": {
+    "issue": "governing spec s17 diagrams a transmit-anchored DDOR; Moyer Section 11.4.1 anchors on common reception time instead",
+    "resolution": "shipped implementation follows the spec's transmit-anchored HARD requirement literally; independently cross-checked against Moyer's reception-anchored convention using zero new solver code",
+    "solved_transmit_time_difference_s": 0.007345,
+    "d_s_relative_difference": 0.00141,
+    "jacobian_component_relative_differences": [
+      0.000338,
+      0.000288,
+      0.000313,
+      0.00033,
+      0.000333,
+      0.000341
+    ],
+    "conclusion": "Jacobian vectors nearly PARALLEL (uniform ~3.3e-4 scale offset), so f_perp/theta_K are unaffected by the anchor choice; the negative finding is robust to it"
+  },
+  "information_geometry": {
+    "range_only": {
+      "f_perp": 0.2523,
+      "theta_k_deg": 14.61,
+      "sigma_k_over_k": 0.0927,
+      "conditional_k_information": 1162817.0
+    },
+    "range_plus_ddor_5nrad": {
+      "f_perp": 0.2121,
+      "theta_k_deg": 12.25,
+      "sigma_k_over_k": 0.0867,
+      "conditional_k_information": 1329505.0
+    },
+    "f_perp_gain": -0.0401
+  },
+  "session_bias_study": {
+    "case_a_sigma_k": 0.0008672714,
+    "case_c_sigma_k_bias_nuisance": 0.0008719299,
+    "case_c_inflation_factor": 1.01,
+    "case_b_induced_k_shift_per_ns_bias_m2_per_kg": -0.002250994,
+    "case_b_shift_fraction_of_k_truth_at_1ns": 0.225,
+    "classification": "EXTREME"
+  },
+  "tests": {
+    "targeted": {
+      "collected": "see r1od test run",
+      "passed": "all",
+      "failed": 0,
+      "errors": 0
+    },
+    "full_suite": {
+      "collected": 1287,
+      "passed": 1246,
+      "failed": 2,
+      "errors": 10,
+      "skipped": 29
+    },
+    "r1o_full_suite_baseline": {
+      "collected": 1264,
+      "passed": 1223,
+      "failed": 2,
+      "errors": 10,
+      "skipped": 29
+    },
+    "delta_is_new_tests_only": true,
+    "new_tests_added": 23,
+    "r1od_introduced_nonpasses": 0,
+    "new_scientific_regressions": 0,
+    "unknown_nonpasses": 0
+  },
+  "next_action": "PHASE_17_R1O_OPT (lunar landmark LOS production measurement model design and qualification), carrying forward this phase's central lesson: verify a surrogate against real physics before trusting it. Not begun automatically.",
+  "production_files_added": [
+    "lunar_od/delta_dor.py"
+  ],
+  "test_files_added": [
+    "tests/test_delta_dor.py"
+  ],
+  "analysis_scripts": [
+    "phase17_r1od_anchor_convention_check.py",
+    "phase17_r1od_campaign.py",
+    "phase17_r1od_jacobian_and_k.py",
+    "phase17_r1od_oracles.py",
+    "phase17_r1od_surrogate_bridge.py"
+  ],
+  "orphaned_scripts_not_committed": [
+    "phase17_r1od_fd_convergence.py",
+    "phase17_r1od_qualification.py",
+    "(reference a superseded pre-rewrite delta_dor.py API; their literature research is preserved in docs/phase17_r1od_literature_contract.md)"
+  ],
+  "report": "docs/phase17_r1od_production_ddor_qualification.md",
+  "literature_contract": "docs/phase17_r1od_literature_contract.md",
+  "artifact_sha256": {
+    "r1od_campaign_summary.json": "15c82a4177d5ed7270c2cf943e078bf59be4ebe6bd32f57dd573a5184b774d64",
+    "r1od_jacobian_fd_sweep.csv": "defdaeba2a4def037f0335be7cb7bcc17df5a6e6cb961be6a8122b745ecfe6b0",
+    "r1od_k_sensitivity_fd.csv": "d1ae918b4491580fc77fe8260a010234f17f1cf87cda1576ac44388a5960ce3b",
+    "r1od_oracle_gates.json": "d54d124d89278a36eaaf70ebda2b765c4749fbee5aa7b60b35c70341d247194f",
+    "r1od_qualification_summary.json": "467edbc16183011131bd7e78f54f63e1f9b238612bd865cf0a0fda3bbabd0f0c",
+    "r1od_random_noise_study.csv": "d385f272aebf392f67d98e0efb39d95c707640247a542fa082e8eef0c0a0a8e8",
+    "r1od_systematic_residual_study.csv": "407d59fc9c7551da7cc203e71af15394b6654f606c1e346b4d5ab2d7e8450c48"
+  }
+}

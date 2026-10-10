@@ -1,0 +1,37 @@
+{
+  "n_dual_visible": 143,
+  "n_converged": 143,
+  "goldstone_canberra_dual_visibility_reproduction": "PASS",
+  "range_only": {
+    "n_obs": 782,
+    "raw_i_kk": 18268566.025090486,
+    "conditional_k_information": 1162817.0907819087,
+    "orthogonal_fraction": 0.2522919965229832,
+    "theta_k_deg": 14.613182283011557,
+    "smallest_scaled_singular_value": 116.28170840871176,
+    "scaled_condition": 9325336632734080.0,
+    "rank": 6,
+    "weakest_mode_k_component": 0.9999999967347587,
+    "qualified_sigma_k": 0.0009273513250655349,
+    "fractional_sigma_k": 0.09273513250655349,
+    "rank_margin": 6662381.157463631
+  },
+  "range_ddor_5nrad": {
+    "n_obs": 925,
+    "raw_i_kk": 29540647.329104707,
+    "conditional_k_information": 1329504.9690358194,
+    "orthogonal_fraction": 0.2121460639512246,
+    "theta_k_deg": 12.248146794154993,
+    "smallest_scaled_singular_value": 132.9504968999256,
+    "scaled_condition": 1.3600690877491672e+16,
+    "rank": 6,
+    "weakest_mode_k_component": 0.9999999999876465,
+    "qualified_sigma_k": 0.0008672713853687615,
+    "fractional_sigma_k": 0.08672713853687615,
+    "rank_margin": 5516723.907097088
+  },
+  "f_perp_gain": -0.04014593257175858,
+  "information_direction_class": "MAGNITUDE_ONLY",
+  "r1cov_ddor_covariance_path_gate": "PASS",
+  "covariance_crosscheck_rel_error": 1.0001041803305945e-15
+}

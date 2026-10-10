@@ -1,0 +1,167 @@
+{
+ "force_model": "GL1800F 50x50 MOON_PA_DE440 + Earth/Sun point-mass third body + cannonball SRP (conical penumbra); harmonic STM opt-in",
+ "weakest_rule_selection": {
+  "case": "O5_FAVOURABLE_GEO_MAX_FPERP",
+  "pair": "GM",
+  "delta": -0.08136360805746912
+ },
+ "cases": [
+  {
+   "case_id": "CANON",
+   "pair": "GC",
+   "SIMPLIFIED": {
+    "range_f_perp": 0.0915024012983624,
+    "range_sigma_k_frac": 0.2540230025569859,
+    "range_obs": 960,
+    "n_rows": 170,
+    "nom48_final_pos": [
+     -1754512.0574502663,
+     -308198.7427032489,
+     472476.0592857364
+    ],
+    "k_sens_final_norm": 2427.5874306546557,
+    "dense_f_perp": 0.17234299835774247,
+    "dense_delta": 0.08084059705938007,
+    "dense_class": "STRONG_DIRECTION_GAIN",
+    "dense_sigma_k_frac": 0.07456525880445558,
+    "absolute_class": "WEAK_K_SEPARATION",
+    "weakest_mode_k_component": 0.9999999999968238,
+    "design_condition": 119589198.19999273,
+    "ops_delta": 0.06716359733143751,
+    "ops_class": "STRONG_DIRECTION_GAIN",
+    "b4_delta": 0.045624346059344206
+   },
+   "FIDELITY_GL50_EARTH_SUN": {
+    "range_f_perp": 0.09432396248645196,
+    "range_sigma_k_frac": 0.23507674146706975,
+    "range_obs": 961,
+    "n_rows": 170,
+    "nom48_final_pos": [
+     -1750911.1475992063,
+     -343839.19217302336,
+     442911.4233013
+    ],
+    "k_sens_final_norm": 2547.1554508673044,
+    "dense_f_perp": 0.16687899654824576,
+    "dense_delta": 0.0725550340617938,
+    "dense_class": "STRONG_DIRECTION_GAIN",
+    "dense_sigma_k_frac": 0.07351803725658966,
+    "absolute_class": "WEAK_K_SEPARATION",
+    "weakest_mode_k_component": 0.9999999999967293,
+    "design_condition": 118285200.97356114,
+    "ops_delta": 0.059250842656015365,
+    "ops_class": "STRONG_DIRECTION_GAIN",
+    "b4_delta": 0.03911513536871049
+   },
+   "max_position_difference_m": 46446.484162477136,
+   "class_preserved": true,
+   "margin_to_nearest_threshold": 0.022555034061793794,
+   "elapsed_s": 181.99657559394836
+  },
+  {
+   "case_id": "O2_FULL_SUN_HIGH_BETA",
+   "pair": "GC",
+   "SIMPLIFIED": {
+    "range_f_perp": 0.11416101714230077,
+    "range_sigma_k_frac": 2.005920494799905,
+    "range_obs": 1339,
+    "n_rows": 232,
+    "nom48_final_pos": [
+     699977.5600198999,
+     1553513.152114362,
+     687965.9814055905
+    ],
+    "k_sens_final_norm": 591.993859826011,
+    "dense_f_perp": 0.27151284296566885,
+    "dense_delta": 0.1573518258233681,
+    "dense_class": "STRONG_DIRECTION_GAIN",
+    "dense_sigma_k_frac": 0.34530718527552856,
+    "absolute_class": "WEAK_K_SEPARATION",
+    "weakest_mode_k_component": 0.9999999999994444,
+    "design_condition": 487895384.3441648,
+    "ops_delta": 0.09495383935656206,
+    "ops_class": "STRONG_DIRECTION_GAIN",
+    "b4_delta": 0.06971102597843039
+   },
+   "FIDELITY_GL50_EARTH_SUN": {
+    "range_f_perp": 0.11051878861995588,
+    "range_sigma_k_frac": 2.0610007424438233,
+    "range_obs": 1330,
+    "n_rows": 229,
+    "nom48_final_pos": [
+     692791.6574703902,
+     1553973.8680518433,
+     686474.5720111605
+    ],
+    "k_sens_final_norm": 590.0806145181425,
+    "dense_f_perp": 0.2639409038524503,
+    "dense_delta": 0.15342211523249438,
+    "dense_class": "STRONG_DIRECTION_GAIN",
+    "dense_sigma_k_frac": 0.356911970081997,
+    "absolute_class": "WEAK_K_SEPARATION",
+    "weakest_mode_k_component": 0.9999999999994905,
+    "design_condition": 503879149.1192183,
+    "ops_delta": 0.09230938824589428,
+    "ops_class": "STRONG_DIRECTION_GAIN",
+    "b4_delta": 0.07045641368580384
+   },
+   "max_position_difference_m": 15235.837729700415,
+   "class_preserved": true,
+   "margin_to_nearest_threshold": 0.10342211523249438,
+   "elapsed_s": 144.4167492389679
+  },
+  {
+   "case_id": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "pair": "GM",
+   "SIMPLIFIED": {
+    "range_f_perp": 0.2814151816661691,
+    "range_sigma_k_frac": 0.28317521412229496,
+    "range_obs": 957,
+    "n_rows": 92,
+    "nom48_final_pos": [
+     1298282.5559781776,
+     1172982.3316407676,
+     561452.107661631
+    ],
+    "k_sens_final_norm": 1059.8239100161325,
+    "dense_f_perp": 0.20003979084440704,
+    "dense_delta": -0.08137539082176204,
+    "dense_class": "DIRECTION_LOSS",
+    "dense_sigma_k_frac": 0.25081440318191484,
+    "absolute_class": "WEAK_K_SEPARATION",
+    "weakest_mode_k_component": 0.9999999999726433,
+    "design_condition": 342640327.0073284,
+    "ops_delta": -0.04109149823839511,
+    "ops_class": "DIRECTION_LOSS",
+    "b4_delta": -0.08523536925557029
+   },
+   "FIDELITY_GL50_EARTH_SUN": {
+    "range_f_perp": 0.3107500455023441,
+    "range_sigma_k_frac": 0.27460388064713603,
+    "range_obs": 958,
+    "n_rows": 92,
+    "nom48_final_pos": [
+     1305679.5856252294,
+     1165648.1826876532,
+     551653.0276115406
+    ],
+    "k_sens_final_norm": 956.2126452702524,
+    "dense_f_perp": 0.19970019524023164,
+    "dense_delta": -0.11104985026211245,
+    "dense_class": "DIRECTION_LOSS",
+    "dense_sigma_k_frac": 0.25157197120940017,
+    "absolute_class": "WEAK_K_SEPARATION",
+    "weakest_mode_k_component": 0.999999999971292,
+    "design_condition": 343820807.50208914,
+    "ops_delta": -0.06800426460595094,
+    "ops_class": "DIRECTION_LOSS",
+    "b4_delta": -0.11535509414380726
+   },
+   "max_position_difference_m": 21507.390746628796,
+   "class_preserved": true,
+   "margin_to_nearest_threshold": 0.09104985026211244,
+   "elapsed_s": 181.2323398590088
+  }
+ ],
+ "PRODUCTION_FIDELITY_DYNAMICS_EFFECT": "PRESERVES_CLASS"
+}

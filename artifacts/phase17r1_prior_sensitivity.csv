@@ -1,0 +1,3 @@
+prior,mean_m2_per_kg,sigma_m2_per_kg,posterior_m2_per_kg,posterior_sigma_m2_per_kg,classification
+broad,0.012,1.0,0.010985408094097694,0.0016448103092278434,DATA_DOMINATED
+moderate,0.012,0.01,0.01146154766363444,0.001644810333391077,DATA_DOMINATED
