@@ -207,3 +207,12 @@ NEXT_ACTION = hard stop. Not started (separately authorised): a stochastic-K pha
 - **Estimator scope.** It is an analysis-layer batch solver.
   - The production BLS did not converge on this arc from the a priori start; it agrees only when warm-started (§8.2).
   - Its posterior covariance carries HARDEN-D25.
+
+## 11. Addendum — Phase 17-HARDEN-BLS1 (2026-10-10)
+
+The production-BLS non-convergence in §8.2 was an estimator defect (HARDEN-D26), now repaired. Run unchanged
+against the repaired estimator from the declared a priori, the frozen `job_bls` reaches this phase's solution to
+≤ 6.2e-5 σ. The PRODUCTION_BLS gate's estimate criterion therefore passes as computed. Its σ criterion still fails,
+and the whole failure is HARDEN-D25 (σ ratio 1.0000 once the harmonic field is included). Nothing in §1–§9 changes:
+every decision quantity here comes from this phase's own solver. This section's frozen artifacts are not
+regenerated. See `docs/phase17_harden_bls1_production_bls_recovery.md`.

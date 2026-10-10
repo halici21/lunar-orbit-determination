@@ -324,7 +324,33 @@
       "klass": "REQUIRED_FOR_CORRECTNESS",
       "repair": "none in KP2 (estimator change out of scope); pass the harmonic model through to the posterior design and re-qualify Phase 17-R's posterior tests",
       "regression": "none yet",
-      "reproduction": "examples/phase17_kp2_campaign.py --posthoc-verification (bls_stationarity)"
+      "reproduction": "examples/phase17_kp2_campaign.py --posthoc-verification (bls_stationarity); BLS1: examples/phase17_bls1_qualification.py --hf (diagnostic_d25: with the solve's harmonic field the sigma ratio is 1.0000 for all 7 parameters, so D25 is the whole PRODUCTION_BLS sigma-criterion failure; immaterial to every KP2 classification)"
+    },
+    {
+      "id": "HARDEN-D26",
+      "title": "BLS-LM K_SRP solve-for cannot leave a realistic a priori",
+      "location": "lunar_od/estimators.py estimate_two_way_range_bls_lm (solve_for_k_srp=True): _lm_step, the negative-K trial branch, _adaptive_tol",
+      "discovered": "Phase 17-KP2 frozen production-BLS verification (DampingLimit, K -> 2.9e-7, 347 sigma off)",
+      "root_cause": "(a) the damped normal matrix was formed in bookkeeping units (cond 8.5e16 vs 1.6e8 equilibrated), so every small-lambda step was declared singular and the weak state/K direction (eigenvalue 4.3e-8) was unreachable; (b) a negative-K trial discarded the whole step and raised lambda, which on the coupled problem makes dK more negative; (c) the Jacobian was integrated at rtol 1e-8 early on, moving the Gauss-Newton fixed point",
+      "effect": "from a ~100 m a priori the solve stalled at chi2 1.28e6 vs optimum 902 (simplified) and 347 sigma from the least-squares solution (high fidelity); not an identifiability limit (cond(H) 1.3e4, one undamped GN step reaches the optimum)",
+      "status": "FIXED",
+      "klass": "REQUIRED_FOR_CORRECTNESS",
+      "repair": "Phase 17-HARDEN-BLS1: equilibrated-QR solve of the same damped system (_lm_step_square_root), K-fixed bound-active step instead of discard, caller-tolerance Jacobian; K path only, six-state path bitwise unchanged. Frozen KP2 job from the declared a priori: <= 6.2e-5 sigma from the KP2 solution, independent stationarity <= 4.1e-3 sigma; docs/phase17_harden_bls1_production_bls_recovery.md",
+      "regression": "tests/test_harden_bls1_k_srp_recovery.py (unit-induced singularity reproduced; end-to-end recovery vs independent GN and truth start; bound-active path)",
+      "reproduction": "examples/phase17_bls1_qualification.py --ablation / --hf"
+    },
+    {
+      "id": "HARDEN-D27",
+      "title": "BLS-LM K_SRP reports DampingLimit at a verified stationary point",
+      "location": "lunar_od/estimators.py estimate_two_way_range_bls_lm acceptance / termination logic",
+      "discovered": "Phase 17-HARDEN-BLS1 qualification",
+      "root_cause": "at the minimiser no trial step beats the objective's integration noise, so every trial is rejected and lambda climbs to the 1e12 guard; the J-Stab/step-norm tests only run on accepted steps",
+      "effect": "label only: high-fidelity KP2 job ends DampingLimit with the GN remainder <= 4.1e-3 sigma; a solve started at the truth ends DampingLimit at the converged solution (0 sigma). The status is not a reliable convergence indicator near the noise floor",
+      "status": "OPEN_RECOMMENDED_FOLLOWUP",
+      "klass": "RECOMMENDED_FOLLOWUP",
+      "repair": "none (a new acceptance/termination rule is a convergence-criterion change); qualify with an independent stationarity check",
+      "regression": "none",
+      "reproduction": "examples/phase17_bls1_qualification.py --hf (production.status, diagnostic_stationarity)"
     }
   ]
 }
