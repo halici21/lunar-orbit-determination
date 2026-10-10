@@ -1,0 +1,25 @@
+{
+ "phase": "Phase 17-HARDEN-D25 - production posterior covariance consistency",
+ "written": "2026-10-10, after the repair code was written and the focused K_SRP tests ran, BEFORE any qualification number (oracle, KP2 sigma, stage F/G) was computed",
+ "repair_under_test": "estimators._posterior_dynamics_kwargs: the posterior passes of estimate_two_way_range_bls_lm (K and six-state) and estimate_two_way_range_srif (six-state) receive the solve's own dynamics contract (fixed SRP; lunar harmonic field with harmonic_stm_opt_in=True). No change to the estimate path, weights, prior, tolerances or covariance algebra.",
+ "blast_radius_from_source": {
+  "BLS_K_path": "solve: harmonics + SRP(K); posterior: SRP(K), no harmonics  -> D25 as recorded",
+  "BLS_six_state": "solve: harmonics + fixed SRP; posterior: neither  -> D25 extends here",
+  "SRIF_six_state": "solve: fixed SRP; posterior: no SRP  -> D25 extends here (SRIF has no harmonic option)",
+  "SRIF_K_path": "solve and posterior both SRP(K), no harmonics -> consistent",
+  "position / range-rate estimators": "no SRP or harmonic options -> unaffected",
+  "default (srp=None, no harmonics)": "unaffected; must stay bitwise identical"
+ },
+ "gates": {
+  "G1_default_invariance": "with srp=None and no harmonic field, BLS and SRIF (six-state and K) estimates AND posteriors are bitwise identical to the pre-D25 code (742576f)",
+  "G2_estimate_invariance": "in every tested configuration (defaults, harmonics, fixed SRP, K path) x_best, K, status, iterations and final_cost are bitwise identical pre/post D25 (the posterior is computed after the solve)",
+  "G3_O1_independent_assembly": "at each converged solution, a design rebuilt by the qualification script (own propagation call with the solve's kwargs, own whitening, column-normalised QR inverse) reproduces the production posterior: every sigma within 1e-6 relative and every correlation within 1e-6 absolute",
+  "G4_O2_finite_difference_oracle": "KP2 CANON k0 high-fidelity K path at the BLS1 production solution: central finite differences of the solve's own nonlinear range model (production propagate_state with the harmonic field, rtol 1e-13 / atol 1e-14; steps 1 m, 1e-3 m/s, 1e-4 m2/kg) give a covariance whose 7 sigmas match the repaired production posterior within 1e-3 relative and whose correlations match within 1e-3 absolute. POSITIVE CONTROL: the pre-D25 posterior must differ from O2 by more than 1e-2 relative in sigma_K, otherwise the oracle is declared unable to see D25 and G4 fails",
+  "G5_KP2_frozen_sigma_criterion": "the frozen KP2 PRODUCTION_BLS criterion (every sigma within 1 % of the KP2 solver) evaluated with the repaired production posterior at the BLS1 production solution; an end-to-end rerun of the frozen job_bls is confirmatory and reported as computed",
+  "G6_KP2_classifications": "no KP2 decision input reads the production posterior (code evidence) and tests/test_kp2_m3_recovery.py passes unchanged",
+  "G7_blast_radius": "stage F (gravity campaign, 40 stored solutions): the pre-D25 helper must reproduce the stored P_hat (every element within 1e-6 relative of the largest) - this proves the historical numbers carry the defect; the repaired posteriors are then recomputed at the same solutions and stage G's ANEES, overconfidence ratio, formal 3D position sigma and coverage are re-derived with stage G's own formulas. Characterisation: no pass threshold, every change reported. Fixed-SRP six-state BLS and SRIF fixtures: G3 applies",
+  "G8_regression": "permanent tests for the historical defect; full suite on a clean worktree with 0 failures"
+ },
+ "PHASE17_HARDEN_D25_GATE": "PASS iff G1-G6 and G8 pass and G7's reproduction check passes; G7's re-derived statistics are reported, not gated",
+ "non_goals": ["no change to the estimate, objective, weights, prior or dynamics", "no empirical rescaling", "D27 untouched", "the common K level is not claimed"]
+}

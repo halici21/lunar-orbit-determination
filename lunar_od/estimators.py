@@ -1997,6 +1997,23 @@ def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | No
         )
 
 
+def _posterior_dynamics_kwargs(srp, harmonic_kwargs: dict | None) -> dict:
+    """Phase 17-HARDEN-D25.  The solve's dynamics contract for a posterior pass.
+
+    Mirrors the estimators' own augmented-pass kwargs: ``srp`` only when given,
+    and a harmonic field always with ``harmonic_stm_opt_in=True`` (the matched
+    analytic Pines gradient), exactly as the solve iterations pass it.  Empty
+    when neither is active, so the default call is unchanged.
+    """
+    out = {}
+    if srp is not None:
+        out["srp"] = srp
+    if harmonic_kwargs:
+        out.update(harmonic_kwargs)
+        out["harmonic_stm_opt_in"] = True
+    return out
+
+
 def _two_way_range_posterior_information(
     t_pass_s: np.ndarray,
     obs_data: np.ndarray,
@@ -2012,7 +2029,19 @@ def _two_way_range_posterior_information(
     rtol: float,
     atol: float,
     j2_moon: float,
+    *,
+    srp=None,
+    harmonic_kwargs: dict | None = None,
 ) -> np.ndarray:
+    """(6,6) posterior information at the converged state.
+
+    Phase 17-HARDEN-D25: ``srp`` and ``harmonic_kwargs`` carry the SAME
+    dynamics contract the solve iterated with (fixed SRP; lunar harmonic field
+    with its matched analytic STM).  Before D25 this pass silently dropped
+    both, so with either opt-in active the covariance was linearised on a
+    different force model from the one that produced the estimate.  Omitted
+    (the default), the propagation call is exactly the historical one.
+    """
     x_aug0 = np.concatenate([x_dyn, _IDENTITY_6_COL])
     x_aug_hist = propagate_augmented_state(
         t_pass_s,
@@ -2025,6 +2054,7 @@ def _two_way_range_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **_posterior_dynamics_kwargs(srp, harmonic_kwargs),
     )
     _, h_initial = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
     return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
@@ -2047,12 +2077,15 @@ def _two_way_range_posterior_information_with_k(
     rtol: float,
     atol: float,
     j2_moon: float,
+    *,
+    harmonic_kwargs: dict | None = None,
 ) -> np.ndarray:
     """Phase 17-R.  (7,7) posterior information at the converged (x0, K)."""
     h_full = _two_way_range_posterior_design_with_k(
         t_pass_s, obs_data, x_dyn, k_srp, srp, pass_geo,
         mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
+        harmonic_kwargs=harmonic_kwargs,
     )
     return _symmetrize(h_full.T @ (w_diag[:, None] * h_full) + prior_inv)
 
@@ -2072,6 +2105,8 @@ def _two_way_range_posterior_design_with_k(
     rtol: float,
     atol: float,
     j2_moon: float,
+    *,
+    harmonic_kwargs: dict | None = None,
 ) -> np.ndarray:
     """Phase 17-R1COV.  The (M,7) augmented design matrix at the solution.
 
@@ -2081,11 +2116,17 @@ def _two_way_range_posterior_design_with_k(
     formed on its behalf.  The arithmetic of the information matrix is
     unchanged by the split, so ``posterior_information`` stays bitwise
     identical to Phase 17-R.
+
+    Phase 17-HARDEN-D25: ``harmonic_kwargs`` is the solve's lunar harmonic
+    field.  Without it the design was linearised on central/J2 gravity while
+    the estimate came from the harmonic solve: measured sigma_K +9 %, sigma_z
+    +3 % (KP2 CANON k0, GL1800F); with it, an independent rebuild agrees.
     """
     x_aug_hist = propagate_state_with_k_sensitivity(
         t_pass_s, x_dyn, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_srp),
         rtol=rtol, atol=atol, j2_moon=j2_moon,
+        **_posterior_dynamics_kwargs(None, harmonic_kwargs),
     )
     _, h_x0 = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
     h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
@@ -2506,6 +2547,7 @@ def estimate_two_way_range_bls_lm(
                 t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
+                harmonic_kwargs=_harm,     # Phase 17-HARDEN-D25: the solve's field
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
@@ -2530,6 +2572,8 @@ def estimate_two_way_range_bls_lm(
                 rtol,
                 atol,
                 j2_moon,
+                srp=srp,                   # Phase 17-HARDEN-D25: the solve's own
+                harmonic_kwargs=_harm,     # dynamics contract (fixed SRP, field)
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -2848,6 +2892,7 @@ def estimate_two_way_range_srif(
                 rtol,
                 atol,
                 j2_moon,
+                srp=srp,                   # Phase 17-HARDEN-D25: the solve's fixed SRP
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
             k_sqrt_information = None
