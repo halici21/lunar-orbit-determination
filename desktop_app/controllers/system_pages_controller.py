@@ -520,7 +520,7 @@ class SettingsController(QWidget):
         super().__init__(parent)
         self._w, lay = _make_scroll_page("settings_page.ui", self)
         self.mainLayout = lay
-        self._settings = QSettings(_SETTINGS_ORG, _SETTINGS_APP)
+        self._settings = getattr(parent, "_settings", None) or QSettings(_SETTINGS_ORG, _SETTINGS_APP)
         self._build(lay)
 
     def on_shown(self) -> None:
@@ -531,6 +531,15 @@ class SettingsController(QWidget):
             "Application paths, theme options, runtime profiles, and reproducibility controls.",
             muted=True,
         ))
+
+        manager = getattr(self.window(), "environment", None)
+        if manager is not None:
+            from widgets.environment_panel import EnvironmentPanel
+            readiness_box = QGroupBox("Hesaplama ortamı")
+            readiness_layout = QVBoxLayout(readiness_box)
+            self.environment_panel = EnvironmentPanel(manager)
+            readiness_layout.addWidget(self.environment_panel)
+            lay.addWidget(readiness_box)
 
         # --- Paths ---
         box, form = _group("Paths")
@@ -554,23 +563,6 @@ class SettingsController(QWidget):
         form.addRow("Results directory:", results_row)
         browse_results.clicked.connect(self._browse_results)
 
-        try:
-            from lunar_od.spice_loader import resolve_kernel_dir
-            _kdir = str(resolve_kernel_dir())
-        except Exception:
-            _kdir = str(PYTHON_PORT / "kernels")
-        self._kernels_edit = QLineEdit(_kdir)
-        self._kernels_edit.setReadOnly(True)
-        self._kernels_edit.setStyleSheet(self._results_edit.styleSheet())
-        browse_kernels = QPushButton("Browse…")
-        browse_kernels.setFixedWidth(80)
-        browse_kernels.setStyleSheet(browse_results.styleSheet())
-        kernels_row = QHBoxLayout()
-        kernels_row.addWidget(self._kernels_edit)
-        kernels_row.addWidget(browse_kernels)
-        form.addRow("SPICE kernels:", kernels_row)
-        browse_kernels.clicked.connect(self._browse_kernels)
-
         lay.addWidget(box)
 
         from styles.appearance import THEMES, THEME_KEY
@@ -592,24 +584,25 @@ class SettingsController(QWidget):
         form2.addRow("Worker threads:", self._n_workers)
         lay.addWidget(box2)
 
-        # --- Environment info ---
-        box3, _ = _group("Environment")
-        import sys
-        info = [
-            ("Python", sys.version.split()[0]),
-            ("PyQt5", self._pkg_version("PyQt5")),
-            ("numpy", self._pkg_version("numpy")),
-            ("matplotlib", self._pkg_version("matplotlib")),
-            ("spiceypy", self._pkg_version("spiceypy")),
-        ]
-        for lib, ver in info:
-            lbl = QLabel(f"{ver}")
-            lbl.setStyleSheet(
-                f"color:{C.GREEN if ver != 'N/A' else C.RED}; font-size:{FONT.SIZE_SM}px;"
-                f" font-family:{FONT.MONO};"
-            )
-            box3.layout().addRow(f"{lib}:", lbl)
-        lay.addWidget(box3)
+        if manager is None:
+            # --- Environment info ---
+            box3, _ = _group("Environment")
+            import sys
+            info = [
+                ("Python", sys.version.split()[0]),
+                ("PyQt5", self._pkg_version("PyQt5")),
+                ("numpy", self._pkg_version("numpy")),
+                ("matplotlib", self._pkg_version("matplotlib")),
+                ("spiceypy", self._pkg_version("spiceypy")),
+            ]
+            for lib, ver in info:
+                lbl = QLabel(f"{ver}")
+                lbl.setStyleSheet(
+                    f"color:{C.GREEN if ver != 'N/A' else C.RED}; font-size:{FONT.SIZE_SM}px;"
+                    f" font-family:{FONT.MONO};"
+                )
+                box3.layout().addRow(f"{lib}:", lbl)
+            lay.addWidget(box3)
 
         # Save
         lay.addWidget(_divider())
@@ -635,12 +628,6 @@ class SettingsController(QWidget):
                                                 self._results_edit.text())
         if path:
             self._results_edit.setText(path)
-
-    def _browse_kernels(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Select SPICE kernels directory",
-                                                self._kernels_edit.text())
-        if path:
-            self._kernels_edit.setText(path)
 
     @staticmethod
     def _pkg_version(name: str) -> str:

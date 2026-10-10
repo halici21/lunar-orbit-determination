@@ -286,3 +286,30 @@ This set passed 142 tests on the clean main-based UI branch. It covers recorded
 artifact integrity, process lifecycle, archive/clone/compare/export/reopen,
 rendering semantics, session recovery and compact layouts. These tests do not
 qualify estimator physics or all legacy scientific pages.
+
+## Environment readiness (2026-10-10)
+
+The status-bar Environment button opens Settings → Hesaplama ortamı. A separate
+QProcess imports the runtime packages, compares the validated profile, inventories
+all ten canonical REQUIRED_KERNELS, and loads them with the unchanged backend
+loader order. Missing, empty, unreadable, or malformed files cannot report ready.
+The DE440 atomic pair remains required. The GUI SPICE pool is not touched.
+
+The selected kernel directory persists in app_settings/kernel_directory and is
+applied to this desktop process before any page loads. Child jobs inherit the
+current override; clearing it restores the environment inherited at desktop launch.
+A saved missing directory fails closed in the probe. ProcessWorker reconstructs
+its environment on every launch so reused processes cannot retain a stale selection.
+
+Scenario Builder preflight captures the submitted form, checks its duration and
+both padded sampling-grid endpoints, and only then persists the UUID/job folder.
+Failure opens the report without creating a job; timeout and process failure never
+start the solver. Probe shutdown also cancels a pending scenario launch.
+
+SPICE queries sample the fixture epoch and, for a submitted scenario, midpoint/end
+of the largest padded grid: Earth/Sun relative to Moon, J2000→ITRF93, and explicit
+DE421/DE440 lunar PA frames. This is sampled operational readiness, not continuous
+coverage, statistical validation, or convergence. Output permission checks create
+no files and cannot guarantee a later write. High-degree gravity/campaign assets
+are outside this baseline check. Historical script launches from Run Monitor retain
+their own validation; the automatic run gate applies to Scenario Builder.

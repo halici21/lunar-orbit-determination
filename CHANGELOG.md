@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Asynchronous startup environment report with runtime import/profile checks and
+  canonical SPICE kernel inventory/load/sample-epoch validation.
+- Persistent desktop kernel selection applied to subsequent child processes.
+- Scenario Builder checks readiness before creating a job; failed probes open the
+  report without starting computation. Timeout, shutdown and inconsistent reports
+  cannot trigger a pending solver launch.
+- Fourteen readiness/GUI/process regression cases added to the public gate.
+- [Readiness implementation and verification](docs/environment-readiness_2026-10-10.md).
+
+These changes are on main; the existing 0.1.0-alpha.1 source asset is immutable
+and predates this feature.
+
 ## 0.1.0-alpha.1 — 2026-10-10
 
 First documented Windows source prerelease. Research qualification reports keep

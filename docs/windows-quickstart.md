@@ -28,6 +28,31 @@ kurulum paketi değildir. Başlatıcı yeni klonda veya ZIP'ten çıkarılmış 
 Geliştiricinin sekiz deneme koşusu pakete dahil değildir.
 Seçilen arşiv klasörü normal kapanıştan sonra hatırlanır.
 
+## Ortam kontrolü
+
+Açılışta alt çubuktaki **Ortam** düğmesi kontrol durumunu gösterir.
+Düğmeye tıklayın veya **Ayarlar → Hesaplama ortamı** bölümünü açın.
+
+- **Kernel klasörü seç:** seçimi kaydeder; sonraki masaüstü hesaplamaları bu yolu kullanır.
+- **Otomatik bul:** kayıtlı seçimi kaldırır; uygulamanın açılışında devraldığı ortam
+  değişkeni ve yükleyicinin standart arama sırası yeniden kullanılır.
+- **Yeniden kontrol et:** paket importlarını, referans sürümleri, gerekli on dosyanın
+  okunabilirliğini ve SPICE yükleme/örnek epok sorgularını ayrı süreçte denetler.
+
+Kayıtlı özel klasör yoksa başka klasöre sessizce geçilmez; eksik olarak raporlanır.
+Dosya adı ve okunabilirlik kontrolü tek başına başarılı SPICE yüklemesi sayılmaz.
+Referans paket sürümünden farklılık uyarıdır; import veya kernel hatası koşuyu engeller.
+Kontrol sürerken arşiv ve sonuç ekranları kullanılabilir.
+
+**Senaryo → Koşuyu başlat**, seçilen süre ve örnek adımlarıyla yeni bir kontrol yapar.
+Başarısızsa koşu klasörü oluşturmadan rapora yönlendirir. Çıktı yolunda yalnızca
+mevcut üst klasörün izinleri kontrol edilir; yazma başarısı gerçek koşu oluşturulurken
+ayrıca doğrulanır. Devam eden hesaplamanın kernel seçimi değiştirilmez.
+
+SPICE kontrolü başlangıç, orta ve son örnek epoklara bakar; tüm zaman aralığında
+kesintisiz kernel kapsamını, bilimsel doğruluğu veya çözücü yakınsamasını kanıtlamaz.
+Yüksek dereceli çekim ve dış kampanya verileri bu başlangıç kontrolünün kapsamına girmez.
+
 ## SPICE kernels
 
 Arayüzü açmak ve kayıtlı sonuçları incelemek için kernel gerekmez.
@@ -38,8 +63,9 @@ PowerShell'de:
     $env:LUNAR_OD_KERNEL_DIR = "C:\path\to\kernels"
     .\.venv\Scripts\python.exe desktop_app/main.py
 
-Çift tıklayarak başlatmada da geçerli olması için LUNAR_OD_KERNEL_DIR değerini
-Windows kullanıcı ortam değişkenlerine ekleyin ve yeni bir terminal/uygulama açın.
+Çift tıklayarak başlatmada **Ayarlar → Hesaplama ortamı → Kernel klasörü seç**
+üzerinden seçim yapabilirsiniz. Bu masaüstü tercihi LUNAR_OD_KERNEL_DIR değerinden
+önceliklidir; komut satırı araçları kendi ortam değişkenlerini kullanır.
 
 | Dosya | Görev |
 | --- | --- |

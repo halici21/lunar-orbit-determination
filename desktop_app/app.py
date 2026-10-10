@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QLabel, QPushButton, QFrame,
     QSizePolicy, QProgressBar, QVBoxLayout, QButtonGroup, QShortcut, QScrollArea, QStackedWidget,
 )
-from PyQt5.QtCore import Qt, QSettings, QSize
+from PyQt5.QtCore import Qt, QSettings, QSize, QTimer
 from PyQt5 import uic
 from PyQt5.QtGui import QKeySequence
 
@@ -148,6 +148,8 @@ class MainWindow(QMainWindow):
         self.pageScroll.setWidget(self.pageStack)
 
         self._settings = QSettings("LunarOD", "DesktopApp")
+        from controllers.environment_controller import EnvironmentController
+        self.environment = EnvironmentController(self._settings, self)
         from services.workspace_session import read_session
         self._workspace_session = read_session(self._settings)
         self._restored_pages = set()
@@ -164,6 +166,7 @@ class MainWindow(QMainWindow):
         self._restore_geometry()
         active = self._workspace_session.get("active", "console")
         self.navigate(active if active in ("console","comparison","archive") else "console")
+        QTimer.singleShot(0, self.environment.refresh)
 
     # ------------------------------------------------------------------
     # UI setup
@@ -234,11 +237,32 @@ class MainWindow(QMainWindow):
         self._status_lbl = QLabel("Hazır")
         self._status_lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:0 8px;")
         sb.addWidget(self._status_lbl)
+        self.environment_button = QPushButton("Ortam · kontrol bekleniyor")
+        self.environment_button.setFlat(True)
+        self.environment_button.setFixedHeight(22)
+        self.environment_button.setStyleSheet("QPushButton {padding:0 8px; min-height:18px; font-size:11px; border:none;}")
+        self.environment_button.setToolTip("Ortam ve SPICE kernel raporunu aç")
+        self.environment_button.clicked.connect(lambda: self.navigate("settings"))
+        sb.addPermanentWidget(self.environment_button)
+        self.environment.changed.connect(self._update_environment_status)
         self._progress = QProgressBar()
         self._progress.setFixedSize(180, 12)
         self._progress.setTextVisible(False)
         self._progress.setVisible(False)
         sb.addPermanentWidget(self._progress)
+
+    def _update_environment_status(self):
+        env = self.environment
+        if env.busy:
+            text = "Ortam · kontrol ediliyor"
+        elif env.error:
+            text = "Ortam · kontrol hatası"
+        elif env.report:
+            warnings = any(c["status"] == "warning" for c in env.report["checks"])
+            text = ("Ortam · profil farkı" if warnings else "Ortam · kontrol geçti") if env.report["ready"] else "Ortam · eksikler var"
+        else:
+            text = "Ortam · kontrol bekleniyor"
+        self.environment_button.setText(text)
 
     # ------------------------------------------------------------------
     # Page loading
@@ -403,6 +427,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         from services.workspace_session import save_session
+        self.environment.shutdown()
         save_session(self)
         for page in self._pages.values():
             if hasattr(page, "shutdown"):

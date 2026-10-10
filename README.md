@@ -42,6 +42,11 @@ Python 3.13.2; other platforms are not covered by this desktop release.
 | Sonuçlar | Inspect recorded states, errors, metadata and source provenance |
 | Arşiv | Find existing runs and reopen their verified artifacts |
 | Karşılaştırma | Compare exactly matched records; export and reopen the workspace |
+| Ayarlar / Ortam | Check runtime and kernels; save the kernel directory for subsequent jobs |
+
+On main, startup and Scenario Builder preflight report missing dependencies or
+kernels before computation; see [readiness checks](docs/environment-readiness_2026-10-10.md).
+This feature postdates the v0.1.0-alpha.1 source ZIP.
 
 Modern and Orchid themes are available in Settings. Advanced scientific pages
 remain in the expandable sidebar section. See the
@@ -53,14 +58,14 @@ hosted web application for the current desktop workflow.
 
 ## What is verified
 
-- **Local combined suite, 2026-10-10:** 1,747 passed, 29 skipped, zero failures/errors.
+- **Local combined suite, 2026-10-10:** 1,759 passed, 29 skipped, zero failures/errors.
 - **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
   desktop artifact, process, archive, comparison, rendering and session checks.
   External data paths are isolated; this gate uses committed fixtures only.
 - **Real desktop workflow:** short recorded runs, derivation, comparison, export
   and reopening were exercised. Eight existing single-arc runs remained readable.
 
-[Local verification record](docs/main_workspace_readiness_2026-10-10.md) ·
+[Local verification record](docs/environment-readiness_2026-10-10.md) ·
 [Public CI scope](docs/verification.md) ·
 [Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
 

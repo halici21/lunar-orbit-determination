@@ -24,6 +24,7 @@ does not qualify every newer optional extension.
 
 - [Branch consolidation audit](branch_consolidation_2026-10-10/README.md)
 - [Latest combined workspace validation](main_workspace_readiness_2026-10-10.md)
+- [Desktop environment readiness](environment-readiness_2026-10-10.md)
 - [Public repository readiness](repository-readiness_2026-10-10.md)
 - [Contributing](../CONTRIBUTING.md)
 - [Changelog](../CHANGELOG.md)

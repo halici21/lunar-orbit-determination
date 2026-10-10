@@ -58,12 +58,11 @@ class ProcessWorker(QObject):
         self._stderr_buf = ""
         if working_dir:
             self._proc.setWorkingDirectory(working_dir)
-        if env is not None:
-            from PyQt5.QtCore import QProcessEnvironment
-            qenv = QProcessEnvironment.systemEnvironment()
-            for k, v in env.items():
-                qenv.insert(k, v)
-            self._proc.setProcessEnvironment(qenv)
+        from PyQt5.QtCore import QProcessEnvironment
+        qenv = QProcessEnvironment.systemEnvironment()
+        for k, v in (env or {}).items():
+            qenv.insert(k, v)
+        self._proc.setProcessEnvironment(qenv)
         self._proc.start(program, args)
 
     def run_script(self, script_path: str | Path, working_dir: str | None = None) -> None:

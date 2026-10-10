@@ -394,8 +394,8 @@ class ScenarioBuilderController(QWidget):
                 analysis.apply_scenario_params(model)
 
     def _run_scenario(self) -> None:
-        """Persist the exact inputs and run the scientific backend in QProcess."""
-        from services.scenario_execution import prepare_desktop_job
+        """Validate the environment before persisting a new job or starting the solver."""
+        from services.scenario_execution import execution_payload, prepare_desktop_job
         model = self._widgets_to_model()
         main_win = self.window()
         if not hasattr(main_win, "run_desktop_job"):
@@ -406,11 +406,37 @@ class ScenarioBuilderController(QWidget):
             main_win.set_status("Önce çalışan koşunun tamamlanmasını bekleyin veya iptal edin.")
             return
         try:
-            path, folder, run_id = prepare_desktop_job(model, PYTHON_PORT, derived_from=self._archive_origin)
-        except (ValueError, OSError) as exc:
+            execution_payload(model)
+        except ValueError as exc:
             QMessageBox.warning(self, "Koşu oluşturulamadı", str(exc))
             return
-        main_win.run_desktop_job(path, folder, run_id)
+        origin = self._archive_origin
+        def launch(ready):
+            self.runScenarioBtn.setEnabled(True)
+            if not ready:
+                main_win.navigate("settings")
+                main_win.set_status("Koşu başlatılmadı; ortam raporundaki eksikleri giderin.")
+                return
+            monitor = main_win._pages.get("run_monitor")
+            if monitor and monitor._worker.is_running:
+                main_win.set_status("Başka bir koşu çalışıyor; önce tamamlanmasını bekleyin.")
+                return
+            try:
+                path, folder, run_id = prepare_desktop_job(model, PYTHON_PORT, derived_from=origin)
+            except (ValueError, OSError) as exc:
+                QMessageBox.warning(self, "Koşu oluşturulamadı", str(exc))
+                return
+            main_win.run_desktop_job(path, folder, run_id)
+        manager = getattr(main_win, "environment", None)
+        if manager is not None:
+            if manager.busy:
+                main_win.set_status("Ortam kontrolü sürüyor; tamamlanınca koşuyu başlatın.")
+                return
+            self.runScenarioBtn.setEnabled(False)
+            manager.refresh(model=model, callback=launch)
+            main_win.set_status("Koşu öncesi ortam kontrol ediliyor…")
+        else:
+            launch(True)
 
     def load_archived(self, archived):
         previous = (replace(self._widgets_to_model()), self._archive_origin)
