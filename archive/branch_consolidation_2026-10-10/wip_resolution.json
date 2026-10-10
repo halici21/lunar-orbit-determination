@@ -1,0 +1,51 @@
+{
+  "wip_commit": "13e75f111dbb13bd6ee57d405a66e15c4d909f7d",
+  "qualified_source": "46e21c80c7ee2ff3caf2b650d2c5e8fc3fc01fc7",
+  "files": [
+    {
+      "path": "examples/r2_measurement_fidelity_validation.py",
+      "wip_sha256": "055ddd07c461df48364d45ee8c9308d4586c3863504d985192b2b728f090cb66",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "lunar_od/dynamics.py",
+      "wip_sha256": "0e37d67ccd337af6a2e9ab25b5e5fe232a52906716efa6c47194840bae1d266c",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "lunar_od/estimators.py",
+      "wip_sha256": "040659fad83b9a0041acecdab255c8d699b36a8d163e7e165ecafee133ad00c7",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "lunar_od/srp.py",
+      "wip_sha256": "0d39c5fb0dc9fd2d9a7bd58a2ad13e6e1b72c6e4a83fb6fd3cd21841042bf5a9",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "tests/test_direct_spice_rhs.py",
+      "wip_sha256": "df5a5441598ce0cbc60dcc24ef290cd8ebc0ebf9f600ceb872fc4134fd4c7647",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "tests/test_k_srp_bls_solve_for.py",
+      "wip_sha256": "eb2d38415a25cf3f46b762d2b88c96cd7a6fde81322ae235ebc7a976a5cd1ec3",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "tests/test_pines_gradient_numba_parity.py",
+      "wip_sha256": "49fb19bc699f53f983e303acf8f54dfe35d302587d0fc925991d3a128ff2e48b",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "tests/test_reference_config.py",
+      "wip_sha256": "272bb7adf1c08cc97b8ce49f9bb4d3d32a8d57743b3574ca3a5b1afeffe06a69",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    },
+    {
+      "path": "tests/test_srp_production.py",
+      "wip_sha256": "c0602a3e32c33beb1e20f5d3113178f02b74e028bc1de511cfa58d7ddb71554a",
+      "resolution": "retain reviewed Phase 17 research version; WIP preserved as historical source"
+    }
+  ]
+}
