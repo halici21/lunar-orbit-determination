@@ -573,6 +573,17 @@ class SettingsController(QWidget):
 
         lay.addWidget(box)
 
+        from styles.appearance import THEMES, THEME_KEY
+        appearance_box, appearance_form = _group("Görünüm")
+        self._theme_combo = QComboBox()
+        for key, label in THEMES.items():
+            self._theme_combo.addItem(label, key)
+        stored = str(self._settings.value(THEME_KEY, "modern"))
+        self._theme_combo.setCurrentIndex(max(0, self._theme_combo.findData(stored)))
+        appearance_form.addRow("Renk paleti:", self._theme_combo)
+        appearance_form.addRow(_label("Kaydettikten sonra uygulamayı yeniden açınca uygulanır.", muted=True))
+        lay.addWidget(appearance_box)
+
         # --- Runtime ---
         box2, form2 = _group("Runtime")
         self._seed = _ispin(0, 99999, int(self._get("random_seed", 42)))
@@ -613,6 +624,8 @@ class SettingsController(QWidget):
         lay.addStretch()
 
     def _save(self) -> None:
+        from styles.appearance import THEME_KEY
+        self._settings.setValue(THEME_KEY, self._theme_combo.currentData())
         self._settings.setValue(f"{self._SECTION}/random_seed", self._seed.value())
         self._settings.setValue(f"{self._SECTION}/n_workers", self._n_workers.value())
         self._saved.setText("Saved")

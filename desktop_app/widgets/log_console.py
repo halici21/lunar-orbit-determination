@@ -23,7 +23,7 @@ class LogConsole(QPlainTextEdit):
                 border: 1px solid {C.BORDER_MAIN};
                 border-radius: 6px;
                 padding: 8px;
-                selection-background-color: #1d4770;
+                selection-background-color: {C.BG_ACTIVE};
             }}
         """)
 

@@ -52,6 +52,10 @@ class ResultsBrowserController(QWidget):
         self.zoomOutBtn.clicked.connect(self._zoom_out)
         self.zoomFitBtn.clicked.connect(self._zoom_fit)
         self._build_csv_pager()
+        self.consoleBtn = QPushButton("Sonuç konsolunda aç")
+        self.consoleBtn.setEnabled(False)
+        self.consoleBtn.clicked.connect(self._open_console)
+        self.csvLayout.insertWidget(1, self.consoleBtn)
         self._build_csv_filter()
         self.contentStack.setCurrentIndex(_STACK_EMPTY)
         self._populate_tree()
@@ -260,6 +264,7 @@ class ResultsBrowserController(QWidget):
 
     def _load_file(self, kind: str, path: Path) -> None:
         self._current_path = path
+        self.consoleBtn.setEnabled(kind == "csv" and path.name.endswith(("_ukf_updates.csv", "_arc_solutions.csv")))
         self.filePathLabel.setText(str(path))
         self.openExternalBtn.setEnabled(True)
         self.exportBtn.setEnabled(True)
@@ -268,6 +273,11 @@ class ResultsBrowserController(QWidget):
             self._load_csv(path)
         elif kind == "image":
             self._load_image(path)
+
+    def _open_console(self) -> None:
+        window = self.window()
+        if self._current_path and hasattr(window, "open_in_result_console"):
+            window.open_in_result_console(self._current_path)
 
     def _load_csv(self, path: Path) -> None:
         self.contentStack.setCurrentIndex(_STACK_CSV)

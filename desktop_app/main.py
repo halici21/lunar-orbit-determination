@@ -26,14 +26,12 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QFont
 
-from app import MainWindow
 
 
 def _load_stylesheet(app: QApplication) -> None:
-    qss_path = DESKTOP_DIR / "styles" / "dark_theme.qss"
-    if qss_path.exists():
-        with open(qss_path, "r", encoding="utf-8") as fh:
-            app.setStyleSheet(fh.read())
+    from styles.workspace_light import workspace_stylesheet
+    app.setStyle("Fusion")
+    app.setStyleSheet(workspace_stylesheet())
 
 
 def main() -> None:
@@ -50,8 +48,10 @@ def main() -> None:
     font = QFont("Segoe UI", 10)
     app.setFont(font)
 
-    # Dark stylesheet
+    from styles.appearance import load_saved_theme
+    load_saved_theme()
     _load_stylesheet(app)
+    from app import MainWindow
 
     window = MainWindow()
     window.show()
