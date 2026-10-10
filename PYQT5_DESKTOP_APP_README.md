@@ -1,5 +1,7 @@
 # Lunar Orbit Determination Desktop App Brief
 
+> Historical design / implementation brief. Current application: [README](README.md), [desktop workflow](desktop_app/RESULT_WORKFLOW.md). See [legacy status](docs/legacy-tools.md).
+
 This document is a complete implementation brief for building a modern local
 desktop application for the Lunar Orbit Determination project. The intended UI
 framework is **PyQt5**. The application must run locally as a desktop program;

@@ -1,5 +1,7 @@
 # Performance Optimization Plan
 
+> Historical performance plan. Test counts, command paths and task status belong to the original plan. Current setup and checks: [README](README.md), [verification](docs/verification.md).
+
 Scope: computational speed improvements only. Mathematical results must be bit-identical (or within floating-point rounding) before and after each task. Run `python -m pytest python_port/tests/ -q` after every task — must stay at 172 passed.
 
 Excluded from this plan: light-time correction (correctness), rank-revealing QR (robustness), Q auto-calibration (functionality), angle-wrap Jacobian (correctness).

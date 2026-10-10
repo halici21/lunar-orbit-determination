@@ -1,5 +1,7 @@
 # Lunar Orbit Determination Project Context
 
+> Historical project context, verified 2026-07-11. Its branch and implementation-status claims describe that snapshot; use the current [README](README.md), [Phase 17 status](docs/phase17_authoritative_status.md) and [consolidation audit](docs/branch_consolidation_2026-10-10/README.md) for current state.
+
 > Canonical onboarding document for future Claude sessions. Read this before
 > changing anything in the repository.
 > Last verified against the repository: **2026-07-11**.

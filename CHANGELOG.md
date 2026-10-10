@@ -1,0 +1,28 @@
+# Changelog
+
+## 0.1.0-alpha.1 — 2026-10-10
+
+First documented Windows source prerelease. Research qualification reports keep
+their original version/phase identities; this version describes the desktop
+source distribution.
+
+- Native scenario, process monitor, recorded results, archive, derivation,
+  comparison/export/reopen and normal-close session workflow.
+- Modern and Orchid appearance with expandable advanced tools.
+- Empty first-run archive guidance.
+- Pinned Windows/Python 3.13 reference environment.
+- Portable setup_windows.cmd and launch_lunar_od.cmd entry points.
+- GitHub public regression gate using committed fixtures without private data.
+- Short root README, documentation index, contribution guidance and legacy labels.
+- Historical branches consolidated into main and retained through annotated tags.
+
+Known limits: Python must be installed separately; SPICE kernels and historical
+campaign/real gravity data are external. Short workflow runs do not qualify
+estimator convergence. Long real-run desktop acceptance and standalone EXE
+packaging remain outstanding.
+
+## Historical research
+
+Phase-specific scientific changes and validation are documented in docs/ and
+artifacts/. [The branch consolidation report](docs/branch_consolidation_2026-10-10/README.md)
+records imported history and preserved pending work.

@@ -1,5 +1,7 @@
 # PyQt5 Desktop App Brief - Lunar OD
 
+> Historical design / implementation brief. Current application: [README](README.md), [desktop workflow](desktop_app/RESULT_WORKFLOW.md). See [legacy status](docs/legacy-tools.md).
+
 Build a **local PyQt5 desktop application**, not a website. The app should be a
 modern, smooth, dark-themed mission-analysis cockpit for this lunar orbit
 determination project.

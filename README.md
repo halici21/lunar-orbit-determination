@@ -1,514 +1,109 @@
-# Lunar Orbit Determination Framework
+# Lunar OD
 
-A Python research framework and desktop application for lunar orbit determination
-experiments. The project combines a scientific backend for trajectory
-propagation, measurement simulation, estimator comparison, diagnostics, and
-report generation with a native PyQt5 interface for running and reviewing
-experiments.
+Lunar orbit determination research framework with a native Windows desktop
+workspace. Configure scenarios, run BLS-LM / SRIF / SR-UKF experiments, inspect
+recorded results, and compare runs with their saved settings and source metadata.
 
-The main research focus is the comparison of two estimation approaches under
-lunar tracking conditions:
+[![Public checks](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml/badge.svg)](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml)
+[MIT license](LICENSE) · [Releases](https://github.com/halici21/lunar-orbit-determination/releases) · [Documentation](docs/README.md)
 
-- **BLS-LM**: batch least-squares with Levenberg-Marquardt damping
-- **SR-UKF**: square-root unscented Kalman filter for sequential estimation
+![Lunar OD scenario workspace](docs/images/desktop-scenario.png)
 
-The framework was developed for thesis-scale algorithm research and controlled
-synthetic experiments. It is not intended to be used as flight software.
+## Start on Windows
 
----
+1. Install **64-bit Python 3.13** from [python.org](https://www.python.org/downloads/windows/).
+2. Download a source ZIP from [Releases](https://github.com/halici21/lunar-orbit-determination/releases), or clone this repository. Extract the ZIP before running anything.
+3. Double-click **setup_windows.cmd** to install the pinned environment in this folder.
+4. Double-click **launch_lunar_od.cmd** to open the desktop app.
 
-## Current development branch
+The launcher runs setup on first use if no environment exists. Setup requires
+internet access. This distribution uses Python; a standalone EXE installer is
+not provided.
 
-Use **main** for development. The 2026-10-10 consolidation integrates the
-committed research history and the native recorded-run workspace. Historical
-branch tips remain available under branch-history/2026-10-10/ tags; archived
-WIP and uncommitted snapshots are preservation material, not active code.
-See the [branch audit and validation](docs/branch_consolidation_2026-10-10/README.md)
-and the [desktop workflow](desktop_app/RESULT_WORKFLOW.md).
+**Türkçe:** [Windows kurulum ve kullanım rehberi](docs/windows-quickstart.md).
 
-## Highlights
+Or from PowerShell in the repository root:
 
-- Moon-centered lunar orbit propagation
-- Earth and Sun third-body perturbations
-- Optional lunar J2 perturbation support
-- SPICE-based ephemeris and frame handling
-- Ground-station visibility with elevation masks and lunar occultation
-- Synthetic range, azimuth, elevation, range-rate, two-way counted Doppler,
-  and converged two-way range measurements
-- Batch and sequential orbit determination workflows
-- BLS-LM, SRIF, and SR-UKF estimator implementations
-- Arc-by-arc campaign execution with cold, hot, formal, and square-root formal
-  handoff modes
-- Monte Carlo, long-duration, fragmented-visibility, and Doppler comparison
-  scripts
-- Diagnostics for residuals, NIS, NEES, observability, covariance conditioning,
-  convergence, and runtime
-- Native PyQt5 desktop application for local scenario exploration and result
-  review
+    py -3.13 -m venv .venv
+    .\.venv\Scripts\python.exe -m pip install -r requirements-validated-windows.txt
+    .\.venv\Scripts\python.exe desktop_app/main.py
 
----
+The UI can open without SPICE data. Scientific runs require the
+[SPICE kernels](docs/windows-quickstart.md#spice-kernels); kernels and historical
+campaign data are not bundled. The validated environment is Windows x86_64,
+Python 3.13.2; other platforms are not covered by this desktop release.
 
-## Repository Structure
+## Desktop workflow
 
-```text
-.
-|-- lunar_od/                 # Core orbit determination library
-|-- desktop_app/              # PyQt5 desktop application
-|-- examples/                 # Reproducible experiment scripts
-|-- tests/                    # Unit and regression tests
-|-- fixtures/                 # Reference data used by tests
-|-- results/                  # Generated experiment outputs
-|-- docs/                     # Supplementary notes
-|-- requirements.txt          # Core scientific dependencies
-|-- requirements-dev.txt      # Test/development dependencies
-`-- requirements-accelerated.txt
-```
-
-### Core Library
-
-The scientific code lives in `lunar_od/`.
-
-| Module | Purpose |
+| Screen | Use |
 | --- | --- |
-| `geometry.py` | WGS84, ECEF, SEZ, azimuth/elevation geometry |
-| `orbit.py` | Classical orbital elements and Cartesian state utilities |
-| `dynamics.py` | Equations of motion, STM propagation, gravity gradients |
-| `ephemeris.py` | SPICE sampling and interpolation |
-| `visibility.py` | Elevation masks, lunar occultation, tracking arcs |
-| `measurements.py` | Synthetic observations, residuals, analytic Jacobians |
-| `radiometrics.py` | Simplified two-way counted Doppler model |
-| `two_way_range.py` | Converged two-way range events, observable, Jacobian |
-| `estimators.py` | BLS-LM and SRIF estimators |
-| `filters.py` | SR-UKF prediction, update, gating, and diagnostics |
-| `scenarios.py` | Arc-by-arc campaign execution |
-| `observability.py` | Rank, condition number, Fisher information diagnostics |
-| `diagnostics.py` | Residual, consistency, and convergence analysis |
-| `scenario_config.py` | JSON-serializable scenario configuration |
-| `monte_carlo.py` | Seeded Monte Carlo campaign support |
-| `reporting.py` | CSV and plot generation |
+| Senaryo | Configure a reproducible scenario or derive one from a saved run |
+| Çalıştır | Run in a separate process; inspect logs and cancellation status |
+| Sonuçlar | Inspect recorded states, errors, metadata and source provenance |
+| Arşiv | Find existing runs and reopen their verified artifacts |
+| Karşılaştırma | Compare exactly matched records; export and reopen the workspace |
 
-### Desktop Application
+Modern and Orchid themes are available in Settings. Advanced scientific pages
+remain in the expandable sidebar section. See the
+[desktop workflow and data contracts](desktop_app/RESULT_WORKFLOW.md).
 
-The desktop app lives in `desktop_app/` and is organized around Qt Designer
-`.ui` files, page controllers, services, background workers, reusable widgets,
-and configurable light themes.
+The current entry point is desktop_app/main.py. The older Tkinter and local web
+tools remain for reference; see [legacy tools](docs/legacy-tools.md). There is no
+hosted web application for the current desktop workflow.
 
-Key screens include:
+## What is verified
 
-- Mission Dashboard
-- Results Browser
-- Run Monitor
-- Comparison
-- Scenario Builder
-- Dynamics
-- Measurements
-- Estimators
-- Ground Stations
-- Visibility Gantt
-- Estimator Analysis
-- Ground Track
-- Settings
+- **Local combined suite, 2026-10-10:** 1,747 passed, 29 skipped, zero failures/errors.
+- **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
+  desktop artifact, process, archive, comparison, rendering and session checks.
+  External data paths are isolated; this gate uses committed fixtures only.
+- **Real desktop workflow:** short recorded runs, derivation, comparison, export
+  and reopening were exercised. Eight existing single-arc runs remained readable.
 
-The app is designed as a local mission-analysis cockpit: it launches existing
-experiment scripts, streams logs, loads CSV/PNG outputs, and compares estimator
-results without requiring a web server.
+[Local verification record](docs/main_workspace_readiness_2026-10-10.md) ·
+[Public CI scope](docs/verification.md) ·
+[Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
 
----
+Passing UI tests or completing a process does not establish estimator convergence.
+The deliberately short BLS workflow runs retained operational_success=False.
+Long real-run acceptance and optional data-heavy scientific campaigns remain
+separate.
 
-## Installation
+Run the public checks in the installed environment:
 
-### 1. Create a virtual environment
+    .\.venv\Scripts\python.exe tools/run_public_checks.py --junitxml outputs/public-checks.xml
 
-From the repository root:
+## Repository map
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-```
-
-On macOS/Linux:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-```
-
-### 2. Install the core dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Install desktop application dependencies
-
-```bash
-pip install -r desktop_app/requirements_desktop.txt
-```
-
-### 4. Install development tools
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-### 5. Optional acceleration backend
-
-Numba is optional. The code falls back to NumPy if Numba is unavailable.
-
-```bash
-pip install -r requirements-accelerated.txt
-```
-
----
-
-## Validated Windows environment
-
-For the recorded scientific regression environment, use CPython 3.13 on Windows
-x86_64 and install the combined core, accelerated, desktop and test profile:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-validated-windows.txt
-```
-
-[The validation record](docs/branch_consolidation_2026-10-10/validation.json)
-documents the reference package versions and required external data.
-[Fresh-environment verification](docs/main_workspace_readiness_2026-10-10.md)
-records the combined profile and desktop checks. Tight numerical
-reference tests depend on this environment; reproducing it does not replace
-the required SPICE and gravity fixtures.
-
-## SPICE Kernel Setup
-
-Some examples and visibility workflows require NASA SPICE kernels. Place the
-required kernels in a local kernel directory and set:
-
-```powershell
-$env:LUNAR_OD_KERNEL_DIR = "C:\path\to\kernels"
-```
-
-On macOS/Linux:
-
-```bash
-export LUNAR_OD_KERNEL_DIR=/path/to/kernels
-```
-
-If `LUNAR_OD_KERNEL_DIR` is not set, the loader searches these directories in
-order: `~/Documents/mice/kernels`, then `<project>/kernels`.
-
-Required kernels:
-
-| Kernel | Purpose |
+| Path | Contents |
 | --- | --- |
-| `naif0012.tls.txt` | Leap seconds |
-| `de421.bsp` | Planetary ephemeris |
-| `earth_assoc_itrf93.tf.txt` | Earth frame association (ITRF93) |
-| `moon_080317.tf.txt` | Lunar frame association |
-| `earth_2025_250826_2125_predict.bpc` | Earth orientation (predicted) |
-| `moon_pa_de421_1900-2050.bpc` | Lunar orientation (principal axes) |
-| `gm_de431.tpc.txt` | Gravitational constants |
-| `pck00010.tpc.txt` | Planetary constants |
-
-The library can still run many synthetic tests without SPICE, but SPICE-backed
-campaigns and realistic station visibility analysis require the kernels.
-
----
-
-## Quick Start
-
-### Run the test suite
-
-From the repository root:
-
-```bash
-python -m pytest tests -q
-```
-
-If running from the parent project directory:
-
-```bash
-python -m pytest python_port/tests -q
-```
-
-### Run the desktop application
-
-From the parent project directory:
-
-```bash
-python python_port/desktop_app/main.py
-```
-
-Or from inside `python_port/`:
-
-```bash
-python desktop_app/main.py
-```
-
-### Run a baseline estimator comparison
-
-```bash
-python examples/baseline_bls_ukf_comparison.py
-```
-
-### Run a fragmented-visibility comparison
-
-```bash
-python examples/sequential_tracking_comparison.py
-```
-
-### Generate the 28-day visibility analysis
-
-```bash
-python examples/visibility_28day_dsn_itu_gantt.py
-```
-
-### Run the two-way Doppler comparison
-
-```bash
-python examples/two_way_doppler_bls_ukf_comparison.py
-```
-
-Generated CSV and PNG outputs are written under `results/`.
-
----
-
-## Scientific Model
-
-### State Definition
-
-The spacecraft state is represented in a Moon-centered, J2000-aligned inertial
-frame:
-
-```text
-x = [rx, ry, rz, vx, vy, vz]^T
-```
-
-### Baseline Dynamics
-
-The nominal force model includes:
-
-- Lunar point-mass gravity
-- Differential third-body gravity from Earth
-- Differential third-body gravity from the Sun
-- Optional lunar J2 perturbation
-
-The state transition matrix is propagated through an augmented 42-state ODE,
-allowing analytical measurement Jacobians to be mapped from the initial arc
-state to each measurement epoch.
-
-### Measurements
-
-The measurement layer supports:
-
-- Range
-- Azimuth
-- Elevation
-- Geometric range-rate
-- Simplified two-way counted Doppler
-- Converged two-way range (`measurement_type: two_way_range`): explicit
-  t1/t2u/t2d/t3 event chain with fixed transponder delay, exact event-epoch
-  `sxform` station states, and an implicit 3x3 event-system Jacobian
-  (BLS-LM/SRIF only; see `docs/two_way_range.md`)
-
-Measurements are generated only when the spacecraft satisfies station
-visibility constraints and is not occulted by the Moon.
-
-#### Aberration corrections (optional)
-
-Range/azimuth/elevation generation and residuals accept two opt-in corrections
-(both default **off**, so the geometric instantaneous model is unchanged):
-
-- **`apply_light_time=True`** — converged Newtonian one-way light time (CN). The
-  spacecraft is evaluated at the transmit time `t_t = t_r − τ` (τ from a
-  contraction-mapping iteration) while the station, Earth, and topocentric frame
-  are evaluated at the receive time `t_r`. This accounts for **target motion
-  during the light travel time**.
-- **`apply_stellar_aberration=True`** (requires light time) — reception-case
-  Newtonian stellar aberration, applied *after* the CN solution as a pure
-  Rodrigues rotation of the inertial line of sight toward the observer velocity
-  (`sin φ = (v/c) sin w`). It accounts for the **observer's velocity aberration**
-  and shifts azimuth/elevation while leaving range unchanged (rotation preserves
-  the vector norm). Two frames are selectable via `stellar_aberration_model`:
-  - `"spice_ssb"` — observer velocity relative to the **Solar System Barycentre**
-    (J2000 axes; MCI is J2000-aligned so no extra rotation is needed). This is the
-    SPICE-like `CN+S` choice; the correction is of order `|v_⊕,SSB|/c ≈ 1e-4 rad`.
-  - `"local_mci"` *(default)* — observer velocity relative to the Moon-centred
-    frame. Internally consistent but **not** identical to SPICE `CN+S` (it omits
-    the Moon's barycentric velocity, giving a correction ~20× smaller).
-
-The same correction settings are carried on `PassGeometry` and reused in
-generation, prediction, and residual computation. Jacobian behavior is selected
-independently. The default light-time Jacobian remains the backward-compatible
-first-order approximation. With `jacobian_model="implicit_light_time"`, the CN
-range, azimuth, and elevation rows include implicit `dτ/dx`, transmit-epoch STM,
-LOS-normalization, and receive-epoch SEZ chain-rule terms. For CN+S, the range
-row remains the same implicit CN result while the angle rows additionally apply
-a local tangent-space central finite-difference Jacobian of the production
-stellar-aberration transform. The resulting method is hybrid, not fully
-analytic: analytic implicit CN sensitivity, local numerical aberration
-sensitivity, and analytic receive-frame/SEZ angle mapping. The legacy
-first-order mode remains unchanged.
-See `docs/one_way_light_time_jacobians.md` for equations and singularity policy.
-
-### Estimators
-
-**BLS-LM** processes all measurements in a completed tracking arc and solves a
-damped nonlinear least-squares problem.
-
-**SR-UKF** processes measurements sequentially. It propagates sigma points,
-updates the square-root covariance factor, and supports consistency monitoring
-through NIS/NEES-style diagnostics.
-
----
-
-## Main Experiment Families
-
-The `examples/` directory contains scripts used to reproduce the main
-comparison studies:
-
-| Script | Description |
-| --- | --- |
-| `baseline_bls_ukf_comparison.py` | Controlled BLS-LM vs SR-UKF baseline |
-| `baseline_bls_ukf_matrix_campaign.py` | Extended comparison matrix |
-| `sequential_tracking_comparison.py` | Fragmented visibility case |
-| `visibility_28day_dsn_itu_gantt.py` | Multi-station visibility analysis |
-| `two_way_doppler_bls_ukf_comparison.py` | Two-way counted Doppler comparison |
-| `thesis_factorial_report.py` | Factorial thesis campaign summary |
-| `campaign_diagnostic_plots.py` | Diagnostic figure generation |
-| `run_scenario_config.py` | Run a JSON-defined scenario |
-
----
-
-## Scenario Configuration
-
-Scenarios can be defined programmatically or loaded from JSON through
-`ScenarioConfig`.
-
-Example fields include:
-
-```text
-measurement_type: position | range_rate
-estimator_type: bls_lm | srif | ukf
-start_mode: cold | hot | formal | sqrt_formal
-network: single | multi
-duration_h
-sample_step_s
-min_elevation_deg
-noise
-j2_moon
-range_rate_physics
-```
-
-This makes experiment setup reproducible and suitable for regression testing.
-
----
-
-## Validation and Testing
-
-The project includes tests for:
-
-- Coordinate geometry
-- Orbit conversion
-- Dynamics and state propagation
-- STM and finite-difference consistency
-- Measurement generation and residuals
-- Estimator convergence
-- SR-UKF sigma points and covariance handling
-- Visibility and occultation
-- Scenario configuration
-- Monte Carlo utilities
-- Reporting outputs
-- Desktop app smoke tests
-
-Run:
-
-```bash
-python -m pytest tests -q
-```
-
-For slow or long-running campaigns, use the dedicated scripts in `examples/`
-instead of the default fast test suite.
-
----
-
-## Generated Results
-
-The project writes generated outputs under `results/`. Typical outputs include:
-
-- CSV summary tables
-- Per-arc estimator metrics
-- Visibility Gantt charts
-- Residual and NIS plots
-- Runtime comparison plots
-- Baseline BLS-LM vs SR-UKF comparison figures
-
-Large generated outputs should normally not be committed to Git unless they are
-small, stable, and intentionally used as reference artifacts.
-
----
-
-## Limitations
-
-This repository is intended for algorithm research, not operational navigation.
-Important limitations include:
-
-- Synthetic measurements are used for the main experiments.
-- The nominal dynamics model is intentionally simplified relative to
-  high-fidelity flight dynamics.
-- The two-way Doppler model is a simplified proof-of-capability model.
-- Media corrections, transponder delays, clock effects, and full operational DSN
-  calibration are outside the current scope.
-- SPICE ephemerides are treated as truth in the controlled experiments.
-
-The reported numerical results should be interpreted as controlled estimator
-comparison results, not flight-ready navigation performance.
-
----
-
-## Recommended GitHub Workflow
-
-For a clean public repository, use this directory as the repository root and
-avoid committing:
-
-- `__pycache__/`
-- `.pytest_cache/`
-- virtual environments
-- generated result folders unless intentionally curated
-- large `.mat` files
-- private thesis drafts, presentations, or unrelated PDFs
-- local SPICE kernels
-
-Suggested first commit:
-
-```bash
-git init
-git add lunar_od desktop_app examples tests fixtures docs
-git add requirements.txt requirements-dev.txt requirements-accelerated.txt
-git add README.md .gitignore
-git commit -m "Initial public release of lunar OD framework"
-```
-
----
-
-## License
-
-No license is currently included. Before publishing the repository publicly,
-add a license file such as MIT, BSD-3-Clause, or Apache-2.0 depending on how you
-want others to use the code.
-
----
-
-## Citation
-
-If this work is used in academic or research contexts, please cite the related
-graduation thesis/project report associated with this repository.
-
-Suggested citation format:
-
-```text
-Halici, C. E. Lunar Orbit Determination Framework: Comparative Analysis of
-Batch Least-Squares and Square-Root Unscented Kalman Filtering for Lunar Orbit
-Determination. Graduation Project, Istanbul Technical University.
-```
+| lunar_od/ | Scientific library: propagation, observables, estimation and diagnostics |
+| desktop_app/ | Current PyQt5 application and artifact workspace |
+| examples/ | Scenario runners and research/qualification scripts |
+| tests/, fixtures/ | Regressions and committed reference fixtures |
+| docs/ | User guides, scientific contracts and qualification reports |
+| artifacts/, 08_manifests/ | Committed scientific evidence and provenance |
+| archive/ | Preserved historical work; not active implementation |
+| tools/ | Public checks and Windows setup helpers |
+| results/ | Local generated runs; created as needed and ignored by Git |
+
+## Research and development
+
+The framework supports Moon-centered propagation, station visibility, synthetic
+tracking, and batch/sequential estimation. Baseline and optional models have
+different fidelity and qualification limits; see the
+[research guide](docs/research-guide.md) and
+[authoritative scientific status](docs/phase17_authoritative_status.md).
+
+Use **main** for current development. Previous branch tips are preserved under
+branch-history/2026-10-10/ tags. Historical snapshots do not replace current code.
+[Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) ·
+[Branch consolidation audit](docs/branch_consolidation_2026-10-10/README.md)
+
+## License and citation
+
+[MIT License](LICENSE), copyright 2026 Cemil Eray Halıcı.
+
+For academic use, cite the related Lunar Orbit Determination graduation project
+and the commit/tag used to produce your results. A stable DOI or formal release
+citation is not registered in this repository.

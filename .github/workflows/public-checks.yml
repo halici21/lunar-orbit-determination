@@ -1,0 +1,49 @@
+name: Public checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows / Python 3.13 public checks
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - name: Use Windows reference checkout line endings
+        run: git config --global core.autocrlf true
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13.2'
+          architecture: x64
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-accelerated.txt
+            requirements-validated-windows.txt
+            desktop_app/requirements_desktop.txt
+      - name: Install validated dependencies
+        run: python -m pip install -r requirements-validated-windows.txt
+      - name: Check dependencies
+        run: python -m pip check
+      - name: Public regressions
+        run: python tools/run_public_checks.py --junitxml outputs/public-checks.xml
+      - name: Save JUnit report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: public-checks-windows-py313
+          path: outputs/public-checks.xml
+          if-no-files-found: warn
+          retention-days: 14
