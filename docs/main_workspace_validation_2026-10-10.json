@@ -1,0 +1,251 @@
+{
+  "date": "2026-10-10",
+  "base_commit": "4f7ee7d6c0b01562ad440880e8eed0715fb03cc0",
+  "result": "passed with stated skips and external-data requirements",
+  "environment": {
+    "python": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+    "platform": "Windows AMD64",
+    "isolated_venv": true,
+    "system_site_packages": false,
+    "packages": {
+      "PyQt5": "5.15.11",
+      "PyQt5-Qt5": "5.15.2",
+      "PyQt5_sip": "12.18.0",
+      "Pygments": "2.21.0",
+      "colorama": "0.4.6",
+      "contourpy": "1.4.0",
+      "cycler": "0.12.1",
+      "fonttools": "4.66.1",
+      "h5py": "3.16.0",
+      "iniconfig": "2.3.1",
+      "kiwisolver": "1.5.1",
+      "llvmlite": "0.47.0",
+      "matplotlib": "3.10.7",
+      "numba": "0.65.1",
+      "numpy": "2.4.3",
+      "packaging": "26.3",
+      "pandas": "3.0.6",
+      "pillow": "12.3.0",
+      "pip": "24.3.1",
+      "pluggy": "1.6.0",
+      "pyparsing": "3.3.3",
+      "pyqtgraph": "0.14.0",
+      "pytest": "9.1.1",
+      "python-dateutil": "2.9.0.post0",
+      "scipy": "1.17.1",
+      "six": "1.17.0",
+      "spiceypy": "8.2.0",
+      "tzdata": "2026.5"
+    }
+  },
+  "profile_sha256": "5bf3336f585f364e8ea733a2b8ac9d51e09109884c521fea80c4e9ee95299a4f",
+  "commands": {
+    "install": "python -m pip install -r requirements-validated-windows.txt",
+    "full": "python -m pytest -p tests.desktop_preferences tests --durations=15 --junitxml=main-followup-full.xml -q",
+    "rendering": "python -m pytest -p tests.desktop_preferences tests/test_compact_recovery.py tests/test_tracking_render_semantics.py tests/test_workflow_polish.py tests/test_workspace_appearance.py --junitxml=main-followup-rendering.xml -q"
+  },
+  "full_suite": {
+    "counts": {
+      "tests": 1776,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "passed": 1747
+    },
+    "seconds": 296.747,
+    "junit_sha256": "9636221a92ba086b0b15e763e1214b8cb896909de6ba44d78442e56f4c824d8f",
+    "skips": [
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_adaptive_q_reduces_dynamics_mismatch_error",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_adaptive_r_handles_underestimated_measurement_noise",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_position_seeded_monte_carlo_is_statistically_consistent",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_range_rate_global_bias_monte_carlo_is_consistent",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_range_rate_seeded_monte_carlo_is_statistically_consistent",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_range_rate_station_full_bias_recovery_synthetic_arc",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_two_way_range_rate_monte_carlo_is_consistent",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_lunar_ukf_two_way_range_rate_noise_free_synthetic_arc_reduces_error",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_square_root_station_bias_long_arc_with_mismatch_and_heavy_tails",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_square_root_ukf_34_state_ill_conditioned_station_bias_stress",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_filters.FilterTests::test_two_way_long_arc_noise_clock_and_model_mismatch_with_station_biases",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_phase13g_synthesis_report.RealStoreSmokeTests::test_real_store_synthesis_with_known_values",
+        "reason": "real Phase 13G store not available"
+      },
+      {
+        "test": "tests.test_r1_r4_long_arc_qualification.BoundedQualificationSlice::test_slow_day_horizon_slice_remains_bitwise_at_zero_delay",
+        "reason": "bounded slow long-arc slice"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_c20_j2_sanity",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_double_count_guard",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_label_file_present",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_loader_sanity",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_stm_guard",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_tesseral_coefficients_present",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_real_grail_optional.RealGrail660Tests::test_zonal_only_acceleration_finite",
+        "reason": "real GRGM660PRIM file not available locally (data/gravity/grgm660prim/gggrx_0660pm_sha.tab); optional test skipped"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_formal_range_rate_global_bias_recovery_regression",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_formal_start_preserves_augmented_bias_covariance",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_formal_start_propagates_covariance_handoff",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_hot_start_uses_previous_arc_solution",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_noisy_multi_station_batch_matrix_covers_measurement_and_start_modes",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_sqrt_formal_process_noise_matches_covariance_handoff",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_sqrt_formal_start_carries_square_root_information",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_ukf_arc_sequence_supports_cold_hot_and_formal_handoff",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      },
+      {
+        "test": "tests.test_scenarios.ScenarioTests::test_ukf_auto_bias_constraints_freeze_unobserved_station_states",
+        "reason": "slow regression; set LUNAR_OD_RUN_SLOW_TESTS=1 to run"
+      }
+    ]
+  },
+  "rendering_suite": {
+    "counts": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 15
+    },
+    "seconds": 3.243,
+    "junit_sha256": "d854e51c7a3a841482e4093d7d2155e3c0bcb92d668d59677d5ff5e059bb7e53",
+    "skips": []
+  },
+  "targeted_suite": {
+    "counts": {
+      "tests": 48,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 48
+    },
+    "environment": "previous desktop venv; full suite and rendering suite use fresh isolated venv"
+  },
+  "qt": {
+    "full_suite_platform": "offscreen",
+    "rendering_font_directory": "Windows system Fonts directory"
+  },
+  "workflow": {
+    "jobs": [
+      {
+        "seconds": 7.923657400009688,
+        "heartbeat_count": 626,
+        "max_heartbeat_gap_ms": 20.80449997447431,
+        "operational_success": [
+          false
+        ]
+      },
+      {
+        "seconds": 2.478746600012528,
+        "heartbeat_count": 179,
+        "max_heartbeat_gap_ms": 25.309499993454665,
+        "operational_success": [
+          false
+        ]
+      }
+    ],
+    "steps_ms": {
+      "archive_0": 42.20470000291243,
+      "archive_1": 32.58189998450689,
+      "comparison": 112.35880001913756,
+      "reopen_report": 47.409099992364645
+    },
+    "paired_rows": 1,
+    "export_reopen_equal": true
+  },
+  "existing_archive": {
+    "opened_runs": 8,
+    "records_per_run": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "source_files_unchanged": 134,
+    "restored_after_close": true
+  },
+  "scope": {
+    "physics_and_examples_unchanged_from_base": true,
+    "external_data_reused": true,
+    "long_real_run_qualified": false,
+    "timings": "local observations under concurrent testing; no broad performance claim"
+  }
+}

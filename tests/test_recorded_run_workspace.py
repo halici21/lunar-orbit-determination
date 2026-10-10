@@ -400,3 +400,44 @@ def test_native_navigation_archive_to_comparison_to_console(app, tmp_path):
         assert window.pageStack.currentWidget() is console
     finally:
         window.close()
+
+
+def test_new_workspace_missing_archive_is_empty_without_creating_folders(tmp_path):
+    folder = tmp_path / "first-run-results"
+    assert scan_run_archive(folder, missing_ok=True) == ()
+    assert not folder.exists()
+    with pytest.raises(ResultLoadError):
+        scan_run_archive(folder)
+    with pytest.raises(LoadCancelled):
+        scan_run_archive(folder, cancel=lambda: True, missing_ok=True)
+
+
+def test_default_empty_archive_guides_user_and_custom_missing_folder_stays_an_error(
+    app, tmp_path, monkeypatch,
+):
+    import controllers.run_archive_controller as module
+
+    default = tmp_path / "not-created-yet"
+    monkeypatch.setattr(module, "RESULTS_DIR", default)
+    page = RunArchiveController()
+    try:
+        page.on_shown()
+        wait(app, lambda: not page._jobs)
+        assert page.model.rowCount() == 0
+        assert "Henüz kayıtlı koşu yok" in page.status_label.text()
+        assert not page.open_button.isEnabled()
+        assert not page.compare_button.isEnabled()
+        assert not default.exists()
+
+        source = write_run(tmp_path / "previous-runs")
+        page.set_folder(source.parent)
+        wait(app, lambda: not page._jobs)
+        assert page.model.rowCount() == 1
+
+        page.set_folder(tmp_path / "missing-custom-folder")
+        wait(app, lambda: not page._jobs)
+        assert "Arşiv okunamadı" in page.status_label.text()
+        assert page.model.entries[0].path == source
+    finally:
+        page.shutdown()
+        page.close()

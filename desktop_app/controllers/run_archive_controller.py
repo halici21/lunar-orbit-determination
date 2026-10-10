@@ -219,7 +219,8 @@ class RunArchiveController(ArtifactJobs, QWidget):
         # Each worker owns its cache snapshot; canceled generations cannot
         # overwrite the active generation. Explicit refresh rescans all CSVs.
         self._count_cache = {} if force else dict(self._count_cache)
-        self.start_job(partial(scan_run_archive, count_cache=self._count_cache), (self.folder,))
+        self.start_job(partial(scan_run_archive, count_cache=self._count_cache,
+            missing_ok=self.folder == RESULTS_DIR), (self.folder,))
 
     def cancel_scan(self):
         self.cancel_jobs()
@@ -297,7 +298,10 @@ class RunArchiveController(ArtifactJobs, QWidget):
             self.lineage_label.hide()
             self.details.clear()
             self.summary.clear()
-        self.status_label.setText(f"{self.proxy.rowCount()} / {len(self.model.entries)} koşu · {len(entries)} seçili · karşılaştırma için Ctrl ile iki satır seçin")
+        if not self.model.entries:
+            self.status_label.setText("Henüz kayıtlı koşu yok. Senaryo sayfasından bir koşu başlatın ya da başka bir klasör seçin.")
+        else:
+            self.status_label.setText(f"{self.proxy.rowCount()} / {len(self.model.entries)} koşu · {len(entries)} seçili · karşılaştırma için Ctrl ile iki satır seçin")
 
     def open_selected(self):
         entries = self.selected_entries()

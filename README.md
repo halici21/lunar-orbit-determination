@@ -163,6 +163,23 @@ pip install -r requirements-accelerated.txt
 
 ---
 
+## Validated Windows environment
+
+For the recorded scientific regression environment, use CPython 3.13 on Windows
+x86_64 and install the combined core, accelerated, desktop and test profile:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-validated-windows.txt
+```
+
+[The validation record](docs/branch_consolidation_2026-10-10/validation.json)
+documents the reference package versions and required external data.
+[Fresh-environment verification](docs/main_workspace_readiness_2026-10-10.md)
+records the combined profile and desktop checks. Tight numerical
+reference tests depend on this environment; reproducing it does not replace
+the required SPICE and gravity fixtures.
+
 ## SPICE Kernel Setup
 
 Some examples and visibility workflows require NASA SPICE kernels. Place the

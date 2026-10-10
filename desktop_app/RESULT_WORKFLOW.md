@@ -233,6 +233,17 @@ The scenario form groups arc and measurement fields under Advanced settings.
 JSON preview is optional; run/save/import/analysis actions, source provenance
 and draft recovery remain independently accessible.
 
+## First-run archive and existing results
+
+Before a workspace has produced its first run, the default results folder may
+not exist. The archive shows an empty state with instructions to run a scenario
+or choose another folder. Opening this page does not create directories.
+
+A missing folder explicitly selected by the user remains an error, and the
+previous indexed rows are preserved. Use the folder selector to open results
+from an earlier checkout. The chosen folder is restored after normal shutdown;
+source files remain in their original location.
+
 ## Session and compact desktop behavior
 
 On normal shutdown, the app stores source identities and view preferences.
@@ -258,16 +269,19 @@ Zero baseline errors never produce a fabricated percentage.
 
 ## Verification
 
-Install the project and desktop dependencies, plus pytest. From the repo root on
+Install requirements-validated-windows.txt for the recorded Windows environment.
+From the repo root on
 PowerShell, run:
 
 ```powershell
-$env:PYTHONPATH = "$PWD;$PWD/desktop_app"
 $env:QT_QPA_PLATFORM = "offscreen"
+$env:QT_QPA_FONTDIR = Join-Path $env:WINDIR "Fonts"
 python -m pytest -p tests.desktop_preferences tests/test_compact_recovery.py tests/test_desktop_workflow.py tests/test_large_workspace.py tests/test_recorded_run_workspace.py tests/test_result_summary.py tests/test_run_workspace_resume.py tests/test_tracking_console.py tests/test_tracking_render_semantics.py tests/test_workflow_polish.py tests/test_workspace_appearance.py tests/test_workspace_session.py tests/test_pytest_desktop_app.py -q
 ```
 
-The opt-in preferences plugin writes only temporary QSettings files.
+The opt-in preferences plugin writes only temporary QSettings files. On Windows,
+QT_QPA_FONTDIR gives the offscreen Qt backend access to system fonts so layout
+and screenshot checks render text. Normal desktop launch uses the Windows backend.
 This set passed 142 tests on the clean main-based UI branch. It covers recorded
 artifact integrity, process lifecycle, archive/clone/compare/export/reopen,
 rendering semantics, session recovery and compact layouts. These tests do not

@@ -75,14 +75,20 @@ def _csv_signature(stat):
     return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
 
 
-def scan_run_archive(folder, cancel=lambda: False, *, count_cache=None):
+def scan_run_archive(folder, cancel=lambda: False, *, count_cache=None, missing_ok=False):
     """Index artifacts; optional per-worker cache stores structural row counts.
 
     Stat signatures are a navigation optimization, not an integrity guarantee.
     Explicit refresh uses a fresh cache; opening a result validates its payload.
+    missing_ok is for a new workspace before its first result folder is created.
     """
+    folder = Path(folder)
+    if missing_ok and not folder.exists():
+        if cancel():
+            raise LoadCancelled()
+        return ()
     entries = []
-    for run in discover_tracking_runs(Path(folder), cancel):
+    for run in discover_tracking_runs(folder, cancel):
         if cancel():
             raise LoadCancelled()
         path = run.updates_path
