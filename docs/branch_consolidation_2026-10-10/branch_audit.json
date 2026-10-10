@@ -1,0 +1,207 @@
+{
+  "base_main": "b12bd73",
+  "branches": [
+    {
+      "branch": "archive/worktree-snapshots-2026-09-24",
+      "tip": "a25d6faeecc7399b341b0f2c7847035eda3cb953",
+      "main_only_before": 2,
+      "branch_only_before": 3,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/archive/worktree-snapshots-2026-09-24"
+    },
+    {
+      "branch": "codex/lunar-od-workspace",
+      "tip": "a9f9e56c2556b98a68493e3425ae42b836f34f8c",
+      "main_only_before": 1,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/codex/lunar-od-workspace"
+    },
+    {
+      "branch": "feature/lunar-high-order-gravity-closure",
+      "tip": "fc13cc4000767ac07abeb3856ec18521bfbc0f76",
+      "main_only_before": 14,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/lunar-high-order-gravity-closure"
+    },
+    {
+      "branch": "feature/lunar-j2-force-models",
+      "tip": "632560d72d51b3d77b401365b1839908c2c8e85f",
+      "main_only_before": 22,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/lunar-j2-force-models"
+    },
+    {
+      "branch": "feature/phase14-17ar-qualified",
+      "tip": "0e785f624a4e512177b3e7b5c0adc00d2c809e34",
+      "main_only_before": 13,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/phase14-17ar-qualified"
+    },
+    {
+      "branch": "feature/phase17-r-k-srp-estimation",
+      "tip": "46e21c80c7ee2ff3caf2b650d2c5e8fc3fc01fc7",
+      "main_only_before": 2,
+      "branch_only_before": 56,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/phase17-r-k-srp-estimation"
+    },
+    {
+      "branch": "feature/r0b-force-contract-parity",
+      "tip": "9dd19c39b0ca2d0eee33498b754454b8e4dc395b",
+      "main_only_before": 37,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/r0b-force-contract-parity"
+    },
+    {
+      "branch": "feature/r1-covariance-observability-parity",
+      "tip": "6e88015114540253cf64892d9a6ff22342bb9d1b",
+      "main_only_before": 33,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/r1-covariance-observability-parity"
+    },
+    {
+      "branch": "feature/r2-measurement-fidelity-parity",
+      "tip": "5ca652a4659375fa9a053cee8450ad2375b3bbf3",
+      "main_only_before": 26,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/r2-measurement-fidelity-parity"
+    },
+    {
+      "branch": "feature/r3-exact-station-transform",
+      "tip": "d03a9132a842ad8f4aa559d22e9d2ee295270345",
+      "main_only_before": 20,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/r3-exact-station-transform"
+    },
+    {
+      "branch": "feature/r4-four-event-counted-doppler",
+      "tip": "5bf0c542898913c7a283e5495f8a1c884ea4dd71",
+      "main_only_before": 17,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/feature/r4-four-event-counted-doppler"
+    },
+    {
+      "branch": "fix/history-domain-enforcement",
+      "tip": "da28e5acb8dba0367f2252070ed77c8941b86de5",
+      "main_only_before": 43,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/fix/history-domain-enforcement"
+    },
+    {
+      "branch": "fix/light-time-nonconvergence",
+      "tip": "e572a64be38c81102c5d6d95e2d527cd78464390",
+      "main_only_before": 44,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/fix/light-time-nonconvergence"
+    },
+    {
+      "branch": "fix/measurement-model-safety",
+      "tip": "3265dbe96826e2fb843362c61913b1c6d7c47629",
+      "main_only_before": 45,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/fix/measurement-model-safety"
+    },
+    {
+      "branch": "fix/r0a-force-config-ukf-parity",
+      "tip": "543b6b9472f5a227c2e2b2857d0086bc14d45ffd",
+      "main_only_before": 42,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/fix/r0a-force-config-ukf-parity"
+    },
+    {
+      "branch": "fix/r1-r4-long-arc-time-conditioning",
+      "tip": "a347397e89f0c7b921eaa66c3f94909f75113bd7",
+      "main_only_before": 12,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/fix/r1-r4-long-arc-time-conditioning"
+    },
+    {
+      "branch": "integration/phase17-canonical",
+      "tip": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+      "main_only_before": 2,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/integration/phase17-canonical"
+    },
+    {
+      "branch": "main",
+      "tip": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+      "main_only_before": 2,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/main"
+    },
+    {
+      "branch": "validation/r1-r4-long-arc-qualification",
+      "tip": "3c6f3b092b95dea9cf2e4539cf9ac0d95e6b31a3",
+      "main_only_before": 15,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/validation/r1-r4-long-arc-qualification"
+    },
+    {
+      "branch": "wip/phase17-r-estimator-integration",
+      "tip": "13e75f111dbb13bd6ee57d405a66e15c4d909f7d",
+      "main_only_before": 14,
+      "branch_only_before": 1,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/wip/phase17-r-estimator-integration"
+    }
+  ],
+  "remote_branches": [
+    {
+      "branch": "origin/archive/worktree-snapshots-2026-09-24",
+      "tip": "a25d6faeecc7399b341b0f2c7847035eda3cb953",
+      "main_only_before": 2,
+      "branch_only_before": 3,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/remote/archive/worktree-snapshots-2026-09-24"
+    },
+    {
+      "branch": "origin/codex/lunar-od-workspace",
+      "tip": "a9f9e56c2556b98a68493e3425ae42b836f34f8c",
+      "main_only_before": 1,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/remote/codex/lunar-od-workspace"
+    },
+    {
+      "branch": "origin/feature/phase17-r-k-srp-estimation",
+      "tip": "595f5b9853048bcb74ee622688821d237095a24b",
+      "main_only_before": 2,
+      "branch_only_before": 16,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/remote/feature/phase17-r-k-srp-estimation"
+    },
+    {
+      "branch": "origin/main",
+      "tip": "b12bd7349d48f827eb82fb732ab7d7c8f3ce23fe",
+      "main_only_before": 0,
+      "branch_only_before": 0,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/remote/main"
+    },
+    {
+      "branch": "origin/wip/phase17-r-estimator-integration",
+      "tip": "13e75f111dbb13bd6ee57d405a66e15c4d909f7d",
+      "main_only_before": 14,
+      "branch_only_before": 1,
+      "included_after": true,
+      "preservation_tag": "branch-history/2026-10-10/remote/wip/phase17-r-estimator-integration"
+    }
+  ]
+}

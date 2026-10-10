@@ -17,6 +17,15 @@ synthetic experiments. It is not intended to be used as flight software.
 
 ---
 
+## Current development branch
+
+Use **main** for development. The 2026-10-10 consolidation integrates the
+committed research history and the native recorded-run workspace. Historical
+branch tips remain available under branch-history/2026-10-10/ tags; archived
+WIP and uncommitted snapshots are preservation material, not active code.
+See the [branch audit and validation](docs/branch_consolidation_2026-10-10/README.md)
+and the [desktop workflow](desktop_app/RESULT_WORKFLOW.md).
+
 ## Highlights
 
 - Moon-centered lunar orbit propagation
@@ -82,7 +91,7 @@ The scientific code lives in `lunar_od/`.
 
 The desktop app lives in `desktop_app/` and is organized around Qt Designer
 `.ui` files, page controllers, services, background workers, reusable widgets,
-and a dark QSS theme.
+and configurable light themes.
 
 Key screens include:
 

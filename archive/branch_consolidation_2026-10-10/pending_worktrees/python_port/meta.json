@@ -1,0 +1,16 @@
+{
+  "worktree": "project/python_port",
+  "base_commit": "632560d72d51b3d77b401365b1839908c2c8e85f",
+  "status": [
+    "?? docs/measurement_models_physics_derivatives_and_gaps.md"
+  ],
+  "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "untracked_preserved": [
+    {
+      "path": "docs/measurement_models_physics_derivatives_and_gaps.md",
+      "sha256": "8f01b2be128de9381fa5fa05ab0d35a24796f1c958497d7c62190bfaab24468e",
+      "bytes": 129127
+    }
+  ],
+  "purpose": "preservation only; uncommitted scientific changes are not activated"
+}

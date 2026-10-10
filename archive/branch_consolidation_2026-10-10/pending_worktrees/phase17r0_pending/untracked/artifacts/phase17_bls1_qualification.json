@@ -1,0 +1,51 @@
+{
+ "simplified_ablation": {
+  "label": "DIAGNOSTIC: KP2 cross-check problem (same a priori and noise draws) in SIMPLIFIED dynamics, one BLS1 change removed per row",
+  "rows": [
+   {
+    "variant": "final",
+    "status": "Converged",
+    "k": 0.00513051097781201,
+    "iterations": 30,
+    "negative_k_trials": 5,
+    "chi2": 902.4408596065725,
+    "gn_step_over_sigma_max": 0.1486223430157969,
+    "pos_err_m": 6.486966925783366,
+    "elapsed_s": 156.15995836257935
+   },
+   {
+    "variant": "no_square_root_step",
+    "status": "MaxIter",
+    "k": 0.0012096313465210446,
+    "iterations": 80,
+    "negative_k_trials": 63,
+    "chi2": 1283041.2777098299,
+    "gn_step_over_sigma_max": 349.6060877578707,
+    "pos_err_m": 156.85927248532514,
+    "elapsed_s": 345.6956238746643
+   },
+   {
+    "variant": "no_bound_active_step",
+    "status": "DampingLimit",
+    "k": 5.74220571648724e-05,
+    "iterations": 30,
+    "negative_k_trials": 12,
+    "chi2": 1295359.8792407815,
+    "gn_step_over_sigma_max": 350.6449505828136,
+    "pos_err_m": 158.44565394069684,
+    "elapsed_s": 147.02356433868408
+   },
+   {
+    "variant": "no_caller_tolerance_jacobian",
+    "status": "Converged",
+    "k": 0.004088603158011678,
+    "iterations": 25,
+    "negative_k_trials": 6,
+    "chi2": 1405.0741157751681,
+    "gn_step_over_sigma_max": 5.2865935845315475,
+    "pos_err_m": 9.323380425052346,
+    "elapsed_s": 104.85720491409302
+   }
+  ]
+ }
+}

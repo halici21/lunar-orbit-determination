@@ -363,6 +363,25 @@ PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# --------------------------------------------------------------------------
+# Desktop workspace re-freeze (PR #7, approved and merged by the owner;
+# integration requested on 2026-10-10).
+# --------------------------------------------------------------------------
+# The opt-in desktop_options/artifact_callback bridge in run_scenario_config.py
+# was merged at a9f9e56. Legacy CLI dispatch and the default science path remain
+# covered by their retained regression tests. This updates only the CURRENT
+# accepted bytes; all R2 historical hashes and protected-path membership remain
+# unchanged. A subsequent edit still fails the SHA-256 gate.
+# Historical hash: f6cf74b69fa15a15148cb6ca59db56980b9afa3340b59fcaf4de8a2a2a533bac
+# Approved hash:   fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed
+# Representation: git cat-file --filters, core.autocrlf=true (as above).
+# Scope and evidence: docs/branch_consolidation_2026-10-10/desktop_refreeze.json.
+DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256 = {
+    "examples/run_scenario_config.py":
+        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
+}
+
+
 def expected_current_tree_sha256(relative_path: str) -> str:
     """Expected CURRENT-tree hash for a protected path.
 
@@ -370,6 +389,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256:
+        return DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE17_HARDEN_REFROZEN_CURRENT_TREE_SHA256:

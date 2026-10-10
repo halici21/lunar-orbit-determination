@@ -1,0 +1,1561 @@
+diff --git a/desktop_app/app.py b/desktop_app/app.py
+index 845d7f4..08de243 100644
+--- a/desktop_app/app.py
++++ b/desktop_app/app.py
+@@ -1,14 +1,16 @@
+ """Main window — loads main_window.ui, wires sidebar nav and page stack."""
+ from __future__ import annotations
+ import sys
++import importlib
+ from pathlib import Path
+ 
+ from PyQt5.QtWidgets import (
+     QMainWindow, QWidget, QLabel, QPushButton, QFrame,
+-    QSizePolicy, QProgressBar,
++    QSizePolicy, QProgressBar, QVBoxLayout, QButtonGroup, QShortcut, QScrollArea, QStackedWidget,
+ )
+-from PyQt5.QtCore import Qt, QSettings
++from PyQt5.QtCore import Qt, QSettings, QSize
+ from PyQt5 import uic
++from PyQt5.QtGui import QKeySequence
+ 
+ from styles.theme import C, FONT
+ 
+@@ -16,28 +18,36 @@ DESKTOP_DIR = Path(__file__).resolve().parent
+ UI_PATH = DESKTOP_DIR / "ui" / "main_window.ui"
+ 
+ # (page_id, sidebar_label, hint_text)
+-_NAV = [
+-    ("dashboard",   "Dashboard",        "Mission overview"),
+-    ("results",     "Results Browser",  "CSV tables & PNG plots"),
+-    ("run_monitor", "Run Monitor",       "Launch scripts live"),
+-    ("comparison",  "Comparison",        "Estimator comparison"),
+-    ("scenario",    "Scenario Builder",  "Configure runs"),
+-    ("dynamics",    "Dynamics",          "Force model & propagation"),
+-    ("measurements","Measurements",      "Noise, bias & Doppler"),
+-    ("estimators",  "Estimators",        "BLS / SRIF / UKF tuning"),
+-    ("stations",    "Stations",          "Network & precision"),
+-    ("visibility",  "Visibility Gantt",  "Station contact windows"),
+-    ("analysis",     "Analysis",          "BLS / UKF comparison"),
+-    ("ground_track", "Ground Track",      "Selenographic ground track"),
+-    ("settings",     "Settings",          "Paths, theme & runtime"),
++_PRIMARY_NAV = [
++    ("scenario", "Senaryo", "Ayarları hazırla veya arşivden bir koşuyu temel al"),
++    ("run_monitor", "Çalıştır", "Çalışan işi ve kayıtlarını izle"),
++    ("console", "Sonuçlar", "Grafikler, kayıtlar ve koşu ayrıntıları"),
++    ("archive", "Arşiv", "Kaydedilmiş koşuları bul ve yeniden kullan"),
++    ("comparison", "Karşılaştırma", "İki koşunun kayıtlarını ve ayarlarını karşılaştır"),
+ ]
++_ADVANCED = [
++    ("dashboard", "Genel bakış", "Araştırma özeti"),
++    ("results", "Dosya tarayıcı", "Diğer CSV ve görsel dosyalar"),
++    ("dynamics", "Dinamik", "Kuvvet modeli ve yayılım"),
++    ("measurements", "Ölçümler", "Gürültü, bias ve Doppler"),
++    ("estimators", "Kestiriciler", "BLS / SRIF / UKF ayarları"),
++    ("stations", "İstasyonlar", "Ağ ve hassasiyet"),
++    ("visibility", "Görünürlük", "İstasyon temas aralıkları"),
++    ("analysis", "Analiz", "Kestirici incelemesi"),
++    ("ground_track", "Yüzey izi", "Ay yüzeyindeki yörünge izi"),
++]
++
++_NAV = _PRIMARY_NAV + _ADVANCED + [("settings", "Ayarlar", "Uygulama ayarları")]
+ 
+ _TITLES: dict[str, tuple[str, str]] = {
++    "console": ("Sonuçlar", "Kayıtlı grafikler, koşu ayarları ve kaynak ilişkileri"),
++    "archive": ("Koşu arşivi", "Gerçek koşular, ayarlar ve tamamlanma kayıtları"),
+     "dashboard":   ("Mission Dashboard",   "Lunar OD research overview"),
+     "results":     ("Results Browser",     "Browse CSV tables and PNG plots"),
+-    "run_monitor": ("Run Monitor",         "Launch example scripts with live output"),
+-    "comparison":  ("Comparison",          "Compare BLS-LM vs SR-UKF, start modes, physics"),
+-    "scenario":    ("Scenario Builder",    "Configure, export, and run scenarios"),
++    "run_monitor": ("Çalıştır", "İşlem durumu, canlı günlük ve çıktı dosyaları"),
++    "comparison":  ("Koşu karşılaştırması", "Kaydedilmiş değerler, tam epok eşleşmeleri ve ayar farkları"),
++    "summary_comparison": ("Diğer CSV özetleri", "Eski özet CSV araçları"),
++    "scenario": ("Senaryo", "Ayarları hazırla, kaydet ve yeni koşu başlat"),
+     "dynamics":    ("Dynamics",            "Force model, SPICE kernels, propagation grid, and numerical tolerances"),
+     "measurements":("Measurements",        "Synthetic observables, noise, biases, and Doppler configuration"),
+     "estimators":  ("Estimators",          "Centralized BLS-LM, SRIF, and SR-UKF tuning controls"),
+@@ -65,8 +75,7 @@ class _NavButton(QPushButton):
+     )
+     # Hover rule is fully resolved — no .format() placeholders needed.
+     _HOVER = (
+-        f"QPushButton:hover {{ background:{C.BG_ACTIVE};"
+-        f" border-left-color:#2a4a6a; color:{C.TEXT_SECONDARY}; }}"
++        f"QPushButton:hover {{ background:{C.BG_HOVER}; border-left-color:{C.BORDER_MID}; color:{C.TEXT_PRIMARY}; }}"
+     )
+ 
+     def __init__(self, label: str, hint: str, parent=None) -> None:
+@@ -78,13 +87,14 @@ class _NavButton(QPushButton):
+         self.setMinimumHeight(38)
+         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+         self.setToolTip(hint)
++        self.toggled.connect(self._refresh_style)
+         self._refresh_style()
+ 
+     def _refresh_style(self) -> None:
+         checked = self.isChecked()
+         sheet = self._TPL.format(
+             border=C.NAV_ACTIVE if checked else "transparent",
+-            fg=C.NAV_ACTIVE_FG if checked else C.TEXT_MUTED,
++            fg=C.TEXT_PRIMARY if checked else C.TEXT_MUTED,
+             fw="600" if checked else "normal",
+         ) + self._HOVER
+         self.setStyleSheet(sheet)
+@@ -100,104 +110,128 @@ class _NavButton(QPushButton):
+ 
+ 
+ # ---------------------------------------------------------------------------
++class _VisiblePageStack(QStackedWidget):
++    """A tall hidden page must not stretch every other page in the viewport."""
++    def sizeHint(self):
++        page = self.currentWidget()
++        return page.sizeHint() if page else QSize(960, 720)
++
++    def minimumSizeHint(self):
++        page = self.currentWidget()
++        return page.minimumSizeHint() if page else QSize(960, 720)
++
++    def heightForWidth(self, width):
++        page = self.currentWidget()
++        if page and page.hasHeightForWidth():
++            return page.heightForWidth(width)
++        return self.minimumSizeHint().height()
++
++
+ class MainWindow(QMainWindow):
+     def __init__(self) -> None:
+         super().__init__()
+         uic.loadUi(str(UI_PATH), self)
++        # Keep controls reachable on small/high-DPI desktops without compressing
++        # scientific plots or removing advanced controls.
++        self.setMinimumSize(760, 420)
++        self.pageScroll = QScrollArea()
++        self.pageScroll.setWidgetResizable(True)
++        self.pageScroll.setFrameShape(QFrame.NoFrame)
++        self.pageScroll.setAccessibleName("Çalışma alanı; taşan içerik kaydırılabilir")
++        original_stack = self.pageStack
++        parent_layout = original_stack.parentWidget().layout()
++        parent_layout.replaceWidget(original_stack, self.pageScroll)
++        self.pageStack = _VisiblePageStack()
++        self.pageStack.setObjectName("pageStack")
++        original_stack.deleteLater()
++        self.pageStack.setMinimumSize(960, 720)
++        self.pageScroll.setWidget(self.pageStack)
+ 
+         self._settings = QSettings("LunarOD", "DesktopApp")
++        from services.workspace_session import read_session
++        self._workspace_session = read_session(self._settings)
++        self._restored_pages = set()
++        self._active_page = "console"
+         self._nav_btns: dict[str, _NavButton] = {}
+         self._pages: dict[str, QWidget] = {}
+ 
++        self.brandSubLabel.setText("Yörünge belirleme çalışma alanı")
++        self.footerNativeLabel.setText("Yerel çalışma alanı")
+         self._apply_styles()
+         self._build_nav()
+         self._build_status_bar()
+         self._load_pages()
+         self._restore_geometry()
+-        self.navigate("dashboard")
++        active = self._workspace_session.get("active", "console")
++        self.navigate(active if active in ("console","comparison","archive") else "console")
+ 
+     # ------------------------------------------------------------------
+     # UI setup
+     # ------------------------------------------------------------------
+     def _apply_styles(self) -> None:
+-        self.sidebarFrame.setObjectName("sidebarFrame")
+-
+-        self.brandFrame.setStyleSheet(
+-            f"background-color:{C.BG_SIDEBAR}; border-bottom:1px solid {C.BORDER_MAIN};"
+-        )
+-        self.brandTitleLabel.setStyleSheet(
+-            f"color:{C.NAV_ACTIVE_FG}; font-size:20px; font-weight:bold; background:transparent;"
+-        )
+-        self.brandSubLabel.setStyleSheet(
+-            f"color:{C.TEXT_MUTED}; font-size:10px; background:transparent;"
+-        )
+-
+-        self.navScrollArea.setStyleSheet(
+-            f"QScrollArea {{ background-color:{C.BG_SIDEBAR}; border:none; }}"
+-        )
+-        self.navWidget.setStyleSheet(f"background-color:{C.BG_SIDEBAR};")
+-
+-        self.footerFrame.setStyleSheet(
+-            f"background-color:{C.BG_SIDEBAR}; border-top:1px solid {C.BORDER_MAIN};"
+-        )
+-        self.footerNativeLabel.setStyleSheet(
+-            f"color:{C.GREEN}; font-size:11px; font-weight:bold; background:transparent;"
+-        )
+-        self.footerVerLabel.setStyleSheet(
+-            f"color:{C.TEXT_MUTED}; font-size:10px; background:transparent;"
+-        )
+-
+-        self.contentFrame.setObjectName("contentFrame")
+-        self.pageHeaderFrame.setObjectName("pageHeaderFrame")
++        from styles.workspace_light import workspace_stylesheet
++        self.setStyleSheet(workspace_stylesheet())
++        self.setWindowTitle("Lunar OD · Çalışma alanı")
++        self.sidebarFrame.setFixedWidth(192)
++        self.sidebarFrame.setStyleSheet(
++            f"QFrame#sidebarFrame {{background:{C.BG_SIDEBAR}; border-right:1px solid {C.BORDER_MAIN};}}")
++        for widget in (self.brandFrame, self.navWidget, self.footerFrame):
++            widget.setStyleSheet(f"background:{C.BG_SIDEBAR};")
++        self.navScrollArea.setStyleSheet(f"QScrollArea {{background:{C.BG_SIDEBAR}; border:0;}}")
++        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:20px; font-weight:500;")
++        self.brandSubLabel.setText("Yörünge belirleme")
++        self.brandSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
++        self.footerNativeLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
++        self.footerVerLabel.setText("Araştırma çalışma alanı")
++        self.footerVerLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+         self.pageHeaderFrame.setStyleSheet(
+-            f"QFrame#pageHeaderFrame {{ background-color:{C.BG_SIDEBAR}; "
+-            f"border-bottom:1px solid {C.BORDER_MAIN}; }}"
+-        )
+-        self.pageTitleLabel.setStyleSheet(
+-            f"color:{C.TEXT_PRIMARY}; font-size:17px; font-weight:600; background:transparent;"
+-        )
+-        self.pageSubLabel.setStyleSheet(
+-            f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px; background:transparent;"
+-        )
++            f"QFrame#pageHeaderFrame {{background:{C.BG_DEEP}; border-bottom:1px solid {C.BORDER_MAIN};}}")
++        self.pageTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:19px; font-weight:500;")
++        self.pageSubLabel.hide()
+ 
+     def _build_nav(self) -> None:
+         layout = self.navLayout
+-        # Group nav items with thin dividers
+-        groups = [
+-            [("dashboard",    "Dashboard",       "Mission overview"),
+-             ("results",      "Results Browser", "CSV tables & PNG plots")],
+-            [("run_monitor",  "Run Monitor",      "Launch scripts live"),
+-             ("scenario",     "Scenario Builder", "Configure runs"),
+-             ("comparison",   "Comparison",       "Estimator comparison")],
+-            [("dynamics",     "Dynamics",         "Force model & propagation"),
+-             ("measurements", "Measurements",     "Noise, bias & Doppler"),
+-             ("estimators",   "Estimators",       "BLS / SRIF / UKF tuning"),
+-             ("stations",     "Stations",         "Network & precision")],
+-            [("visibility",   "Visibility",       "Station contact windows"),
+-             ("analysis",     "Analysis",         "BLS / UKF comparison"),
+-             ("ground_track", "Ground Track",     "Selenographic ground track")],
+-            [("settings",     "Settings",         "Paths, theme & runtime")],
+-        ]
+-        first = True
+-        for group in groups:
+-            if not first:
+-                div = QFrame(self)
+-                div.setFrameShape(QFrame.HLine)
+-                div.setFixedHeight(1)
+-                div.setStyleSheet(f"background:{C.BORDER_MAIN}; border:none; margin:3px 12px;")
+-                layout.addWidget(div)
+-            first = False
+-            for page_id, label, hint in group:
+-                btn = _NavButton(label, hint)
+-                btn.clicked.connect(lambda _checked, pid=page_id: self.navigate(pid))
+-                layout.addWidget(btn)
+-                self._nav_btns[page_id] = btn
++        self._nav_group = QButtonGroup(self)
++        self._nav_group.setExclusive(True)
++        def add_button(item, target):
++            page_id, label, hint = item
++            btn = _NavButton(label, hint)
++            btn.setAutoExclusive(False)
++            self._nav_group.addButton(btn)
++            btn.clicked.connect(lambda _checked, pid=page_id: self.navigate(pid))
++            target.addWidget(btn)
++            self._nav_btns[page_id] = btn
++        label = QLabel("ÇALIŞMA ALANI")
++        label.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:14px 16px 6px; font-size:11px;")
++        layout.addWidget(label)
++        for number, item in enumerate(_PRIMARY_NAV, 1):
++            add_button(item, layout)
++            shortcut = QShortcut(QKeySequence(f"Alt+{number}"), self)
++            shortcut.activated.connect(lambda pid=item[0]: self.navigate(pid))
++        self.advanced_toggle = QPushButton("Gelişmiş araçlar  ›")
++        self.advanced_toggle.setCheckable(True)
++        self.advanced_toggle.setStyleSheet(f"text-align:left; padding:12px 16px; color:{C.TEXT_MUTED}; border:0; background:transparent;")
++        layout.addWidget(self.advanced_toggle)
++        self.advanced_panel = QWidget()
++        advanced_layout = QVBoxLayout(self.advanced_panel)
++        advanced_layout.setContentsMargins(10, 0, 0, 0)
++        advanced_layout.setSpacing(0)
++        for item in _ADVANCED:
++            add_button(item, advanced_layout)
++        layout.addWidget(self.advanced_panel)
++        self.advanced_panel.hide()
++        self.advanced_toggle.toggled.connect(self._toggle_advanced)
+         layout.addStretch()
++        add_button(("settings", "Ayarlar", "Dosya yolları ve uygulama ayarları"), layout)
++
++    def _toggle_advanced(self, expanded):
++        self.advanced_panel.setVisible(expanded)
++        self.advanced_toggle.setText("Gelişmiş araçlar  ⌄" if expanded else "Gelişmiş araçlar  ›")
+ 
+     def _build_status_bar(self) -> None:
+         sb = self.statusBar
+         sb.setFixedHeight(26)
+-        self._status_lbl = QLabel("Ready")
++        self._status_lbl = QLabel("Hazır")
+         self._status_lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:0 8px;")
+         sb.addWidget(self._status_lbl)
+         self._progress = QProgressBar()
+@@ -210,56 +244,63 @@ class MainWindow(QMainWindow):
+     # Page loading
+     # ------------------------------------------------------------------
+     def _load_pages(self) -> None:
++        """Register pages; expensive modules are imported on first navigation."""
+         sys.path.insert(0, str(DESKTOP_DIR))
+-        from controllers.dashboard_controller import DashboardController
+-        from controllers.results_browser_controller import ResultsBrowserController
+-        from controllers.run_monitor_controller import RunMonitorController
+-        from controllers.comparison_controller import ComparisonController
+-        from controllers.scenario_builder_controller import ScenarioBuilderController
+-        from controllers.stations_controller import StationsController
+-        from controllers.visibility_controller import VisibilityController
+-        from controllers.analysis_controller import AnalysisController
+-        from controllers.ground_track_controller import GroundTrackController
+-        from controllers.system_pages_controller import (
+-            DynamicsController,
+-            MeasurementsController,
+-            EstimatorsController,
+-            SettingsController,
+-        )
+-
+-        page_map: dict[str, type] = {
+-            "dashboard":    DashboardController,
+-            "results":      ResultsBrowserController,
+-            "run_monitor":  RunMonitorController,
+-            "comparison":   ComparisonController,
+-            "scenario":     ScenarioBuilderController,
+-            "dynamics":     DynamicsController,
+-            "measurements": MeasurementsController,
+-            "estimators":   EstimatorsController,
+-            "stations":     StationsController,
+-            "visibility":   VisibilityController,
+-            "analysis":     AnalysisController,
+-            "ground_track": GroundTrackController,
+-            "settings":     SettingsController,
++        self._page_factories = {
++            "console": ("controllers.tracking_console_controller", "TrackingConsoleController"),
++            "archive": ("controllers.run_archive_controller", "RunArchiveController"),
++            "dashboard": ("controllers.dashboard_controller", "DashboardController"),
++            "results": ("controllers.results_browser_controller", "ResultsBrowserController"),
++            "run_monitor": ("controllers.run_monitor_controller", "RunMonitorController"),
++            "comparison": ("controllers.recorded_comparison_controller", "RecordedComparisonController"),
++            "summary_comparison": ("controllers.comparison_controller", "ComparisonController"),
++            "scenario": ("controllers.scenario_builder_controller", "ScenarioBuilderController"),
++            "stations": ("controllers.stations_controller", "StationsController"),
++            "visibility": ("controllers.visibility_controller", "VisibilityController"),
++            "analysis": ("controllers.analysis_controller", "AnalysisController"),
++            "ground_track": ("controllers.ground_track_controller", "GroundTrackController"),
++            **{page: ("controllers.system_pages_controller", cls) for page, cls in (
++                ("dynamics", "DynamicsController"), ("measurements", "MeasurementsController"),
++                ("estimators", "EstimatorsController"), ("settings", "SettingsController"))},
+         }
+-        for page_id, cls in page_map.items():
+-            try:
+-                widget = cls(self)
+-            except Exception as exc:
+-                widget = self._error_page(page_id, exc)
+-            self._pages[page_id] = widget
+-            self.pageStack.addWidget(widget)
++
++    def _ensure_page(self, page_id: str) -> QWidget | None:
++        if page_id in self._pages:
++            return self._pages[page_id]
++        factory = self._page_factories.get(page_id)
++        if factory is None:
++            return None
++        try:
++            module_name, class_name = factory
++            cls = getattr(importlib.import_module(module_name), class_name)
++            widget = cls(self)
++        except Exception as exc:
++            widget = self._error_page(page_id, exc)
++        widget._workspace_size_policy = widget.sizePolicy()
++        self._pages[page_id] = widget
++        self.pageStack.addWidget(widget)
++        return widget
+ 
+     def _error_page(self, page_id: str, exc: Exception) -> QWidget:
+         from PyQt5.QtWidgets import QVBoxLayout
+         w = QWidget()
+         lay = QVBoxLayout(w)
+         lay.addStretch()
+-        msg = QLabel(f"Error loading '{page_id}':\n\n{exc}")
++        msg = QLabel(f"Sayfa açılamadı: {page_id}\n\n{exc}\n\nYeniden deneyin veya başka bir sayfaya geçin.")
++        msg.setTextFormat(Qt.PlainText)
+         msg.setAlignment(Qt.AlignCenter)
+         msg.setStyleSheet(f"color:{C.RED}; font-size:13px;")
+         msg.setWordWrap(True)
+         lay.addWidget(msg)
++        retry = QPushButton("Yeniden dene")
++        def retry_page():
++            if self._pages.get(page_id) is w:
++                self._pages.pop(page_id)
++                self.pageStack.removeWidget(w)
++                w.deleteLater()
++            self.navigate(page_id)
++        retry.clicked.connect(retry_page)
++        lay.addWidget(retry, alignment=Qt.AlignCenter)
+         lay.addStretch()
+         return w
+ 
+@@ -267,10 +308,19 @@ class MainWindow(QMainWindow):
+     # Navigation
+     # ------------------------------------------------------------------
+     def navigate(self, page_id: str) -> None:
+-        if page_id not in self._pages:
++        page = self._ensure_page(page_id)
++        if page is None:
+             return
+-        page = self._pages[page_id]
++        if page_id in {item[0] for item in _ADVANCED}:
++            self.advanced_toggle.setChecked(True)
++        self._active_page = page_id
++        for other in self._pages.values():
++            other.setSizePolicy(other._workspace_size_policy if other is page else
++                                QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored))
+         self.pageStack.setCurrentWidget(page)
++        self.pageStack.updateGeometry()
++        self.pageScroll.verticalScrollBar().setValue(0)
++        self.pageScroll.horizontalScrollBar().setValue(0)
+         self._fade_in(page)
+ 
+         title, sub = _TITLES.get(page_id, (page_id, ""))
+@@ -282,6 +332,8 @@ class MainWindow(QMainWindow):
+ 
+         if hasattr(page, "on_shown"):
+             page.on_shown()
++        from services.workspace_session import restore_page
++        restore_page(self, page_id, page)
+ 
+     def _fade_in(self, page: QWidget) -> None:
+         pass  # page switch via QStackedWidget is instant; no animation needed
+@@ -303,6 +355,31 @@ class MainWindow(QMainWindow):
+         if page and hasattr(page, "show_file"):
+             page.show_file(path)
+ 
++    def open_in_result_console(self, path: "Path") -> None:
++        self.navigate("console")
++        page = self._pages.get("console")
++        if page and hasattr(page, "open_result"):
++            page.open_folder(path) if path.is_dir() else page.open_result(path)
++
++    def run_desktop_job(self, job_path: "Path", folder: "Path", run_id: str) -> None:
++        self.navigate("run_monitor")
++        page = self._pages.get("run_monitor")
++        if page and hasattr(page, "preset_script"):
++            page.preset_script(str(DESKTOP_DIR / "scenario_job.py"), extra_args=[str(job_path)], auto_start=True,
++                job_context={"folder": str(folder), "run_id": run_id})
++
++    def compare_runs(self, left: "Path", right: "Path") -> None:
++        self.navigate("comparison")
++        page = self._pages.get("comparison")
++        if page and hasattr(page, "set_files"):
++            page.set_files(left, right)
++
++    def edit_archived_scenario(self, archived) -> None:
++        page = self._ensure_page("scenario")
++        if page and hasattr(page, "load_archived"):
++            page.load_archived(archived)
++            self.navigate("scenario")
++
+     # ------------------------------------------------------------------
+     # Status bar helpers
+     # ------------------------------------------------------------------
+@@ -325,5 +402,10 @@ class MainWindow(QMainWindow):
+             self.restoreGeometry(geo)
+ 
+     def closeEvent(self, event) -> None:
++        from services.workspace_session import save_session
++        save_session(self)
++        for page in self._pages.values():
++            if hasattr(page, "shutdown"):
++                page.shutdown()
+         self._settings.setValue("mainWindow/geometry", self.saveGeometry())
+         super().closeEvent(event)
+diff --git a/desktop_app/controllers/results_browser_controller.py b/desktop_app/controllers/results_browser_controller.py
+index 1481869..bdf5f1f 100644
+--- a/desktop_app/controllers/results_browser_controller.py
++++ b/desktop_app/controllers/results_browser_controller.py
+@@ -52,6 +52,10 @@ class ResultsBrowserController(QWidget):
+         self.zoomOutBtn.clicked.connect(self._zoom_out)
+         self.zoomFitBtn.clicked.connect(self._zoom_fit)
+         self._build_csv_pager()
++        self.consoleBtn = QPushButton("Sonuç konsolunda aç")
++        self.consoleBtn.setEnabled(False)
++        self.consoleBtn.clicked.connect(self._open_console)
++        self.csvLayout.insertWidget(1, self.consoleBtn)
+         self._build_csv_filter()
+         self.contentStack.setCurrentIndex(_STACK_EMPTY)
+         self._populate_tree()
+@@ -260,6 +264,7 @@ class ResultsBrowserController(QWidget):
+ 
+     def _load_file(self, kind: str, path: Path) -> None:
+         self._current_path = path
++        self.consoleBtn.setEnabled(kind == "csv" and path.name.endswith(("_ukf_updates.csv", "_arc_solutions.csv")))
+         self.filePathLabel.setText(str(path))
+         self.openExternalBtn.setEnabled(True)
+         self.exportBtn.setEnabled(True)
+@@ -269,6 +274,11 @@ class ResultsBrowserController(QWidget):
+         elif kind == "image":
+             self._load_image(path)
+ 
++    def _open_console(self) -> None:
++        window = self.window()
++        if self._current_path and hasattr(window, "open_in_result_console"):
++            window.open_in_result_console(self._current_path)
++
+     def _load_csv(self, path: Path) -> None:
+         self.contentStack.setCurrentIndex(_STACK_CSV)
+         info = csv_summary(path)
+diff --git a/desktop_app/controllers/run_monitor_controller.py b/desktop_app/controllers/run_monitor_controller.py
+index ffd8be0..bea1244 100644
+--- a/desktop_app/controllers/run_monitor_controller.py
++++ b/desktop_app/controllers/run_monitor_controller.py
+@@ -2,11 +2,12 @@
+ from __future__ import annotations
+ import sys
+ import subprocess
++import json
+ from pathlib import Path
+ 
+ from PyQt5.QtWidgets import (
+     QWidget, QVBoxLayout, QMessageBox, QGroupBox, QFormLayout,
+-    QDoubleSpinBox, QComboBox, QCheckBox, QLineEdit, QLabel,
++    QDoubleSpinBox, QComboBox, QCheckBox, QLineEdit, QLabel, QPushButton,
+ )
+ from PyQt5.QtCore import Qt
+ from PyQt5 import uic
+@@ -15,6 +16,7 @@ from services.project_paths import DESKTOP_APP_DIR, EXAMPLES_DIR, PYTHON_PORT
+ from workers.process_worker import ProcessWorker
+ from widgets.log_console import LogConsole
+ from styles.theme import C, FONT
++from styles.artifact_workspace import ARTIFACT_STYLE
+ 
+ UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "run_monitor_page.ui"
+ 
+@@ -77,7 +79,28 @@ class RunMonitorController(QWidget):
+         self._last_exit_code: int | None = None
+         self._override_command: tuple[Path, list[str]] | None = None
+         self._setting_preset = False
++        self._job_context = None
++        self._result_path = None
++        self._pending_result = None
++        self._cancelled = False
+         self._setup()
++        self.setObjectName("artifactWorkspace")
++        self.setAttribute(Qt.WA_StyledBackground, True)
++        self.setStyleSheet(ARTIFACT_STYLE)
++        for control in self.findChildren(QWidget):
++            if isinstance(control, (QGroupBox, QDoubleSpinBox, QComboBox, QLineEdit, QPushButton)):
++                control.setStyleSheet("")
++        self._log.setStyleSheet("")
++        self._log.setPlaceholderText("Henüz çalışan bir iş yok. Senaryo ekranından koşu başlatın veya yukarıdan bir betik seçin.")
++        self.scriptGroup.setTitle("Çalıştırılacak betik")
++        self.consoleGroup.setTitle("Çalışma günlüğü")
++        self._sp_box.setTitle("Gelişmiş betik parametreleri")
++        self.startBtn.setText("Çalıştır")
++        self.cancelBtn.setText("İptal et")
++        self.clearLogBtn.setText("Günlüğü temizle")
++        self.openOutputBtn.setText("Çıktı klasörü")
++        self.openConsoleBtn.setText("Koşu ayrıntılarını aç")
++        self.autoConsoleCheck.setText("Tamamlanınca sonuçları aç")
+ 
+     def _setup(self) -> None:
+         # Insert LogConsole into placeholder
+@@ -102,6 +125,8 @@ class RunMonitorController(QWidget):
+             else:
+                 self.scriptCombo.addItem(label)
+                 self._script_map[idx] = rel
++        if self._script_map:
++            self.scriptCombo.setCurrentIndex(min(self._script_map))
+         self.scriptCombo.currentIndexChanged.connect(self._on_script_changed)
+         self._update_command_preview()
+ 
+@@ -113,9 +138,17 @@ class RunMonitorController(QWidget):
+         self.cancelBtn.clicked.connect(self._cancel)
+         self.clearLogBtn.clicked.connect(self._log.clear_log)
+         self.openOutputBtn.clicked.connect(self._open_output)
++        self.openConsoleBtn = QPushButton("Sonuç konsolunda aç")
++        self.openConsoleBtn.setEnabled(False)
++        self.openConsoleBtn.clicked.connect(self._open_console)
++        self.autoConsoleCheck = QCheckBox("Tamamlanınca konsolda aç")
++        self.autoConsoleCheck.setChecked(True)
++        self.mainLayout.insertWidget(1, self.autoConsoleCheck)
++        self.mainLayout.insertWidget(2, self.openConsoleBtn)
+ 
+         # Worker signals
+         self._worker.output_line.connect(self._log.append_stdout)
++        self._worker.output_line.connect(self._capture_result)
+         self._worker.error_line.connect(self._log.append_stderr)
+         self._worker.started.connect(self._on_started)
+         self._worker.finished.connect(self._on_finished)
+@@ -223,6 +256,13 @@ class RunMonitorController(QWidget):
+     def _on_script_changed(self) -> None:
+         if not self._setting_preset:
+             self._override_command = None
++            self._job_context = None
++            self._result_path = None
++            self._pending_result = None
++            if hasattr(self, "_sp_box"):
++                self._sp_box.setEnabled(True)
++            if hasattr(self, "openConsoleBtn"):
++                self.openConsoleBtn.setEnabled(False)
+         idx = self.scriptCombo.currentIndex()
+         if idx not in self._script_map and idx >= 0:
+             # User selected a separator/header — advance to next valid item
+@@ -285,26 +325,29 @@ class RunMonitorController(QWidget):
+         if self._worker.is_running:
+             return
+         self._log.clear_log()
++        self._result_path = None
++        self._pending_result = None
++        self._cancelled = False
++        self.openConsoleBtn.setEnabled(False)
++        self.startBtn.setEnabled(False)
+         program, args = self._get_current_args()
+         self._log.append_info(f"Starting: {program} {' '.join(args)}")
+-        self._worker.run(program, args, working_dir=str(PYTHON_PORT.parent))
++        self._worker.run(program, ["-u", *args], working_dir=str(PYTHON_PORT if self._job_context else PYTHON_PORT.parent),
++                         env={"PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"})
+ 
+     def _cancel(self) -> None:
+         if not self._worker.is_running:
+             return
+-        reply = QMessageBox.question(
+-            self, "Cancel run?",
+-            "Kill the running process?\nPartial output files may remain.",
+-            QMessageBox.Yes | QMessageBox.No,
+-        )
+-        if reply == QMessageBox.Yes:
+-            self._log.append_warning("User cancelled — killing process.")
+-            self._worker.cancel()
++        self._cancelled = True
++        self._log.append_warning("Koşu iptal ediliyor; kısmi dosyalar tamamlanmış sonuç olarak açılmayacak.")
++        self._worker.cancel()
+ 
+     def _on_started(self) -> None:
+         self.startBtn.setEnabled(False)
+         self.cancelBtn.setEnabled(True)
+         self.openOutputBtn.setEnabled(False)
++        self.scriptCombo.setEnabled(False)
++        self._sp_box.setEnabled(False)
+         self.progressBar.setVisible(True)
+         self._set_status("Running…", C.YELLOW)
+ 
+@@ -313,10 +356,21 @@ class RunMonitorController(QWidget):
+         self.startBtn.setEnabled(True)
+         self.cancelBtn.setEnabled(False)
+         self.openOutputBtn.setEnabled(True)
++        self.scriptCombo.setEnabled(True)
++        self._sp_box.setEnabled(self._job_context is None)
+         self.progressBar.setVisible(False)
+-        if exit_code == 0:
++        if self._cancelled:
++            self._set_status("İptal edildi — kısmi dosyalar korunuyor", C.YELLOW)
++        elif exit_code == 0:
+             self._log.append_success(f"Process exited successfully (code 0)")
+-            self._set_status("Completed successfully", C.GREEN)
++            self._set_status("İşlem tamamlandı · çözüm durumu sonuçlarda", C.GREEN)
++            if self._pending_result is not None:
++                self._result_path = self._pending_result
++                self.openConsoleBtn.setEnabled(True)
++                if self.autoConsoleCheck.isChecked():
++                    self._open_console()
++            elif self._job_context:
++                self._set_status("İşlem bitti, tamamlanmış sonuç paketi alınamadı", C.YELLOW)
+         else:
+             self._log.append_stderr(f"Process exited with code {exit_code}")
+             self._set_status(f"Failed (exit code {exit_code})", C.RED)
+@@ -334,7 +388,8 @@ class RunMonitorController(QWidget):
+         try:
+             import subprocess as sp
+             from services.project_paths import RESULTS_DIR
+-            sp.Popen(f'explorer "{RESULTS_DIR}"', shell=True)
++            folder = self._job_context["folder"] if self._job_context else RESULTS_DIR
++            sp.Popen(["explorer", str(folder)])
+         except Exception:
+             pass
+ 
+@@ -344,6 +399,7 @@ class RunMonitorController(QWidget):
+         script_path: str,
+         extra_args: list[str] | None = None,
+         auto_start: bool = False,
++        job_context: dict | None = None,
+     ) -> None:
+         """Pre-select a script by path and optional arguments.
+ 
+@@ -351,6 +407,16 @@ class RunMonitorController(QWidget):
+         scenario_config_cli intentionally shows ``--help`` for manual use, while
+         scenario runs must pass the exported JSON path instead.
+         """
++        if self._worker.is_running:
++            self._log.append_warning("Çalışan koşu tamamlanmadan yeni koşu yüklenemez.")
++            return
++        self._job_context = job_context
++        self._result_path = None
++        self._pending_result = None
++        self.openConsoleBtn.setEnabled(False)
++        if job_context:
++            self._sp_box.setChecked(False)
++        self._sp_box.setEnabled(job_context is None)
+         target = Path(script_path)
+         if not target.is_absolute():
+             target = PYTHON_PORT / target
+@@ -369,6 +435,34 @@ class RunMonitorController(QWidget):
+         if auto_start:
+             self._start()
+ 
++    def _capture_result(self, line):
++        if not self._job_context or not line.startswith("LUNAR_OD_RESULT "):
++            return
++        try:
++            info = json.loads(line.removeprefix("LUNAR_OD_RESULT "))
++            if not isinstance(info, dict):
++                raise ValueError("Sonuç bildirimi nesne olmalı.")
++            path = Path(info["result_path"]).resolve()
++            folder = Path(self._job_context["folder"]).resolve()
++            completion = json.loads((folder / "completed.json").read_text(encoding="utf-8"))
++            if (info.get("schema") != "lunar-od-completed-job-v1" or info.get("run_id") != self._job_context["run_id"]
++                    or path.parent != folder or not path.name.endswith("_arc_solutions.csv")
++                    or not path.is_file() or completion != info):
++                raise ValueError("Koşu kimliği veya tamamlanma kaydı uyuşmuyor.")
++            self._pending_result = path
++        except (ValueError, TypeError, KeyError, OSError) as exc:
++            self._log.append_warning(f"Sonuç bildirimi geçersiz: {exc}")
++
++    def _open_console(self):
++        if self._result_path is not None and hasattr(self.window(), "open_in_result_console"):
++            self.window().open_in_result_console(self._result_path)
++
++    def shutdown(self):
++        if self._worker.is_running:
++            self._cancelled = True
++            self._worker.cancel()
++            self._worker._proc.waitForFinished(2000)
++
+ 
+ def _quote_arg(arg: str) -> str:
+     text = str(arg)
+diff --git a/desktop_app/controllers/scenario_builder_controller.py b/desktop_app/controllers/scenario_builder_controller.py
+index e9868e6..989f5d9 100644
+--- a/desktop_app/controllers/scenario_builder_controller.py
++++ b/desktop_app/controllers/scenario_builder_controller.py
+@@ -4,15 +4,19 @@ import json
+ import math
+ import sys
+ from pathlib import Path
++from dataclasses import replace, asdict
++from decimal import Decimal
+ 
+ from PyQt5.QtWidgets import (
+-    QWidget, QFileDialog, QMessageBox, QApplication, QLabel, QPushButton,
++    QWidget, QFileDialog, QMessageBox, QApplication, QLabel, QPushButton, QDoubleSpinBox,
+ )
+ from PyQt5.QtCore import Qt
+ from PyQt5 import uic
+ 
+ from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT, RESULTS_DIR
+ from models.scenario_model import ScenarioModel, PRESETS
++from styles.artifact_workspace import ARTIFACT_STYLE
++from styles.theme import C
+ 
+ UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "scenario_builder_page.ui"
+ 
+@@ -21,11 +25,26 @@ class ScenarioBuilderController(QWidget):
+     def __init__(self, parent=None) -> None:
+         super().__init__(parent)
+         uic.loadUi(str(UI_PATH), self)
++        self.setObjectName("artifactWorkspace")
++        self.setAttribute(Qt.WA_StyledBackground, True)
++        self.setStyleSheet(ARTIFACT_STYLE)
+         self._current_model = ScenarioModel()
+         self._updating_from_model = False
++        self._archive_origin = None
++        self._draft_before_archive = None
+         self._setup()
++        self._simplify_layout()
+ 
+     def _setup(self) -> None:
++        self.origin_label = QLabel()
++        self.origin_label.setWordWrap(True)
++        self.origin_label.setTextFormat(Qt.PlainText)
++        self.origin_label.setStyleSheet(f"color:{C.TEXT_PRIMARY}; padding:8px; background:{C.BG_PANEL};")
++        self.restore_draft_button = QPushButton("Önceki taslağa dön")
++        self.restore_draft_button.clicked.connect(self.restore_previous_draft)
++        self.previewLayout.insertWidget(0, self.origin_label)
++        self.previewLayout.insertWidget(1, self.restore_draft_button)
++        self._show_origin()
+         # Populate preset combo
+         self.presetCombo.addItem("— custom —")
+         for name in PRESETS:
+@@ -57,14 +76,16 @@ class ScenarioBuilderController(QWidget):
+ 
+         # Arc count estimate label — added dynamically to arcGroup's form layout
+         self._arc_count_label = QLabel("")
+-        self._arc_count_label.setStyleSheet("QLabel { color: #00d4ff; font-size: 11px; }")
++        self._arc_count_label.setStyleSheet(f"QLabel {{ color:{C.TEXT_MUTED}; font-size:12px; }}")
+         self.arcGroup.layout().addRow("Estimate:", self._arc_count_label)
+ 
+         # Action buttons
+         self.copyJsonBtn.clicked.connect(self._copy_json)
+         self.exportJsonBtn.clicked.connect(self._export_json)
+         self.importJsonBtn.clicked.connect(self._import_json)
++        self.runScenarioBtn.setProperty("primary", True)
+         self.runScenarioBtn.clicked.connect(self._run_scenario)
++        self.runScenarioBtn.setToolTip("Formu yeni koşu kimliğiyle kaydet ve Run Monitor üzerinden çalıştır")
+         if not hasattr(self, "openAnalysisBtn"):
+             self.openAnalysisBtn = QPushButton("→ Open in Analysis")
+             self.openAnalysisBtn.setToolTip(
+@@ -109,6 +130,73 @@ class ScenarioBuilderController(QWidget):
+         self._update_json()
+         self._on_arc_mode_changed()
+ 
++    def _simplify_layout(self):
++        from PyQt5.QtWidgets import QVBoxLayout, QBoxLayout, QSizePolicy
++        self.layout().setDirection(QBoxLayout.TopToBottom)
++        self.layout().setContentsMargins(24, 12, 24, 16)
++        self.layout().setSpacing(12)
++        self.formScroll.setMaximumWidth(16777215)
++        form_layout = self.estimatorGroup.parentWidget().layout()
++        form_layout.setContentsMargins(0, 0, 20, 0)
++        form_layout.setSpacing(10)
++        for group in (self.presetsGroup, self.identityGroup, self.timeGroup, self.estimatorGroup):
++            group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
++        self.presetDescLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
++        self.advanced_form_toggle = QPushButton("Gelişmiş ayarlar · yaylar ve ölçümler")
++        self.advanced_form_toggle.setCheckable(True)
++        self.advanced_form = QWidget()
++        advanced_layout = QVBoxLayout(self.advanced_form)
++        advanced_layout.setContentsMargins(0, 0, 0, 0)
++        for group in (self.arcGroup, self.measGroup):
++            form_layout.removeWidget(group)
++            advanced_layout.addWidget(group)
++        form_layout.insertWidget(form_layout.count() - 1, self.advanced_form_toggle)
++        form_layout.insertWidget(form_layout.count() - 1, self.advanced_form)
++        self.advanced_form.hide()
++        self.advanced_form_toggle.toggled.connect(self.advanced_form.setVisible)
++        self.presetsGroup.setTitle("Başlangıç şablonu")
++        self.identityGroup.setTitle("Senaryo")
++        self.timeGroup.setTitle("Zaman aralığı")
++        self.estimatorGroup.setTitle("Kestirici")
++        self.runScenarioBtn.setText("Koşuyu başlat")
++        self.exportJsonBtn.setText("Ayarları kaydet")
++        self.importJsonBtn.setText("Ayarları aç")
++        self.openAnalysisBtn.setText("Analizde aç")
++        self.jsonLabel.setText("Etkin ayarlar · JSON")
++        self.copyJsonBtn.setText("Kopyala")
++        self.preview_toggle = QPushButton("JSON önizlemesi")
++        self.preview_toggle.setCheckable(True)
++        self.preview_toggle.setChecked(False)
++        # Keep all action buttons outside the optional technical preview.
++        self.previewLayout.removeItem(self.actionButtonsLayout)
++        actions = QWidget()
++        actions.setLayout(self.actionButtonsLayout)
++        self.previewLayout.removeWidget(self.openAnalysisBtn)
++        self.actionButtonsLayout.insertWidget(2, self.openAnalysisBtn)
++        self.layout().addWidget(actions)
++        # Provenance and draft recovery remain visible with the JSON panel closed.
++        self.previewLayout.removeWidget(self.origin_label)
++        self.previewLayout.removeWidget(self.restore_draft_button)
++        self.layout().insertWidget(0, self.restore_draft_button)
++        self.layout().insertWidget(0, self.origin_label)
++        toolbar = QWidget()
++        toolbar_layout = QVBoxLayout(toolbar)
++        toolbar_layout.setContentsMargins(0, 0, 0, 0)
++        toolbar_layout.addWidget(self.preview_toggle, 0, Qt.AlignRight)
++        self.layout().insertWidget(0, toolbar)
++        self.layout().setStretchFactor(self.splitter, 1)
++        self.previewPanel.hide()
++        self.preview_toggle.toggled.connect(self.previewPanel.setVisible)
++        for button in (self.exportJsonBtn, self.importJsonBtn, self.openAnalysisBtn, self.runScenarioBtn):
++            button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
++        self.splitter.setSizes([650, 400])
++        for name, label in (
++            ("nameLabel", "Ad"), ("descLabel", "Açıklama"), ("outputDirLabel", "Çıktı klasörü"),
++            ("durationLabel", "Süre (gün)"), ("stepLabel", "Örnekleme (s)"),
++            ("seedLabel", "Rastgelelik tohumu"), ("estimatorLabel", "Yöntem"),
++            ("startModeLabel", "Başlangıç")):
++            getattr(self, name).setText(label)
++
+     def on_shown(self) -> None:
+         self._reload_network_presets()
+ 
+@@ -126,8 +214,10 @@ class ScenarioBuilderController(QWidget):
+             self.networkCombo.addItem(name)
+         # Restore selection
+         idx = self.networkCombo.findText(current)
+-        if idx >= 0:
+-            self.networkCombo.setCurrentIndex(idx)
++        if idx < 0 and current:
++            self.networkCombo.addItem(current)
++            idx = self.networkCombo.count() - 1
++        self.networkCombo.setCurrentIndex(idx)
+ 
+     # ------------------------------------------------------------------
+     def _on_arc_mode_changed(self, _text: str = "") -> None:
+@@ -136,9 +226,10 @@ class ScenarioBuilderController(QWidget):
+         for w in (self.arcDurLabel, self.arcDurSpin,
+                   self.arcStrideLabel, self.arcStrideSpin):
+             w.setVisible(is_prescribed)
+-        # visibility-only fields
+-        for w in (self.elevMaskLabel, self.elevMaskSpin,
+-                  self.gapThreshLabel, self.gapThreshSpin):
++        # The station elevation mask applies to planned windows as well.
++        for w in (self.elevMaskLabel, self.elevMaskSpin):
++            w.setVisible(True)
++        for w in (self.gapThreshLabel, self.gapThreshSpin):
+             w.setVisible(not is_prescribed)
+         self._update_arc_count()
+ 
+@@ -159,7 +250,8 @@ class ScenarioBuilderController(QWidget):
+             count = int(total_h / stride_h) if stride_h > 0 else 0
+             self._arc_count_label.setText(
+                 f"~{count} arcs  "
+-                f"({self.durationSpin.value():.1f} days ÷ {stride_h:.1f}h stride)"
++                f"({self.durationSpin.value():.1f} days ÷ {stride_h:.1f}h stride)\n"
++                "Planlı pencereler: yalnızca gerçekten görünen istasyonlardan ölçüm alınır."
+             )
+         else:
+             gap_min = self.gapThreshSpin.value() / 60.0
+@@ -171,6 +263,8 @@ class ScenarioBuilderController(QWidget):
+ 
+     def _on_preset_selected(self, name: str) -> None:
+         if name in PRESETS:
++            self._archive_origin = None
++            self._show_origin()
+             self._current_model = ScenarioModel(**vars(PRESETS[name]))
+             self.presetDescLabel.setText(self._current_model.description)
+             self._model_to_widgets(self._current_model)
+@@ -179,19 +273,26 @@ class ScenarioBuilderController(QWidget):
+             self.presetDescLabel.setText("")
+ 
+     def _model_to_widgets(self, model: ScenarioModel) -> None:
++        from services.archived_scenario import form_from_mapping
++        form_from_mapping(asdict(model))
++        numbers = ((self.durationSpin, model.duration_days), (self.stepSpin, model.state_step_s),
++            (self.seedSpin, model.random_seed), (self.arcDurSpin, model.arc_duration_h),
++            (self.arcStrideSpin, model.arc_stride_h), (self.elevMaskSpin, model.elevation_mask_deg),
++            (self.gapThreshSpin, model.gap_threshold_s))
++        # Check representability before touching the current draft. Never clip an
++        # archived value to a widget's old range or quietly round its precision.
++        for widget, value in numbers:
++            if max(0, -Decimal(str(value)).as_tuple().exponent) > 323:
++                raise ValueError("Kayıtlı sayı bu formun gösterim hassasiyetini aşıyor.")
++        self._current_model = model
+         self._updating_from_model = True
+         try:
+             self.nameEdit.setText(model.name)
+             self.descEdit.setText(model.description)
+             self.outputDirEdit.setText(model.output_dir)
+-            self.durationSpin.setValue(model.duration_days)
+-            self.stepSpin.setValue(model.state_step_s)
+-            self.seedSpin.setValue(model.random_seed)
++            for widget, value in numbers:
++                _set_number(widget, value)
+             _set_combo(self.arcModeCombo, model.arc_mode)
+-            self.arcDurSpin.setValue(model.arc_duration_h)
+-            self.arcStrideSpin.setValue(model.arc_stride_h)
+-            self.elevMaskSpin.setValue(model.elevation_mask_deg)
+-            self.gapThreshSpin.setValue(model.gap_threshold_s)
+             _set_combo(self.measTypeCombo, model.measurement_type)
+             _set_combo(self.rrPhysicsCombo, model.range_rate_physics)
+             _set_combo(self.networkCombo, model.network_name)
+@@ -210,13 +311,13 @@ class ScenarioBuilderController(QWidget):
+         is_position = self.measTypeCombo.currentText() == "position"
+         light_time = is_position and self.lightTimeCheck.isChecked()
+         stellar = light_time and self.stellarCheck.isChecked()
+-        return ScenarioModel(
++        return replace(self._current_model,
+             name=self.nameEdit.text().strip() or "unnamed",
+             description=self.descEdit.text().strip(),
+             output_dir=self.outputDirEdit.text().strip() or "results",
+             duration_days=self.durationSpin.value(),
+             state_step_s=self.stepSpin.value(),
+-            random_seed=self.seedSpin.value(),
++            random_seed=int(self.seedSpin.value()),
+             arc_mode=self.arcModeCombo.currentText(),
+             arc_duration_h=self.arcDurSpin.value(),
+             arc_stride_h=self.arcStrideSpin.value(),
+@@ -266,8 +367,16 @@ class ScenarioBuilderController(QWidget):
+         try:
+             with open(path, "r", encoding="utf-8") as f:
+                 text = f.read()
++            payload = json.loads(text)
++            if not isinstance(payload, dict):
++                raise ValueError("Senaryo JSON nesne olmalı.")
++            unknown = set(payload) - set(ScenarioModel.__dataclass_fields__)
++            if unknown:
++                raise ValueError("Bu form JSON'unda desteklenmeyen alanlar var: " + ", ".join(sorted(unknown)))
+             model = ScenarioModel.from_json(text)
+             self._model_to_widgets(model)
++            self._archive_origin = None
++            self._show_origin()
+             self._update_json()
+             # Reset preset combo to custom
+             self.presetCombo.setCurrentIndex(0)
+@@ -285,31 +394,63 @@ class ScenarioBuilderController(QWidget):
+                 analysis.apply_scenario_params(model)
+ 
+     def _run_scenario(self) -> None:
+-        """Export a temp JSON and launch scenario_config_cli.py with it."""
+-        import tempfile
+-        import os
++        """Persist the exact inputs and run the scientific backend in QProcess."""
++        from services.scenario_execution import prepare_desktop_job
+         model = self._widgets_to_model()
+-        tmp_file = Path(tempfile.mktemp(suffix=".json"))
+-        tmp_file.write_text(model.to_json(), encoding="utf-8")
+-
+-        script = PYTHON_PORT / "examples" / "scenario_config_cli.py"
+-        if not script.exists():
+-            QMessageBox.warning(
+-                self, "Script not found",
+-                f"Could not find:\n{script}\n\nPlease run from the Run Monitor page.",
+-            )
+-            return
+-
+-        # Navigate to run monitor and launch
+         main_win = self.window()
+-        if hasattr(main_win, "navigate_and_run"):
+-            main_win.navigate_and_run(str(script), extra_args=[str(tmp_file)], auto_start=True)
+-        elif hasattr(main_win, "navigate"):
++        if not hasattr(main_win, "run_desktop_job"):
++            return
++        monitor = main_win._pages.get("run_monitor")
++        if monitor and monitor._worker.is_running:
+             main_win.navigate("run_monitor")
++            main_win.set_status("Önce çalışan koşunun tamamlanmasını bekleyin veya iptal edin.")
++            return
++        try:
++            path, folder, run_id = prepare_desktop_job(model, PYTHON_PORT, derived_from=self._archive_origin)
++        except (ValueError, OSError) as exc:
++            QMessageBox.warning(self, "Koşu oluşturulamadı", str(exc))
++            return
++        main_win.run_desktop_job(path, folder, run_id)
++
++    def load_archived(self, archived):
++        previous = (replace(self._widgets_to_model()), self._archive_origin)
++        self._model_to_widgets(replace(archived.model))
++        self._draft_before_archive = previous
++        self._archive_origin = archived.origin
++        self.presetCombo.setCurrentIndex(0)
++        self._update_json()
++        self._show_origin()
++
++    def _show_origin(self):
++        self.origin_label.setVisible(self._archive_origin is not None)
++        self.restore_draft_button.setVisible(self._draft_before_archive is not None)
++        if self._archive_origin:
++            self.origin_label.setText(f"Kaynak koşu: {self._archive_origin['run_id']}\n"
++                "Ayarlar yeni taslağa alındı. Çalıştırınca yeni koşu kimliği ve değişiklik kaydı oluşturulur.")
++            self.origin_label.setToolTip(self._archive_origin["result_path"])
++
++    def restore_previous_draft(self):
++        if self._draft_before_archive:
++            model, origin = self._draft_before_archive
++            self._model_to_widgets(model)
++            self._archive_origin = origin
++            self._draft_before_archive = None
++            self.presetCombo.setCurrentIndex(0)
++            self._update_json()
++            self._show_origin()
+ 
+ 
+ # -------------------------------------------------------------------------
+ def _set_combo(combo, value: str) -> None:
+     idx = combo.findText(value)
+-    if idx >= 0:
+-        combo.setCurrentIndex(idx)
++    if idx < 0:
++        combo.addItem(value)
++        idx = combo.count() - 1
++    combo.setCurrentIndex(idx)
++
++
++def _set_number(widget, value):
++    if isinstance(widget, QDoubleSpinBox):
++        widget.setDecimals(max(widget.decimals(), max(0, -Decimal(str(value)).as_tuple().exponent)))
++    widget.setRange(min(widget.minimum(), value), max(widget.maximum(), value))
++    widget.setValue(value)
+diff --git a/desktop_app/controllers/system_pages_controller.py b/desktop_app/controllers/system_pages_controller.py
+index 6a392be..c718806 100644
+--- a/desktop_app/controllers/system_pages_controller.py
++++ b/desktop_app/controllers/system_pages_controller.py
+@@ -573,6 +573,17 @@ class SettingsController(QWidget):
+ 
+         lay.addWidget(box)
+ 
++        from styles.appearance import THEMES, THEME_KEY
++        appearance_box, appearance_form = _group("Görünüm")
++        self._theme_combo = QComboBox()
++        for key, label in THEMES.items():
++            self._theme_combo.addItem(label, key)
++        stored = str(self._settings.value(THEME_KEY, "modern"))
++        self._theme_combo.setCurrentIndex(max(0, self._theme_combo.findData(stored)))
++        appearance_form.addRow("Renk paleti:", self._theme_combo)
++        appearance_form.addRow(_label("Kaydettikten sonra uygulamayı yeniden açınca uygulanır.", muted=True))
++        lay.addWidget(appearance_box)
++
+         # --- Runtime ---
+         box2, form2 = _group("Runtime")
+         self._seed = _ispin(0, 99999, int(self._get("random_seed", 42)))
+@@ -613,6 +624,8 @@ class SettingsController(QWidget):
+         lay.addStretch()
+ 
+     def _save(self) -> None:
++        from styles.appearance import THEME_KEY
++        self._settings.setValue(THEME_KEY, self._theme_combo.currentData())
+         self._settings.setValue(f"{self._SECTION}/random_seed", self._seed.value())
+         self._settings.setValue(f"{self._SECTION}/n_workers", self._n_workers.value())
+         self._saved.setText("Saved")
+diff --git a/desktop_app/main.py b/desktop_app/main.py
+index 54ae8d7..2b5f9d4 100644
+--- a/desktop_app/main.py
++++ b/desktop_app/main.py
+@@ -26,14 +26,12 @@ from PyQt5.QtWidgets import QApplication
+ from PyQt5.QtCore import Qt, QCoreApplication
+ from PyQt5.QtGui import QFont
+ 
+-from app import MainWindow
+ 
+ 
+ def _load_stylesheet(app: QApplication) -> None:
+-    qss_path = DESKTOP_DIR / "styles" / "dark_theme.qss"
+-    if qss_path.exists():
+-        with open(qss_path, "r", encoding="utf-8") as fh:
+-            app.setStyleSheet(fh.read())
++    from styles.workspace_light import workspace_stylesheet
++    app.setStyle("Fusion")
++    app.setStyleSheet(workspace_stylesheet())
+ 
+ 
+ def main() -> None:
+@@ -50,8 +48,10 @@ def main() -> None:
+     font = QFont("Segoe UI", 10)
+     app.setFont(font)
+ 
+-    # Dark stylesheet
++    from styles.appearance import load_saved_theme
++    load_saved_theme()
+     _load_stylesheet(app)
++    from app import MainWindow
+ 
+     window = MainWindow()
+     window.show()
+diff --git a/desktop_app/styles/theme.py b/desktop_app/styles/theme.py
+index dc5d639..e0b2d52 100644
+--- a/desktop_app/styles/theme.py
++++ b/desktop_app/styles/theme.py
+@@ -1,4 +1,4 @@
+-"""Central theme definitions — colours, fonts, matplotlib style.
++"""Compatibility color tokens, fonts and matplotlib style for native pages.
+ 
+ Import this module anywhere you need palette values:
+     from styles.theme import C, FONT, MPL_DARK, ACCENT, NET_COLORS
+@@ -81,9 +81,9 @@ NET_COLORS: dict[str, str] = {
+ class FONT:
+     MONO     = "Consolas"     # log console, code previews, axis ticks
+     UI       = ""             # empty = system default
+-    SIZE_XS  = 8
+-    SIZE_SM  = 10
+-    SIZE_MD  = 11
++    SIZE_XS  = 11
++    SIZE_SM  = 12
++    SIZE_MD  = 13
+     SIZE_LG  = 13
+     SIZE_XL  = 19
+     SIZE_H1  = 26             # metric card value
+@@ -112,3 +112,7 @@ MPL_DARK: dict = {
+ 
+ # Convenience: bar chart series colours in order
+ BAR_COLORS = [C.BLUE, C.GREEN, C.YELLOW, C.RED, C.PURPLE, C.ORANGE, C.CYAN]
++
++# Preserve legacy tokens while defaulting all new windows to Modern.
++from styles.appearance import apply_palette
++apply_palette("modern")
+diff --git a/desktop_app/ui/pages/scenario_builder_page.ui b/desktop_app/ui/pages/scenario_builder_page.ui
+index 246fd9f..2925faa 100644
+--- a/desktop_app/ui/pages/scenario_builder_page.ui
++++ b/desktop_app/ui/pages/scenario_builder_page.ui
+@@ -67,7 +67,7 @@
+            <item row="1" column="0"><widget class="QLabel" name="stepLabel"><property name="text"><string>State step (s)</string></property></widget></item>
+            <item row="1" column="1"><widget class="QDoubleSpinBox" name="stepSpin"><property name="minimum"><double>10.0</double></property><property name="maximum"><double>3600.0</double></property><property name="singleStep"><double>60.0</double></property><property name="value"><double>600.0</double></property><property name="toolTip"><string>RK propagation step size in seconds</string></property></widget></item>
+            <item row="2" column="0"><widget class="QLabel" name="seedLabel"><property name="text"><string>Random seed</string></property></widget></item>
+-           <item row="2" column="1"><widget class="QSpinBox" name="seedSpin"><property name="minimum"><number>0</number></property><property name="maximum"><number>99999</number></property><property name="value"><number>42</number></property><property name="toolTip"><string>Noise/perturbation random seed</string></property></widget></item>
++           <item row="2" column="1"><widget class="QDoubleSpinBox" name="seedSpin"><property name="decimals"><number>0</number></property><property name="minimum"><double>0</double></property><property name="maximum"><double>4294967295</double></property><property name="value"><double>42</double></property><property name="toolTip"><string>Noise/perturbation random seed (uint32)</string></property></widget></item>
+           </layout>
+          </widget>
+         </item>
+diff --git a/desktop_app/widgets/log_console.py b/desktop_app/widgets/log_console.py
+index 16916dd..4729e0d 100644
+--- a/desktop_app/widgets/log_console.py
++++ b/desktop_app/widgets/log_console.py
+@@ -23,7 +23,7 @@ class LogConsole(QPlainTextEdit):
+                 border: 1px solid {C.BORDER_MAIN};
+                 border-radius: 6px;
+                 padding: 8px;
+-                selection-background-color: #1d4770;
++                selection-background-color: {C.BG_ACTIVE};
+             }}
+         """)
+ 
+diff --git a/desktop_app/workers/process_worker.py b/desktop_app/workers/process_worker.py
+index 54658d8..ba55ed8 100644
+--- a/desktop_app/workers/process_worker.py
++++ b/desktop_app/workers/process_worker.py
+@@ -32,6 +32,8 @@ class ProcessWorker(QObject):
+         self._proc.readyReadStandardError.connect(self._read_stderr)
+         self._proc.started.connect(self._on_started)
+         self._proc.finished.connect(self._on_finished)
++        self._proc.errorOccurred.connect(self._on_error)
++        self._completion_emitted = False
+ 
+         self._timer = QTimer(self)
+         self._timer.setInterval(500)
+@@ -51,6 +53,9 @@ class ProcessWorker(QObject):
+         """Start the subprocess. No-op if already running."""
+         if self._proc.state() != QProcess.NotRunning:
+             return
++        self._completion_emitted = False
++        self._stdout_buf = ""
++        self._stderr_buf = ""
+         if working_dir:
+             self._proc.setWorkingDirectory(working_dir)
+         if env is not None:
+@@ -67,12 +72,12 @@ class ProcessWorker(QObject):
+ 
+     def cancel(self) -> None:
+         """Kill the running process."""
+-        if self._proc.state() == QProcess.Running:
++        if self._proc.state() != QProcess.NotRunning:
+             self._proc.kill()
+ 
+     @property
+     def is_running(self) -> bool:
+-        return self._proc.state() == QProcess.Running
++        return self._proc.state() != QProcess.NotRunning
+ 
+     # ------------------------------------------------------------------
+     def _on_started(self) -> None:
+@@ -84,12 +89,23 @@ class ProcessWorker(QObject):
+ 
+     def _on_finished(self, exit_code: int, _status) -> None:
+         self._timer.stop()
++        self._read_stdout()
++        self._read_stderr()
+         # Flush any remaining buffered output
+         self._flush(self._stdout_buf, stdout=True)
+         self._stdout_buf = ""
+         self._flush(self._stderr_buf, stdout=False)
+         self._stderr_buf = ""
+-        self.finished.emit(exit_code)
++        if not self._completion_emitted:
++            self._completion_emitted = True
++            self.finished.emit(exit_code if _status == QProcess.NormalExit else -1)
++
++    def _on_error(self, error):
++        self.error_line.emit(self._proc.errorString())
++        if error == QProcess.FailedToStart and not self._completion_emitted:
++            self._completion_emitted = True
++            self._timer.stop()
++            self.finished.emit(-1)
+ 
+     def _on_tick(self) -> None:
+         self.elapsed_tick.emit(time.monotonic() - self._start_time)
+diff --git a/examples/run_scenario_config.py b/examples/run_scenario_config.py
+index 92cc2e0..e7ae923 100644
+--- a/examples/run_scenario_config.py
++++ b/examples/run_scenario_config.py
+@@ -87,6 +87,8 @@ def run_configured_scenario(
+     truth_j2_moon: float | None = None,
+     estimator_j2_moon: float | None = None,
+     manifest_dir=None,
++    desktop_options=None,
++    artifact_callback=None,
+ ):
+     # R0A runtime defense-in-depth: directly constructed ScenarioConfig objects
+     # bypass loader validation, so the Earth-J2 fail-closed gate must also fire
+@@ -115,7 +117,7 @@ def run_configured_scenario(
+         estimator_spec=_stage_a_estimator,
+         context="run_configured_scenario Stage A force-model preflight",
+     )
+-    fixture_path = Path("python_port") / "fixtures" / "spice_snapshots.json"
++    fixture_path = Path(__file__).resolve().parents[1] / "fixtures" / "spice_snapshots.json"
+     if not fixture_path.is_file():
+         raise FileNotFoundError(f"Fixture not found: {fixture_path}")
+ 
+@@ -175,7 +177,9 @@ def run_configured_scenario(
+     )
+ 
+     t_eval_s = np.arange(0.0, config.duration_h * 3600.0 + config.sample_step_s, config.sample_step_s)
+-    t_ephem_s = np.arange(0.0, config.duration_h * 3600.0 + THESIS_EPHEMERIS_STEP_S, THESIS_EPHEMERIS_STEP_S)
++    options = desktop_options or {}
++    ephem_step = options.get("ephemeris_step_s", THESIS_EPHEMERIS_STEP_S)
++    t_ephem_s = np.arange(0.0, config.duration_h * 3600.0 + ephem_step, ephem_step)
+     all_stations_by_name = {station.name: station for station in range_rate_stations()}
+     network = thesis_network_by_name(config.network)
+     stations = [all_stations_by_name[name] for name in network.station_names]
+@@ -208,7 +212,7 @@ def run_configured_scenario(
+             r_moon_mean_m=float(initial["r_moon_mean_m"]),
+             earth_rotation_rad_s=7.292115e-5,
+             epoch_utc=epoch_utc,
+-            min_elevation_deg=THESIS_MIN_ELEVATION_DEG,
++            min_elevation_deg=options.get("elevation_mask_deg", THESIS_MIN_ELEVATION_DEG),
+         )
+         from lunar_od import analyze_visibility_gap_with_transforms, run_batch_arc_sequence
+ 
+@@ -218,9 +222,14 @@ def run_configured_scenario(
+             stations,
+             ephemeris.earth_position,
+             x_j2000_to_itrf93,
+-            THESIS_MAX_GAP_S,
++            options.get("gap_threshold_s", THESIS_MAX_GAP_S),
+             visibility_config,
+         )
++        if options.get("arc_mode") == "prescribed":
++            from desktop_app.services.scenario_execution import planned_segments
++            seg_starts, seg_ends = planned_segments(
++                t_eval_s, options["arc_duration_h"], options["arc_stride_h"]
++            )
+         arcs = build_measurement_arcs(
+             config.measurement_type,
+             t_eval_s,
+@@ -234,7 +243,7 @@ def run_configured_scenario(
+             et0,
+             noise=config.noise,
+             rng=None if measurement_seed is None else np.random.default_rng(int(measurement_seed)),
+-            min_samples=4,
++            min_samples=options.get("min_visibility_samples", 4),
+             range_rate_physics=scenario_range_rate_physics_config(config),
+             two_way_range=(
+                 scenario_two_way_range_config(config)
+@@ -249,6 +258,10 @@ def run_configured_scenario(
+             jacobian_model=config.jacobian_model,
+         )
+         arcs = tuple(_with_estimator_ephemeris(arc, estimator_ephemeris) for arc in arcs)
++        if options.get("max_arcs") is not None:
++            arcs = arcs[:options["max_arcs"]]
++        if desktop_options is not None and not arcs:
++            raise ValueError("Seçilen zaman, ağ ve yay ayarlarıyla ölçüm yayı oluşmadı.")
+         cold_bank = make_cold_start_bank(
+             len(arcs),
+             THESIS_COLD_START_SIGMA_POS_M * float(cold_start_scale),
+@@ -276,6 +289,7 @@ def run_configured_scenario(
+             label=config.name,
+             process_noise_covariance=config.ukf_acceleration_psd_m2_s3,
+             max_iter=config.max_iter,
++            **({"bls_lambda0": config.bls_lambda0, "tol_cost_stability": config.tol_cost_stability} if desktop_options is not None else {}),
+             rtol=config.rtol,
+             atol=config.atol,
+             ukf_transform_config=ukf_transform_config,
+@@ -301,9 +315,10 @@ def run_configured_scenario(
+                 "persisted force manifest SHA does not match the decision SHA "
+                 f"({written_sha} vs {force_parity.manifest_sha256})."
+             )
+-        return replace(
+-            scenario_result, **scenario_result_force_fields(force_parity)
+-        )
++        final_result = replace(scenario_result, **scenario_result_force_fields(force_parity))
++        if artifact_callback is not None:
++            artifact_callback(final_result, arcs, t_eval_s, truth, epoch_utc)
++        return final_result
+     finally:
+         spice.kclear()
+ 
+diff --git a/lunar_od/estimators.py b/lunar_od/estimators.py
+index 8805595..9f235ff 100644
+--- a/lunar_od/estimators.py
++++ b/lunar_od/estimators.py
+@@ -71,6 +71,9 @@ class EstimatorStats:
+     k_srp_estimate: float | None = None
+     k_srp_prior_status: str | None = None
+     k_srp_negative_step_rejections: int = 0
++    #: Phase 17-HARDEN-BLS1: negative-K trials replaced by the K-fixed
++    #: (bound-active) step instead of being discarded.  BLS only.
++    k_srp_bound_active_steps: int = 0
+ 
+ 
+ def estimate_position_srif(
+@@ -1562,6 +1565,68 @@ def _lm_step(
+     return scale @ step_bar, condition_number, rank, False
+ 
+ 
++def _lm_step_square_root(
++    h_initial: np.ndarray,
++    residual: np.ndarray,
++    w_diag: np.ndarray,
++    scale: np.ndarray,
++    prior_inv_scaled: np.ndarray,
++    prior_rhs_scaled: np.ndarray,
++    lambda_damping: float,
++) -> tuple[np.ndarray, float, int, bool]:
++    """The SAME damped LM step as :func:`_lm_step`, solved without the normal matrix.
++
++    Phase 17-HARDEN-BLS1.  ``_lm_step`` solves
++
++        (A^T A + lambda D + P) d = A^T b + p,   A = sqrt(W) H scale,
++        D = diag(A^T A)  (identity if that is all zero),
++
++    by forming the normal matrix in the caller's bookkeeping units and calling
++    it singular above cond 1e15.  With K_SRP solved for, those units (1e6 m,
++    1e3 m/s, k_srp_scale) leave the columns ~1e8 apart in norm, so the formed
++    matrix measured cond ~1e16-1e17 on a design whose column-equilibrated
++    normal matrix has cond ~1e8: every small-lambda step was declared
++    singular, the retry pushed lambda to ~1, and the weakly-determined
++    state/K direction (normalised eigenvalue ~4e-8) could never be stepped
++    along.  That is a units artefact, the same squaring Phase 17-R1M/R1COV
++    removed from the covariance.
++
++    Here the identical system is written as the stacked least-squares problem
++    [A; sqrt(lambda D); U] d = [b; 0; U dbar] (U^T U = P, P dbar = p), whose
++    normal equations ARE the system above, and solved by QR after column
++    equilibration.  The objective, the damping matrix, lambda and its schedule
++    are unchanged; only the arithmetic is.  The singularity guard keeps its
++    threshold and its meaning -- cond of the normal matrix > 1e15 -- now
++    evaluated in the equilibrated basis (cond(R)^2), so it no longer depends
++    on the arbitrary units (contract s19/s20: scaling is numerical only).
++    """
++    a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
++    b = np.sqrt(w_diag) * residual
++    n = a.shape[1]
++    d = np.einsum("ij,ij->j", a, a)
++    if not np.any(d):
++        d = np.ones(n)
++    rows, rhs = [a, np.diag(np.sqrt(lambda_damping * d))], [b, np.zeros(n)]
++    if np.any(prior_inv_scaled):
++        ev, vec = np.linalg.eigh(_symmetrize(prior_inv_scaled))
++        u = np.sqrt(np.clip(ev, 0.0, None))[:, None] * vec.T
++        dbar = np.linalg.lstsq(prior_inv_scaled, prior_rhs_scaled, rcond=None)[0]
++        rows.append(u)
++        rhs.append(u @ dbar)
++    stacked = np.vstack(rows)
++    if not np.all(np.isfinite(stacked)):
++        return np.zeros(h_initial.shape[1]), float("inf"), 0, True
++    col = np.linalg.norm(stacked, axis=0)
++    col[col == 0.0] = 1.0
++    q, r = np.linalg.qr(stacked / col)
++    condition_number = float(np.linalg.cond(r)) ** 2
++    rank = int(np.linalg.matrix_rank(r))
++    if not np.isfinite(condition_number) or condition_number > 1e15:
++        return np.zeros(h_initial.shape[1]), condition_number, rank, True
++    step_bar = np.linalg.solve(r, q.T @ np.concatenate(rhs)) / col
++    return scale @ step_bar, condition_number, rank, False
++
++
+ def _limit_step(step: np.ndarray, *, pos_limit_m: float) -> np.ndarray:
+     step = np.asarray(step, dtype=float).copy()
+     pos_step_norm = float(np.linalg.norm(step[:3]))
+@@ -2170,6 +2235,10 @@ def estimate_two_way_range_bls_lm(
+     max_rejected_components = 0
+     min_active_weight_fraction = 1.0
+     negative_k_rejections = 0
++    bound_active_steps = 0
++    # Phase 17-HARDEN-BLS1: the K solve-for path solves the (unchanged) damped
++    # LM system by equilibrated QR; the six-state path keeps _lm_step bit-for-bit.
++    _step_fn = _lm_step_square_root if solve_for_k_srp else _lm_step
+ 
+     def _active_srp(k_state):
+         if srp is None:
+@@ -2241,6 +2310,17 @@ def estimate_two_way_range_bls_lm(
+     for iteration in range(1, max_iter + 1):
+         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+         if solve_for_k_srp:
++            # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
++            # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
++            # used, so a Jacobian integrated at rtol 1e-8 does not merely slow
++            # convergence: its error along the weak state/K direction is
++            # amplified ~1/s_min (~5e3 here), so near the optimum the steps
++            # stop being descent directions for the scored cost.  Measured on
++            # the KP2 cross-check (simplified dynamics): with the loosened
++            # Jacobian every step from chi2 1423 was rejected up to the damping
++            # guard; at the caller's tolerance the solve reaches the optimum
++            # (chi2 902.44, Gauss-Newton remainder 0.02).
++            _atol_r, _atol_a = rtol, atol
+             x_aug_hist = propagate_state_with_k_sensitivity(
+                 t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                 get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
+@@ -2294,7 +2374,7 @@ def estimate_two_way_range_bls_lm(
+                           else x_nominal)
+         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior_full - x_current_full)
+                             if prior_active else np.zeros(na))
+-        step, last_condition_number, last_rank, singular = _lm_step(
++        step, last_condition_number, last_rank, singular = _step_fn(
+             h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
+             prior_rhs_scaled, lambda_damping,
+         )
+@@ -2314,7 +2394,7 @@ def estimate_two_way_range_bls_lm(
+             retry_lambda = lambda_damping
+             while singular and retry_lambda <= 1e12:
+                 retry_lambda *= 10.0
+-                step, last_condition_number, last_rank, singular = _lm_step(
++                step, last_condition_number, last_rank, singular = _step_fn(
+                     h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
+                     prior_rhs_scaled, retry_lambda,
+                 )
+@@ -2332,19 +2412,42 @@ def estimate_two_way_range_bls_lm(
+         if solve_for_k_srp:
+             k_candidate = k_current + step[6]
+             if k_candidate < 0.0:
+-                # s18: domain-infeasible trial point. REJECT without ever
+-                # calling propagate() with a negative K (which SRPOptions
+-                # would raise on) -- never clip toward zero, which would bias
+-                # the estimate low. Same LM safeguard as a worse-cost step.
++                # s18: domain-infeasible trial point. It is never evaluated
++                # (SRPOptions would raise on a negative K) and K is never
++                # clipped toward zero, which would bias the estimate low.
+                 negative_k_rejections += 1
+-                x_nominal = x_best.copy()
+-                k_current = k_best
+-                lambda_damping *= 10.0
+-                if lambda_damping > 1e12:
+-                    stop_reason = "DampingLimit"
+-                    termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
+-                    break
+-                continue
++                # Phase 17-HARDEN-BLS1: the bound K >= 0 is ACTIVE for this
++                # trial, so take the damped step in the feasible face instead
++                # -- the same normal equations with K held at its current
++                # value (the standard active-set treatment of a simple bound).
++                # Previously the WHOLE step was discarded and lambda raised:
++                # from a ~100 m a-priori orbit the coupled step aliases state
++                # error into the weak K direction and points K negative on
++                # every iteration, so the orbit correction was thrown away with
++                # it, lambda ratcheted to the 1e12 guard, and the solve stalled
++                # at 184 m RMS (cost 1400x the truth's) while K was walked to
++                # ~0 by the accepted steps.  K is re-freed on the next
++                # iteration, so this only ever changes WHICH feasible step is
++                # tried, never the objective or the constraint.
++                prior_rhs_x = prior_rhs_scaled[:nx]
++                step_x, _cn, _rk, singular_x = _step_fn(
++                    h_initial[:, :nx], residual, w_curr_diag, scale[:nx, :nx],
++                    prior_inv_scaled[:nx, :nx], prior_rhs_x, lambda_damping,
++                )
++                if singular_x:
++                    x_nominal = x_best.copy()
++                    k_current = k_best
++                    lambda_damping *= 10.0
++                    if lambda_damping > 1e12:
++                        stop_reason = "DampingLimit"
++                        termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
++                        break
++                    continue
++                bound_active_steps += 1
++                step = np.concatenate([_limit_step(step_x, pos_limit_m=20000.0), [0.0]])
++                last_step = step
++                x_candidate = x_nominal + step[:6]
++                k_candidate = k_current
+         else:
+             k_candidate = None
+         residual_candidate = _acceptance_residual(x_candidate, k_candidate)
+@@ -2448,6 +2551,7 @@ def estimate_two_way_range_bls_lm(
+             if solve_for_k_srp else None
+         ),
+         k_srp_negative_step_rejections=negative_k_rejections,
++        k_srp_bound_active_steps=bound_active_steps,
+     )
+     return x_best, stop_reason, stats
+ 

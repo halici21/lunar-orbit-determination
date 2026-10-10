@@ -1,0 +1,193 @@
+diff --git a/lunar_od/estimators.py b/lunar_od/estimators.py
+index 8805595..9f235ff 100644
+--- a/lunar_od/estimators.py
++++ b/lunar_od/estimators.py
+@@ -71,6 +71,9 @@ class EstimatorStats:
+     k_srp_estimate: float | None = None
+     k_srp_prior_status: str | None = None
+     k_srp_negative_step_rejections: int = 0
++    #: Phase 17-HARDEN-BLS1: negative-K trials replaced by the K-fixed
++    #: (bound-active) step instead of being discarded.  BLS only.
++    k_srp_bound_active_steps: int = 0
+ 
+ 
+ def estimate_position_srif(
+@@ -1562,6 +1565,68 @@ def _lm_step(
+     return scale @ step_bar, condition_number, rank, False
+ 
+ 
++def _lm_step_square_root(
++    h_initial: np.ndarray,
++    residual: np.ndarray,
++    w_diag: np.ndarray,
++    scale: np.ndarray,
++    prior_inv_scaled: np.ndarray,
++    prior_rhs_scaled: np.ndarray,
++    lambda_damping: float,
++) -> tuple[np.ndarray, float, int, bool]:
++    """The SAME damped LM step as :func:`_lm_step`, solved without the normal matrix.
++
++    Phase 17-HARDEN-BLS1.  ``_lm_step`` solves
++
++        (A^T A + lambda D + P) d = A^T b + p,   A = sqrt(W) H scale,
++        D = diag(A^T A)  (identity if that is all zero),
++
++    by forming the normal matrix in the caller's bookkeeping units and calling
++    it singular above cond 1e15.  With K_SRP solved for, those units (1e6 m,
++    1e3 m/s, k_srp_scale) leave the columns ~1e8 apart in norm, so the formed
++    matrix measured cond ~1e16-1e17 on a design whose column-equilibrated
++    normal matrix has cond ~1e8: every small-lambda step was declared
++    singular, the retry pushed lambda to ~1, and the weakly-determined
++    state/K direction (normalised eigenvalue ~4e-8) could never be stepped
++    along.  That is a units artefact, the same squaring Phase 17-R1M/R1COV
++    removed from the covariance.
++
++    Here the identical system is written as the stacked least-squares problem
++    [A; sqrt(lambda D); U] d = [b; 0; U dbar] (U^T U = P, P dbar = p), whose
++    normal equations ARE the system above, and solved by QR after column
++    equilibration.  The objective, the damping matrix, lambda and its schedule
++    are unchanged; only the arithmetic is.  The singularity guard keeps its
++    threshold and its meaning -- cond of the normal matrix > 1e15 -- now
++    evaluated in the equilibrated basis (cond(R)^2), so it no longer depends
++    on the arbitrary units (contract s19/s20: scaling is numerical only).
++    """
++    a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
++    b = np.sqrt(w_diag) * residual
++    n = a.shape[1]
++    d = np.einsum("ij,ij->j", a, a)
++    if not np.any(d):
++        d = np.ones(n)
++    rows, rhs = [a, np.diag(np.sqrt(lambda_damping * d))], [b, np.zeros(n)]
++    if np.any(prior_inv_scaled):
++        ev, vec = np.linalg.eigh(_symmetrize(prior_inv_scaled))
++        u = np.sqrt(np.clip(ev, 0.0, None))[:, None] * vec.T
++        dbar = np.linalg.lstsq(prior_inv_scaled, prior_rhs_scaled, rcond=None)[0]
++        rows.append(u)
++        rhs.append(u @ dbar)
++    stacked = np.vstack(rows)
++    if not np.all(np.isfinite(stacked)):
++        return np.zeros(h_initial.shape[1]), float("inf"), 0, True
++    col = np.linalg.norm(stacked, axis=0)
++    col[col == 0.0] = 1.0
++    q, r = np.linalg.qr(stacked / col)
++    condition_number = float(np.linalg.cond(r)) ** 2
++    rank = int(np.linalg.matrix_rank(r))
++    if not np.isfinite(condition_number) or condition_number > 1e15:
++        return np.zeros(h_initial.shape[1]), condition_number, rank, True
++    step_bar = np.linalg.solve(r, q.T @ np.concatenate(rhs)) / col
++    return scale @ step_bar, condition_number, rank, False
++
++
+ def _limit_step(step: np.ndarray, *, pos_limit_m: float) -> np.ndarray:
+     step = np.asarray(step, dtype=float).copy()
+     pos_step_norm = float(np.linalg.norm(step[:3]))
+@@ -2170,6 +2235,10 @@ def estimate_two_way_range_bls_lm(
+     max_rejected_components = 0
+     min_active_weight_fraction = 1.0
+     negative_k_rejections = 0
++    bound_active_steps = 0
++    # Phase 17-HARDEN-BLS1: the K solve-for path solves the (unchanged) damped
++    # LM system by equilibrated QR; the six-state path keeps _lm_step bit-for-bit.
++    _step_fn = _lm_step_square_root if solve_for_k_srp else _lm_step
+ 
+     def _active_srp(k_state):
+         if srp is None:
+@@ -2241,6 +2310,17 @@ def estimate_two_way_range_bls_lm(
+     for iteration in range(1, max_iter + 1):
+         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+         if solve_for_k_srp:
++            # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
++            # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
++            # used, so a Jacobian integrated at rtol 1e-8 does not merely slow
++            # convergence: its error along the weak state/K direction is
++            # amplified ~1/s_min (~5e3 here), so near the optimum the steps
++            # stop being descent directions for the scored cost.  Measured on
++            # the KP2 cross-check (simplified dynamics): with the loosened
++            # Jacobian every step from chi2 1423 was rejected up to the damping
++            # guard; at the caller's tolerance the solve reaches the optimum
++            # (chi2 902.44, Gauss-Newton remainder 0.02).
++            _atol_r, _atol_a = rtol, atol
+             x_aug_hist = propagate_state_with_k_sensitivity(
+                 t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                 get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
+@@ -2294,7 +2374,7 @@ def estimate_two_way_range_bls_lm(
+                           else x_nominal)
+         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior_full - x_current_full)
+                             if prior_active else np.zeros(na))
+-        step, last_condition_number, last_rank, singular = _lm_step(
++        step, last_condition_number, last_rank, singular = _step_fn(
+             h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
+             prior_rhs_scaled, lambda_damping,
+         )
+@@ -2314,7 +2394,7 @@ def estimate_two_way_range_bls_lm(
+             retry_lambda = lambda_damping
+             while singular and retry_lambda <= 1e12:
+                 retry_lambda *= 10.0
+-                step, last_condition_number, last_rank, singular = _lm_step(
++                step, last_condition_number, last_rank, singular = _step_fn(
+                     h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
+                     prior_rhs_scaled, retry_lambda,
+                 )
+@@ -2332,19 +2412,42 @@ def estimate_two_way_range_bls_lm(
+         if solve_for_k_srp:
+             k_candidate = k_current + step[6]
+             if k_candidate < 0.0:
+-                # s18: domain-infeasible trial point. REJECT without ever
+-                # calling propagate() with a negative K (which SRPOptions
+-                # would raise on) -- never clip toward zero, which would bias
+-                # the estimate low. Same LM safeguard as a worse-cost step.
++                # s18: domain-infeasible trial point. It is never evaluated
++                # (SRPOptions would raise on a negative K) and K is never
++                # clipped toward zero, which would bias the estimate low.
+                 negative_k_rejections += 1
+-                x_nominal = x_best.copy()
+-                k_current = k_best
+-                lambda_damping *= 10.0
+-                if lambda_damping > 1e12:
+-                    stop_reason = "DampingLimit"
+-                    termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
+-                    break
+-                continue
++                # Phase 17-HARDEN-BLS1: the bound K >= 0 is ACTIVE for this
++                # trial, so take the damped step in the feasible face instead
++                # -- the same normal equations with K held at its current
++                # value (the standard active-set treatment of a simple bound).
++                # Previously the WHOLE step was discarded and lambda raised:
++                # from a ~100 m a-priori orbit the coupled step aliases state
++                # error into the weak K direction and points K negative on
++                # every iteration, so the orbit correction was thrown away with
++                # it, lambda ratcheted to the 1e12 guard, and the solve stalled
++                # at 184 m RMS (cost 1400x the truth's) while K was walked to
++                # ~0 by the accepted steps.  K is re-freed on the next
++                # iteration, so this only ever changes WHICH feasible step is
++                # tried, never the objective or the constraint.
++                prior_rhs_x = prior_rhs_scaled[:nx]
++                step_x, _cn, _rk, singular_x = _step_fn(
++                    h_initial[:, :nx], residual, w_curr_diag, scale[:nx, :nx],
++                    prior_inv_scaled[:nx, :nx], prior_rhs_x, lambda_damping,
++                )
++                if singular_x:
++                    x_nominal = x_best.copy()
++                    k_current = k_best
++                    lambda_damping *= 10.0
++                    if lambda_damping > 1e12:
++                        stop_reason = "DampingLimit"
++                        termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
++                        break
++                    continue
++                bound_active_steps += 1
++                step = np.concatenate([_limit_step(step_x, pos_limit_m=20000.0), [0.0]])
++                last_step = step
++                x_candidate = x_nominal + step[:6]
++                k_candidate = k_current
+         else:
+             k_candidate = None
+         residual_candidate = _acceptance_residual(x_candidate, k_candidate)
+@@ -2448,6 +2551,7 @@ def estimate_two_way_range_bls_lm(
+             if solve_for_k_srp else None
+         ),
+         k_srp_negative_step_rejections=negative_k_rejections,
++        k_srp_bound_active_steps=bound_active_steps,
+     )
+     return x_best, stop_reason, stats
+ 

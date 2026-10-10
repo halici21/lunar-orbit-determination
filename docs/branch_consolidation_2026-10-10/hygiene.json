@@ -1,0 +1,10 @@
+{
+  "reviewed_files": 549,
+  "files_over_10_MB": [],
+  "kernel_private_or_heavy_file_extensions": [],
+  "credential_pattern_files": [],
+  "diff_check_exit": 2,
+  "whitespace_warning_count": 8215,
+  "active_whitespace_warnings": [],
+  "historical_archive_bytes_kept_exact": true
+}

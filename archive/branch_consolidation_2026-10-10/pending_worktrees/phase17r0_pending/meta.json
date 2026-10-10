@@ -1,0 +1,80 @@
+{
+  "worktree": "project/python_port_phase17r0",
+  "base_commit": "46e21c80c7ee2ff3caf2b650d2c5e8fc3fc01fc7",
+  "status": [
+    " M desktop_app/app.py",
+    " M desktop_app/controllers/results_browser_controller.py",
+    " M desktop_app/controllers/run_monitor_controller.py",
+    " M desktop_app/controllers/scenario_builder_controller.py",
+    " M desktop_app/controllers/system_pages_controller.py",
+    " M desktop_app/main.py",
+    " M desktop_app/styles/theme.py",
+    " M desktop_app/ui/pages/scenario_builder_page.ui",
+    " M desktop_app/widgets/log_console.py",
+    " M desktop_app/workers/process_worker.py",
+    " M examples/run_scenario_config.py",
+    " M lunar_od/estimators.py",
+    "?? artifacts/phase17_bls1_qualification.json",
+    "?? desktop_app/RESULT_WORKFLOW.md",
+    "?? desktop_app/controllers/recorded_comparison_controller.py",
+    "?? desktop_app/controllers/run_archive_controller.py",
+    "?? desktop_app/controllers/tracking_console_controller.py",
+    "?? desktop_app/result_console.py",
+    "?? desktop_app/scenario_job.py",
+    "?? desktop_app/services/archived_scenario.py",
+    "?? desktop_app/services/comparison_session.py",
+    "?? desktop_app/services/result_summary.py",
+    "?? desktop_app/services/run_archive.py",
+    "?? desktop_app/services/run_comparison.py",
+    "?? desktop_app/services/run_details.py",
+    "?? desktop_app/services/scenario_artifacts.py",
+    "?? desktop_app/services/scenario_execution.py",
+    "?? desktop_app/services/tracking_results.py",
+    "?? desktop_app/services/workspace_session.py",
+    "?? desktop_app/styles/appearance.py",
+    "?? desktop_app/styles/artifact_workspace.py",
+    "?? desktop_app/styles/workspace_light.py",
+    "?? desktop_app/widgets/comparison_chart.py",
+    "?? desktop_app/widgets/run_details_panel.py",
+    "?? desktop_app/widgets/tracking_plots.py",
+    "?? desktop_app/workers/artifact_task.py",
+    "?? examples/phase17_bls1_qualification.py",
+    "?? tests/test_compact_recovery.py",
+    "?? tests/test_desktop_workflow.py",
+    "?? tests/test_harden_bls1_k_srp_recovery.py",
+    "?? tests/test_large_workspace.py",
+    "?? tests/test_recorded_run_workspace.py",
+    "?? tests/test_result_summary.py",
+    "?? tests/test_run_workspace_resume.py",
+    "?? tests/test_tracking_console.py",
+    "?? tests/test_tracking_render_semantics.py",
+    "?? tests/test_workflow_polish.py",
+    "?? tests/test_workspace_appearance.py",
+    "?? tests/test_workspace_session.py"
+  ],
+  "patch_sha256": "2dab44ad0e0ba0fe3e6216c4c8b1b9176a51a3647f1cf5e5d9517228fe4d6d5b",
+  "untracked_preserved": [
+    {
+      "path": "artifacts/phase17_bls1_qualification.json",
+      "sha256": "6fd5b2d1ff5fc3dcebd9ba2c2c38262f731e1961eba1cf773039dbbba918b057",
+      "bytes": 1476
+    },
+    {
+      "path": "desktop_app/RESULT_WORKFLOW.md",
+      "sha256": "b2e0dd42943596d35ce33ca2eac77810a47a66d9a7714884b683541c9d89030e",
+      "bytes": 14808
+    },
+    {
+      "path": "examples/phase17_bls1_qualification.py",
+      "sha256": "4fbb07a163146cf642503bc995163baabf8635629f8f56a7385e4317b2da90d0",
+      "bytes": 9824
+    },
+    {
+      "path": "tests/test_harden_bls1_k_srp_recovery.py",
+      "sha256": "852a3b29248ef9104ad4e2d7521b0de1609ae53ec55b53138f3bece67ba9958f",
+      "bytes": 8683
+    }
+  ],
+  "patch_reverse_check": true,
+  "purpose": "preservation only; uncommitted scientific changes are not activated"
+}
