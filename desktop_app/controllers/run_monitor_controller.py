@@ -2,11 +2,12 @@
 from __future__ import annotations
 import sys
 import subprocess
+import json
 from pathlib import Path
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QMessageBox, QGroupBox, QFormLayout,
-    QDoubleSpinBox, QComboBox, QCheckBox, QLineEdit, QLabel,
+    QDoubleSpinBox, QComboBox, QCheckBox, QLineEdit, QLabel, QPushButton,
 )
 from PyQt5.QtCore import Qt
 from PyQt5 import uic
@@ -15,6 +16,7 @@ from services.project_paths import DESKTOP_APP_DIR, EXAMPLES_DIR, PYTHON_PORT
 from workers.process_worker import ProcessWorker
 from widgets.log_console import LogConsole
 from styles.theme import C, FONT
+from styles.artifact_workspace import ARTIFACT_STYLE
 
 UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "run_monitor_page.ui"
 
@@ -77,7 +79,28 @@ class RunMonitorController(QWidget):
         self._last_exit_code: int | None = None
         self._override_command: tuple[Path, list[str]] | None = None
         self._setting_preset = False
+        self._job_context = None
+        self._result_path = None
+        self._pending_result = None
+        self._cancelled = False
         self._setup()
+        self.setObjectName("artifactWorkspace")
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet(ARTIFACT_STYLE)
+        for control in self.findChildren(QWidget):
+            if isinstance(control, (QGroupBox, QDoubleSpinBox, QComboBox, QLineEdit, QPushButton)):
+                control.setStyleSheet("")
+        self._log.setStyleSheet("")
+        self._log.setPlaceholderText("Henüz çalışan bir iş yok. Senaryo ekranından koşu başlatın veya yukarıdan bir betik seçin.")
+        self.scriptGroup.setTitle("Çalıştırılacak betik")
+        self.consoleGroup.setTitle("Çalışma günlüğü")
+        self._sp_box.setTitle("Gelişmiş betik parametreleri")
+        self.startBtn.setText("Çalıştır")
+        self.cancelBtn.setText("İptal et")
+        self.clearLogBtn.setText("Günlüğü temizle")
+        self.openOutputBtn.setText("Çıktı klasörü")
+        self.openConsoleBtn.setText("Koşu ayrıntılarını aç")
+        self.autoConsoleCheck.setText("Tamamlanınca sonuçları aç")
 
     def _setup(self) -> None:
         # Insert LogConsole into placeholder
@@ -102,6 +125,8 @@ class RunMonitorController(QWidget):
             else:
                 self.scriptCombo.addItem(label)
                 self._script_map[idx] = rel
+        if self._script_map:
+            self.scriptCombo.setCurrentIndex(min(self._script_map))
         self.scriptCombo.currentIndexChanged.connect(self._on_script_changed)
         self._update_command_preview()
 
@@ -113,9 +138,17 @@ class RunMonitorController(QWidget):
         self.cancelBtn.clicked.connect(self._cancel)
         self.clearLogBtn.clicked.connect(self._log.clear_log)
         self.openOutputBtn.clicked.connect(self._open_output)
+        self.openConsoleBtn = QPushButton("Sonuç konsolunda aç")
+        self.openConsoleBtn.setEnabled(False)
+        self.openConsoleBtn.clicked.connect(self._open_console)
+        self.autoConsoleCheck = QCheckBox("Tamamlanınca konsolda aç")
+        self.autoConsoleCheck.setChecked(True)
+        self.mainLayout.insertWidget(1, self.autoConsoleCheck)
+        self.mainLayout.insertWidget(2, self.openConsoleBtn)
 
         # Worker signals
         self._worker.output_line.connect(self._log.append_stdout)
+        self._worker.output_line.connect(self._capture_result)
         self._worker.error_line.connect(self._log.append_stderr)
         self._worker.started.connect(self._on_started)
         self._worker.finished.connect(self._on_finished)
@@ -223,6 +256,13 @@ class RunMonitorController(QWidget):
     def _on_script_changed(self) -> None:
         if not self._setting_preset:
             self._override_command = None
+            self._job_context = None
+            self._result_path = None
+            self._pending_result = None
+            if hasattr(self, "_sp_box"):
+                self._sp_box.setEnabled(True)
+            if hasattr(self, "openConsoleBtn"):
+                self.openConsoleBtn.setEnabled(False)
         idx = self.scriptCombo.currentIndex()
         if idx not in self._script_map and idx >= 0:
             # User selected a separator/header — advance to next valid item
@@ -285,26 +325,29 @@ class RunMonitorController(QWidget):
         if self._worker.is_running:
             return
         self._log.clear_log()
+        self._result_path = None
+        self._pending_result = None
+        self._cancelled = False
+        self.openConsoleBtn.setEnabled(False)
+        self.startBtn.setEnabled(False)
         program, args = self._get_current_args()
         self._log.append_info(f"Starting: {program} {' '.join(args)}")
-        self._worker.run(program, args, working_dir=str(PYTHON_PORT.parent))
+        self._worker.run(program, ["-u", *args], working_dir=str(PYTHON_PORT if self._job_context else PYTHON_PORT.parent),
+                         env={"PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"})
 
     def _cancel(self) -> None:
         if not self._worker.is_running:
             return
-        reply = QMessageBox.question(
-            self, "Cancel run?",
-            "Kill the running process?\nPartial output files may remain.",
-            QMessageBox.Yes | QMessageBox.No,
-        )
-        if reply == QMessageBox.Yes:
-            self._log.append_warning("User cancelled — killing process.")
-            self._worker.cancel()
+        self._cancelled = True
+        self._log.append_warning("Koşu iptal ediliyor; kısmi dosyalar tamamlanmış sonuç olarak açılmayacak.")
+        self._worker.cancel()
 
     def _on_started(self) -> None:
         self.startBtn.setEnabled(False)
         self.cancelBtn.setEnabled(True)
         self.openOutputBtn.setEnabled(False)
+        self.scriptCombo.setEnabled(False)
+        self._sp_box.setEnabled(False)
         self.progressBar.setVisible(True)
         self._set_status("Running…", C.YELLOW)
 
@@ -313,10 +356,21 @@ class RunMonitorController(QWidget):
         self.startBtn.setEnabled(True)
         self.cancelBtn.setEnabled(False)
         self.openOutputBtn.setEnabled(True)
+        self.scriptCombo.setEnabled(True)
+        self._sp_box.setEnabled(self._job_context is None)
         self.progressBar.setVisible(False)
-        if exit_code == 0:
+        if self._cancelled:
+            self._set_status("İptal edildi — kısmi dosyalar korunuyor", C.YELLOW)
+        elif exit_code == 0:
             self._log.append_success(f"Process exited successfully (code 0)")
-            self._set_status("Completed successfully", C.GREEN)
+            self._set_status("İşlem tamamlandı · çözüm durumu sonuçlarda", C.GREEN)
+            if self._pending_result is not None:
+                self._result_path = self._pending_result
+                self.openConsoleBtn.setEnabled(True)
+                if self.autoConsoleCheck.isChecked():
+                    self._open_console()
+            elif self._job_context:
+                self._set_status("İşlem bitti, tamamlanmış sonuç paketi alınamadı", C.YELLOW)
         else:
             self._log.append_stderr(f"Process exited with code {exit_code}")
             self._set_status(f"Failed (exit code {exit_code})", C.RED)
@@ -334,7 +388,8 @@ class RunMonitorController(QWidget):
         try:
             import subprocess as sp
             from services.project_paths import RESULTS_DIR
-            sp.Popen(f'explorer "{RESULTS_DIR}"', shell=True)
+            folder = self._job_context["folder"] if self._job_context else RESULTS_DIR
+            sp.Popen(["explorer", str(folder)])
         except Exception:
             pass
 
@@ -344,6 +399,7 @@ class RunMonitorController(QWidget):
         script_path: str,
         extra_args: list[str] | None = None,
         auto_start: bool = False,
+        job_context: dict | None = None,
     ) -> None:
         """Pre-select a script by path and optional arguments.
 
@@ -351,6 +407,16 @@ class RunMonitorController(QWidget):
         scenario_config_cli intentionally shows ``--help`` for manual use, while
         scenario runs must pass the exported JSON path instead.
         """
+        if self._worker.is_running:
+            self._log.append_warning("Çalışan koşu tamamlanmadan yeni koşu yüklenemez.")
+            return
+        self._job_context = job_context
+        self._result_path = None
+        self._pending_result = None
+        self.openConsoleBtn.setEnabled(False)
+        if job_context:
+            self._sp_box.setChecked(False)
+        self._sp_box.setEnabled(job_context is None)
         target = Path(script_path)
         if not target.is_absolute():
             target = PYTHON_PORT / target
@@ -368,6 +434,34 @@ class RunMonitorController(QWidget):
 
         if auto_start:
             self._start()
+
+    def _capture_result(self, line):
+        if not self._job_context or not line.startswith("LUNAR_OD_RESULT "):
+            return
+        try:
+            info = json.loads(line.removeprefix("LUNAR_OD_RESULT "))
+            if not isinstance(info, dict):
+                raise ValueError("Sonuç bildirimi nesne olmalı.")
+            path = Path(info["result_path"]).resolve()
+            folder = Path(self._job_context["folder"]).resolve()
+            completion = json.loads((folder / "completed.json").read_text(encoding="utf-8"))
+            if (info.get("schema") != "lunar-od-completed-job-v1" or info.get("run_id") != self._job_context["run_id"]
+                    or path.parent != folder or not path.name.endswith("_arc_solutions.csv")
+                    or not path.is_file() or completion != info):
+                raise ValueError("Koşu kimliği veya tamamlanma kaydı uyuşmuyor.")
+            self._pending_result = path
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            self._log.append_warning(f"Sonuç bildirimi geçersiz: {exc}")
+
+    def _open_console(self):
+        if self._result_path is not None and hasattr(self.window(), "open_in_result_console"):
+            self.window().open_in_result_console(self._result_path)
+
+    def shutdown(self):
+        if self._worker.is_running:
+            self._cancelled = True
+            self._worker.cancel()
+            self._worker._proc.waitForFinished(2000)
 
 
 def _quote_arg(arg: str) -> str:

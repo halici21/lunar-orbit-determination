@@ -67,7 +67,7 @@
            <item row="1" column="0"><widget class="QLabel" name="stepLabel"><property name="text"><string>State step (s)</string></property></widget></item>
            <item row="1" column="1"><widget class="QDoubleSpinBox" name="stepSpin"><property name="minimum"><double>10.0</double></property><property name="maximum"><double>3600.0</double></property><property name="singleStep"><double>60.0</double></property><property name="value"><double>600.0</double></property><property name="toolTip"><string>RK propagation step size in seconds</string></property></widget></item>
            <item row="2" column="0"><widget class="QLabel" name="seedLabel"><property name="text"><string>Random seed</string></property></widget></item>
-           <item row="2" column="1"><widget class="QSpinBox" name="seedSpin"><property name="minimum"><number>0</number></property><property name="maximum"><number>99999</number></property><property name="value"><number>42</number></property><property name="toolTip"><string>Noise/perturbation random seed</string></property></widget></item>
+           <item row="2" column="1"><widget class="QDoubleSpinBox" name="seedSpin"><property name="decimals"><number>0</number></property><property name="minimum"><double>0</double></property><property name="maximum"><double>4294967295</double></property><property name="value"><double>42</double></property><property name="toolTip"><string>Noise/perturbation random seed (uint32)</string></property></widget></item>
           </layout>
          </widget>
         </item>

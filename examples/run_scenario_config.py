@@ -87,6 +87,8 @@ def run_configured_scenario(
     truth_j2_moon: float | None = None,
     estimator_j2_moon: float | None = None,
     manifest_dir=None,
+    desktop_options=None,
+    artifact_callback=None,
 ):
     # R0A runtime defense-in-depth: directly constructed ScenarioConfig objects
     # bypass loader validation, so the Earth-J2 fail-closed gate must also fire
@@ -115,7 +117,7 @@ def run_configured_scenario(
         estimator_spec=_stage_a_estimator,
         context="run_configured_scenario Stage A force-model preflight",
     )
-    fixture_path = Path("python_port") / "fixtures" / "spice_snapshots.json"
+    fixture_path = Path(__file__).resolve().parents[1] / "fixtures" / "spice_snapshots.json"
     if not fixture_path.is_file():
         raise FileNotFoundError(f"Fixture not found: {fixture_path}")
 
@@ -175,7 +177,9 @@ def run_configured_scenario(
     )
 
     t_eval_s = np.arange(0.0, config.duration_h * 3600.0 + config.sample_step_s, config.sample_step_s)
-    t_ephem_s = np.arange(0.0, config.duration_h * 3600.0 + THESIS_EPHEMERIS_STEP_S, THESIS_EPHEMERIS_STEP_S)
+    options = desktop_options or {}
+    ephem_step = options.get("ephemeris_step_s", THESIS_EPHEMERIS_STEP_S)
+    t_ephem_s = np.arange(0.0, config.duration_h * 3600.0 + ephem_step, ephem_step)
     all_stations_by_name = {station.name: station for station in range_rate_stations()}
     network = thesis_network_by_name(config.network)
     stations = [all_stations_by_name[name] for name in network.station_names]
@@ -208,7 +212,7 @@ def run_configured_scenario(
             r_moon_mean_m=float(initial["r_moon_mean_m"]),
             earth_rotation_rad_s=7.292115e-5,
             epoch_utc=epoch_utc,
-            min_elevation_deg=THESIS_MIN_ELEVATION_DEG,
+            min_elevation_deg=options.get("elevation_mask_deg", THESIS_MIN_ELEVATION_DEG),
         )
         from lunar_od import analyze_visibility_gap_with_transforms, run_batch_arc_sequence
 
@@ -218,9 +222,14 @@ def run_configured_scenario(
             stations,
             ephemeris.earth_position,
             x_j2000_to_itrf93,
-            THESIS_MAX_GAP_S,
+            options.get("gap_threshold_s", THESIS_MAX_GAP_S),
             visibility_config,
         )
+        if options.get("arc_mode") == "prescribed":
+            from desktop_app.services.scenario_execution import planned_segments
+            seg_starts, seg_ends = planned_segments(
+                t_eval_s, options["arc_duration_h"], options["arc_stride_h"]
+            )
         arcs = build_measurement_arcs(
             config.measurement_type,
             t_eval_s,
@@ -234,7 +243,7 @@ def run_configured_scenario(
             et0,
             noise=config.noise,
             rng=None if measurement_seed is None else np.random.default_rng(int(measurement_seed)),
-            min_samples=4,
+            min_samples=options.get("min_visibility_samples", 4),
             range_rate_physics=scenario_range_rate_physics_config(config),
             two_way_range=(
                 scenario_two_way_range_config(config)
@@ -249,6 +258,10 @@ def run_configured_scenario(
             jacobian_model=config.jacobian_model,
         )
         arcs = tuple(_with_estimator_ephemeris(arc, estimator_ephemeris) for arc in arcs)
+        if options.get("max_arcs") is not None:
+            arcs = arcs[:options["max_arcs"]]
+        if desktop_options is not None and not arcs:
+            raise ValueError("Seçilen zaman, ağ ve yay ayarlarıyla ölçüm yayı oluşmadı.")
         cold_bank = make_cold_start_bank(
             len(arcs),
             THESIS_COLD_START_SIGMA_POS_M * float(cold_start_scale),
@@ -276,6 +289,7 @@ def run_configured_scenario(
             label=config.name,
             process_noise_covariance=config.ukf_acceleration_psd_m2_s3,
             max_iter=config.max_iter,
+            **({"bls_lambda0": config.bls_lambda0, "tol_cost_stability": config.tol_cost_stability} if desktop_options is not None else {}),
             rtol=config.rtol,
             atol=config.atol,
             ukf_transform_config=ukf_transform_config,
@@ -301,9 +315,10 @@ def run_configured_scenario(
                 "persisted force manifest SHA does not match the decision SHA "
                 f"({written_sha} vs {force_parity.manifest_sha256})."
             )
-        return replace(
-            scenario_result, **scenario_result_force_fields(force_parity)
-        )
+        final_result = replace(scenario_result, **scenario_result_force_fields(force_parity))
+        if artifact_callback is not None:
+            artifact_callback(final_result, arcs, t_eval_s, truth, epoch_utc)
+        return final_result
     finally:
         spice.kclear()
 
