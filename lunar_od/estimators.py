@@ -229,6 +229,9 @@ def estimate_position_srif(
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, prior_sqrt_info, has_explicit_prior)
         posterior_information = _position_posterior_information(
             t_pass_s,
             obs_data,
@@ -240,7 +243,7 @@ def estimate_position_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_diag,
             rtol,
             atol,
@@ -258,7 +261,7 @@ def estimate_position_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_sqrt_info,
+            post_prior_sqrt,
             w_diag,
             rtol,
             atol,
@@ -456,6 +459,9 @@ def estimate_range_rate_srif(
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, prior_sqrt_info, has_explicit_prior)
         posterior_information = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
@@ -467,7 +473,7 @@ def estimate_range_rate_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_curr_diag,
             rtol,
             atol,
@@ -485,7 +491,7 @@ def estimate_range_rate_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_sqrt_info,
+            post_prior_sqrt,
             w_curr_diag,
             rtol,
             atol,
@@ -648,6 +654,9 @@ def estimate_position_bls_lm(
 
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, None, has_explicit_prior)
         posterior_information = _position_posterior_information(
             t_pass_s,
             obs_data,
@@ -659,7 +668,7 @@ def estimate_position_bls_lm(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_diag,
             rtol,
             atol,
@@ -848,6 +857,9 @@ def estimate_range_rate_bls_lm(
 
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, None, has_explicit_prior)
         posterior_information = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
@@ -859,7 +871,7 @@ def estimate_range_rate_bls_lm(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_curr_diag,
             rtol,
             atol,
@@ -880,6 +892,25 @@ def estimate_range_rate_bls_lm(
         posterior_covariance=posterior_covariance,
     )
     return x_best, stop_reason, stats
+
+
+def _posterior_prior_terms(prior_inv, prior_sqrt_info, has_explicit_prior: bool):
+    """Phase 17-HARDEN-D28.  The prior terms a posterior may carry: exactly those of the objective.
+
+    With no explicit prior every estimator here fits a DATA-ONLY objective: the right-hand
+    side never pulls toward ``x_prior`` and the BLS acceptance cost has no prior term.  The
+    15 km / 5 m/s diagonal that ``_prior_information_and_scale`` supplies in that case is a
+    numerical STEP REGULARIZER inherited from the MATLAB design (``P_bar_inv``, "a priori
+    covariance inverse (Regularization)", used only in the LM step); it is not a prior.
+    Before D28 the posterior added it anyway, so the reported covariance belonged to a
+    weakly regularized problem nobody had solved.  The posterior now carries the prior only
+    when one was supplied; the step path is untouched.
+    """
+    if has_explicit_prior:
+        return prior_inv, prior_sqrt_info
+    zero_inv = None if prior_inv is None else np.zeros_like(np.asarray(prior_inv, dtype=float))
+    zero_sqrt = None if prior_sqrt_info is None else np.zeros_like(np.asarray(prior_sqrt_info, dtype=float))
+    return zero_inv, zero_sqrt
 
 
 def _prior_information_and_scale(
@@ -2527,6 +2558,11 @@ def estimate_two_way_range_bls_lm(
 
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms:
+        # the explicit state prior (if supplied) and the explicit K qualification prior.
+        post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
+        if solve_for_k_srp and k_prior_active and not has_explicit_prior:
+            post_prior_inv[6, 6] = prior_inv[6, 6]
         if solve_for_k_srp:
             # Phase 17-R1COV.  The design matrix is read once and used for BOTH
             # the reported information matrix and the covariance.
@@ -2551,10 +2587,10 @@ def estimate_two_way_range_bls_lm(
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
-                + prior_inv
+                + post_prior_inv
             )
             posterior_covariance, _ = _square_root_covariance_from_design(
-                posterior_design, w_curr_diag, prior_inv, scale
+                posterior_design, w_curr_diag, post_prior_inv, scale
             )
         else:
             posterior_information = _two_way_range_posterior_information(
@@ -2567,7 +2603,7 @@ def estimate_two_way_range_bls_lm(
                 mu_sun_m3_s2,
                 get_earth_pos,
                 get_sun_pos,
-                prior_inv,
+                post_prior_inv,
                 w_curr_diag,
                 rtol,
                 atol,
@@ -2859,6 +2895,8 @@ def estimate_two_way_range_srif(
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
         if solve_for_k_srp:
+            # Phase 17-HARDEN-D28: unchanged on purpose - this objective's z_bar pulls toward the
+            # FULL prior (default state rows + required K prior), so the posterior keeps it.
             # Phase 17-R1COV.  Same square-root covariance path as the BLS
             # branch (see its comment for the full rationale).  Unreachable for
             # solve_for_k_srp=False.
@@ -2877,6 +2915,8 @@ def estimate_two_way_range_srif(
                 )
             )
         else:
+            # Phase 17-HARDEN-D28: data-only objective unless a prior was supplied.
+            post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
             posterior_information = _two_way_range_posterior_information(
                 t_pass_s,
                 obs_data,
@@ -2887,7 +2927,7 @@ def estimate_two_way_range_srif(
                 mu_sun_m3_s2,
                 get_earth_pos,
                 get_sun_pos,
-                prior_inv,
+                post_prior_inv,
                 w_curr_diag,
                 rtol,
                 atol,

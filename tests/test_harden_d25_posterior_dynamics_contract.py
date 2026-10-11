@@ -89,8 +89,8 @@ def _six_state_information(fx, x, *, srp, harm):
 def _k_path_covariance(fx, x, k, *, harm):
     """Independent K-path rebuild: column-normalised QR of the whitened 7-column design.
 
-    With no explicit prior the estimator's posterior carries its default weak state prior
-    (15 km, 5 m/s; none on K) - part of its declared posterior, so the rebuild includes it.
+    Data-only: with no explicit prior the posterior carries no prior term (Phase 17-HARDEN-D28;
+    before D28 it silently added the 15 km / 5 m/s step regularizer, which this rebuild mirrored).
     """
     kw = dict(harm, harmonic_stm_opt_in=True) if harm else {}
     aug = E.propagate_state_with_k_sensitivity(fx["t_pass"], x, *_dyn(fx),
@@ -98,11 +98,6 @@ def _k_path_covariance(fx, x, k, *, harm):
     _, hx = E.two_way_range_nominal_and_initial_jacobian(fx["obs"], fx["pg"], aug)
     hk = E._two_way_range_k_srp_column(fx["obs"], aug, hx)
     a = np.hstack([hx, hk[:, None]]) * np.sqrt(E._two_way_range_weight_diagonal(fx["obs"], fx["pg"]))[:, None]
-    prior6, *_ = E._prior_information_and_scale(6, E._TWO_WAY_RANGE_NO_BIAS_CFG,
-                                                E._two_way_range_bias_prior_and_scale, None, None)
-    prior_rows = np.zeros((6, 7))
-    prior_rows[:, :6] = np.diag(np.sqrt(np.diag(prior6)))
-    a = np.vstack([a, prior_rows])
     c = np.linalg.norm(a, axis=0)
     r_inv = np.linalg.inv(np.linalg.qr(a / c, mode="r"))
     return (r_inv @ r_inv.T) / np.outer(c, c)

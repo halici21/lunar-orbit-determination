@@ -11,7 +11,7 @@
 ## 0. Final status
 
 ```
-PHASE17_HARDEN_D25_GATE                 = FAIL as computed -> ADJUDICATED (pending owner acceptance)
+PHASE17_HARDEN_D25_GATE                 = FAIL as computed -> ADJUDICATED -> PASS (owner accepted 2026-10-12)
                                           G1 G2 G3 G5 G6 G8 PASS; G7 reproduction PASS (bitwise);
                                           G4 (predeclared FD oracle) FAIL: its K and velocity steps sat in the
                                           FD noise floor (error ~1/h, measured); at steps out of the floor the
@@ -216,3 +216,11 @@ qualification compares like with like by including this default prior in every r
 D27, D28, stochastic K, production M3 / counted-Doppler capability, new science. The common K level is not
 claimed. The external `od_covariance_campaign` repository is read, never modified. Its stage F/G artifacts are
 superseded by §4 here, not rewritten.
+
+## 9. Addendum — owner acceptance and HARDEN-D28 (2026-10-12)
+
+The owner accepted the G4 adjudication: **the D25 gate is PASS**. HARDEN-D28 has since made no-explicit-prior
+posteriors data-only. §6 and the qualification rebuilds above included the 15 km / 5 m/s step regularizer because
+production did; under the D28 contract they do not, and `tests/test_harden_d25_posterior_dynamics_contract.py` now
+rebuilds the K path data-only. No D25 conclusion changes: the effect on KP2 is ≤ 1.5e-6, and stages F/G/I use an
+explicit P0. See `docs/phase17_harden_d28_prior_covariance_contract.md`.

@@ -354,16 +354,29 @@
     },
     {
       "id": "HARDEN-D28",
-      "title": "Default weak state prior enters the posterior but not the fitted objective",
-      "location": "lunar_od/estimators.py _prior_information_and_scale (no explicit prior) as used by the two-way-range BLS posterior",
+      "title": "Default step regularizer reported as a prior in no-prior posteriors",
+      "location": "lunar_od/estimators.py posterior blocks of the position / range-rate / two-way-range SRIF and BLS estimators (prior from _prior_information_and_scale when none is supplied)",
       "discovered": "Phase 17-HARDEN-D25 qualification (independent covariance rebuild)",
-      "root_cause": "with no prior given, a 15 km / 5 m/s state prior is supplied; it enters the LM normal matrix and the reported posterior, but not the acceptance objective nor the step right-hand side, so the estimate is the data-only solution while the covariance is the weakly regularised one; undocumented",
-      "effect": "sigma <= 1.4e-4 relative on a 3.3 h single-station fixture; < 1e-5 on the KP2 15-orbit arc",
+      "root_cause": "with no prior given, a 15 km / 5 m/s diagonal (MATLAB P_bar_inv, 'a priori covariance inverse (Regularization)') damps the LM / SRIF step with a zero right-hand side, so the fitted objective is data-only; the Python posterior helpers added it unconditionally, so the reported covariance belonged to a regularized problem no estimator solved",
+      "effect": "sigma <= 3.4e-4 on a 3.3 h single-station arc; KP2 <= 1.5e-6; scenario hand-off arcs <= 3.7e-8; no authoritative number superseded",
+      "status": "FIXED",
+      "klass": "REQUIRED_FOR_CORRECTNESS",
+      "repair": "Phase 17-HARDEN-D28: _posterior_prior_terms - each posterior carries exactly the prior terms of its own objective (explicit prior, explicit K prior; never the step regularizer). Estimates bitwise unchanged (17 cases), explicit-prior posteriors bitwise unchanged; docs/phase17_harden_d28_prior_covariance_contract.md",
+      "regression": "tests/test_harden_d28_posterior_prior_contract.py",
+      "reproduction": "examples/phase17_d28_qualification.py --invariance/--scenarios --code old|new, --kp2"
+    },
+    {
+      "id": "HARDEN-D29",
+      "title": "SRIF K_SRP objective pulls toward the default state regularizer",
+      "location": "lunar_od/estimators.py estimate_two_way_range_srif (solve_for_k_srp=True): z_bar uses the full prior_sqrt_info whenever has_explicit_prior or solve_for_k_srp",
+      "discovered": "Phase 17-HARDEN-D28 audit",
+      "root_cause": "the K path needs an initial K uncertainty (s31) and builds its right-hand side from the whole prior square root, which then includes the 15 km / 5 m/s state rows when no state prior was supplied: a hidden weak state prior in the ESTIMATE (its posterior is consistent with it)",
+      "effect": "not measured on a science case; bounded by the regularizer's weakness (15 km / 5 m/s against metre-level data information)",
       "status": "OPEN_RECOMMENDED_FOLLOWUP",
       "klass": "RECOMMENDED_FOLLOWUP",
-      "repair": "none (changing it changes every default posterior bitwise); document the contract or make the posterior data-only in a separately scoped phase",
-      "regression": "tests/test_harden_d25_posterior_dynamics_contract.py includes it in its K-path rebuild",
-      "reproduction": "examples/phase17_d25_qualification.py (_kp2_production prior_inv)"
+      "repair": "none (changes estimates; separate scoped decision: K-only prior right-hand side, state data-only)",
+      "regression": "tests/test_harden_d28_posterior_prior_contract.py pins the current, internally consistent behaviour",
+      "reproduction": "examples/phase17_d28_qualification.py --invariance (two_way_srif_k_*)"
     }
   ]
 }
