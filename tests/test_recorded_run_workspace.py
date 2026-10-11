@@ -379,7 +379,7 @@ def test_native_navigation_archive_to_comparison_to_console(app, tmp_path):
     isolated = QSettings(str(tmp_path / "test-settings.ini"), QSettings.IniFormat)
     with patch("app.QSettings", return_value=isolated), patch.object(archive_module, "RESULTS_DIR", tmp_path):
         window = MainWindow()
-        assert set(window._pages) == {"console"}
+        assert set(window._pages) == {"mission"}
         window.navigate("archive")
     try:
         archive = window._pages["archive"]

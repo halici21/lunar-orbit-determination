@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Mission overview with recorded orbit playback, clickable Earth stations and a
+  synchronized measurement Gantt. Station, visibility and surface-track pages
+  are now primary navigation tools with visible purpose descriptions.
+- New native runs persist hashed station/measurement geometry; legacy runs keep
+  explicit missing-data states. Orbital descriptors use only recorded lunar GM.
+- Expandable orbital help, cached drawing and scrollable small-window controls.
+- Cancel the owned startup timer on window close, preventing delayed preflight
+  callbacks after closure.
+
+
 - Asynchronous startup environment report with runtime import/profile checks and
   canonical SPICE kernel inventory/load/sample-epoch validation.
 - Persistent desktop kernel selection applied to subsequent child processes.

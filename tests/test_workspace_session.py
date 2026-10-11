@@ -30,7 +30,7 @@ def environment(tmp_path):
 def test_console_restart_restores_filter_selection_and_panels(environment,tmp_path):
     app,settings,create = environment
     path = write_run(tmp_path/"a")
-    window = create(); page = window._pages["console"]
+    window = create(); window.navigate("console"); page = window._pages["console"]
     page.open_result(path); wait_until(app,lambda:not page._busy)
     page.arc_combo.setCurrentIndex(page.arc_combo.findData(2)); page.apply_filters()
     page.select_index(3); page._toggle_scale()
@@ -49,7 +49,7 @@ def test_console_restart_restores_filter_selection_and_panels(environment,tmp_pa
 def test_changed_source_does_not_reuse_old_filter(environment,tmp_path):
     app,settings,create = environment
     path = write_run(tmp_path/"a")
-    window=create(); page=window._pages["console"]
+    window=create(); window.navigate("console"); page=window._pages["console"]
     page.open_result(path); wait_until(app,lambda:not page._busy)
     page.arc_combo.setCurrentIndex(page.arc_combo.findData(2)); page.apply_filters()
     window.close()
@@ -65,7 +65,7 @@ def test_changed_source_does_not_reuse_old_filter(environment,tmp_path):
 def test_missing_source_is_recoverable_on_restart(environment,tmp_path):
     app,settings,create = environment
     path=write_run(tmp_path/"a")
-    window=create(); page=window._pages["console"]
+    window=create(); window.navigate("console"); page=window._pages["console"]
     page.open_result(path); wait_until(app,lambda:not page._busy)
     window.close(); path.unlink()
     restored=create()._pages["console"]
@@ -96,7 +96,7 @@ def test_invalid_or_unsafe_active_page_never_starts_job(environment,raw):
     app,settings,create=environment
     settings.setValue(KEY,raw)
     window=create()
-    assert window._active_page=="console"
+    assert window._active_page=="mission"
     assert "run_monitor" not in window._pages
 
 

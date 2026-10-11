@@ -129,6 +129,9 @@ class TrackingConsoleController(QWidget):
             archive_button = QPushButton("Koşu arşivi")
             archive_button.clicked.connect(lambda: self.window().navigate("archive"))
             header.addWidget(archive_button)
+            mission_button = QPushButton("Görev görünümü")
+            mission_button.clicked.connect(lambda: self.window().navigate("mission"))
+            header.addWidget(mission_button)
         self.open_button = QPushButton("Sonuç klasörü aç")
         self.open_button.setProperty("primary", True)
         self.open_button.clicked.connect(self._choose_folder)
@@ -415,6 +418,7 @@ class TrackingConsoleController(QWidget):
             self.loadFailed.emit(message)
 
     def _accept_result(self, result, details=None):
+        self.loaded_details = details or {}
         self.recovery_message.hide()
         self.retry_button.hide()
         self.result = result

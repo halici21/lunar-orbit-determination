@@ -111,7 +111,7 @@ def _build_map(stations: list[dict]):
         fig = Figure(figsize=(11, 4.5), tight_layout={"pad": 0.8})
         ax = fig.add_subplot(111)
 
-    draw_land(ax)
+    draw_land(ax, land_color=C.BG_PANEL, edge_color=C.BORDER_MID, ocean_color=C.BG_DEEP)
 
     for lat in range(-90, 91, 30):
         ax.axhline(lat, color=C.BORDER_FAINT, linewidth=0.4, zorder=2)

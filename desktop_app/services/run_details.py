@@ -18,8 +18,12 @@ def inspect_run(result, cancel=lambda: False):
         if path.suffix.lower() != ".json":
             continue
         raw = path.read_bytes()
-        if len(raw) > 1024 * 1024 or hashlib.sha256(raw).hexdigest() != source["sha256"]:
+        is_mission = path.name == result.metadata.get("mission_file")
+        limit = (16 if is_mission else 1) * 1024 * 1024
+        if len(raw) > limit or hashlib.sha256(raw).hexdigest() != source["sha256"]:
             raise ResultLoadError(f"{path.name}: ayrıntı kaynağı değişti veya boyut sınırı aşıldı.")
+        if is_mission:
+            continue  # Typed geometry was validated by the result loader.
         value = json.loads(raw.decode("utf-8-sig"))
         if not isinstance(value, dict):
             raise ResultLoadError(f"{path.name}: JSON nesnesi gerekli.")

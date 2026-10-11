@@ -18,6 +18,8 @@ kurulum paketi değildir. Başlatıcı yeni klonda veya ZIP'ten çıkarılmış 
 
 ## Uygulamayı kullanma
 
+- **Görev görünümü:** yörünge, Dünya istasyonları ve kayıtlı ölçüm Gantt’ını birlikte izleyin.
+- **İstasyonlar / Temas planı / Yüzey izi:** katalog, ayrı görünürlük hesabı ve Ay yüzeyindeki izdüşüm.
 - **Senaryo:** ayarları düzenleyin; yeni UUID ile ayrı bir koşu oluşturulur.
 - **Çalıştır:** işlem günlüğünü izleyin. Hesaplama ayrı süreçte çalışır.
 - **Sonuçlar:** kayıtlı sonuçları, birimleri, epoku ve kaynak bilgilerini inceleyin.
@@ -27,6 +29,34 @@ kurulum paketi değildir. Başlatıcı yeni klonda veya ZIP'ten çıkarılmış 
 İlk kurulumda sonuç klasörü bulunmayabilir; arşiv boş görünür.
 Geliştiricinin sekiz deneme koşusu pakete dahil değildir.
 Seçilen arşiv klasörü normal kapanıştan sonra hatırlanır.
+
+## Yörünge, harita ve Gantt
+
+Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.
+Yeni kurulumda **Görev görünümü** açılır. Geçerli kaydedilmiş oturum varsa son
+arşiv/sonuç/karşılaştırma/görev sayfası geri açılabilir.
+
+1. **Görev görünümü → Koşu aç** ile arşive gidin; sonuç klasörünü seçin.
+2. Bir koşu seçip **Harita ve yörüngeyi aç** düğmesine basın.
+3. Haritadaki istasyona tıklayın: adı, enlem/boylamı ve Gantt satırı vurgulanır.
+4. Gantt’a tıklayın veya kaydırıcıyı hareket ettirin: en yakın kayıtlı epok seçilir.
+5. **Oynat / Duraklat**, hız seçimi ve **Başa dön** aynı zaman imlecini yönetir.
+   Başka sayfaya geçmek oynatmayı durdurur. Yörüngeyi sürükleyerek döndürün;
+   tekerlekle yakınlaştırın.
+6. **Yörünge değerleri ne anlama geliyor?** açıklamasını açın: yükseklik,
+   eğim, yarı büyük eksen, dışmerkezlik ve periyot tanımları gösterilir.
+
+Dolu istasyon noktası, seçili epokun kaydedilmiş ölçüm aralığında olduğunu
+belirtir. Gantt, hazırlanmış yaylarda üretilen ölçüm örneklerini gösterir;
+tüm süre boyunca geometrik/radyo görünürlüğü veya kestirim başarısı değildir.
+Yeni koşular istasyon adlarını ve ölçüm aralıklarını ayrıca kaydeder.
+Eski kayıtlar için eksik veri mesajı görünür; yay sınırları istasyon teması
+olarak kullanılmaz. **Görünürlük hesabı**, ayrı bir hesaplama aracını açar;
+sonuçlarını tarihsel koşunun temas takvimi olarak etiketlemez.
+
+Kayıtlı durum ve kuvvet manifesti yoksa yörünge/periyot uydurulmaz. Eğim J2000
+kaydı için J2000 XY düzlemine göredir; Ay ekvatoruna göre eğim değildir.
+Truth yörüngesi senaryonun referans hareketidir, gerçek görev telemetrisi değildir.
 
 ## Ortam kontrolü
 

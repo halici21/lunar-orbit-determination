@@ -14,7 +14,8 @@ campaign files or SPICE kernels.
 Scope: core configuration, geometry, orbit and baseline dynamics; typed scenario
 configuration; desktop process lifecycle; source integrity; archive/derivation;
 comparison/export/reopening; rendering, layouts, preferences and sessions;
-read-only environment readiness and persistent kernel selection.
+read-only environment readiness and persistent kernel selection; linked mission
+map/Gantt/playback, geometry provenance and compact comparison report reopening.
 
     python tools/run_public_checks.py --junitxml outputs/public-checks.xml
 
@@ -27,8 +28,12 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest readiness regression](environment-readiness_2026-10-10.md): 1,759 passed
-and 29 skipped; the final 233-case public gate includes all 14 new readiness cases.
+[Latest mission regression](mission-overview_2026-10-11.md): 1,783 passed checks
+and 29 skipped (JUnit includes 146 subtest checks); the final 256-case public gate
+includes all 23 mission cases. The full gate collected 22 initial mission cases;
+the final report-compaction regression was validated in the final public gate.
+[Previous readiness regression](environment-readiness_2026-10-10.md): 1,759 passed
+and 29 skipped; the 233-case public gate includes all 14 readiness cases.
 [The prior clean-install record](main_workspace_readiness_2026-10-10.md) recorded
 1,747 passed and 29 skipped. Full local executions reused existing external data.
 

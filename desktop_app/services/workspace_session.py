@@ -119,7 +119,7 @@ def restore_page(window, name, page):
 def save_session(window):
     data = dict(window._workspace_session)
     data["schema"] = 1
-    data["active"] = window._active_page if window._active_page in ("console","comparison","archive") else "console"
+    data["active"] = window._active_page if window._active_page in ("mission","console","comparison","archive") else "mission"
     for name,page in window._pages.items():
         if name == "console" and getattr(page, "result", None) is not None:
             data[name] = capture_console(page)

@@ -84,6 +84,7 @@ def test_small_window_reaches_primary_actions_by_scroll(tmp_path):
     try:
         window.resize(910,465); window.show(); app.processEvents()
         assert window.width() == 910 and window.height() == 465
+        window.navigate("console")
         page = window._pages["console"]
         for button in (page.open_button,page.details_toggle):
             window.pageScroll.ensureWidgetVisible(button,0,0); app.processEvents()

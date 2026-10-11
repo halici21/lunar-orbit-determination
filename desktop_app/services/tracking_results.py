@@ -232,6 +232,26 @@ def load_tracking_results(updates_path: Path, cancel=lambda: False) -> TrackingR
                 if key == "job_file" and info.get("job_sha256") and side_source["sha256"] != info["job_sha256"]:
                     raise ResultLoadError("job.json SHA-256 manifest kaydıyla uyuşmuyor.")
                 sources.append(side_source)
+        if info.get("mission_file"):
+            name = info["mission_file"]
+            if not isinstance(name, str):
+                raise ResultLoadError("mission_file bir dosya adı olmalı.")
+            mission_path = (path.parent / name).resolve()
+            if mission_path.parent != path.parent or not mission_path.is_file():
+                raise ResultLoadError("Görev geometrisi manifest ile aynı klasörde bulunmalı.")
+            fingerprints[mission_path] = _fingerprint(mission_path)
+            if mission_path.stat().st_size > 16 * 1024 * 1024:
+                raise ResultLoadError("Görev geometrisi 16 MB sınırını aşıyor.")
+            mission_source = _source(mission_path, cancel)
+            if mission_source["sha256"] != info.get("mission_sha256"):
+                raise ResultLoadError("Görev geometrisi SHA-256 manifest kaydıyla uyuşmuyor.")
+            try:
+                from services.mission_data import validate_geometry
+                metadata["mission_geometry"] = validate_geometry(json.loads(mission_path.read_text(encoding="utf-8-sig")))
+            except (ValueError, TypeError, OSError) as exc:
+                raise ResultLoadError(f"Görev geometrisi geçersiz: {exc}") from exc
+            metadata["mission_file"] = mission_path.name
+            sources.append(mission_source)
         sources.append(_source(manifest, cancel))
         state_file = info.get("state_file")
         if state_file:

@@ -35,12 +35,12 @@ def window(app, tmp_path):
 
 
 def test_navigation_keeps_lazy_pages_and_selected_group(window, app):
-    assert set(window._pages) == {"console"}
-    assert [v[0] for v in _PRIMARY_NAV] == ["scenario", "run_monitor", "console", "archive", "comparison"]
+    assert set(window._pages) == {"mission"}
+    assert [v[0] for v in _PRIMARY_NAV] == ["mission", "scenario", "run_monitor", "console", "archive", "comparison", "stations", "visibility", "ground_track"]
     assert not window.advanced_panel.isVisible()
     window.advanced_toggle.click()
     assert window.advanced_panel.isVisible()
-    assert set(window._pages) == {"console"}  # expanding menu does not load tools
+    assert set(window._pages) == {"mission"}  # expanding menu does not load tools
     window.navigate("settings")
     assert window._nav_btns["settings"].isChecked()
     assert not window._nav_btns["console"].isChecked()

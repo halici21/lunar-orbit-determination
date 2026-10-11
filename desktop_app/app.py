@@ -19,11 +19,15 @@ UI_PATH = DESKTOP_DIR / "ui" / "main_window.ui"
 
 # (page_id, sidebar_label, hint_text)
 _PRIMARY_NAV = [
+    ("mission", "Görev görünümü", "Yörünge, Dünya istasyonları ve ölçüm zamanlarını birlikte izle"),
     ("scenario", "Senaryo", "Ayarları hazırla veya arşivden bir koşuyu temel al"),
     ("run_monitor", "Çalıştır", "Çalışan işi ve kayıtlarını izle"),
     ("console", "Sonuçlar", "Grafikler, kayıtlar ve koşu ayrıntıları"),
     ("archive", "Arşiv", "Kaydedilmiş koşuları bul ve yeniden kullan"),
     ("comparison", "Karşılaştırma", "İki koşunun kayıtlarını ve ayarlarını karşılaştır"),
+    ("stations", "İstasyonlar", "Dünya haritası, koordinatlar ve ağ kataloğu"),
+    ("visibility", "Temas planı", "SPICE ile istasyon görünürlüğü ve Gantt hesabı"),
+    ("ground_track", "Yüzey izi", "Ay yüzeyindeki iz ve yörünge tasarım önizlemesi"),
 ]
 _ADVANCED = [
     ("dashboard", "Genel bakış", "Araştırma özeti"),
@@ -31,15 +35,13 @@ _ADVANCED = [
     ("dynamics", "Dinamik", "Kuvvet modeli ve yayılım"),
     ("measurements", "Ölçümler", "Gürültü, bias ve Doppler"),
     ("estimators", "Kestiriciler", "BLS / SRIF / UKF ayarları"),
-    ("stations", "İstasyonlar", "Ağ ve hassasiyet"),
-    ("visibility", "Görünürlük", "İstasyon temas aralıkları"),
     ("analysis", "Analiz", "Kestirici incelemesi"),
-    ("ground_track", "Yüzey izi", "Ay yüzeyindeki yörünge izi"),
 ]
 
 _NAV = _PRIMARY_NAV + _ADVANCED + [("settings", "Ayarlar", "Uygulama ayarları")]
 
 _TITLES: dict[str, tuple[str, str]] = {
+    "mission": ("Görev görünümü", "Kayıtlı yörüngeyi oynatın; istasyonları ve ölçüm aralıklarını aynı zamanda inceleyin."),
     "console": ("Sonuçlar", "Kayıtlı grafikler, koşu ayarları ve kaynak ilişkileri"),
     "archive": ("Koşu arşivi", "Gerçek koşular, ayarlar ve tamamlanma kayıtları"),
     "dashboard":   ("Mission Dashboard",   "Lunar OD research overview"),
@@ -47,15 +49,15 @@ _TITLES: dict[str, tuple[str, str]] = {
     "run_monitor": ("Çalıştır", "İşlem durumu, canlı günlük ve çıktı dosyaları"),
     "comparison":  ("Koşu karşılaştırması", "Kaydedilmiş değerler, tam epok eşleşmeleri ve ayar farkları"),
     "summary_comparison": ("Diğer CSV özetleri", "Eski özet CSV araçları"),
-    "scenario": ("Senaryo", "Ayarları hazırla, kaydet ve yeni koşu başlat"),
-    "dynamics":    ("Dynamics",            "Force model, SPICE kernels, propagation grid, and numerical tolerances"),
-    "measurements":("Measurements",        "Synthetic observables, noise, biases, and Doppler configuration"),
-    "estimators":  ("Estimators",          "Centralized BLS-LM, SRIF, and SR-UKF tuning controls"),
-    "stations":    ("Ground Stations",     "Station locations and measurement precision"),
-    "visibility":  ("Visibility Gantt",    "Station contact windows — selectable stations, Gantt chart export"),
+    "scenario": ("Senaryo", "Ölçüm türü, istasyon ağı, süre ve kestiriciyi seçin; etkin ayarları kaydedip yeni bir sayısal koşu başlatın."),
+    "dynamics":    ("Dinamik model", "Kuvvet modeli, SPICE dosyaları ve yayılım ayarları. Çalıştırılacak etkin yapılandırmayı Senaryo sayfasında doğrulayın."),
+    "measurements":("Ölçüm modeli", "Menzil, menzil hızı ve konum ölçümleri; gürültü ve bias ayarlarını inceleyin."),
+    "estimators":  ("Kestiriciler", "BLS ölçüm grubunu birlikte çözer; UKF sırayla günceller; SRIF bilgi matrisiyle çalışır. Ayarların etkin karşılığını Senaryo sayfasında kontrol edin."),
+    "stations":    ("İstasyonlar", "Dünya üzerindeki konumları ve ağ kataloğunu inceleyin. Özel istasyonlar katalogda saklanır; yeni koşunun ağı Senaryo sayfasında seçilir."),
+    "visibility":  ("Temas planı", "Seçilen istasyonlar için bağımsız görünürlük hesabı yapın. Gantt geometrik görünürlük örneklerini gösterir; kayıtlı koşunun ölçüm takvimi değildir."),
     "analysis":     ("Estimator Analysis",  "BLS-LM vs UKF comparison — observable type, start mode, α/β/κ sensitivity"),
-    "ground_track": ("Ground Track",        "Selenographic ground track — station coverage, animation"),
-    "settings":     ("Settings",            "Application paths, theme options, and reproducibility defaults"),
+    "ground_track": ("Ay yüzey izi", "Uzay aracının Ay üzerindeki izdüşümünü inceleyin. Yörünge tasarım önizlemesi Kepler modelidir; kayıtlı sonuçlardan ayrıdır."),
+    "settings":     ("Ayarlar", "Python ortamını ve SPICE dosyalarını kontrol edin. Hazırlık denetimi hesaplamayı başlatmadan eksikleri gösterir."),
 }
 
 
@@ -153,7 +155,8 @@ class MainWindow(QMainWindow):
         from services.workspace_session import read_session
         self._workspace_session = read_session(self._settings)
         self._restored_pages = set()
-        self._active_page = "console"
+        self._active_page = "mission"
+        self._latest_result = None
         self._nav_btns: dict[str, _NavButton] = {}
         self._pages: dict[str, QWidget] = {}
 
@@ -164,9 +167,15 @@ class MainWindow(QMainWindow):
         self._build_status_bar()
         self._load_pages()
         self._restore_geometry()
-        active = self._workspace_session.get("active", "console")
-        self.navigate(active if active in ("console","comparison","archive") else "console")
-        QTimer.singleShot(0, self.environment.refresh)
+        active = self._workspace_session.get("active", "mission")
+        self.navigate(active if active in ("mission", "console", "comparison", "archive") else "mission")
+        if self._active_page == "mission" and isinstance(self._workspace_session.get("console"), dict):
+            from services.workspace_session import restore_page
+            restore_page(self, "console", self._ensure_page("console"))
+        self._startup_timer = QTimer(self)
+        self._startup_timer.setSingleShot(True)
+        self._startup_timer.timeout.connect(self.environment.refresh)
+        self._startup_timer.start(0)
 
     # ------------------------------------------------------------------
     # UI setup
@@ -190,7 +199,13 @@ class MainWindow(QMainWindow):
         self.pageHeaderFrame.setStyleSheet(
             f"QFrame#pageHeaderFrame {{background:{C.BG_DEEP}; border-bottom:1px solid {C.BORDER_MAIN};}}")
         self.pageTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:19px; font-weight:500;")
-        self.pageSubLabel.hide()
+        self.pageHeaderFrame.setMaximumHeight(16777215)
+        self.pageHeaderFrame.setMinimumHeight(72)
+        self.pageHeaderFrame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.pageSubLabel.setTextFormat(Qt.PlainText)
+        self.pageSubLabel.setWordWrap(True)
+        self.pageSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        self.pageSubLabel.show()
 
     def _build_nav(self) -> None:
         layout = self.navLayout
@@ -271,6 +286,7 @@ class MainWindow(QMainWindow):
         """Register pages; expensive modules are imported on first navigation."""
         sys.path.insert(0, str(DESKTOP_DIR))
         self._page_factories = {
+            "mission": ("controllers.mission_controller", "MissionController"),
             "console": ("controllers.tracking_console_controller", "TrackingConsoleController"),
             "archive": ("controllers.run_archive_controller", "RunArchiveController"),
             "dashboard": ("controllers.dashboard_controller", "DashboardController"),
@@ -300,6 +316,11 @@ class MainWindow(QMainWindow):
             widget = cls(self)
         except Exception as exc:
             widget = self._error_page(page_id, exc)
+        if page_id == "console" and hasattr(widget, "resultLoaded"):
+            widget.resultLoaded.connect(self._on_result_loaded)
+            widget.loadFailed.connect(self._on_mission_load_failed)
+        if page_id == "mission" and self._latest_result and hasattr(widget, "set_result"):
+            widget.set_result(*self._latest_result)
         widget._workspace_size_policy = widget.sizePolicy()
         self._pages[page_id] = widget
         self.pageStack.addWidget(widget)
@@ -385,6 +406,31 @@ class MainWindow(QMainWindow):
         if page and hasattr(page, "open_result"):
             page.open_folder(path) if path.is_dir() else page.open_result(path)
 
+    def _on_result_loaded(self, result):
+        console = self._pages.get("console")
+        self._latest_result = (result, getattr(console, "loaded_details", {}))
+        mission = self._pages.get("mission")
+        if mission and hasattr(mission, "set_result"):
+            mission.set_result(*self._latest_result)
+
+    def _on_mission_load_failed(self, message):
+        mission = self._pages.get("mission")
+        if mission and hasattr(mission, "run_label"):
+            previous = f"{mission.result.name} korunuyor. " if mission.result else ""
+            mission.run_label.setText(previous + "Koşu açılamadı: " + message + " · Arşivden tekrar seçin.")
+
+    def open_in_mission(self, path):
+        if path.is_dir():
+            self.open_in_result_console(path)  # Multiple-run folders need the visible picker.
+            return
+        console = self._ensure_page("console")
+        self.navigate("mission")
+        mission = self._pages.get("mission")
+        if hasattr(mission, "run_label"):
+            mission.run_label.setText("Koşu yükleniyor… Önceki görüntü yeni kaynak doğrulanana kadar korunur.")
+        if hasattr(console, "open_result"):
+            console.open_folder(path) if path.is_dir() else console.open_result(path)
+
     def run_desktop_job(self, job_path: "Path", folder: "Path", run_id: str) -> None:
         self.navigate("run_monitor")
         page = self._pages.get("run_monitor")
@@ -427,6 +473,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         from services.workspace_session import save_session
+        self._startup_timer.stop()
         self.environment.shutdown()
         save_session(self)
         for page in self._pages.values():

@@ -7,7 +7,7 @@ recorded results, and compare runs with their saved settings and source metadata
 [![Public checks](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml/badge.svg)](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml)
 [MIT license](LICENSE) · [Releases](https://github.com/halici21/lunar-orbit-determination/releases) · [Documentation](docs/README.md)
 
-![Lunar OD scenario workspace](docs/images/desktop-scenario.png)
+![Lunar OD mission view with recorded orbit, stations and measurement Gantt](docs/images/desktop-mission.png)
 
 ## Start on Windows
 
@@ -37,6 +37,8 @@ Python 3.13.2; other platforms are not covered by this desktop release.
 
 | Screen | Use |
 | --- | --- |
+| Görev görünümü | Play stored orbit samples alongside Earth stations and the recorded measurement Gantt |
+| İstasyonlar / Temas planı / Yüzey izi | Inspect the catalogue, compute independent visibility, or explore the lunar surface track |
 | Senaryo | Configure a reproducible scenario or derive one from a saved run |
 | Çalıştır | Run in a separate process; inspect logs and cancellation status |
 | Sonuçlar | Inspect recorded states, errors, metadata and source provenance |
@@ -48,8 +50,11 @@ On main, startup and Scenario Builder preflight report missing dependencies or
 kernels before computation; see [readiness checks](docs/environment-readiness_2026-10-10.md).
 This feature postdates the v0.1.0-alpha.1 source ZIP.
 
-Modern and Orchid themes are available in Settings. Advanced scientific pages
-remain in the expandable sidebar section. See the
+Modern and Orchid themes are available in Settings. Station, visibility and
+surface-track tools are now visible in the main sidebar; other specialist pages
+remain expandable. New runs record actual measurement epochs for the mission
+Gantt. Legacy runs without those epochs show an explicit missing-data message.
+See the [mission guide](docs/mission-overview_2026-10-11.md) and the
 [desktop workflow and data contracts](desktop_app/RESULT_WORKFLOW.md).
 
 The current entry point is desktop_app/main.py. The older Tkinter and local web
@@ -58,14 +63,15 @@ hosted web application for the current desktop workflow.
 
 ## What is verified
 
-- **Local combined suite, 2026-10-10:** 1,759 passed, 29 skipped, zero failures/errors.
+- **Local combined suite, 2026-10-11:** 1,783 passed checks, 29 skipped, zero failures/errors.
+  Final public gate: 256 passed.
 - **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
   desktop artifact, process, archive, comparison, rendering and session checks.
   External data paths are isolated; this gate uses committed fixtures only.
 - **Real desktop workflow:** short recorded runs, derivation, comparison, export
   and reopening were exercised. Eight existing single-arc runs remained readable.
 
-[Local verification record](docs/environment-readiness_2026-10-10.md) ·
+[Local verification record](docs/mission-overview_2026-10-11.md) ·
 [Public CI scope](docs/verification.md) ·
 [Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
 

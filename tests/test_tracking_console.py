@@ -242,12 +242,13 @@ def test_main_window_creates_only_requested_pages(app):
     from app import MainWindow
     window = MainWindow()
     try:
-        assert set(window._pages) == {"console"}
+        assert set(window._pages) == {"mission"}
+        window.navigate("console")
         instance = window._pages["console"]
         window.navigate("console")
         assert window._pages["console"] is instance
         window.navigate("settings")
-        assert set(window._pages) == {"console", "settings"}
+        assert set(window._pages) == {"mission", "console", "settings"}
     finally:
         window.close()
 

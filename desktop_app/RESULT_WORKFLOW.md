@@ -11,6 +11,47 @@ the form-to-backend translation with the canonical ScenarioConfig loader, then c
 When the child writes a completion record and exits successfully, the console opens
 that exact run. Disable “Tamamlanınca konsolda aç” to stay in Run Monitor.
 
+## Mission overview
+
+New installations open **Görev görünümü**. Saved safe workspace pages remain
+restorable. Stations, visibility planning and lunar ground track are primary
+sidebar tools; opening the mission page does not load Matplotlib, propagate an
+orbit or run a solver. Its Earth coastline and station coordinates are local
+tracked data. Without a run, markers represent the station catalogue.
+
+The archive's **Harita ve yörüngeyi aç** routes through the same background,
+hash-verified loader as Result Console. An accepted result snapshot is shared
+with the mission page. Failed replacements preserve the previous result and
+show the load error; a folder containing multiple runs opens the visible console
+picker. The console also has a **Görev görünümü** shortcut.
+
+Orbit playback, measurement Gantt and active station markers share a recorded
+sample time. Gantt clicks snap to the nearest stored state; playback selects the
+last available sample at its elapsed simulation time. There is no interpolation,
+propagation, station ephemeris computation or estimator execution in playback.
+The timer uses monotonic wall time and stops on hiding/closing the page.
+Map, Gantt and orbit backgrounds are cached independently of the cursor.
+
+New native bundles include `*_mission_geometry.json`, referenced by manifest
+`mission_file` and `mission_sha256`. It records exact local station identities
+and coordinates from PreparedArc.pass_geo and actual obs_data epochs. Station
+IDs are translated from the observable's one-based ID column to zero-based IDs;
+the station list never comes from a global catalogue index. Adjacent observed
+epochs within the configured sample step are grouped, gaps and arc boundaries
+are retained, and singleton measurements remain zero-duration events. Scope is
+`recorded_measurement_samples`, not continuous visibility or radio contact.
+The typed geometry file is limited to 16 MB, 100 stations and 250,000 windows.
+It must be in the same folder and match its saved SHA-256. Geometry stays in
+the shared result snapshot for rendering; comparison report metadata does not
+duplicate its windows, while source hashes still include its file. Legacy bundles remain
+readable without this sidecar; no contact windows are inferred from arc bounds.
+
+Display altitude subtracts a fixed 1737.4 km reference Moon radius. Inclination
+is relative to the stored frame's XY plane. Semi-major axis, eccentricity and
+period are instantaneous two-body descriptors using only the saved truth-force
+manifest's lunar GM; without that GM they stay unknown. Unbound states have no
+invented bound-orbit period. Expandable help explains these conventions.
+
 ## Settings
 
 Days become duration_h; state_step_s becomes sample_step_s; noise_enabled becomes

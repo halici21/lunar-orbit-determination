@@ -182,6 +182,9 @@ class RunArchiveController(ArtifactJobs, QWidget):
         self.compare_button = QPushButton("İki koşuyu karşılaştır")
         self.compare_button.clicked.connect(self.compare_selected)
         actions.addWidget(self.open_button)
+        self.mission_button = QPushButton("Harita ve yörüngeyi aç")
+        self.mission_button.clicked.connect(self.open_mission)
+        actions.addWidget(self.mission_button)
         self.clone_button = QPushButton("Koşuyu temel al")
         self.clone_button.setToolTip("Kayıtlı formu doğrula ve Scenario Builder'da yeni bir taslak aç")
         self.clone_button.clicked.connect(self.clone_selected)
@@ -275,6 +278,7 @@ class RunArchiveController(ArtifactJobs, QWidget):
     def _selection_changed(self, *args):
         entries = self.selected_entries()
         self.open_button.setEnabled(len(entries) == 1 and entries[0].status != "invalid")
+        self.mission_button.setEnabled(self.open_button.isEnabled())
         self.clone_button.setEnabled(len(entries) == 1 and entries[0].status != "invalid" and bool(entries[0].metadata.get("job_file")))
         self.compare_button.setEnabled(len(entries) == 2 and all(e.status != "invalid" for e in entries))
         if entries:
@@ -302,6 +306,11 @@ class RunArchiveController(ArtifactJobs, QWidget):
             self.status_label.setText("Henüz kayıtlı koşu yok. Senaryo sayfasından bir koşu başlatın ya da başka bir klasör seçin.")
         else:
             self.status_label.setText(f"{self.proxy.rowCount()} / {len(self.model.entries)} koşu · {len(entries)} seçili · karşılaştırma için Ctrl ile iki satır seçin")
+
+    def open_mission(self):
+        entries = self.selected_entries()
+        if len(entries) == 1 and entries[0].status != "invalid" and hasattr(self.window(), "open_in_mission"):
+            self.window().open_in_mission(entries[0].path)
 
     def open_selected(self):
         entries = self.selected_entries()

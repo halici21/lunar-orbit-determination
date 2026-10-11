@@ -104,6 +104,13 @@ def _keys(result):
     return keys
 
 
+def _report_metadata(result):
+    # Parsed geometry is a drawing payload, like the separately held states.
+    # Its original file/hash stays in sources; duplicating all windows in a
+    # settings cell or report can exceed the workspace's 16 MB reopen limit.
+    return {key: value for key, value in result.metadata.items() if key != "mission_geometry"}
+
+
 def compare_results(left, right, snapshots=({}, {}), variable="none", cancel=lambda: False):
     notes, compatible = [], True
     for key in ("epoch", "time_scale", "frame", "origin", "record_kind"):
@@ -133,7 +140,7 @@ def compare_results(left, right, snapshots=({}, {}), variable="none", cancel=lam
         notes.append(f"Aynı epok/yay/istasyon anahtarında belirsiz kayıt: A={ambiguous[0]}, B={ambiguous[1]}; eşleşmeye alınmadı.")
     if compatible and not pairs:
         notes.append("Aynı epok, yay ve istasyon anahtarında ortak kayıt yok. Durumlar başka epoka taşınmadı.")
-    compared_snapshots = tuple({**s, "metadata": r.metadata} for s, r in zip(snapshots, (left, right)))
+    compared_snapshots = tuple({**s, "metadata": _report_metadata(r)} for s, r in zip(snapshots, (left, right)))
     changes = _differences(compared_snapshots[0], compared_snapshots[1], variable)
     if changes:
         notes.append(f"{len(changes)} ayar/kuvvet sözleşmesi farkı var; seçilen değişken ayrıca işaretlendi.")
@@ -188,8 +195,8 @@ def export_comparison(comparison, path, cancel=lambda: False, *, view=None):
         "units": {"time": "s", "position": "m", "velocity": "m/s"},
         "paired_N": len(comparison.pairs), "ambiguous": comparison.ambiguous,
         "notes": comparison.notes, "metrics": comparison.metrics, "differences": comparison.differences,
-        "A": {"name": comparison.left.name, "metadata": comparison.left.metadata, "sources": comparison.left.sources, "snapshot": comparison.snapshots[0]},
-        "B": {"name": comparison.right.name, "metadata": comparison.right.metadata, "sources": comparison.right.sources, "snapshot": comparison.snapshots[1]}}
+        "A": {"name": comparison.left.name, "metadata": _report_metadata(comparison.left), "sources": comparison.left.sources, "snapshot": comparison.snapshots[0]},
+        "B": {"name": comparison.right.name, "metadata": _report_metadata(comparison.right), "sources": comparison.right.sources, "snapshot": comparison.snapshots[1]}}
     if view:
         report["view"] = view
     # Keep the absolute provenance path and add a relocatable reference. Source

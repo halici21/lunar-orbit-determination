@@ -325,6 +325,22 @@ class StoredOrbit(QWidget):
         p.drawEllipse(QPointF(cx, cy), radius, radius)
         p.setPen(QColor(MUTED))
         p.drawText(round(cx - 10), round(cy), "Ay")
+        # Geometric reference grid on the Moon; it is not terrain or ephemeris.
+        p.setPen(QPen(QColor(C.BORDER_FAINT), .8))
+        for latitude in (-60, -30, 0, 30, 60):
+            phi = math.radians(latitude)
+            ring = QPainterPath()
+            for n in range(73):
+                angle = n*math.pi/36
+                point = project((1737.4*math.cos(phi)*math.cos(angle),
+                                 1737.4*math.cos(phi)*math.sin(angle), 1737.4*math.sin(phi)))
+                ring.moveTo(point) if n == 0 else ring.lineTo(point)
+            p.drawPath(ring)
+        p.setPen(QPen(QColor(C.BORDER_MID), .8, Qt.DashLine))
+        for axis, endpoint in zip(("X", "Y", "Z"), ((self._extent*1.07, 0, 0), (0, self._extent*1.07, 0), (0, 0, self._extent*1.07))):
+            point = project(endpoint)
+            p.drawLine(QPointF(cx, cy), point)
+            p.drawText(point+QPointF(4, -4), axis)
         path = QPainterPath()
         # Raw recorded samples only. The display connects samples; it performs
         # no propagation, frame transform, or ephemeris interpolation.

@@ -63,6 +63,15 @@ def write_console_bundle(result, arcs, times, truth, epoch, *, config, job_path,
                 raise ValueError("Referans durum geçmişi geçersiz.")
             yield dict(zip(state_columns, values))
     _csv(state_path, state_rows(), state_columns)
+    from .mission_data import recorded_geometry, validate_geometry
+    mission = recorded_geometry(arcs, config)
+    mission_fields = {}
+    if mission is not None:
+        validate_geometry(mission)
+        mission_path = folder / f"{stem}_mission_geometry.json"
+        _json(mission_path, mission)
+        mission_fields = {"mission_file": mission_path.name,
+                          "mission_sha256": hashlib.sha256(mission_path.read_bytes()).hexdigest()}
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=project_root, stderr=subprocess.DEVNULL, timeout=3).decode().strip()
     except (OSError, subprocess.SubprocessError):
@@ -74,7 +83,7 @@ def write_console_bundle(result, arcs, times, truth, epoch, *, config, job_path,
         dirty = None
     code_hashes = {}
     for relative in ("examples/run_scenario_config.py", "desktop_app/scenario_job.py", "desktop_app/services/scenario_execution.py",
-                     "desktop_app/services/scenario_artifacts.py", "lunar_od/scenarios.py", "lunar_od/estimators.py", "lunar_od/filters.py"):
+                     "desktop_app/services/scenario_artifacts.py", "desktop_app/services/mission_data.py", "lunar_od/scenarios.py", "lunar_od/estimators.py", "lunar_od/filters.py"):
         source = Path(project_root) / relative
         if source.is_file():
             code_hashes[relative] = hashlib.sha256(source.read_bytes()).hexdigest()
@@ -93,6 +102,7 @@ def write_console_bundle(result, arcs, times, truth, epoch, *, config, job_path,
         "station_id_convention": "backend zero-based observed_station_ids",
         "force_model_manifest_file": f"{stem}_force_model_manifest.json",
         "nis_scope": "arc_mean", "state_points": len(times),
+        **mission_fields,
     })
     return csv_path
 

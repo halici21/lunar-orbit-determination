@@ -647,7 +647,7 @@ def _draw_moon_sphere(ax) -> None:
     z = moon_km * np.outer(np.ones_like(u), np.cos(v))
     ax.plot_surface(
         x, y, z,
-        color="#30384f", edgecolor="#46516d", linewidth=0.12,
+        color=C.BG_PANEL, edgecolor=C.BORDER_MID, linewidth=0.12,
         alpha=0.78, shade=False, zorder=1,
     )
     equ = np.linspace(0.0, 2.0 * np.pi, 180)

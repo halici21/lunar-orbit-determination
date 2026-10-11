@@ -1,0 +1,31 @@
+{
+  "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+  "states": 145,
+  "arc_solutions": 4,
+  "stations": 4,
+  "measurement_windows": 12,
+  "frame": "J2000",
+  "role": "truth",
+  "animation_before_t_s": 21600.0,
+  "animation_after_t_s": 25800.0,
+  "original_source_hashes_unchanged": true,
+  "small_window_controls_reachable": true,
+  "operational_success": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "source_hashes": {
+    "completed.json": "1dfc2af4ae115a8b7dc7bca1e75c1475c7971aec9fc45c46ed15fc8c8474c4b6",
+    "effective_config.json": "73c39d2dc089fd2b41747dcdf81abd06bab8a20122b6a915ed0c70276880f659",
+    "job.json": "469c3b8e35e445851fe170796c53c4246fbfc2a11605f1655e68986f10e15f91",
+    "mission_overview_verified_arc_solutions.csv": "fdd2f815341e6c4ae3cbf99b296689c0b1e883105a106b487e6de2501adf7301",
+    "mission_overview_verified_comparison.png": "d6ab645a9506fe190a1c03e532a20fbc9eca54426f1501fe1dd011f803ba2be9",
+    "mission_overview_verified_force_model_manifest.json": "be1f423ea23a07f4365662b283b105cd2a57265fe61089887ecfb02575fbf8b0",
+    "mission_overview_verified_mission_geometry.json": "04c4fc563327b5261994587269a23b0c23179a469ce05885dc151d58e8b9a882",
+    "mission_overview_verified_result_manifest.json": "03376810b3215c2d1558495b15d0c03d8ddce350866286fc787bce8deceda9c9",
+    "mission_overview_verified_summary.csv": "29f17e2ce62c94ea75fd01289216c6b70a95cc6a8dc63f9fb198f48b7dd76273",
+    "mission_overview_verified_truth_states.csv": "f7ff852c1434e3f15c12dc011ff659658a3f34187306db1c90254810daa79d56"
+  }
+}
