@@ -116,6 +116,7 @@ class StationWorldMap(QWidget):
 
 class MissionGantt(QWidget):
     timeSelected = pyqtSignal(float)
+    stationSelected = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -127,7 +128,7 @@ class MissionGantt(QWidget):
         self._by_station = {}
         self.setMinimumHeight(180)
         self.setMouseTracking(True)
-        self.setAccessibleName("İstasyon ölçüm aralıkları Gantt; zamanı seçmek için tıklayın")
+        self.setAccessibleName("İstasyon ölçüm aralıkları Gantt; satır adı istasyonu, çizelge zamanı seçer")
 
     def set_result(self, result):
         self.result = result
@@ -168,7 +169,8 @@ class MissionGantt(QWidget):
         for index, station in enumerate(stations):
             y = 22+index*27
             p.setPen(QColor(C.TEXT_PRIMARY))
-            p.drawText(QRectF(8, y-9, left-15, 20), Qt.AlignRight | Qt.AlignVCenter, station["name"])
+            label = p.fontMetrics().elidedText(station["name"], Qt.ElideRight, int(left-15))
+            p.drawText(QRectF(8, y-9, left-15, 20), Qt.AlignRight | Qt.AlignVCenter, label)
             color = NET_COLORS.get(network(station["name"]), C.TEXT_PRIMARY)
             if self.selected_station and self.selected_station != station["name"]:
                 color = C.BORDER_MID
@@ -197,6 +199,12 @@ class MissionGantt(QWidget):
             p.drawLine(QPointF(x, 10), QPointF(x, self.height()-30))
 
     def mouseMoveEvent(self, event):
+        station = self._label_station(event.pos())
+        if station:
+            self.setCursor(Qt.PointingHandCursor)
+            QToolTip.showText(event.globalPos(), f"{station['name']}\nHaritada ve çizelgede seçmek için tıklayın.", self)
+            return
+        self.unsetCursor()
         if self.geometry and 151 <= event.x() <= self.width()-24:
             row = round((event.y()-22)/27)
             stations = self.geometry["stations"]
@@ -213,7 +221,21 @@ class MissionGantt(QWidget):
                     return
         QToolTip.hideText()
 
+    def _label_station(self, point):
+        if not self.geometry or not 8 <= point.x() < 151:
+            return None
+        row = round((point.y()-22)/27)
+        stations = self.geometry["stations"]
+        if 0 <= row < len(stations) and abs(point.y()-(22+row*27)) <= 10:
+            return stations[row]
+        return None
+
     def mousePressEvent(self, event):
-        if self.geometry and 151 <= event.x() <= self.width()-24:
+        if event.button() != Qt.LeftButton:
+            return
+        station = self._label_station(event.pos())
+        if station:
+            self.stationSelected.emit(station["name"])
+        elif self.geometry and 151 <= event.x() <= self.width()-24:
             lo, hi = self.bounds
             self.timeSelected.emit(lo+(event.x()-151)/(self.width()-175)*(hi-lo))

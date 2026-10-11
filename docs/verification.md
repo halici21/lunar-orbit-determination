@@ -28,6 +28,10 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
+[Latest usability regression](mission-usability_2026-10-11.md): 1,787 passed
+checks, 29 skipped (1,670 named cases and 146 subtest checks), zero failures/errors;
+the final 259-case public gate includes all 26 mission cases and the final
+760×420 layout adjustment.
 [Latest mission regression](mission-overview_2026-10-11.md): 1,783 passed checks
 and 29 skipped (JUnit includes 146 subtest checks); the final 256-case public gate
 includes all 23 mission cases. The full gate collected 22 initial mission cases;

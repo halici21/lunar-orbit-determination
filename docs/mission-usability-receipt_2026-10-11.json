@@ -1,0 +1,31 @@
+{
+  "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+  "states": 145,
+  "arc_solutions": 4,
+  "stations": 4,
+  "measurement_windows": 12,
+  "frame": "J2000",
+  "role": "truth",
+  "animation_before_t_s": 21600.0,
+  "animation_after_t_s": 25800.0,
+  "original_source_hashes_unchanged": true,
+  "small_window_controls_reachable": true,
+  "station_picker_selection": "Madrid DSN",
+  "narrow_plots_stacked": true,
+  "horizontal_scroll_maximum": 0,
+  "operational_success": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "minimum_window_verification": {
+    "width": 760,
+    "height": 420,
+    "horizontal_scroll_maximum": 0,
+    "station_picker_reachable": true,
+    "playback_reachable": true,
+    "help_reachable": true,
+    "source_hashes_unchanged": true
+  }
+}

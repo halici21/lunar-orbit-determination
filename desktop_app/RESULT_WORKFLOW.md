@@ -32,6 +32,14 @@ propagation, station ephemeris computation or estimator execution in playback.
 The timer uses monotonic wall time and stops on hiding/closing the page.
 Map, Gantt and orbit backgrounds are cached independently of the cursor.
 
+The station dropdown, map marker and Gantt row label share selection. The
+dropdown supports native keyboard navigation; selecting a row label does not
+change time. "Tüm istasyonlar" clears the highlight. The status text distinguishes
+an epoch with no recorded measurements from a run with missing geometry/state
+history. Selection is reset on replacement with a different run. Mission plots
+stack vertically below 920 logical pixels of page width; the other pages retain
+their existing scrollable width. Splitter panes cannot collapse.
+
 New native bundles include `*_mission_geometry.json`, referenced by manifest
 `mission_file` and `mission_sha256`. It records exact local station identities
 and coordinates from PreparedArc.pass_geo and actual obs_data epochs. Station

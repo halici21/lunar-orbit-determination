@@ -38,13 +38,20 @@ arşiv/sonuç/karşılaştırma/görev sayfası geri açılabilir.
 
 1. **Görev görünümü → Koşu aç** ile arşive gidin; sonuç klasörünü seçin.
 2. Bir koşu seçip **Harita ve yörüngeyi aç** düğmesine basın.
-3. Haritadaki istasyona tıklayın: adı, enlem/boylamı ve Gantt satırı vurgulanır.
-4. Gantt’a tıklayın veya kaydırıcıyı hareket ettirin: en yakın kayıtlı epok seçilir.
+3. İstasyonu listeden seçin veya haritadaki noktasına / Gantt satır adına
+   tıklayın: üç seçim eşleşir. Listede ok tuşlarıyla da seçim yapabilirsiniz.
+   **Tüm istasyonlar** vurguyu kaldırır. Alt metin, seçili epokta ölçüm kaydı
+   olup olmadığını gösterir; eski koşularda veri eksikliği ayrıca belirtilir.
+4. Gantt’ın zaman alanına tıklayın veya kaydırıcıyı hareket ettirin:
+   en yakın kayıtlı epok seçilir. Satır adına tıklamak zamanı değiştirmez.
 5. **Oynat / Duraklat**, hız seçimi ve **Başa dön** aynı zaman imlecini yönetir.
    Başka sayfaya geçmek oynatmayı durdurur. Yörüngeyi sürükleyerek döndürün;
    tekerlekle yakınlaştırın.
 6. **Yörünge değerleri ne anlama geliyor?** açıklamasını açın: yükseklik,
    eğim, yarı büyük eksen, dışmerkezlik ve periyot tanımları gösterilir.
+
+Dar pencerede yörünge ve harita alt alta yerleşir; aşağı kaydırarak haritaya,
+Gantt’a ve oynatma kontrollerine erişin. Geniş pencerede yan yana gösterilir.
 
 Dolu istasyon noktası, seçili epokun kaydedilmiş ölçüm aralığında olduğunu
 belirtir. Gantt, hazırlanmış yaylarda üretilen ölçüm örneklerini gösterir;

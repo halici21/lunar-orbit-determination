@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Linked station dropdown/map/Gantt row selection with keyboard access and
+  explicit current-epoch measurement status. Mission plots stack on narrow
+  screens, avoiding the previous fixed 960-pixel page width.
 - Mission overview with recorded orbit playback, clickable Earth stations and a
   synchronized measurement Gantt. Station, visibility and surface-track pages
   are now primary navigation tools with visible purpose descriptions.

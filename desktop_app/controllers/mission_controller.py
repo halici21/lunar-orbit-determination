@@ -5,7 +5,7 @@ import time
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton,
-                            QSlider, QComboBox, QSplitter)
+                            QSlider, QComboBox, QSplitter, QSizePolicy)
 from services.mission_data import station_catalog, orbit_summary
 from widgets.mission_plots import StationWorldMap, MissionGantt
 from widgets.tracking_plots import StoredOrbit
@@ -51,7 +51,8 @@ class MissionController(QWidget):
         row.addWidget(self.scenario_button)
         root.addLayout(row)
 
-        plots = QSplitter(Qt.Horizontal)
+        self.plots = plots = QSplitter(Qt.Horizontal)
+        plots.setChildrenCollapsible(False)
         orbit_page = QWidget()
         orbit_layout = QVBoxLayout(orbit_page)
         orbit_layout.setContentsMargins(0, 0, 12, 0)
@@ -75,8 +76,22 @@ class MissionController(QWidget):
         self.map_caption = caption("İçi boş: katalog / seçili ağ · dolu: seçili zamanda ölçüm kaydı")
         self.map_caption.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
         map_layout.addWidget(self.map_caption)
+        station_row = QHBoxLayout()
+        station_label = QLabel("İstasyon:")
+        self.station_picker = QComboBox()
+        self.station_picker.setAccessibleName("Harita ve Gantt için istasyon seçimi")
+        self.station_picker.setMinimumContentsLength(14)
+        self.station_picker.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.station_picker.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.station_picker.setToolTip("Listeden veya haritadan seçin; Gantt satır başlıklarına da tıklayabilirsiniz.")
+        station_label.setBuddy(self.station_picker)
+        station_row.addWidget(station_label)
+        station_row.addWidget(self.station_picker, 1)
+        map_layout.addLayout(station_row)
         self.world_map = StationWorldMap(station_catalog())
         self.world_map.stationSelected.connect(self._select_station)
+        self._fill_station_picker()
+        self.station_picker.currentIndexChanged.connect(self._picker_changed)
         map_layout.addWidget(self.world_map, 1)
         self.station_info = caption("Noktaya tıkla: istasyon adı ve koordinatları. DSN / ITU / ESA ve diğer ağlar katalogdan gelir.")
         self.station_info.setMinimumHeight(42)
@@ -95,6 +110,7 @@ class MissionController(QWidget):
         root.addLayout(row)
         self.gantt = MissionGantt()
         self.gantt.timeSelected.connect(self.select_time)
+        self.gantt.stationSelected.connect(self._select_station)
         root.addWidget(self.gantt, 1)
         row = QHBoxLayout()
         self.play_button = QPushButton("▶ Oynat")
@@ -132,6 +148,28 @@ class MissionController(QWidget):
         self.help_text.hide()
         self._set_controls(False)
 
+    def resizeEvent(self, event):
+        # The outer page scroll keeps both full-size plots reachable on laptops.
+        orientation = Qt.Vertical if self.width() < 920 else Qt.Horizontal
+        if self.plots.orientation() != orientation:
+            self.plots.setOrientation(orientation)
+            vertical = orientation == Qt.Vertical
+            self.plots.widget(0).layout().setContentsMargins(0, 0, 0 if vertical else 12, 0)
+            self.plots.widget(1).layout().setContentsMargins(0 if vertical else 12, 0, 0, 0)
+            self.plots.setSizes([360, 360] if vertical else [600, 450])
+        super().resizeEvent(event)
+
+    def _fill_station_picker(self):
+        self.station_picker.blockSignals(True)
+        self.station_picker.clear()
+        self.station_picker.addItem("Tüm istasyonlar", None)
+        for station in self.world_map.stations:
+            self.station_picker.addItem(station["name"], station["name"])
+        self.station_picker.blockSignals(False)
+
+    def _picker_changed(self, index):
+        self._select_station(self.station_picker.itemData(index))
+
     def _navigate(self, page):
         if hasattr(self.window(), "navigate"):
             self.window().navigate(page)
@@ -157,6 +195,7 @@ class MissionController(QWidget):
         self.gantt.set_result(result)
         geometry = result.metadata.get("mission_geometry")
         self.world_map.set_stations(geometry["stations"] if geometry else station_catalog())
+        self._fill_station_picker()
         self.map_caption.setText("Seçili koşunun istasyonları · dolu nokta: ölçüm aralığında" if geometry else
                                  "Katalog konumları · bu koşunun istasyon eşlemesi kaydedilmemiş")
         self._intervals = {}
@@ -177,13 +216,39 @@ class MissionController(QWidget):
         self.slider.blockSignals(False)
         self.station_info.setText("Noktaya tıklayarak istasyon adını ve koordinatlarını inceleyin.")
         self._select_index(0)
+        self._refresh_station_info()
 
     def _select_station(self, name):
-        station = next(s for s in self.world_map.stations if s["name"] == name)
-        self.station_info.setText(f"{name} · {station['lat_deg']:.3f}° enlem · {station['lon_deg']:.3f}° boylam\n"
-                                  "Gantt’ta bu istasyon vurgulanır; seçili zamanda dolu nokta ölçüm kaydını gösterir.")
+        if name is not None and not any(s["name"] == name for s in self.world_map.stations):
+            return
+        self.world_map.selected = name
+        self.world_map.update()
         self.gantt.selected_station = name
         self.gantt.update()
+        self.station_picker.blockSignals(True)
+        self.station_picker.setCurrentIndex(max(0, self.station_picker.findData(name)))
+        self.station_picker.blockSignals(False)
+        self._refresh_station_info()
+
+    def _refresh_station_info(self):
+        name = self.world_map.selected
+        station = next((s for s in self.world_map.stations if s["name"] == name), None)
+        geometry = self.result.metadata.get("mission_geometry") if self.result else None
+        if not self.result:
+            status = "Katalog konumu · ölçüm zamanlarını görmek için bir koşu açın."
+        elif not geometry:
+            status = "Bu koşuda istasyon ölçüm zamanları kaydedilmemiş."
+        elif not self._times:
+            status = "Durum geçmişi yok · seçili epok için ölçüm durumu gösterilemiyor."
+        elif station:
+            status = "Seçili epokta ölçüm kaydı " + ("var." if name in self.world_map.active else "yok.")
+        else:
+            active = sorted(self.world_map.active)
+            names = ", ".join(active[:3]) + (f" (+{len(active)-3})" if len(active) > 3 else "")
+            status = f"Seçili epokta ölçüm kaydı: {names}." if active else "Seçili epokta hiçbir istasyonun ölçüm kaydı yok."
+        coordinates = f"{name} · {station['lat_deg']:.3f}° enlem · {station['lon_deg']:.3f}° boylam\n" if station else ""
+        self.station_info.setText(coordinates + status)
+        self.station_info.setToolTip("\n".join(sorted(self.world_map.active)))
 
     def _select_index(self, index):
         if not self._times:
@@ -206,6 +271,7 @@ class MissionController(QWidget):
                 active.add(name)
         self.world_map.active = active
         self.world_map.update()
+        self._refresh_station_info()
         self.time_label.setText(f"T+ {t_s/3600:.2f} sa · {self._position+1}/{len(self._times)}")
         values = orbit_summary(self.result.states[self._position], mu=self._mu)
         def fmt(key, precision=1):

@@ -156,6 +156,7 @@ def test_map_click_and_time_selection_link_all_views(mission, app):
     point = page.world_map._point(-116.81, 35.3).toPoint()
     QTest.mouseClick(page.world_map, Qt.LeftButton, pos=point)
     assert page.gantt.selected_station == "Goldstone DSN"
+    assert page.station_picker.currentData() == "Goldstone DSN"
     assert "35.300" in page.station_info.text()
     page.select_time(20.)
     assert page.orbit.selected_t == page.gantt.cursor == 20.
@@ -165,6 +166,52 @@ def test_map_click_and_time_selection_link_all_views(mission, app):
     page.gantt.timeSelected.emit(39.)
     assert page.orbit.selected_t == page.gantt.cursor == 40.
     assert page.slider.value() == 3
+
+
+def test_keyboard_station_choice_and_gantt_label_keep_time_and_link_selection(mission, app):
+    page, _ = mission
+    page.select_time(20.)
+    page.station_picker.setFocus()
+    QTest.keyClick(page.station_picker, Qt.Key_Down)
+    assert page.world_map.selected == page.gantt.selected_station == "Goldstone DSN"
+    assert "ölçüm kaydı var" in page.station_info.text()
+    QTest.mouseClick(page.gantt, Qt.LeftButton, pos=QPoint(70, 49))
+    assert page.station_picker.currentData() == "Canberra DSN"
+    assert page.world_map.selected == page.gantt.selected_station == "Canberra DSN"
+    assert page.orbit.selected_t == page.gantt.cursor == 20.  # A row label never seeks time.
+    page.select_time(30.)
+    assert "ölçüm kaydı yok" in page.station_info.text()  # Real gap, regardless of selection.
+    page.station_picker.setCurrentIndex(0)
+    assert page.world_map.selected is None and page.gantt.selected_station is None
+    assert "hiçbir istasyonun" in page.station_info.text()
+    page.select_time(20.)
+    assert "Goldstone DSN" in page.station_info.text() and "Canberra DSN" in page.station_info.text()
+
+
+def test_reload_clears_station_selection_and_missing_geometry_never_implies_contact(mission):
+    page, _ = mission
+    page._select_station("Canberra DSN")
+    result = replace(page.result, metadata={k: v for k, v in page.result.metadata.items() if k != "mission_geometry"})
+    page.set_result(result)
+    assert page.station_picker.currentData() is None
+    assert page.world_map.selected is None and page.gantt.selected_station is None
+    assert not page.world_map.active
+    page._select_station("Madrid DSN")
+    assert "ölçüm zamanları kaydedilmemiş" in page.station_info.text()
+    assert "kaydı yok" not in page.station_info.text()  # Missing data is not evidence of no measurement.
+
+
+def test_narrow_layout_stacks_full_width_plots_and_restores_selection(mission, app):
+    page, _ = mission
+    page._select_station("Canberra DSN")
+    page.resize(740, 1300); app.processEvents()
+    assert page.plots.orientation() == Qt.Vertical
+    assert page.world_map.width() > 600 and page.orbit.width() > 600
+    assert not page.plots.childrenCollapsible()
+    page.resize(1240, 920); app.processEvents()
+    assert page.plots.orientation() == Qt.Horizontal
+    assert page.station_picker.currentData() == "Canberra DSN"
+    assert page.world_map.selected == page.gantt.selected_station == "Canberra DSN"
 
 
 def test_playback_uses_elapsed_time_pauses_at_end_and_on_hide(mission, app):
@@ -260,9 +307,11 @@ def test_small_mission_window_keeps_playback_and_help_reachable(app, tmp_path):
     with patch("app.QSettings", return_value=QSettings(str(tmp_path / "compact.ini"), QSettings.IniFormat)):
         window = MainWindow()
     try:
-        window.resize(910, 465); window.show(); app.processEvents()
+        window.resize(760, 420); window.show(); app.processEvents()
         page = window._pages["mission"]
-        for button in (page.play_button, page.help_button, page.archive_button):
+        assert page.plots.orientation() == Qt.Vertical
+        assert window.pageScroll.horizontalScrollBar().maximum() == 0
+        for button in (page.play_button, page.help_button, page.archive_button, page.station_picker):
             window.pageScroll.ensureWidgetVisible(button, 0, 0); app.processEvents()
             bounds = QRect(button.mapTo(window.pageScroll.viewport(), QPoint(0, 0)), button.size())
             assert window.pageScroll.viewport().rect().contains(bounds)
