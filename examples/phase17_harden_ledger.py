@@ -190,23 +190,30 @@ DEFECTS = [
          repair="none (outside D23); first-order two-sum correction demonstrated in "
                 "examples/phase17_d23_qualification.py et_exact_spice_provider",
          regression="none", reproduction="examples/phase17_d23_qualification.py --et-exact-diagnostic"),
-    dict(id="HARDEN-D25", title="BLS-LM K_SRP posterior design omits the lunar harmonic field",
-         location="lunar_od/estimators.py _two_way_range_posterior_design_with_k (called by "
-                  "estimate_two_way_range_bls_lm when solve_for_k_srp=True)",
-         discovered="Phase 17-KP2 production BLS cross-check (warm-start stationarity)",
-         root_cause="the posterior-design propagation receives no harmonic_model / harmonic_epoch_et0, while the "
-                    "solve iterations do: the reported covariance is linearised on a different force model",
-         effect="with harmonics opt-in, the estimate is unaffected (warm-started production BLS agrees with the "
-                "KP2 solution to <= 8e-4 sigma) but the posterior sigma differs from the QR covariance on the "
-                "solve's own dynamics: K +9 %, z +3 % (CANON k0, 15-orbit range-only arc)",
-         status=FOLLOWUP, klass="REQUIRED_FOR_CORRECTNESS",
-         repair="none in KP2 (estimator change out of scope); pass the harmonic model through to the posterior "
-                "design and re-qualify Phase 17-R's posterior tests",
-         regression="none yet",
-         reproduction="examples/phase17_kp2_campaign.py --posthoc-verification (bls_stationarity); "
-                      "BLS1: examples/phase17_bls1_qualification.py --hf (diagnostic_d25: with the solve's "
-                      "harmonic field the sigma ratio is 1.0000 for all 7 parameters, so D25 is the whole "
-                      "PRODUCTION_BLS sigma-criterion failure; immaterial to every KP2 classification)"),
+    dict(id="HARDEN-D25", title="Two-way-range posterior covariance linearised on a different force model than the solve",
+         location="lunar_od/estimators.py posterior passes of estimate_two_way_range_bls_lm (K: "
+                  "_two_way_range_posterior_design_with_k; six-state: _two_way_range_posterior_information) and "
+                  "estimate_two_way_range_srif (six-state)",
+         discovered="Phase 17-KP2 production BLS cross-check (warm-start stationarity); blast radius widened by "
+                    "Phase 17-HARDEN-D25 source audit",
+         root_cause="the posterior pass dropped part of the solve's dynamics contract: BLS K path the lunar harmonic "
+                    "field; BLS six-state the field AND a fixed SRP; SRIF six-state a fixed SRP. The estimate (the "
+                    "solve's fixed point) was right; only the after-the-fact re-linearisation used other dynamics",
+         effect="KP2 CANON k0 (K path, GL1800F): sigma_K +9 %, sigma_z +3 %. Gravity-campaign stages F/G/I "
+                "(six-state, E50/E100 GL1800F): stored P_hat reproduced bitwise by the defective pass; repaired G100 "
+                "ANEES 11.58 -> 9.01 (overconfidence 1.93x -> 1.50x, still outside the band), formal 3D sigma "
+                "64.41 -> 63.84 m; stage I trace(P^-1 C) 5.96 -> 4.06, largest generalized eigenvalue 4.28 -> 1.74. "
+                "Default paths (no SRP, no field) never affected",
+         status=FIXED, klass="REQUIRED_FOR_CORRECTNESS",
+         repair="Phase 17-HARDEN-D25 (aac72ed): _posterior_dynamics_kwargs passes the solve's fixed SRP and harmonic "
+                "field (with the matched analytic STM) to every posterior pass; covariance algebra, estimate, "
+                "weights, prior and dynamics unchanged. Estimates bitwise identical in all 8 tested configurations, "
+                "default posteriors bitwise identical; O1 independent assembly 2.5e-13; frozen KP2 sigma criterion "
+                "1.000000-1.000001 (was 0.917); docs/phase17_harden_d25_posterior_covariance_consistency.md",
+         regression="tests/test_harden_d25_posterior_dynamics_contract.py (K path, six-state BLS field+SRP, six-state "
+                    "SRIF SRP; each also proves the historical construction is visibly different)",
+         reproduction="examples/phase17_d25_qualification.py --invariance / --kp2 / --kp2-posthoc-fd / --e2e / "
+                      "--stage-f / --stage-i"),
     dict(id="HARDEN-D26", title="BLS-LM K_SRP solve-for cannot leave a realistic a priori",
          location="lunar_od/estimators.py estimate_two_way_range_bls_lm (solve_for_k_srp=True): _lm_step, the "
                   "negative-K trial branch, _adaptive_tol",
@@ -242,6 +249,20 @@ DEFECTS = [
                 "independent stationarity check",
          regression="none",
          reproduction="examples/phase17_bls1_qualification.py --hf (production.status, diagnostic_stationarity)"),
+    dict(id="HARDEN-D28", title="Default weak state prior enters the posterior but not the fitted objective",
+         location="lunar_od/estimators.py _prior_information_and_scale (no explicit prior) as used by the "
+                  "two-way-range BLS posterior",
+         discovered="Phase 17-HARDEN-D25 qualification (independent covariance rebuild)",
+         root_cause="with no prior given, a 15 km / 5 m/s state prior is supplied; it enters the LM normal matrix "
+                    "and the reported posterior, but not the acceptance objective nor the step right-hand side, so "
+                    "the estimate is the data-only solution while the covariance is the weakly regularised one; "
+                    "undocumented",
+         effect="sigma <= 1.4e-4 relative on a 3.3 h single-station fixture; < 1e-5 on the KP2 15-orbit arc",
+         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP",
+         repair="none (changing it changes every default posterior bitwise); document the contract or make the "
+                "posterior data-only in a separately scoped phase",
+         regression="tests/test_harden_d25_posterior_dynamics_contract.py includes it in its K-path rebuild",
+         reproduction="examples/phase17_d25_qualification.py (_kp2_production prior_inv)"),
 ]
 
 # contract_id, quantity, producer, consumer, time_origin, frame, center, units, coverage, enforcement, tests

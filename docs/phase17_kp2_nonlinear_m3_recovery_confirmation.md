@@ -216,3 +216,10 @@ against the repaired estimator from the declared a priori, the frozen `job_bls` 
 and the whole failure is HARDEN-D25 (σ ratio 1.0000 once the harmonic field is included). Nothing in §1–§9 changes:
 every decision quantity here comes from this phase's own solver. This section's frozen artifacts are not
 regenerated. See `docs/phase17_harden_bls1_production_bls_recovery.md`.
+
+## 12. Addendum — Phase 17-HARDEN-D25 (2026-10-11)
+
+HARDEN-D25 is repaired: the production posterior is now linearised on the solve's own dynamics. The frozen
+`job_bls`, rerun unchanged end to end with the BLS1 + D25 estimator, passes **both** PRODUCTION_BLS criteria
+as computed: estimate ≤ 5.7e-5 σ, σ ratios 1.000000–1.000001. The FD gate remains as adjudicated in §8.
+Nothing in §1–§9 changes. See `docs/phase17_harden_d25_posterior_covariance_consistency.md`.
