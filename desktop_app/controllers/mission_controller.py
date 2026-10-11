@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton,
                             QSlider, QComboBox, QSplitter, QSizePolicy)
 from services.mission_data import station_catalog, orbit_summary
+from services.result_summary import result_status
 from widgets.mission_plots import StationWorldMap, MissionGantt
 from widgets.tracking_plots import StoredOrbit
 from styles.theme import C
@@ -49,6 +50,20 @@ class MissionController(QWidget):
         self.scenario_button = QPushButton("Yeni senaryo")
         self.scenario_button.clicked.connect(lambda: self._navigate("scenario"))
         row.addWidget(self.scenario_button)
+        root.addLayout(row)
+
+        row = QHBoxLayout()
+        self.run_status = caption("Koşunun işlem ve yay başarı kayıtları, bir sonuç açıldığında burada gösterilir.")
+        self.run_status.setAccessibleName("Yüklü koşunun işlem ve kayıtlı yay başarı durumu")
+        self.run_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        self.run_status.setToolTip("İşlem tamamlandı: eşleşen tamamlanma kaydı var. Yay başarısı: kaynak CSV’deki operational_success alanı. "
+                                  "Bu alanlar yakınsama veya bilimsel doğruluk onayı değildir. Referans yörünge de başarı kanıtı değildir.")
+        row.addWidget(self.run_status, 1)
+        self.details_button = QPushButton("Koşu ayrıntıları")
+        self.details_button.setToolTip("Aynı yüklü sonucun hatalarını, duruş nedenlerini, ayarlarını ve kaynaklarını Sonuçlar ekranında inceleyin.")
+        self.details_button.setEnabled(False)
+        self.details_button.clicked.connect(self._open_details)
+        row.addWidget(self.details_button)
         root.addLayout(row)
 
         self.plots = plots = QSplitter(Qt.Horizontal)
@@ -174,6 +189,10 @@ class MissionController(QWidget):
         if hasattr(self.window(), "navigate"):
             self.window().navigate(page)
 
+    def _open_details(self):
+        if hasattr(self.window(), "open_result_details"):
+            self.window().open_result_details()
+
     def _set_controls(self, enabled):
         for widget in (self.play_button, self.reset_button, self.speed_combo, self.slider):
             widget.setEnabled(enabled)
@@ -188,6 +207,9 @@ class MissionController(QWidget):
         self._mu = payload.get("gravitational_parameter_m3_s2") if isinstance(payload, dict) else None
         self.run_label.setText(f"{result.name} · {result.metadata.get('estimator_type', 'kayıt')} · {len(result.states):,} durum örneği")
         self.run_label.setToolTip(result.sources[0]["path"])
+        self.run_status.setText("Yüklü koşu · " + result_status(result, details) +
+                                "\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.")
+        self.details_button.setEnabled(True)
         self.orbit_caption.setText(f"{result.metadata.get('origin', 'Bilinmiyor')} merkezli · {result.metadata.get('frame', 'Bilinmiyor')} · "
                                   f"{'referans (truth)' if result.metadata.get('state_role') == 'truth' else 'kayıtlı durum'} · sürükle / yakınlaştır")
         self.orbit.selected_t = None

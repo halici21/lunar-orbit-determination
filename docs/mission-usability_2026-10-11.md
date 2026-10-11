@@ -72,8 +72,8 @@ Graphify was refreshed and changed documentation links resolve.
 
 ## Next design checks
 
-- Improve discovery of a run's completion/acceptance status without implying
-  convergence from the truth orbit or station measurement display.
+- Completed: expose recorded process/arc-success status without inferring
+  convergence; see the [status iteration](mission-status_2026-10-11.md).
 - Review first-run guidance and remaining specialist pages for short explanations,
   consistent units and keyboard access.
 - Profile slow operations against large recorded runs when representative data

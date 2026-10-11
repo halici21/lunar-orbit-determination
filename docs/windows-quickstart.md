@@ -38,6 +38,10 @@ arşiv/sonuç/karşılaştırma/görev sayfası geri açılabilir.
 
 1. **Görev görünümü → Koşu aç** ile arşive gidin; sonuç klasörünü seçin.
 2. Bir koşu seçip **Harita ve yörüngeyi aç** düğmesine basın.
+   Koşu adının altında işlem durumu ve kaynak CSV’deki yay başarı alanları görünür.
+   **İşlem tamamlandı**, tamamlanma kaydının bulunduğunu gösterir; yakınsama veya
+   bilimsel doğruluk onayı değildir. **Koşu ayrıntıları**, aynı sonucun hatalarını,
+   duruş nedenlerini, ayarlarını ve kaynaklarını açar.
 3. İstasyonu listeden seçin veya haritadaki noktasına / Gantt satır adına
    tıklayın: üç seçim eşleşir. Listede ok tuşlarıyla da seçim yapabilirsiniz.
    **Tüm istasyonlar** vurguyu kaldırır. Alt metin, seçili epokta ölçüm kaydı

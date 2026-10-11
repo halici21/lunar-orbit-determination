@@ -3,12 +3,21 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from types import SimpleNamespace
 from dataclasses import replace
 from PyQt5.QtWidgets import QApplication
-from services.result_summary import result_summary, comparison_summary
+from services.result_summary import result_summary, result_status, comparison_summary
 from services.run_comparison import load_run_comparison
 from services.run_details import load_run_with_details
 from controllers.tracking_console_controller import TrackingConsoleController
 from controllers.recorded_comparison_controller import RecordedComparisonController
 from tests.test_recorded_run_workspace import write_run
+
+
+def test_status_requires_no_error_statistics_and_uses_arc_flags_for_sequential_results():
+    source = SimpleNamespace(updates=(), arcs=[{"operational_success": False}, {"operational_success": None}],
+                             metadata={"record_kind": "filter_update"})
+    headline = result_status(source, {"status": "Tamamlanma kaydı yok"})
+    assert "0/1 yay kaydı başarılı" in headline and "1 kayıtta başarı alanı yok" in headline
+    assert "Koşu sürüyor veya yarım kalmış olabilir" in headline
+    assert "İşlem tamamlandı" not in headline
 
 
 def test_success_does_not_imply_convergence_and_missing_is_not_zero():

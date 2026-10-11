@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Mission view now exposes recorded process/arc-success status and explicitly
+  marks convergence as unverified. A direct action opens the loaded result's
+  inspector without reopening the source files.
 - Linked station dropdown/map/Gantt row selection with keyboard access and
   explicit current-epoch measurement status. Mission plots stack on narrow
   screens, avoiding the previous fixed 960-pixel page width.

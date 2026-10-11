@@ -7,20 +7,26 @@ def number(value):
     return "kayıtlı değil" if value is None else f"{value:.4g}"
 
 
-def result_summary(result, details):
-    rows = result.updates
-    batch = result.metadata.get("record_kind") == "arc_solution"
-    arcs = rows if batch else result.arcs
+def result_status(result, details):
+    """Recorded process/success headline without computing diagnostic statistics."""
+    arcs = result.updates if result.metadata.get("record_kind") == "arc_solution" else result.arcs
     known = [r.get("operational_success") for r in arcs if r.get("operational_success") is not None]
     success = f"{sum(v is True for v in known)}/{len(known)} yay kaydı başarılı" if known else "operasyonel başarı bilinmiyor"
     if arcs and len(known) < len(arcs):
         success += f" · {len(arcs)-len(known)} kayıtta başarı alanı yok"
-    stops = Counter(r.get("stop_reason") or "Bilinmiyor" for r in arcs)
-    stop_text = ", ".join(f"{key} ({value})" for key, value in sorted(stops.items())) or "kayıtlı değil"
     status = details.get("status", "İşlem durumu bilinmiyor")
     headline = f"{status} · {success}"
     if status == "Tamamlanma kaydı yok":
         headline += " · Koşu sürüyor veya yarım kalmış olabilir; Çalıştır ekranını kontrol edin, bitince sonucu yeniden açın."
+    return headline
+
+
+def result_summary(result, details):
+    rows = result.updates
+    arcs = rows if result.metadata.get("record_kind") == "arc_solution" else result.arcs
+    headline = result_status(result, details)
+    stops = Counter(r.get("stop_reason") or "Bilinmiyor" for r in arcs)
+    stop_text = ", ".join(f"{key} ({value})" for key, value in sorted(stops.items())) or "kayıtlı değil"
     errors = "Tüm kaynak · N=" + str(len(rows)) + " · Konum hata medyanı " + number(median(r["position_error_m"] for r in rows)) + " m · Hız hata medyanı " + number(median(r["velocity_error_mps"] for r in rows)) + " m/s"
     nis = sum(r.get("normalized_nis") is not None for r in rows)
     diagnostics = f"Yakınsama: ayrı bir doğrulama alanı yok · Duruş: {stop_text}\n"

@@ -5,6 +5,7 @@
 - [Windows installation and usage — Türkçe](windows-quickstart.md)
 - [Mission overview: user flow, data scope and verification](mission-overview_2026-10-11.md)
 - [Mission usability iteration: station selection and narrow layout](mission-usability_2026-10-11.md)
+- [Mission status iteration: completion, success and result details](mission-status_2026-10-11.md)
 - [Desktop workflow and scientific display contracts](../desktop_app/RESULT_WORKFLOW.md)
 - [Public CI scope and scientific verification](verification.md)
 - [Earlier interfaces and historical documents](legacy-tools.md)

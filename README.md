@@ -59,6 +59,9 @@ Gantt row labels. Mission plots stack vertically in narrow windows.
 See the [mission guide](docs/mission-overview_2026-10-11.md),
 [usability iteration](docs/mission-usability_2026-10-11.md) and the
 [desktop workflow and data contracts](desktop_app/RESULT_WORKFLOW.md).
+The mission caption also exposes process completion and recorded arc-success
+fields, with a direct result-inspector action; see the
+[status iteration](docs/mission-status_2026-10-11.md).
 
 The current entry point is desktop_app/main.py. The older Tkinter and local web
 tools remain for reference; see [legacy tools](docs/legacy-tools.md). There is no
@@ -66,15 +69,15 @@ hosted web application for the current desktop workflow.
 
 ## What is verified
 
-- **Local combined suite, 2026-10-11:** 1,787 passed checks, 29 skipped, zero failures/errors.
-  Final public gate: 259 passed.
+- **Local combined suite, 2026-10-11:** 1,792 passed checks, 29 skipped, zero failures/errors.
+  Final public gate: 264 passed.
 - **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
   desktop artifact, process, archive, comparison, rendering and session checks.
   External data paths are isolated; this gate uses committed fixtures only.
 - **Real desktop workflow:** short recorded runs, derivation, comparison, export
   and reopening were exercised. Eight existing single-arc runs remained readable.
 
-[Local verification record](docs/mission-usability_2026-10-11.md) ·
+[Local verification record](docs/mission-status_2026-10-11.md) ·
 [Public CI scope](docs/verification.md) ·
 [Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
 

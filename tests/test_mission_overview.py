@@ -168,6 +168,51 @@ def test_map_click_and_time_selection_link_all_views(mission, app):
     assert page.slider.value() == 3
 
 
+@pytest.mark.parametrize("successes,expected", [
+    ([False, False], "0/2 yay kaydı başarılı"),
+    ([True, None], "1/1 yay kaydı başarılı · 1 kayıtta başarı alanı yok"),
+    ([None, None], "operasyonel başarı bilinmiyor"),
+])
+def test_mission_completion_does_not_infer_success_from_truth(mission, successes, expected):
+    page, _ = mission
+    row = page.result.updates[0]
+    result = replace(page.result, updates=tuple(dict(row, operational_success=v) for v in successes))
+    page.set_result(result, {"status": "İşlem tamamlandı"})
+    assert "İşlem tamamlandı" in page.run_status.text() and expected in page.run_status.text()
+    assert "Yakınsama: kaynakta ayrı bir doğrulama alanı yok" in page.run_status.text()
+    assert "başarı kanıtı değildir" in page.run_status.toolTip()
+    assert page.details_button.isEnabled()
+    before = page.run_status.text()
+    page.select_time(40.)
+    assert page.run_status.text() == before  # Playback never changes completion/acceptance.
+
+
+def test_mission_details_opens_same_result_and_preserves_status_after_failed_replacement(app, tmp_path):
+    with patch("app.QSettings", return_value=QSettings(str(tmp_path / "details.ini"), QSettings.IniFormat)):
+        window = MainWindow()
+    try:
+        window.show(); app.processEvents()
+        page = window._pages["mission"]
+        assert not page.details_button.isEnabled()
+        path = geometry_run(tmp_path)
+        window.open_in_mission(path)
+        wait_until(app, lambda: page.result is not None)
+        status = page.run_status.text()
+        page.play_button.setChecked(True)
+        page.details_button.click()
+        assert window._active_page == "console"
+        assert window._pages["console"].result is page.result
+        assert window._pages["console"].details_toggle.isChecked()
+        assert not window._pages["console"].inspector_tabs.isHidden()
+        assert window._pages["console"].inspector_tabs.currentIndex() == 0
+        assert not page._timer.isActive()
+        window.open_in_mission(tmp_path / "missing.csv")
+        wait_until(app, lambda: not window._pages["console"]._busy)
+        assert page.run_status.text() == status and "Koşu açılamadı" in page.run_label.text()
+    finally:
+        window.close()
+
+
 def test_keyboard_station_choice_and_gantt_label_keep_time_and_link_selection(mission, app):
     page, _ = mission
     page.select_time(20.)
@@ -311,7 +356,7 @@ def test_small_mission_window_keeps_playback_and_help_reachable(app, tmp_path):
         page = window._pages["mission"]
         assert page.plots.orientation() == Qt.Vertical
         assert window.pageScroll.horizontalScrollBar().maximum() == 0
-        for button in (page.play_button, page.help_button, page.archive_button, page.station_picker):
+        for button in (page.play_button, page.help_button, page.archive_button, page.station_picker, page.details_button):
             window.pageScroll.ensureWidgetVisible(button, 0, 0); app.processEvents()
             bounds = QRect(button.mapTo(window.pageScroll.viewport(), QPoint(0, 0)), button.size())
             assert window.pageScroll.viewport().rect().contains(bounds)

@@ -409,6 +409,14 @@ class MainWindow(QMainWindow):
         if page and hasattr(page, "open_result"):
             page.open_folder(path) if path.is_dir() else page.open_result(path)
 
+    def open_result_details(self) -> None:
+        """Expose the shared loaded result's inspector without reopening its files."""
+        self.navigate("console")
+        console = self._pages.get("console")
+        if hasattr(console, "details_toggle"):
+            console.details_toggle.setChecked(True)
+            console.inspector_tabs.setCurrentIndex(0)
+
     def _on_result_loaded(self, result):
         console = self._pages.get("console")
         self._latest_result = (result, getattr(console, "loaded_details", {}))

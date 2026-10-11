@@ -25,6 +25,15 @@ with the mission page. Failed replacements preserve the previous result and
 show the load error; a folder containing multiple runs opens the visible console
 picker. The console also has a **Görev görünümü** shortcut.
 
+Mission view shows the loaded run's verified process status alongside its
+recorded arc-success fields. Missing success fields remain unknown; completion
+and truth states do not infer convergence. The same status formatter is shared
+with the console and computes no error statistics. The status is refreshed only
+when a result is accepted, not on playback frames. **Koşu ayrıntıları** opens the
+same shared result's **Koşu** inspector tab without reopening its source files;
+leaving mission view pauses playback. The action is disabled before a result is
+loaded. A failed replacement retains the previous loaded result's status.
+
 Orbit playback, measurement Gantt and active station markers share a recorded
 sample time. Gantt clicks snap to the nearest stored state; playback selects the
 last available sample at its elapsed simulation time. There is no interpolation,
