@@ -1,0 +1,9 @@
+{
+ "n3_propagation_max_abs_diff": 0.0,
+ "n3_evaluation_max_abs_diff": 0.0,
+ "n15_sum_of_k_columns_vs_scalar_rel": {
+  "range": 6.271202490692742e-09,
+  "doppler": 6.910442699509546e-09
+ },
+ "n15_eval_elapsed_s": 3.8403496742248535
+}

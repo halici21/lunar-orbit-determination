@@ -1,0 +1,73 @@
+{
+ "phase": "PHASE17_KGM_FINAL_K_CLOSEOUT",
+ "question": "Does a first-order Gauss-Markov K representation recover the time-variation information KP2 demonstrated with M3, without manufacturing variation or resting on the prior?",
+ "truth_level": "SYNTHETIC_CAMPAIGN_TRUTH",
+ "model": {
+  "name": "GM15",
+  "n_segments": 15,
+  "segment": "one per orbit of the 15-orbit KP2 arc (equal durations)",
+  "parameterisation": "K_j = K0 (1 + f_j); f = m 1 + delta; delta stationary first-order GM; m flat (no prior)",
+  "prior_information": "Lambda = C^-1 - C^-1 11^T C^-1 / (1^T C^-1 1), C_ij = sigma^2 phi^|i-j|, rank 14",
+  "primary": {
+   "sigma": 0.3,
+   "tau_segments": 5.0
+  },
+  "hyperparameter_rules": {
+   "tau": "tau = T_arc / 3 = 5 orbits: the resolution at which KP2/M3 asserted variation information; the like-for-like comparison of the two representations",
+   "sigma": "sigma = 0.30: >= 3.7x every KP2 posterior M3 sigma_v (max 0.081, O2 k0), so the prior is diffuse wherever KP2 found information; chosen from KP2 POSTERIORS, not from the truths"
+  },
+  "sensitivity": {
+   "rule": "declared now, run on CANON k0 T0 and T1 only; no selection among them",
+   "tau_segments": [
+    1.0,
+    15.0
+   ]
+  }
+ },
+ "estimator": "KP2 staged batch Gauss-Newton (stage 1: x0 + biases at K0, 4 evals; stage 2: all free, 10 evals, every step < 1e-2 sigma), production range + counted-Doppler values/Jacobians, one free bias per Doppler pass, a priori N(0, diag(100 m, 0.1 m/s)^2), GM rows appended to the K block",
+ "cells": [
+  [
+   "CANON",
+   0
+  ],
+  [
+   "O2_FULL_SUN_HIGH_BETA",
+   0
+  ],
+  [
+   "O1_LOW_BETA_ECLIPSE_RICH",
+   12
+  ]
+ ],
+ "cell_rationale": "one cell per KP2 behaviour: CANON k0 strong recovery; O2 k0 information-limited miss; O1 k12 marginal (T2 missed at chi2 12.4, T1 recovered)",
+ "truths": {
+  "T0_CONSTANT": "f = 0 (15 segments)",
+  "T1_STEP": "KP2 T1 (+0.10, -0.10, 0) on thirds, i.e. 5 segments each",
+  "T3_GM": {
+   "rule": "one GM realisation, sample mean removed (level K0), sigma 0.10, tau 2 orbits (deliberately NOT the model tau)",
+   "seed": [
+    17,
+    3,
+    0
+   ]
+  }
+ },
+ "seeds": "per (cell, truth): rng([KP2 cell index, truth index, 0]) with truth index T0=0, T1=1, T3_GM=3 (T0/T1: same truth K(t), same draws as KP2; the truth is propagated with 15 instead of 3 segment restarts, which differ only at integrator-noise level)",
+ "m3_comparison": "M3 (KP2 solver, unchanged) on T0/T1 read from artifacts/phase17_kp2_raw_results.json; M3 on T3_GM solved here on the same data",
+ "metrics": {
+  "recovered_m3_projection": "converged and chi2_err <= 13.82 and chi2_detect >= 13.82 on the 2-dof M3 variation of the GM estimate averaged onto thirds (the KP2 rule)",
+  "false_variation": "T0: chi2_detect >= 13.82 (M3 projection) or full 14-dof chi2_detect >= chi2_14(0.999) = 36.12",
+  "full_resolution": "full 14-dof chi2_err / chi2_detect vs chi2_14(0.999); reconstruction skill 1 - rms(var err)/rms(var truth) on T3_GM",
+  "prior_share": "DFS = 14 - tr(Lambda_u C_post,u); PRIOR_DOMINATED if DFS/14 < 0.5 in a cell where GM reports recovery; sigma ratio GM/M3 on the M3 projection (< 0.8 flags prior information)",
+  "common_level": "z of the mean deviation, REPORTED ONLY; the level is not claimed"
+ },
+ "classification": {
+  "SUPPORTS_M3_VARIATION_RESULT": "GM recovers T1 in every cell where KP2/M3 did and not where M3 did not (agreement 3/3 cells), 0 false variations on T0, not prior-dominated",
+  "PARTIALLY_SUPPORTS_M3_VARIATION_RESULT": "agreement in 2/3 cells, <= 1 false variation, or a prior-influence flag",
+  "DOES_NOT_ADD_RELIABLE_INFORMATION": "false variation in >= 2 cells, or every GM recovery prior-dominated, or agreement <= 1/3",
+  "INCONCLUSIVE": "fewer than 2 of 3 primary T1 solves converge",
+  "T3_GM_role": "reported: full-resolution reconstruction and whether GM or M3 better represents a variation that M3 cannot represent exactly; not part of the class"
+ },
+ "budget": "9 primary GM15 solves + 3 M3 solves on T3_GM + 2 sensitivity solves; no Monte Carlo, no grid",
+ "canonical_sha256": "6fd5419f0f3a0c0f88300dfb62f5ae823a36af44fcb5717173b27f744150a604"
+}
