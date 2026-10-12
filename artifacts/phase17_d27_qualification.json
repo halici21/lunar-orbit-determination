@@ -1,0 +1,102 @@
+{
+ "simplified": {
+  "label": "KP2 cross-check problem, SIMPLIFIED dynamics, current production estimator",
+  "bls1_final_row_k": 0.00513051097781201,
+  "apriori_k_bitwise_equal_to_bls1": true,
+  "rows": [
+   {
+    "case": "apriori",
+    "status": "Converged",
+    "termination_detail": "STEP_NORM",
+    "production_decrement": null,
+    "independent_decrement": 0.15869927817757484,
+    "gn_step_over_sigma_max": 0.1486223430157969,
+    "chi2": 902.4408596065725,
+    "k": 0.00513051097781201,
+    "x": [
+     -1746513.6174246548,
+     -277089.04640075646,
+     518730.08299154596,
+     -138.53781623240894,
+     -1206.7336175500495,
+     -1085.0559000635708
+    ],
+    "iterations": 30,
+    "pos_err_m": 6.486966925783366,
+    "elapsed_s": 182.96643447875977
+   },
+   {
+    "case": "truth_start",
+    "status": "DampingLimit",
+    "termination_detail": "LAMBDA_HARD_LIMIT",
+    "production_decrement": 3.6808271871410447,
+    "independent_decrement": 3.6808271871413076,
+    "gn_step_over_sigma_max": 1.946069732559114,
+    "chi2": 916.8220892476588,
+    "k": 0.007759474447590421,
+    "x": [
+     -1746513.5292434846,
+     -277083.972447346,
+     518734.12705571414,
+     -138.5397860656825,
+     -1206.7373144640737,
+     -1085.051164480504
+    ],
+    "iterations": 18,
+    "pos_err_m": 0.01845985585257627,
+    "elapsed_s": 103.82043147087097
+   },
+   {
+    "case": "floor",
+    "status": "DampingLimit",
+    "termination_detail": "LAMBDA_HARD_LIMIT",
+    "production_decrement": 0.15869927817688134,
+    "independent_decrement": 0.15869927817757484,
+    "gn_step_over_sigma_max": 0.1486223430157969,
+    "chi2": 902.4408596065725,
+    "k": 0.00513051097781201,
+    "x": [
+     -1746513.6174246548,
+     -277089.04640075646,
+     518730.08299154596,
+     -138.53781623240894,
+     -1206.7336175500495,
+     -1085.0559000635708
+    ],
+    "iterations": 35,
+    "pos_err_m": 6.486966925783366,
+    "elapsed_s": 228.3786382675171
+   },
+   {
+    "case": "bad_jacobian",
+    "status": "DampingLimit",
+    "termination_detail": "LAMBDA_HARD_LIMIT",
+    "production_decrement": 2510.9698301852254,
+    "independent_decrement": 2510.9698301852227,
+    "gn_step_over_sigma_max": 604.5598125109626,
+    "chi2": 6305551.967714859,
+    "k": 1.5423885947553346,
+    "x": [
+     -1746620.0261444275,
+     -277197.8537541954,
+     518783.7000130733,
+     -138.47177919956115,
+     -1206.6937070343745,
+     -1084.9436573859011
+    ],
+    "iterations": 31,
+    "pos_err_m": 163.5938555380307,
+    "elapsed_s": 209.20489525794983
+   }
+  ]
+ },
+ "high_fidelity": {
+  "stored_status": "DampingLimit",
+  "stored_detail": "LAMBDA_HARD_LIMIT",
+  "a_priori_matches_stored": true,
+  "decrement_at_production_solution": 0.0019365918818536215,
+  "decrement_at_a_priori": 11252.238609796952,
+  "elapsed_s": 672.3677515983582,
+  "status_under_d27_rule": "Converged/STATIONARY_AT_DAMPING_LIMIT"
+ }
+}

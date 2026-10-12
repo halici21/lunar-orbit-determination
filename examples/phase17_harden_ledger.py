@@ -236,19 +236,24 @@ DEFECTS = [
                     "recovery vs independent GN and truth start; bound-active path)",
          reproduction="examples/phase17_bls1_qualification.py --ablation / --hf"),
     dict(id="HARDEN-D27", title="BLS-LM K_SRP reports DampingLimit at a verified stationary point",
-         location="lunar_od/estimators.py estimate_two_way_range_bls_lm acceptance / termination logic",
+         location="lunar_od/estimators.py BLS-LM termination at lambda > 1e12 (position, range-rate, two-way "
+                  "range incl. the K_SRP path)",
          discovered="Phase 17-HARDEN-BLS1 qualification",
          root_cause="at the minimiser no trial step beats the objective's integration noise, so every trial is "
                     "rejected and lambda climbs to the 1e12 guard; the J-Stab/step-norm tests only run on accepted "
-                    "steps",
-         effect="label only: high-fidelity KP2 job ends DampingLimit with the GN remainder <= 4.1e-3 sigma; a "
-                "solve started at the truth ends DampingLimit at the converged solution (0 sigma). The status "
-                "is not a reliable convergence indicator near the noise floor",
-         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP",
-         repair="none (a new acceptance/termination rule is a convergence-criterion change); qualify with an "
-                "independent stationarity check",
-         regression="none",
-         reproduction="examples/phase17_bls1_qualification.py --hf (production.status, diagnostic_stationarity)"),
+                    "steps, so exhaustion was reported as DampingLimit whether or not the point was stationary",
+         effect="label only: high-fidelity KP2 job ended DampingLimit at a solution whose Gauss-Newton decrement is "
+                "1.9e-3 sigma; the exact-optimum regression fixture likewise. Estimates never affected",
+         status=FIXED, klass="RECOMMENDED_FOLLOWUP",
+         repair="Phase 17-HARDEN-D27: at damping exhaustion the undamped Gauss-Newton decrement of the scored "
+                "objective (unit-free, posterior-sigma length of the remaining correction; Boyd & Vandenberghe "
+                "s9.5.1) is evaluated at the incumbent, linearised at the caller's tolerance; <= 0.1 -> Converged / "
+                "STATIONARY_AT_DAMPING_LIMIT, else DampingLimit / LAMBDA_HARD_LIMIT; decrement reported in "
+                "EstimatorStats.gauss_newton_decrement. Estimates bitwise unchanged; "
+                "docs/phase17_harden_d27_convergence_status.md",
+         regression="tests/test_harden_d27_convergence_status.py; tests/test_estimator_lm_consistency.py "
+                    "(TerminationSemanticsTests, exact-optimum test)",
+         reproduction="examples/phase17_d27_qualification.py --simplified / --hf"),
     dict(id="HARDEN-D28", title="Default step regularizer reported as a prior in no-prior posteriors",
          location="lunar_od/estimators.py posterior blocks of the position / range-rate / two-way-range SRIF and "
                   "BLS estimators (prior from _prior_information_and_scale when none is supplied)",
@@ -286,6 +291,23 @@ DEFECTS = [
          regression="tests/test_harden_d29_srif_k_prior_contract.py (incl. strengthened-regularizer test: pre-D29 "
                     "0.27 sigma start dependence, D29 6.2e-4)",
          reproduction="examples/phase17_d29_qualification.py --run --code old|new; --compare"),
+    dict(id="HARDEN-D30", title="BLS-LM acceptance cost noise rejects small damped steps (stall away from the "
+                                "minimiser)",
+         location="lunar_od/estimators.py estimate_two_way_range_bls_lm acceptance (_acceptance_residual: 6-state "
+                  "propagate_state at the caller's rtol) vs LM damping escalation",
+         discovered="Phase 17-HARDEN-D27 qualification (simplified KP2 cross-check, truth start)",
+         root_cause="the scored cost carries ~5 chi^2 of integration noise at rtol 1e-11 (1 % and 10 % Gauss-Newton "
+                    "steps RAISE it by 4-6 chi^2 while the full step lowers it by 9); damped steps whose predicted "
+                    "gain is below that noise are rejected, lambda escalates, and the shrinking steps are rejected in "
+                    "turn",
+         effect="from the truth start the K solve ends DampingLimit 1.95 sigma (chi2 +14.4, K 0.0078 vs 0.0051) from "
+                "the minimiser; correctly NOT certified by D27 (decrement 3.68). No authoritative result affected: "
+                "KP2 uses its own solver; the BLS1 / KP2 production job converges from the declared a priori",
+         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP",
+         repair="none (an acceptance-noise-aware LM / step rule is an estimator-design change outside the K closeout)",
+         regression="none; the status is protected by the D27 genuine-failure tests",
+         reproduction="examples/phase17_d27_qualification.py --simplified (truth_start row); line search in "
+                      "docs/phase17_harden_d27_convergence_status.md s4"),
 ]
 
 # contract_id, quantity, producer, consumer, time_origin, frame, center, units, coverage, enforcement, tests
