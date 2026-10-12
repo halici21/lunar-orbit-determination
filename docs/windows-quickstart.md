@@ -36,6 +36,12 @@ Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği i
 Yeni kurulumda **Görev görünümü** açılır. Geçerli kaydedilmiş oturum varsa son
 arşiv/sonuç/karşılaştırma/görev sayfası geri açılabilir.
 
+Henüz koşu açılmamışsa yörünge ve Gantt alanları başlangıç adımlarını gösterir;
+haritadaki noktalar istasyon kataloğudur. **Koşu aç** mevcut sonuçları,
+**Yeni senaryo** yeni koşu ayarlarını açar. Bir sonuç yüklendikten sonra
+"durum vektörü bulunmuyor" veya "ölçüm zamanları kaydedilmemiş" yazıyorsa,
+o sonuçta ilgili veri eksiktir.
+
 1. **Görev görünümü → Koşu aç** ile arşive gidin; sonuç klasörünü seçin.
 2. Bir koşu seçip **Harita ve yörüngeyi aç** düğmesine basın.
    Koşu adının altında işlem durumu ve kaynak CSV’deki yay başarı alanları görünür.

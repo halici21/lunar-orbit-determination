@@ -308,6 +308,33 @@ def test_legacy_without_geometry_or_states_never_fakes_contacts(app, tmp_path):
         page.close()
 
 
+def test_unopened_and_missing_data_messages_remain_distinct_and_accessible(app, tmp_path):
+    from widgets.tracking_plots import StoredOrbit
+    from widgets.mission_plots import MissionGantt
+    orbit, gantt = StoredOrbit(), MissionGantt()
+    try:
+        assert "koşu açın" in orbit.accessibleDescription()
+        assert "koşu açın" in gantt.accessibleDescription()
+        assert "bulunmuyor" not in orbit.accessibleDescription()
+        assert "kaydedilmemiş" not in gantt.accessibleDescription()
+        _, _, _, path = native_run(tmp_path)
+        result = load_tracking_results(path)
+        orbit.set_result(replace(result, states=()))
+        gantt.set_result(result)
+        assert "durum vektörü bulunmuyor" in orbit.accessibleDescription()
+        assert "ölçüm zamanları kaydedilmemiş" in gantt.accessibleDescription()
+        assert "temas süresi olarak gösterilmez" in gantt.accessibleDescription()
+        loaded, _ = load_run_with_details(geometry_run(tmp_path / "complete"))
+        orbit.set_result(loaded); gantt.set_result(loaded)
+        assert orbit.accessibleDescription() == gantt.accessibleDescription() == ""
+        orbit.set_result(None); gantt.set_result(None)
+        assert "koşu açın" in orbit.accessibleDescription() and "koşu açın" in gantt.accessibleDescription()
+        orbit.grab(); gantt.grab()  # Reset also invalidates previously rendered data.
+        assert orbit._points == [] and gantt.geometry is None
+    finally:
+        orbit.close(); gantt.close()
+
+
 def test_mission_startup_routing_help_and_restart_revalidate_source(app, tmp_path):
     settings = QSettings(str(tmp_path / "ui.ini"), QSettings.IniFormat)
     path = geometry_run(tmp_path)

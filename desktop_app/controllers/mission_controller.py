@@ -36,7 +36,7 @@ class MissionController(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 12, 24, 16)
         root.setSpacing(10)
-        self.intro = caption("İstasyon noktasına tıklayın; Gantt’ta zamanı seçin. Oynatırken yörünge ve ölçüm durumu birlikte ilerler.")
+        self.intro = caption("Başlamak için Koşu aç ile arşivden bir sonuç seçin veya Yeni senaryo ile bir koşu hazırlayın.")
         self.intro.setStyleSheet(f"color:{C.TEXT_MUTED};")
         root.addWidget(self.intro)
         row = QHBoxLayout()
@@ -79,8 +79,7 @@ class MissionController(QWidget):
         self.orbit = StoredOrbit()
         self.orbit.setMinimumHeight(260)
         orbit_layout.addWidget(self.orbit, 1)
-        self.orbit_info = caption("Yükseklik, eğim ve periyot seçilen kayıttan gösterilecek. "
-                                  "Durum geçmişi olmayan bir kayıtta yörünge uydurulmaz.")
+        self.orbit_info = caption("Bir koşu açıldığında kayıtlı yörünge ve seçili epokun yükseklik, eğim ve periyot bilgileri burada görünür.")
         self.orbit_info.setMinimumHeight(42)
         orbit_layout.addWidget(self.orbit_info)
         map_page = QWidget()
@@ -200,6 +199,7 @@ class MissionController(QWidget):
     def set_result(self, result, details=None):
         self.play_button.setChecked(False)
         self.result = result
+        self.intro.setText("İstasyonu listeden, haritadan veya Gantt satırından seçin. Oynatırken yörünge ve ölçüm durumu aynı epoku izler.")
         details = details or {}
         payload = details
         for key in ("force", "truth", "canonical_payload", "lunar_point_mass"):

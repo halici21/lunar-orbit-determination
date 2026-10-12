@@ -129,6 +129,14 @@ class MissionGantt(QWidget):
         self.setMinimumHeight(180)
         self.setMouseTracking(True)
         self.setAccessibleName("İstasyon ölçüm aralıkları Gantt; satır adı istasyonu, çizelge zamanı seçer")
+        self.setAccessibleDescription(self.empty_message())
+
+    def empty_message(self):
+        if self.result is None:
+            return "Ölçüm çizelgesini görmek için bir koşu açın.\nKoşu aç ile arşivden seçim yapabilir veya Yeni senaryo ile başlayabilirsiniz."
+        if not self.geometry:
+            return "Bu koşuda istasyon ölçüm zamanları kaydedilmemiş.\nGörünürlük hesabını açabilir veya yeni bir senaryo çalıştırabilirsiniz.\nEski yay başlangıç/sonları temas süresi olarak gösterilmez."
+        return ""
 
     def set_result(self, result):
         self.result = result
@@ -136,6 +144,7 @@ class MissionGantt(QWidget):
         self._base_key = None
         self._by_station = {}
         self.geometry = result.metadata.get("mission_geometry") if result else None
+        self.setAccessibleDescription(self.empty_message())
         for window in (self.geometry or {}).get("windows", []):
             self._by_station.setdefault(window["station_id"], []).append(window)
         states = result.states if result else ()
@@ -154,7 +163,7 @@ class MissionGantt(QWidget):
         p.setPen(QColor(C.TEXT_MUTED))
         if not self.geometry:
             p.drawText(QRectF(12, 18, self.width()-24, self.height()-36), Qt.AlignCenter | Qt.TextWordWrap,
-                       "Bu koşuda istasyon ölçüm zamanları kaydedilmemiş.\nGörünürlük hesabını açabilir veya yeni bir senaryo çalıştırabilirsiniz.\nEski yay başlangıç/sonları temas süresi olarak gösterilmez.")
+                       self.empty_message())
             return
         left, right = 151., self.width()-24.
         lo, hi = self.bounds

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- First-run mission plots now explain how to open a run; missing-data messages
+  appear only for loaded results. The same contextual explanations are exposed
+  through Qt accessibility descriptions.
 - Mission view now exposes recorded process/arc-success status and explicitly
   marks convergence as unverified. A direct action opens the loaded result's
   inspector without reopening the source files.

@@ -86,8 +86,8 @@ Graphify was refreshed, changed documentation links resolve, and git diff
 
 ## Remaining design work
 
-- Review first-run empty screens for instructions that clearly distinguish an
-  unopened run from a loaded result missing optional data.
+- Completed: distinguish an unopened run from loaded results missing optional
+  data; see [first-run guidance](mission-onboarding_2026-10-12.md).
 - Review remaining specialist pages for readable units and keyboard access.
 - Profile slow operations against representative large saved runs when available;
   synthetic stress checks do not establish long-run acceptance.

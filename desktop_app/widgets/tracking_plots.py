@@ -233,10 +233,20 @@ class StoredOrbit(QWidget):
         self.setMinimumSize(350, 230)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setAccessibleName("Kaydedilmiş Ay merkezli durum vektörlerinin yörüngesi")
+        self.setAccessibleDescription(self.empty_message())
+
+    def empty_message(self):
+        """Distinguish an unopened workspace from a loaded run without states."""
+        if self.result is None:
+            return "Yörüngeyi görmek için kaydedilmiş bir koşu açın.\nAy merkezli x/y/z durum geçmişi olan sonuçlar burada gösterilir."
+        if not self.result.states:
+            return "Bu sonuçta durum vektörü bulunmuyor.\nKonum/hız hata grafikleri kaynak CSV'den gösterilir.\nYörünge için Ay merkezli x/y/z durum geçmişi gerekli."
+        return ""
 
     def set_result(self, result):
         self._base_key = None
         self.result = result
+        self.setAccessibleDescription(self.empty_message())
         self._points = [(r["x_m"] / 1000, r["y_m"] / 1000, r["z_m"] / 1000) for r in result.states] if result else []
         self._times = [r["t_s"] for r in result.states] if result else []
         self._extent = max(1737.4, max((math.sqrt(sum(v * v for v in p)) for p in self._points), default=1737.4))
@@ -308,7 +318,7 @@ class StoredOrbit(QWidget):
         if not self._points:
             p.setPen(QColor(MUTED))
             p.drawText(QRectF(25, 60, self.width() - 50, self.height() - 85), Qt.AlignCenter | Qt.TextWordWrap,
-                       "Bu sonuçta durum vektörü bulunmuyor.\nKonum/hız hata grafikleri kaynak CSV'den gösterilir.\nYörünge için Ay merkezli x/y/z durum geçmişi gerekli.")
+                       self.empty_message())
             return
         scale = min(self.width() * .40, self.height() * .36) / self._extent * self.zoom
         cx, cy = self.width() / 2, self.height() / 2

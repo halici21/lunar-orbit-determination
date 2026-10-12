@@ -28,7 +28,10 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest status-display regression](mission-status_2026-10-11.md): 1,792 passed
+[Latest first-run regression](mission-onboarding_2026-10-12.md): 1,793 passed
+checks, 29 skipped (1,676 named cases and 146 subtest checks), zero failures/errors.
+The 265-case public gate includes all 31 mission and four result-summary cases.
+[Previous status-display regression](mission-status_2026-10-11.md): 1,792 passed
 checks, 29 skipped (1,675 named cases and 146 subtest checks), zero failures/errors.
 The 264-case public gate includes all 30 mission and four result-summary cases.
 [Latest usability regression](mission-usability_2026-10-11.md): 1,787 passed
