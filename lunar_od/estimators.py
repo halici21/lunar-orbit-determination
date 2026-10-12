@@ -74,6 +74,9 @@ class EstimatorStats:
     #: Phase 17-HARDEN-BLS1: negative-K trials replaced by the K-fixed
     #: (bound-active) step instead of being discarded.  BLS only.
     k_srp_bound_active_steps: int = 0
+    #: Phase 17-HARDEN-D27: Gauss-Newton decrement at the returned point,
+    #: evaluated only when BLS-LM exhausts its damping (NaN otherwise).
+    gauss_newton_decrement: float = float("nan")
 
 
 def estimate_position_srif(
@@ -561,55 +564,58 @@ def estimate_position_bls_lm(
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
+    termination_detail = ""
+    gn_decrement = float("nan")
     lambda_damping = float(lambda0)
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
 
-    for iteration in range(1, max_iter + 1):
-        x_dyn_nominal = x_nominal[:nx]
-        b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-
-        x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
+    def _linearize(x_state, r_tol, a_tol):
         x_aug_hist = propagate_augmented_state(
             t_pass_s,
-            x_aug0,
+            np.concatenate([x_state[:nx], _IDENTITY_6_COL]),
             mu_moon_m3_s2,
             mu_earth_m3_s2,
             mu_sun_m3_s2,
             get_earth_pos,
             get_sun_pos,
-            rtol=_atol_r,
-            atol=_atol_a,
+            rtol=r_tol,
+            atol=a_tol,
             j2_moon=j2_moon,
         )
         x_hist = x_aug_hist[:, :6]
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
-        h_nom_aug = _apply_position_bias(h_nom, obs_data, b_nominal, bias_cfg)
+        h_nom_aug = _apply_position_bias(
+            h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
         residual = _position_residual_from_h(obs_data, h_nom_aug)
+        h_initial_state = _position_initial_state_jacobian(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
+        if nb:
+            h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
+        else:
+            h_initial = h_initial_state
+        return h_initial, residual
+
+    for iteration in range(1, max_iter + 1):
+        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
         current_cost = float(np.dot(w_diag * residual, residual))
 
         if iteration == 1:
             best_cost = current_cost
             x_best = x_nominal.copy()
 
-        h_initial_state = _position_initial_state_jacobian(
-            obs_data, x_aug_hist, h_tilde, pass_geo
-        )
-
-        if nb:
-            h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
-        else:
-            h_initial = h_initial_state
-
+        prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
+                            else np.zeros(na))
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
             w_diag,
             scale,
             prior_inv_scaled,
-            scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na),
+            prior_rhs_scaled,
             lambda_damping,
         )
         if singular:
@@ -649,7 +655,13 @@ def estimate_position_bls_lm(
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "DampingLimit"
+                # Phase 17-HARDEN-D27: certify at the caller's tolerance.
+                if (_atol_r, _atol_a) != (rtol, atol):
+                    h_initial, residual = _linearize(x_best, rtol, atol)
+                stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
+                    h_initial, residual, w_diag, scale,
+                    prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled,
+                )
                 break
 
     posterior_information, posterior_covariance = (None, None)
@@ -685,6 +697,8 @@ def estimate_position_bls_lm(
         rank=last_rank,
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 
@@ -748,30 +762,27 @@ def estimate_range_rate_bls_lm(
     last_active_weight_fraction = 1.0
     max_rejected_components = 0
     min_active_weight_fraction = 1.0
+    termination_detail = ""
+    gn_decrement = float("nan")
 
-    for iteration in range(1, max_iter + 1):
-        x_dyn_nominal = x_nominal[:nx]
-        b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-
-        x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
+    def _linearize(x_state, r_tol, a_tol):
+        x_dyn = x_state[:nx]
         x_aug_hist = propagate_augmented_state(
             t_pass_s,
-            x_aug0,
+            np.concatenate([x_dyn, _IDENTITY_6_COL]),
             mu_moon_m3_s2,
             mu_earth_m3_s2,
             mu_sun_m3_s2,
             get_earth_pos,
             get_sun_pos,
-            rtol=_atol_r,
-            atol=_atol_a,
+            rtol=r_tol,
+            atol=a_tol,
             j2_moon=j2_moon,
         )
-
         h_nom, h_initial_state = _range_rate_nominal_and_initial_jacobian(
             t_pass_s,
             obs_data,
-            x_dyn_nominal,
+            x_dyn,
             pass_geo,
             mu_moon_m3_s2,
             mu_earth_m3_s2,
@@ -782,8 +793,13 @@ def estimate_range_rate_bls_lm(
             rtol,
             atol,
         )
-        h_nom_aug = _apply_range_rate_bias(h_nom, obs_data, b_nominal, bias_cfg)
-        residual = _range_rate_residual_from_h(obs_data, h_nom_aug)
+        h_nom_aug = _apply_range_rate_bias(
+            h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
+        return h_initial_state, _range_rate_residual_from_h(obs_data, h_nom_aug)
+
+    for iteration in range(1, max_iter + 1):
+        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        h_initial_state, residual = _linearize(x_nominal, _atol_r, _atol_a)
         w_curr_diag, last_rejected_components, last_active_weight_fraction = _robust_weight_diagonal(
             w_diag,
             residual,
@@ -805,13 +821,15 @@ def estimate_range_rate_bls_lm(
         else:
             h_initial = h_initial_state
 
+        prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
+                            else np.zeros(na))
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
             w_curr_diag,
             scale,
             prior_inv_scaled,
-            scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na),
+            prior_rhs_scaled,
             lambda_damping,
         )
         if singular:
@@ -852,7 +870,15 @@ def estimate_range_rate_bls_lm(
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "DampingLimit"
+                # Phase 17-HARDEN-D27: certify at the caller's tolerance.
+                if (_atol_r, _atol_a) != (rtol, atol):
+                    h_initial_state, residual = _linearize(x_best, rtol, atol)
+                    h_initial = (np.hstack([h_initial_state, _range_rate_bias_jacobian(obs_data, bias_cfg)])
+                                 if nb else h_initial_state)
+                stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
+                    h_initial, residual, w_curr_diag, scale,
+                    prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled,
+                )
                 break
 
     posterior_information, posterior_covariance = (None, None)
@@ -890,6 +916,8 @@ def estimate_range_rate_bls_lm(
         active_weight_fraction=min_active_weight_fraction,
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 
@@ -1658,6 +1686,74 @@ def _lm_step_square_root(
     return scale @ step_bar, condition_number, rank, False
 
 
+#: Phase 17-HARDEN-D27 stationarity threshold on the Gauss-Newton decrement
+#: (dimensionless, posterior-sigma units).  Declared before any case was scored.
+STATIONARITY_DECREMENT_TOL = 0.1
+
+
+def _gauss_newton_decrement(
+    h_initial: np.ndarray,
+    residual: np.ndarray,
+    w_diag: np.ndarray,
+    scale: np.ndarray,
+    prior_inv_scaled: np.ndarray | None,
+    prior_rhs_scaled: np.ndarray | None,
+) -> float:
+    """Undamped Gauss-Newton decrement of the objective at the current point.
+
+    Phase 17-HARDEN-D27.  For the whitened stacked system [A; U] d = [b; U dbar]
+    (U^T U = P, P dbar = p, exactly the rows :func:`_lm_step_square_root`
+    builds, with lambda = 0) the full Gauss-Newton step d removes
+
+        delta^2 = || [A; U] d ||^2 = g^T N^+ g,   g = A^T b + p,  N = A^T A + P,
+
+    from the cost r^T W r (+ prior term) under the linear model: the squared
+    Newton decrement (Boyd & Vandenberghe 2004, s9.5.1).  delta is also the
+    step's length in the posterior metric, so every parameter is within
+    delta posterior sigma of the linearised minimiser (|d_i| / sigma_i <= delta).
+    It is unit-free, needs no damping, and is computed by column-equilibrated
+    least squares, so a rank-deficient direction contributes nothing instead of
+    failing the solve.  Pass ``prior_inv_scaled=None`` for a data-only objective.
+    """
+    a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
+    b = np.sqrt(w_diag) * residual
+    rows, rhs = [a], [b]
+    if prior_inv_scaled is not None and np.any(prior_inv_scaled):
+        ev, vec = np.linalg.eigh(_symmetrize(prior_inv_scaled))
+        u = np.sqrt(np.clip(ev, 0.0, None))[:, None] * vec.T
+        dbar = np.linalg.lstsq(prior_inv_scaled, prior_rhs_scaled, rcond=None)[0]
+        rows.append(u)
+        rhs.append(u @ dbar)
+    stacked = np.vstack(rows)
+    target = np.concatenate(rhs)
+    if not (np.all(np.isfinite(stacked)) and np.all(np.isfinite(target))):
+        return float("inf")
+    col = np.linalg.norm(stacked, axis=0)
+    col[col == 0.0] = 1.0
+    step_bar = np.linalg.lstsq(stacked / col, target, rcond=None)[0]
+    return float(np.linalg.norm((stacked / col) @ step_bar))
+
+
+def _damping_exhaustion_status(*decrement_args) -> tuple[str, str, float]:
+    """Status of a BLS-LM solve whose damping passed the 1e12 guard.
+
+    Phase 17-HARDEN-D27.  Damping exhaustion only says that no trial step
+    lowered the scored cost.  At a minimiser that is expected: the remaining
+    Gauss-Newton gain falls below the objective's integration noise, every
+    trial is rejected and lambda climbs to the guard.  Far from a minimiser it
+    is a genuine failure.  The two are told apart by the undamped decrement at
+    the incumbent point, never by lambda itself: ``Converged`` /
+    ``STATIONARY_AT_DAMPING_LIMIT`` only when the whole remaining correction is
+    within ``STATIONARITY_DECREMENT_TOL`` posterior sigma, else ``DampingLimit``
+    / ``LAMBDA_HARD_LIMIT`` exactly as before.  The returned estimate is the
+    same either way.
+    """
+    decrement = _gauss_newton_decrement(*decrement_args)
+    if np.isfinite(decrement) and decrement <= STATIONARITY_DECREMENT_TOL:
+        return "Converged", "STATIONARY_AT_DAMPING_LIMIT", decrement
+    return "DampingLimit", "LAMBDA_HARD_LIMIT", decrement
+
+
 def _limit_step(step: np.ndarray, *, pos_limit_m: float) -> np.ndarray:
     step = np.asarray(step, dtype=float).copy()
     pos_step_norm = float(np.linalg.norm(step[:3]))
@@ -2308,6 +2404,7 @@ def estimate_two_way_range_bls_lm(
     min_active_weight_fraction = 1.0
     negative_k_rejections = 0
     bound_active_steps = 0
+    gn_decrement = float("nan")
     # Phase 17-HARDEN-BLS1: the K solve-for path solves the (unchanged) damped
     # LM system by equilibrated QR; the six-state path keeps _lm_step bit-for-bit.
     _step_fn = _lm_step_square_root if solve_for_k_srp else _lm_step
@@ -2552,8 +2649,25 @@ def estimate_two_way_range_bls_lm(
                 # PHASE 6.2: damping exhaustion, NOT a singular linear solve.
                 # _lm_step reported no singularity to reach here; the LM step
                 # simply stopped being accepted.  The 1e12 limit is unchanged.
-                stop_reason = "DampingLimit"
-                termination_detail = "LAMBDA_HARD_LIMIT"
+                # Phase 17-HARDEN-D27: whether it stopped AT a minimiser is
+                # decided by the decrement of the scored objective, linearised
+                # at the caller's tolerance (the K path already is).
+                if (_atol_r, _atol_a) != (rtol, atol):
+                    x_aug_hist = propagate_augmented_state(
+                        t_pass_s, np.concatenate([x_best, _IDENTITY_6_COL]),
+                        mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                        get_earth_pos, get_sun_pos, rtol=rtol, atol=atol,
+                        j2_moon=j2_moon, srp=srp,
+                        **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
+                    )
+                    h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
+                        obs_data, pass_geo, x_aug_hist
+                    )
+                    residual = _two_way_range_residual_from_h(obs_data, h_nom)
+                stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
+                    h_initial, residual, w_curr_diag, scale,
+                    prior_inv_scaled if prior_active else None, prior_rhs_scaled,
+                )
                 break
 
     posterior_information, posterior_covariance = (None, None)
@@ -2632,6 +2746,7 @@ def estimate_two_way_range_bls_lm(
         ),
         k_srp_negative_step_rejections=negative_k_rejections,
         k_srp_bound_active_steps=bound_active_steps,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 

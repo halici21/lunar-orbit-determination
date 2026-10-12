@@ -330,9 +330,18 @@ class DescentAcceptanceTests(unittest.TestCase):
         The truth state reproduces this fixture's own measurements to zero
         residual, so there is nothing to descend towards and every candidate is
         rightly rejected.  What matters is that the run says so honestly: it is
-        damping exhaustion, not a failed linear solve, and the returned state is
-        the untouched start rather than a drifted one.
+        not a failed linear solve, and the returned state is the untouched
+        start rather than a drifted one.
+
+        Phase 17-HARDEN-D27: this was the defect's own fixture.  It used to
+        assert ``DampingLimit``, i.e. that a solve sitting exactly on its
+        minimiser be labelled a non-convergence.  The damping still exhausts;
+        the Gauss-Newton decrement at the returned point (~0) now certifies the
+        stationary point, so the label is ``Converged`` with the distinct
+        detail ``STATIONARY_AT_DAMPING_LIMIT``.
         """
+        from lunar_od.estimators import STATIONARITY_DECREMENT_TOL
+
         t_pass, gep, gsp, x_true0, obs, pass_geo = _observations()
         x_hat, stop_reason, stats = _solve(
             t_pass, obs, x_true0.copy(), pass_geo, gep, gsp, max_iter=30
@@ -340,8 +349,9 @@ class DescentAcceptanceTests(unittest.TestCase):
 
         self.assertTrue(np.all(np.isfinite(x_hat)))
         np.testing.assert_allclose(x_hat, x_true0, rtol=0, atol=0)
-        self.assertEqual(stop_reason, "DampingLimit")
-        self.assertEqual(stats.termination_detail, "LAMBDA_HARD_LIMIT")
+        self.assertEqual(stop_reason, "Converged")
+        self.assertEqual(stats.termination_detail, "STATIONARY_AT_DAMPING_LIMIT")
+        self.assertLessEqual(stats.gauss_newton_decrement, STATIONARITY_DECREMENT_TOL)
 
     def test_large_residual_start_still_makes_accepted_progress(self):
         """The regime that always worked must keep working.
@@ -412,8 +422,12 @@ class TerminationSemanticsTests(unittest.TestCase):
 
         estimators._lm_step = always_bad_step
         try:
+            # Phase 17-HARDEN-D27: started off the optimum, so the exhaustion is
+            # a genuine failure.  (Started AT the truth, as this test used to be,
+            # the returned point is the minimiser and is now certified.)
+            x_start = x_true0 + np.array([25.0, -20.0, 12.0, 0.01, -0.008, 0.004])
             _x, stop_reason, stats = _solve(
-                t_pass, obs, x_true0.copy(), pass_geo, gep, gsp, max_iter=40
+                t_pass, obs, x_start, pass_geo, gep, gsp, max_iter=40
             )
         finally:
             estimators._lm_step = original
@@ -421,6 +435,7 @@ class TerminationSemanticsTests(unittest.TestCase):
         self.assertEqual(stop_reason, "DampingLimit")
         self.assertEqual(stats.termination_detail, "LAMBDA_HARD_LIMIT")
         self.assertNotEqual(stop_reason, "Singular")
+        self.assertGreater(stats.gauss_newton_decrement, estimators.STATIONARITY_DECREMENT_TOL)
 
     def test_ordinary_convergence_reports_a_convergence_detail(self):
         """Ordinary convergence must be labelled as such.
