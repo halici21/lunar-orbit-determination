@@ -1,0 +1,190 @@
+{
+  "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+  "states": 145,
+  "arc_solutions": 4,
+  "stations": 4,
+  "measurement_windows": 12,
+  "frame": "J2000",
+  "role": "truth",
+  "animation_before_t_s": 21600.0,
+  "animation_after_t_s": 25800.0,
+  "original_source_hashes_unchanged": true,
+  "small_window_controls_reachable": true,
+  "station_picker_selection": "Madrid DSN",
+  "narrow_plots_stacked": true,
+  "horizontal_scroll_maximum": 0,
+  "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+  "first_run_guidance_verified": true,
+  "loaded_messages_clear_initial_guidance": true,
+  "details_button_enabled": true,
+  "operational_success": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "minimum_window": {
+    "controls_reachable": true,
+    "height": 420,
+    "horizontal_scroll_maximum": 0,
+    "width": 760
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "map_layouts": [
+    [
+      {
+        "width": 320,
+        "height": 230,
+        "theme": "modern",
+        "dpr": 1.0,
+        "station_count": 15,
+        "selected": "Canberra DSN",
+        "selected_full_name_visible": true,
+        "map_aspect_ratio": 2,
+        "labels_contained_and_disjoint": true,
+        "station_click_correct": true,
+        "playback_reuses_land_cache": true,
+        "labelled_stations": [
+          "Canberra DSN",
+          "ITU Ayazaga",
+          "Goldstone DSN",
+          "Madrid DSN"
+        ]
+      },
+      {
+        "width": 500,
+        "height": 260,
+        "theme": "modern",
+        "dpr": 1.0,
+        "station_count": 15,
+        "selected": "ITU Ayazaga",
+        "selected_full_name_visible": true,
+        "map_aspect_ratio": 2,
+        "labels_contained_and_disjoint": true,
+        "station_click_correct": true,
+        "playback_reuses_land_cache": true,
+        "labelled_stations": [
+          "ITU Ayazaga",
+          "Goldstone DSN",
+          "Madrid DSN",
+          "Canberra DSN"
+        ]
+      },
+      {
+        "width": 1200,
+        "height": 300,
+        "theme": "modern",
+        "dpr": 1.0,
+        "station_count": 15,
+        "selected": "Madrid DSN",
+        "selected_full_name_visible": true,
+        "map_aspect_ratio": 2,
+        "labels_contained_and_disjoint": true,
+        "station_click_correct": true,
+        "playback_reuses_land_cache": true,
+        "labelled_stations": [
+          "Madrid DSN",
+          "ITU Ayazaga",
+          "Goldstone DSN",
+          "Canberra DSN"
+        ]
+      }
+    ],
+    [
+      {
+        "width": 320,
+        "height": 230,
+        "theme": "orchid",
+        "dpr": 2.0,
+        "station_count": 15,
+        "selected": "Canberra DSN",
+        "selected_full_name_visible": true,
+        "map_aspect_ratio": 2,
+        "labels_contained_and_disjoint": true,
+        "station_click_correct": true,
+        "playback_reuses_land_cache": true,
+        "labelled_stations": [
+          "Canberra DSN",
+          "ITU Ayazaga",
+          "Goldstone DSN",
+          "Madrid DSN"
+        ]
+      },
+      {
+        "width": 500,
+        "height": 260,
+        "theme": "orchid",
+        "dpr": 2.0,
+        "station_count": 15,
+        "selected": "ITU Ayazaga",
+        "selected_full_name_visible": true,
+        "map_aspect_ratio": 2,
+        "labels_contained_and_disjoint": true,
+        "station_click_correct": true,
+        "playback_reuses_land_cache": true,
+        "labelled_stations": [
+          "ITU Ayazaga",
+          "Goldstone DSN",
+          "Madrid DSN",
+          "Canberra DSN"
+        ]
+      },
+      {
+        "width": 1200,
+        "height": 300,
+        "theme": "orchid",
+        "dpr": 2.0,
+        "station_count": 15,
+        "selected": "Madrid DSN",
+        "selected_full_name_visible": true,
+        "map_aspect_ratio": 2,
+        "labels_contained_and_disjoint": true,
+        "station_click_correct": true,
+        "playback_reuses_land_cache": true,
+        "labelled_stations": [
+          "Madrid DSN",
+          "ITU Ayazaga",
+          "Goldstone DSN",
+          "Canberra DSN"
+        ]
+      }
+    ]
+  ]
+}

@@ -65,6 +65,8 @@ convergence. No new scientific campaign was run.
 
 ## Remaining design work
 
-- Check dense station-label placement and map proportions across viewports.
+- Map proportions and station-label bounds were addressed in the
+  [map iteration](map-layout_2026-10-12.md); coincident marker clusters still use
+  the precise station dropdown.
 - Review specialist pages for clear units, short help and keyboard access.
 - Profile workflows with representative large saved runs when available.

@@ -49,13 +49,20 @@ propagation, station ephemeris computation or estimator execution in playback.
 The timer uses monotonic wall time and stops on hiding/closing the page.
 Map, Gantt and orbit backgrounds are cached independently of the cursor.
 
-The station dropdown, map marker and Gantt row label share selection. The
+The station dropdown, map marker/name and Gantt row label share selection. The
 dropdown supports native keyboard navigation; selecting a row label does not
 change time. "Tüm istasyonlar" clears the highlight. The status text distinguishes
 an epoch with no recorded measurements from a run with missing geometry/state
 history. Selection is reset on replacement with a different run. Mission plots
 stack vertically below 920 logical pixels of page width; the other pages retain
 their existing scrollable width. Splitter panes cannot collapse.
+
+The mission map fits a centered 2:1 equirectangular rectangle at every viewport
+size. Land, markers and hit testing share the same projection. Selected station
+labels get priority, stay within the map bounds and can be clicked by name;
+optional labels may hide where crowded, while all markers and dropdown entries
+remain. An explicit selection is retained for marker centers indistinguishable
+at integer pointer resolution. The dropdown resolves coincident station pairs.
 
 New native bundles include `*_mission_geometry.json`, referenced by manifest
 `mission_file` and `mission_sha256`. It records exact local station identities

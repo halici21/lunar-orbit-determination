@@ -1,6 +1,7 @@
 """Cached native Earth map and clickable mission Gantt, sharing recorded time."""
 from __future__ import annotations
 import json
+import math
 from pathlib import Path
 
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal
@@ -21,6 +22,7 @@ class StationWorldMap(QWidget):
         self.stations, self.active, self.selected = tuple(stations), set(), None
         self._base_key, self._base = None, None
         self._markers = []
+        self._labels = []
         self.setMinimumSize(320, 230)
         self.setMouseTracking(True)
         self.setAccessibleName("Dünya haritasında yer istasyonları; konumu seçmek için tıklayın")
@@ -38,8 +40,42 @@ class StationWorldMap(QWidget):
         self.selected = None
         self.update()
 
+    def _map_rect(self):
+        """Fit the 360° by 180° equirectangular map without stretching it."""
+        width = min(self.width()-40, 2*(self.height()-52))
+        height = width/2
+        return QRectF((self.width()-width)/2, 20+(self.height()-52-height)/2, width, height)
+
     def _point(self, lon, lat):
-        return QPointF(20+(lon+180)/360*(self.width()-40), 20+(90-lat)/180*(self.height()-52))
+        rect = self._map_rect()
+        return QPointF(rect.left()+(lon+180)/360*rect.width(), rect.top()+(90-lat)/180*rect.height())
+
+    def _place_labels(self, metrics):
+        bounds = self._map_rect().adjusted(3, 3, -3, -3)
+        occupied = []
+        markers = [QRectF(p.x()-10, p.y()-10, 20, 20) for p, _ in self._markers]
+        placements = []
+        # Give the selected station first choice; nearby optional names may hide.
+        for point, station in sorted(self._markers, key=lambda item: item[1]["name"] != self.selected):
+            selected = station["name"] == self.selected
+            if not selected and station["name"] not in {"Goldstone DSN", "Madrid DSN", "Canberra DSN", "ITU Ayazaga"}:
+                continue
+            text = station["name"] if selected else station["name"].split()[0]
+            text = metrics.elidedText(text, Qt.ElideRight, int(bounds.width()-4))
+            width, height = metrics.horizontalAdvance(text)+4, metrics.height()+4
+            candidates = []
+            for dx, dy in ((12, -height-12), (-width-12, -height-12), (12, 12), (-width-12, 12)):
+                rect = QRectF(point.x()+dx, point.y()+dy, width, height)
+                rect.moveLeft(max(bounds.left(), min(rect.left(), bounds.right()-width)))
+                rect.moveTop(max(bounds.top(), min(rect.top(), bounds.bottom()-height)))
+                collisions = sum(rect.intersects(other) for other in occupied+markers)
+                candidates.append((collisions, rect))
+            collisions, rect = min(candidates, key=lambda candidate: candidate[0])
+            if collisions and not selected:
+                continue
+            occupied.append(rect.adjusted(-3, -3, 3, 3))
+            placements.append((point, station, text, rect))
+        return placements
 
     def _background(self):
         key = (self.width(), self.height(), self.devicePixelRatioF())
@@ -89,21 +125,40 @@ class StationWorldMap(QWidget):
             if active or selected:
                 p.setBrush(Qt.NoBrush)
                 p.drawEllipse(point, 9, 9)
-            if selected or station["name"] in {"Goldstone DSN", "Madrid DSN", "Canberra DSN", "ITU Ayazaga"}:
-                p.setFont(QFont("Segoe UI", 8))
-                p.setPen(QColor(C.TEXT_PRIMARY))
-                p.drawText(point+QPointF(8, -8), station["name"].split()[0])
+        p.setFont(QFont("Segoe UI", 8))
+        self._labels = self._place_labels(p.fontMetrics())
+        for point, station, text, rect in self._labels:
+            anchor = QPointF(max(rect.left(), min(point.x(), rect.right())),
+                             max(rect.top(), min(point.y(), rect.bottom())))
+            p.setPen(QPen(QColor(C.BORDER_MID), .8))
+            length = math.hypot(anchor.x()-point.x(), anchor.y()-point.y())
+            if length > 10:
+                p.drawLine(point+(anchor-point)*(10/length), anchor)
+            p.fillRect(rect, QColor(C.BG_DEEP))
+            p.setPen(QColor(C.TEXT_PRIMARY))
+            p.drawText(rect.adjusted(2, 2, -2, -2), Qt.AlignLeft | Qt.AlignVCenter, text)
 
     def _hit(self, point):
+        for _, station, _, rect in self._labels:
+            if rect.contains(QPointF(point)):
+                return station
         nearby = [(abs(p.x()-point.x())**2+abs(p.y()-point.y())**2, station) for p, station in self._markers]
         hit = min(nearby, key=lambda pair: pair[0], default=(9999, None))
+        if hit[0] < 144:
+            # Integer pointer coordinates cannot resolve subpixel station pairs
+            # such as Madrid/Cebreros. Retain an explicit existing selection.
+            selected = next((pair for pair in nearby if pair[1]["name"] == self.selected), None)
+            if selected and selected[0] < 144 and selected[0] <= hit[0]+1:
+                return selected[1]
         return hit[1] if hit[0] < 144 else None
 
     def mouseMoveEvent(self, event):
         station = self._hit(event.pos())
         if station:
-            QToolTip.showText(event.globalPos(), f"{station['name']}\n{station['lat_deg']:.3f}° enlem · {station['lon_deg']:.3f}° boylam", self)
+            self.setCursor(Qt.PointingHandCursor)
+            QToolTip.showText(event.globalPos(), f"{station['name']}\n{station['lat_deg']:.3f}° enlem · {station['lon_deg']:.3f}° boylam\nİstasyonu seçmek için tıklayın.", self)
         else:
+            self.unsetCursor()
             QToolTip.hideText()
 
     def mousePressEvent(self, event):

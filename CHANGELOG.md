@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Mission map preserves its 2:1 equirectangular proportions when resized.
+  Bounded station labels avoid collisions and support exact name selection;
+  explicit selection is retained for subpixel marker pairs.
 - Orbit legends, interaction instructions and recorded frame/epoch labels use
   separate wrapped bands. Enlarged orbit geometry is clipped away from text;
   playback retains its cached drawing and nearest-record explanation.

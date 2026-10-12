@@ -168,6 +168,68 @@ def test_map_click_and_time_selection_link_all_views(mission, app):
     assert page.slider.value() == 3
 
 
+@pytest.mark.parametrize("size", [(320, 230), (600, 260), (1200, 300)])
+def test_world_map_keeps_equal_angular_scale_and_station_hits_after_resize(app, size):
+    from widgets.mission_plots import StationWorldMap
+    stations = station_catalog()
+    world = StationWorldMap(stations)
+    try:
+        world.resize(*size)
+        world.grab()
+        # Independent equirectangular oracle: equal degree spans use equal pixels.
+        origin, east, north = world._point(0, 0), world._point(60, 0), world._point(0, 60)
+        assert east.x()-origin.x() == pytest.approx(origin.y()-north.y(), abs=1e-10)
+        assert origin.x() == pytest.approx(world.width()/2)
+        assert world._point(-180, 90).x() == pytest.approx(world._map_rect().left())
+        assert world._point(180, -90).y() == pytest.approx(world._map_rect().bottom())
+        assert world._map_rect().width()/world._map_rect().height() == pytest.approx(2)
+        for station in stations:
+            point = world._point(station["lon_deg"], station["lat_deg"])
+            assert any(p == point and row is station for p, row in world._markers)
+        canberra = next(s for s in stations if s["name"] == "Canberra DSN")
+        chosen = []
+        world.stationSelected.connect(chosen.append)
+        QTest.mouseClick(world, Qt.LeftButton, pos=world._point(canberra["lon_deg"], canberra["lat_deg"]).toPoint())
+        assert chosen == ["Canberra DSN"]
+        world.resize(500, 350); world.grab()
+        assert world.selected == "Canberra DSN"
+        assert world._hit(world._point(canberra["lon_deg"], canberra["lat_deg"])) is canberra
+    finally:
+        world.close()
+
+
+def test_map_names_fit_edges_and_selected_station_wins_crowded_labels(app):
+    from widgets.mission_plots import StationWorldMap
+    world = StationWorldMap(station_catalog())
+    try:
+        world.resize(320, 230)
+        world.selected = "Canberra DSN"
+        world.grab()
+        assert any(s["name"] == "Canberra DSN" and text == "Canberra DSN" for _, s, text, _ in world._labels)
+        assert all(world._map_rect().contains(rect) for _, _, _, rect in world._labels)
+        assert all(not a[3].intersects(b[3]) for i, a in enumerate(world._labels) for b in world._labels[i+1:])
+        world.selected = "Madrid DSN"; world.grab()
+        madrid = next(s for s in world.stations if s["name"] == "Madrid DSN")
+        # Madrid and Cebreros occupy the same pointer pixel at this scale.
+        assert world._hit(world._point(madrid["lon_deg"], madrid["lat_deg"]).toPoint()) is madrid
+        world.selected = "Cebreros ESA"; world.grab()
+        cebreros_label = next(rect for _, s, _, rect in world._labels if s["name"] == "Cebreros ESA")
+        chosen = []
+        world.stationSelected.connect(chosen.append)
+        QTest.mouseClick(world, Qt.LeftButton, pos=cebreros_label.center().toPoint())
+        assert chosen == ["Cebreros ESA"]  # Names resolve nearby markers explicitly.
+        # Several names at one point: suppress optional labels, keep every marker.
+        stations = [dict(name=name, lon_deg=0., lat_deg=0.)
+                    for name in ("Goldstone DSN", "Madrid DSN", "Canberra DSN", "ITU Ayazaga", "Selected station")]
+        world.set_stations(stations); world.selected = "Selected station"
+        world.grab()
+        assert len(world._markers) == len(stations)
+        assert world._labels[0][1]["name"] == "Selected station"
+        assert all(not a[3].intersects(b[3]) for i, a in enumerate(world._labels) for b in world._labels[i+1:])
+    finally:
+        world.close()
+
+
 @pytest.mark.parametrize("successes,expected", [
     ([False, False], "0/2 yay kaydı başarılı"),
     ([True, None], "1/1 yay kaydı başarılı · 1 kayıtta başarı alanı yok"),

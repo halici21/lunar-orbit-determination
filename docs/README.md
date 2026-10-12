@@ -8,6 +8,7 @@
 - [Mission status iteration: completion, success and result details](mission-status_2026-10-11.md)
 - [First-run guidance and accessible plot placeholders](mission-onboarding_2026-10-12.md)
 - [Orbit labels: narrow plots, zoom and display scaling](orbit-labels_2026-10-12.md)
+- [Mission map: consistent proportions and clickable station labels](map-layout_2026-10-12.md)
 - [Desktop workflow and scientific display contracts](../desktop_app/RESULT_WORKFLOW.md)
 - [Public CI scope and scientific verification](verification.md)
 - [Earlier interfaces and historical documents](legacy-tools.md)

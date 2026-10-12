@@ -28,7 +28,10 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest orbit-label regression](orbit-labels_2026-10-12.md): 1,795 passed checks,
+[Latest map regression](map-layout_2026-10-12.md): 1,799 passed checks, 29 skipped
+(1,682 named cases and 146 subtest checks), zero failures/errors. The 271-case
+public gate includes all 35 mission cases, including map proportions and labels.
+[Previous orbit-label regression](orbit-labels_2026-10-12.md): 1,795 passed checks,
 29 skipped (1,678 named cases and 146 subtest checks), zero failures/errors.
 The 267-case public gate includes all 31 mission and seven large-workspace cases.
 [Previous first-run regression](mission-onboarding_2026-10-12.md): 1,793 passed
