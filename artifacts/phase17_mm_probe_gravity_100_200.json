@@ -1,0 +1,139 @@
+{
+ "label": "DIAGNOSTIC PROBE (model-mismatch pivot): linear signature of GL1800F degrees 51-100 omitted by the 50x50 estimation field",
+ "model": {
+  "A_bond": 0.12,
+  "T_subsolar_K": 390.0,
+  "T_night_K": 95.0,
+  "approximation": "sub-spacecraft point"
+ },
+ "rows": [
+  {
+   "orbit": "CANON",
+   "k": 0,
+   "dyn": "SIMPLIFIED",
+   "force": "GRAV",
+   "degrees": [
+    100,
+    200
+   ],
+   "mismodel_scale": 1.0,
+   "convolution_check_rel": 0.024084443644747787,
+   "mean_accel_ratio_pr_over_srp": 38.1594923399546,
+   "sine_pr_vs_m3_design": 0.06781933900872328,
+   "sine_scalar_k_vs_state": 0.06790807644534595,
+   "resid_chi2_10pct": 374412.49881656514,
+   "signal_chi2_10pct": 81403528.99676482,
+   "alias_10pct": {
+    "false_variation_chi2": 87608.46388165507,
+    "variation_bias": [
+     -0.8617335662869114,
+     2.008219153633703
+    ],
+    "variation_sd": [
+     0.009010739150286726,
+     0.006869580294872015
+    ],
+    "level_bias": 0.2723869901264631,
+    "level_bias_over_sigma": 28.43650943667292,
+    "state_bias_pos_m": 5.275267753022919
+   },
+   "sigma_c_pr": 0.0016342738474141383
+  },
+  {
+   "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+   "k": 12,
+   "dyn": "SIMPLIFIED",
+   "force": "GRAV",
+   "degrees": [
+    100,
+    200
+   ],
+   "mismodel_scale": 1.0,
+   "convolution_check_rel": 0.019658820040847177,
+   "mean_accel_ratio_pr_over_srp": 32.222760069151335,
+   "sine_pr_vs_m3_design": 0.02223229429362159,
+   "sine_scalar_k_vs_state": 0.10802860829724269,
+   "resid_chi2_10pct": 62396.73110816024,
+   "signal_chi2_10pct": 126238920.69280377,
+   "alias_10pct": {
+    "false_variation_chi2": 18371.251793647847,
+    "variation_bias": [
+     -1.9561333844709816,
+     -3.5688572179044087
+    ],
+    "variation_sd": [
+     0.03459898202325195,
+     0.030269965067344674
+    ],
+    "level_bias": 0.18012718028136285,
+    "level_bias_over_sigma": 12.841657439845164,
+    "state_bias_pos_m": 2.9892248680985936
+   },
+   "sigma_c_pr": 0.0040033087053399155
+  },
+  {
+   "orbit": "O2_FULL_SUN_HIGH_BETA",
+   "k": 0,
+   "dyn": "SIMPLIFIED",
+   "force": "GRAV",
+   "degrees": [
+    100,
+    200
+   ],
+   "mismodel_scale": 1.0,
+   "convolution_check_rel": 0.00025926059784739744,
+   "mean_accel_ratio_pr_over_srp": 19.849670310155137,
+   "sine_pr_vs_m3_design": 0.08039516779505282,
+   "sine_scalar_k_vs_state": 0.23959580812397804,
+   "resid_chi2_10pct": 58523.07530539995,
+   "signal_chi2_10pct": 9054557.84718097,
+   "alias_10pct": {
+    "false_variation_chi2": 29586.300007656468,
+    "variation_bias": [
+     -3.989778674185972,
+     13.203084323403232
+    ],
+    "variation_sd": [
+     0.07780457663970763,
+     0.07685542983339808
+    ],
+    "level_bias": -1.6817805918261692,
+    "level_bias_over_sigma": -47.74272663926943,
+    "state_bias_pos_m": 13.235234167188326
+   },
+   "sigma_c_pr": 0.004133675969802208
+  },
+  {
+   "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+   "k": 0,
+   "dyn": "SIMPLIFIED",
+   "force": "GRAV",
+   "degrees": [
+    100,
+    200
+   ],
+   "mismodel_scale": 1.0,
+   "convolution_check_rel": 0.016562528895368685,
+   "mean_accel_ratio_pr_over_srp": 31.58624637973045,
+   "sine_pr_vs_m3_design": 0.10741076934494861,
+   "sine_scalar_k_vs_state": 0.1995165851996523,
+   "resid_chi2_10pct": 131180.26525874232,
+   "signal_chi2_10pct": 11370324.26138236,
+   "alias_10pct": {
+    "false_variation_chi2": 3964.2298513332776,
+    "variation_bias": [
+     0.7335296014311541,
+     -1.3252463942538855
+    ],
+    "variation_sd": [
+     0.02348019260616281,
+     0.02209824510401242
+    ],
+    "level_bias": 0.6073539193306206,
+    "level_bias_over_sigma": 60.029511593249154,
+    "state_bias_pos_m": 7.083414775578715
+   },
+   "sigma_c_pr": 0.0027609958103584
+  }
+ ]
+}
