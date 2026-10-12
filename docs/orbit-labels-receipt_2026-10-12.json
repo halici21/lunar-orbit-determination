@@ -1,0 +1,142 @@
+{
+  "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+  "states": 145,
+  "arc_solutions": 4,
+  "stations": 4,
+  "measurement_windows": 12,
+  "frame": "J2000",
+  "role": "truth",
+  "animation_before_t_s": 21600.0,
+  "animation_after_t_s": 25800.0,
+  "original_source_hashes_unchanged": true,
+  "small_window_controls_reachable": true,
+  "station_picker_selection": "Madrid DSN",
+  "narrow_plots_stacked": true,
+  "horizontal_scroll_maximum": 0,
+  "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+  "first_run_guidance_verified": true,
+  "loaded_messages_clear_initial_guidance": true,
+  "details_button_enabled": true,
+  "operational_success": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "minimum_window": {
+    "width": 760,
+    "horizontal_scroll_maximum": 0,
+    "controls_reachable": true,
+    "height": 420
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "plot_layouts": [
+    {
+      "layouts": [
+        {
+          "width": 350,
+          "height": 230,
+          "dpr": 1.0,
+          "theme": "modern",
+          "label_bands_disjoint": true,
+          "zoom_preserves_label_pixels": true,
+          "playback_reuses_base_cache": true,
+          "viewport_height": 102.0
+        },
+        {
+          "width": 500,
+          "height": 260,
+          "dpr": 1.0,
+          "theme": "modern",
+          "label_bands_disjoint": true,
+          "zoom_preserves_label_pixels": true,
+          "playback_reuses_base_cache": true,
+          "viewport_height": 132.0
+        },
+        {
+          "width": 780,
+          "height": 440,
+          "dpr": 1.0,
+          "theme": "modern",
+          "label_bands_disjoint": true,
+          "zoom_preserves_label_pixels": true,
+          "playback_reuses_base_cache": true,
+          "viewport_height": 312.0
+        }
+      ],
+      "original_sources_unchanged": true
+    },
+    {
+      "layouts": [
+        {
+          "width": 350,
+          "height": 230,
+          "dpr": 2.0,
+          "theme": "orchid",
+          "label_bands_disjoint": true,
+          "zoom_preserves_label_pixels": true,
+          "playback_reuses_base_cache": true,
+          "viewport_height": 102.0
+        },
+        {
+          "width": 500,
+          "height": 260,
+          "dpr": 2.0,
+          "theme": "orchid",
+          "label_bands_disjoint": true,
+          "zoom_preserves_label_pixels": true,
+          "playback_reuses_base_cache": true,
+          "viewport_height": 132.0
+        },
+        {
+          "width": 780,
+          "height": 440,
+          "dpr": 2.0,
+          "theme": "orchid",
+          "label_bands_disjoint": true,
+          "zoom_preserves_label_pixels": true,
+          "playback_reuses_base_cache": true,
+          "viewport_height": 312.0
+        }
+      ],
+      "original_sources_unchanged": true
+    }
+  ]
+}

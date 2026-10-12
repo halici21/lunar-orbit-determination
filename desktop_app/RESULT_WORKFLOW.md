@@ -283,6 +283,12 @@ speed claim. See tests/test_workflow_polish.py for focused behavioral regression
 
 ## Modern / Orchid appearance
 
+Stored orbit plots reserve separate wrapped text bands for the legend, drag/zoom
+help, frame, kilometre units and selected saved-state epoch. Orbit geometry and
+the current-state marker are clipped to the intervening drawing viewport, so
+zooming cannot obscure those labels. The complete orbit is smaller at the
+minimum plot size; zoom remains available. Playback keeps the cached base image.
+
 The default Modern theme uses the Sunumatik palette gallery's white/plaster
 surfaces and signal-red accent. Orchid uses Berry Wine / Orchid Mist.
 Appearance is stored under app_settings/appearance in the existing QSettings.

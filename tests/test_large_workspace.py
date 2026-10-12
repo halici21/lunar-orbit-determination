@@ -74,6 +74,40 @@ def test_selection_uses_raw_state_even_when_line_is_decimated(app):
     orbit.close()
 
 
+@pytest.mark.parametrize("size", [(350, 230), (780, 440)])
+def test_orbit_labels_remain_separate_and_unobscured_when_zoomed(app, size):
+    """Native raster oracle: zoomed geometry cannot paint over instructions/metadata."""
+    from PyQt5.QtCore import QRectF, Qt
+    from PyQt5.QtGui import QFontMetrics
+    orbit = StoredOrbit()
+    try:
+        orbit.resize(*size)
+        source = result(5)
+        source.metadata.update(state_role="truth", frame="J2000")
+        orbit.set_result(source)
+        orbit.selected_t = 31  # Nearest saved epoch retains its explanatory suffix.
+        original = orbit.grab().toImage()
+        labels, epoch, viewport = orbit._label_layout()
+        rects = [rect for _, _, rect in labels] + [epoch, viewport]
+        assert all(QRectF(orbit.rect()).contains(rect) for rect in rects)
+        assert all(not a.intersects(b) for i, a in enumerate(rects) for b in rects[i+1:])
+        for text, font, rect in labels:
+            metrics = QFontMetrics(font)
+            # Measure actual multiline ink, not a hard-coded character count.
+            assert metrics.boundingRect(0, 0, int(rect.width()), 1000,
+                Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, text).height() <= rect.height()
+        assert "truth" in labels[0][0] and "yay tahmini" in labels[0][0]
+        assert "Tekerlek" in labels[1][0] and "J2000" in labels[2][0] and "km" in labels[2][0]
+        orbit.zoom = 4
+        zoomed = orbit.grab().toImage()
+        assert original != zoomed
+        for rect in rects[:-1]:
+            assert original.copy(rect.toAlignedRect()) == zoomed.copy(rect.toAlignedRect())
+        assert source.states[3]["t_s"] == 30 and orbit.selected_t == 31
+    finally:
+        orbit.close()
+
+
 def test_archive_cache_reuses_counts_but_refreshes_manifest_and_changed_csv(tmp_path):
     path = make_run(tmp_path)
     cache = {}

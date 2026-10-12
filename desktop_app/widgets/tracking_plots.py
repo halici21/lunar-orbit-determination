@@ -5,7 +5,7 @@ import bisect
 import math
 
 from PyQt5.QtCore import Qt, QRectF, QPointF, pyqtSignal
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen, QFont, QPixmap
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen, QFont, QFontMetrics, QPixmap
 from PyQt5.QtWidgets import QWidget
 
 
@@ -230,6 +230,8 @@ class StoredOrbit(QWidget):
         self._base_key = None
         self._base_image = None
         self._project = None
+        self._plot_rect = QRectF()
+        self._epoch_rect = QRectF()
         self.setMinimumSize(350, 230)
         self.setFocusPolicy(Qt.StrongFocus)
         self.setAccessibleName("Kaydedilmiş Ay merkezli durum vektörlerinin yörüngesi")
@@ -298,30 +300,61 @@ class StoredOrbit(QWidget):
             i = bisect.bisect_left(self._times, self.selected_t)
             choices = [j for j in (i - 1, i) if 0 <= j < len(self._times)]
             j = min(choices, key=lambda n: abs(self._times[n] - self.selected_t))
+            p.save()
+            p.setClipRect(self._plot_rect)
             p.setBrush(QColor(ACCENT))
             p.setPen(Qt.NoPen)
             p.drawEllipse(self._project(self._points[j]), 4, 4)
+            p.restore()
             t_label = f"Durum epoku: {elapsed(self._times[j])}"
             if self._times[j] != self.selected_t:
                 t_label += " (en yakın kayıt)"
         p.setPen(QColor(MUTED))
         p.setFont(QFont("Segoe UI", 9))
-        p.drawText(18, self.height() - 23, t_label)
+        p.drawText(self._epoch_rect, Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, t_label)
+
+    def _label_layout(self):
+        """Reserve separate wrapped text bands and a clipped drawing viewport."""
+        width = self.width() - 36
+        title_font, detail_font = QFont("Segoe UI", 10), QFont("Segoe UI", 9)
+        truth = self.result and self.result.metadata.get("state_role") == "truth"
+        title = "Referans yörünge (truth) · ○ kayıtlı yay tahmini" if truth else "Kaydedilmiş yörünge"
+        help_text = "Sürükle: döndür · Tekerlek: yakınlaştır" if self._points else ""
+        frame = f"Çerçeve: {self.result.metadata['frame']} · görünüm: km" if self._points else ""
+        # Reserve the longest cursor message so playback never moves the plot.
+        metrics = QFontMetrics(detail_font)
+        longest_time = max((elapsed(t) for t in (self._times[0], self._times[-1])),
+                           key=metrics.horizontalAdvance) if self._times else ""
+        epoch = f"Durum epoku: {longest_time} (en yakın kayıt)" if self._points else ""
+        flags = Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap
+        def height(text, font):
+            return QFontMetrics(font).boundingRect(0, 0, width, 1000, flags, text).height() if text else 0
+        title_rect = QRectF(18, 12, width, height(title, title_font))
+        help_rect = QRectF(18, title_rect.bottom()+5, width, height(help_text, detail_font))
+        epoch_rect = QRectF(18, self.height()-12-height(epoch, detail_font), width, height(epoch, detail_font))
+        frame_rect = QRectF(18, epoch_rect.top()-4-height(frame, detail_font), width, height(frame, detail_font))
+        plot_rect = QRectF(18, help_rect.bottom()+10, width, max(1, frame_rect.top()-help_rect.bottom()-18))
+        return ((title, title_font, title_rect), (help_text, detail_font, help_rect),
+                (frame, detail_font, frame_rect)), epoch_rect, plot_rect
 
     def _draw_base(self, p):
         p.setRenderHint(QPainter.Antialiasing)
         p.fillRect(self.rect(), QColor(BG))
-        p.setFont(QFont("Segoe UI", 10))
-        p.setPen(QColor(TEXT))
+        labels, self._epoch_rect, self._plot_rect = self._label_layout()
+        for index, (text, font, rect) in enumerate(labels):
+            p.setFont(font)
+            p.setPen(QColor(TEXT if index == 0 else MUTED))
+            p.drawText(rect, Qt.AlignLeft | Qt.AlignTop | Qt.TextWordWrap, text)
         truth = self.result and self.result.metadata.get("state_role") == "truth"
-        p.drawText(18, 26, "Referans yörünge (truth) · ○ kayıtlı yay tahmini" if truth else "Kaydedilmiş yörünge")
         if not self._points:
             p.setPen(QColor(MUTED))
-            p.drawText(QRectF(25, 60, self.width() - 50, self.height() - 85), Qt.AlignCenter | Qt.TextWordWrap,
+            p.drawText(self._plot_rect, Qt.AlignCenter | Qt.TextWordWrap,
                        self.empty_message())
             return
-        scale = min(self.width() * .40, self.height() * .36) / self._extent * self.zoom
-        cx, cy = self.width() / 2, self.height() / 2
+        p.save()
+        p.setClipRect(self._plot_rect)
+        scale = min(self._plot_rect.width(), self._plot_rect.height()) * .40 / self._extent * self.zoom
+        cx, cy = self._plot_rect.center().x(), self._plot_rect.center().y()
         cos_yaw, sin_yaw = math.cos(self.yaw), math.sin(self.yaw)
         cos_pitch, sin_pitch = math.cos(self.pitch), math.sin(self.pitch)
         def project(point):
@@ -379,7 +412,4 @@ class StoredOrbit(QWidget):
             p.setBrush(QColor(BG))
             for row in self.result.updates if self.result.metadata.get("record_kind") == "arc_solution" else ():
                 p.drawEllipse(project(tuple(row[k] / 1000 for k in ("x_m", "y_m", "z_m"))), 3.3, 3.3)
-        p.setPen(QColor(MUTED))
-        p.setFont(QFont("Segoe UI", 9))
-        p.drawText(18, self.height() - 42, f"Çerçeve: {self.result.metadata['frame']} · görünüm: km")
-        p.drawText(self.width() - 240, 26, "Sürükle: döndür · Tekerlek: yakınlaştır")
+        p.restore()

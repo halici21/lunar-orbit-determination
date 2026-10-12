@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Orbit legends, interaction instructions and recorded frame/epoch labels use
+  separate wrapped bands. Enlarged orbit geometry is clipped away from text;
+  playback retains its cached drawing and nearest-record explanation.
 - First-run mission plots now explain how to open a run; missing-data messages
   appear only for loaded results. The same contextual explanations are exposed
   through Qt accessibility descriptions.

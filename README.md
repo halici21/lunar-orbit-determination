@@ -64,6 +64,8 @@ fields, with a direct result-inspector action; see the
 [status iteration](docs/mission-status_2026-10-11.md).
 The initial view explains how to begin; loaded runs retain specific missing-data
 messages. See [first-run guidance](docs/mission-onboarding_2026-10-12.md).
+Orbit legends, controls and recorded metadata also remain readable in narrow
+plots and at high zoom; see [plot readability](docs/orbit-labels_2026-10-12.md).
 
 The current entry point is desktop_app/main.py. The older Tkinter and local web
 tools remain for reference; see [legacy tools](docs/legacy-tools.md). There is no
@@ -71,15 +73,15 @@ hosted web application for the current desktop workflow.
 
 ## What is verified
 
-- **Local combined suite, 2026-10-12:** 1,793 passed checks, 29 skipped, zero failures/errors.
-  Final public gate: 265 passed.
+- **Local combined suite, 2026-10-12:** 1,795 passed checks, 29 skipped, zero failures/errors.
+  Final public gate: 267 passed.
 - **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
   desktop artifact, process, archive, comparison, rendering and session checks.
   External data paths are isolated; this gate uses committed fixtures only.
 - **Real desktop workflow:** short recorded runs, derivation, comparison, export
   and reopening were exercised. Eight existing single-arc runs remained readable.
 
-[Local verification record](docs/mission-onboarding_2026-10-12.md) ·
+[Local verification record](docs/orbit-labels_2026-10-12.md) ·
 [Public CI scope](docs/verification.md) ·
 [Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
 
