@@ -123,4 +123,4 @@ docstrings:
 
 - Focused: `test_harden_d27_convergence_status`, `test_estimator_lm_consistency`, `test_estimators`,
   `test_harden_bls1_k_srp_recovery`, `test_harden_d25/d28/d29`, `test_k_srp_bls_solve_for`, `test_scenarios`: pass.
-- Full suite on a clean tree: see the closeout report (`docs/phase17_k_closeout_and_model_mismatch_pivot.md` §5).
+- Full suite on a clean detached worktree of `fd24147`: 1497 passed, 29 skipped, 0 failed (`artifacts/phase17_closeout_verification.txt`).

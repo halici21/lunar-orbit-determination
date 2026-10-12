@@ -243,6 +243,6 @@ new tunable parameter: the error amplitude α is the controlled variable.
 ## 5. Verification
 
 - **Focused (worktree):** D27, LM consistency, estimators, BLS1, D25/D28/D29, K-SRP BLS and scenarios. All pass.
-- **Full suite:** clean detached worktree of the final commit (only committed files; the concurrent desktop-app edits
-  in the shared worktree are excluded). See the commit message of the verification record and
+- **Full suite:** clean detached worktree of `fd24147` (only committed files; the concurrent desktop-app edits
+  in the shared worktree are excluded): **1497 passed, 29 skipped, 0 failed** (exit 0). Record:
   `artifacts/phase17_closeout_verification.txt`.
