@@ -2739,6 +2739,15 @@ def estimate_two_way_range_srif(
         prior_inv, scale = prior_inv6, scale6
         prior_sqrt_info = prior_sqrt_info6
         r_bar = prior_sqrt_scaled6
+    # Phase 17-HARDEN-D29: the prior right-hand side carries only the PRIORS of the declared
+    # problem.  ``r_bar`` keeps the full rows (with no explicit state prior the state block is
+    # the 15 km / 5 m/s step regularizer, as in every other path - D28), but its right-hand side
+    # is a pull toward x_prior only for an explicit state prior.  The K row is the required,
+    # explicit K prior (s31).  Before D29 the K path multiplied the FULL prior square root here,
+    # so the step regularizer silently became a Bayesian state prior in the estimate.
+    prior_rhs_sqrt = prior_sqrt_info.copy()
+    if solve_for_k_srp and not has_explicit_prior:
+        prior_rhs_sqrt[:6, :] = 0.0
 
     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
     w_curr_diag = w_diag.copy()
@@ -2816,7 +2825,7 @@ def estimate_two_way_range_srif(
                         else x_prior)
         x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
                           else x_nominal)
-        z_bar = (prior_sqrt_info @ (x_prior_full - x_current_full)
+        z_bar = (prior_rhs_sqrt @ (x_prior_full - x_current_full)
                  if (has_explicit_prior or solve_for_k_srp) else np.zeros(na))
         combined = np.vstack(
             [
@@ -2895,8 +2904,10 @@ def estimate_two_way_range_srif(
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
         if solve_for_k_srp:
-            # Phase 17-HARDEN-D28: unchanged on purpose - this objective's z_bar pulls toward the
-            # FULL prior (default state rows + required K prior), so the posterior keeps it.
+            # Phase 17-HARDEN-D29: the objective now carries the explicit state prior (if any) and
+            # the required K prior only, so the posterior carries exactly those (as the BLS K path).
+            post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
+            post_prior_inv[6, 6] = prior_inv[6, 6]
             # Phase 17-R1COV.  Same square-root covariance path as the BLS
             # branch (see its comment for the full rationale).  Unreachable for
             # solve_for_k_srp=False.
@@ -2907,11 +2918,11 @@ def estimate_two_way_range_srif(
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
-                + prior_inv
+                + post_prior_inv
             )
             posterior_covariance, k_sqrt_information = (
                 _square_root_covariance_from_design(
-                    posterior_design, w_curr_diag, prior_inv, scale
+                    posterior_design, w_curr_diag, post_prior_inv, scale
                 )
             )
         else:

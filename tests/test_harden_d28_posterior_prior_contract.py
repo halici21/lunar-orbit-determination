@@ -8,8 +8,8 @@ Contract (docs/phase17_harden_d28_prior_covariance_contract.md):
     (MATLAB P_bar_inv heritage), not a prior; it never enters the posterior;
   - explicit prior: MAP objective and posterior carry it (unchanged);
   - BLS K path with only a K qualification prior: posterior carries only the K row;
-  - SRIF K path: its objective pulls toward the FULL prior (default state rows + the
-    required K prior), so its posterior keeps it - unchanged by design.
+  - SRIF K path: since Phase 17-HARDEN-D29 its objective carries only the required K prior
+    (plus an explicit state prior if supplied), so its posterior carries exactly those.
 
 Before D28 every posterior silently added the default diagonal.
 """
@@ -117,7 +117,7 @@ def test_two_way_bls_k_path_posterior_is_data_only_or_carries_only_the_k_prior(f
     assert _sigma_rel(np.asarray(sk.posterior_covariance), np.linalg.inv(with_k)) <= 1e-8
 
 
-def test_two_way_srif_six_state_is_data_only_and_k_path_keeps_its_objective_prior(fx):
+def test_two_way_srif_six_state_is_data_only_and_k_path_carries_only_the_k_prior(fx):
     srp_only = dict(fx, harm={})
     aug0 = np.concatenate([fx["x_true0"], np.eye(6).reshape(-1, order="F")])
     hist = D25.propagate_augmented_state(fx["t_pass"], aug0, *D25._dyn(fx), srp=fx["srp"], **TOL)
@@ -134,7 +134,7 @@ def test_two_way_srif_six_state_is_data_only_and_k_path_keeps_its_objective_prio
     w = E._two_way_range_weight_diagonal(f2["obs"], pg)
     data_only = h.T @ (w[:, None] * h)
     assert _info_rel(info, data_only) <= 1e-8
-    # SRIF K path: z_bar pulls toward the full prior, so the posterior keeps the default rows + K prior
+    # SRIF K path (HARDEN-D29): data-only state + the required K prior, in objective and posterior
     xk, _, sk = E.estimate_two_way_range_srif(f2["t_pass"], f2["obs"], f2["x_true0"], pg, *D25._dyn(f2), max_iter=3,
                                               **TOL, srp=f2["srp"], solve_for_k_srp=True, k_srp_initial=0.01,
                                               k_srp_prior_sigma=0.005, return_posterior=True)
@@ -143,9 +143,8 @@ def test_two_way_srif_six_state_is_data_only_and_k_path_keeps_its_objective_prio
     _, hx = E.two_way_range_nominal_and_initial_jacobian(f2["obs"], pg, aug)
     hfull = np.hstack([hx, E._two_way_range_k_srp_column(f2["obs"], aug, hx)[:, None]])
     full = hfull.T @ (w[:, None] * hfull)
-    full[:6, :6] += _default_prior()
     full[6, 6] += 1.0 / 0.005 ** 2
-    assert _sigma_rel(np.asarray(sk.posterior_covariance), np.linalg.inv(full)) <= 1e-6
+    assert _sigma_rel(np.asarray(sk.posterior_covariance), np.linalg.inv(full)) <= 1e-8
 
 
 # ----------------------------------------------------------------------

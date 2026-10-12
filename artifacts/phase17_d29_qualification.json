@@ -1,0 +1,82 @@
+{
+ "gates": {
+  "G1_explicit_state_prior_unchanged": true,
+  "G2_six_state_unchanged": true,
+  "G3_no_state_pull": true,
+  "G4_stationarity": true,
+  "G5_posterior_rebuild": true,
+  "G6_bls_srif_equivalence": false
+ },
+ "g6_posthoc_attribution": {
+  "label": "POST-HOC: the G6 posterior gap is the covariance's linearisation-point dependence",
+  "bls_posterior_vs_declared_at_bls_point": 2.3314683517128287e-15,
+  "srif_posterior_vs_declared_at_srif_point": 5.773159728050814e-15,
+  "declared_bls_point_vs_srif_point": 1.4383963999886618e-06
+ },
+ "start_dependence_over_sigma": {
+  "old": 0.00010473724537236104,
+  "new": 1.3396919416936841e-05
+ },
+ "stationarity_max_over_sigma": 3.694309722565885e-05,
+ "posterior_rebuild_sigma_rel": 5.773159728050814e-15,
+ "bls_srif_estimate_over_sigma": 0.00043462041971233193,
+ "bls_srif_sigma_rel": 1.4383963944375466e-06,
+ "bls_stop": "J-Stab",
+ "srif_stop": "MaxIter",
+ "materiality": {
+  "start_truth": {
+   "estimate_change_over_new_sigma": [
+    0.00017877912425708393,
+    0.00020961892890098186,
+    0.00020959953977183022,
+    0.00020962310369359026,
+    5.2283573616885044e-05,
+    0.00011758502394927363,
+    1.6143537000634983e-05
+   ],
+   "position_change_m": 0.03207059803453511,
+   "k_old": 0.01056372937813715,
+   "k_new": 0.010563649954945097,
+   "sigma_rel_change": [
+    9.517881333009903e-05,
+    0.000131717081554239,
+    0.00013169379422084404,
+    0.00013172139728911958,
+    8.132082788048223e-06,
+    4.1757486459514936e-05,
+    7.812591129585655e-07
+   ],
+   "stop_old": "MaxIter",
+   "stop_new": "MaxIter",
+   "iterations_old": 40,
+   "iterations_new": 40
+  },
+  "start_offset": {
+   "estimate_change_over_new_sigma": [
+    9.660591004435047e-05,
+    0.00011333368745367525,
+    0.00011336064294574992,
+    0.00011333466208431077,
+    2.8629331891021867e-05,
+    6.275054654559915e-05,
+    8.931381412623032e-06
+   ],
+   "position_change_m": 0.01734393764263419,
+   "k_old": 0.010563675069966293,
+   "k_new": 0.010563631129235012,
+   "sigma_rel_change": [
+    9.549855806190166e-05,
+    0.0001317154542455068,
+    0.00013169223343667547,
+    0.0001317202160786568,
+    8.169598317175897e-06,
+    4.1612322617679e-05,
+    7.811550153391522e-07
+   ],
+   "stop_old": "MaxIter",
+   "stop_new": "MaxIter",
+   "iterations_old": 40,
+   "iterations_new": 40
+  }
+ }
+}

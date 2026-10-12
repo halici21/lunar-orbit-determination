@@ -1,0 +1,31 @@
+{
+ "phase": "Phase 17-HARDEN-D29 - SRIF K-path hidden state-prior contract",
+ "written": "2026-10-12, after the provenance audit and BEFORE any production change or measured estimate change",
+ "evidence": {
+  "srif_docstring": "estimate_two_way_range_srif: 'same three independent switches as estimate_two_way_range_bls_lm (s13), and the same contract'",
+  "bls_k_path": "BLS K path: state prior right-hand side and acceptance term only for an explicit state prior; the default diagonal is a step regularizer (D28)",
+  "s31_rationale": "k_srp_prior_sigma is REQUIRED for SRIF because 'an UNREGULARIZED K column here would frequently leave r_hat singular' (no LM damping) - a K-specific numerical justification; nothing about a state prior",
+  "phase17r_report": "od_covariance_campaign/05_reports/phase17r_k_srp_solve_for_estimator_integration.md describes runs without an explicit state prior as 'no state prior' / 'the data-only regime'",
+  "six_state_srif": "z_bar only if has_explicit_prior: the default state rows are a step regularizer (D28 contract, MATLAB P_bar_inv heritage)",
+  "origin_of_defect": "b8da5e6 (2026-09-14 transplant): z_bar = prior_sqrt_info @ (x_prior_full - x_current_full) if (has_explicit_prior or solve_for_k_srp) - the clause needed to activate the required K row multiplies the FULL 7x7 prior square root and so also activates the default state rows",
+  "consumers": "no authoritative result runs SRIF K without an explicit state prior (Phase 17-R final synthesis uses PRIOR_COV; scenarios and KP2 never call the SRIF K path)"
+ },
+ "declared_contract": {
+  "SRIF_K_NO_EXPLICIT_STATE_PRIOR": "data-only state + the REQUIRED explicit K prior: J = r^T W r + (K - K0)^2 / sigma_K^2",
+  "SRIF_K_EXPLICIT_STATE_PRIOR": "MAP with the supplied state prior and the K prior (unchanged)",
+  "SRIF_K_EXPLICIT_K_PRIOR": "always in objective and posterior (unchanged)",
+  "DEFAULT_STATE_DIAGONAL": "numerical step regularizer only (r_bar rows, zero right-hand side) - identical role to every other path (D28)"
+ },
+ "repair": "SRIF K path: the state block of the prior right-hand side is zero unless a state prior was supplied; the posterior carries the explicit state prior (if any) and the K prior, never the default diagonal (same rule as the BLS K path). r_bar, the step regularizer, the acceptance cost, dynamics, D25 and BLS1 untouched",
+ "gates": {
+  "G1_explicit_state_prior_unchanged": "SRIF K and six-state with an explicit state prior: estimate and posterior bitwise identical pre/post (b5d59b8)",
+  "G2_six_state_unchanged": "SRIF six-state without K: estimate and posterior bitwise identical pre/post",
+  "G3_no_state_pull": "SRIF K, no state prior: two different starting states (the hidden prior's mean) converge to the same solution within 1e-2 of the posterior sigma in every component; the pre-D29 code is shown to differ between the two starts",
+  "G4_stationarity": "at the SRIF K solution, an independent Gauss-Newton step of the declared objective (data + K prior only) is <= 1e-2 sigma in every component",
+  "G5_posterior_rebuild": "SRIF K posterior = independent (H^T W H + K-prior row)^-1 within 1e-8 in sigma",
+  "G6_bls_srif_equivalence": "same data, same K prior, no state prior: BLS K and SRIF K estimates agree within 2e-2 posterior sigma and their posteriors within 1e-6 in sigma (the problems are now mathematically identical)",
+  "G7_regression_and_neighbours": "D25, D28, BLS1, K_SRP solve-for suites pass (the D28 SRIF-K test updated to the D29 contract); new D29 tests; full suite on a clean worktree 0 failures",
+  "G8_materiality": "quantified, not gated: SRIF K estimate/sigma change on the fixtures; KP2 and every authoritative SRIF-K consumer"
+ },
+ "PHASE17_HARDEN_D29_GATE": "PASS iff G1-G7 pass; G8 reported"
+}

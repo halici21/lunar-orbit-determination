@@ -130,3 +130,10 @@ Each test also checks that the historical construction is measurably different o
   reported as such: six-state through the existing floored inverse (R1M caveat), the K path through the QR rank
   test. None occurred here.
 - D27 and stochastic K are not started.
+
+## 7. Addendum — HARDEN-D29 (2026-10-12)
+
+The one exception above, the SRIF K path whose objective carried the default state rows, was a defect: it
+departed from the BLS contract its docstring declares. HARDEN-D29 removed it. The SRIF K objective is now data-only
+state + the required K prior, and its posterior carries exactly those. The D28 contract now holds in every path:
+the 15 km / 5 m/s diagonal is a step regularizer only. See `docs/phase17_harden_d29_srif_k_prior_contract.md`.

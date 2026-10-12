@@ -266,20 +266,26 @@ DEFECTS = [
                 "docs/phase17_harden_d28_prior_covariance_contract.md",
          regression="tests/test_harden_d28_posterior_prior_contract.py",
          reproduction="examples/phase17_d28_qualification.py --invariance/--scenarios --code old|new, --kp2"),
-    dict(id="HARDEN-D29", title="SRIF K_SRP objective pulls toward the default state regularizer",
-         location="lunar_od/estimators.py estimate_two_way_range_srif (solve_for_k_srp=True): z_bar uses the full "
-                  "prior_sqrt_info whenever has_explicit_prior or solve_for_k_srp",
+    dict(id="HARDEN-D29", title="SRIF K_SRP objective pulled the state toward the default step regularizer",
+         location="lunar_od/estimators.py estimate_two_way_range_srif (solve_for_k_srp=True): z_bar used the full "
+                  "prior square root whenever has_explicit_prior or solve_for_k_srp",
          discovered="Phase 17-HARDEN-D28 audit",
-         root_cause="the K path needs an initial K uncertainty (s31) and builds its right-hand side from the whole "
-                    "prior square root, which then includes the 15 km / 5 m/s state rows when no state prior was "
-                    "supplied: a hidden weak state prior in the ESTIMATE (its posterior is consistent with it)",
-         effect="not measured on a science case; bounded by the regularizer's weakness (15 km / 5 m/s against "
-                "metre-level data information)",
-         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP",
-         repair="none (changes estimates; separate scoped decision: K-only prior right-hand side, state data-only)",
-         regression="tests/test_harden_d28_posterior_prior_contract.py pins the current, internally consistent "
-                    "behaviour",
-         reproduction="examples/phase17_d28_qualification.py --invariance (two_way_srif_k_*)"),
+         root_cause="the clause switching on the required K prior row (s31) multiplied the FULL prior square root, so "
+                    "with no explicit state prior the 15 km / 5 m/s step regularizer became a Bayesian state prior "
+                    "in the ESTIMATE (b8da5e6 transplant); the SRIF docstring declares the BLS contract",
+         effect="SRIF K estimate pulled toward its start: 1e-4 sigma (3 cm) on a 3.3 h arc; 0.27 sigma start "
+                "dependence with the regularizer strengthened 1e4x; BLS/SRIF posteriors differed by 1.3e-4. No "
+                "authoritative consumer (KP2 never uses it; Phase 17-R synthesis supplies an explicit prior)",
+         status=FIXED, klass="REQUIRED_FOR_CORRECTNESS",
+         repair="Phase 17-HARDEN-D29: prior right-hand side state block zero without an explicit state prior "
+                "(r_bar regularizer unchanged); posterior = explicit state prior + K prior. Explicit-prior and "
+                "six-state paths bitwise unchanged; stationary for J to 3.7e-5 sigma; start-independent to 1.3e-5 "
+                "sigma; posterior = declared problem to 6e-15; BLS/SRIF now the same problem (estimates 4.3e-4 "
+                "sigma). Gate FAIL as computed on G6's 1e-6 posterior sub-criterion (1.44e-6 = linearisation-point "
+                "dependence), adjudicated, pending owner; docs/phase17_harden_d29_srif_k_prior_contract.md",
+         regression="tests/test_harden_d29_srif_k_prior_contract.py (incl. strengthened-regularizer test: pre-D29 "
+                    "0.27 sigma start dependence, D29 6.2e-4)",
+         reproduction="examples/phase17_d29_qualification.py --run --code old|new; --compare"),
 ]
 
 # contract_id, quantity, producer, consumer, time_origin, frame, center, units, coverage, enforcement, tests
