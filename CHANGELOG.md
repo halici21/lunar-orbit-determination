@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Station catalogue search now reports visible/total and selected rows, explains
+  empty results and supports Ctrl+F plus a clear button. CSV exports only the
+  filtered table; an empty filter cannot export hidden catalogue entries.
 - Mission map preserves its 2:1 equirectangular proportions when resized.
   Bounded station labels avoid collisions and support exact name selection;
   explicit selection is retained for subpixel marker pairs.

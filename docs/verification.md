@@ -15,7 +15,8 @@ Scope: core configuration, geometry, orbit and baseline dynamics; typed scenario
 configuration; desktop process lifecycle; source integrity; archive/derivation;
 comparison/export/reopening; rendering, layouts, preferences and sessions;
 read-only environment readiness and persistent kernel selection; linked mission
-map/Gantt/playback, geometry provenance and compact comparison report reopening.
+map/Gantt/playback, geometry provenance and compact comparison report reopening;
+station catalogue filtering, empty states, keyboard find and CSV scope.
 
     python tools/run_public_checks.py --junitxml outputs/public-checks.xml
 
@@ -28,7 +29,11 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest map regression](map-layout_2026-10-12.md): 1,799 passed checks, 29 skipped
+[Latest station-catalogue regression](station-filters_2026-10-13.md): 1,803 passed
+checks, 29 skipped (1,686 named cases and 146 subtest checks), zero failures/errors.
+The 275-case public gate includes all four station-search/export cases and all
+35 mission cases.
+[Previous map regression](map-layout_2026-10-12.md): 1,799 passed checks, 29 skipped
 (1,682 named cases and 146 subtest checks), zero failures/errors. The 271-case
 public gate includes all 35 mission cases, including map proportions and labels.
 [Previous orbit-label regression](orbit-labels_2026-10-12.md): 1,795 passed checks,

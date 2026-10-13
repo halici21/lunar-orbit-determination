@@ -10,10 +10,10 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QHeaderView, QPushButton, QLineEdit, QLabel, QDialog, QFormLayout,
     QDoubleSpinBox, QDialogButtonBox, QMessageBox, QComboBox, QInputDialog,
-    QFileDialog,
+    QFileDialog, QShortcut, QSizePolicy,
 )
 from PyQt5.QtCore import Qt, QSettings
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QKeySequence
 from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
@@ -282,15 +282,22 @@ class StationsController(QWidget):
 
         # Toolbar: search + action buttons
         toolbar = QWidget(self)
+        toolbar.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         tb_lay = QHBoxLayout(toolbar)
         tb_lay.setContentsMargins(0, 4, 0, 4)
         tb_lay.setSpacing(8)
 
         self._search = QLineEdit()
-        self._search.setPlaceholderText("Search stations…")
+        self._search.setPlaceholderText("İstasyon adı / ağ kodu…")
+        self._search.setClearButtonEnabled(True)
+        self._search.setAccessibleName("İstasyon adı veya ağ koduyla tabloyu filtrele")
+        self._search.setToolTip("Ad veya ağ kodu (DSN, ESA…) ile tablodaki istasyonları filtreleyin. Ctrl+F: aramaya geç. Harita tüm kataloğu gösterir.")
         self._search.setStyleSheet(_SEARCH_STYLE)
         self._search.setMaximumWidth(220)
         self._search.textChanged.connect(self._apply_filter)
+        self._find_shortcut = QShortcut(QKeySequence.Find, self)
+        self._find_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
+        self._find_shortcut.activated.connect(self._focus_search)
         tb_lay.addWidget(self._search)
         tb_lay.addStretch()
 
@@ -332,6 +339,13 @@ class StationsController(QWidget):
 
         # Insert toolbar above table
         self.mainLayout.insertWidget(1, toolbar)
+        self._filter_status = QLabel()
+        self._filter_status.setWordWrap(True)
+        self._filter_status.setMaximumWidth(520)
+        self._filter_status.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self._filter_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
+        self._filter_status.setAccessibleName("İstasyon tablosunun filtre ve seçim durumu")
+        self.mainLayout.insertWidget(2, self._filter_status)
 
         # Table
         self._populate_table(self._all_stations)
@@ -462,9 +476,22 @@ class StationsController(QWidget):
             ]
             self._populate_table(filtered)
 
+    def _focus_search(self) -> None:
+        self._search.setFocus(Qt.ShortcutFocusReason)
+        self._search.selectAll()
+
     # ------------------------------------------------------------------
     def _on_selection(self) -> None:
         rows = self._selected_rows()
+        count = len(self._filtered_stations)
+        self._btn_export.setEnabled(count > 0)
+        if not self._all_stations:
+            message = "İstasyon kataloğu boş. İstasyon ekleyebilir veya katalog kaynağını kontrol edebilirsiniz."
+        elif not count:
+            message = "Eşleşen istasyon yok. Aramayı temizleyin veya ad / ağ koduyla (DSN, ESA…) arayın."
+        else:
+            message = f"{count}/{len(self._all_stations)} istasyon · {len(rows)} seçili. CSV dışa aktarımı tablodaki satırları içerir; harita tüm kataloğu gösterir."
+        self._filter_status.setText(message)
         self._btn_save_net.setEnabled(len(rows) >= 1)
         single_selected = len(rows) == 1
         self._btn_edit.setEnabled(single_selected)
@@ -537,7 +564,9 @@ class StationsController(QWidget):
         self._rebuild_map()
 
     def _export_csv(self) -> None:
-        stations = self._filtered_stations if self._filtered_stations else self._all_stations
+        stations = self._filtered_stations
+        if not stations:
+            return
         path, _ = QFileDialog.getSaveFileName(
             self, "Export Stations CSV",
             str(Path.home() / "stations.csv"),

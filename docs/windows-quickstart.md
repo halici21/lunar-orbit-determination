@@ -30,6 +30,12 @@ kurulum paketi değildir. Başlatıcı yeni klonda veya ZIP'ten çıkarılmış 
 Geliştiricinin sekiz deneme koşusu pakete dahil değildir.
 Seçilen arşiv klasörü normal kapanıştan sonra hatırlanır.
 
+**İstasyonlar** sayfasında ad veya ağ koduyla (DSN, ESA…) arayın. **Ctrl+F**
+arama alanına geçer ve sorguyu seçer; alanın temizleme düğmesi tüm satırları
+geri getirir. Alt metin görünen/toplam ve seçili istasyon sayısını gösterir.
+**Export CSV**, seçili satırları değil, filtrelenmiş tablonun tamamını aktarır;
+eşleşme yoksa düğme devre dışıdır. Bu sayfadaki harita tüm kataloğu gösterir.
+
 ## Yörünge, harita ve Gantt
 
 Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.

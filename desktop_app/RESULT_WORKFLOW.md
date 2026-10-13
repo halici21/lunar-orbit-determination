@@ -11,6 +11,15 @@ the form-to-backend translation with the canonical ScenarioConfig loader, then c
 When the child writes a completion record and exits successfully, the console opens
 that exact run. Disable “Tamamlanınca konsolda aç” to stay in Run Monitor.
 
+## Station catalogue
+
+The separate **İstasyonlar** catalogue page filters table rows by name/network
+code. Ctrl+F focuses and selects the query; the clear button restores all rows.
+The status line reports visible/total and selected counts. CSV export includes
+all filtered rows, independent of the selected rows, and is disabled for an
+empty result. Its map continues to show the full catalogue, as the search help
+states. This catalogue filter does not change a scenario or recorded-run geometry.
+
 ## Mission overview
 
 New installations open **Görev görünümü**. Saved safe workspace pages remain

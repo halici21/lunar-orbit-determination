@@ -15,7 +15,7 @@ TEST_FILES = (
     "test_recorded_run_workspace.py", "test_result_summary.py",
     "test_run_workspace_resume.py", "test_tracking_console.py",
     "test_tracking_render_semantics.py", "test_workflow_polish.py",
-    "test_workspace_appearance.py", "test_workspace_session.py",
+    "test_workspace_appearance.py", "test_workspace_session.py", "test_station_catalog_filters.py",
     "test_pytest_desktop_app.py", "test_environment_readiness.py", "test_mission_overview.py",
 )
 
