@@ -235,6 +235,10 @@ def analyse() -> dict:
         for o, k, ci in CELLS:
             m = json.loads((JOBS / f"{o}_k{k}_alpha{a}.json").read_text(encoding="utf-8"))
             b = base[(o, k)]
+            if "error" in m:                                     # the solver failed: recorded, not dropped
+                rows.append(dict(orbit=o, k=k, alpha=a, converged=False, solver_error=m["error"], chi2_detect=None,
+                                 detect=None, delta_chi2=None, residual_undetectable=None, masquerade=False))
+                continue
             n = m["n_range"] + m["n_doppler"]
             dchi2 = m["chi2_data"] - b["chi2_data"]
             thr = 2 * math.sqrt(2 * n)
