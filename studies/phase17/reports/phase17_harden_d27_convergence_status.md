@@ -2,10 +2,10 @@
 
 - **Date:** 2026-10-12
 - **Branch:** local `phase17-harden-bls1` (worktree `python_port_phase17r0`), on top of D29 `e35e245`
-- **Code:** `lunar_od/estimators.py` (`_gauss_newton_decrement`, `_damping_exhaustion_status`,
-  `STATIONARITY_DECREMENT_TOL`, `EstimatorStats.gauss_newton_decrement`), `lunar_od/diagnostics.py`
+- **Code:** `src/lunar_od/estimators.py` (`_gauss_newton_decrement`, `_damping_exhaustion_status`,
+  `STATIONARITY_DECREMENT_TOL`, `EstimatorStats.gauss_newton_decrement`), `src/lunar_od/diagnostics.py`
   (`converged_by_stationarity`, category `converged_stationary`)
-- **Evidence:** `artifacts/phase17_d27_qualification.json`, `examples/phase17_d27_qualification.py`
+- **Evidence:** `studies/phase17/results/phase17_d27_qualification.json`, `studies/phase17/scripts/phase17_d27_qualification.py`
 - **Tests:** `tests/test_harden_d27_convergence_status.py` (11), `tests/test_estimator_lm_consistency.py` (2 updated)
 
 ## 0. Final status
@@ -69,7 +69,7 @@ computed by column-equilibrated least squares, so an unobservable direction cont
   Scenario `algorithmic_success` therefore counts a certified stationary point as converged. `operational_success`
   never depended on the label.
 
-## 3. Qualification (`examples/phase17_d27_qualification.py`)
+## 3. Qualification (`studies/phase17/scripts/phase17_d27_qualification.py`)
 
 KP2 cross-check problem (CANON k0, range only, scalar K, no prior, the frozen job's a priori and noise draws).
 
@@ -123,4 +123,4 @@ docstrings:
 
 - Focused: `test_harden_d27_convergence_status`, `test_estimator_lm_consistency`, `test_estimators`,
   `test_harden_bls1_k_srp_recovery`, `test_harden_d25/d28/d29`, `test_k_srp_bls_solve_for`, `test_scenarios`: pass.
-- Full suite on a clean detached worktree of `fd24147`: 1497 passed, 29 skipped, 0 failed (`artifacts/phase17_closeout_verification.txt`).
+- Full suite on a clean detached worktree of `fd24147`: 1497 passed, 29 skipped, 0 failed (`studies/phase17/results/phase17_closeout_verification.txt`).

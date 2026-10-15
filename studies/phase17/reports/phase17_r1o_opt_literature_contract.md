@@ -1,7 +1,7 @@
 # PHASE 17-R1O-OPT — LUNAR LANDMARK OPTICAL MEASUREMENT LITERATURE CONTRACT
 
 For every physical/error term the production model represents or defers: literature source, exact
-value/equation, repository representation, and status. Read before `lunar_od/lunar_landmark_optical.py`.
+value/equation, repository representation, and status. Read before `src/lunar_od/lunar_landmark_optical.py`.
 
 ## Primary references
 

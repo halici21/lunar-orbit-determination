@@ -3,10 +3,10 @@
 - **Date:** 2026-10-10 – 2026-10-11
 - **Branch:** local `phase17-harden-bls1` (worktree `python_port_phase17r0`), on top of BLS1 `742576f`.
   Repair and predeclaration: `aac72ed`.
-- **Predeclaration:** `artifacts/phase17_d25_predeclaration.json`, committed with the repair before any
+- **Predeclaration:** `studies/phase17/configs/phase17_d25_predeclaration.json`, committed with the repair before any
   qualification number was computed.
-- **Evidence:** `artifacts/phase17_d25_qualification.json`, `artifacts/phase17_d25_e2e.json`,
-  `examples/phase17_d25_qualification.py`, `tests/test_harden_d25_posterior_dynamics_contract.py`.
+- **Evidence:** `studies/phase17/results/phase17_d25_qualification.json`, `studies/phase17/results/phase17_d25_e2e.json`,
+  `studies/phase17/scripts/phase17_d25_qualification.py`, `tests/test_harden_d25_posterior_dynamics_contract.py`.
 
 ## 0. Final status
 
@@ -60,7 +60,7 @@ central/J2 (or SRP-free) trajectory, not of the trajectory that was fitted. Gate
 fixture configurations, including the four D25 changes, the estimate, status, iteration count and final cost are
 bitwise identical before and after the repair.
 
-## 2. Repair (`aac72ed`, `lunar_od/estimators.py`, +45 / −0)
+## 2. Repair (`aac72ed`, `src/lunar_od/estimators.py`, +45 / −0)
 
 `_posterior_dynamics_kwargs(srp, harmonic_kwargs)` builds the posterior pass's dynamics arguments exactly as the
 iterations build theirs: SRP when given; a harmonic field always with `harmonic_stm_opt_in=True`, the matched
@@ -72,7 +72,7 @@ analytic Pines gradient. The three posterior helpers accept these arguments.
 With nothing active the call is exactly the historical one. Untouched: the estimate path, weights, prior,
 tolerances, covariance algebra (R1COV QR / six-state information), the force model, D27.
 
-## 3. Qualification (gates frozen in `artifacts/phase17_d25_predeclaration.json`)
+## 3. Qualification (gates frozen in `studies/phase17/configs/phase17_d25_predeclaration.json`)
 
 | gate | result | value |
 |---|---|---|
@@ -85,7 +85,7 @@ tolerances, covariance algebra (R1COV QR / six-state information), the force mod
 | G7 blast radius | reproduction **PASS** | stored stage F and stage I covariances reproduced bitwise by the pre-D25 pass; statistics re-derived (§4) |
 | G8 regression | **PASS** | 4 new tests; full suite on a clean worktree 1475 passed, 29 skipped, 0 failed |
 
-End to end (`artifacts/phase17_d25_e2e.json`): the frozen KP2 `job_bls`, rerun unchanged with the repaired
+End to end (`studies/phase17/results/phase17_d25_e2e.json`): the frozen KP2 `job_bls`, rerun unchanged with the repaired
 estimator from the declared a priori, gives an estimate within 5.7e-5 σ and σ ratios of 1.000000–1.000001.
 Both frozen criteria pass as computed.
 
@@ -100,7 +100,7 @@ O2 failed on every σ, systematically, while O1 and the independent KP2 solver a
    derivative. HARDEN-D05 documented the same FD-floor behaviour at the non-smooth penumbra right-hand side.
 2. **HF with h_K = 5e-3 and 2.5e-3** (central steps keep K > 0; the two agree to 2.2e-3): the K σ
    disagreement drops from 1.1 % to 2.9e-4 – 4.1e-4. Velocity σ still differ by 0.25–0.33 %.
-3. **HF velocity-step study** (all columns saved: `artifacts/phase17_d25_posthoc_fd_columns.npz`):
+3. **HF velocity-step study** (all columns saved: `studies/phase17/results/phase17_d25_posthoc_fd_columns.npz`):
 
    | | FD vs analytic design column |
    |---|---|
@@ -123,7 +123,7 @@ owner acceptance, as for D23 and KP2.
 
 The high-order gravity covariance-realism campaign (`od_covariance_campaign`, stages F, G and I) used the six-state
 BLS with GL1800F E50_G50 / E100_G100 and `return_posterior=True`. That is the six-state D25 branch.
-`examples/phase17_d25_qualification.py --stage-f` reads its 40 stored solutions read-only and rebuilds the
+`studies/phase17/scripts/phase17_d25_qualification.py --stage-f` reads its 40 stored solutions read-only and rebuilds the
 posterior at each one. The rebuild uses the same observation realisation (seed), prior P0, weights and tolerances.
 
 **The historical numbers carry D25.** The pre-D25 posterior reproduces every stored `P_hat` **bitwise**
@@ -150,7 +150,7 @@ ANEES band, and G50 is still model-error dominated. The estimates, errors and ho
 (G2). Phase 6.2's "0.0219 σ" is in measurement-noise units and is unaffected. The Phase 6 discriminator records
 single-realisation NEES values only as documentation, not for decisions.
 
-**Stage I** (G100, 24 nonlinear cubature solves; `artifacts/phase17_d25_stage_i.json`). The stored per-point
+**Stage I** (G100, 24 nonlinear cubature solves; `studies/phase17/results/phase17_d25_stage_i.json`). The stored per-point
 `P_hat` are reproduced **bitwise** by the pre-D25 pass on the shared fit geometry. With the repaired posterior:
 
 | statistic | historical | repaired |
@@ -223,4 +223,4 @@ The owner accepted the G4 adjudication: **the D25 gate is PASS**. HARDEN-D28 has
 posteriors data-only. §6 and the qualification rebuilds above included the 15 km / 5 m/s step regularizer because
 production did; under the D28 contract they do not, and `tests/test_harden_d25_posterior_dynamics_contract.py` now
 rebuilds the K path data-only. No D25 conclusion changes: the effect on KP2 is ≤ 1.5e-6, and stages F/G/I use an
-explicit P0. See `docs/phase17_harden_d28_prior_covariance_contract.md`.
+explicit P0. See `studies/phase17/reports/phase17_harden_d28_prior_covariance_contract.md`.

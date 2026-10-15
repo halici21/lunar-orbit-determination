@@ -49,7 +49,7 @@ Verified, not assumed:
 | main = origin/main | `fea476f81dad07b3914e53eab709e10fa6e9d10b` |
 | entering gates | PHASE17_HARDEN_GATE = PASS; INFRASTRUCTURE = QUALIFIED_FOR_NEW_SCIENCE |
 | entering suite | 1391 collected / 1362 passed / 0 failed / 0 errors / 29 skipped |
-| canonical baseline | range 0.091508, combined 0.172351, gain +0.0808, σ_K/K 7.46% (`docs/phase17_authoritative_status.md`) |
+| canonical baseline | range 0.091508, combined 0.172351, gain +0.0808, σ_K/K 7.46% (`studies/phase17/reports/phase17_authoritative_status.md`) |
 | v2 instructions | `CLAUDE_OPUS_5_5_REPO_INSTRUCTIONS_v2.md` absent (not blocking, per the brief) |
 
 The pre-F1 materiality run at this HEAD reproduced the stored D2 and GEO values exactly.
@@ -67,15 +67,15 @@ HARDEN proved this was the cause, but `dynamics.py` was protected. F1 is the aut
 
 | file | gate | before | after |
 |---|---|---|---|
-| `lunar_od/dynamics.py` | R2 current-tree gate (`expected_current_tree_sha256`) | b369899a (HARDEN re-freeze, content of 0e785f6, blob c973822f) | c6e7975c (9a0e786, blob 44cf92ca), via additive `PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256` |
-| `lunar_od/accelerated.py` | R2 closure re-freeze e455b36b | unchanged | unchanged |
-| `lunar_od/srp.py` | none (value parity with Phase 13 only) | d9ba4c22 | extended (the new gradient functions only) |
-| `lunar_od/two_way_range.py` | R3-P21-M3 byte gate | unchanged | unchanged |
+| `src/lunar_od/dynamics.py` | R2 current-tree gate (`expected_current_tree_sha256`) | b369899a (HARDEN re-freeze, content of 0e785f6, blob c973822f) | c6e7975c (9a0e786, blob 44cf92ca), via additive `PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256` |
+| `src/lunar_od/accelerated.py` | R2 closure re-freeze e455b36b | unchanged | unchanged |
+| `src/lunar_od/srp.py` | none (value parity with Phase 13 only) | d9ba4c22 | extended (the new gradient functions only) |
+| `src/lunar_od/two_way_range.py` | R3-P21-M3 byte gate | unchanged | unchanged |
 
 ## 5. Task-State Completion
 
-`artifacts/phase17_f1_task_state.json` tracks the checklist; every item is closed. Predeclarations were committed
-before implementation in bfc98e4 (`artifacts/phase17_f1_predeclaration.json`). They cover:
+`studies/phase17/results/phase17_f1_task_state.json` tracks the checklist; every item is closed. Predeclarations were committed
+before implementation in bfc98e4 (`studies/phase17/configs/phase17_f1_predeclaration.json`). They cover:
 - the GEO spot cases;
 - the escalation rule;
 - all numerical gates.
@@ -163,8 +163,8 @@ There is no legacy switch and no production FD. The gradient is analytic.
 
 ## 13. What Changed in Production
 
-- **`lunar_od/srp.py`:** +`_illumination_and_gradient` and +`srp_acceleration_position_gradient`.
-- **`lunar_od/dynamics.py`:**
+- **`src/lunar_od/srp.py`:** +`_illumination_and_gradient` and +`srp_acceleration_position_gradient`.
+- **`src/lunar_od/dynamics.py`:**
   - `dynamics_jacobian_a_matrix(srp=None)`;
   - the harmonic and K-sensitivity paths pass `srp`;
   - the 42-state wrapper adds the Φ term;
@@ -186,7 +186,7 @@ There is no legacy switch and no production FD. The gradient is analytic.
 
 ## 15. Full-Sun Gradient Qualification
 
-`artifacts/phase17_f1_local_gradient_oracle.json`. Two Sun directions × two altitudes, sunward and anti-sunward:
+`studies/phase17/results/phase17_f1_local_gradient_oracle.json`. Two Sun directions × two altitudes, sunward and anti-sunward:
 - the best-resolved error is 3.6e-10 to 1.8e-7;
 - the analytic value equals the closed form K(P/d)(I−3uuᵀ) to 1e-12;
 - `FULL_SUN_GRADIENT_GATE = PASS`.
@@ -251,7 +251,7 @@ gradient. On the HARDEN-D05 penumbra-rich case:
 
 ## 21. STM Independent Oracle
 
-`artifacts/phase17_f1_stm_oracle.json`. Setup: canonical x0 and epoch, 4 orbits, 90 s grid, as in HARDEN-D05.
+`studies/phase17/results/phase17_f1_stm_oracle.json`. Setup: canonical x0 and epoch, 4 orbits, 90 s grid, as in HARDEN-D05.
 
 **Oracle:** 6-state production re-propagation, all six columns, h_pos ∈ {1, 10, 100} m and h_vel ∈ {1e-3, 1e-2,
 1e-1} m/s. Position and velocity rows are both scored.
@@ -282,7 +282,7 @@ The fixed-step RK4 cross-check at dt = 2 s and 1 s gives 1.5e-8 and 2.2e-8.
 
 ## 23. K-Sensitivity Independent Oracle
 
-`artifacts/phase17_f1_k_sensitivity_oracle.json`. Cases: CANON 4 orbits, FULL_SUN 4 orbits (D2
+`studies/phase17/results/phase17_f1_k_sensitivity_oracle.json`. Cases: CANON 4 orbits, FULL_SUN 4 orbits (D2
 O2_FULL_SUN_HIGH_BETA) and CANON 15 orbits.
 
 **The adaptive K-FD is noise-limited.**
@@ -303,7 +303,7 @@ The remaining ~1e-6 scatter is the oracle's noise/(S_K ΔK) floor. `F1_K_SENSITI
 
 ## 24. Range Derivative Requalification
 
-`artifacts/phase17_f1_measurement_derivatives.json`. Four runs: new and old models (the old one via an in-process
+`studies/phase17/results/phase17_f1_measurement_derivatives.json`. Four runs: new and old models (the old one via an in-process
 analysis-only zeroed gradient), each at the science configuration (analytic rtol 1e-12, oracle 1e-13) and at
 rtol 3e-15. The old model at the science configuration reproduces the HARDEN pre-F1 values exactly.
 
@@ -349,7 +349,7 @@ K: 9.1e-6 versus 6.2e-6, both at the K-FD noise floor. `OPTICAL_DERIVATIVE_GATE 
 
 ## 28. State-Truth / Force Parity
 
-`artifacts/phase17_f1_state_parity.json`. Captured before any edit and compared after.
+`studies/phase17/results/phase17_f1_state_parity.json`. Captured before any edit and compared after.
 
 **Physical force: bitwise equal.**
 - the 6-state truth (4 orbits);
@@ -377,7 +377,7 @@ match the 48-state Φ to 1e-8.
 
 ## 30. Canonical Phase-17 Materiality
 
-`artifacts/phase17_f1_science_materiality.json`. The same script ran pre (at the entering HEAD) and post.
+`studies/phase17/results/phase17_f1_science_materiality.json`. The same script ran pre (at the entering HEAD) and post.
 
 | quantity | pre | post |
 |---|---:|---:|
@@ -425,7 +425,7 @@ O2 GC, and O5 GM (the rule-selected case).
 - **Classes:** all preserved.
 - **Largest change:** fidelity Δ, O5 GM −0.111037 → −0.111050.
 
-`F1_HIGH_FIDELITY_REQUALIFICATION = PRESERVES_CLASS` (`artifacts/phase17_f1_high_fidelity.json`).
+`F1_HIGH_FIDELITY_REQUALIFICATION = PRESERVES_CLASS` (`studies/phase17/results/phase17_f1_high_fidelity.json`).
 
 ## 34. Protection / Provenance Update
 
@@ -607,7 +607,7 @@ Materiality: `NUMERICAL_BASELINES_UPDATED_CLASSES_PRESERVED`.
 - No Phase-17 classification changed.
 - The authoritative status page carries the corrected digits.
 
-A tracking-design phase should cite `docs/phase17_authoritative_status.md`, which gives range 0.091502 and combined
+A tracking-design phase should cite `studies/phase17/reports/phase17_authoritative_status.md`, which gives range 0.091502 and combined
 0.172343.
 
 ## 48. Exact Next Action

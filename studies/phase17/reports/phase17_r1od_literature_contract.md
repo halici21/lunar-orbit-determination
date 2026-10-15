@@ -1,7 +1,7 @@
 # PHASE 17-R1O-D — ΔDOR LITERATURE CONTRACT
 
 For every term this phase implements, approximates, or defers: the literature source, the exact
-equation, the repository representation, and its status. Read this before reading `lunar_od/delta_dor.py`.
+equation, the repository representation, and its status. Read this before reading `src/lunar_od/delta_dor.py`.
 
 **Provenance note.** This document's literature research (the Moyer citations, equation numbers, and
 quoted text below) was produced during an earlier attempt at this phase whose own `lunar_od/
@@ -62,7 +62,7 @@ spec's §17 makes that construction an explicit HARD requirement ("Failure = HAR
 a reference to Moyer's own choice of anchor.
 
 **This was not left as an untested assumption.** A direct numerical reconciliation
-(`examples/phase17_r1od_anchor_convention_check.py`) computed the RECEPTION-anchored quantity
+(`studies/phase17/scripts/phase17_r1od_anchor_convention_check.py`) computed the RECEPTION-anchored quantity
 independently, using ONLY the pre-existing, already-qualified `one_way_light_time_initial_state_
 sensitivity` called twice (once per station, at the same nominal epoch T) — zero new solver code —
 and compared it against the shipped transmit-anchored production result on the identical campaign

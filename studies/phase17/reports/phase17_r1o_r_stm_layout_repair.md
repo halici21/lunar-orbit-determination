@@ -5,7 +5,7 @@
 > The ΔDOR-like 0.3203 and Earth-LOS 0.0920 values below are still superseded: their rows were accepted on elevation only.
 > On the production elevation + occultation contract the values are ΔDOR-like 5 nrad **0.1722**
 > (1 nrad 0.1381) and Earth LOS **0.0919**; 230 of 590 Earth-LOS rows were occulted. Production ΔDOR is **0.172351**.
-> The current numbers are in `docs/phase17_authoritative_status.md`.
+> The current numbers are in `studies/phase17/reports/phase17_authoritative_status.md`.
 
 > ### ERRATUM (Phase 17-FXR) — STM repair VALID, baseline numbers SUPERSEDED
 >
@@ -18,7 +18,7 @@
 > This report's requalification table was computed on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. Its range baseline (0.2523), and
 > its conclusion that neither surrogate improves on that baseline, are superseded: on the
 > consistent geometry, range is 0.0915, ΔDOR-like 5 nrad is 0.3203 and landmark 1 µrad is 0.2524.
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 ## 1. Executive Summary
 
@@ -26,7 +26,7 @@ Phase 17-R1O-OPT found a defect in the already-closed Phase 17-R1O analysis code
 repaired it, proved the repair against an independent oracle, reproduced R1O's published numbers
 exactly, regenerated them correctly, and determined what R1O should have concluded.
 
-One line was wrong. `examples/phase17_r1o_core.py::chain_to_augmented_columns` unflattened the
+One line was wrong. `studies/phase17/scripts/phase17_r1o_core.py::chain_to_augmented_columns` unflattened the
 column-major 6x6 state-transition matrix with NumPy's default C order, which for a column-major
 flattening returns `Phi^T`. Phi is not symmetric, so every surrogate state-design row R1O published
 was built from the transpose of the state-transition matrix. The K columns were never affected:
@@ -163,14 +163,14 @@ STM_LAYOUT_CONTRACT_GATE = PASS
 ```
 
 One apparent exception was checked rather than assumed:
-`lunar_od/lunar_landmark_optical.py` s270 calls `.reshape(6, 6)` without an order. It takes an
+`src/lunar_od/lunar_landmark_optical.py` s270 calls `.reshape(6, 6)` without an order. It takes an
 **already-2-D** Phi as an argument, where the call is a no-op; all its callers pass
 `.reshape((6, 6), order="F")` explicitly, and `tests/test_lunar_landmark_optical.py` already contains
 a transpose-sensitivity test. Not a defect.
 
 ## 7. Defect Reproduction
 
-`examples/phase17_r1o_core.py::chain_to_augmented_columns`, as committed through R1O, R1O-D and
+`studies/phase17/scripts/phase17_r1o_core.py::chain_to_augmented_columns`, as committed through R1O, R1O-D and
 R1O-OPT:
 
 ```python
@@ -185,7 +185,7 @@ presumably how the error survived review. Both the code and the docstring were r
 
 ## 8. Independent STM Oracle
 
-`examples/phase17_r1o_r_stm_oracle.py`. Phi is *defined* by `dx(t) = Phi dx0`, so its position rows
+`studies/phase17/scripts/phase17_r1o_r_stm_oracle.py`. Phi is *defined* by `dx(t) = Phi dx0`, so its position rows
 satisfy `dr(t)/dx0[:, j] = Phi[:3, j]`. The oracle measures the left-hand side directly, by central
 differences on trajectories re-propagated with `propagate_state` — the **6-state** propagator, which
 never forms a variational block at all — and compares both candidate unpackings against it, at two
@@ -267,8 +267,8 @@ AFFECTED_ANALYSES =
 UNAFFECTED_ANALYSES =
   R1O range-only baseline  (production two_way_range_nominal_and_initial_jacobian
                             + _two_way_range_k_srp_column, both order="F")
-  production DDOR          (lunar_od/delta_dor.py -- re-run in full, s18)
-  production optical       (lunar_od/lunar_landmark_optical.py -- callers pass
+  production DDOR          (src/lunar_od/delta_dor.py -- re-run in full, s18)
+  production optical       (src/lunar_od/lunar_landmark_optical.py -- callers pass
                             order="F"; transpose-sensitivity test already present)
   ALL K columns everywhere (S_K is a 6-vector, never reshaped -- s12)
   Phase 17-R1M, Phase 17-R1COV  (no use of the helper)
@@ -388,7 +388,7 @@ faster than the numerator `I_K|x`, so the fraction falls even though total infor
 
 ## 18. DDOR Production Comparison
 
-Production DDOR was re-run in full (`examples/phase17_r1od_campaign.py`, unmodified) to confirm this
+Production DDOR was re-run in full (`studies/phase17/scripts/phase17_r1od_campaign.py`, unmodified) to confirm this
 phase did not perturb it. It reproduces every published value exactly: range-only `0.2523` /
 `1.162817e+06`, 5 nrad `0.2121` / `1.329505e+06`, and the complete noise sweep
 (1 nrad `0.0738`, 2 `0.1264`, 3 `0.1657`, 5 `0.2121`, 10 `0.2493`, 30 `0.2636`, 100 `0.2641`).
@@ -582,7 +582,7 @@ Verified, not assumed:
 
 ```
 PRODUCTION_CODE_CHANGED        = NO
-ANALYSIS_CODE_CHANGED          = YES  (one line + docstring in examples/phase17_r1o_core.py)
+ANALYSIS_CODE_CHANGED          = YES  (one line + docstring in studies/phase17/scripts/phase17_r1o_core.py)
 HISTORICAL_REPORT_CHANGED      = YES  (supersede/provenance notices only; no number deleted)
 
 PHYSICAL_MODEL_CHANGED         = NO
@@ -592,8 +592,8 @@ K_SOLVE_FOR_MATH_CHANGED       = NO
 COVARIANCE_METHOD_CHANGED      = NO
 ```
 
-Added: `examples/phase17_r1o_r_stm_oracle.py`, `examples/phase17_r1o_r_requalification.py`,
-`tests/test_r1o_stm_layout.py`, `docs/phase17_r1o_scientific_erratum.md`, this report, and the
+Added: `studies/phase17/scripts/phase17_r1o_r_stm_oracle.py`, `studies/phase17/scripts/phase17_r1o_r_requalification.py`,
+`tests/test_r1o_stm_layout.py`, `studies/phase17/reports/phase17_r1o_scientific_erratum.md`, this report, and the
 `r1o_r_*` artifacts.
 
 ## 29. What Did Not Change
@@ -650,10 +650,10 @@ interface. This is a software-verification lesson, not a new mission capability.
 Targeted re-runs, all green:
 
 - `tests/test_r1o_stm_layout.py` — 5 new tests, pass; fail on mutation, pass on repair.
-- `examples/phase17_r1o_r_stm_oracle.py` — `R1O_STM_LAYOUT_ORACLE_GATE = PASS`.
-- `examples/phase17_r1od_campaign.py` (production DDOR, unmodified) — reproduces every published
+- `studies/phase17/scripts/phase17_r1o_r_stm_oracle.py` — `R1O_STM_LAYOUT_ORACLE_GATE = PASS`.
+- `studies/phase17/scripts/phase17_r1od_campaign.py` (production DDOR, unmodified) — reproduces every published
   value, confirming the repair did not perturb production.
-- `examples/phase17_r1o_r_requalification.py` — historical reproduction bitwise exact; K columns
+- `studies/phase17/scripts/phase17_r1o_r_requalification.py` — historical reproduction bitwise exact; K columns
   bitwise invariant across all four affected designs.
 
 ## 33. Full Suite
@@ -727,7 +727,7 @@ START_TREE   = 4df2e2d22130edc87aa6e8169172bdf7b950a33e
 FINAL_HEAD   = 8fdde8c54a244b3f8030ff5af943ba3f13248a35
 FINAL_TREE   = 877bd81653fb204498baec92ae845b0c23f5fc2b
                (final science-bearing commit; a following commit adds only this
-                verdict block and artifacts/r1o_r_manifest.json)
+                verdict block and studies/phase17/results/r1o_r_manifest.json)
 
 R1O_REPAIR_INPUT_GATE = PASS
 
@@ -748,8 +748,8 @@ AFFECTED_ANALYSES =
 
 UNAFFECTED_ANALYSES =
   R1O range-only baseline (production two-way range Jacobian)
-  production DDOR   (lunar_od/delta_dor.py -- re-run, reproduces exactly)
-  production optical (lunar_od/lunar_landmark_optical.py)
+  production DDOR   (src/lunar_od/delta_dor.py -- re-run, reproduces exactly)
+  production optical (src/lunar_od/lunar_landmark_optical.py)
   ALL K columns everywhere (S_K is a 6-vector, never reshaped)
   Phase 17-R1M, Phase 17-R1COV
 
@@ -793,7 +793,7 @@ R1O_CORRECTED_PRIMARY_CONCLUSION =
   case is a large information-MAGNITUDE gain (sigma_K/K 9.27% -> 0.67%) at an
   unchanged f_perp; the DDOR case reduces f_perp below the range-only baseline.
 
-ERRATUM_DOCUMENT_CREATED           = YES (docs/phase17_r1o_scientific_erratum.md)
+ERRATUM_DOCUMENT_CREATED           = YES (studies/phase17/reports/phase17_r1o_scientific_erratum.md)
 ORIGINAL_R1O_REPORT_MARKED_SUPERSEDED = YES (header notice; zero numbers deleted)
 
 PRODUCTION_CODE_CHANGED   = NO   (lunar_od/ byte-identical to START_TREE)
@@ -815,7 +815,7 @@ TESTS_SKIPPED         = 29
   tests.  The non-passing set is IDENTICAL: the FA-06 isolated-import guard
   (KNOWN_PREEXISTING_ENVIRONMENT -- the workspace-root pytest.ini injects a
   sibling worktree onto pythonpath) and the R2 protected-tree byte gate on
-  lunar_od/dynamics.py (KNOWN_PREEXISTING_PROVENANCE -- awaiting owner re-freeze;
+  src/lunar_od/dynamics.py (KNOWN_PREEXISTING_PROVENANCE -- awaiting owner re-freeze;
   lunar_od/ was not modified by this phase), plus the 10 R2 errors downstream of
   that gate.
 

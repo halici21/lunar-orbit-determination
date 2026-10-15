@@ -17,7 +17,7 @@
 > | gain Δ`f_perp` | **+0.0808** (STRONG_DIRECTION_GAIN) |
 > | σ_K/K | **7.46%** |
 >
-> **R1O surrogates under the same contract** (Phase 17-HARDEN, `artifacts/phase17_harden_visibility_requalification.json`):
+> **R1O surrogates under the same contract** (Phase 17-HARDEN, `studies/phase17/results/phase17_harden_visibility_requalification.json`):
 >
 > | surrogate | 5 nrad `f_perp` | 1 nrad `f_perp` | rows |
 > |---|---:|---:|---|
@@ -25,8 +25,8 @@
 > | Earth LOS | 0.0919 | — | 360 kept; 230 of 590 were occulted |
 >
 > The R1O-D-era bridge surrogate uses an Earth frozen at t = 0 and is historical only. On the legacy (elevation-only) path, every FXR number
-> still reproduces bitwise. The single current status is in `docs/phase17_authoritative_status.md`. The defect is
-> HARDEN-D04 in `docs/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
+> still reproduces bitwise. The single current status is in `studies/phase17/reports/phase17_authoritative_status.md`. The defect is
+> HARDEN-D04 in `studies/phase17/reports/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
 
 
 > **The question, answered first.** After the Earth-position epoch inconsistency is corrected,
@@ -51,7 +51,7 @@
 >   `f_perp = 0.091508`, `theta_K = 5.25°`, `I(K|x) = 1.5497e+05`, `sigma_K/K = 25.40%`
 >   (`SYNTHETIC_CAMPAIGN_TRUTH`).
 
-The central erratum map is `docs/phase17_fxr_earth_epoch_fixture_erratum.md`.
+The central erratum map is `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`.
 
 ---
 
@@ -150,12 +150,12 @@ impact queries can see this dependency.
   node: it lives in a separate repository and enters as a runtime callable. Its direct consumers
   were found by Grep.
 
-Details: `artifacts/phase17_fxr_graphify_discovery.md`. `GRAPHIFY_DISCOVERY_GATE = PASS`.
+Details: `studies/phase17/results/phase17_fxr_graphify_discovery.md`. `GRAPHIFY_DISCOVERY_GATE = PASS`.
 
 ## 7. Manual Runtime Configuration Audit
 
 Every geometric epoch was traced in source and then verified at runtime on the built arcs
-(`artifacts/phase17_fxr_epoch_audit.json`, `runtime_audit`):
+(`studies/phase17/results/phase17_fxr_epoch_audit.json`, `runtime_audit`):
 
 | quantity | epoch (published fixture) | epoch (canonical) |
 |---|---|---|
@@ -178,7 +178,7 @@ Measured:
 ## 8. Exact Defect Location
 
 ```
-DEFECT_FILE      = examples/phase17_r1m_core.py
+DEFECT_FILE      = studies/phase17/scripts/phase17_r1m_core.py
 DEFECT_SYMBOL    = build_range_arc   (visibility and generate_two_way_range_measurements were
                    given od_gravity_covariance_campaign.get_earth_pos / get_earth_vel)
 DEFECT_MECHANISM = an untagged Earth callable whose t = 0 is the campaign ET0 (ephemeris_data.mat
@@ -238,7 +238,7 @@ The offset enters the geometry as a Moon→Earth direction error:
 ## 11. Historical Fixture Reproduction
 
 The legacy arm (A) reproduces the published W15 baseline exactly, against committed
-`artifacts/r1od_campaign_summary.json`:
+`studies/phase17/results/r1od_campaign_summary.json`:
 
 - n_obs 782;
 - `f_perp` 0.2522919965229832;
@@ -551,7 +551,7 @@ GEO's "invariant/exactly" wording is correct to about 1e-4, and its §28 table p
 value on every row. The interpretation (linear SRP, so K magnitude is a relative-precision effect)
 stands, with the caveat that end-to-end sensitivity depends weakly on the K-dependent nominal
 trajectory. `GEO_G5_IMPLEMENTATION_CLASS = PHYSICAL_K_TRUTH_TRAJECTORY_SWEEP`.
-Evidence: `artifacts/phase17_fxr_g5_audit.json`.
+Evidence: `studies/phase17/results/phase17_fxr_g5_audit.json`.
 
 ## 24. Historical vs Corrected Cross-Phase Table
 
@@ -635,7 +635,7 @@ into a PASS. `RANGE_JACOBIAN_MAX_KNOWN_MATERIALITY_ON_F_PERP = 3.77e-6`.
 ## 31. Repository Changes
 
 - **Commit a108f55: fixture repair, legacy path, helpers, test.**
-  - `examples/phase17_r1m_core.py`: `EarthEphemeris`, fixture constants, coverage error,
+  - `studies/phase17/scripts/phase17_r1m_core.py`: `EarthEphemeris`, fixture constants, coverage error,
     superseded warning, `measurement_earth_ephemeris`, `earth_position_mci`, `earth_velocity_mci`,
     the `build_range_arc(earth_fixture=...)` argument, `ArcFixture.earth`.
   - `phase17_r1o_core.build_ddor_arc`, and `earth_los_rows` / `bridge_reduced_rows` in the R1O-R
@@ -644,17 +644,17 @@ into a PASS. `RANGE_JACOBIAN_MAX_KNOWN_MATERIALITY_ON_F_PERP = 3.77e-6`.
   - Five auxiliary scripts: Earth follows the arc's fixture.
   - GEO published arms: pinned to the legacy fixture.
   - `tests/test_fxr_earth_epoch_fixture.py`.
-- **Commit 3928224: evidence scripts and artifacts.** `examples/phase17_fxr_epoch_audit.py`,
+- **Commit 3928224: evidence scripts and artifacts.** `studies/phase17/scripts/phase17_fxr_epoch_audit.py`,
   `phase17_fxr_requalification.py`, `phase17_fxr_g5_audit.py`; `artifacts/phase17_fxr_*.json`;
   the Graphify discovery note.
 - **Final commit: documents.** This report, the central erratum, erratum blocks in eight existing
-  documents, and `artifacts/phase17_fxr_manifest.json`.
+  documents, and `studies/phase17/results/phase17_fxr_manifest.json`.
 
 ## 32. Production Code Impact
 
 `git diff 40bc153 -- lunar_od/` is empty. The production range, SPICE loaders, SRP, shadow,
 gravity, STM, K sensitivity, estimators, R1COV covariance, ΔDOR and optical code are untouched. The
-stale docstring in `lunar_od/lunar_landmark_optical.py` is left as it is (s50).
+stale docstring in `src/lunar_od/lunar_landmark_optical.py` is left as it is (s50).
 `PRODUCTION_CODE_CHANGED = NO`.
 
 ## 33. Historical Report Errata
@@ -775,7 +775,7 @@ the non-pass set is identical:
 | non-pass | class |
 |---|---|
 | `test_fa06_pytest_session_imports_isolated_repository`: the workspace-root `pytest.ini` injects the sibling worktree onto `pythonpath` | KNOWN_PREEXISTING_ENVIRONMENT |
-| `test_r2_current_tree_protection_holds_for_paths_r3_must_not_change`: R2 byte gate on `lunar_od/dynamics.py`, awaiting owner re-freeze. `lunar_od/` is untouched by FXR (empty diff) | KNOWN_PREEXISTING_PROVENANCE |
+| `test_r2_current_tree_protection_holds_for_paths_r3_must_not_change`: R2 byte gate on `src/lunar_od/dynamics.py`, awaiting owner re-freeze. `lunar_od/` is untouched by FXR (empty diff) | KNOWN_PREEXISTING_PROVENANCE |
 | 10 errors in `test_r2_measurement_fidelity.py`, downstream of that gate | KNOWN_PREEXISTING_PROVENANCE |
 
 ```
@@ -849,7 +849,7 @@ GRAPHIFY_REFRESH_HEAD   = 40bc1533fb3056b626b3132bbd71a153456c16da
 GRAPHIFY_DISCOVERY_GATE = PASS
 FXR_RUNTIME_EPOCH_AUDIT = PASS
 
-DEFECT_FILE      = examples/phase17_r1m_core.py
+DEFECT_FILE      = studies/phase17/scripts/phase17_r1m_core.py
 DEFECT_SYMBOL    = build_range_arc (measurement Earth = od_gravity_covariance_campaign.get_earth_pos/_vel)
 DEFECT_MECHANISM = untagged Earth callable with origin phase7_et0 − 504000 s passed beside et0 = phase7_et0;
                    numpy.interp holds it after 28260 s
@@ -874,7 +874,7 @@ PHASE17_FXR_GATE = PASS
 PRIMARY_CLASS    = HISTORICAL_EARTH_EPOCH_FIXTURE_DEFECT_REPAIRED_AND_PRIOR_BASELINES_REQUALIFIED
 ```
 
-The remaining fields are in §9–§30 and in `artifacts/phase17_fxr_manifest.json`.
+The remaining fields are in §9–§30 and in `studies/phase17/results/phase17_fxr_manifest.json`.
 
 ## 46. Exact Next Action
 

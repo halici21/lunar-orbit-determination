@@ -82,7 +82,7 @@ for the first 40 % of iterations. The Gauss–Newton fixed point is H̃ᵀ W r =
 the Jacobian error is amplified ~1/s_min along the weak direction. With D-a and D-b repaired, every step from
 χ² 1405 was rejected up to the damping guard and the solve reported a false `Converged`.
 
-## 3. Repair (lunar_od/estimators.py, K solve-for path only)
+## 3. Repair (src/lunar_od/estimators.py, K solve-for path only)
 
 1. `_lm_step_square_root`: the **same** damped system (same D = diag(AᵀA), same λ, same prior, same schedule)
    written as the stacked least-squares problem [A; √(λD); U] d = [b; 0; U d̄] and solved by QR after column
@@ -105,7 +105,7 @@ acceptance propagator by Δχ² ≈ 4 at the same point. Scored correctly, the s
 
 ## 4. Ablation (simplified dynamics, KP2 cross-check problem, same draws)
 
-`examples/phase17_bls1_qualification.py --ablation` → `artifacts/phase17_bls1_qualification.json`
+`studies/phase17/scripts/phase17_bls1_qualification.py --ablation` → `studies/phase17/results/phase17_bls1_qualification.json`
 (`simplified_ablation`). Variants are source-level copies exec'd into a private namespace; the production
 module is untouched.
 
@@ -121,7 +121,7 @@ taking that Gauss–Newton step *raises* the scored cost (902.46 → 902.68).
 
 ## 5. High-fidelity qualification (the frozen KP2 job, unchanged)
 
-`examples/phase17_bls1_qualification.py --hf` runs `phase17_kp2_campaign.job_bls` unmodified. The job uses
+`studies/phase17/scripts/phase17_bls1_qualification.py --hf` runs `phase17_kp2_campaign.job_bls` unmodified. The job uses
 CANON k0, high fidelity (GL1800F field, Earth/Sun third body, conical-penumbra SRP), rtol 1e-12, T0, range
 only, scalar K and no prior. It starts from the declared a priori x0 + dx (dx = −109, −124, +56 m;
 +0.069, +0.043, +0.107 m/s), K0 = 0.01. The job also runs the KP2 solver on the same data and compares.
@@ -166,9 +166,9 @@ tolerance from the first iteration (D-c). That is the price of a correct fixed p
 ## 7. HARDEN-D25 materiality to KP2
 
 **None for the KP2 classifications.** Every KP2 decision quantity (recovery, χ²_var, NEES, false detections,
-level z, σ_v) uses the covariance of the KP2 solver's own QR (`examples/phase17_kp2_core.py` `_gauss_newton`,
+level z, σ_v) uses the covariance of the KP2 solver's own QR (`studies/phase17/scripts/phase17_kp2_core.py` `_gauss_newton`,
 lines 247–254, `sol["cov"]`). The production posterior is read in exactly two places, `job_bls` and
-`posthoc_bls_stationarity` (`examples/phase17_kp2_campaign.py` lines 171 and 240), and only for the
+`posthoc_bls_stationarity` (`studies/phase17/scripts/phase17_kp2_campaign.py` lines 171 and 240), and only for the
 PRODUCTION_BLS verification gate's σ criterion. D25 is **material to that criterion and fully explains its
 failure**: recomputed with the harmonic field, the σ ratio is 1.0000 (§5). It is not repaired here. That would be a separate, scoped change with its own posterior re-qualification.
 

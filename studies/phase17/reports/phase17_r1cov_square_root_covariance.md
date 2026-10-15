@@ -13,7 +13,7 @@
 > | old floored-path overconfidence, G0 / G1 / G3 | ×261 / ×11.8 / ×10.2 | ×65 / ×45 / ×51 |
 > | best existing case, M3 Model B | 0.00452 (45%), 295 obs | 0.0358 (358%), 250 obs |
 >
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 ## 1. Executive Summary
 
@@ -216,7 +216,7 @@ Every use of the two floored helpers was located by AST-attributed source scan b
 
 `scenarios.py` carries its own separate *definition* of `_safe_covariance_from_information`. It is
 not part of the K solve-for chain and was not touched (§39). The full inventory with file, line,
-enclosing function and classification is `artifacts/r1cov_callsite_inventory.csv`.
+enclosing function and classification is `studies/phase17/results/r1cov_callsite_inventory.csv`.
 
 ## 9. Existing Floor Semantics
 
@@ -516,7 +516,7 @@ code path entirely and were not edited.
 
 ## 23. Controlled Production Integration
 
-Changes to `lunar_od/estimators.py`, and nothing else:
+Changes to `src/lunar_od/estimators.py`, and nothing else:
 
 1. **`RankDeficientCovarianceError`** — new exception carrying `rank`, `n`, `singular_ratio`,
    `threshold`.
@@ -637,12 +637,12 @@ Historical artifacts are left intact as historical evidence (§46); this table i
 | R1M: `sigma_K` NOT_RELIABLE_IN_NEAR_SINGULAR_REGIME | R1M covariance audit | CONFIRMED_AND_REPAIRED | confirmed independently; repaired on the K path; default six-state path unchanged and still floored |
 | R1M best case `sigma_K ≈ 4.52e-03` from `1/sqrt(I(K|x))` | information-domain proxy | **CONFIRMED** | qualified covariance reproduces it exactly; R1M's conclusion stands |
 
-Machine-readable at `artifacts/r1cov_historical_correction_table.csv`.
+Machine-readable at `studies/phase17/results/r1cov_historical_correction_table.csv`.
 
 ## 31. What Changed in the System
 
 ```
-PRODUCTION_CODE_CHANGED         = YES  (lunar_od/estimators.py only)
+PRODUCTION_CODE_CHANGED         = YES  (src/lunar_od/estimators.py only)
 POINT_ESTIMATE_BEHAVIOR_CHANGED = NO   (bitwise verified)
 PHYSICAL_MODEL_CHANGED          = NO
 MEASUREMENT_MODEL_CHANGED       = NO
@@ -951,7 +951,7 @@ ESTIMATOR_SIGMA_K_TRUST_STATUS_AFTER_R1COV = QUALIFIED
     (for the BLS and SRIF K solve-for paths only; the default six-state
      paths retain the floored helper and are NOT covered)
 
-PRODUCTION_CODE_CHANGED          = YES   (lunar_od/estimators.py only)
+PRODUCTION_CODE_CHANGED          = YES   (src/lunar_od/estimators.py only)
 POINT_ESTIMATE_BEHAVIOR_CHANGED  = NO
 PHYSICAL_MODEL_CHANGED           = NO
 MEASUREMENT_MODEL_CHANGED        = NO
@@ -1019,7 +1019,7 @@ NEXT_ACTION =
   covariance. Neither begins automatically.
 
 COMMITS_CREATED = 1
-COMMIT_LIST     = recorded in artifacts/r1cov_manifest.json
+COMMIT_LIST     = recorded in studies/phase17/results/r1cov_manifest.json
     (a commit cannot embed its own hash; the manifest written alongside this
      report records the parent, and the tip is reported in the phase closure
      message)

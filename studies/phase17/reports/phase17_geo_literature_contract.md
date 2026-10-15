@@ -7,7 +7,7 @@ tagged:
   actually read.
 - **REPOSITORY HYPOTHESIS** — what this phase tests because of it.
 - **REPOSITORY RESULT** — filled in from this phase's own numbers in the main report
-  (`docs/phase17_geo_geometry_identifiability.md`, §24–§33).
+  (`studies/phase17/reports/phase17_geo_geometry_identifiability.md`, §24–§33).
 
 The literature motivates the grid. It does not answer the question for this repository.
 
@@ -87,7 +87,7 @@ is explicitly marked as not verified in full text.
   **Not verified in full text:** any quantitative statement about how scale factors vary with β, or
   about grazing-eclipse timing errors.
 - **Limitation carried.** Production here uses a **spherical-Moon conical penumbra**
-  (`lunar_od/srp.py`). Near the full-Sun boundary a real, topographic Moon changes eclipse timing. The
+  (`src/lunar_od/srp.py`). Near the full-Sun boundary a real, topographic Moon changes eclipse timing. The
   grazing cases (|β| ≈ 69–73°) are therefore statements about the spherical model, not mission-truth
   eclipse timing (§28).
 

@@ -10,7 +10,7 @@
 > absolute `sigma_K` varies by 1.3e-4 relative. "Invariant" and "exactly" therefore hold to about
 > 1e-4, not exactly. The §28 table prints the K = 0.01 value on every row. §57's "fixture erratum
 > phase" option has now been carried out.
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 > **The question, answered in plain language first (§73).** When the lunar orbit's altitude,
 > inclination, Sun orientation, eclipse history and tracking geometry are changed, does K_SRP start
@@ -114,7 +114,7 @@ direction does not break out of the weak regime.
 
 ## 8. Literature Context
 
-`docs/phase17_geo_literature_contract.md` (written before the grid was frozen). The operational
+`studies/phase17/reports/phase17_geo_literature_contract.md` (written before the grid was frozen). The operational
 anchor is Slojkowski (NTRS 20140008968 §6.2): LRO could estimate C_R "for non-full-Sun orbit periods"
 but "consistent estimation of C_R … is still not possible during full-Sun periods" with a cannonball
 model. The same source attributes the full-Sun problem partly to the area model. The EKF follow-up
@@ -131,7 +131,7 @@ The full-Sun boundary at the canonical radius is `|beta| ≈ arcsin(R_Moon/a) = 
 ## 10. Eclipse Physics
 
 Eclipses come from the **production** conical-penumbra model with a spherical Moon
-(`lunar_od/srp.py`), never from beta. An eclipse event is counted when `nu < 0.5`; the force always
+(`src/lunar_od/srp.py`), never from beta. An eclipse event is counted when `nu < 0.5`; the force always
 uses the continuous `nu`. Earth shadow is not modelled. At the GEO epoch the Sun–Earth separation
 seen from the Moon is 174.4° (new moon), so the Earth cannot occult the Sun for any GEO orbit.
 
@@ -162,7 +162,7 @@ The working tree held only the two known untracked R1O-D orphans, left untouched
 
 ## 14. Graphify Discovery
 
-`artifacts/phase17_geo_graphify_discovery.md`. The graph was current (no `.py` change since its
+`studies/phase17/results/phase17_geo_graphify_discovery.md`. The graph was current (no `.py` change since its
 build) and was not refreshed. `graphify explain "K_SRP"` resolved only to docstrings; real symbols
 (`SRPOptions`, `srp_acceleration_kernel`, `illumination_fraction`,
 `propagate_state_with_k_sensitivity`, `_two_way_range_k_srp_column`, `build_range_arc`) gave useful
@@ -243,7 +243,7 @@ favourable to K, and it was not the scenario's geometry.
 
 ## 20. Predeclared Geometry Grid
 
-`artifacts/phase17_geo_predeclared_grid.json`, v2 (SHA-256
+`studies/phase17/configs/phase17_geo_predeclared_grid.json`, v2 (SHA-256
 `2ba87a471c6b303e7d39a0607daed60bca693b21cb6075642ed7b64e4c7e754d`). The campaign refuses to run
 against any other hash. The grid was written before any K metric existed: it holds 57 cases, the
 thresholds, the stage rules, and the G5 prediction. `GEO_GRID_PREDECLARED = YES`.
@@ -385,7 +385,7 @@ neighbours (triggered only by MODERATE/STRONG cases) were likewise not required.
 
 ## 30. SRP RTN Interpretation
 
-`docs/figures/phase17_geo/f6_srp_rtn_and_eclipse_timelines.png`. At beta 0°, SRP is entirely
+`studies/phase17/results/figures/phase17_geo/f6_srp_rtn_and_eclipse_timelines.png`. At beta 0°, SRP is entirely
 in-plane (R/T share 0.44/0.55, N 0.01), square-wave-modulated by eclipses. At the canonical 21.5°
 it is in-plane plus a steady cross-track part (0.33/0.43/0.24). At beta 88°, SRP is a **constant
 cross-track push** (N share 0.95). A constant cross-track acceleration is almost exactly what a small
@@ -395,7 +395,7 @@ collapses 37× and `sigma_K` explodes, while `f_perp` is unchanged. This is a ph
 
 ## 31. Eclipse-Modulation Interpretation
 
-The counterfactual (`artifacts/phase17_geo_results.json`, stage CF) propagates the identical orbit
+The counterfactual (`studies/phase17/results/phase17_geo_results.json`, stage CF) propagates the identical orbit
 with the production `shadow_model="NO_SHADOW"`. It is analysis-only, never a default, never mission
 truth.
 
@@ -419,11 +419,11 @@ decided by the signature's shape.
 
 ## 33. f_perp Results
 
-All 57 cases are in `artifacts/phase17_geo_information_metrics.csv`. Over the 48 primary geometry
+All 57 cases are in `studies/phase17/results/phase17_geo_information_metrics.csv`. Over the 48 primary geometry
 cases (G1–G4), `f_perp` = 0.0326–0.2814 (the minimum is single-station Madrid; the minimum for a
 three-station geometry is G3 i60 beta 0 at 0.0766).
 
-**POST-HOC phase diagnostic.** `artifacts/phase17_geo_phase_robustness.json` is not predeclared and
+**POST-HOC phase diagnostic.** `studies/phase17/results/phase17_geo_phase_robustness.json` is not predeclared and
 is used for no classification. Only the argument of latitude at epoch is varied (8 values):
 
 | geometry | `f_perp` range over phase | spread | `sigma_K/K` range |
@@ -464,7 +464,7 @@ polar beta 0, x/vx/z at beta 88°, y/vx at altitude. Design condition numbers ar
 
 ## 38. Full-Data vs Matched-Count Comparison
 
-`docs/figures/phase17_geo/f5_full_vs_matched_count.png`: all 54 points sit on the identity line, with
+`studies/phase17/results/figures/phase17_geo/f5_full_vs_matched_count.png`: all 54 points sit on the identity line, with
 a maximum deviation of 0.0035. Direction differences are not produced by one geometry simply
 yielding more data.
 
@@ -479,7 +479,7 @@ polar beta 0 and 88°, 30 km, 1000 km, i 26.7° beta 0) on 4-revolution arcs. Se
 **Result: FAIL.** The K column passes in all six geometries. State columns fail in five of six
 (G1 beta 88° passes), with ratios up to 35.
 
-The failure is characterized, not loosened (`artifacts/phase17_geo_jacobian_diagnosis.json`):
+The failure is characterized, not loosened (`studies/phase17/results/phase17_geo_jacobian_diagnosis.json`):
 
 - **Shape.** The error is **flat across the 16× step range** (~1–3×10⁻⁶ relative for most columns,
   up to 3×10⁻⁵). It follows neither truncation (∝h²) nor roundoff (∝1/h). It is a systematic
@@ -520,7 +520,7 @@ their on/off timing is itself phase-locked to the orbit.
 ## 43. What Changed in the Repository
 
 New files only: `examples/phase17_geo_{core,grid,campaign,fixture_attribution,jacobian_checks,
-jacobian_diagnosis,phase_robustness,figures}.py`, `docs/phase17_geo_literature_contract.md`, this
+jacobian_diagnosis,phase_robustness,figures}.py`, `studies/phase17/reports/phase17_geo_literature_contract.md`, this
 report, `docs/figures/phase17_geo/` (9 PNG figures + 9 data CSVs), and `artifacts/phase17_geo_*`.
 
 ## 44. What Did Not Change

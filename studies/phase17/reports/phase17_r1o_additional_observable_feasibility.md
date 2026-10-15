@@ -5,7 +5,7 @@
 > The ΔDOR-like 0.3203 and Earth-LOS 0.0920 values below are still superseded: their rows were accepted on elevation only.
 > On the production elevation + occultation contract the values are ΔDOR-like 5 nrad **0.1722**
 > (1 nrad 0.1381) and Earth LOS **0.0919**; 230 of 590 Earth-LOS rows were occulted. Production ΔDOR is **0.172351**.
-> The current numbers are in `docs/phase17_authoritative_status.md`.
+> The current numbers are in `studies/phase17/reports/phase17_authoritative_status.md`.
 
 > ## ERRATUM 2 (Phase 17-FXR) — Earth-epoch fixture
 >
@@ -24,13 +24,13 @@
 > The original ranking remains invalid, because of the STM defect. R1O-R's corrected conclusion,
 > that neither candidate improves on the range baseline, **no longer holds**: on the consistent
 > geometry both surrogates raise `f_perp` well above it. The LOS negative control stays null.
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 > ## HISTORICAL RESULT — SUPERSEDED
 >
 > **Every surrogate result in this report used Phi^T in place of Phi.**
 >
-> `examples/phase17_r1o_core.py::chain_to_augmented_columns` unflattened the column-major 6x6
+> `studies/phase17/scripts/phase17_r1o_core.py::chain_to_augmented_columns` unflattened the column-major 6x6
 > state-transition matrix with NumPy's default C order. Phi is not symmetric, so all three
 > surrogate observables below — the DDOR-like angle, the lunar-landmark LOS, and the
 > Earth-center LOS control — were built on transposed state Jacobians. The K columns were
@@ -46,7 +46,7 @@
 > The range-only baseline, and every K-column value, remain valid.
 >
 > The original numbers below are deliberately preserved as a historical artifact. See
-> **`docs/phase17_r1o_scientific_erratum.md`** and **`docs/phase17_r1o_r_stm_layout_repair.md`**
+> **`studies/phase17/reports/phase17_r1o_scientific_erratum.md`** and **`studies/phase17/reports/phase17_r1o_r_stm_layout_repair.md`**
 > (Phase 17-R1O-R, repair commit `75ba49a7e86cf7c4ea01e45ca757126159dc0654`).
 
 ## 1. Executive Summary
@@ -676,7 +676,7 @@ production trajectory, frame-transform, and covariance code; none modifies it.
 
 ## 35. What Did Not Change
 
-`lunar_od/estimators.py`, `dynamics.py`, `two_way_range.py`, `radiometrics.py`,
+`src/lunar_od/estimators.py`, `dynamics.py`, `two_way_range.py`, `radiometrics.py`,
 `two_way_counted_doppler_reference.py`, `filters.py`, `measurements.py`, `geometry.py`,
 `lunar_frames.py`, `visibility.py`, and `constants.py` were all read and executed only. No new
 measurement type exists in `lunar_od/`. The qualified square-root covariance helper
@@ -1048,7 +1048,7 @@ NEXT_ACTION =
   Neither begins automatically; both require separate authorization.
 
 COMMITS_CREATED = <recorded after local commit>
-COMMIT_LIST     = recorded in artifacts/r1o_manifest.json
+COMMIT_LIST     = recorded in studies/phase17/results/r1o_manifest.json
 
 PUSH = NONE
 MERGE = NONE

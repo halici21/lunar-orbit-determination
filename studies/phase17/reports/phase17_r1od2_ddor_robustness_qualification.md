@@ -22,7 +22,7 @@
 > Predeclared outcome: `DDOR_K_INFORMATION_GAIN_IS_STRONGLY_GEOMETRY_DEPENDENT`.
 
 All numbers are `SYNTHETIC_CAMPAIGN_TRUTH` (K_truth = 0.01 m²/kg is a campaign value). Evidence:
-`artifacts/phase17_r1od2_*.json|csv|png`. Grid: `artifacts/phase17_r1od2_predeclared_grid.json`
+`artifacts/phase17_r1od2_*.json|csv|png`. Grid: `studies/phase17/configs/phase17_r1od2_predeclared_grid.json`
 (SHA-256, LF-normalized, `2a99c50e…c07c11`), committed in `1ca5356` **before** any headline metric.
 
 ---
@@ -114,7 +114,7 @@ absolute terms (0.172, θ_K = 9.9°). A large relative gain is not identifiabili
 
 ## 5. Literature Contract
 
-See `docs/phase17_r1od2_literature_contract.md`. It inspects:
+See `studies/phase17/reports/phase17_r1od2_literature_contract.md`. It inspects:
 - DSN 810-005 Module 210 Rev. E (2023/24);
 - CCSDS 500.1-G-2 (2019);
 - Curkendall & Border (2013).
@@ -638,7 +638,7 @@ Two further mechanisms act on top of this:
 |---|---|
 | `1ca5356` | literature contract; predeclared grid (+ writer); `phase17_r1od2_core.py` |
 | `89d151d` | campaign, FD (+ K refinement), fidelity, figures and summary scripts; `tests/test_r1od2_ddor_contracts.py` (7 tests); all `phase17_r1od2_*` artifacts |
-| final | this report and `artifacts/phase17_r1od2_manifest.json` |
+| final | this report and `studies/phase17/results/phase17_r1od2_manifest.json` |
 
 **Changes made to the D2 analysis code during the phase, disclosed.** All three are metric or
 bookkeeping defects in D2's own new code, not threshold changes:
@@ -746,7 +746,7 @@ contract tests. The non-pass set is identical:
 | non-pass | class |
 |---|---|
 | `test_fa06_pytest_session_imports_isolated_repository` | KNOWN_PREEXISTING_ENVIRONMENT |
-| `test_r2_current_tree_protection_holds_for_paths_r3_must_not_change`: R2 byte gate on `lunar_od/dynamics.py`, unchanged by D2 | KNOWN_PREEXISTING_PROVENANCE |
+| `test_r2_current_tree_protection_holds_for_paths_r3_must_not_change`: R2 byte gate on `src/lunar_od/dynamics.py`, unchanged by D2 | KNOWN_PREEXISTING_PROVENANCE |
 | 10 downstream `test_r2_measurement_fidelity.py` errors | KNOWN_PREEXISTING_PROVENANCE |
 
 `D2_INTRODUCED_NONPASSES = 0`, `NEW_SCIENTIFIC_REGRESSIONS = 0`, `UNKNOWN_NONPASSES = 0`.

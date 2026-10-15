@@ -27,7 +27,7 @@
 > **No longer true:** M3 Model B as the best configuration, and M3 Model B beating contiguous G3.
 > The window anchors were read from the published (defective) visibility. On the corrected
 > geometry the M windows hold 34–71 observations instead of 59 each. FXR did not re-anchor them.
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 ## 1. Executive Summary
 
@@ -938,7 +938,7 @@ Both non-pass classes are confined to `tests/test_r2_measurement_fidelity.py` an
 pre-existing:
 
 1. **1 FAILED** — `test_r2_current_tree_protection_holds_for_paths_r3_must_not_change`:
-   `lunar_od/dynamics.py` hashes `b369899a45a8…` against the R2-frozen `dde8c188e035…`. This is the
+   `src/lunar_od/dynamics.py` hashes `b369899a45a8…` against the R2-frozen `dde8c188e035…`. This is the
    Phase 16 explicit-SRP integration into `dynamics.py`. The corresponding R2 byte-gate re-freeze
    was **explicitly withheld** from the Phase 17C-RF owner authorization and remains owner business.
    Classification: `KNOWN_PREEXISTING_PROVENANCE`.
@@ -1075,7 +1075,7 @@ FINAL_HEAD = the manifest commit, which is the child of CONTENT_COMMIT
 FINAL_TREE = the manifest commit's tree
     A commit cannot contain its own hash, so these two values are reported in
     the phase closure message rather than embedded here. Everything else in
-    this block is self-contained, and artifacts/r1m_manifest.json records
+    this block is self-contained, and studies/phase17/results/r1m_manifest.json records
     CONTENT_COMMIT above.
 
 R1M_INPUT_GATE = PASS
@@ -1222,7 +1222,7 @@ COMMITS_CREATED = 2
 COMMIT_LIST =
   f2af3045e44860b0892fe84b788ab7b75c7c63a2  analysis scripts, artifacts,
                                             figures and this report
-  <manifest commit>                         artifacts/r1m_manifest.json and
+  <manifest commit>                         studies/phase17/results/r1m_manifest.json and
                                             this reference
 
 PUSH = NONE

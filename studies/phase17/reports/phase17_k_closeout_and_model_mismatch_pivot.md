@@ -13,7 +13,7 @@
 ## 0. Final status
 
 ```
-PHASE17_HARDEN_D27_GATE              = PASS (docs/phase17_harden_d27_convergence_status.md); opens HARDEN-D30
+PHASE17_HARDEN_D27_GATE              = PASS (studies/phase17/reports/phase17_harden_d27_convergence_status.md); opens HARDEN-D30
 STOCHASTIC_K_RESULT                  = SUPPORTS_M3_VARIATION_RESULT (predeclared rule, applied as frozen)
 COMMON_K_LEVEL_STATUS                = NOT_CLAIMED; now with a physical reason: lunar albedo + IR pressure is
                                        ~99.99 % collinear with it (s3.1)
@@ -54,15 +54,15 @@ returned point, at the caller's tolerance.
   - Genuine failures stay failures (2511; truth-start stall 3.68).
 - **New open item, HARDEN-D30.** Integration noise in the acceptance cost (~5 χ² at rtol 1e-11) rejects small
   damped steps. No authoritative result is affected.
-- **Full report:** `docs/phase17_harden_d27_convergence_status.md`.
+- **Full report:** `studies/phase17/reports/phase17_harden_d27_convergence_status.md`.
 
 ## 2. Work package B — final stochastic-K experiment (KGM)
 
-### 2.1 Design (frozen: `artifacts/phase17_kgm_predeclaration.json`, sha256 `6fd5419f…`)
+### 2.1 Design (frozen: `studies/phase17/configs/phase17_kgm_predeclaration.json`, sha256 `6fd5419f…`)
 
 - **Model GM15.** K_j = K0 (1 + f_j) on 15 one-orbit segments, realised exactly by segmented production
   propagation. It is the KP2 construction generalised; anchor: N = 3 reproduces KP2 **bitwise**, and the 15 K
-  columns sum to the scalar column to 7e-9 (`artifacts/phase17_kgm_anchor.json`).
+  columns sum to the scalar column to 7e-9 (`studies/phase17/results/phase17_kgm_anchor.json`).
 - **Stochastic model.** First-order Gauss-Markov deviations with a **flat (no-information) common level**. The prior
   information is Λ = C⁻¹ − C⁻¹11ᵀC⁻¹/(1ᵀC⁻¹1), of rank 14. The GM prior constrains variation only, so
   common-level identifiability is untouched. It is zero-mean, so it can only shrink a variation, never create
@@ -80,7 +80,7 @@ returned point, at the caller's tolerance.
   T3_GM was solved here.
 - **Runs.** 16 high-fidelity solves, all converged (5–7 evaluations).
 
-### 2.2 Results (`artifacts/phase17_kgm_summary.json`, `phase17_kgm_raw_results.json`)
+### 2.2 Results (`studies/phase17/results/phase17_kgm_summary.json`, `phase17_kgm_raw_results.json`)
 
 | cell | T1 GM15 χ²_err / χ²_detect | T1 M3 (KP2) | GM σ_v / M3 σ_v | DFS / 14 | T0 GM χ²_detect (M3-proj. / full 14-dof) | agree |
 |---|---|---|---:|---:|---|---|
@@ -121,7 +121,7 @@ for a new K parameterisation; the caveat is the next phase's question.
 
 ## 3. Work package C — model-mismatch pivot
 
-Linear probes, labelled DIAGNOSTIC (`examples/phase17_mm_probe.py`; `artifacts/phase17_mm_probe*.json`).
+Linear probes, labelled DIAGNOSTIC (`studies/phase17/scripts/phase17_mm_probe.py`; `artifacts/phase17_mm_probe*.json`).
 
 - **Signature construction.** Each candidate mismatch's trajectory signature is built by STM convolution,
   S(t) = Φ(t)∫Φ(τ)⁻¹[0; δa(τ)]dτ. It is checked by applying the same construction to the production SRP kernel
@@ -245,4 +245,4 @@ new tunable parameter: the error amplitude α is the controlled variable.
 - **Focused (worktree):** D27, LM consistency, estimators, BLS1, D25/D28/D29, K-SRP BLS and scenarios. All pass.
 - **Full suite:** clean detached worktree of `fd24147` (only committed files; the concurrent desktop-app edits
   in the shared worktree are excluded): **1497 passed, 29 skipped, 0 failed** (exit 0). Record:
-  `artifacts/phase17_closeout_verification.txt`.
+  `studies/phase17/results/phase17_closeout_verification.txt`.

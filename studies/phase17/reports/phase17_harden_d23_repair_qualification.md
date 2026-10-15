@@ -1,9 +1,9 @@
 # Phase 17-HARDEN-D23 — Counted-Doppler Earth Ephemeris Repair and Value-Level Qualification
 
 - **Scope:** HARDEN qualification, not a science phase. No estimator, K parameterization, ΔDOR or force-model change.
-- **Code:** `lunar_od/radiometrics.py` (repair); `examples/phase17_d23_qualification.py` (qualification).
+- **Code:** `src/lunar_od/radiometrics.py` (repair); `studies/phase17/scripts/phase17_d23_qualification.py` (qualification).
 - **Tests:** `tests/test_harden_d23_counted_doppler_earth.py`.
-- **Acceptance criteria:** `artifacts/phase17_d23_acceptance.json`, canonical sha256 `2d1cb370…`. They were committed in
+- **Acceptance criteria:** `studies/phase17/results/phase17_d23_acceptance.json`, canonical sha256 `2d1cb370…`. They were committed in
   `bc640fa` before any repaired result.
 - **Evidence:** `artifacts/phase17_d23_*`.
 
@@ -134,7 +134,7 @@ D23_DOCUMENTATION_CONSISTENCY = CLOSED (ledger regenerated: D23 FIXED, 1.5e-6 ke
 COUNTED_DOPPLER_VALUES_SAFE_FOR_NEXT_ESTIMATION_PHASE = YES, at the 1e-7 m/s level (residual D24 floor
                                                         <= 1e-7 rms, 20x below the optimistic noise floor)
 
-PRODUCTION_CODE_CHANGED = YES (one provider function in lunar_od/radiometrics.py; one docstring)
+PRODUCTION_CODE_CHANGED = YES (one provider function in src/lunar_od/radiometrics.py; one docstring)
 MEASUREMENT_MODEL_CHANGED = YES (Earth interpolation inside the counted-Doppler station provider only)
 PHYSICAL_MODEL_CHANGED = NO
 ESTIMATOR_CHANGED = NO
@@ -159,9 +159,9 @@ NEXT_ACTION = hard stop. Owner: accept or reject the §5 adjudication. A value-b
 
 ## 8. Reproduction
 
-- **Full run:** `python examples/phase17_d23_qualification.py --reuse-fd`, with
+- **Full run:** `python studies/phase17/scripts/phase17_d23_qualification.py --reuse-fd`, with
   `PYTHONPATH="<worktree>;<campaign>/06_scripts"`. It takes about 75 min on 8 workers.
   - The 18.8 MB per-row raw output is not committed.
-  - `artifacts/phase17_d23_cells.json` keeps per-cell counts and sums of squares, which reproduce the pooled RMS
+  - `studies/phase17/results/phase17_d23_cells.json` keeps per-cell counts and sums of squares, which reproduce the pooled RMS
     exactly, plus maxima, quantiles and compact epoch diagnostics.
 - **Post-hoc scans:** `--epoch-scan` and `--et-exact-diagnostic`.

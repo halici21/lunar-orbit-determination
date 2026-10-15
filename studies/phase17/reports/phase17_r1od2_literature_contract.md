@@ -1,7 +1,7 @@
 # Phase 17-R1O-D2 — ΔDOR Literature Contract
 
 Written **before** the D2 robustness grid was frozen
-(`artifacts/phase17_r1od2_predeclared_grid.json`). The literature motivates the grid. It does not
+(`studies/phase17/configs/phase17_r1od2_predeclared_grid.json`). The literature motivates the grid. It does not
 predict the repository answer.
 
 Every statement carries one of three tags:
@@ -40,7 +40,7 @@ Page numbers below are the documents' own (they coincide with the PDF page index
 - `LITERATURE_RESULT` (CCSDS p. 4-7/4-8): ΔDOR is "a direct geometric measure of plane-of-sky
   spacecraft position". "Range data combined with ΔDOR from two baselines provides full
   three-dimensional observability."
-- `REPOSITORY_RESULT` (`lunar_od/delta_dor.py`, verified in source): the observable is
+- `REPOSITORY_RESULT` (`src/lunar_od/delta_dor.py`, verified in source): the observable is
   `DDOR = D_S − D_Q`, with `D_S = τ_{S,B} − τ_{S,A}` from a common spacecraft transmit event, and
   `D_Q = −(r_B − r_A)·ŝ/c`. **`D_Q` does not depend on the spacecraft state or on K**, so the
   quasar direction does not enter the state/K design rows at all. It enters only the error model.
@@ -128,7 +128,7 @@ Page numbers below are the documents' own (they coincide with the PDF page index
 - `LITERATURE_RESULT` (DSN-210 §2.4, p. 19): "Units of time delay are employed here to
   characterize ∆DOR measurement error." Angular precision is the delay error divided by the
   projected baseline (0.06 ns ↔ 1.9 nrad at 8000 km).
-- `REPOSITORY_RESULT` (`examples/phase17_r1od_campaign.py`, verified): the R1O-D/FXR weight takes
+- `REPOSITORY_RESULT` (`studies/phase17/scripts/phase17_r1od_campaign.py`, verified): the R1O-D/FXR weight takes
   an **angular** σ_θ and converts it per row as `σ_τ = max(B⊥, 1 m)·σ_θ/c`, with `B⊥` the baseline
   component perpendicular to the station-A→spacecraft line of sight. A constant angle σ is
   therefore a *different* delay σ on every pair and every epoch.

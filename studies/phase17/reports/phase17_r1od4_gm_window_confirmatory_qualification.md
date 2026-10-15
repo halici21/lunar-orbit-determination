@@ -2,8 +2,8 @@
 
 Truth level: **SYNTHETIC_CAMPAIGN_TRUTH** (K_truth = 0.01 m²/kg). No DSN allocation or mission performance is claimed.
 
-Artifacts: `artifacts/phase17_r1od4_*`. Campaign: `examples/phase17_r1od4_campaign.py`. Predeclaration:
-`artifacts/phase17_r1od4_predeclaration.json` (commit 91e899d, before any D4 K metric). Tests:
+Artifacts: `artifacts/phase17_r1od4_*`. Campaign: `studies/phase17/scripts/phase17_r1od4_campaign.py`. Predeclaration:
+`studies/phase17/configs/phase17_r1od4_predeclaration.json` (commit 91e899d, before any D4 K metric). Tests:
 `tests/test_r1od4_gm_confirmation.py`.
 
 ## 1. Executive Summary
@@ -81,7 +81,7 @@ nonlinear work. D4 is that test.
 
 ## 7. Predeclaration
 
-- **File:** `artifacts/phase17_r1od4_predeclaration.json`.
+- **File:** `studies/phase17/configs/phase17_r1od4_predeclaration.json`.
 - **Hash:** sha256 **`3a48bc212f2b5b0b26f15953dfd6c2e2cc230a2fdf042cb9cd1e77772c8b9084`**, taken over the canonical
   JSON body (sorted keys, compact separators).
 - **Commit:** 91e899d, before any D4 metric.
@@ -172,12 +172,12 @@ The initial states are frozen by sha256 of the D2 predeclared-grid x0 (`test_orb
 - **Matrix:** the full predeclared matrix ran, 5 orbits × 22 phases × 2 models = 220 geometries, in 2344 s on 15
   workers. The fallback was not invoked.
 - **HF path check:** the HF range-only f_perp at CANON 75° is 0.21182734886671062, **bitwise equal** to D3's HF2
-  value (`artifacts/phase17_r1od3_high_fidelity.json`).
+  value (`studies/phase17/results/phase17_r1od3_high_fidelity.json`).
 
 ## 16. D3 Anchor Reproduction
 
 Verification item G compared canonical SIMPLIFIED at 75/90/105/135/150°, for FIRST and ALL, under all five
-calibrations. That is 50 values against `artifacts/phase17_r1od3_primary_results.csv`.
+calibrations. That is 50 values against `studies/phase17/results/phase17_r1od3_primary_results.csv`.
 
 - Maximum |difference| = **0.0**, so `D3_ANCHORS_REPRODUCED = YES`.
 - The pytest test `test_d3_anchor_90deg_reproduces_exactly` repeats this at 90°.
@@ -402,8 +402,8 @@ The D3, F1, HARDEN, D2 and measurement tests ran unchanged inside the full suite
 
 **CLEAN.** Relative to the entering HEAD 89942a6, the only changed paths are the D4 files:
 
-- `examples/phase17_r1od4_predeclare.py`
-- `examples/phase17_r1od4_campaign.py`
+- `studies/phase17/scripts/phase17_r1od4_predeclare.py`
+- `studies/phase17/scripts/phase17_r1od4_campaign.py`
 - `tests/test_r1od4_gm_confirmation.py`
 - this report
 - `artifacts/phase17_r1od4_*`

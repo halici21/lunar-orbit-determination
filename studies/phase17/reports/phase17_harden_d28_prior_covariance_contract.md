@@ -2,10 +2,10 @@
 
 - **Date:** 2026-10-12
 - **Branch:** local `phase17-harden-bls1` (worktree `python_port_phase17r0`), on top of D25 `3959f7a`
-- **Predeclaration:** `artifacts/phase17_d28_predeclaration.json`, written after the source/heritage audit and
+- **Predeclaration:** `studies/phase17/configs/phase17_d28_predeclaration.json`, written after the source/heritage audit and
   before any production change or materiality number
-- **Evidence:** `artifacts/phase17_d28_qualification.json` (+ `phase17_d28_invariance_{old,new}.json`,
-  `phase17_d28_scenarios_{old,new}.json`), `examples/phase17_d28_qualification.py`,
+- **Evidence:** `studies/phase17/results/phase17_d28_qualification.json` (+ `phase17_d28_invariance_{old,new}.json`,
+  `phase17_d28_scenarios_{old,new}.json`), `studies/phase17/scripts/phase17_d28_qualification.py`,
   `tests/test_harden_d28_posterior_prior_contract.py`
 
 ## 0. Final status
@@ -56,7 +56,7 @@ intents to resolve.
 objective and is left unchanged. Whether that objective should keep the default state rows is a question about
 the estimate, outside this covariance phase. It is recorded in §6.
 
-## 2. Repair (`lunar_od/estimators.py`, posterior blocks only)
+## 2. Repair (`src/lunar_od/estimators.py`, posterior blocks only)
 
 `_posterior_prior_terms(prior_inv, prior_sqrt_info, has_explicit_prior)` returns the prior terms a posterior may
 carry: the explicit prior, or zero. The rule for each site is that a posterior carries exactly the prior terms
@@ -136,4 +136,4 @@ Each test also checks that the historical construction is measurably different o
 The one exception above, the SRIF K path whose objective carried the default state rows, was a defect: it
 departed from the BLS contract its docstring declares. HARDEN-D29 removed it. The SRIF K objective is now data-only
 state + the required K prior, and its posterior carries exactly those. The D28 contract now holds in every path:
-the 15 km / 5 m/s diagonal is a step regularizer only. See `docs/phase17_harden_d29_srif_k_prior_contract.md`.
+the 15 km / 5 m/s diagonal is a step regularizer only. See `studies/phase17/reports/phase17_harden_d29_srif_k_prior_contract.md`.

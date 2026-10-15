@@ -2,10 +2,10 @@
 
 - **Date:** 2026-10-12
 - **Branch:** local `phase17-harden-bls1` (worktree `python_port_phase17r0`), on top of D28 `b5d59b8`
-- **Predeclaration:** `artifacts/phase17_d29_predeclaration.json`, written after the provenance audit and
+- **Predeclaration:** `studies/phase17/configs/phase17_d29_predeclaration.json`, written after the provenance audit and
   before any production change or measured estimate change
-- **Evidence:** `artifacts/phase17_d29_qualification.json`, `artifacts/phase17_d29_run_{old,new}.json`,
-  `examples/phase17_d29_qualification.py`, `tests/test_harden_d29_srif_k_prior_contract.py`
+- **Evidence:** `studies/phase17/results/phase17_d29_qualification.json`, `artifacts/phase17_d29_run_{old,new}.json`,
+  `studies/phase17/scripts/phase17_d29_qualification.py`, `tests/test_harden_d29_srif_k_prior_contract.py`
 
 ## 0. Final status
 
@@ -60,7 +60,7 @@ so the SRIF K estimate was pulled toward its starting state. The six-state SRIF 
 One authoritative contract, the BLS one, exists, and the SRIF K behaviour departs from it by an implementation
 accident. There were not two competing intents, so no stop was needed.
 
-## 2. Repair (`lunar_od/estimators.py`, SRIF only)
+## 2. Repair (`src/lunar_od/estimators.py`, SRIF only)
 
 - `prior_rhs_sqrt`: a copy of the prior square root whose state block is zeroed when K is solved for without an
   explicit state prior. `z_bar` uses it. `r_bar`, the step regularizer, keeps the full rows, so the numerical

@@ -83,7 +83,7 @@ def write_console_bundle(result, arcs, times, truth, epoch, *, config, job_path,
         dirty = None
     code_hashes = {}
     for relative in ("examples/run_scenario_config.py", "desktop_app/scenario_job.py", "desktop_app/services/scenario_execution.py",
-                     "desktop_app/services/scenario_artifacts.py", "desktop_app/services/mission_data.py", "lunar_od/scenarios.py", "lunar_od/estimators.py", "lunar_od/filters.py"):
+                     "desktop_app/services/scenario_artifacts.py", "desktop_app/services/mission_data.py", "src/lunar_od/scenarios.py", "src/lunar_od/estimators.py", "src/lunar_od/filters.py"):
         source = Path(project_root) / relative
         if source.is_file():
             code_hashes[relative] = hashlib.sha256(source.read_bytes()).hexdigest()

@@ -78,10 +78,10 @@ sha256 `23b302fd…87ce`.
 | formulation | y = c/(2Tc) · [τ(t3e) − τ(t3s)], two round-trip light-time solves at the count endpoints (`radiometrics.two_way_counted_doppler_observable`) | M1 (same structure) |
 | units | `mps_equivalent`: the rate of change of the one-way range, m/s | σ_V convention of L5 |
 | frequency | constant X-band uplink 7.2 GHz; turnaround 880/749; no ramps | M4 (ramps omitted: documented simplification) |
-| media / relativity | not modeled (docs/two_way_counted_doppler.md) | M4 |
+| media / relativity | not modeled (docs/theory/two_way_counted_doppler.md) | M4 |
 | count interval | configurable; production default 60 s | M2 |
 | events | R3 single bounce, exact event-epoch station states; = the R4 four-event model at zero delay (R4-P08, bitwise) | — |
-| RF noise | `lunar_od/rf/doppler_noise.py` implements 202E Eqs. (12), (25), (26). With no spacecraft RF inputs the thermal term is **PARAMETRIC**. The H-maser floor at 60 s is 4.5e-7 to 2.1e-6 m/s. | L5–L7 |
+| RF noise | `src/lunar_od/rf/doppler_noise.py` implements 202E Eqs. (12), (25), (26). With no spacecraft RF inputs the thermal term is **PARAMETRIC**. The H-maser floor at 60 s is 4.5e-7 to 2.1e-6 m/s. | L5–L7 |
 
 ## 6. REPOSITORY_HYPOTHESIS for CD1
 
@@ -97,7 +97,7 @@ mimicked. CD1 measures the orthogonal fraction f_perp. It does not assume it.
 - **No mission-specific Doppler sigma can be justified from public information** for this project. There is no
   spacecraft RF hardware, so 202E's thermal term cannot be evaluated. Therefore:
 - **Primary (structural):** σ_D = 1.0 × 10⁻⁴ m/s at Tc = 60 s.
-  - This is the repository's existing DSN station `sigma_range_rate_mps` (`lunar_od/config.py`).
+  - This is the repository's existing DSN station `sigma_range_rate_mps` (`src/lunar_od/config.py`).
   - It sits inside the 202E X/X scintillation span at 60 s (2.1e-5 to 1.8e-4 m/s).
   - It is 25× worse than Moyer's "very best" 4 × 10⁻⁶ m/s.
   - Swept over a ×100 bracket.

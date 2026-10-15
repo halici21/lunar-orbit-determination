@@ -2,10 +2,10 @@
 
 - **Date:** 2026-10-12 (run) – 2026-10-14 (analysis)
 - **Branch:** local `phase17-harden-bls1` (worktree `python_port_phase17r0`)
-- **Predeclaration:** `artifacts/phase17_mm_predeclaration.json`, committed in `a735e2b` before any mismatch solve
-- **Evidence:** `artifacts/phase17_mm_summary.json`, `artifacts/phase17_mm_jobs/*.json`,
-  `examples/phase17_mm_experiment.py`, `tests/test_mm_truth_field.py`
-- **Origin:** the minimum falsification experiment of `docs/phase17_k_closeout_and_model_mismatch_pivot.md` §3.4
+- **Predeclaration:** `studies/phase17/configs/phase17_mm_predeclaration.json`, committed in `a735e2b` before any mismatch solve
+- **Evidence:** `studies/phase17/results/phase17_mm_summary.json`, `artifacts/phase17_mm_jobs/*.json`,
+  `studies/phase17/scripts/phase17_mm_experiment.py`, `tests/test_mm_truth_field.py`
+- **Origin:** the minimum falsification experiment of `studies/phase17/reports/phase17_k_closeout_and_model_mismatch_pivot.md` §3.4
 
 ## 0. Final status
 

@@ -7,7 +7,7 @@ Doppler values.
 - **Code:** `examples/phase17_kp1_{core,predeclare,campaign}.py`.
 - **Artifacts:** `artifacts/phase17_kp1_*`.
 - **Tests:** `tests/test_kp1_alternative_k.py`.
-- **Predeclaration:** `artifacts/phase17_kp1_predeclaration.json`, canonical sha256 `4f7f2632…e495`. It was committed
+- **Predeclaration:** `studies/phase17/configs/phase17_kp1_predeclaration.json`, canonical sha256 `4f7f2632…e495`. It was committed
   in `90bec18` before any separation metric existed.
 
 ## 1. Result
@@ -56,7 +56,7 @@ estimation, stochastic K, empirical accelerations or a ΔDOR search.
 
 ## 4. Candidate Discovery
 
-- **K semantics.** a_SRP = K·P(d)·ν·r̂, with K = C_R·A/m constant (`lunar_od/srp.py`). dx/dK solves the static-parameter
+- **K semantics.** a_SRP = K·P(d)·ν·r̂, with K = C_R·A/m constant (`src/lunar_od/srp.py`). dx/dK solves the static-parameter
   variational equation with the F1 A matrix (`propagate_state_with_k_sensitivity`).
 - **LITERATURE_RESULT** (sources read in full text in the GEO contract):
   - S1 (LRO OD, §6.3): SRP variations from variable spacecraft area are *time-dependent* dynamical errors.

@@ -41,7 +41,7 @@ It also found and fixed two defects the brief did not list:
 - **HARDEN-D12.** The external campaign module prepends a sibling checkout to `sys.path` before importing `lunar_od`.
 - **HARDEN-D04, Earth-LOS extension.** 230 of 590 Earth-LOS surrogate rows (39%) were occulted.
 
-A first attempt put the Earth contract inside the byte-frozen `lunar_od/two_way_range.py`. That tripped the
+A first attempt put the Earth contract inside the byte-frozen `src/lunar_od/two_way_range.py`. That tripped the
 qualified R3-P21-M3 gate, so the module was restored byte for byte and the contract moved one layer up (§41).
 
 ## 2. Why These Defects Were Possible
@@ -59,8 +59,8 @@ qualified R3-P21-M3 gate, so the module was restored byte for byte and the contr
 
 ## 3. Defect Ledger
 
-The full ledger is `docs/phase17_harden_defect_ledger.md` (= `artifacts/phase17_harden_defects.json`, single
-source `examples/phase17_harden_ledger.py`). Summary:
+The full ledger is `studies/phase17/reports/phase17_harden_defect_ledger.md` (= `studies/phase17/results/phase17_harden_defects.json`, single
+source `studies/phase17/scripts/phase17_harden_ledger.py`). Summary:
 
 | status | IDs |
 |---|---|
@@ -91,7 +91,7 @@ spans, `row_rule`), check it where the data is consumed, and pin it with a test 
 
 ## 6. Task Checklist / Completion State
 
-`artifacts/phase17_harden_checklist.md`:
+`studies/phase17/results/phase17_harden_checklist.md`:
 - all 27 REQUIRED items are done;
 - 4 RECOMMENDED_FOLLOWUP items and 1 OPTIONAL_CLEANUP item are recorded open.
 
@@ -199,30 +199,30 @@ Surrogates re-evaluated under the contract:
 | Earth LOS | 0.0920 | 0.0919 | bitwise |
 
 The visibility-correct surrogate differs from production by −1.7e-4 in `f_perp`
-(`artifacts/phase17_harden_visibility_requalification.json`).
+(`studies/phase17/results/phase17_harden_visibility_requalification.json`).
 
 ## 17. Range Event Audit
 
-`artifacts/phase17_harden_range_event_ledger.json` records t1/t2u/t2d/t3, local and absolute ET, and the
+`studies/phase17/results/phase17_harden_range_event_ledger.json` records t1/t2u/t2d/t3, local and absolute ET, and the
 equation residuals. Receive tags whose chain precedes the grid are dropped, not extrapolated.
 
 ## 18. Doppler Event Audit
 
-`artifacts/phase17_harden_doppler_event_ledger.json` records the count-interval events. Counted Doppler
+`studies/phase17/results/phase17_harden_doppler_event_ledger.json` records the count-interval events. Counted Doppler
 interpolates the Earth linearly (documented design R3-P22). That gives 2.62 m at mid-nodes and a ~1.5e-6 m/s count-rate error (D23).
 
 > **Erratum (2026-10):** the ~1.5e-6 m/s count-rate figure differenced only the symmetric receive endpoints. The
 > asymmetric uplink transmit epochs give a 1.67–1.83e-3 m/s value offset (CD1 closure §49.1). D23 is **FIXED** by
-> Phase 17-HARDEN-D23 (cubic-Hermite Earth): see `docs/phase17_harden_d23_repair_qualification.md`.
+> Phase 17-HARDEN-D23 (cubic-Hermite Earth): see `studies/phase17/reports/phase17_harden_d23_repair_qualification.md`.
 
 ## 19. ΔDOR Event Audit
 
-`artifacts/phase17_harden_ddor_event_ledger.json` records the common transmit event. Both light-time equations
+`studies/phase17/results/phase17_harden_ddor_event_ledger.json` records the common transmit event. Both light-time equations
 hold to < 1e-12 s (`test_common_transmit_event_satisfies_both_light_time_equations`).
 
 ## 20. Optical Event Audit
 
-`artifacts/phase17_harden_optical_event_ledger.json`. Optical rows are Earth-independent (bitwise on both fixtures, FXR).
+`studies/phase17/results/phase17_harden_optical_event_ledger.json`. Optical rows are Earth-independent (bitwise on both fixtures, FXR).
 
 ## 21. SRP / Shadow Audit
 
@@ -253,7 +253,7 @@ The gradient is not uniform:
 
 Its effect on Φ accumulates secularly.
 
-**Evidence from interventions** (`artifacts/phase17_harden_range_jacobian_decomposition.json`, 4 orbits, rtol 1e-13, h = 10 m / 0.01 m/s):
+**Evidence from interventions** (`studies/phase17/results/phase17_harden_range_jacobian_decomposition.json`, 4 orbits, rtol 1e-13, h = 10 m / 0.01 m/s):
 - **Event derivative.** The light-time/geometry chain evaluated on re-propagated states (LIN) agrees with the
   analytic event derivative to 1e-8 – 9e-8, and the error falls with h. The event derivative is exact.
 - **Penumbra STM error.** With SRP and conical penumbra, the error is 2.3e-6 – 1.0e-5. Turning the shadow off
@@ -262,7 +262,7 @@ Its effect on Φ accumulates secularly.
 - **First-order prediction.** δΦ = Φ ∫ Φ⁻¹ B Φ dτ with B = [[0,0],[G_SRP,0]], using the production kernel, reproduces
   the observed error. At dt = 1 s: correlation 1.000 / 0.999 / 1.000 / 0.999 on x0 / z0 / vy0 / vz0, and the vx0
   residual (2.2e-7) is at the floor. With the FD oracle at rtol 1e-14 two columns fit only partly (y0 0.908, vx0 0.737). That residual was
-tested, not assumed (`artifacts/phase17_harden_range_jacobian_oracle_convergence.json`):
+tested, not assumed (`studies/phase17/results/phase17_harden_range_jacobian_oracle_convergence.json`):
 - **Quadrature is not the cause.** Refining the prediction's quadrature to dt = 0.25 s and 0.1 s leaves the y0 residual at 9.9e-7.
 - **Oracle tolerance is the cause.** Tightening the oracle's integrator tolerance removes it. The y0 residual goes
   9.5e-6 (rtol 1e-13) → 1.0e-6 (1e-14) → 3.8e-8 (3e-15), i.e. it scales with rtol.
@@ -283,7 +283,7 @@ The discrepancy is fully attributed.
 
 ## 26. ΔDOR Derivative Qualification
 
-Against re-propagation at rtol 1e-13, best step (`artifacts/phase17_harden_derivatives.json`):
+Against re-propagation at rtol 1e-13, best step (`studies/phase17/results/phase17_harden_derivatives.json`):
 - state columns ≤ 1.2e-6;
 - K 1.1e-4, at the K FD floor (R1O-D2 refined it with an rtol 1e-14 oracle).
 
@@ -310,7 +310,7 @@ The two dead R1O-D scripts are archived byte for byte in `archive/phase17_orphan
 
 ## 31. External Input / Path Hardening
 
-- **Resolver.** `lunar_od/project_paths.py` provides `repo_root`, `artifacts_dir`, `project_root`, `campaign_root`,
+- **Resolver.** `src/lunar_od/project_paths.py` provides `repo_root`, `artifacts_dir`, `project_root`, `campaign_root`,
   `gravity_data_root` and `ephemeris_mat`, overridable through `LUNAR_OD_*` environment variables.
 - **Literals.** Zero machine-specific literals remain in tracked `.py` files outside `archive/`.
 - **Campaign import.** `import_campaign_module()` neutralises the external module's sibling-checkout `sys.path` injection (D12).
@@ -386,13 +386,13 @@ The R3-P21-M3 gate (`two_way_range.py`) was **not** re-frozen. HARDEN is not aut
 
 | file | change | root cause / regression |
 |---|---|---|
-| `lunar_od/ephemeris.py` | contract API; tagged `MoonCenteredEphemeris`; coverage errors | D02, D03, D15 / mutants A, B, E, F |
-| `lunar_od/measurement_contracts.py` (new) | checked range generator | D02, D14 / mutants A, F; structural test |
-| `lunar_od/scenarios.py` | uses the checked generator | D14 |
-| `lunar_od/delta_dor.py` | t_tx grid bound | D16 |
-| `lunar_od/lunar_landmark_optical.py` | 6×6 Φ check; docstring | D17, D06 |
-| `lunar_od/project_paths.py` (new) | path resolver; guarded campaign import | D10, D12 |
-| `lunar_od/two_way_range.py` | **net unchanged**: edited in 2e8a53d, restored byte for byte in e2fbfdc | P21-M3 gate |
+| `src/lunar_od/ephemeris.py` | contract API; tagged `MoonCenteredEphemeris`; coverage errors | D02, D03, D15 / mutants A, B, E, F |
+| `src/lunar_od/measurement_contracts.py` (new) | checked range generator | D02, D14 / mutants A, F; structural test |
+| `src/lunar_od/scenarios.py` | uses the checked generator | D14 |
+| `src/lunar_od/delta_dor.py` | t_tx grid bound | D16 |
+| `src/lunar_od/lunar_landmark_optical.py` | 6×6 Φ check; docstring | D17, D06 |
+| `src/lunar_od/project_paths.py` (new) | path resolver; guarded campaign import | D10, D12 |
+| `src/lunar_od/two_way_range.py` | **net unchanged**: edited in 2e8a53d, restored byte for byte in e2fbfdc | P21-M3 gate |
 
 Before/after evidence: no committed science number changed. The legacy path reproduces FXR bitwise, D2's contract
 tests are unchanged, and the full suite results are in §51.
@@ -420,7 +420,7 @@ Updated:
 
 ## 44. Documentation Changes
 
-- `docs/phase17_authoritative_status.md`
+- `studies/phase17/reports/phase17_authoritative_status.md`
 - the defect ledger
 - the contracts CSV
 - six errata blocks
@@ -444,7 +444,7 @@ Updated:
 - `PHASE17_LEGACY_REPRODUCTION=1 python examples/<historical script>.py`
 - `row_rule=DDOR_ROW_RULE_LEGACY_ELEVATION_ONLY`
 - `EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED`
-- `examples/phase17_fxr_requalification.py`, which reproduces FXR bitwise.
+- `studies/phase17/scripts/phase17_fxr_requalification.py`, which reproduces FXR bitwise.
 
 ## 47. Remaining Scientific Limitations
 
@@ -525,7 +525,7 @@ No convenience refactors and no unrelated files. A control-character scan of eve
 
 ## 53. Phase-17 Authoritative Status
 
-See `docs/phase17_authoritative_status.md`. The current ΔDOR number is **0.172351**, not 0.3204.
+See `studies/phase17/reports/phase17_authoritative_status.md`. The current ΔDOR number is **0.172351**, not 0.3204.
 
 ## 54. What This Phase Actually Established
 
@@ -571,7 +571,7 @@ Every strict PASS criterion (§71) is met:
 
 **Yes, within the documented scope.** The infrastructure is **QUALIFIED_FOR_NEW_SCIENCE**. New science must:
 - use the checked generator and the visibility contract (the defaults);
-- cite `docs/phase17_authoritative_status.md`;
+- cite `studies/phase17/reports/phase17_authoritative_status.md`;
 - treat D05 (the SRP-gradient approximation) as a known, bounded model limit for penumbra-rich arcs.
 
 ## 58. Exact Next Action
@@ -598,7 +598,7 @@ ORIGIN_MAIN_HEAD = fea476f81dad07b3914e53eab709e10fa6e9d10b
 HARDEN_INPUT_GATE = PASS (PHASE17_FXR_GATE = PASS, PHASE17_R1O_D2_GATE = PASS)
 
 CLAUDE_REPO_INSTRUCTIONS_READ = YES (worktree + workspace CLAUDE.md; CLAUDE_OPUS_5_5_REPO_INSTRUCTIONS.md NOT FOUND)
-PERSISTENT_TASK_CHECKLIST_USED = YES (artifacts/phase17_harden_checklist.md)
+PERSISTENT_TASK_CHECKLIST_USED = YES (studies/phase17/results/phase17_harden_checklist.md)
 
 SUBAGENTS_USED = 2
 SUBAGENT_LIST = physics-contract audit sweep (read-only); FA-06/R2 nonpass investigation (read-only)

@@ -17,7 +17,7 @@
 > | gain Δ`f_perp` | **+0.0808** (STRONG_DIRECTION_GAIN) |
 > | σ_K/K | **7.46%** |
 >
-> **R1O surrogates under the same contract** (Phase 17-HARDEN, `artifacts/phase17_harden_visibility_requalification.json`):
+> **R1O surrogates under the same contract** (Phase 17-HARDEN, `studies/phase17/results/phase17_harden_visibility_requalification.json`):
 >
 > | surrogate | 5 nrad `f_perp` | 1 nrad `f_perp` | rows |
 > |---|---:|---:|---|
@@ -25,15 +25,15 @@
 > | Earth LOS | 0.0919 | — | 360 kept; 230 of 590 were occulted |
 >
 > The R1O-D-era bridge surrogate uses an Earth frozen at t = 0 and is historical only. On the legacy (elevation-only) path, every FXR number
-> still reproduces bitwise. The single current status is in `docs/phase17_authoritative_status.md`. The defect is
-> HARDEN-D04 in `docs/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
+> still reproduces bitwise. The single current status is in `studies/phase17/reports/phase17_authoritative_status.md`. The defect is
+> HARDEN-D04 in `studies/phase17/reports/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
 
 
 > ### ERRATUM (Phase 17-FXR) — relative classification CHANGED
 >
 > The range arc of this campaign was built on the published Earth fixture: the Earth position given to the range model came from an epoch **504000 s (5.83 days) earlier** than the Earth rotation, Sun and spacecraft state, and was **held constant after 28260 s (3.9986 orbits)**. The ΔDOR stations were also placed on an
 > Earth **frozen at t = 0 for the whole 15-orbit arc**. Neither the production ΔDOR code
-> (`lunar_od/delta_dor.py`) nor its software qualification is affected. Re-run on the
+> (`src/lunar_od/delta_dor.py`) nor its software qualification is affected. Re-run on the
 > epoch-consistent fixture, with the same pair, quasar, grid and noise levels:
 >
 > | quantity | published | consistent (Earth at measurement epoch) |
@@ -51,13 +51,13 @@
 >
 > The earlier provenance note said "below the range-only baseline at every tested precision".
 > That was already inexact: 30 and 100 nrad gave 0.2636 and 0.2641, both above 0.2523.
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 > ### PROVENANCE NOTE (Phase 17-R1O-R) — result VALID, causal attribution REVISED
 >
 > **This phase's own production result is unchanged and was re-run to confirm it.** Production
 > ΔDOR remains `MAGNITUDE_ONLY`, with `f_perp` below the range-only baseline at every tested
-> precision (1 nrad `0.0738` ... 100 nrad `0.2641`), and `lunar_od/delta_dor.py` was never touched.
+> precision (1 nrad `0.0738` ... 100 nrad `0.2641`), and `src/lunar_od/delta_dor.py` was never touched.
 >
 > **What is revised is s21's explanation of the surrogate-vs-production gap.** R1O's surrogate is
 > now known to have used Phi^T (an STM storage-order defect in `phase17_r1o_core`, repaired in
@@ -74,7 +74,7 @@
 >
 > s21's bridge experiment could not have detected this: it varied event physics between two arms
 > that **both** used the defective Phi. A controlled comparison cannot reveal a defect its control
-> and treatment arms share. See `docs/phase17_r1o_scientific_erratum.md`.
+> and treatment arms share. See `studies/phase17/reports/phase17_r1o_scientific_erratum.md`.
 
 ## 1. Executive Summary
 
@@ -153,7 +153,7 @@ derived-table column**:
   fraction from 0.252 to 0.442 at 2 nrad noise... drives the fractional K uncertainty from 9.3% down
   to 1.2%."* These are the **1 nrad** values (`f_perp=0.4419`, `sigma_K/K=1.224%`), not the 2 nrad
   values (`f_perp=0.4246`, `sigma_K/K=2.365%`).
-- The root cause is traced to `examples/phase17_r1o_comparison.py`: its primary comparison table
+- The root cause is traced to `studies/phase17/scripts/phase17_r1o_comparison.py`: its primary comparison table
   built a row labeled `"O2 DDOR best-in-class (2 nrad)"` but populated it from
   `r1o_ddor_summary.json`'s `best_*` fields — which hold the single **best-tested** (1 nrad) case,
   not literally the 2 nrad row. That mislabeled string then propagated into
@@ -223,8 +223,8 @@ anchored on a single spacecraft *transmit* event; Moyer's actual Section 11.4.1 
 common *reception* time, with each station's transmit time solved independently backward. The shipped
 implementation follows the spec's transmit-anchored diagram literally (§17's "HARD REQUIREMENT"
 language leaves no discretion), but this was not left as an untested assumption: a direct numerical
-reconciliation (`examples/phase17_r1od_anchor_convention_check.py`; full derivation in
-`docs/phase17_r1od_literature_contract.md`) computed Moyer's reception-anchored quantity independently
+reconciliation (`studies/phase17/scripts/phase17_r1od_anchor_convention_check.py`; full derivation in
+`studies/phase17/reports/phase17_r1od_literature_contract.md`) computed Moyer's reception-anchored quantity independently
 — using *zero* new solver code, two calls to the pre-existing, already-qualified
 `one_way_light_time_initial_state_sensitivity` — and compared it against the production result on the
 identical campaign epoch. The two solved transmit times differ by `0.007345 s`, within Moyer's own
@@ -246,7 +246,7 @@ to that narrower question came back negative.
 
 ## 7. Reference Spacecraft RF Capability
 
-**Audited, not assumed** (correcting R1O's unaudited claim). `lunar_od/rf/link_budget.py` implements
+**Audited, not assumed** (correcting R1O's unaudited claim). `src/lunar_od/rf/link_budget.py` implements
 carrier EIRP/CN0/free-space-loss/G-over-T calculations for a two-way coherent link — no DOR-tone
 generation, PN-DOR modulation, or wideband ranging-channel structure is represented anywhere in it.
 `lunar_od/reference_config/` is a schema and validation *framework* (it asserts that *if* a
@@ -279,7 +279,7 @@ Verified identical to R1O's reported `FINAL_HEAD`. `main`/`origin/main` verified
 Per §14's explicit scope boundary, this phase implements the **OD-level calibrated ΔDOR
 observable** — the processed interferometric-delay quantity an orbit determination system consumes
 — not raw RF sampling, correlator, or PN-code processing. The new production module is
-`lunar_od/delta_dor.py`, added standalone (not wired into `estimators.py`/`filters.py`/`scenarios.py`
+`src/lunar_od/delta_dor.py`, added standalone (not wired into `estimators.py`/`filters.py`/`scenarios.py`
 call sites): its qualification is complete, but its *scientific case* for solve-for integration did
 not clear this phase's own information-direction gate (§36–40), so no estimator-interface change was
 made or would have been justified.
@@ -781,7 +781,7 @@ DDOR_HOLDOUT_PREDICTION_GATE = NOT_RUN_BY_GATE
 ## 46. What Changed in the System
 
 ```
-PRODUCTION_CODE_CHANGED               = YES  (one new file, lunar_od/delta_dor.py)
+PRODUCTION_CODE_CHANGED               = YES  (one new file, src/lunar_od/delta_dor.py)
 PHYSICAL_FORCE_MODEL_CHANGED          = NO
 EVENT_SOLVER_CHANGED                  = NO   (two_way_range.py's event solver untouched; a
                                               NEW, separate event solver was added for DDOR,
@@ -795,13 +795,13 @@ COVARIANCE_METHOD_CHANGED             = NO   (R1COV's square-root path reused un
 DEFAULT_6STATE_BEHAVIOR_CHANGED       = NO
 ```
 
-`lunar_od/delta_dor.py` is entirely new, additive, and is not imported by any existing production
+`src/lunar_od/delta_dor.py` is entirely new, additive, and is not imported by any existing production
 entry point — it is reachable only from this phase's own analysis scripts and its permanent test
 file. No existing production file's bytes changed.
 
 ## 47. What Did Not Change
 
-`lunar_od/estimators.py`, `dynamics.py`, `two_way_range.py`, `radiometrics.py`, `measurements.py`,
+`src/lunar_od/estimators.py`, `dynamics.py`, `two_way_range.py`, `radiometrics.py`, `measurements.py`,
 `filters.py`, `srp.py`, `visibility.py`, `lunar_frames.py`, and R1COV's square-root covariance helper
 were all read and executed only. `git status --porcelain --untracked-files=no` was empty throughout
 except for the one new production file, its test file, and analysis/artifact additions.
@@ -1139,7 +1139,7 @@ ACADEMIC_LITERATURE_ALIGNMENT = CONSISTENT_WITH_ESTABLISHED_DDOR_THEORY
      is the application-specific, non-literature-derived result)
 OPERATIONAL_RECOMMENDATION_CLASS = DO_NOT_PURSUE_DDOR_FOR_K_SRP_ON_THIS_EVIDENCE
 
-PRODUCTION_CODE_CHANGED               = YES (lunar_od/delta_dor.py, new file only)
+PRODUCTION_CODE_CHANGED               = YES (src/lunar_od/delta_dor.py, new file only)
 PHYSICAL_FORCE_MODEL_CHANGED          = NO
 EVENT_SOLVER_CHANGED                  = NO (new, separate solver; existing one untouched)
 NEW_MEASUREMENT_MODEL_ADDED           = YES
@@ -1208,7 +1208,7 @@ NEXT_ACTION =
   automatically; requires separate authorization.
 
 COMMITS_CREATED = <recorded after local commit>
-COMMIT_LIST     = recorded in artifacts/r1od_manifest.json
+COMMIT_LIST     = recorded in studies/phase17/results/r1od_manifest.json
 
 PUSH = NONE
 MERGE = NONE

@@ -15,12 +15,12 @@
 > | operational improvement factor | ×1.18 | ×1.79 |
 > | class | MARGINAL_DIRECTION_GAIN | MARGINAL_DIRECTION_GAIN |
 >
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 > ### PROVENANCE NOTE (Phase 17-R1O-R) — CONFIRMED
 >
 > The STM storage-order defect this phase discovered in `phase17_r1o_core.chain_to_augmented_columns`
-> has been repaired and R1O requalified (`docs/phase17_r1o_scientific_erratum.md`, repair commit
+> has been repaired and R1O requalified (`studies/phase17/reports/phase17_r1o_scientific_erratum.md`, repair commit
 > `75ba49a7e86cf7c4ea01e45ca757126159dc0654`).
 >
 > This phase's production optical result is **unaffected and confirmed**: it never used the
@@ -72,7 +72,7 @@ light-time; R1O-OPT's landmark surrogate failed because of a transposed Φ.
 
 ## §3. Literature contract
 
-`docs/phase17_r1o_opt_literature_contract.md`, written **before any code**, gives the term-by-term
+`studies/phase17/reports/phase17_r1o_opt_literature_contract.md`, written **before any code**, gives the term-by-term
 contract (15 terms: literature source, exact value, repository representation, status).
 `OPT_LITERATURE_CONTRACT_GATE = PASS`.
 
@@ -114,7 +114,7 @@ design**, not a mission asset.
 
 ## §5. What was built
 
-**`lunar_od/lunar_landmark_optical.py`** (new production module, ~330 lines):
+**`src/lunar_od/lunar_landmark_optical.py`** (new production module, ~330 lines):
 
 | Component | Purpose |
 |---|---|
@@ -131,7 +131,7 @@ design**, not a mission asset.
 **`tests/test_lunar_landmark_optical.py`** — 27 permanent tests.
 
 **Analysis scripts** (analysis space only, no production code modified):
-`examples/phase17_r1o_opt_oracles.py`, `_core.py`, `_jacobian_and_k.py`, `_bridge.py`, `_campaign.py`.
+`studies/phase17/scripts/phase17_r1o_opt_oracles.py`, `_core.py`, `_jacobian_and_k.py`, `_bridge.py`, `_campaign.py`.
 
 ---
 
@@ -234,13 +234,13 @@ blocks being swapped.
 
 ### §10.2 The defect
 
-`lunar_od/dynamics.py` packs the state-transition matrix column-major
+`src/lunar_od/dynamics.py` packs the state-transition matrix column-major
 (`np.eye(6).reshape(-1, order="F")`, line 1249) and propagates it that way, and **every production
 consumer** unflattens it with `order="F"`: `delta_dor.py:411`, `dynamics.py:394/847/1255`,
 `accelerated.py:448/464`, `estimators.py`. `delta_dor.py` even carries an explicit warning that
 "reusing a different order here would silently transpose every Phi lookup."
 
-`examples/phase17_r1o_core.py:130` (`chain_to_augmented_columns`, Phase 17-R1O) uses
+`studies/phase17/scripts/phase17_r1o_core.py:130` (`chain_to_augmented_columns`, Phase 17-R1O) uses
 `nom48_row[6:42].reshape(6, 6)` — NumPy's **default C order** — while its docstring claims to match
 `_two_way_range_k_srp_column`. Φ is not symmetric, so this yields **Φᵀ**.
 
@@ -266,7 +266,7 @@ wrong by orders of magnitude.
 | `phase17_r1o_celestial.py:88` — R1O's Earth-LOS negative control | **YES** |
 | `phase17_r1od_surrogate_bridge.py:101` — R1O-D's bridge, surrogate side | **YES** |
 | `build_range_arc` (the W15 range baseline) | **NO** — built by production `two_way_range_nominal_and_initial_jacobian`, which handles Φ internally |
-| `lunar_od/delta_dor.py` — R1O-D's production ΔDOR Jacobian | **NO** — uses `order="F"` explicitly |
+| `src/lunar_od/delta_dor.py` — R1O-D's production ΔDOR Jacobian | **NO** — uses `order="F"` explicitly |
 | K columns everywhere | **NO** — `S_K` is a plain 6-vector needing no reshape (verified: the K column is bitwise identical between the two runs) |
 
 **So R1O's range-only baseline and R1O-D's production ΔDOR result are unaffected; every R1O
@@ -595,7 +595,7 @@ REGRESSION_TOTAL                            = 1460
 REGRESSION_PASSED                           = 1419
 REGRESSION_NEW_FAILURES                     = 0
 NEW_PERMANENT_TESTS                         = 27
-PRODUCTION_FILES_ADDED                      = 1 (lunar_od/lunar_landmark_optical.py)
+PRODUCTION_FILES_ADDED                      = 1 (src/lunar_od/lunar_landmark_optical.py)
 PRODUCTION_FILES_MODIFIED                   = 0
 PUSH                                        = NONE
 MERGE                                       = NONE

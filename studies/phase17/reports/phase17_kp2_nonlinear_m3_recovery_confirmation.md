@@ -5,7 +5,7 @@
 - **Code:** `examples/phase17_kp2_{core,predeclare,campaign}.py`.
 - **Evidence:** `artifacts/phase17_kp2_*`.
 - **Tests:** `tests/test_kp2_m3_recovery.py`.
-- **Predeclaration:** `artifacts/phase17_kp2_predeclaration.json`, canonical sha256 `111856fb…`, committed in `e2012b1`
+- **Predeclaration:** `studies/phase17/configs/phase17_kp2_predeclaration.json`, canonical sha256 `111856fb…`, committed in `e2012b1`
   before any high-fidelity recovery result.
 
 ## 1. Result
@@ -76,7 +76,7 @@
 | O2 k12 T1 | **convergence floor, estimate correct** | f̂ (0.142, −0.083, 0.023) against (0.10, −0.10, 0); χ²_err 0.63, χ²_detect 47; last step 0.0198 σ (criterion 0.01 σ); later steps rejected by ~1e-3 σ integrator cost noise |
 | O2 k12 T2 | **estimator basin / iteration budget** | a priori error 254 m / 0.195 m/s (first cost 3e13); stage 1 did not settle within 4 evaluations and the solve diverged |
 
-- **Basin check (post-hoc, labelled; `artifacts/phase17_kp2_posthoc_basin.json`).** The same O2 k12 T2 data and a
+- **Basin check (post-hoc, labelled; `studies/phase17/results/phase17_kp2_posthoc_basin.json`).** The same O2 k12 T2 data and a
   priori, re-solved with 10 stage-1 and 20 stage-2 evaluations, **converges and recovers the variation**: χ²_err 1.2,
   χ²_detect 23.9, NEES 9.5, residual rms 0.99 / 0.98. The frozen result is unchanged.
 - **The failure classes.**
@@ -129,7 +129,7 @@
 
 - **Frozen result.** O2 k12 segment 3 reached 5.3e-4 against the 1e-4 gate. Every other segment, and CANON throughout,
   is ≤ 9.1e-6.
-- **Post-hoc check (labelled; `artifacts/phase17_kp2_posthoc_verification.json`).** The same FD job was rerun with
+- **Post-hoc check (labelled; `studies/phase17/results/phase17_kp2_posthoc_verification.json`).** The same FD job was rerun with
   nominal and perturbed propagations at rtol 1e-13 / atol 1e-14, the KP1 FD-oracle tolerance. Segment errors fall to
   5.2e-6 / 6.8e-6 / **1.86e-5**, all ≤ 1e-4.
 - **Interpretation.** The exceedance was the FD oracle's own integration floor on the shortest-lived sensitivity, not
@@ -215,14 +215,14 @@ against the repaired estimator from the declared a priori, the frozen `job_bls` 
 ≤ 6.2e-5 σ. The PRODUCTION_BLS gate's estimate criterion therefore passes as computed. Its σ criterion still fails,
 and the whole failure is HARDEN-D25 (σ ratio 1.0000 once the harmonic field is included). Nothing in §1–§9 changes:
 every decision quantity here comes from this phase's own solver. This section's frozen artifacts are not
-regenerated. See `docs/phase17_harden_bls1_production_bls_recovery.md`.
+regenerated. See `studies/phase17/reports/phase17_harden_bls1_production_bls_recovery.md`.
 
 ## 12. Addendum — Phase 17-HARDEN-D25 (2026-10-11)
 
 HARDEN-D25 is repaired: the production posterior is now linearised on the solve's own dynamics. The frozen
 `job_bls`, rerun unchanged end to end with the BLS1 + D25 estimator, passes **both** PRODUCTION_BLS criteria
 as computed: estimate ≤ 5.7e-5 σ, σ ratios 1.000000–1.000001. The FD gate remains as adjudicated in §8.
-Nothing in §1–§9 changes. See `docs/phase17_harden_d25_posterior_covariance_consistency.md`.
+Nothing in §1–§9 changes. See `studies/phase17/reports/phase17_harden_d25_posterior_covariance_consistency.md`.
 
 ## 13. Addendum — owner acceptance (2026-10-15)
 
@@ -230,4 +230,4 @@ The owner accepted the adjudication of the two frozen verification criteria (§8
 production-BLS non-convergence. **The KP2 gate is PASS.** Since HARDEN-BLS1 and HARDEN-D25, the frozen
 PRODUCTION_BLS job passes both of its criteria as computed (§11–§12). The classification is unchanged. Its
 external validity is bounded by Phase 17-MM: a Moon-fixed gravity-field error can masquerade as a K variation
-(`docs/phase17_mm_gravity_masquerade_falsification.md`), so the variation finding holds under truth = model only.
+(`studies/phase17/reports/phase17_mm_gravity_masquerade_falsification.md`), so the variation finding holds under truth = model only.

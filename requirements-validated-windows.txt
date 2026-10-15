@@ -1,5 +1,5 @@
 # Validated on Windows x86_64, CPython 3.13.
-# Numerical reference: docs/branch_consolidation_2026-10-10/environment.json
+# Numerical reference: docs/development/branch_consolidation_2026-10-10/environment.json
 # Install from a fresh venv: python -m pip install -r requirements-validated-windows.txt
 -r requirements-accelerated.txt
 -r desktop_app/requirements_desktop.txt

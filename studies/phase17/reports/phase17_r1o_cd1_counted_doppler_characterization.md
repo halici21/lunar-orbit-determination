@@ -4,12 +4,12 @@ Truth level: **SYNTHETIC_CAMPAIGN_TRUTH** (K_truth = 0.01 m²/kg, one constant s
 claimed.
 
 Artifacts: `artifacts/phase17_r1o_cd1_*`. Code: `examples/phase17_r1o_cd1_{core,predeclare,campaign}.py`. Tests:
-`tests/test_r1o_cd1_counted_doppler.py`. Literature: `docs/phase17_r1o_cd1_literature_contract.md`.
+`tests/test_r1o_cd1_counted_doppler.py`. Literature: `studies/phase17/reports/phase17_r1o_cd1_literature_contract.md`.
 
 > **Closure (2026-10-04, §49–§50).** HARDEN-D23 was measured over the full primary population and moves no CD1
 > decision. The §32 rebuild exceedance was adjudicated against an exact rational oracle and is the rebuild route's own
 > float error. `PHASE17_R1O_CD1_GATE = PASS`. The scientific verdict is unchanged. Closure code, artifacts and tests:
-> `examples/phase17_r1o_cd1_closure.py`, `artifacts/phase17_r1o_cd1_closure{,_raw}.json`,
+> `studies/phase17/scripts/phase17_r1o_cd1_closure.py`, `artifacts/phase17_r1o_cd1_closure{,_raw}.json`,
 > `tests/test_r1o_cd1_closure.py`.
 
 ## 1. Executive Summary
@@ -76,7 +76,7 @@ plausible Doppler systematics, rather than in isolated cells?
 
 ## 5. Literature Contract
 
-`docs/phase17_r1o_cd1_literature_contract.md` separates three kinds of statement:
+`studies/phase17/reports/phase17_r1o_cd1_literature_contract.md` separates three kinds of statement:
 
 - **LITERATURE_RESULT:** DSN 810-005 Module 202 Rev. E; Moyer, DESCANSO Monograph 2, §10.2.3.1.2 and §13.3; Mazarico
   et al. 2012 (LRO); AAS 22-728 (NRHO SRP).
@@ -137,7 +137,7 @@ receive, fixed). The receive epochs are t_mid ± Tc/2.
 
 ## 11. Predeclaration
 
-- **File and hash:** `artifacts/phase17_r1o_cd1_predeclaration.json`, sha256
+- **File and hash:** `studies/phase17/configs/phase17_r1o_cd1_predeclaration.json`, sha256
   **`bbaa5cee8687926699465de6fe75185fde87b10df840be652ba390ff7af3571a`**.
 - **Commit:** `21962b7`, before any CD1 K-information metric.
 - **Enforcement:** the campaign pins the hash and refuses to run on a mismatch; tamper tests pass.
@@ -399,7 +399,7 @@ These are the representative cells, CANON at k = 0, 6, 12 and 18, high fidelity,
   - The wrapper f_perp came out slightly low.
 - **Fix:** such passes carry no drift column, because a drift is undefined on a single row. A regression test was
   added.
-- **Rerun:** the 13 affected cells were recomputed (`artifacts/phase17_r1o_cd1_ibf01_rerun.json`).
+- **Rerun:** the 13 affected cells were recomputed (`studies/phase17/results/phase17_r1o_cd1_ibf01_rerun.json`).
   - Only `RPD|D2|*` configurations changed, by at most 1.3e-5 in f_perp.
   - Range, rows and every other configuration are **bitwise identical**.
 - **Decision fields:** before and after, every one is identical: PRIMARY_CLASS, both populations, ABS, nuisance,
@@ -614,7 +614,7 @@ test systematics jointly, including a per-pass Doppler bias.
 ## 49. Closure (2026-10-04)
 
 This section is analysis only. The predeclaration (`bbaa5cee…`), decision tree, thresholds, noise and nuisance models
-are unchanged and hash-checked. No production code changed. Script: `examples/phase17_r1o_cd1_closure.py`.
+are unchanged and hash-checked. No production code changed. Script: `studies/phase17/scripts/phase17_r1o_cd1_closure.py`.
 
 ### 49.1 HARDEN-D23 materiality, measured
 
@@ -729,7 +729,7 @@ NEXT_ACTION = hard stop. Recommended, separately authorised: an alternative K_SR
 ```
 
 *(Later status: KP1 completed the parameterization step, and Phase 17-HARDEN-D23 repaired the Earth interpolation.
-CD1's results re-qualify unchanged on the repaired path: `docs/phase17_harden_d23_repair_qualification.md` §6.)*
+CD1's results re-qualify unchanged on the repaired path: `studies/phase17/reports/phase17_harden_d23_repair_qualification.md` §6.)*
 
 The suite counts are from the supported plain invocation (`python -m pytest -o addopts="" -p no:cacheprovider`, no
 PYTHONPATH) on the final tree.

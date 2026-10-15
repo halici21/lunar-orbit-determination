@@ -68,7 +68,7 @@ Verified:
 | entering gates | HARDEN PASS, F1 PASS, infrastructure QUALIFIED_FOR_NEW_SCIENCE, SRP variational QUALIFIED, tracking design safe |
 | entering suite (re-run) | 1406 collected / 1377 passed / 0 failed / 0 errors / 29 skipped |
 
-The authoritative values (`docs/phase17_authoritative_status.md`) are range 0.091502 and GC 5 nrad combined 0.172343.
+The authoritative values (`studies/phase17/reports/phase17_authoritative_status.md`) are range 0.091502 and GC 5 nrad combined 0.172343.
 D3 reproduced both at k = 0 to < 1e-6 (0.0915024 and 0.1723430).
 
 ## 4. F1 / HARDEN Dependencies
@@ -85,7 +85,7 @@ model. `install_legacy_earth_guard()` is active in every worker. No production f
 
 ## 5. Current Literature Contract
 
-See `docs/phase17_r1od3_literature_contract.md`, which cites:
+See `studies/phase17/reports/phase17_r1od3_literature_contract.md`, which cites:
 - DSN-210 **Rev. F** (2026-07-02), verified from the source;
 - DSN-107 Rev. F;
 - CCSDS 500.1-G-2 (still current).
@@ -113,7 +113,7 @@ One D2 arithmetic slip was found and corrected. The RSS of the Table 8 systemati
 
 ## 8. Predeclared Grid
 
-`artifacts/phase17_r1od3_predeclared_grid.json`: canonical SHA-256 `a651c4de…0003`, committed in c860759 before any
+`studies/phase17/configs/phase17_r1od3_predeclared_grid.json`: canonical SHA-256 `a651c4de…0003`, committed in c860759 before any
 metric. The campaign and tests refuse a mismatching grid (`GridHashMismatch`). The grid was **not modified**.
 
 **One `IMPLEMENTATION_BUG_FIX` (D3-IBF-01, recorded in the task state).** D2's `pair_geometry()` overwrote the
@@ -196,7 +196,7 @@ maximum 3.49°.
 
 ## 17. Primary Epoch Geometry
 
-`artifacts/phase17_r1od3_epoch_geometry.csv`:
+`studies/phase17/results/phase17_r1od3_epoch_geometry.csv`:
 - The Sun–Moon–Earth angle sweeps 7.7°–174.7°.
 - The lunar declination spans −27.4° to +27.6°.
 
@@ -242,7 +242,7 @@ This revises D2's "GM never strongly complementary", which D2 tested only at k =
 
 ## 21. Joint-Baseline Results
 
-`artifacts/phase17_r1od3_joint_baseline_results.csv`. GC_PLUS_GM is STRONG at k = 9, 10 (+0.069, +0.087), where GM
+`studies/phase17/results/phase17_r1od3_joint_baseline_results.csv`. GC_PLUS_GM is STRONG at k = 9, 10 (+0.069, +0.087), where GM
 alone is already STRONG. Across epochs, the median (joint − GC) under C1 is +0.0002. The joint never exceeds the better
 single baseline.
 
@@ -321,7 +321,7 @@ Median session-hours:
 | GC ALL | 2.0 |
 | joint ALL | 4.7 |
 
-`artifacts/phase17_r1od3_delta_vs_session_hours.png` shows no monotone Δ gain with hours. Station-hours are 2 × session-hours.
+`studies/phase17/results/phase17_r1od3_delta_vs_session_hours.png` shows no monotone Δ gain with hours. Station-hours are 2 × session-hours.
 
 ## 26. Favorable-Window Analysis
 
@@ -376,7 +376,7 @@ K-specific component.
 
 ## 32. Orbit-Geometry Robustness
 
-`artifacts/phase17_r1od3_orbit_robustness.json`. There is no primary window, so
+`studies/phase17/results/phase17_r1od3_orbit_robustness.json`. There is no primary window, so
 `ORBIT_ROBUSTNESS_CLASS = NO_WINDOW_TO_TEST`. The descriptive results at k = 0, 6, 12, 18 are still informative:
 - **k = 0, GC_ONLY:** STRONG for 4 of 5 representative orbits (O2–O5), MODEST for O1, and MODEST for the canonical
   orbit itself.
@@ -388,7 +388,7 @@ representative.
 
 ## 33. High-Fidelity Dynamics Check
 
-`artifacts/phase17_r1od3_high_fidelity.json`. The force model is GL1800F 50×50 with Earth and Sun third body, SRP, and
+`studies/phase17/results/phase17_r1od3_high_fidelity.json`. The force model is GL1800F 50×50 with Earth and Sun third body, SRP, and
 the F1 STM. Cases were chosen by rule:
 
 | case | simplified | high fidelity |

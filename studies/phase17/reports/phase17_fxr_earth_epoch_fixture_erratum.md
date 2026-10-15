@@ -1,9 +1,9 @@
 # ERRATUM — PHASE 17 EARTH-EPOCH FIXTURE (R1M, R1COV, R1O, R1O-D, R1O-OPT, R1O-R)
 
 **Status:** authoritative map between historical and corrected Phase 17 results.
-**Issued by:** Phase 17-FXR. The full evidence is in `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
-**Evidence artifacts:** `artifacts/phase17_fxr_epoch_audit.json`,
-`artifacts/phase17_fxr_requalification.json`, `artifacts/phase17_fxr_g5_audit.json`.
+**Issued by:** Phase 17-FXR. The full evidence is in `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
+**Evidence artifacts:** `studies/phase17/results/phase17_fxr_epoch_audit.json`,
+`studies/phase17/results/phase17_fxr_requalification.json`, `studies/phase17/results/phase17_fxr_g5_audit.json`.
 **Truth level:** every number below is `SYNTHETIC_CAMPAIGN_TRUTH` (K_truth = 0.01 m²/kg is a campaign
 setting, not a spacecraft property). The dynamics are the inherited simplified model: Moon point
 mass, lunar J2 and cannonball SRP, with no Earth or Sun third-body gravity.
@@ -25,7 +25,7 @@ mass, lunar J2 and cannonball SRP, with no Earth or Sun third-body gravity.
 > | gain Δ`f_perp` | **+0.0808** (STRONG_DIRECTION_GAIN) |
 > | σ_K/K | **7.46%** |
 >
-> **R1O surrogates under the same contract** (Phase 17-HARDEN, `artifacts/phase17_harden_visibility_requalification.json`):
+> **R1O surrogates under the same contract** (Phase 17-HARDEN, `studies/phase17/results/phase17_harden_visibility_requalification.json`):
 >
 > | surrogate | 5 nrad `f_perp` | 1 nrad `f_perp` | rows |
 > |---|---:|---:|---|
@@ -33,8 +33,8 @@ mass, lunar J2 and cannonball SRP, with no Earth or Sun third-body gravity.
 > | Earth LOS | 0.0919 | — | 360 kept; 230 of 590 were occulted |
 >
 > The R1O-D-era bridge surrogate uses an Earth frozen at t = 0 and is historical only. On the legacy (elevation-only) path, every FXR number
-> still reproduces bitwise. The single current status is in `docs/phase17_authoritative_status.md`. The defect is
-> HARDEN-D04 in `docs/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
+> still reproduces bitwise. The single current status is in `studies/phase17/reports/phase17_authoritative_status.md`. The defect is
+> HARDEN-D04 in `studies/phase17/reports/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
 
 
 Historical numbers are **not deleted** anywhere. Each affected report keeps its text and carries an

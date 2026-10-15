@@ -17,7 +17,7 @@
 > | gain Δ`f_perp` | **+0.0808** (STRONG_DIRECTION_GAIN) |
 > | σ_K/K | **7.46%** |
 >
-> **R1O surrogates under the same contract** (Phase 17-HARDEN, `artifacts/phase17_harden_visibility_requalification.json`):
+> **R1O surrogates under the same contract** (Phase 17-HARDEN, `studies/phase17/results/phase17_harden_visibility_requalification.json`):
 >
 > | surrogate | 5 nrad `f_perp` | 1 nrad `f_perp` | rows |
 > |---|---:|---:|---|
@@ -25,8 +25,8 @@
 > | Earth LOS | 0.0919 | — | 360 kept; 230 of 590 were occulted |
 >
 > The R1O-D-era bridge surrogate uses an Earth frozen at t = 0 and is historical only. On the legacy (elevation-only) path, every FXR number
-> still reproduces bitwise. The single current status is in `docs/phase17_authoritative_status.md`. The defect is
-> HARDEN-D04 in `docs/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
+> still reproduces bitwise. The single current status is in `studies/phase17/reports/phase17_authoritative_status.md`. The defect is
+> HARDEN-D04 in `studies/phase17/reports/phase17_harden_defect_ledger.md`. The text below is kept unchanged as the historical record.
 
 
 > ### SECOND ERRATUM (Phase 17-FXR) — Earth-epoch fixture
@@ -40,12 +40,12 @@
 >
 > §8's "neither ... meaningfully rotates K_SRP's information direction" and §7's "R1O-D conclusion
 > VALID" do not hold on the consistent geometry. §2–§4, the STM defect and its repair, stand.
-> Full map: `docs/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `docs/phase17_fxr_earth_epoch_fixture_requalification.md`.
+> Full map: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md`; evidence: `studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md`.
 
 **Status:** Phase 17-R1O's cross-observable ranking is **SUPERSEDED**.
-**Issued by:** Phase 17-R1O-R (`docs/phase17_r1o_r_stm_layout_repair.md`).
+**Issued by:** Phase 17-R1O-R (`studies/phase17/reports/phase17_r1o_r_stm_layout_repair.md`).
 **Repair commit:** `75ba49a7e86cf7c4ea01e45ca757126159dc0654`.
-**Affected report:** `docs/phase17_r1o_additional_observable_feasibility.md`.
+**Affected report:** `studies/phase17/reports/phase17_r1o_additional_observable_feasibility.md`.
 
 Phase 17-R1O's original numbers are deliberately preserved, in this document and in its own report.
 They are not deleted. This erratum records what was published, what was wrong with it, what the
@@ -75,7 +75,7 @@ K's independent signature toward orthogonality with the six-state subspace, not 
 
 ## 2. The defect
 
-`examples/phase17_r1o_core.py`, function `chain_to_augmented_columns`:
+`studies/phase17/scripts/phase17_r1o_core.py`, function `chain_to_augmented_columns`:
 
 ```python
 phi = np.asarray(nom48_row[6:42], dtype=float).reshape(6, 6)     # C order - WRONG
@@ -123,8 +123,8 @@ Verified by exhaustive search of every `reshape(6,6)` in the repository, not ass
 **Unaffected** (verified, in several cases by re-running them):
 - R1O's range-only baseline — built by the production `two_way_range_nominal_and_initial_jacobian`
   and `_two_way_range_k_srp_column`, which use `order="F"`
-- Production DDOR (`lunar_od/delta_dor.py`) — re-run in full; reproduces every published value
-- Production optical (`lunar_od/lunar_landmark_optical.py`) — its callers pass an already-unpacked
+- Production DDOR (`src/lunar_od/delta_dor.py`) — re-run in full; reproduces every published value
+- Production optical (`src/lunar_od/lunar_landmark_optical.py`) — its callers pass an already-unpacked
   `order="F"` Phi, and a transpose-sensitivity test already guards it
 - **All K columns everywhere** — `S_K` is a plain 6-vector in columns `[42:48]`, never reshaped, so
   no storage-order convention applies to it. Verified bitwise identical before and after repair.
