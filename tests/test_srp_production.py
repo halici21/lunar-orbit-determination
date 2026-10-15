@@ -680,8 +680,8 @@ def test_default_source_label_says_the_caller_supplied_it():
 # Group I - default invariance against the actual pre-Phase-16 code
 # ======================================================================
 PRE_PHASE16_DYNAMICS = (campaign_root() / "00_recovery" / "phase14_base_snapshot"
-                        / "worktree_files" / "src" / "lunar_od" / "dynamics.py")
-#: The Phase 13 freeze recorded this hash for src/lunar_od/dynamics.py, so the
+                        / "worktree_files" / "lunar_od" / "dynamics.py")
+#: The Phase 13 freeze recorded this hash for lunar_od/dynamics.py, so the
 #: snapshot below is provably the module as it stood before SRP existed.
 PRE_PHASE16_DYNAMICS_SHA256 = (
     "64411c997e9372237c70009fbce8f50e917476f3581c7e1b020714f5abb67304"
