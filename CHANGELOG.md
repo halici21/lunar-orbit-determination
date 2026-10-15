@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.2 — 2026-10-15
+
+- Add a data-free, seeded BLS-LM/SRIF orbit-fit tutorial with observations,
+  trajectories, residuals, PNG/SVG figures, an animated plot and source identities.
+- Publish a source-linked results gallery and estimator/model support matrix;
+  add searchable documentation with pull-request builds and main-only Pages deployment.
+- Add bug/scientific issue forms, a PR template, roadmap and explicit source/wheel/DOI procedures.
+- Add deterministic-noise and noiseless-recovery tutorial checks to the public gate.
+- Distribute an installable library wheel alongside the Windows source preview.
+- Preserve scientific implementation, numerical tolerances and historical study bytes.
+
 - Add an installable `src/lunar_od` package; consolidate Phase 17 study
   scripts, configs, evidence, reports and provenance; organize durable docs
   by purpose. Preserve numerical implementation, scientific record bytes,

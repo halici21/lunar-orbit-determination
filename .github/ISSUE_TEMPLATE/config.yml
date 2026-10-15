@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup and first orbit fit
+    url: https://halici21.github.io/lunar-orbit-determination/quickstart/
+    about: Start with the public data-free tutorial.
+  - name: Scientific support and limits
+    url: https://halici21.github.io/lunar-orbit-determination/support/
+    about: Check the supported estimator and measurement combinations.

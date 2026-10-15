@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lunar-orbit-determination"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Lunar orbit determination research framework"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,8 +14,10 @@ authors = [{name = "Cemil Eray Halıcı"}]
 dynamic = ["dependencies"]
 
 [project.urls]
+Documentation = "https://halici21.github.io/lunar-orbit-determination/"
 Repository = "https://github.com/halici21/lunar-orbit-determination"
 Issues = "https://github.com/halici21/lunar-orbit-determination/issues"
+Changelog = "https://github.com/halici21/lunar-orbit-determination/blob/main/CHANGELOG.md"
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}

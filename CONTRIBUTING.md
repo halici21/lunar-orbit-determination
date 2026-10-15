@@ -4,6 +4,12 @@ Use main as the current development base. Keep changes focused and describe
 their purpose, affected behavior, commands run and required external data.
 Use a small pull request for review.
 
+`main` is the integration branch. Use a short-lived branch for a focused change;
+merge after required CI checks, then delete the merged branch. The
+[roadmap](ROADMAP.md) gives concrete acceptance criteria for open work. Use the
+scientific-inconsistency issue form for model/result discrepancies and the bug
+form for installation or application behavior.
+
 ## Set up
 
 Install the validated Windows environment using setup_windows.cmd, or follow
@@ -50,6 +56,12 @@ the command and relevant error text. Share a minimal config and public/synthetic
 fixture where possible; remove credentials and private paths from attachments.
 
 ## Releases
+
+Documentation changes should pass `python tools/build_docs.py --strict` after
+installing `requirements-docs.txt`. Tutorial/gallery regeneration is explicit;
+see the [gallery source trail](docs/research/results-gallery.md).
+
+Follow the [release and DOI procedure](docs/development/releases.md).
 
 Source prereleases require a passing public CI gate and a clean Windows setup
 check. They require Python 3.13 and external kernels for SPICE-backed runs.

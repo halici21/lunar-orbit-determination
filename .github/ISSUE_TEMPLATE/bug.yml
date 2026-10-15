@@ -1,0 +1,29 @@
+name: Bug report
+description: Report installation, library or desktop behavior with a reproducible case.
+labels: [bug]
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and source
+      description: OS, Python version, commit/tag and installation method.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Command or UI steps and a public/synthetic config. Remove private paths and credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Error text or evidence
+      description: Include relevant logs, traceback or a screenshot. State whether the process failed or a scientific acceptance criterion failed.
