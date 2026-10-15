@@ -24,10 +24,11 @@ KP2_VARIATION_RESULT_STATUS        = UNCHANGED: M3_VARIATION_PARTIALLY_RECOVERAB
 D25_KP2_MATERIALITY                = NOT_MATERIAL to every KP2 classification; MATERIAL ONLY to the
                                      PRODUCTION_BLS gate's sigma criterion, which it explains completely
                                      (sigma ratio 0.9171 -> 1.0000 with the solve's harmonic field)
-KP2_GATE_STATUS                    = FAIL as computed, adjudicated, pending owner acceptance.
+KP2_GATE_STATUS                    = FAIL as computed, adjudicated; owner accepted 2026-10-15 (gate PASS).
                                      FD: oracle floor (unchanged).
                                      PRODUCTION_BLS: estimate criterion now PASS (<= 6e-5 sigma vs 0.02);
-                                     sigma criterion FAIL (K 0.917, z 0.972), wholly HARDEN-D25.
+                                     sigma criterion FAIL (K 0.917, z 0.972), wholly HARDEN-D25
+                                     (repaired since: D25 end-to-end rerun passes both criteria).
 ```
 
 The common K level is not claimed.

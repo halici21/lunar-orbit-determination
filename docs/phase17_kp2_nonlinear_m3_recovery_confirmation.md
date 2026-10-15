@@ -223,3 +223,11 @@ HARDEN-D25 is repaired: the production posterior is now linearised on the solve'
 `job_bls`, rerun unchanged end to end with the BLS1 + D25 estimator, passes **both** PRODUCTION_BLS criteria
 as computed: estimate ≤ 5.7e-5 σ, σ ratios 1.000000–1.000001. The FD gate remains as adjudicated in §8.
 Nothing in §1–§9 changes. See `docs/phase17_harden_d25_posterior_covariance_consistency.md`.
+
+## 13. Addendum — owner acceptance (2026-10-15)
+
+The owner accepted the adjudication of the two frozen verification criteria (§8): the FD oracle floor and the
+production-BLS non-convergence. **The KP2 gate is PASS.** Since HARDEN-BLS1 and HARDEN-D25, the frozen
+PRODUCTION_BLS job passes both of its criteria as computed (§11–§12). The classification is unchanged. Its
+external validity is bounded by Phase 17-MM: a Moon-fixed gravity-field error can masquerade as a K variation
+(`docs/phase17_mm_gravity_masquerade_falsification.md`), so the variation finding holds under truth = model only.

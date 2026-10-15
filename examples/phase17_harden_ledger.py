@@ -287,7 +287,7 @@ DEFECTS = [
                 "six-state paths bitwise unchanged; stationary for J to 3.7e-5 sigma; start-independent to 1.3e-5 "
                 "sigma; posterior = declared problem to 6e-15; BLS/SRIF now the same problem (estimates 4.3e-4 "
                 "sigma). Gate FAIL as computed on G6's 1e-6 posterior sub-criterion (1.44e-6 = linearisation-point "
-                "dependence), adjudicated, pending owner; docs/phase17_harden_d29_srif_k_prior_contract.md",
+                "dependence), adjudicated, owner accepted 2026-10-15 (gate PASS); docs/phase17_harden_d29_srif_k_prior_contract.md",
          regression="tests/test_harden_d29_srif_k_prior_contract.py (incl. strengthened-regularizer test: pre-D29 "
                     "0.27 sigma start dependence, D29 6.2e-4)",
          reproduction="examples/phase17_d29_qualification.py --run --code old|new; --compare"),

@@ -10,7 +10,7 @@
 ## 0. Final status
 
 ```
-PHASE17_HARDEN_D29_GATE                    = FAIL as computed -> ADJUDICATED (pending owner acceptance)
+PHASE17_HARDEN_D29_GATE                    = FAIL as computed -> ADJUDICATED -> PASS (owner accepted 2026-10-15)
                                              G1 G2 G3 G4 G5 G7 PASS; G6 (BLS/SRIF equivalence) FAIL on its
                                              posterior sub-criterion: 1.44e-6 vs 1e-6, wholly the covariance's
                                              dependence on the linearisation point (two solutions 4.3e-4 sigma
