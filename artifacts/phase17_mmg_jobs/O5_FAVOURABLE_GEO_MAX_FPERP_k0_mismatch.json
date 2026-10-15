@@ -1,0 +1,7 @@
+{
+ "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+ "orbit": "O5_FAVOURABLE_GEO_MAX_FPERP",
+ "k": 0,
+ "ci": 8,
+ "kind": "mismatch"
+}

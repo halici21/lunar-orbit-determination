@@ -1,0 +1,7 @@
+{
+ "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+ "orbit": "CANON",
+ "k": 0,
+ "ci": 0,
+ "kind": "mismatch"
+}
