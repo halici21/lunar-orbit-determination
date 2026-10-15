@@ -15,7 +15,7 @@ acceptance criteria rather than dates or promises. Track work in
 
 | Work | Acceptance evidence |
 |---|---|
-| Paired BLS-LM / SRIF / SR-UKF comparison | Predeclared scenarios, matched data and uncertainty assumptions, explicit Q/R, multiple seeds, error distributions and failure cases |
+| [Paired BLS-LM / SRIF / SR-UKF comparison](https://github.com/halici21/lunar-orbit-determination/issues/12) | Predeclared scenarios, matched data and uncertainty assumptions, explicit Q/R, multiple seeds, error distributions and failure cases |
 | Independent propagation/observable comparison | Aligned frames, time scales, constants and force/measurement models; stored external reference with reproducible inputs |
 | Stronger consistency assessment | Sufficient independent trials, documented degrees of freedom, residual/innovation diagnostics and justified NIS/NEES interpretation |
 
@@ -23,9 +23,9 @@ acceptance criteria rather than dates or promises. Track work in
 
 | Work | Acceptance evidence |
 |---|---|
-| Standalone Windows distribution | Clean-machine installation, packaged child-process/backend execution, cancellation/shutdown tests and scientific data setup |
-| Broader library platform qualification | Explicit Python/OS matrix with passing library checks; desktop qualification remains separately stated |
-| Archived research release DOI | Owner-authorized Zenodo integration, archived release record and verified DOI added to citation metadata |
+| [Standalone Windows distribution](https://github.com/halici21/lunar-orbit-determination/issues/13) | Clean-machine installation, packaged child-process/backend execution, cancellation/shutdown tests and scientific data setup |
+| [Broader library platform qualification](https://github.com/halici21/lunar-orbit-determination/issues/14) | Explicit Python/OS matrix with passing library checks; desktop qualification remains separately stated |
+| [Archived research release DOI](https://github.com/halici21/lunar-orbit-determination/issues/15) | Owner-authorized Zenodo integration, archived release record and verified DOI added to citation metadata |
 
 The small quickstart is not the estimator benchmark above. Passing a software
 milestone does not close a scientific qualification item. Long campaigns remain

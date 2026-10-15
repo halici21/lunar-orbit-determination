@@ -1,0 +1,16 @@
+{
+  "source": "fixtures/spice_snapshots.json",
+  "source_sha256": "945535ac6afcd7ac5994dfd2bce2fa5572aff4410898cbaa490b1f484be9ade7",
+  "data_keys": [
+    "visibility.t_eval_s",
+    "visibility.multi_vis_mask_raw",
+    "visibility.multi_station_names"
+  ],
+  "sample_count": 6,
+  "epoch_utc": "2027-03-02 23:32:37",
+  "minimum_elevation_deg": 10,
+  "interpretation": "Recorded fixture samples only; separate from the idealized quickstart arc; not continuous access intervals",
+  "producing_script": "tools/build_showcase.py",
+  "producing_script_sha256": "76a71c880fd597931f076d3ab7a6e2cadd34962eac857477bca88d1bcaaaed88",
+  "source_commit": "6a33571a8d4542c3579f24d1b8be1af9bd56dcab"
+}

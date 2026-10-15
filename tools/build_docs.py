@@ -5,6 +5,7 @@ Requires requirements-docs.txt; no scientific dependencies or external data.
 """
 from __future__ import annotations
 import argparse
+import logging
 from pathlib import Path
 import re
 import shutil
@@ -28,6 +29,7 @@ PAGES = {
 
 
 def build(strict):
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     from mkdocs.config import load_config
     from mkdocs.commands.build import build as mkdocs_build
     output = ROOT / "outputs"
@@ -57,7 +59,7 @@ def build(strict):
                     destination = SOURCE + resolved.relative_to(ROOT).as_posix()
                 return f"{label}({destination}{separator}{anchor})"
 
-            content = re.sub(r"(!?\[[^\]\n]*\])\(([^\s)]+)\)", rewrite,
+            content = re.sub(r"(!?\[[^\]]*\])\(([^\s)]+)\)", rewrite,
                              document.read_text(encoding="utf-8"))
             (staging / target).write_text(content, encoding="utf-8")
         assets = staging / "assets"

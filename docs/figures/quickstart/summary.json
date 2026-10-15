@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "config": {
+    "seed": 20261015,
+    "noise_enabled": true,
+    "duration_s": 1800,
+    "sample_step_s": 60,
+    "mu_moon_m3_s2": 4902800066000.0,
+    "initial_state_m_mps": [
+      1837400.0,
+      30000.0,
+      -20000.0,
+      -15.0,
+      1633.5,
+      4.0
+    ],
+    "initial_error_m_mps": [
+      150.0,
+      -100.0,
+      80.0,
+      0.05,
+      -0.04,
+      0.03
+    ],
+    "earth_position_m": [
+      384400000.0,
+      0.0,
+      0.0
+    ],
+    "stations_lat_lon_deg": [
+      [
+        15.0,
+        160.0
+      ],
+      [
+        -25.0,
+        200.0
+      ],
+      [
+        45.0,
+        180.0
+      ],
+      [
+        -35.0,
+        150.0
+      ]
+    ],
+    "sigma_range_m": 5.0,
+    "sigma_angle_rad": 1e-05,
+    "max_iter": 40,
+    "rtol": 1e-11,
+    "atol": 1e-12
+  },
+  "config_sha256": "84e16f49304428425907ecbec5b34e2eaf73818ea46b959b3430ba7d80af40c8",
+  "source": {
+    "git_commit": "6a33571a8d4542c3579f24d1b8be1af9bd56dcab",
+    "git_dirty": false,
+    "source_sha256": {
+      "examples/quickstart_od.py": "3a737292864cd8f2b26363d24e1bd87cb5b86387355345119a01da5a2d7fa870",
+      "src/lunar_od/__init__.py": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
+      "src/lunar_od/accelerated.py": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
+      "src/lunar_od/adaptive_tuning.py": "708bddb864509872a87802c9c38abe09c8bb71aa3a112ce5b036d0347295ff4f",
+      "src/lunar_od/config.py": "fc5d180941fd6acc9b6630232a2d23d2c3c81b9855c43b85e61ad84dcb1a0a4e",
+      "src/lunar_od/constants.py": "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
+      "src/lunar_od/delta_dor.py": "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b",
+      "src/lunar_od/diagnostics.py": "e5f2e07ba1056b5e27d040966136b6f497c26e86a21f21e176cf3f7e4dd49324",
+      "src/lunar_od/dynamics.py": "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
+      "src/lunar_od/ephemeris.py": "a85f60e5822c795fad1afa42aa42c7d240fe49b670cf1cb75114f14995286745",
+      "src/lunar_od/estimators.py": "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
+      "src/lunar_od/filters.py": "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
+      "src/lunar_od/force_contract.py": "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
+      "src/lunar_od/force_models.py": "c1412fe22ac7bed580ca3fa1ffaa7a794cc508b0f0a985a10106f36d6a7d2389",
+      "src/lunar_od/geometry.py": "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf",
+      "src/lunar_od/gravity_harmonics.py": "6695a1127d90a65f02831df81ffb889904fc05178c9045f8f96c2bbb3045feb9",
+      "src/lunar_od/gravity_model_loader.py": "8c4d1708a6545b37c434cac23a388399c0372f8a7bb6f838a951b6f2af543e48",
+      "src/lunar_od/history_domain.py": "0f71dcd94175050c7b83dca50586ea37c1e395231c746778609a005a2eac8db4",
+      "src/lunar_od/lunar_frames.py": "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4",
+      "src/lunar_od/lunar_landmark_optical.py": "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36",
+      "src/lunar_od/measurement_contracts.py": "f0e625a2577ea242c9aa57b74dc435fb1330973cda849e13871585418a73764a",
+      "src/lunar_od/measurement_ingestion.py": "61ee6920a0c82006656ac48fa1a59b9c02508132df6d6249acfe75984ff16979",
+      "src/lunar_od/measurements.py": "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
+      "src/lunar_od/monte_carlo.py": "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
+      "src/lunar_od/noise_models.py": "440b679adaab7b3aca702bfbc2b62c39b28a19968ec64cd220127be9bbf694bb",
+      "src/lunar_od/observability.py": "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f",
+      "src/lunar_od/orbit.py": "bd8a4a8780068bbf662759a03bb1fdc825b46fb6e41e558b77af6face692e0a0",
+      "src/lunar_od/project_paths.py": "d388335c1923f15438a82c7c09825c352d9fb161feb6b8949fd1f2410fb9869b",
+      "src/lunar_od/q_tuning.py": "3ee6ea0788af2f5468107f0742450e884b20e2905732aad99792497f9eca27d2",
+      "src/lunar_od/radiometrics.py": "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
+      "src/lunar_od/reference_config/__init__.py": "8e38138f3ed90a830d9555ff6bf2c88820a643e12c8b2e763c81c48696e6e756",
+      "src/lunar_od/reference_config/errors.py": "19feef7cc28a88efa351a426f206056ebd691f6ec5ec3329e92a4da6c8ea08f9",
+      "src/lunar_od/reference_config/fingerprint.py": "b3cfba3a6185b0957d39bc110b3685e4d6ea01859a875ba316315f36ad5167a0",
+      "src/lunar_od/reference_config/loader.py": "8dbfacf3b2c42df87dd19d4b34b6640fa5e802ac8d9acde188a6667b4367b609",
+      "src/lunar_od/reference_config/model.py": "d336bb74bde478f7b14ae12fb00b892c7b3c120f1b26dcec242cf8c5f0a99136",
+      "src/lunar_od/reference_config/registry.py": "380edfc8a01a012256b9fd6acdb2e5084e4439bec174162657415639497df863",
+      "src/lunar_od/reference_config/reporting.py": "8423424e822c69e7d7ed8eb53d8e956cd59a1c31382fede312aca629c5b0431e",
+      "src/lunar_od/reference_config/schema.py": "2fd5eae93a5c8cf2e6a43c29cca98605fd7954c0c750068fe09fc4081384c246",
+      "src/lunar_od/reference_config/validation.py": "648dc248923844473c339eb8e3760cc860ad631eb9603a43712ada0bed3fd196",
+      "src/lunar_od/reference_config/vocabulary.py": "b1674b6b7b11e71e0ffa0b002e5e87d0ca896a37e1a8706a25d771114d31cada",
+      "src/lunar_od/reporting.py": "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
+      "src/lunar_od/rf/__init__.py": "82abf4845babfdb2fbba459f8d62d56342ca0c6e48d778450e2b9660e8e61f8a",
+      "src/lunar_od/rf/doppler_noise.py": "5e1aa3f119a581c0473ed985a22415423a65f772a8a2affe0ea8f5a6e73d5ea1",
+      "src/lunar_od/rf/environment.py": "4ca5dea470d4003e66c19b2446928532901e84e90b8fb9571c6866defa1fe921",
+      "src/lunar_od/rf/link_budget.py": "7a4b50b3a6b804d7d5a916bab4d4de15813b6e79c10c055af9ca23ee770592bc",
+      "src/lunar_od/rf/reference.py": "99a3a15e41268c8014c64236b610d144415499cb3c5b56742e0def005d6cb5d0",
+      "src/lunar_od/rf/types.py": "9c5a7538409015c0b19263fe81e99f96cf02de7d955e272911a18c7811ac40f7",
+      "src/lunar_od/scenario_config.py": "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
+      "src/lunar_od/scenarios.py": "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
+      "src/lunar_od/spice_loader.py": "fa57dd282371ca0138fa02a58dbac947d86e85dbf7efa3cc326eb53e0b1a88b9",
+      "src/lunar_od/srp.py": "9f9986d2a66a264b8eb6acba18e5a1e865718995f7f600ce98f08b3e95a6335a",
+      "src/lunar_od/thesis_matrix.py": "e9437f7d57c746057910927f063bfa9b0def75a22382f007befd68408fd3e3ea",
+      "src/lunar_od/two_way_counted_doppler.py": "f499038b57f1cd6a1c3f1696aafc0e3ef951234d89f91706c8dcad2109b759dc",
+      "src/lunar_od/two_way_counted_doppler_reference.py": "8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa",
+      "src/lunar_od/two_way_range.py": "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995",
+      "src/lunar_od/visibility.py": "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a"
+    }
+  },
+  "environment": {
+    "python": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 116 Stepping 1, AuthenticAMD",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "matplotlib": "3.10.7"
+  },
+  "scope": {
+    "truth_level": 0,
+    "independent_arcs": 1,
+    "independent_seeds": 1,
+    "force_model": "lunar point mass only",
+    "station_frame": "fixed identity transform",
+    "visibility": "all scheduled observations retained; no elevation/occultation screening",
+    "light_time": false,
+    "aberration": false,
+    "explicit_prior": null,
+    "comparison": "educational paired fit; no performance ranking or operational claim"
+  },
+  "initial_position_error_m": 197.2308292331602,
+  "observations": 124,
+  "metrics": {
+    "BLS-LM": {
+      "stop_reason": "J-Stab",
+      "iterations": 6,
+      "initial_epoch_position_error_m": 43.17392235238884,
+      "arc_end_position_error_m": 49.56225814136792,
+      "arc_end_velocity_error_mps": 0.0632087405290881,
+      "residual_rms_m_rad_rad": [
+        4.669045587953377,
+        9.374892507934224e-06,
+        9.179762765667277e-06
+      ],
+      "rank": 6,
+      "condition_number": 292788.23319470644,
+      "runtime_s": 0.021284400019794703,
+      "posterior_covariance_finite": true
+    },
+    "SRIF": {
+      "stop_reason": "J-Stab",
+      "iterations": 18,
+      "initial_epoch_position_error_m": 43.17389434136047,
+      "arc_end_position_error_m": 49.56220460314885,
+      "arc_end_velocity_error_mps": 0.06320865287379566,
+      "residual_rms_m_rad_rad": [
+        4.669045578036744,
+        9.37489251828164e-06,
+        9.179762770399482e-06
+      ],
+      "rank": 6,
+      "condition_number": 541.1121232751808,
+      "runtime_s": 0.04929340002126992,
+      "posterior_covariance_finite": true
+    }
+  },
+  "artifact_sha256": {
+    "fit-preview.gif": "321852c51d4842a365db28210c587d82fcbbef007c55534660dd6c07aa290408",
+    "observations.csv": "3520ad6021c51db6f9d23b05226c0cb50480489d5e4708bf5b722e960076efd4",
+    "position-error.png": "688b4087884b8152e9c92ca40fcfb8cde2f1a4cb766cf65d127a8192452dfc60",
+    "position-error.svg": "0bb50fc3876b70aeeec34f36512379f6e91a8df2cc83de3c73a998a077fe2214",
+    "residuals.csv": "9ce5cfcb0452a0b5401b4bbd86f4b5ad28147d392422f36dca2a13b839df65f9",
+    "residuals.png": "833f8181d03c3a030a505fd0d817734a96943709ee8f85b3db06b847ed19db9a",
+    "residuals.svg": "03403579109310bb0c0650998a9266c44882fae46a939e5577a94d5984f10e84",
+    "states.csv": "b4fc5bed39a627cb4ed5f7b047d3786216353cf0deef1a685c0aa476ca66569c"
+  }
+}

@@ -51,6 +51,7 @@ Default output: ignored `outputs/quickstart/`.
 | `residuals.csv` | Observed-minus-computed range (m), azimuth and elevation (rad) |
 | `position-error.png` / `.svg` | Same-model position-error histories |
 | `residuals.png` / `.svg` | Post-fit residuals; angles displayed in arcseconds |
+| `fit-preview.gif` | A time reveal of the recorded error curves, not solver iterations |
 
 The configuration is [quickstart.json](../../examples/configs/quickstart.json).
 To experiment, copy it outside the tracked tree and change the seed or initial
