@@ -61,6 +61,9 @@ def build(strict):
 
             content = re.sub(r"(!?\[[^\]]*\])\(([^\s)]+)\)", rewrite,
                              document.read_text(encoding="utf-8"))
+            if target == "api.md":
+                from api_reference import render_reference
+                content += "\n" + render_reference(ROOT)
             (staging / target).write_text(content, encoding="utf-8")
         assets = staging / "assets"
         assets.mkdir(exist_ok=True)
