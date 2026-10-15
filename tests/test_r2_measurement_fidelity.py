@@ -914,7 +914,7 @@ def test_r2_current_tree_protection_holds_for_paths_r3_must_not_change():
         # Phase 17-HARDEN: the gate's single resolution point (authorized re-freezes
         # included); the historical table itself is tested separately above.
         expected = campaign.expected_current_tree_sha256(relative_path)
-        actual = hashlib.sha256((ROOT / relative_path).read_bytes()).hexdigest()
+        actual = hashlib.sha256((ROOT / campaign.current_source_path(relative_path)).read_bytes()).hexdigest()
         assert actual == expected, relative_path
 
 
@@ -1027,7 +1027,7 @@ def test_reference_module_is_opt_in_and_absent_from_production_dispatch():
         "desktop_app/controllers/analysis_controller.py",
     )
     for relative_path in protected:
-        source = (ROOT / relative_path).read_text(encoding="utf-8")
+        source = (ROOT / campaign.current_source_path(relative_path)).read_text(encoding="utf-8")
         assert "two_way_counted_doppler_reference" not in source
 
 

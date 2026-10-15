@@ -27,8 +27,8 @@ env/
 Thumbs.db
 
 # Generated experiment outputs
-results/
-outputs/
+/results/
+/outputs/
 *.log
 
 # Large local data and kernels
@@ -67,3 +67,14 @@ plots/
 # graph.json alone is ~9.5 MB and GRAPH_REPORT.md embeds the build commit, so
 # tracking either would churn on every commit.
 graphify-out/
+
+# Packaging, numerical caches and local study output
+*.egg-info/
+*.nbc
+*.nbi
+*.prof
+*.lprof
+coverage.xml
+.tox/
+.nox/
+studies/**/generated/

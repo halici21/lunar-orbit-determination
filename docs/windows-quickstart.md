@@ -8,6 +8,8 @@
 4. Kurulum tamamlanınca launch_lunar_od.cmd dosyasına çift tıklayın.
 
 Kurulum bu klasörün içinde .venv oluşturur ve sabitlenmiş bağımlılıkları yükler.
+`src/lunar_od` paketini düzenlenebilir kurulumla yükler. Güncel kaynakları
+aldıktan sonra mevcut ortamda da `setup_windows.cmd` komutunu yeniden çalıştırın.
 İnternet bağlantısı gerekir. Bilgisayarınızdaki genel Python paketlerini değiştirmez.
 Mevcut .venv kullanılamıyorsa onu otomatik silmez; hata mesajındaki yönlendirmeyi izleyin.
 Kurulum dosyası her çalıştırıldığında bağımlılık profilini yeniden uygular.
@@ -138,14 +140,14 @@ PowerShell'de:
 | gm_de431.tpc.txt | Çekim sabitleri |
 | pck00010.tpc.txt | Gezegen sabitleri |
 
-Liste, [güncel yükleyicideki](../lunar_od/spice_loader.py) REQUIRED_KERNELS sırasını izler.
+Liste, [güncel yükleyicideki](../src/lunar_od/spice_loader.py) REQUIRED_KERNELS sırasını izler.
 DE440 çerçeve ve yönelim dosyaları birlikte gereklidir; iki Ay gerçekleşimini
 koruyan yükleme sırasını uygulamanın yükleyicisi yönetir.
 
 Değişken ayarlanmadığında yükleyici önce ~/Documents/mice/kernels, sonra
 projenin kernels klasörünü arar. Kernel dosyaları GitHub paketinde bulunmaz.
 Dış kampanya ve yüksek dereceli çekim verilerinin yolları için
-[doğrulama rehberine](verification.md) bakın.
+[doğrulama rehberine](validation/verification.md) bakın.
 
 ## Sorun giderme
 

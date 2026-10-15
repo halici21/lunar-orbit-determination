@@ -393,12 +393,12 @@ class ForceContractImportDirectionTests(unittest.TestCase):
         return {name.split(".")[-1] for name in found}
 
     def test_force_contract_has_no_forbidden_imports(self):
-        imported = self._module_imports("lunar_od/force_contract.py")
+        imported = self._module_imports("src/lunar_od/force_contract.py")
         offending = imported & self.FORBIDDEN_FOR_FORCE_CONTRACT
         self.assertEqual(offending, set(), f"force_contract must not import {offending}")
 
     def test_force_contract_is_standard_library_only(self):
-        imported = self._module_imports("lunar_od/force_contract.py")
+        imported = self._module_imports("src/lunar_od/force_contract.py")
         allowed = {
             "__future__", "hashlib", "json", "math", "dataclasses",
             "enum", "types", "typing",
@@ -408,7 +408,7 @@ class ForceContractImportDirectionTests(unittest.TestCase):
         )
 
     def test_dynamics_does_not_import_force_contract_or_scenario_config(self):
-        imported = self._module_imports("lunar_od/dynamics.py")
+        imported = self._module_imports("src/lunar_od/dynamics.py")
         self.assertNotIn("force_contract", imported)
         self.assertNotIn("scenario_config", imported)
 

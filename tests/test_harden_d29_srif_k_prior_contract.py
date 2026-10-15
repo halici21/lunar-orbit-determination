@@ -4,7 +4,7 @@ Before D29, ``estimate_two_way_range_srif(solve_for_k_srp=True)`` built its prio
 from the FULL prior square root, so with no explicit state prior the 15 km / 5 m/s step
 regularizer (MATLAB P_bar_inv heritage, D28) silently became a Bayesian state prior in the
 ESTIMATE, pulling the state toward its starting value. The declared contract
-(docs/phase17_harden_d29_srif_k_prior_contract.md) is the BLS one:
+(studies/phase17/reports/phase17_harden_d29_srif_k_prior_contract.md) is the BLS one:
 
     J = r^T W r + (K - K0)^2 / sigma_K^2          (no explicit state prior)
 

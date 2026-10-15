@@ -300,7 +300,7 @@ class R3EarthEphemerisPolicyInvariance(unittest.TestCase):
 
     R3 kept the Earth LINEAR so the exact path reproduced R2 model S. That left
     a ~1.7-1.8e-3 m/s counted-Doppler value offset from the asymmetric uplink
-    transmit epochs (docs/phase17_harden_d23_repair_qualification.md). The
+    transmit epochs (studies/phase17/reports/phase17_harden_d23_repair_qualification.md). The
     exact path now uses the same cubic-Hermite Earth as M3 range and DeltaDOR;
     the site-transform contract of R3 is unchanged.
     """

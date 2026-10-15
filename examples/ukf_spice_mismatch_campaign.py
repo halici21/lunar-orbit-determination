@@ -6,7 +6,6 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lunar_od import load_scenario_config_json, plot_scenario_comparison, write_scenario_summary_csv
 from run_scenario_config import run_configured_scenario

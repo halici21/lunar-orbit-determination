@@ -382,6 +382,11 @@ DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+def current_source_path(relative_path: str) -> str:
+    """Resolve historical source identities in the current src layout."""
+    return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
+
+
 def expected_current_tree_sha256(relative_path: str) -> str:
     """Expected CURRENT-tree hash for a protected path.
 
@@ -1919,7 +1924,7 @@ def build_r2_current_tree_protection_rows(
         # historical table was read directly here, bypassing every re-freeze).
         expected_hash = expected_current_tree_sha256(relative_path)
         actual_hash = hashlib.sha256(
-            (repository_root / relative_path).read_bytes()
+            (repository_root / current_source_path(relative_path)).read_bytes()
         ).hexdigest()
         rows.append(
             {
@@ -1937,7 +1942,7 @@ def build_r2_current_tree_protection_rows(
     for relative_path in CLOSURE_REFROZEN_CURRENT_TREE_SHA256:
         expected_hash = expected_current_tree_sha256(relative_path)
         actual_hash = hashlib.sha256(
-            (repository_root / relative_path).read_bytes()
+            (repository_root / current_source_path(relative_path)).read_bytes()
         ).hexdigest()
         rows.append(
             {
@@ -2066,7 +2071,7 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
             "evidence": "consumer_capabilities_for",
         }
     )
-    filters_source = (repository_root / "lunar_od/filters.py").read_text(encoding="utf-8")
+    filters_source = (repository_root / "src/lunar_od/filters.py").read_text(encoding="utf-8")
     ukf_rejection = (
         "measurement_type='two_way_range' is not supported by the UKF in M3" in filters_source
     )

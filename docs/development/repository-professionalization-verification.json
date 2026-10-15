@@ -1,0 +1,121 @@
+{
+  "date": "2026-10-15",
+  "validated_commit": "58caeffd1e96603618e86a3c6242a02bd2cded32",
+  "integrated_main_commit": "6f70e29ca36e7c0515e5041b98f500101d44a03f",
+  "baseline": {
+    "tests": 1865,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 1836
+  },
+  "full_clean_checkout": {
+    "tests": 1869,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 29,
+    "passed": 1840
+  },
+  "public_checks": {
+    "tests": 279,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 279
+  },
+  "pytest_summary": {
+    "baseline": {
+      "named_passed": 1690,
+      "subtests_passed": 146,
+      "skipped": 29
+    },
+    "clean": {
+      "named_passed": 1694,
+      "subtests_passed": 146,
+      "skipped": 29
+    }
+  },
+  "test_identity_comparison": {
+    "removed": [],
+    "added": [
+      [
+        "tests.test_station_catalog_filters",
+        "test_catalogue_map_preserves_degree_scale_and_actual_coordinates[size0]"
+      ],
+      [
+        "tests.test_station_catalog_filters",
+        "test_catalogue_map_preserves_degree_scale_and_actual_coordinates[size1]"
+      ],
+      [
+        "tests.test_station_catalog_filters",
+        "test_narrow_station_window_keeps_actions_and_selection_without_page_horizontal_scroll[size0]"
+      ],
+      [
+        "tests.test_station_catalog_filters",
+        "test_narrow_station_window_keeps_actions_and_selection_without_page_horizontal_scroll[size1]"
+      ]
+    ]
+  },
+  "preservation": {
+    "base_commit": "f27db9da3c58aef413737bd4da5be14dcd8a7e15",
+    "numeric_comparison_commit": "6f70e29ca36e7c0515e5041b98f500101d44a03f",
+    "original_files": 991,
+    "original_files_still_present": 991,
+    "original_files_byte_identical": 768,
+    "missing": [],
+    "scientific_or_test_numeric_literal_changes": []
+  },
+  "structure": {
+    "original_tracked_files": 991,
+    "phase17_scripts": 85,
+    "phase17_reports": 36,
+    "phase17_configs": 19,
+    "phase17_results": 289,
+    "phase17_provenance_manifests": 4,
+    "path_manifest_records": 549,
+    "byte_preservation_gates": 375
+  },
+  "environment": {
+    "os": "Windows x86_64",
+    "python": "3.13.2",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "numba": "0.65.1",
+    "spiceypy": "8.2.0",
+    "pytest": "9.1.1",
+    "PyQt5": "5.15.11"
+  },
+  "checks": {
+    "fresh_clone": true,
+    "setup_windows": true,
+    "editable_install": true,
+    "wheel_build": true,
+    "wheel_install_outside_checkout": true,
+    "all_55_runtime_modules_packaged": true,
+    "pip_check": true,
+    "documentation_links": true,
+    "example_schema": true,
+    "study_cli_help": true,
+    "compileall": true,
+    "git_diff_check": true,
+    "graphify_refresh": true
+  },
+  "external_data": "Existing project/campaign data and SPICE kernels; no numerical inputs changed or downloaded.",
+  "skip_policy": "Existing opt-in slow tests and unavailable optional historical inputs; no new skips allowed.",
+  "scientific_result_impact": "NONE",
+  "numerical_implementation_impact": "NONE",
+  "deferred": [
+    "desktop_app directory move while other worktrees have active desktop work",
+    "historical baseline/example driver relocation pending external-import and protected-hash compatibility audit",
+    "frozen source docstrings and archived/receipt paths retain historical identities resolved by the path manifest"
+  ],
+  "junit_sha256": {
+    "baseline-tests.xml": "31ba6b3ae978bacb3b11ef8f7606e279a36222945e01ef1d166d1572bc90b189",
+    "clean-tests.xml": "eaa5a49195018d1744b31f14b29171109f6ecf776930fbe4127b62b911573030",
+    "public-tests.xml": "48e977e4dee93605d67184716d058248c26fd92557a97572dd2e243affaa6786"
+  },
+  "documentation": {
+    "current_markdown_files": 86,
+    "valid_local_links": 142
+  }
+}

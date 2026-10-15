@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lunar_od.dynamics import (  # noqa: E402
     f3body_moon, ode_fun_v3, dynamics_jacobian_a_matrix,

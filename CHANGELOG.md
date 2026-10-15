@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add an installable `src/lunar_od` package; consolidate Phase 17 study
+  scripts, configs, evidence, reports and provenance; organize durable docs
+  by purpose. Preserve numerical implementation, scientific record bytes,
+  pinned hashes, test discovery and historical traceability.
+- Add citation metadata, artifact policy and repository integrity checks.
+
+
 - Station catalogue actions stack into two groups on narrow windows, keeping
   every action accessible without horizontal page scrolling. The catalogue map
   resizes with the viewport and preserves equal longitude/latitude degree scales.
@@ -40,7 +47,7 @@
   report without starting computation. Timeout, shutdown and inconsistent reports
   cannot trigger a pending solver launch.
 - Fourteen readiness/GUI/process regression cases added to the public gate.
-- [Readiness implementation and verification](docs/environment-readiness_2026-10-10.md).
+- [Readiness implementation and verification](docs/development/environment-readiness_2026-10-10.md).
 
 These changes are on main; the existing 0.1.0-alpha.1 source asset is immutable
 and predates this feature.
@@ -68,6 +75,6 @@ packaging remain outstanding.
 
 ## Historical research
 
-Phase-specific scientific changes and validation are documented in docs/ and
-artifacts/. [The branch consolidation report](docs/branch_consolidation_2026-10-10/README.md)
+Phase-specific scientific changes and validation are documented in
+`studies/phase17/` and the durable `docs/` guides. [The branch consolidation report](docs/development/branch_consolidation_2026-10-10/README.md)
 records imported history and preserved pending work.

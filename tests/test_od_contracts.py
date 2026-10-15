@@ -436,7 +436,7 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
             },
         )
 
-    #: P21/M3 provenance baseline for ``lunar_od/two_way_range.py``.
+    #: P21/M3 provenance baseline for ``src/lunar_od/two_way_range.py``.
     #:
     #: RE-FROZEN under explicit owner authorization after the Q1-F01/F07/F08
     #: long-arc light-time conditioning repair was ported and qualified.
@@ -498,8 +498,8 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
     )
 
     def test_p21_m3_production_module_is_byte_identical_to_the_baseline(self):
-        root = Path(radiometrics_module.__file__).resolve().parents[1]
-        current = (root / "lunar_od" / "two_way_range.py").read_bytes()
+        root = Path(radiometrics_module.__file__).resolve().parents[2]
+        current = (root / "src" / "lunar_od" / "two_way_range.py").read_bytes()
         self.assertEqual(hashlib.sha256(current).hexdigest(),
                          self.P21_M3_TWO_WAY_RANGE_SHA256)
 

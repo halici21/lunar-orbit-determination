@@ -38,6 +38,8 @@ try {
         Assert-LunarPython $lunarPython
         & $lunarPython -m pip install -r $lunarRequirements
         if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed. Check the pip output above.' }
+        & $lunarPython -m pip install -e $lunarRoot
+        if ($LASTEXITCODE -ne 0) { throw 'Package installation failed.' }
         & $lunarPython -m pip check
         if ($LASTEXITCODE -ne 0) { throw 'Dependency verification failed.' }
         & $lunarPython -c "import lunar_od, scipy, numba, spiceypy, pandas, matplotlib, pyqtgraph, h5py; from PyQt5 import QtWidgets; print('Lunar OD desktop imports: OK')"

@@ -12,7 +12,7 @@ Two frames are assessed:
 
 For each: measurement-level systematic bias (truth vs model-off), the post-fit OD
 solution (state error, residual RMS, iterations, cost, conditioning), and the
-formal covariance. Regenerates ``docs/stellar_aberration_od_impact.md``.
+formal covariance. Regenerates ``docs/theory/stellar_aberration_od_impact.md``.
 
 Run from the project root (SPICE kernels required)::
 
@@ -28,7 +28,6 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import spiceypy as spice  # noqa: E402
 
@@ -44,7 +43,7 @@ from lunar_od.geometry import wrap_to_pi  # noqa: E402
 
 PYTHON_PORT = Path(__file__).resolve().parents[1]
 FIXTURE = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
-OUT = PYTHON_PORT / "docs" / "stellar_aberration_od_impact.md"
+OUT = PYTHON_PORT / "docs" / "theory" / "stellar_aberration_od_impact.md"
 ARCSEC = np.degrees(1.0) * 3600.0
 
 

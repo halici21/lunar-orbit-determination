@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[1]
-for _path in (_ROOT / "desktop_app", _ROOT):        # inserted in reverse: ROOT ends first
+for _path in (_ROOT / "studies" / "phase17" / "scripts", _ROOT / "desktop_app", _ROOT):        # inserted in reverse: ROOT ends first
     _entry = str(_path)
     if _entry in sys.path:
         sys.path.remove(_entry)

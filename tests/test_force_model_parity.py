@@ -477,7 +477,7 @@ class P12ImportDirectionTests(unittest.TestCase):
         self.assertEqual(out.stdout.strip(), "ok")
 
     def test_force_contract_still_free_of_project_imports(self):
-        source = (_REPO_ROOT / "lunar_od" / "force_contract.py").read_text(encoding="utf-8")
+        source = (_REPO_ROOT / "src" / "lunar_od" / "force_contract.py").read_text(encoding="utf-8")
         for forbidden in (
             "from .scenario_config", "from .scenarios", "from .filters",
             "from .estimators", "from .reporting", "from .dynamics",

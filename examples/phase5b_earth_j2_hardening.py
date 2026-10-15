@@ -9,7 +9,6 @@ nothing.
 import sys, time
 from pathlib import Path
 import numpy as np
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lunar_od import body_j2_acceleration, body_j2_gravity_gradient, f3body_moon, ode_fun_v3, dynamics_jacobian_a_matrix
 from lunar_od.dynamics import (_J2000_TO_EARTH_BF as C_E, _MCI_TO_MOON_BF, MOON_J2, MOON_R_M,

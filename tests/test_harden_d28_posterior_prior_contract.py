@@ -1,6 +1,6 @@
 """Phase 17-HARDEN-D28 - with no explicit prior, the posterior is data-only.
 
-Contract (docs/phase17_harden_d28_prior_covariance_contract.md):
+Contract (studies/phase17/reports/phase17_harden_d28_prior_covariance_contract.md):
 
   - no explicit prior: DATA-ONLY objective (the right-hand side never pulls toward x_prior;
     the BLS acceptance cost has no prior term) and a DATA-ONLY posterior (H^T W H);

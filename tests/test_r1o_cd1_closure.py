@@ -14,14 +14,14 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
 import phase17_r1o_cd1_closure as X  # noqa: E402
 
-CLOSURE = json.loads((ROOT / "artifacts" / "phase17_r1o_cd1_closure.json").read_text(encoding="utf-8"))
-SUMMARY = json.loads((ROOT / "artifacts" / "phase17_r1o_cd1_summary.json").read_text(encoding="utf-8"))
+CLOSURE = json.loads((ROOT / "studies" / "phase17" / "results" / "phase17_r1o_cd1_closure.json").read_text(encoding="utf-8"))
+SUMMARY = json.loads((ROOT / "studies" / "phase17" / "results" / "phase17_r1o_cd1_summary.json").read_text(encoding="utf-8"))
 RAW = json.loads(X.RAW_PATH.read_text(encoding="utf-8"))
 
 

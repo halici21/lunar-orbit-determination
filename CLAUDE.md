@@ -1,5 +1,20 @@
 # Lunar OD — Project Instructions
 
+## Current repository layout (2026-10-15)
+
+The importable package is `src/lunar_od/`; install it with `python -m pip
+install -e .` before running tests or drivers. Phase 17 scripts, configs,
+reports, results and manifests live under `studies/phase17/`. Durable docs are
+grouped by purpose under `docs/`. The desktop application's location remains
+`desktop_app/` while other worktrees carry active desktop work.
+
+Use [the current architecture guide](docs/development/repository-layout.md) and
+[path manifest](docs/development/path-migration.json) when a historical report,
+source comment or synchronized skill reference names an earlier location.
+Historical source identities and archived records keep their original keys.
+Skill copies were not edited across other sessions' worktrees during this
+migration; their older location examples require this translation.
+
 ## Mandatory Skill Discovery and Routing
 
 Before analyzing, editing, or validating project code, evaluate all available
@@ -110,7 +125,7 @@ Also invisible to the graph, so verify in source:
   `propagate_state_with_k_sensitivity` -> `nom48[:, 42:48]` ->
   `_two_way_range_k_srp_column`) and the column-major STM block `[6:42]` have no
   edge. The Phase 17-R1O storage-order defect lived exactly there.
-- `lunar_od/__init__.py` re-exports everything, so any two exported functions look
+- `src/lunar_od/__init__.py` re-exports everything, so any two exported functions look
   two hops apart through it. Discard paths routed through `__init__.py`.
 - Physical and numerical meaning: units, frames, epochs, `order="F"` layouts,
   tolerances. Communities are unlabeled ("Community N"; no LLM backend configured).

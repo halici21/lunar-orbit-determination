@@ -691,7 +691,7 @@ def build_synthesis(store: dict, store_sha256: str, store_path: Path) -> dict:
             "store_sha256": store_sha256,
             "store_generated_utc": store.get("generated_utc"),
             "campaign_commits": ["a081dcb (13G-b)", "5401db8 (13G-c1)"],
-            "context_commit": "18d1900 (PROJECT_CONTEXT.md)",
+            "context_commit": "18d1900 (docs/development/PROJECT_CONTEXT.md)",
         },
         "level1_disclaimer": LEVEL1_DISCLAIMER,
         "evidence_levels": list(EVIDENCE_LEVELS),

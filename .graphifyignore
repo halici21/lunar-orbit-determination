@@ -5,8 +5,9 @@
 # Generated run outputs and phase manifests: records of results, not architecture.
 # Not indexed by a code-only build anyway; excluded so a semantic (docs) build does
 # not ingest ~120 generated JSON/CSV/TXT files as if they were design documents.
-artifacts/
-08_manifests/
+studies/phase17/results/
+studies/phase17/configs/
+studies/phase17/provenance/
 
 # Claude Code tooling (skills, skill-sync validator), not project architecture.
 .claude/

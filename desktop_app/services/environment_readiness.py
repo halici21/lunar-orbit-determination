@@ -86,7 +86,7 @@ def inspect_environment(*, kernel_dir=None, duration_h=None, state_step_s=600.0,
     checks = _runtime_checks()
     # Read the canonical loader without importing lunar_od's eager scientific API.
     # This also allows the missing-dependency report to retain the kernel inventory.
-    loader = runpy.run_path(str(ROOT / "lunar_od" / "spice_loader.py"))
+    loader = runpy.run_path(str(ROOT / "src" / "lunar_od" / "spice_loader.py"))
     candidates = [Path(kernel_dir).expanduser()] if kernel_dir else loader["default_kernel_candidates"]()
     directory = None
     try:

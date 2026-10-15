@@ -15,7 +15,7 @@ difference [m], angular difference [arcsec], and light-time difference [s].
 The temporary SPK is densely sampled from the model interpolant
 (`interp_state_history`), so SPICE reproduces our trajectory to interpolation
 precision and the residual differences isolate the light-time / stellar
-aberration / frame-chain algorithms. Regenerates ``SPICE_CN_CNPLUS_VALIDATION.md``.
+aberration / frame-chain algorithms. Regenerates ``docs/validation/SPICE_CN_CNPLUS_VALIDATION.md``.
 
 Run from the project root (SPICE kernels required)::
 
@@ -32,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import spiceypy as spice  # noqa: E402
 
@@ -51,7 +50,7 @@ from lunar_od.measurements import (  # noqa: E402
 
 PYTHON_PORT = Path(__file__).resolve().parents[1]
 FIXTURE = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
-OUT = PYTHON_PORT / "SPICE_CN_CNPLUS_VALIDATION.md"
+OUT = PYTHON_PORT / "docs/validation/SPICE_CN_CNPLUS_VALIDATION.md"
 SC_BODY_ID = -999       # custom NAIF id for the synthetic orbiter
 MOON_ID = 301
 ARCSEC = np.degrees(1.0) * 3600.0
@@ -270,7 +269,7 @@ def _write_report(rows):
     L.append("Despite the CN frame offset, the `+S` rotation each model applies on top "
              "of its own CN agrees, confirming the stellar-aberration operator itself is "
              "correct (cf. the `spice.stelab` operator check in "
-             "`docs/spice_cross_validation.md`):\n")
+             "`docs/validation/spice_cross_validation.md`):\n")
     L.append("| # | station | our CN->CN+S [arcsec] | SPICE CN->CN+S [arcsec] | diff [arcsec] |")
     L.append("|---:|---|---:|---:|---:|")
     for r in rows:
