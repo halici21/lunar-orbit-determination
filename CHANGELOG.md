@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Move catalogue network colors into a wrapping key below the map, preventing
+  the legend from covering station markers. Explain custom stars separately
+  from network colors and keep unknown networks visible in the key.
 - Group optional/development/docs/Windows dependency profiles under `requirements/`
   while retaining the standard core `requirements.txt` and Windows launch commands.
 - Move the earlier Tkinter/HTTP tools and web assets to `legacy/`; document their
