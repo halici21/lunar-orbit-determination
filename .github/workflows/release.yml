@@ -8,9 +8,14 @@ on:
       - 'tools/*release*.py'
       - 'tools/*portable*.py'
       - 'desktop_app/**'
+      - 'src/**'
+      - 'examples/**'
+      - 'fixtures/**'
+      - 'tools/check_library_install.py'
+      - 'tools/check_repository.py'
+      - 'tools/run_public_checks.py'
       - 'requirements/**'
       - 'pyproject.toml'
-      - 'examples/desktop_tutorial.py'
   workflow_dispatch:
 permissions:
   contents: read

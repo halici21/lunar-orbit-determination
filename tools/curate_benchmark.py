@@ -89,11 +89,13 @@ def curate(source):
                 f"{vel['median']:.5f} | {group['successes']}/{group['attempted']} | "
                 f"{group['solver_termination_fraction']:.1%} | {group['nees']['mean']:.3f} |")
     lines += ["", "## Interpretation and scientific review", "",
-        "**Accept with caveats** for this declared synthetic comparison. All three "
-        "estimators meet the predeclared numerical error/covariance criteria in all "
-        "attempted trials. Solver termination is a separate criterion: SRIF reaches "
-        "MaxIter in many trials even when its state error is small. Those trials "
-        "are retained and are not called converged. See raw stop reasons below.", "",
+        "The table reports the predeclared numerical criteria separately from solver "
+        "termination. Every attempted trial is retained. MaxIter counts are: "
+        + ", ".join(f"{label}={sum(r.get('stop_reason') == 'MaxIter' for r in rows if r['estimator'] == label)}"
+                    for label in LABELS)
+        + ". Such stopped trials are not called converged. A scientific acceptance "
+        "decision must inspect these outcomes and the complete diagnostics; numerical "
+        "criteria alone are insufficient.", "",
         "Final errors are close in this fixed, well-behaved geometry; the data do "
         "not establish general estimator superiority. BLS-LM/SRIF estimate an initial "
         "state using the complete arc; the UKF filters sequentially. Only their "

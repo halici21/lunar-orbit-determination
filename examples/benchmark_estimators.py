@@ -116,7 +116,8 @@ def run_trial(seed, noise_scale, plan, base, output):
             arrays[key + "_final_covariance"] = covariance
             row["diagnostics"] = diagnostics(whitened)
         except Exception as exc:
-            row.update(failure=f"{type(exc).__name__}: {exc}", runtime_s=perf_counter() - started,
+            row.update(success=False, solver_terminated=False,
+                       failure=f"{type(exc).__name__}: {exc}", runtime_s=perf_counter() - started,
                        stop_reason="Exception")
         rows.append(row)
     assert input_hash == hashlib.sha256(b"".join(x.tobytes() for x in (times, truth, obs, initial, prior))).hexdigest()
