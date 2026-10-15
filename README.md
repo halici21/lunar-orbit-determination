@@ -16,6 +16,9 @@ measurement extensions have individual qualification limits.
 
 ![Desktop mission view](docs/images/desktop-mission.png)
 
+[Watch the 60-second desktop walkthrough](docs/media/desktop/desktop-walkthrough.mp4)
+or [run the data-free desktop tutorial](docs/tutorials/desktop.md).
+
 | Build experiments | Fit orbital states | Inspect the evidence |
 |---|---|---|
 | Dynamics, tracking geometry and seeded observations | BLS-LM, SRIF and SR-UKF within their supported profiles | Residuals, recorded comparisons and traceable study artifacts |
@@ -28,7 +31,17 @@ recorded station visibility. This is a one-seed, same-model demonstration;
 scientific qualification is stated separately in the
 [support matrix](docs/validation/support-matrix.md).
 
+The [three-estimator comparison](docs/research/paired-benchmark.md) reports
+64 paired synthetic trials, error distributions, solver stops, covariance
+diagnostics and complete raw inputs under a predeclared design.
+
 ## Install
+
+**Windows without a Python installation:** download the named
+`windows-x64-portable.zip` asset from [Releases](https://github.com/halici21/lunar-orbit-determination/releases),
+extract it completely to a writable directory, and open `LunarOD.cmd`.
+See the [desktop guide](docs/tutorials/desktop.md) for the built-in tutorial and
+external scientific data setup.
 
 The reference environment is Windows x86_64 and Python 3.13.2. Core package
 metadata permits Python 3.10+, but other versions/platforms are not covered by
@@ -43,6 +56,10 @@ py -3.13 -m venv .venv
 For library-only use, install with `python -m pip install -e .` in your virtual
 environment; add `-r requirements/dev.txt` for development. The import name is
 `lunar_od`. No `PYTHONPATH` override is needed.
+
+Library-only wheel imports, analytic propagation and kernel-independent
+regressions are checked on Windows and Linux with Python 3.10–3.13.
+This platform matrix is separate from desktop and kernel-backed qualification.
 
 On Windows, `setup_windows.cmd` installs the pinned environment and editable
 package; `launch_lunar_od.cmd` starts the desktop app. See the

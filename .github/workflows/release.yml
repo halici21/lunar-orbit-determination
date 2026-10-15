@@ -1,0 +1,94 @@
+name: Release qualification
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'tools/*release*.py'
+      - 'tools/*portable*.py'
+      - 'desktop_app/**'
+      - 'src/**'
+      - 'examples/**'
+      - 'fixtures/**'
+      - 'tools/check_library_install.py'
+      - 'tools/check_repository.py'
+      - 'tools/run_public_checks.py'
+      - 'requirements/**'
+      - 'pyproject.toml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Release / build and qualify
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13.2'
+          cache: pip
+      - name: Validate tagged release belongs to main
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          $expectedTag = 'v' + (python -c "import sys; sys.path.insert(0,'tools'); from prepare_release import release_version; print(release_version())")
+          if ($env:RELEASE_TAG -ne $expectedTag) { throw 'Tag and package versions disagree' }
+          git merge-base --is-ancestor HEAD origin/main
+          if ($LASTEXITCODE -ne 0) { throw 'Release source is not merged into main' }
+      - run: python -m pip install -r requirements/windows.txt -r requirements/release.txt
+      - run: python -m pip install -e .
+      - run: python tools/prepare_release.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: qualified-release
+          path: outputs/qualified-release/*
+          if-no-files-found: error
+          retention-days: 14
+  publish:
+    name: Release / publish verified assets
+    if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: qualified-release
+          path: assets
+      - name: Check digests and publish immutable alpha assets
+        working-directory: assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          sha256sum --check SHA256SUMS
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'Release already exists; refusing to replace assets.' >&2
+            exit 1
+          fi
+          python - <<'PY'
+          import glob, json
+          from pathlib import Path
+          report = json.loads(Path(glob.glob('*-verification.json')[0]).read_text())
+          assert report['portable']['passed'] is True
+          Path('release-notes.md').write_text(
+              'Qualified source, scientific library wheel and Python-bundled Windows x64 portable desktop.\n\n'
+              + 'Source commit: `' + report['source_commit'] + '`.\n\n'
+              + 'Extract the entire portable ZIP to a writable folder and run LunarOD.cmd. '
+              + 'The synthetic tutorial needs no downloads; SPICE scenarios need separately configured kernels.\n\n'
+              + 'See the verification JSON and SHA256SUMS for exact inputs, checks and asset identities. '
+              + 'This is an unsigned alpha research preview. No DOI is assigned.\n')
+          PY
+          gh release create "$RELEASE_TAG" --verify-tag --prerelease --title "$RELEASE_TAG" --notes-file release-notes.md ./*.zip ./*.whl ./*-verification.json SHA256SUMS

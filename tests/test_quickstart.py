@@ -5,6 +5,16 @@ import numpy as np
 from examples.quickstart_od import CONFIG, build_case, run
 
 
+def test_source_identity_normalizes_equivalent_file_paths(monkeypatch):
+    from examples import quickstart_od
+    monkeypatch.chdir(quickstart_od.ROOT)
+    # __file__ may retain a relative/Windows short alias while ROOT is resolved.
+    monkeypatch.setattr(quickstart_od, "__file__", "examples/quickstart_od.py")
+    identity = quickstart_od.source_identity()
+    assert "examples/quickstart_od.py" in identity["source_sha256"]
+    assert identity["source_sha256"]["examples/quickstart_od.py"] == quickstart_od.sha256(quickstart_od.ROOT / "examples/quickstart_od.py")
+
+
 def test_quickstart_noise_is_seeded_and_shared():
     config = json.loads(CONFIG.read_text())
     first = build_case(config)[3]

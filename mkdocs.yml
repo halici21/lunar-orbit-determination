@@ -12,7 +12,9 @@ theme:
 nav:
   - Overview: index.md
   - Quickstart: quickstart.md
+  - Desktop walkthrough: desktop.md
   - Results gallery: results.md
+  - Estimator comparison: benchmark.md
   - Support matrix: support.md
   - Theory: theory.md
   - Validation: validation.md

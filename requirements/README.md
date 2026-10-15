@@ -11,6 +11,7 @@ Existing `pip install -r requirements.txt` and `pip install -e .` commands work.
 | [Development](dev.txt) | Core, pytest and optional Qt test helpers | `python -m pip install -r requirements/dev.txt` |
 | [Documentation](docs.txt) | MkDocs only; no scientific runtime | `python -m pip install -r requirements/docs.txt` |
 | [Windows reference](windows.txt) | Exact validated scientific/desktop versions | `python -m pip install -r requirements/windows.txt` |
+| [Release tooling](release.txt) | Build frontend and recording encoder; add to the Windows build environment | `python -m pip install -r requirements/release.txt` |
 | [Desktop additions](../desktop_app/requirements_desktop.txt) | Application dependencies above core | `python -m pip install -r desktop_app/requirements_desktop.txt` |
 
 After dependency installation, install the library with `python -m pip install -e .`.

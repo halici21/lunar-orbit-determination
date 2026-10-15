@@ -61,6 +61,14 @@ def main() -> int:
         source = json.loads((gallery / 'visibility-source.json').read_text(encoding='utf-8'))
         if hashlib.sha256((ROOT / source['source']).read_bytes()).hexdigest() != source['source_sha256']:
             errors.append('Curated visibility fixture identity changed')
+    for folder, record in ((ROOT / 'docs/figures/benchmark', 'published.json'),
+                           (ROOT / 'docs/media/desktop', 'recording.json')):
+        if folder.is_dir():
+            receipt = json.loads((folder / record).read_text(encoding='utf-8'))
+            for name, expected in receipt['artifact_sha256'].items():
+                path = folder / name
+                if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+                    errors.append(f'Curated evidence changed: {path.relative_to(ROOT)}')
     print(f'{len(manifest["files"])} migrated paths; {preserved} preserved byte identities; '
           f'{len(documents)} documents / {link_count} local links checked.')
     for error in errors:

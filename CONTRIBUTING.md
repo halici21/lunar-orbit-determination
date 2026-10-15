@@ -1,5 +1,8 @@
 # Contributing
 
+See the [maintenance and verification tiers](docs/development/maintenance.md)
+for dependency-update review, the library platform matrix and release gates.
+
 Use main as the current development base. Keep changes focused and describe
 their purpose, affected behavior, commands run and required external data.
 Use a small pull request for review.

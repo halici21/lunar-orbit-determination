@@ -1,0 +1,62 @@
+name: Library qualification
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  library:
+    name: Library / ${{ matrix.os }} / Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+        python: ['3.10', '3.11', '3.12', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      MPLBACKEND: Agg
+      LUNAR_OD_KERNEL_DIR: ${{ github.workspace }}/outputs/no-kernels
+      LUNAR_OD_CAMPAIGN_ROOT: ${{ github.workspace }}/outputs/no-campaign
+      LUNAR_OD_GRAVITY_ROOT: ${{ github.workspace }}/outputs/no-gravity
+      LUNAR_OD_PROJECT_ROOT: ${{ github.workspace }}/outputs/no-project
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Build and install library wheel
+        shell: bash
+        run: |
+          python -m pip wheel --no-deps . --wheel-dir outputs/wheels
+          python -m pip install outputs/wheels/*.whl 'pytest>=8'
+          python -m pip check
+      - name: Check installed wheel outside checkout
+        shell: bash
+        run: |
+          cp tools/check_library_install.py "$RUNNER_TEMP/check_library_install.py"
+          cd "$RUNNER_TEMP"
+          python check_library_install.py
+      - name: Kernel-independent library regression
+        run: python tools/run_library_checks.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: library-${{ matrix.os }}-py${{ matrix.python }}
+          path: outputs/library.xml
+          retention-days: 14
+  qualification:
+    name: Library / qualification
+    needs: library
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every platform and Python job
+        env:
+          MATRIX_RESULT: ${{ needs.library.result }}
+        run: test "$MATRIX_RESULT" = success

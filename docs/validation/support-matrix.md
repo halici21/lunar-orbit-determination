@@ -13,6 +13,7 @@ linked evidence for exact assumptions, profiles and external inputs.
 | SPICE geometry, visibility and frames | Ephemeris / station pipeline | External documented SPICE kernels | [Windows data setup](../windows-quickstart.md), [frame tests](../../tests/test_frame_spice_validation.py); public data-free CI does not qualify every kernel-backed campaign |
 | High-degree gravity / SRP solve-for / field-error studies | Study-specific paths | External gravity data plus each study's saved configuration | [Authoritative status](../../studies/phase17/reports/phase17_authoritative_status.md), [defect ledger](../../studies/phase17/reports/phase17_harden_defect_ledger.md); uncertainty values and superseded results must be checked there |
 | Native desktop workspace | PyQt5 / Windows reference | Python 3.13.2, validated dependencies; kernels for scientific runs | [Public verification](verification.md), [desktop workflow](../../desktop_app/RESULT_WORKFLOW.md); process completion and estimator convergence are separate |
+| Windows portable desktop | Bundled CPython / PyQt5 / scientific backend | Windows x64; writable extracted directory | [Portable qualification](../../tools/qualify_windows_portable.py), [release gate](../development/releases.md); imports, child processes, cancellation, tutorial and shutdown; external kernels remain separate |
 
 ## Verification levels
 
@@ -21,5 +22,28 @@ linked evidence for exact assumptions, profiles and external inputs.
 - **Research qualification:** the exact assumptions and recorded outcomes of each study.
 - **External / operational validation:** not established by passing the above checks.
 
-Core package metadata permits Python 3.10+, but the reference qualification is
-Windows x64 / Python 3.13.2. A supported metadata range is not a tested platform matrix.
+## Library platform matrix
+
+[Library qualification](../../.github/workflows/library.yml) builds a wheel,
+checks every package import outside the checkout, compares propagation with an
+analytic circular orbit, checks dependency consistency and runs the
+[kernel-independent regression tier](../../tools/run_library_checks.py).
+
+| OS runner | Python versions | Scope |
+|---|---|---|
+| Ubuntu 24.04 x64 | 3.10, 3.11, 3.12, 3.13 | Scientific library wheel and data-free regressions |
+| Windows Server 2022 x64 | 3.10, 3.11, 3.12, 3.13 | Scientific library wheel and data-free regressions |
+| Windows desktop reference | 3.13.2 x64 | Pinned source/portable desktop checks |
+
+The library matrix resolves dependencies compatible with each Python version;
+it does not assert identical floating-point outputs across different dependency
+versions. Four explicitly named integration cases that unconditionally load
+external kernels belong to the `--with-kernels` tier, not the data-free matrix.
+Other existing kernel-dependent cases may report explicit skips.
+macOS and Python 3.14+ remain unqualified here. Package metadata's Python 3.10+
+range does not expand this tested matrix or desktop qualification.
+
+The [paired estimator experiment](../research/paired-benchmark.md) supplies a
+separate bounded scientific comparison: 32 seeds per noise block, Level-0 truth,
+matched priors and full failure/termination reporting. It does not qualify
+external frames, real visibility or mission performance.

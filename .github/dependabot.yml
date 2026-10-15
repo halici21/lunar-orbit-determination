@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+    groups:
+      action-updates:
+        patterns: ['*']
+  - package-ecosystem: pip
+    directories: ['/', '/requirements', '/desktop_app']
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      documentation-and-development:
+        patterns: [mkdocs, pytest, pytest-qt, build, packaging, setuptools]
+      scientific-and-desktop:
+        patterns: ['*']
+    # Every update is reviewed and tested. No automatic merge of scientific pins.

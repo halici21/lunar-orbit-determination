@@ -166,6 +166,9 @@ class MainWindow(QMainWindow):
         self._build_nav()
         self._build_status_bar()
         self._load_pages()
+        tutorial_menu = self.menuBar().addMenu("Örnek")
+        tutorial_action = tutorial_menu.addAction("Verisiz sentetik eğitimi başlat")
+        tutorial_action.triggered.connect(self.start_tutorial)
         self._restore_geometry()
         active = self._workspace_session.get("active", "mission")
         self.navigate(active if active in ("mission", "console", "comparison", "archive") else "mission")
@@ -441,6 +444,22 @@ class MainWindow(QMainWindow):
             mission.run_label.setText("Koşu yükleniyor… Önceki görüntü yeni kaynak doğrulanana kadar korunur.")
         if hasattr(console, "open_result"):
             console.open_folder(path) if path.is_dir() else console.open_result(path)
+
+    def start_tutorial(self) -> None:
+        """Start a data-free educational run through the normal process monitor."""
+        import uuid
+        from services.project_paths import RESULTS_DIR
+        page = self._ensure_page("run_monitor")
+        if page._worker.is_running:
+            self.navigate("run_monitor")
+            return
+        run_id = uuid.uuid4().hex
+        folder = RESULTS_DIR / "tutorial" / run_id[:12]
+        folder.mkdir(parents=True, exist_ok=False)
+        self.navigate("run_monitor")
+        page.preset_script(str(DESKTOP_DIR.parent / "examples/desktop_tutorial.py"),
+            extra_args=["--output", str(folder), "--run-id", run_id], auto_start=True,
+            job_context={"folder": str(folder), "run_id": run_id})
 
     def run_desktop_job(self, job_path: "Path", folder: "Path", run_id: str) -> None:
         self.navigate("run_monitor")
