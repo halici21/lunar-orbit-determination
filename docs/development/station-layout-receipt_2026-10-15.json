@@ -1,0 +1,150 @@
+{
+  "base_commit": "f27db9da3c58aef413737bd4da5be14dcd8a7e15",
+  "local_junit": {
+    "targeted": {
+      "tests": "45",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "8.718",
+      "timestamp": "2026-10-15T16:39:01.739443+03:00",
+      "sha256": "932CFA1085AE8FF7A5BEAFF8473C12C126C13C5CF505F6D4A325898AEB742E70",
+      "named_cases": 45
+    },
+    "public": {
+      "tests": "279",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "36.741",
+      "timestamp": "2026-10-15T16:39:45.022065+03:00",
+      "sha256": "77CAEBD9A2B451D58A4189EAA28D0F8586EE82B61A845B831FA726EE1E816803",
+      "named_cases": 279
+    },
+    "full": {
+      "tests": "1869",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "29",
+      "time": "482.450",
+      "timestamp": "2026-10-15T16:39:56.578562+03:00",
+      "sha256": "17A046E0486C63500B3656861938B3A2BFD8A02174A03B800CDFBC832043A73F",
+      "named_cases": 1723
+    }
+  },
+  "station_catalogue": [
+    {
+      "theme": "modern",
+      "dpr": 1.0,
+      "catalogue_count": 15,
+      "filtered_export_count": 3,
+      "exported_names": [
+        "Canberra DSN",
+        "Goldstone DSN",
+        "Madrid DSN"
+      ],
+      "empty_filter_blocks_export": true,
+      "keyboard_find_verified": true,
+      "small_controls_reachable": true,
+      "catalogue_source_hash_unchanged": true,
+      "matplotlib_map_present": true,
+      "page_horizontal_scroll_maximum": 0,
+      "map_pointer_selection_verified": true,
+      "canvas_reused_on_resize": true,
+      "all_seven_columns_retained": true,
+      "wide_narrow_wide_selection_retained": true
+    },
+    {
+      "theme": "orchid",
+      "dpr": 2.0,
+      "catalogue_count": 15,
+      "filtered_export_count": 3,
+      "exported_names": [
+        "Canberra DSN",
+        "Goldstone DSN",
+        "Madrid DSN"
+      ],
+      "empty_filter_blocks_export": true,
+      "keyboard_find_verified": true,
+      "small_controls_reachable": true,
+      "catalogue_source_hash_unchanged": true,
+      "matplotlib_map_present": true,
+      "page_horizontal_scroll_maximum": 0,
+      "map_pointer_selection_verified": true,
+      "canvas_reused_on_resize": true,
+      "all_seven_columns_retained": true,
+      "wide_narrow_wide_selection_retained": true
+    }
+  ],
+  "saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "width": 760,
+    "height": 420,
+    "controls_reachable": true,
+    "horizontal_scroll_maximum": 0
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "table_scrolling": "All seven columns retained; use the table horizontal scrollbar for additional columns in a narrow viewport."
+}

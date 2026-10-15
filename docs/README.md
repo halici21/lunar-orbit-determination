@@ -1,6 +1,7 @@
 # Documentation
 
 - [Install and use on Windows (Türkçe)](windows-quickstart.md)
+- [Station catalogue responsive layout](development/station-layout_2026-10-15.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)

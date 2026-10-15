@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QHeaderView, QPushButton, QLineEdit, QLabel, QDialog, QFormLayout,
     QDoubleSpinBox, QDialogButtonBox, QMessageBox, QComboBox, QInputDialog,
-    QFileDialog, QShortcut, QSizePolicy,
+    QFileDialog, QShortcut, QSizePolicy, QBoxLayout,
 )
 from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QColor, QKeySequence
@@ -138,6 +138,7 @@ def _build_map(stations: list[dict]):
 
     ax.set_xlim(-180, 180)
     ax.set_ylim(-90, 90)
+    ax.set_aspect("equal", adjustable="box")
     ax.set_xticks(range(-180, 181, 30))
     ax.set_yticks(range(-90, 91, 30))
     ax.tick_params(labelsize=8)
@@ -282,10 +283,22 @@ class StationsController(QWidget):
 
         # Toolbar: search + action buttons
         toolbar = QWidget(self)
-        toolbar.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        tb_lay = QHBoxLayout(toolbar)
+        # The outer row must be allowed to shrink before its groups can stack.
+        toolbar.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
+        self._toolbar = toolbar
+        tb_lay = QBoxLayout(QBoxLayout.LeftToRight, toolbar)
+        self._toolbar_layout = tb_lay
         tb_lay.setContentsMargins(0, 4, 0, 4)
         tb_lay.setSpacing(8)
+        self._catalogue_actions = QWidget(toolbar)
+        self._selection_actions = QWidget(toolbar)
+        catalogue_lay = QHBoxLayout(self._catalogue_actions)
+        selection_lay = QHBoxLayout(self._selection_actions)
+        for layout in (catalogue_lay, selection_lay):
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.setSpacing(8)
+        tb_lay.addWidget(self._catalogue_actions, 1)
+        tb_lay.addWidget(self._selection_actions, 1)
 
         self._search = QLineEdit()
         self._search.setPlaceholderText("İstasyon adı / ağ kodu…")
@@ -298,35 +311,36 @@ class StationsController(QWidget):
         self._find_shortcut = QShortcut(QKeySequence.Find, self)
         self._find_shortcut.setContext(Qt.WidgetWithChildrenShortcut)
         self._find_shortcut.activated.connect(self._focus_search)
-        tb_lay.addWidget(self._search)
-        tb_lay.addStretch()
+        catalogue_lay.addWidget(self._search)
+        catalogue_lay.addStretch()
 
         lbl = QLabel("Selection:")
         lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
-        tb_lay.addWidget(lbl)
+        selection_lay.addWidget(lbl)
 
         self._btn_save_net = QPushButton("Save as Network Preset")
         self._btn_save_net.setStyleSheet(_BTN_STYLE)
         self._btn_save_net.setEnabled(False)
         self._btn_save_net.clicked.connect(self._save_network_preset)
-        tb_lay.addWidget(self._btn_save_net)
+        selection_lay.addWidget(self._btn_save_net)
+        selection_lay.addStretch()
 
         self._btn_export = QPushButton("Export CSV")
         self._btn_export.setStyleSheet(_BTN_STYLE)
         self._btn_export.setToolTip("Export displayed stations to CSV")
         self._btn_export.clicked.connect(self._export_csv)
-        tb_lay.addWidget(self._btn_export)
+        catalogue_lay.addWidget(self._btn_export)
 
         self._btn_add = QPushButton("Add Station")
         self._btn_add.setStyleSheet(_BTN_STYLE)
         self._btn_add.clicked.connect(self._add_station)
-        tb_lay.addWidget(self._btn_add)
+        catalogue_lay.addWidget(self._btn_add)
 
         self._btn_edit = QPushButton("Edit")
         self._btn_edit.setStyleSheet(_BTN_STYLE)
         self._btn_edit.setEnabled(False)
         self._btn_edit.clicked.connect(self._edit_station)
-        tb_lay.addWidget(self._btn_edit)
+        selection_lay.addWidget(self._btn_edit)
 
         self._btn_delete = QPushButton("Delete")
         self._btn_delete.setStyleSheet(
@@ -335,7 +349,7 @@ class StationsController(QWidget):
         )
         self._btn_delete.setEnabled(False)
         self._btn_delete.clicked.connect(self._delete_station)
-        tb_lay.addWidget(self._btn_delete)
+        selection_lay.addWidget(self._btn_delete)
 
         # Insert toolbar above table
         self.mainLayout.insertWidget(1, toolbar)
@@ -353,6 +367,20 @@ class StationsController(QWidget):
 
     def on_shown(self) -> None:
         pass
+
+    def resizeEvent(self, event) -> None:
+        if hasattr(self, "_toolbar_layout"):
+            margins = self.mainLayout.contentsMargins()
+            available = self.width() - margins.left() - margins.right()
+            row_width = (self._catalogue_actions.minimumSizeHint().width()
+                         + self._selection_actions.minimumSizeHint().width()
+                         + self._toolbar_layout.spacing())
+            direction = (QBoxLayout.TopToBottom if available < row_width
+                         else QBoxLayout.LeftToRight)
+            if self._toolbar_layout.direction() != direction:
+                self._toolbar_layout.setDirection(direction)
+            self.mapCanvasHolder.setFixedHeight(max(240, min(440, available // 2 + 40)))
+        super().resizeEvent(event)
 
     # ------------------------------------------------------------------
     def _build_map_widget(self, stations: list[dict]) -> None:

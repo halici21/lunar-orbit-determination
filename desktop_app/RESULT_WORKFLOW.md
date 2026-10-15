@@ -20,6 +20,15 @@ all filtered rows, independent of the selected rows, and is disabled for an
 empty result. Its map continues to show the full catalogue, as the search help
 states. This catalogue filter does not change a scenario or recorded-run geometry.
 
+Catalogue-wide actions (search/export/add) and selection actions (network preset,
+edit/delete) stack into two rows when they cannot fit side by side. The outer
+catalogue page fits the 760×420 minimum window without horizontal scrolling;
+vertical scrolling and the table's own horizontal/vertical scrollbars remain.
+All seven columns and their units remain available. Resizing preserves the
+query, selection and existing Matplotlib canvas. The catalogue map uses equal
+degree scales and fits a 2:1 world rectangle; this equirectangular projection
+does not preserve distances or areas on the Earth.
+
 ## Mission overview
 
 New installations open **Görev görünümü**. Saved safe workspace pages remain

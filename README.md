@@ -73,6 +73,9 @@ See the [architecture and artifact policy](docs/development/repository-layout.md
 and [Phase 17 guide](studies/phase17/README.md) for reproduction and historical
 path resolution. Local generated runs go to ignored `results/` or `outputs/`.
 
+The station catalogue adapts its actions and map to narrow windows; see the
+[layout guide](docs/development/station-layout_2026-10-15.md).
+
 ## Validation
 
 ```powershell

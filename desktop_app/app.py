@@ -363,9 +363,9 @@ class MainWindow(QMainWindow):
             other.setSizePolicy(other._workspace_size_policy if other is page else
                                 QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored))
         self.pageStack.setCurrentWidget(page)
-        # Mission plots can stack vertically; the other scientific forms retain
+        # Mission plots and catalogue controls can stack; other forms retain
         # their existing scrollable minimum width.
-        self.pageStack.setMinimumWidth(540 if page_id == "mission" else 960)
+        self.pageStack.setMinimumWidth(540 if page_id in {"mission", "stations"} else 960)
         self.pageStack.updateGeometry()
         self.pageScroll.verticalScrollBar().setValue(0)
         self.pageScroll.horizontalScrollBar().setValue(0)

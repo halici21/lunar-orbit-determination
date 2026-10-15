@@ -29,7 +29,11 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest station-catalogue regression](../development/station-filters_2026-10-13.md): 1,803 passed
+[Latest station-layout regression](../development/station-layout_2026-10-15.md): 1,840 passed
+checks, 29 skipped (1,723 named cases and 146 subtest checks), zero failures/errors.
+The 279-case public gate includes all eight station-search/layout cases and all
+35 mission cases.
+[Previous station-search regression](../development/station-filters_2026-10-13.md): 1,803 passed
 checks, 29 skipped (1,686 named cases and 146 subtest checks), zero failures/errors.
 The 275-case public gate includes all four station-search/export cases and all
 35 mission cases.

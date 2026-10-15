@@ -2737,6 +2737,18 @@
       "path": "desktop_app/controllers/analysis_controller.py",
       "original_sha256": "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33",
       "byte_preserved": true
+    },
+    "docs/station-layout_2026-10-15.md": {
+      "path": "docs/development/station-layout_2026-10-15.md",
+      "original_sha256": "2cd858fa2340b4c62380a1e9584f6a49574409084f6d8232a63b4db2eebd054a",
+      "byte_preserved": false,
+      "introduced_at": "6f70e29"
+    },
+    "docs/station-layout-receipt_2026-10-15.json": {
+      "path": "docs/development/station-layout-receipt_2026-10-15.json",
+      "original_sha256": "49cbc7cf3201851e1685b89b0c1ce9271dab810ff2bc1bd19545bafc1b5a3b1b",
+      "byte_preserved": true,
+      "introduced_at": "6f70e29"
     }
   }
 }

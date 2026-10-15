@@ -9,6 +9,9 @@
 - Add citation metadata, artifact policy and repository integrity checks.
 
 
+- Station catalogue actions stack into two groups on narrow windows, keeping
+  every action accessible without horizontal page scrolling. The catalogue map
+  resizes with the viewport and preserves equal longitude/latitude degree scales.
 - Station catalogue search now reports visible/total and selected rows, explains
   empty results and supports Ctrl+F plus a clear button. CSV exports only the
   filtered table; an empty filter cannot export hidden catalogue entries.
