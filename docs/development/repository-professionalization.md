@@ -61,7 +61,53 @@ Result: **1,690 passed, 29 skipped, 146 subtests passed**, no failures/errors,
 Historical headline check counts should not be compared without separating
 pytest items from subtests.
 
-Post-migration verification is recorded below after the complete checks.
+The current-main station-layout commit `6f70e29` arrived during the migration.
+It was merged into the migration without changing its desktop implementation
+or test content. Its new report and receipt were placed in development docs.
+The initially modified canonical-main files had been independently committed
+and pushed by their owning session before this integration; no dirty work was
+staged, reset or overwritten by the migration.
+
+Post-migration validation used a fresh local clone at `58caeff`, an actual
+`tools/setup_windows.ps1` installation, and the same external-data overrides.
+The source/runtime/test changes were final at that commit; subsequent changes
+record this evidence and broaden documentation checking only.
+
+| Check | Result |
+| --- | --- |
+| Full clean-clone regression | **1,694 passed, 146 subtests passed, 29 skipped**, no failures/errors, 494.91 s |
+| Discovery identity comparison | No baseline test identities removed; four station-layout cases added by `6f70e29` |
+| Public gate with isolated external inputs | **279 passed**, no failures/errors/skips |
+| Scientific preservation | 375 byte-identity gates; all 991 original tracked files retained |
+| Numeric-literal audit against integrated main | No scientific or test numeric literals changed by the migration |
+| Repository documentation checker | 86 current Markdown documents, 141 local links, all valid |
+| Packaging | Editable install and wheel build pass; all 55 library modules present; no study/app modules in wheel |
+| Independent wheel environment | Installed wheel imports outside the source checkout; `pip check` passes |
+| Development entry points | Example schema, minimal geometry example and Phase 17 CLI help pass |
+| Source hygiene | Compileall and Git whitespace checks pass; generated data/caches remain ignored |
+| Dependency graph | Refreshed successfully as an ignored per-worktree discovery artifact |
+
+Commands included `python -m pytest -p tests.desktop_preferences -ra`,
+`python tools/run_public_checks.py`, `python tools/check_repository.py`,
+`python -m pip wheel --no-deps .`, `python -m pip check`, and
+`python -m compileall -q src examples studies/phase17/scripts tools tests`.
+The [machine-readable verification receipt](repository-professionalization-verification.json)
+records exact counts, runtime versions, test-identity differences and JUnit
+SHA-256 values. JUnit aggregate counts include subtests; they are not additional
+named pytest items.
+
+The validation repairs changed path lookup and historical/current identity
+resolution only. The first migration run exposed stale package-root lookups
+and an external snapshot lookup that would have introduced four extra skips;
+those were corrected. The final clean run retains the baseline's 29 skips.
+No numerical expectation, tolerance or scientific decision was relaxed.
+
+**Scientific behavior expected: NONE changed.** Numerical implementation and
+scientific-result impact are **NONE**. Existing synthetic qualification tests
+passed; no long campaign, new baseline, Monte Carlo study or real-mission
+accuracy claim was introduced. Historical frozen-source comments, archives
+and immutable machine-readable records retain their original paths through
+the migration manifest rather than receiving new scientific identities.
 
 ## Deferred scope
 

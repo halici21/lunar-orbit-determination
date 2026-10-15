@@ -1,5 +1,20 @@
 # Lunar OD — Project Instructions
 
+## Current repository layout (2026-10-15)
+
+The importable package is `src/lunar_od/`; install it with `python -m pip
+install -e .` before running tests or drivers. Phase 17 scripts, configs,
+reports, results and manifests live under `studies/phase17/`. Durable docs are
+grouped by purpose under `docs/`. The desktop application's location remains
+`desktop_app/` while other worktrees carry active desktop work.
+
+Use [the current architecture guide](docs/development/repository-layout.md) and
+[path manifest](docs/development/path-migration.json) when a historical report,
+source comment or synchronized skill reference names an earlier location.
+Historical source identities and archived records keep their original keys.
+Skill copies were not edited across other sessions' worktrees during this
+migration; their older location examples require this translation.
+
 ## Mandatory Skill Discovery and Routing
 
 Before analyzing, editing, or validating project code, evaluate all available

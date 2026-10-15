@@ -28,7 +28,7 @@ def main() -> int:
     # Archived snapshots and synchronized historical skill copies are immutable
     # records, not current navigation. Their paths resolve through the manifest.
     documents = [ROOT / name for name in ('README.md', 'CONTRIBUTING.md', 'CHANGELOG.md')]
-    for folder in ('docs', 'studies', 'data', 'tests'):
+    for folder in ('docs', 'studies', 'data', 'tests', 'examples', 'desktop_app'):
         documents.extend((ROOT / folder).rglob('*.md'))
     link_count = 0
     pattern = re.compile(r'(?<![\w])!?\[[^\]\n]*\]\(([^\s)]+)\)')
