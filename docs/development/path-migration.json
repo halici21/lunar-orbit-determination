@@ -2749,6 +2749,108 @@
       "original_sha256": "49cbc7cf3201851e1685b89b0c1ce9271dab810ff2bc1bd19545bafc1b5a3b1b",
       "byte_preserved": true,
       "introduced_at": "6f70e29"
+    },
+    "artifacts/phase17_fe_cells/CANON_k0.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/CANON_k0.json",
+      "original_sha256": "1a356104755be178d9ca0e0fb50f2d010b7cca4f07b876e0b8e66df3280d9f9f",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/CANON_k12.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/CANON_k12.json",
+      "original_sha256": "350a7ba4e408a599250a9dda63cbf9e12d5ef9f40f7e690f40a36afe1c29d4e6",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O1_LOW_BETA_ECLIPSE_RICH_k0.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O1_LOW_BETA_ECLIPSE_RICH_k0.json",
+      "original_sha256": "f9a3b71ea883ec1b3f414fb729f3149bc4f6cd44bf60b1dfed604ff56fa4c067",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O1_LOW_BETA_ECLIPSE_RICH_k12.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O1_LOW_BETA_ECLIPSE_RICH_k12.json",
+      "original_sha256": "5709558dad04eed96a29867b3146227f748a2328d15216af30e0b91e9ba1e21c",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O2_FULL_SUN_HIGH_BETA_k0.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O2_FULL_SUN_HIGH_BETA_k0.json",
+      "original_sha256": "5486dbdfcf85cb797749203220621278bdc9c48bf19e9377ae57fff02de4a671",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O2_FULL_SUN_HIGH_BETA_k12.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O2_FULL_SUN_HIGH_BETA_k12.json",
+      "original_sha256": "1e895fd918ad88abc380e7023814357d1a8cee691296db18971d4ea39fa70b68",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O3_HIGH_ALTITUDE_500KM_k0.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O3_HIGH_ALTITUDE_500KM_k0.json",
+      "original_sha256": "302dae12b8103097585a945722362552b3cbf2cdc32eac8711abb0c4e24b13ad",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O3_HIGH_ALTITUDE_500KM_k12.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O3_HIGH_ALTITUDE_500KM_k12.json",
+      "original_sha256": "6cf618104de4667983d6e9e4f2d9d46ed77f7de96052ce1adc6072171a997076",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O5_FAVOURABLE_GEO_MAX_FPERP_k0.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O5_FAVOURABLE_GEO_MAX_FPERP_k0.json",
+      "original_sha256": "6c234e6f55504fffad974af64c1345d231e53fb5e3ef5d4f11707f8f45e76e89",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_cells/O5_FAVOURABLE_GEO_MAX_FPERP_k12.json": {
+      "path": "studies/phase17/results/phase17_fe_cells/O5_FAVOURABLE_GEO_MAX_FPERP_k12.json",
+      "original_sha256": "638c49cf84662b8cd61a13971e5fd3687cabe5abb947fdf304d9fe80eb5749eb",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_gate_v1.json": {
+      "path": "studies/phase17/results/phase17_fe_gate_v1.json",
+      "original_sha256": "c533838ea10863b95acd25f00863ecb4e96fbde0a6f4e635df7f06007b0565dd",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_gate_v3.json": {
+      "path": "studies/phase17/results/phase17_fe_gate_v3.json",
+      "original_sha256": "e2fd0d62ff7f28dd4dd407d383e9e5d73e9bbcfc8e6f579a15f8e2ea5c7153a4",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_fe_predeclaration.json",
+      "original_sha256": "f3b6c99047f73e4957875ed6d0b563d0cac5f57ced4e3ade9515286098fa68ca",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fe_summary.json": {
+      "path": "studies/phase17/results/phase17_fe_summary.json",
+      "original_sha256": "a34165decc365038c066c8c1371cb6491f2c34bbacca7c65f5c8929f8b7f8009",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "artifacts/phase17_fep_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_fep_predeclaration.json",
+      "original_sha256": "6f078749e38faff18cc29ae682b438afa05348b6b50e3e6608f4828a896a4163",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
+    },
+    "docs/phase17_fe_field_error_parameterisation_linear.md": {
+      "path": "studies/phase17/reports/phase17_fe_field_error_parameterisation_linear.md",
+      "original_sha256": "5bd79d8db92ad2f417f1e13e619c365b372bb0b8934facc52166367c4d869c32",
+      "byte_preserved": false,
+      "introduced_at": "3f46c6c"
+    },
+    "examples/phase17_fe_linear.py": {
+      "path": "studies/phase17/scripts/phase17_fe_linear.py",
+      "original_sha256": "81b3a5f6659bd8f0643ec49864793fa78e24f079d8e2c2cd8ce3013119b952b2",
+      "byte_preserved": true,
+      "introduced_at": "3f46c6c"
     }
   }
 }

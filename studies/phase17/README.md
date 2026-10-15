@@ -18,6 +18,10 @@ Begin with [authoritative status](reports/phase17_authoritative_status.md),
 [defect ledger](reports/phase17_harden_defect_ledger.md). Later qualification
 reports and errata determine which historical conclusions remain current.
 
+The FE-L field-error study includes its committed driver, ten cell records,
+validation gates and report. FE-P currently has a committed predeclaration
+only; no FE-P driver or results are introduced by the branch integration.
+
 ## Reproduce a study
 
 Install the repository with `python -m pip install -e .` and use the validated

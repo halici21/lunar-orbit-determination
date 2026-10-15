@@ -1,0 +1,33 @@
+{
+ "phase": "Phase 17-FE-L - linear study: does a low-degree gravity-field-error parameterisation remove the MM masquerade without destroying the M3 K-variation signal?",
+ "written": "2026-10-15, before any FE number was computed",
+ "motivation": "Phase 17-MM (H_MM_SURVIVES_MASQUERADE): a Moon-fixed field error 0.3 (GRGM1200L - GL1800F) at degree 50, invisible in residuals, produced a false M3 variation (CANON k0, chi2_detect 28.8)",
+ "design": {
+  "cells": "the 10 KP2 cells (5 orbits x k in {0, 12}), HIGH_FIDELITY model trajectory (GL1800F 50x50), constant K0",
+  "base_design": "the KP2 estimator design: x0 with its a priori (PRIOR_SD), M3 K (3 segments), one free bias per Doppler pass; range 5 m, Doppler 1e-4 m/s",
+  "fe_parameters": "fully-normalised coefficient corrections dC_nm (m = 0..n) and dS_nm (m = 1..n), degrees n = 2..N, N in {2, 4, 6} (5, 21, 45 parameters), no prior (data-only)",
+  "fe_partials": "da/dC_nm = the perturbing acceleration of a GL1800F-normalised model whose only nonzero coefficient is C_nm = 1 (the engine is linear in the coefficients, so this is exact), rotation J2000 -> MOON_PA_DE440 at each epoch",
+  "trajectory_columns": "STM convolution S_p(t) = Phi(t) int_0^t Phi^-1 [0; da/dp] dtau (trapezoid on the grid), mapped through the production range / counted-Doppler Jacobians (phase17_kgm_core.evaluate)",
+  "mismatch_signature": "alpha (a_GRGM1200L50 - a_GL1800F50) along the model trajectory, alpha in {0.3, 1}, same convolution"
+ },
+ "metrics_per_cell_and_N": {
+  "fv_chi2": "linear false-variation chi2 (2 dof) of the mismatch signature in the design with the FE columns (N = 0: without them)",
+  "resid_chi2": "chi2 of the part of the mismatch signature the design cannot absorb",
+  "sigma_v_inflation": "max over the 2 variation coordinates of sigma_v(N) / sigma_v(0)",
+  "noncentrality_T1_T2": "v_true^T C_v(N)^-1 v_true for the KP2 truths T1_STEP and T2_MIDDLE (expected chi2_detect of a true variation, noise-free part)",
+  "level_and_state_bias": "alias of the alpha = 0.3 mismatch into the common level (/sigma) and |x0| (m)"
+ },
+ "gates": {
+  "V1_convolution": "HF CANON k0: the convolution column of C22 and of C31 vs (propagation with GL + delta e_p) - (propagation with GL), delta = 1e-7, divided by delta: position-history relative error <= 2e-2",
+  "V2_linear_vs_nonlinear_MM": "reported, not gated: linear N = 0 fv_chi2 for CANON k0 alpha = 0.3 vs the MM nonlinear chi2_detect 28.8 (the nonlinear value carries one noise draw)",
+  "V3_partial_linearity": "sum over coefficients of dC_nm * da/dC_nm reproduces a_GRGM - a_GL truncated to degree N to <= 1e-9 relative at a test point"
+ },
+ "decision": {
+  "SUPPRESSES(N)": "fv_chi2(N, alpha) < 13.82 in every cell for alpha = 0.3 AND alpha = 1",
+  "PRESERVES(N)": "for every (cell, truth) with noncentrality(0) >= 13.82, noncentrality(N) >= 13.82",
+  "FE_RESOLVES_MASQUERADE": "some N satisfies SUPPRESSES and PRESERVES (the nonlinear confirmation is then justified, at the smallest such N)",
+  "FE_SUPPRESSES_BUT_COSTS_VARIATION": "some N suppresses, none also preserves",
+  "FE_DOES_NOT_SUPPRESS": "no N suppresses (mismatch power above degree N, or non-separability)"
+ },
+ "not_claimed": ["the common K level", "a GRAIL error estimate (the field difference is convention-dominated)", "any nonlinear result (this is a linear study)"]
+}
