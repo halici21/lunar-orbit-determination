@@ -50,17 +50,20 @@ def test_explicit_missing_directory_cannot_fall_back(tmp_path, file_only, monkey
     assert len(report["kernels"]) == 10
 
 
-def test_runtime_checks_read_the_relocated_reference_profile(monkeypatch):
-    pins = {}
-    for line in (readiness.ROOT / "requirements/windows.txt").read_text().splitlines():
-        if "==" in line and not line.startswith("#"):
-            name, value = line.split("==", 1)
-            pins[name] = value
+def test_runtime_checks_read_the_relocated_reference_profile(tmp_path, monkeypatch):
+    (tmp_path / "requirements").mkdir()
+    (tmp_path / "requirements/windows.txt").write_text("numpy==2.0.0\n")
+    # A stale file must not override the canonical profile. Sentinel versions
+    # make this an independent path-selection oracle, not a copy of the parser.
+    (tmp_path / "requirements-validated-windows.txt").write_text("numpy==1.0.0\n")
+    monkeypatch.setattr(readiness, "ROOT", tmp_path)
+    monkeypatch.setattr(readiness, "PACKAGES", ("numpy",))
     monkeypatch.setattr(readiness.importlib, "import_module", lambda name: object())
-    monkeypatch.setattr(readiness.importlib.metadata, "version", pins.__getitem__)
+    monkeypatch.setattr(readiness.importlib.metadata, "version", lambda name: "2.0.0")
     checks = readiness._runtime_checks()
-    assert {check["name"] for check in checks[1:]} == set(readiness.PACKAGES)
-    assert all(check["status"] == "ok" for check in checks[1:])
+    assert checks[1]["name"] == "numpy"
+    assert checks[1]["status"] == "ok"
+    assert "referans: 2.0.0" in checks[1]["detail"]
 
 
 def test_empty_kernel_and_directory_named_as_kernel_block_spice(tmp_path, file_only, monkeypatch):
