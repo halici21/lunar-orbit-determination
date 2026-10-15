@@ -1,0 +1,10 @@
+Phase 17 closeout - full-suite verification on a clean tree
+date: 2026-10-12
+tree: detached worktree of fd24147 (committed files only; the shared worktree's uncommitted
+      desktop-app / run_scenario_config edits of another session are NOT included)
+command: python -m pytest tests -q -p no:cacheprovider -rfE   (worktree pytest.ini: addopts -q)
+env: LUNAR_OD_PROJECT_ROOT=<workspace root>; PYTHONPATH=<worktree>;<workspace>/od_covariance_campaign/06_scripts
+interpreter: miniforge3 base (numpy 2.4.3, spiceypy 8.1.0)
+result: exit code 0; 1497 passed, 29 skipped, 0 failed, 0 errors
+        (counted from the progress output; the doubled -q suppressed pytest's final summary line)
+reference: BLS1 clean run 1471 passed / 29 skipped; since then D25, D28, D29 and D27 (+11) tests added

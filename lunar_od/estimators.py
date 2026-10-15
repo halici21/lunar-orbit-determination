@@ -71,6 +71,12 @@ class EstimatorStats:
     k_srp_estimate: float | None = None
     k_srp_prior_status: str | None = None
     k_srp_negative_step_rejections: int = 0
+    #: Phase 17-HARDEN-BLS1: negative-K trials replaced by the K-fixed
+    #: (bound-active) step instead of being discarded.  BLS only.
+    k_srp_bound_active_steps: int = 0
+    #: Phase 17-HARDEN-D27: Gauss-Newton decrement at the returned point,
+    #: evaluated only when BLS-LM exhausts its damping (NaN otherwise).
+    gauss_newton_decrement: float = float("nan")
 
 
 def estimate_position_srif(
@@ -226,6 +232,9 @@ def estimate_position_srif(
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, prior_sqrt_info, has_explicit_prior)
         posterior_information = _position_posterior_information(
             t_pass_s,
             obs_data,
@@ -237,7 +246,7 @@ def estimate_position_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_diag,
             rtol,
             atol,
@@ -255,7 +264,7 @@ def estimate_position_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_sqrt_info,
+            post_prior_sqrt,
             w_diag,
             rtol,
             atol,
@@ -453,6 +462,9 @@ def estimate_range_rate_srif(
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, prior_sqrt_info, has_explicit_prior)
         posterior_information = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
@@ -464,7 +476,7 @@ def estimate_range_rate_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_curr_diag,
             rtol,
             atol,
@@ -482,7 +494,7 @@ def estimate_range_rate_srif(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_sqrt_info,
+            post_prior_sqrt,
             w_curr_diag,
             rtol,
             atol,
@@ -552,55 +564,58 @@ def estimate_position_bls_lm(
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
+    termination_detail = ""
+    gn_decrement = float("nan")
     lambda_damping = float(lambda0)
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
 
-    for iteration in range(1, max_iter + 1):
-        x_dyn_nominal = x_nominal[:nx]
-        b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-
-        x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
+    def _linearize(x_state, r_tol, a_tol):
         x_aug_hist = propagate_augmented_state(
             t_pass_s,
-            x_aug0,
+            np.concatenate([x_state[:nx], _IDENTITY_6_COL]),
             mu_moon_m3_s2,
             mu_earth_m3_s2,
             mu_sun_m3_s2,
             get_earth_pos,
             get_sun_pos,
-            rtol=_atol_r,
-            atol=_atol_a,
+            rtol=r_tol,
+            atol=a_tol,
             j2_moon=j2_moon,
         )
         x_hist = x_aug_hist[:, :6]
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
-        h_nom_aug = _apply_position_bias(h_nom, obs_data, b_nominal, bias_cfg)
+        h_nom_aug = _apply_position_bias(
+            h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
         residual = _position_residual_from_h(obs_data, h_nom_aug)
+        h_initial_state = _position_initial_state_jacobian(
+            obs_data, x_aug_hist, h_tilde, pass_geo
+        )
+        if nb:
+            h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
+        else:
+            h_initial = h_initial_state
+        return h_initial, residual
+
+    for iteration in range(1, max_iter + 1):
+        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
         current_cost = float(np.dot(w_diag * residual, residual))
 
         if iteration == 1:
             best_cost = current_cost
             x_best = x_nominal.copy()
 
-        h_initial_state = _position_initial_state_jacobian(
-            obs_data, x_aug_hist, h_tilde, pass_geo
-        )
-
-        if nb:
-            h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
-        else:
-            h_initial = h_initial_state
-
+        prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
+                            else np.zeros(na))
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
             w_diag,
             scale,
             prior_inv_scaled,
-            scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na),
+            prior_rhs_scaled,
             lambda_damping,
         )
         if singular:
@@ -640,11 +655,20 @@ def estimate_position_bls_lm(
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "DampingLimit"
+                # Phase 17-HARDEN-D27: certify at the caller's tolerance.
+                if (_atol_r, _atol_a) != (rtol, atol):
+                    h_initial, residual = _linearize(x_best, rtol, atol)
+                stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
+                    h_initial, residual, w_diag, scale,
+                    prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled,
+                )
                 break
 
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, None, has_explicit_prior)
         posterior_information = _position_posterior_information(
             t_pass_s,
             obs_data,
@@ -656,7 +680,7 @@ def estimate_position_bls_lm(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_diag,
             rtol,
             atol,
@@ -673,6 +697,8 @@ def estimate_position_bls_lm(
         rank=last_rank,
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 
@@ -736,30 +762,27 @@ def estimate_range_rate_bls_lm(
     last_active_weight_fraction = 1.0
     max_rejected_components = 0
     min_active_weight_fraction = 1.0
+    termination_detail = ""
+    gn_decrement = float("nan")
 
-    for iteration in range(1, max_iter + 1):
-        x_dyn_nominal = x_nominal[:nx]
-        b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-
-        x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
+    def _linearize(x_state, r_tol, a_tol):
+        x_dyn = x_state[:nx]
         x_aug_hist = propagate_augmented_state(
             t_pass_s,
-            x_aug0,
+            np.concatenate([x_dyn, _IDENTITY_6_COL]),
             mu_moon_m3_s2,
             mu_earth_m3_s2,
             mu_sun_m3_s2,
             get_earth_pos,
             get_sun_pos,
-            rtol=_atol_r,
-            atol=_atol_a,
+            rtol=r_tol,
+            atol=a_tol,
             j2_moon=j2_moon,
         )
-
         h_nom, h_initial_state = _range_rate_nominal_and_initial_jacobian(
             t_pass_s,
             obs_data,
-            x_dyn_nominal,
+            x_dyn,
             pass_geo,
             mu_moon_m3_s2,
             mu_earth_m3_s2,
@@ -770,8 +793,13 @@ def estimate_range_rate_bls_lm(
             rtol,
             atol,
         )
-        h_nom_aug = _apply_range_rate_bias(h_nom, obs_data, b_nominal, bias_cfg)
-        residual = _range_rate_residual_from_h(obs_data, h_nom_aug)
+        h_nom_aug = _apply_range_rate_bias(
+            h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
+        return h_initial_state, _range_rate_residual_from_h(obs_data, h_nom_aug)
+
+    for iteration in range(1, max_iter + 1):
+        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        h_initial_state, residual = _linearize(x_nominal, _atol_r, _atol_a)
         w_curr_diag, last_rejected_components, last_active_weight_fraction = _robust_weight_diagonal(
             w_diag,
             residual,
@@ -793,13 +821,15 @@ def estimate_range_rate_bls_lm(
         else:
             h_initial = h_initial_state
 
+        prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
+                            else np.zeros(na))
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
             w_curr_diag,
             scale,
             prior_inv_scaled,
-            scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior else np.zeros(na),
+            prior_rhs_scaled,
             lambda_damping,
         )
         if singular:
@@ -840,11 +870,22 @@ def estimate_range_rate_bls_lm(
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
             if lambda_damping > 1e12:
-                stop_reason = "DampingLimit"
+                # Phase 17-HARDEN-D27: certify at the caller's tolerance.
+                if (_atol_r, _atol_a) != (rtol, atol):
+                    h_initial_state, residual = _linearize(x_best, rtol, atol)
+                    h_initial = (np.hstack([h_initial_state, _range_rate_bias_jacobian(obs_data, bias_cfg)])
+                                 if nb else h_initial_state)
+                stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
+                    h_initial, residual, w_curr_diag, scale,
+                    prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled,
+                )
                 break
 
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
+        post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
+            prior_inv, None, has_explicit_prior)
         posterior_information = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
@@ -856,7 +897,7 @@ def estimate_range_rate_bls_lm(
             get_earth_pos,
             get_sun_pos,
             bias_cfg,
-            prior_inv,
+            post_prior_inv,
             w_curr_diag,
             rtol,
             atol,
@@ -875,8 +916,29 @@ def estimate_range_rate_bls_lm(
         active_weight_fraction=min_active_weight_fraction,
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
+
+
+def _posterior_prior_terms(prior_inv, prior_sqrt_info, has_explicit_prior: bool):
+    """Phase 17-HARDEN-D28.  The prior terms a posterior may carry: exactly those of the objective.
+
+    With no explicit prior every estimator here fits a DATA-ONLY objective: the right-hand
+    side never pulls toward ``x_prior`` and the BLS acceptance cost has no prior term.  The
+    15 km / 5 m/s diagonal that ``_prior_information_and_scale`` supplies in that case is a
+    numerical STEP REGULARIZER inherited from the MATLAB design (``P_bar_inv``, "a priori
+    covariance inverse (Regularization)", used only in the LM step); it is not a prior.
+    Before D28 the posterior added it anyway, so the reported covariance belonged to a
+    weakly regularized problem nobody had solved.  The posterior now carries the prior only
+    when one was supplied; the step path is untouched.
+    """
+    if has_explicit_prior:
+        return prior_inv, prior_sqrt_info
+    zero_inv = None if prior_inv is None else np.zeros_like(np.asarray(prior_inv, dtype=float))
+    zero_sqrt = None if prior_sqrt_info is None else np.zeros_like(np.asarray(prior_sqrt_info, dtype=float))
+    return zero_inv, zero_sqrt
 
 
 def _prior_information_and_scale(
@@ -1562,6 +1624,136 @@ def _lm_step(
     return scale @ step_bar, condition_number, rank, False
 
 
+def _lm_step_square_root(
+    h_initial: np.ndarray,
+    residual: np.ndarray,
+    w_diag: np.ndarray,
+    scale: np.ndarray,
+    prior_inv_scaled: np.ndarray,
+    prior_rhs_scaled: np.ndarray,
+    lambda_damping: float,
+) -> tuple[np.ndarray, float, int, bool]:
+    """The SAME damped LM step as :func:`_lm_step`, solved without the normal matrix.
+
+    Phase 17-HARDEN-BLS1.  ``_lm_step`` solves
+
+        (A^T A + lambda D + P) d = A^T b + p,   A = sqrt(W) H scale,
+        D = diag(A^T A)  (identity if that is all zero),
+
+    by forming the normal matrix in the caller's bookkeeping units and calling
+    it singular above cond 1e15.  With K_SRP solved for, those units (1e6 m,
+    1e3 m/s, k_srp_scale) leave the columns ~1e8 apart in norm, so the formed
+    matrix measured cond ~1e16-1e17 on a design whose column-equilibrated
+    normal matrix has cond ~1e8: every small-lambda step was declared
+    singular, the retry pushed lambda to ~1, and the weakly-determined
+    state/K direction (normalised eigenvalue ~4e-8) could never be stepped
+    along.  That is a units artefact, the same squaring Phase 17-R1M/R1COV
+    removed from the covariance.
+
+    Here the identical system is written as the stacked least-squares problem
+    [A; sqrt(lambda D); U] d = [b; 0; U dbar] (U^T U = P, P dbar = p), whose
+    normal equations ARE the system above, and solved by QR after column
+    equilibration.  The objective, the damping matrix, lambda and its schedule
+    are unchanged; only the arithmetic is.  The singularity guard keeps its
+    threshold and its meaning -- cond of the normal matrix > 1e15 -- now
+    evaluated in the equilibrated basis (cond(R)^2), so it no longer depends
+    on the arbitrary units (contract s19/s20: scaling is numerical only).
+    """
+    a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
+    b = np.sqrt(w_diag) * residual
+    n = a.shape[1]
+    d = np.einsum("ij,ij->j", a, a)
+    if not np.any(d):
+        d = np.ones(n)
+    rows, rhs = [a, np.diag(np.sqrt(lambda_damping * d))], [b, np.zeros(n)]
+    if np.any(prior_inv_scaled):
+        ev, vec = np.linalg.eigh(_symmetrize(prior_inv_scaled))
+        u = np.sqrt(np.clip(ev, 0.0, None))[:, None] * vec.T
+        dbar = np.linalg.lstsq(prior_inv_scaled, prior_rhs_scaled, rcond=None)[0]
+        rows.append(u)
+        rhs.append(u @ dbar)
+    stacked = np.vstack(rows)
+    if not np.all(np.isfinite(stacked)):
+        return np.zeros(h_initial.shape[1]), float("inf"), 0, True
+    col = np.linalg.norm(stacked, axis=0)
+    col[col == 0.0] = 1.0
+    q, r = np.linalg.qr(stacked / col)
+    condition_number = float(np.linalg.cond(r)) ** 2
+    rank = int(np.linalg.matrix_rank(r))
+    if not np.isfinite(condition_number) or condition_number > 1e15:
+        return np.zeros(h_initial.shape[1]), condition_number, rank, True
+    step_bar = np.linalg.solve(r, q.T @ np.concatenate(rhs)) / col
+    return scale @ step_bar, condition_number, rank, False
+
+
+#: Phase 17-HARDEN-D27 stationarity threshold on the Gauss-Newton decrement
+#: (dimensionless, posterior-sigma units).  Declared before any case was scored.
+STATIONARITY_DECREMENT_TOL = 0.1
+
+
+def _gauss_newton_decrement(
+    h_initial: np.ndarray,
+    residual: np.ndarray,
+    w_diag: np.ndarray,
+    scale: np.ndarray,
+    prior_inv_scaled: np.ndarray | None,
+    prior_rhs_scaled: np.ndarray | None,
+) -> float:
+    """Undamped Gauss-Newton decrement of the objective at the current point.
+
+    Phase 17-HARDEN-D27.  For the whitened stacked system [A; U] d = [b; U dbar]
+    (U^T U = P, P dbar = p, exactly the rows :func:`_lm_step_square_root`
+    builds, with lambda = 0) the full Gauss-Newton step d removes
+
+        delta^2 = || [A; U] d ||^2 = g^T N^+ g,   g = A^T b + p,  N = A^T A + P,
+
+    from the cost r^T W r (+ prior term) under the linear model: the squared
+    Newton decrement (Boyd & Vandenberghe 2004, s9.5.1).  delta is also the
+    step's length in the posterior metric, so every parameter is within
+    delta posterior sigma of the linearised minimiser (|d_i| / sigma_i <= delta).
+    It is unit-free, needs no damping, and is computed by column-equilibrated
+    least squares, so a rank-deficient direction contributes nothing instead of
+    failing the solve.  Pass ``prior_inv_scaled=None`` for a data-only objective.
+    """
+    a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
+    b = np.sqrt(w_diag) * residual
+    rows, rhs = [a], [b]
+    if prior_inv_scaled is not None and np.any(prior_inv_scaled):
+        ev, vec = np.linalg.eigh(_symmetrize(prior_inv_scaled))
+        u = np.sqrt(np.clip(ev, 0.0, None))[:, None] * vec.T
+        dbar = np.linalg.lstsq(prior_inv_scaled, prior_rhs_scaled, rcond=None)[0]
+        rows.append(u)
+        rhs.append(u @ dbar)
+    stacked = np.vstack(rows)
+    target = np.concatenate(rhs)
+    if not (np.all(np.isfinite(stacked)) and np.all(np.isfinite(target))):
+        return float("inf")
+    col = np.linalg.norm(stacked, axis=0)
+    col[col == 0.0] = 1.0
+    step_bar = np.linalg.lstsq(stacked / col, target, rcond=None)[0]
+    return float(np.linalg.norm((stacked / col) @ step_bar))
+
+
+def _damping_exhaustion_status(*decrement_args) -> tuple[str, str, float]:
+    """Status of a BLS-LM solve whose damping passed the 1e12 guard.
+
+    Phase 17-HARDEN-D27.  Damping exhaustion only says that no trial step
+    lowered the scored cost.  At a minimiser that is expected: the remaining
+    Gauss-Newton gain falls below the objective's integration noise, every
+    trial is rejected and lambda climbs to the guard.  Far from a minimiser it
+    is a genuine failure.  The two are told apart by the undamped decrement at
+    the incumbent point, never by lambda itself: ``Converged`` /
+    ``STATIONARY_AT_DAMPING_LIMIT`` only when the whole remaining correction is
+    within ``STATIONARITY_DECREMENT_TOL`` posterior sigma, else ``DampingLimit``
+    / ``LAMBDA_HARD_LIMIT`` exactly as before.  The returned estimate is the
+    same either way.
+    """
+    decrement = _gauss_newton_decrement(*decrement_args)
+    if np.isfinite(decrement) and decrement <= STATIONARITY_DECREMENT_TOL:
+        return "Converged", "STATIONARY_AT_DAMPING_LIMIT", decrement
+    return "DampingLimit", "LAMBDA_HARD_LIMIT", decrement
+
+
 def _limit_step(step: np.ndarray, *, pos_limit_m: float) -> np.ndarray:
     step = np.asarray(step, dtype=float).copy()
     pos_step_norm = float(np.linalg.norm(step[:3]))
@@ -1932,6 +2124,23 @@ def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | No
         )
 
 
+def _posterior_dynamics_kwargs(srp, harmonic_kwargs: dict | None) -> dict:
+    """Phase 17-HARDEN-D25.  The solve's dynamics contract for a posterior pass.
+
+    Mirrors the estimators' own augmented-pass kwargs: ``srp`` only when given,
+    and a harmonic field always with ``harmonic_stm_opt_in=True`` (the matched
+    analytic Pines gradient), exactly as the solve iterations pass it.  Empty
+    when neither is active, so the default call is unchanged.
+    """
+    out = {}
+    if srp is not None:
+        out["srp"] = srp
+    if harmonic_kwargs:
+        out.update(harmonic_kwargs)
+        out["harmonic_stm_opt_in"] = True
+    return out
+
+
 def _two_way_range_posterior_information(
     t_pass_s: np.ndarray,
     obs_data: np.ndarray,
@@ -1947,7 +2156,19 @@ def _two_way_range_posterior_information(
     rtol: float,
     atol: float,
     j2_moon: float,
+    *,
+    srp=None,
+    harmonic_kwargs: dict | None = None,
 ) -> np.ndarray:
+    """(6,6) posterior information at the converged state.
+
+    Phase 17-HARDEN-D25: ``srp`` and ``harmonic_kwargs`` carry the SAME
+    dynamics contract the solve iterated with (fixed SRP; lunar harmonic field
+    with its matched analytic STM).  Before D25 this pass silently dropped
+    both, so with either opt-in active the covariance was linearised on a
+    different force model from the one that produced the estimate.  Omitted
+    (the default), the propagation call is exactly the historical one.
+    """
     x_aug0 = np.concatenate([x_dyn, _IDENTITY_6_COL])
     x_aug_hist = propagate_augmented_state(
         t_pass_s,
@@ -1960,6 +2181,7 @@ def _two_way_range_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **_posterior_dynamics_kwargs(srp, harmonic_kwargs),
     )
     _, h_initial = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
     return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
@@ -1982,12 +2204,15 @@ def _two_way_range_posterior_information_with_k(
     rtol: float,
     atol: float,
     j2_moon: float,
+    *,
+    harmonic_kwargs: dict | None = None,
 ) -> np.ndarray:
     """Phase 17-R.  (7,7) posterior information at the converged (x0, K)."""
     h_full = _two_way_range_posterior_design_with_k(
         t_pass_s, obs_data, x_dyn, k_srp, srp, pass_geo,
         mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
+        harmonic_kwargs=harmonic_kwargs,
     )
     return _symmetrize(h_full.T @ (w_diag[:, None] * h_full) + prior_inv)
 
@@ -2007,6 +2232,8 @@ def _two_way_range_posterior_design_with_k(
     rtol: float,
     atol: float,
     j2_moon: float,
+    *,
+    harmonic_kwargs: dict | None = None,
 ) -> np.ndarray:
     """Phase 17-R1COV.  The (M,7) augmented design matrix at the solution.
 
@@ -2016,11 +2243,17 @@ def _two_way_range_posterior_design_with_k(
     formed on its behalf.  The arithmetic of the information matrix is
     unchanged by the split, so ``posterior_information`` stays bitwise
     identical to Phase 17-R.
+
+    Phase 17-HARDEN-D25: ``harmonic_kwargs`` is the solve's lunar harmonic
+    field.  Without it the design was linearised on central/J2 gravity while
+    the estimate came from the harmonic solve: measured sigma_K +9 %, sigma_z
+    +3 % (KP2 CANON k0, GL1800F); with it, an independent rebuild agrees.
     """
     x_aug_hist = propagate_state_with_k_sensitivity(
         t_pass_s, x_dyn, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_srp),
         rtol=rtol, atol=atol, j2_moon=j2_moon,
+        **_posterior_dynamics_kwargs(None, harmonic_kwargs),
     )
     _, h_x0 = two_way_range_nominal_and_initial_jacobian(obs_data, pass_geo, x_aug_hist)
     h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
@@ -2170,6 +2403,11 @@ def estimate_two_way_range_bls_lm(
     max_rejected_components = 0
     min_active_weight_fraction = 1.0
     negative_k_rejections = 0
+    bound_active_steps = 0
+    gn_decrement = float("nan")
+    # Phase 17-HARDEN-BLS1: the K solve-for path solves the (unchanged) damped
+    # LM system by equilibrated QR; the six-state path keeps _lm_step bit-for-bit.
+    _step_fn = _lm_step_square_root if solve_for_k_srp else _lm_step
 
     def _active_srp(k_state):
         if srp is None:
@@ -2241,6 +2479,17 @@ def estimate_two_way_range_bls_lm(
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
         if solve_for_k_srp:
+            # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
+            # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
+            # used, so a Jacobian integrated at rtol 1e-8 does not merely slow
+            # convergence: its error along the weak state/K direction is
+            # amplified ~1/s_min (~5e3 here), so near the optimum the steps
+            # stop being descent directions for the scored cost.  Measured on
+            # the KP2 cross-check (simplified dynamics): with the loosened
+            # Jacobian every step from chi2 1423 was rejected up to the damping
+            # guard; at the caller's tolerance the solve reaches the optimum
+            # (chi2 902.44, Gauss-Newton remainder 0.02).
+            _atol_r, _atol_a = rtol, atol
             x_aug_hist = propagate_state_with_k_sensitivity(
                 t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
@@ -2294,7 +2543,7 @@ def estimate_two_way_range_bls_lm(
                           else x_nominal)
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior_full - x_current_full)
                             if prior_active else np.zeros(na))
-        step, last_condition_number, last_rank, singular = _lm_step(
+        step, last_condition_number, last_rank, singular = _step_fn(
             h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
             prior_rhs_scaled, lambda_damping,
         )
@@ -2314,7 +2563,7 @@ def estimate_two_way_range_bls_lm(
             retry_lambda = lambda_damping
             while singular and retry_lambda <= 1e12:
                 retry_lambda *= 10.0
-                step, last_condition_number, last_rank, singular = _lm_step(
+                step, last_condition_number, last_rank, singular = _step_fn(
                     h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
                     prior_rhs_scaled, retry_lambda,
                 )
@@ -2332,19 +2581,42 @@ def estimate_two_way_range_bls_lm(
         if solve_for_k_srp:
             k_candidate = k_current + step[6]
             if k_candidate < 0.0:
-                # s18: domain-infeasible trial point. REJECT without ever
-                # calling propagate() with a negative K (which SRPOptions
-                # would raise on) -- never clip toward zero, which would bias
-                # the estimate low. Same LM safeguard as a worse-cost step.
+                # s18: domain-infeasible trial point. It is never evaluated
+                # (SRPOptions would raise on a negative K) and K is never
+                # clipped toward zero, which would bias the estimate low.
                 negative_k_rejections += 1
-                x_nominal = x_best.copy()
-                k_current = k_best
-                lambda_damping *= 10.0
-                if lambda_damping > 1e12:
-                    stop_reason = "DampingLimit"
-                    termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
-                    break
-                continue
+                # Phase 17-HARDEN-BLS1: the bound K >= 0 is ACTIVE for this
+                # trial, so take the damped step in the feasible face instead
+                # -- the same normal equations with K held at its current
+                # value (the standard active-set treatment of a simple bound).
+                # Previously the WHOLE step was discarded and lambda raised:
+                # from a ~100 m a-priori orbit the coupled step aliases state
+                # error into the weak K direction and points K negative on
+                # every iteration, so the orbit correction was thrown away with
+                # it, lambda ratcheted to the 1e12 guard, and the solve stalled
+                # at 184 m RMS (cost 1400x the truth's) while K was walked to
+                # ~0 by the accepted steps.  K is re-freed on the next
+                # iteration, so this only ever changes WHICH feasible step is
+                # tried, never the objective or the constraint.
+                prior_rhs_x = prior_rhs_scaled[:nx]
+                step_x, _cn, _rk, singular_x = _step_fn(
+                    h_initial[:, :nx], residual, w_curr_diag, scale[:nx, :nx],
+                    prior_inv_scaled[:nx, :nx], prior_rhs_x, lambda_damping,
+                )
+                if singular_x:
+                    x_nominal = x_best.copy()
+                    k_current = k_best
+                    lambda_damping *= 10.0
+                    if lambda_damping > 1e12:
+                        stop_reason = "DampingLimit"
+                        termination_detail = "LAMBDA_HARD_LIMIT_NEGATIVE_K"
+                        break
+                    continue
+                bound_active_steps += 1
+                step = np.concatenate([_limit_step(step_x, pos_limit_m=20000.0), [0.0]])
+                last_step = step
+                x_candidate = x_nominal + step[:6]
+                k_candidate = k_current
         else:
             k_candidate = None
         residual_candidate = _acceptance_residual(x_candidate, k_candidate)
@@ -2377,12 +2649,34 @@ def estimate_two_way_range_bls_lm(
                 # PHASE 6.2: damping exhaustion, NOT a singular linear solve.
                 # _lm_step reported no singularity to reach here; the LM step
                 # simply stopped being accepted.  The 1e12 limit is unchanged.
-                stop_reason = "DampingLimit"
-                termination_detail = "LAMBDA_HARD_LIMIT"
+                # Phase 17-HARDEN-D27: whether it stopped AT a minimiser is
+                # decided by the decrement of the scored objective, linearised
+                # at the caller's tolerance (the K path already is).
+                if (_atol_r, _atol_a) != (rtol, atol):
+                    x_aug_hist = propagate_augmented_state(
+                        t_pass_s, np.concatenate([x_best, _IDENTITY_6_COL]),
+                        mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                        get_earth_pos, get_sun_pos, rtol=rtol, atol=atol,
+                        j2_moon=j2_moon, srp=srp,
+                        **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
+                    )
+                    h_nom, h_initial = two_way_range_nominal_and_initial_jacobian(
+                        obs_data, pass_geo, x_aug_hist
+                    )
+                    residual = _two_way_range_residual_from_h(obs_data, h_nom)
+                stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
+                    h_initial, residual, w_curr_diag, scale,
+                    prior_inv_scaled if prior_active else None, prior_rhs_scaled,
+                )
                 break
 
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
+        # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms:
+        # the explicit state prior (if supplied) and the explicit K qualification prior.
+        post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
+        if solve_for_k_srp and k_prior_active and not has_explicit_prior:
+            post_prior_inv[6, 6] = prior_inv[6, 6]
         if solve_for_k_srp:
             # Phase 17-R1COV.  The design matrix is read once and used for BOTH
             # the reported information matrix and the covariance.
@@ -2403,13 +2697,14 @@ def estimate_two_way_range_bls_lm(
                 t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
+                harmonic_kwargs=_harm,     # Phase 17-HARDEN-D25: the solve's field
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
-                + prior_inv
+                + post_prior_inv
             )
             posterior_covariance, _ = _square_root_covariance_from_design(
-                posterior_design, w_curr_diag, prior_inv, scale
+                posterior_design, w_curr_diag, post_prior_inv, scale
             )
         else:
             posterior_information = _two_way_range_posterior_information(
@@ -2422,11 +2717,13 @@ def estimate_two_way_range_bls_lm(
                 mu_sun_m3_s2,
                 get_earth_pos,
                 get_sun_pos,
-                prior_inv,
+                post_prior_inv,
                 w_curr_diag,
                 rtol,
                 atol,
                 j2_moon,
+                srp=srp,                   # Phase 17-HARDEN-D25: the solve's own
+                harmonic_kwargs=_harm,     # dynamics contract (fixed SRP, field)
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -2448,6 +2745,8 @@ def estimate_two_way_range_bls_lm(
             if solve_for_k_srp else None
         ),
         k_srp_negative_step_rejections=negative_k_rejections,
+        k_srp_bound_active_steps=bound_active_steps,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 
@@ -2555,6 +2854,15 @@ def estimate_two_way_range_srif(
         prior_inv, scale = prior_inv6, scale6
         prior_sqrt_info = prior_sqrt_info6
         r_bar = prior_sqrt_scaled6
+    # Phase 17-HARDEN-D29: the prior right-hand side carries only the PRIORS of the declared
+    # problem.  ``r_bar`` keeps the full rows (with no explicit state prior the state block is
+    # the 15 km / 5 m/s step regularizer, as in every other path - D28), but its right-hand side
+    # is a pull toward x_prior only for an explicit state prior.  The K row is the required,
+    # explicit K prior (s31).  Before D29 the K path multiplied the FULL prior square root here,
+    # so the step regularizer silently became a Bayesian state prior in the estimate.
+    prior_rhs_sqrt = prior_sqrt_info.copy()
+    if solve_for_k_srp and not has_explicit_prior:
+        prior_rhs_sqrt[:6, :] = 0.0
 
     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
     w_curr_diag = w_diag.copy()
@@ -2632,7 +2940,7 @@ def estimate_two_way_range_srif(
                         else x_prior)
         x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
                           else x_nominal)
-        z_bar = (prior_sqrt_info @ (x_prior_full - x_current_full)
+        z_bar = (prior_rhs_sqrt @ (x_prior_full - x_current_full)
                  if (has_explicit_prior or solve_for_k_srp) else np.zeros(na))
         combined = np.vstack(
             [
@@ -2711,6 +3019,10 @@ def estimate_two_way_range_srif(
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
         if solve_for_k_srp:
+            # Phase 17-HARDEN-D29: the objective now carries the explicit state prior (if any) and
+            # the required K prior only, so the posterior carries exactly those (as the BLS K path).
+            post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
+            post_prior_inv[6, 6] = prior_inv[6, 6]
             # Phase 17-R1COV.  Same square-root covariance path as the BLS
             # branch (see its comment for the full rationale).  Unreachable for
             # solve_for_k_srp=False.
@@ -2721,14 +3033,16 @@ def estimate_two_way_range_srif(
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
-                + prior_inv
+                + post_prior_inv
             )
             posterior_covariance, k_sqrt_information = (
                 _square_root_covariance_from_design(
-                    posterior_design, w_curr_diag, prior_inv, scale
+                    posterior_design, w_curr_diag, post_prior_inv, scale
                 )
             )
         else:
+            # Phase 17-HARDEN-D28: data-only objective unless a prior was supplied.
+            post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
             posterior_information = _two_way_range_posterior_information(
                 t_pass_s,
                 obs_data,
@@ -2739,11 +3053,12 @@ def estimate_two_way_range_srif(
                 mu_sun_m3_s2,
                 get_earth_pos,
                 get_sun_pos,
-                prior_inv,
+                post_prior_inv,
                 w_curr_diag,
                 rtol,
                 atol,
                 j2_moon,
+                srp=srp,                   # Phase 17-HARDEN-D25: the solve's fixed SRP
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
             k_sqrt_information = None

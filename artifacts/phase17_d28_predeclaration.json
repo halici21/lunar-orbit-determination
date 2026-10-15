@@ -1,0 +1,30 @@
+{
+ "phase": "Phase 17-HARDEN-D28 - implicit prior / posterior covariance contract",
+ "written": "2026-10-11, after the source/heritage audit and BEFORE any production change or materiality number",
+ "contract_evidence": {
+  "matlab_origin": "00_inbox/to_delete/matlab/graduation_old_version/last_versions/utils/bls_estimator.m: P_bar_inv = diag([1/15000^2 x3, 1/5^2 x3]) commented 'A priori covariance inverse (Regularization) ... Tuning for Lunar Orbit'; used ONLY in the LM step (AtWA + lambda diag(AtWA) + P_bar_inv) \\ AtWb, with no prior pull on the right-hand side; MATLAB computed no posterior covariance",
+  "python_objective": "all six estimators (position/range-rate/two-way-range x SRIF/BLS) apply the prior right-hand side (pull toward x_prior) ONLY when has_explicit_prior; the BLS acceptance objective (Phase 6.2 _acceptance_cost) includes the prior term only when prior_active",
+  "python_labels": "K path: k_srp_prior_status 'DATA_ONLY' when no K prior; docstring 'omit it for a data-only solve (s23)'",
+  "documentation": "R1COV / R1M / FXR call no-explicit-prior covariances 'data-only'",
+  "posterior_helpers": "every posterior block adds prior_inv (or prior sqrt rows) unconditionally - no branch on has_explicit_prior, no documented intent; introduced with the Python port's posterior functions"
+ },
+ "declared_contract": {
+  "NO_EXPLICIT_PRIOR_OBJECTIVE": "data-only weighted least squares; the fixed point satisfies H^T W r = 0 (unchanged)",
+  "DEFAULT_REGULARIZATION": "the 15 km / 5 m/s diagonal is a NUMERICAL STEP REGULARIZER only (LM normal matrix / SRIF a-priori rows with zero right-hand side), inherited from the MATLAB design; it is not a prior and is not part of the estimation problem (unchanged, to be documented)",
+  "NO_EXPLICIT_PRIOR_COVARIANCE": "data-only posterior: H^T W H at the solution (plus an explicit K qualification prior when given), with NO default-regularizer term",
+  "EXPLICIT_PRIOR": "MAP objective and posterior both carry the supplied prior (unchanged)"
+ },
+ "repair_scope": "covariance only: the posterior blocks of the six estimators use the explicit prior when supplied and zero otherwise; the step path, acceptance objective, estimate, D25 dynamics contract and BLS1 changes are untouched",
+ "gates": {
+  "G1_estimates_unchanged": "for every estimator and prior mode tested, x_best, status, iterations, final_cost (and K) bitwise identical before/after",
+  "G2_explicit_prior_unchanged": "with an explicit prior_covariance or prior_sqrt_information, every posterior output is bitwise identical before/after",
+  "G3_no_hidden_prior": "with no explicit prior, the returned posterior information equals an independently rebuilt H^T W H at the returned solution (relative to its own scale, <= 1e-10) and the historical construction (H^T W H + default diagonal) is measurably different on the same fixture",
+  "G4_independent_covariance": "with no explicit prior, the returned posterior covariance equals the inverse of the independent data-only information (sigma <= 1e-8 relative) wherever that information is well-conditioned; rank-deficient data-only cases are reported, not hidden",
+  "G5_D25_preserved": "tests/test_harden_d25_posterior_dynamics_contract.py passes (K-path rebuild updated to the data-only contract)",
+  "G6_BLS1_preserved": "tests/test_harden_bls1_k_srp_recovery.py and the K_SRP solve-for suites pass",
+  "G7_materiality": "quantified, not gated: KP2 production sigma vs KP2 solver (frozen 1 % criterion re-evaluated), test-suite consumers and scenario hand-off paths that read a no-prior posterior",
+  "G8_regression": "permanent tests for the historical behaviour; full suite on a clean worktree, 0 failures (any test pinning the old default-prior posterior is reported, re-derived from the contract, and listed)"
+ },
+ "PHASE17_HARDEN_D28_GATE": "PASS iff G1-G6 and G8 pass; G7 reported",
+ "stop_if": "the measured materiality shows the change would materially alter established scientific results (e.g. hand-off chains, frozen baselines) - then report and ask before changing the public contract"
+}

@@ -1,0 +1,142 @@
+{
+ "simplified_ablation": {
+  "label": "DIAGNOSTIC: KP2 cross-check problem (same a priori and noise draws) in SIMPLIFIED dynamics, one BLS1 change removed per row",
+  "rows": [
+   {
+    "variant": "final",
+    "status": "Converged",
+    "k": 0.00513051097781201,
+    "iterations": 30,
+    "negative_k_trials": 5,
+    "chi2": 902.4408596065725,
+    "gn_step_over_sigma_max": 0.1486223430157969,
+    "pos_err_m": 6.486966925783366,
+    "elapsed_s": 156.15995836257935
+   },
+   {
+    "variant": "no_square_root_step",
+    "status": "MaxIter",
+    "k": 0.0012096313465210446,
+    "iterations": 80,
+    "negative_k_trials": 63,
+    "chi2": 1283041.2777098299,
+    "gn_step_over_sigma_max": 349.6060877578707,
+    "pos_err_m": 156.85927248532514,
+    "elapsed_s": 345.6956238746643
+   },
+   {
+    "variant": "no_bound_active_step",
+    "status": "DampingLimit",
+    "k": 5.74220571648724e-05,
+    "iterations": 30,
+    "negative_k_trials": 12,
+    "chi2": 1295359.8792407815,
+    "gn_step_over_sigma_max": 350.6449505828136,
+    "pos_err_m": 158.44565394069684,
+    "elapsed_s": 147.02356433868408
+   },
+   {
+    "variant": "no_caller_tolerance_jacobian",
+    "status": "Converged",
+    "k": 0.004088603158011678,
+    "iterations": 25,
+    "negative_k_trials": 6,
+    "chi2": 1405.0741157751681,
+    "gn_step_over_sigma_max": 5.2865935845315475,
+    "pos_err_m": 9.323380425052346,
+    "elapsed_s": 104.85720491409302
+   }
+  ]
+ },
+ "high_fidelity": {
+  "frozen_job_bls": {
+   "kind": "BLS",
+   "status": "DampingLimit",
+   "mine_converged": true,
+   "diff_over_sigma": [
+    -3.426824694177188e-05,
+    -2.196629654730408e-05,
+    -2.2301061574810486e-05,
+    5.6683750319752936e-05,
+    7.220523914778133e-06,
+    -9.547734065108803e-06,
+    9.679670811525444e-06
+   ],
+   "sigma_ratio": [
+    0.9975963297999819,
+    1.00064757344041,
+    0.9721672010985155,
+    0.999080356509413,
+    1.0056871421846223,
+    1.0001768815380352,
+    0.9170957425773497
+   ],
+   "k_mine": 0.005411017977882337,
+   "k_prod": 0.00541099522348417
+  },
+  "frozen_gate_criteria": {
+   "estimate_within_0p02_sigma": true,
+   "sigma_within_1pct": false,
+   "PRODUCTION_BLS": "FAIL"
+  },
+  "production": {
+   "status": "DampingLimit",
+   "termination_detail": "LAMBDA_HARD_LIMIT",
+   "iterations": 40,
+   "k": 0.00541099522348417,
+   "negative_k_trials": 5,
+   "bound_active_steps": 5,
+   "elapsed_s": 9334.498465299606,
+   "x0_err_m": [
+    -0.08195765479467809,
+    -5.045242131862324,
+    -3.944109942880459,
+    0.0018903748421905675,
+    0.004168629153582515,
+    -0.005208737841712718
+   ],
+   "apriori_err_m": [
+    -108.75910428492352,
+    -124.46213686664123,
+    56.052650537516456,
+    0.06888187478921282,
+    0.04281323357326983,
+    0.10662820712468601
+   ]
+  },
+  "diagnostic_stationarity": {
+   "label": "DIAGNOSTIC: undamped Gauss-Newton remainder at the production solution, harmonic field included, column-normalised lstsq (independent of the LM code)",
+   "chi2": 902.9802842527505,
+   "gn_step_over_sigma": [
+    -0.002389208674132961,
+    -0.0010839822451346316,
+    -0.0015953495259984293,
+    0.00245713364363941,
+    -4.821865302363427e-05,
+    6.654664191024288e-05,
+    -0.004132024200831772
+   ]
+  },
+  "diagnostic_d25": {
+   "label": "DIAGNOSTIC (HARDEN-D25 not repaired): sigma at the production solution recomputed WITH the solve's harmonic field; KP2 sigma / this sigma",
+   "sigma_ratio_with_harmonics": [
+    0.9999999678524274,
+    0.9999999883653539,
+    0.9999999824529668,
+    0.9999999599197045,
+    1.0000000016285377,
+    1.0000000014707768,
+    0.9999999469624202
+   ],
+   "sigma_ratio_reported": [
+    0.9975963297999819,
+    1.00064757344041,
+    0.9721672010985155,
+    0.999080356509413,
+    1.0056871421846223,
+    1.0001768815380352,
+    0.9170957425773497
+   ]
+  }
+ }
+}

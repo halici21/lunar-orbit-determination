@@ -74,6 +74,9 @@ class ConvergenceDiagnostics:
     rank_deficient: bool
     outlier_rejected: bool
     finite_final_cost: bool
+    #: Phase 17-HARDEN-D27: BLS-LM exhausted its damping AT a certified
+    #: stationary point (``termination_detail == "STATIONARY_AT_DAMPING_LIMIT"``).
+    converged_by_stationarity: bool = False
 
 
 def analyze_convergence(
@@ -96,14 +99,21 @@ def analyze_convergence(
     attributes.
     """
     reason = str(stop_reason)
+    termination_detail = ""
     if stats is not None:
+        termination_detail = str(getattr(stats, "termination_detail", "") or "")
         rank = getattr(stats, "rank", rank)
         condition_number = getattr(stats, "condition_number", condition_number)
         rejected_components = getattr(stats, "rejected_components", rejected_components)
         final_cost = getattr(stats, "final_cost", final_cost)
 
     normalized = reason.strip().lower().replace("_", "-")
-    converged_by_step = normalized == "converged"
+    # Phase 17-HARDEN-D27: "Converged" is reached either by the step-norm test
+    # or by the Gauss-Newton decrement certificate at damping exhaustion; the
+    # estimator's termination_detail says which.
+    converged_by_stationarity = (normalized == "converged"
+                                 and termination_detail == "STATIONARY_AT_DAMPING_LIMIT")
+    converged_by_step = normalized == "converged" and not converged_by_stationarity
     converged_by_cost = normalized in {"j-stab", "cost-stable", "cost_stable"}
     max_iter = normalized in {"maxiter", "max-iter", "maximum-iterations"}
     singular_reason = normalized in {"singular", "rank-deficient", "ill-conditioned"}
@@ -123,9 +133,12 @@ def analyze_convergence(
         rank_deficient = int(rank) < int(expected_rank)
 
     singular_or_ill_conditioned = bool(singular_reason or ill_conditioned or rank_deficient)
-    converged = bool((converged_by_step or converged_by_cost) and not singular_or_ill_conditioned)
+    converged = bool((converged_by_step or converged_by_cost or converged_by_stationarity)
+                     and not singular_or_ill_conditioned)
     if converged_by_step:
         category = "converged_step"
+    elif converged_by_stationarity:
+        category = "converged_stationary"
     elif converged_by_cost:
         category = "converged_cost_stability"
     elif max_iter:
@@ -150,6 +163,7 @@ def analyze_convergence(
         rank_deficient=rank_deficient,
         outlier_rejected=bool((0 if rejected_components is None else int(rejected_components)) > 0),
         finite_final_cost=bool(np.isfinite(cost_value)),
+        converged_by_stationarity=bool(converged_by_stationarity),
     )
 
 def analyze_residuals(

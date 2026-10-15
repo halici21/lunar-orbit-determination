@@ -1,0 +1,35 @@
+{
+ "phase": "Phase 17-MM - gravity-field model-mismatch masquerade falsification (K-closeout report section 3.4)",
+ "written": "2026-10-12, before any mismatch solve was run",
+ "hypothesis_H_mm": "A Moon-fixed gravity-field error whose residual signature is statistically undetectable produces a significant false M3 K variation",
+ "design": {
+  "truth_K": "constant (T0_CONSTANT), K0 = 0.01 m2/kg on all three segments",
+  "cells": [["CANON", 0, 0], ["O1_LOW_BETA_ECLIPSE_RICH", 12, 3], ["O2_FULL_SUN_HIGH_BETA", 0, 4], ["O5_FAVOURABLE_GEO_MAX_FPERP", 0, 8]],
+  "cells_columns": ["orbit", "k", "KP2 ci"],
+  "seeds": "identical to the KP2 T0 trial of each cell: rng([ci, 0, 0]) -> dx (a priori), range noise, per-pass bias, Doppler noise, in KP2 job_main order",
+  "alpha": [1.0, 0.3],
+  "truth_field": "GL1800F 50x50 + alpha * (GRGM1200L 50x50 - GL1800F 50x50), built on the GL1800F model (mu, R = 1738 km, frame MOON_PA_DE440) with GRGM1200L coefficients rescaled to GL's mu and R: C_T = C_GL + alpha (C_GR mu_GR/mu_GL (R_GR/R_GL)^n - C_GL), n >= 2 (the engine's perturbing field; the central term is MU_MOON in both). Equivalent to a_GL + alpha (a_GR - a_GL), the linear-probe quantity",
+  "truth_dynamics": "KP2 HIGH_FIDELITY (Earth/Sun third body, conical-penumbra SRP, harmonic STM) with the truth field in place of GL1800F 50x50; rtol 1e-12 / atol 1e-13 (KP2 HF_TOL)",
+  "estimator": "KP2 M3 solver unchanged: phase17_kp2_core.solve(model='M3', bias_mode='FREE', dyn=HIGH_FIDELITY) with GL1800F 50x50, default staging and 1e-2 sigma convergence",
+  "baseline": "the existing KP2 T0 trial of each cell (truth = model, same draws): stored theta; residuals recomputed at it; harness check: recomputed KP2 cost reproduces the stored cost within 1e-6 relative"
+ },
+ "measures": {
+  "chi2_detect": "phase17_kp2_core.recovery_metrics(sol, x0, f_true = 0).chi2_var_detect (false variation, 2 dof)",
+  "delta_chi2": "data-only chi2 (whitened range + Doppler residuals at the solution) of the mismatch run minus that of the baseline; N = n_range + n_doppler",
+  "whitened_rms": "range and Doppler whitened rms",
+  "runs_test": "per pass Wald-Wolfowitz runs test on whitened residual signs (Doppler passes = the free-bias columns; range passes = per station, split at gaps > 600 s; passes with < 10 rows skipped); combined Stouffer Z over passes; reported per data type",
+  "bias": "level error (mean fractional K error) and |x0 error| / sigma per component"
+ },
+ "thresholds": {
+  "detect": "chi2_detect >= 13.82 (chi2_2, 99.9 %)",
+  "undetectable_residual": "delta_chi2 <= 2 sqrt(2N)",
+  "runs_flag": "|Stouffer Z| > 3 (secondary, reported)"
+ },
+ "outcome_rule": {
+  "H_MM_SURVIVES_MASQUERADE": "some (cell, alpha) has chi2_detect >= 13.82 AND delta_chi2 <= 2 sqrt(2N) (both on converged solves); also reported: whether the runs test is blind there too",
+  "H_MM_FALSIFIED": "every converged run with chi2_detect >= 13.82 has delta_chi2 > 2 sqrt(2N), or no run reaches 13.82",
+  "INCONCLUSIVE": "a run that would decide the outcome did not converge"
+ },
+ "linear_prediction_recorded": "alpha = 1: detectable, large false variation (CANON, O1, O2); alpha = 0.3: CANON near the window (K-closeout report section 3.2 / 3.4)",
+ "not_claimed": "common K level; any statement about real GRAIL commission error (the field difference is dominated by frame/tide conventions, report section 3.2)"
+}

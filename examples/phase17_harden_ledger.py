@@ -190,20 +190,124 @@ DEFECTS = [
          repair="none (outside D23); first-order two-sum correction demonstrated in "
                 "examples/phase17_d23_qualification.py et_exact_spice_provider",
          regression="none", reproduction="examples/phase17_d23_qualification.py --et-exact-diagnostic"),
-    dict(id="HARDEN-D25", title="BLS-LM K_SRP posterior design omits the lunar harmonic field",
-         location="lunar_od/estimators.py _two_way_range_posterior_design_with_k (called by "
-                  "estimate_two_way_range_bls_lm when solve_for_k_srp=True)",
-         discovered="Phase 17-KP2 production BLS cross-check (warm-start stationarity)",
-         root_cause="the posterior-design propagation receives no harmonic_model / harmonic_epoch_et0, while the "
-                    "solve iterations do: the reported covariance is linearised on a different force model",
-         effect="with harmonics opt-in, the estimate is unaffected (warm-started production BLS agrees with the "
-                "KP2 solution to <= 8e-4 sigma) but the posterior sigma differs from the QR covariance on the "
-                "solve's own dynamics: K +9 %, z +3 % (CANON k0, 15-orbit range-only arc)",
-         status=FOLLOWUP, klass="REQUIRED_FOR_CORRECTNESS",
-         repair="none in KP2 (estimator change out of scope); pass the harmonic model through to the posterior "
-                "design and re-qualify Phase 17-R's posterior tests",
-         regression="none yet",
-         reproduction="examples/phase17_kp2_campaign.py --posthoc-verification (bls_stationarity)"),
+    dict(id="HARDEN-D25", title="Two-way-range posterior covariance linearised on a different force model than the solve",
+         location="lunar_od/estimators.py posterior passes of estimate_two_way_range_bls_lm (K: "
+                  "_two_way_range_posterior_design_with_k; six-state: _two_way_range_posterior_information) and "
+                  "estimate_two_way_range_srif (six-state)",
+         discovered="Phase 17-KP2 production BLS cross-check (warm-start stationarity); blast radius widened by "
+                    "Phase 17-HARDEN-D25 source audit",
+         root_cause="the posterior pass dropped part of the solve's dynamics contract: BLS K path the lunar harmonic "
+                    "field; BLS six-state the field AND a fixed SRP; SRIF six-state a fixed SRP. The estimate (the "
+                    "solve's fixed point) was right; only the after-the-fact re-linearisation used other dynamics",
+         effect="KP2 CANON k0 (K path, GL1800F): sigma_K +9 %, sigma_z +3 %. Gravity-campaign stages F/G/I "
+                "(six-state, E50/E100 GL1800F): stored P_hat reproduced bitwise by the defective pass; repaired G100 "
+                "ANEES 11.58 -> 9.01 (overconfidence 1.93x -> 1.50x, still outside the band), formal 3D sigma "
+                "64.41 -> 63.84 m; stage I trace(P^-1 C) 5.96 -> 4.06, largest generalized eigenvalue 4.28 -> 1.74. "
+                "Default paths (no SRP, no field) never affected",
+         status=FIXED, klass="REQUIRED_FOR_CORRECTNESS",
+         repair="Phase 17-HARDEN-D25 (aac72ed): _posterior_dynamics_kwargs passes the solve's fixed SRP and harmonic "
+                "field (with the matched analytic STM) to every posterior pass; covariance algebra, estimate, "
+                "weights, prior and dynamics unchanged. Estimates bitwise identical in all 8 tested configurations, "
+                "default posteriors bitwise identical; O1 independent assembly 2.5e-13; frozen KP2 sigma criterion "
+                "1.000000-1.000001 (was 0.917); docs/phase17_harden_d25_posterior_covariance_consistency.md",
+         regression="tests/test_harden_d25_posterior_dynamics_contract.py (K path, six-state BLS field+SRP, six-state "
+                    "SRIF SRP; each also proves the historical construction is visibly different)",
+         reproduction="examples/phase17_d25_qualification.py --invariance / --kp2 / --kp2-posthoc-fd / --e2e / "
+                      "--stage-f / --stage-i"),
+    dict(id="HARDEN-D26", title="BLS-LM K_SRP solve-for cannot leave a realistic a priori",
+         location="lunar_od/estimators.py estimate_two_way_range_bls_lm (solve_for_k_srp=True): _lm_step, the "
+                  "negative-K trial branch, _adaptive_tol",
+         discovered="Phase 17-KP2 frozen production-BLS verification (DampingLimit, K -> 2.9e-7, 347 sigma off)",
+         root_cause="(a) the damped normal matrix was formed in bookkeeping units (cond 8.5e16 vs 1.6e8 "
+                    "equilibrated), so every small-lambda step was declared singular and the weak state/K "
+                    "direction (eigenvalue 4.3e-8) was unreachable; (b) a negative-K trial discarded the whole "
+                    "step and raised lambda, which on the coupled problem makes dK more negative; (c) the "
+                    "Jacobian was integrated at rtol 1e-8 early on, moving the Gauss-Newton fixed point",
+         effect="from a ~100 m a priori the solve stalled at chi2 1.28e6 vs optimum 902 (simplified) and 347 "
+                "sigma from the least-squares solution (high fidelity); not an identifiability limit "
+                "(cond(H) 1.3e4, one undamped GN step reaches the optimum)",
+         status=FIXED, klass="REQUIRED_FOR_CORRECTNESS",
+         repair="Phase 17-HARDEN-BLS1: equilibrated-QR solve of the same damped system "
+                "(_lm_step_square_root), K-fixed bound-active step instead of discard, caller-tolerance "
+                "Jacobian; K path only, six-state path bitwise unchanged. Frozen KP2 job from the declared a "
+                "priori: <= 6.2e-5 sigma from the KP2 solution, independent stationarity <= 4.1e-3 sigma; "
+                "docs/phase17_harden_bls1_production_bls_recovery.md",
+         regression="tests/test_harden_bls1_k_srp_recovery.py (unit-induced singularity reproduced; end-to-end "
+                    "recovery vs independent GN and truth start; bound-active path)",
+         reproduction="examples/phase17_bls1_qualification.py --ablation / --hf"),
+    dict(id="HARDEN-D27", title="BLS-LM K_SRP reports DampingLimit at a verified stationary point",
+         location="lunar_od/estimators.py BLS-LM termination at lambda > 1e12 (position, range-rate, two-way "
+                  "range incl. the K_SRP path)",
+         discovered="Phase 17-HARDEN-BLS1 qualification",
+         root_cause="at the minimiser no trial step beats the objective's integration noise, so every trial is "
+                    "rejected and lambda climbs to the 1e12 guard; the J-Stab/step-norm tests only run on accepted "
+                    "steps, so exhaustion was reported as DampingLimit whether or not the point was stationary",
+         effect="label only: high-fidelity KP2 job ended DampingLimit at a solution whose Gauss-Newton decrement is "
+                "1.9e-3 sigma; the exact-optimum regression fixture likewise. Estimates never affected",
+         status=FIXED, klass="RECOMMENDED_FOLLOWUP",
+         repair="Phase 17-HARDEN-D27: at damping exhaustion the undamped Gauss-Newton decrement of the scored "
+                "objective (unit-free, posterior-sigma length of the remaining correction; Boyd & Vandenberghe "
+                "s9.5.1) is evaluated at the incumbent, linearised at the caller's tolerance; <= 0.1 -> Converged / "
+                "STATIONARY_AT_DAMPING_LIMIT, else DampingLimit / LAMBDA_HARD_LIMIT; decrement reported in "
+                "EstimatorStats.gauss_newton_decrement. Estimates bitwise unchanged; "
+                "docs/phase17_harden_d27_convergence_status.md",
+         regression="tests/test_harden_d27_convergence_status.py; tests/test_estimator_lm_consistency.py "
+                    "(TerminationSemanticsTests, exact-optimum test)",
+         reproduction="examples/phase17_d27_qualification.py --simplified / --hf"),
+    dict(id="HARDEN-D28", title="Default step regularizer reported as a prior in no-prior posteriors",
+         location="lunar_od/estimators.py posterior blocks of the position / range-rate / two-way-range SRIF and "
+                  "BLS estimators (prior from _prior_information_and_scale when none is supplied)",
+         discovered="Phase 17-HARDEN-D25 qualification (independent covariance rebuild)",
+         root_cause="with no prior given, a 15 km / 5 m/s diagonal (MATLAB P_bar_inv, 'a priori covariance inverse "
+                    "(Regularization)') damps the LM / SRIF step with a zero right-hand side, so the fitted "
+                    "objective is data-only; the Python posterior helpers added it unconditionally, so the "
+                    "reported covariance belonged to a regularized problem no estimator solved",
+         effect="sigma <= 3.4e-4 on a 3.3 h single-station arc; KP2 <= 1.5e-6; scenario hand-off arcs <= 3.7e-8; "
+                "no authoritative number superseded",
+         status=FIXED, klass="REQUIRED_FOR_CORRECTNESS",
+         repair="Phase 17-HARDEN-D28: _posterior_prior_terms - each posterior carries exactly the prior terms of "
+                "its own objective (explicit prior, explicit K prior; never the step regularizer). Estimates "
+                "bitwise unchanged (17 cases), explicit-prior posteriors bitwise unchanged; "
+                "docs/phase17_harden_d28_prior_covariance_contract.md",
+         regression="tests/test_harden_d28_posterior_prior_contract.py",
+         reproduction="examples/phase17_d28_qualification.py --invariance/--scenarios --code old|new, --kp2"),
+    dict(id="HARDEN-D29", title="SRIF K_SRP objective pulled the state toward the default step regularizer",
+         location="lunar_od/estimators.py estimate_two_way_range_srif (solve_for_k_srp=True): z_bar used the full "
+                  "prior square root whenever has_explicit_prior or solve_for_k_srp",
+         discovered="Phase 17-HARDEN-D28 audit",
+         root_cause="the clause switching on the required K prior row (s31) multiplied the FULL prior square root, so "
+                    "with no explicit state prior the 15 km / 5 m/s step regularizer became a Bayesian state prior "
+                    "in the ESTIMATE (b8da5e6 transplant); the SRIF docstring declares the BLS contract",
+         effect="SRIF K estimate pulled toward its start: 1e-4 sigma (3 cm) on a 3.3 h arc; 0.27 sigma start "
+                "dependence with the regularizer strengthened 1e4x; BLS/SRIF posteriors differed by 1.3e-4. No "
+                "authoritative consumer (KP2 never uses it; Phase 17-R synthesis supplies an explicit prior)",
+         status=FIXED, klass="REQUIRED_FOR_CORRECTNESS",
+         repair="Phase 17-HARDEN-D29: prior right-hand side state block zero without an explicit state prior "
+                "(r_bar regularizer unchanged); posterior = explicit state prior + K prior. Explicit-prior and "
+                "six-state paths bitwise unchanged; stationary for J to 3.7e-5 sigma; start-independent to 1.3e-5 "
+                "sigma; posterior = declared problem to 6e-15; BLS/SRIF now the same problem (estimates 4.3e-4 "
+                "sigma). Gate FAIL as computed on G6's 1e-6 posterior sub-criterion (1.44e-6 = linearisation-point "
+                "dependence), adjudicated, owner accepted 2026-10-15 (gate PASS); docs/phase17_harden_d29_srif_k_prior_contract.md",
+         regression="tests/test_harden_d29_srif_k_prior_contract.py (incl. strengthened-regularizer test: pre-D29 "
+                    "0.27 sigma start dependence, D29 6.2e-4)",
+         reproduction="examples/phase17_d29_qualification.py --run --code old|new; --compare"),
+    dict(id="HARDEN-D30", title="BLS-LM acceptance cost noise rejects small damped steps (stall away from the "
+                                "minimiser)",
+         location="lunar_od/estimators.py estimate_two_way_range_bls_lm acceptance (_acceptance_residual: 6-state "
+                  "propagate_state at the caller's rtol) vs LM damping escalation",
+         discovered="Phase 17-HARDEN-D27 qualification (simplified KP2 cross-check, truth start)",
+         root_cause="the scored cost carries ~5 chi^2 of integration noise at rtol 1e-11 (1 % and 10 % Gauss-Newton "
+                    "steps RAISE it by 4-6 chi^2 while the full step lowers it by 9); damped steps whose predicted "
+                    "gain is below that noise are rejected, lambda escalates, and the shrinking steps are rejected in "
+                    "turn",
+         effect="from the truth start the K solve ends DampingLimit 1.95 sigma (chi2 +14.4, K 0.0078 vs 0.0051) from "
+                "the minimiser; correctly NOT certified by D27 (decrement 3.68). No authoritative result affected: "
+                "KP2 uses its own solver; the BLS1 / KP2 production job converges from the declared a priori",
+         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP",
+         repair="none (an acceptance-noise-aware LM / step rule is an estimator-design change outside the K closeout)",
+         regression="none; the status is protected by the D27 genuine-failure tests",
+         reproduction="examples/phase17_d27_qualification.py --simplified (truth_start row); line search in "
+                      "docs/phase17_harden_d27_convergence_status.md s4"),
 ]
 
 # contract_id, quantity, producer, consumer, time_origin, frame, center, units, coverage, enforcement, tests
