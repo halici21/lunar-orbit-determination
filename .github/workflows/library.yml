@@ -50,3 +50,13 @@ jobs:
           name: library-${{ matrix.os }}-py${{ matrix.python }}
           path: outputs/library.xml
           retention-days: 14
+  qualification:
+    name: Library / qualification
+    needs: library
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every platform and Python job
+        env:
+          MATRIX_RESULT: ${{ needs.library.result }}
+        run: test "$MATRIX_RESULT" = success

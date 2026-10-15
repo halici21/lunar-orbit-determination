@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.3 — 2026-10-15
+
+- Add a Python-bundled Windows x64 portable application and a real, data-free
+  desktop tutorial with execution, cancellation and recorded-comparison checks.
+- Record the actual 60-second desktop workflow and publish its source/result identities.
+- Generate public API signatures/docstrings from source and document numerical units,
+  array shapes, reference epochs, priors and returned covariance contracts.
+- Qualify library wheels on Windows/Linux and Python 3.10–3.13; keep kernel-backed
+  integration checks in their explicit external-data tier.
+- Publish the predeclared 64-trial / 192-fit BLS-LM/SRIF/SR-UKF comparison, full raw
+  inputs and distribution/consistency diagnostics; report SRIF MaxIter outcomes.
+- Add controlled Dependabot updates, PR dependency review and isolated release
+  builds that qualify source/wheel/portable assets before tagged publication.
+- Normalize equivalent Windows source paths when recording tutorial identities.
+
 - Move catalogue network colors into a wrapping key below the map, preventing
   the legend from covering station markers. Explain custom stars separately
   from network colors and keep unknown networks visible in the key.

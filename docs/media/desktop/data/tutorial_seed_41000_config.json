@@ -1,0 +1,69 @@
+{
+  "seed": 41000,
+  "noise_enabled": true,
+  "duration_s": 1800,
+  "sample_step_s": 60,
+  "mu_moon_m3_s2": 4902800066000.0,
+  "initial_state_m_mps": [
+    1837400.0,
+    30000.0,
+    -20000.0,
+    -15.0,
+    1633.5,
+    4.0
+  ],
+  "initial_error_m_mps": [
+    150.0,
+    -100.0,
+    80.0,
+    0.05,
+    -0.04,
+    0.03
+  ],
+  "earth_position_m": [
+    384400000.0,
+    0.0,
+    0.0
+  ],
+  "stations_lat_lon_deg": [
+    [
+      15.0,
+      160.0
+    ],
+    [
+      -25.0,
+      200.0
+    ],
+    [
+      45.0,
+      180.0
+    ],
+    [
+      -35.0,
+      150.0
+    ]
+  ],
+  "sigma_range_m": 5.0,
+  "sigma_angle_rad": 1e-05,
+  "max_iter": 40,
+  "rtol": 1e-11,
+  "atol": 1e-12,
+  "estimator_type": "ukf",
+  "explicit_prior_std_m_mps": [
+    200.0,
+    200.0,
+    200.0,
+    0.1,
+    0.1,
+    0.1
+  ],
+  "process_noise": null,
+  "ukf": {
+    "alpha": 0.35,
+    "beta": 2.0,
+    "kappa": 0.0,
+    "jitter": 1e-12
+  },
+  "truth_level": 0,
+  "scope": "synthetic identity-frame tutorial; all observations retained"
+}

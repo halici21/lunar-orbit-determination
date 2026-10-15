@@ -17,6 +17,7 @@ SOURCE = "https://github.com/halici21/lunar-orbit-determination/blob/main/"
 PAGES = {
     "index.md": "docs/site/index.md",
     "quickstart.md": "docs/tutorials/quickstart.md",
+    "desktop.md": "docs/tutorials/desktop.md",
     "results.md": "docs/research/results-gallery.md",
     "benchmark.md": "docs/research/paired-benchmark.md",
     "support.md": "docs/validation/support-matrix.md",
@@ -51,7 +52,7 @@ def build(strict):
                     raise ValueError(f"Missing or outside-repository link in {source}: {link}")
                 if resolved in reverse:
                     destination = reverse[resolved]
-                elif label.startswith("!"):
+                elif label.startswith("!") or resolved.suffix in {".mp4", ".webm"}:
                     destination = "assets/" + resolved.relative_to(ROOT).as_posix()
                     asset = staging / destination
                     asset.parent.mkdir(parents=True, exist_ok=True)

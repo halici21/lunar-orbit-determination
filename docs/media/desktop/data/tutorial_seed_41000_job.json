@@ -1,0 +1,9 @@
+{
+  "schema": "lunar-od-tutorial-job-v1",
+  "run_id": "500ff359cb4446dcbde636f63bc8a7ba",
+  "created_at": "2026-10-15T20:39:29.771334+00:00",
+  "options": {
+    "measurement_seed": 41000,
+    "cold_start_seed": 41000
+  }
+}
