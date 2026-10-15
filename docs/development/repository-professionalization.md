@@ -80,7 +80,7 @@ record this evidence and broaden documentation checking only.
 | Public gate with isolated external inputs | **279 passed**, no failures/errors/skips |
 | Scientific preservation | 375 byte-identity gates; all 991 original tracked files retained |
 | Numeric-literal audit against integrated main | No scientific or test numeric literals changed by the migration |
-| Repository documentation checker | 86 current Markdown documents, 141 local links, all valid |
+| Repository documentation checker | 86 current Markdown documents, 142 local links, all valid |
 | Packaging | Editable install and wheel build pass; all 55 library modules present; no study/app modules in wheel |
 | Independent wheel environment | Installed wheel imports outside the source checkout; `pip check` passes |
 | Development entry points | Example schema, minimal geometry example and Phase 17 CLI help pass |

@@ -113,5 +113,9 @@
     "baseline-tests.xml": "31ba6b3ae978bacb3b11ef8f7606e279a36222945e01ef1d166d1572bc90b189",
     "clean-tests.xml": "eaa5a49195018d1744b31f14b29171109f6ecf776930fbe4127b62b911573030",
     "public-tests.xml": "48e977e4dee93605d67184716d058248c26fd92557a97572dd2e243affaa6786"
+  },
+  "documentation": {
+    "current_markdown_files": 86,
+    "valid_local_links": 142
   }
 }
