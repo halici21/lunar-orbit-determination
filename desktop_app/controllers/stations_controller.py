@@ -2,6 +2,7 @@
 from __future__ import annotations
 import copy
 import csv as _csv
+from html import escape
 import json
 from pathlib import Path
 from typing import Any
@@ -105,7 +106,6 @@ def _build_map(stations: list[dict]):
     matplotlib.use("Qt5Agg")
     import matplotlib.pyplot as plt
     from matplotlib.figure import Figure
-    from matplotlib.lines import Line2D
 
     with plt.rc_context(_MPL_STYLE):
         fig = Figure(figsize=(11, 4.5), tight_layout={"pad": 0.8})
@@ -147,24 +147,6 @@ def _build_map(stations: list[dict]):
 
     for spine in ax.spines.values():
         spine.set_edgecolor(C.BORDER_MAIN)
-
-    visible_networks = {s["network"] for s in stations}
-    handles = [
-        Line2D([0], [0], marker="o", color="w",
-               markerfacecolor=c, markersize=8, label=net, linestyle="None")
-        for net, c in _NET_COLORS.items() if net in visible_networks
-    ]
-    if any(s.get("_custom") for s in stations):
-        handles.append(
-            Line2D([0], [0], marker="*", color="w",
-                   markerfacecolor=C.YELLOW, markersize=10,
-                   label="Custom", linestyle="None")
-        )
-    leg = ax.legend(handles=handles, loc="lower left",
-                    framealpha=0.6, facecolor=C.BG_PANEL,
-                    edgecolor=C.BORDER_MID, fontsize=FONT.SIZE_XS)
-    for text in leg.get_texts():
-        text.set_color(C.TEXT_SECONDARY)
 
     return fig
 
@@ -280,6 +262,15 @@ class StationsController(QWidget):
 
         # Build map
         self._build_map_widget(self._all_stations)
+        # Keep the key outside the geographic area so it cannot cover stations.
+        self._map_legend = QLabel()
+        self._map_legend.setTextFormat(Qt.RichText)
+        self._map_legend.setWordWrap(True)
+        self._map_legend.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self._map_legend.setStyleSheet(f"color:{C.TEXT_SECONDARY}; font-size:{FONT.SIZE_SM}px;")
+        self._map_legend.setAccessibleName("Harita ağ renkleri ve istasyon işaretleri")
+        self.mainLayout.insertWidget(1, self._map_legend)
+        self._update_map_legend()
 
         # Toolbar: search + action buttons
         toolbar = QWidget(self)
@@ -352,14 +343,14 @@ class StationsController(QWidget):
         selection_lay.addWidget(self._btn_delete)
 
         # Insert toolbar above table
-        self.mainLayout.insertWidget(1, toolbar)
+        self.mainLayout.insertWidget(2, toolbar)
         self._filter_status = QLabel()
         self._filter_status.setWordWrap(True)
         self._filter_status.setMaximumWidth(520)
         self._filter_status.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         self._filter_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
         self._filter_status.setAccessibleName("İstasyon tablosunun filtre ve seçim durumu")
-        self.mainLayout.insertWidget(2, self._filter_status)
+        self.mainLayout.insertWidget(3, self._filter_status)
 
         # Table
         self._populate_table(self._all_stations)
@@ -367,6 +358,23 @@ class StationsController(QWidget):
 
     def on_shown(self) -> None:
         pass
+
+    def _update_map_legend(self) -> None:
+        visible = {s["network"] for s in self._all_stations}
+        networks = [net for net in _NET_COLORS if net in visible]
+        networks.extend(sorted(visible - set(networks)))
+        items = [
+            f'<span style="color:{_NET_COLORS.get(net, _DEFAULT_COLOR)}">'
+            f'●&nbsp;{escape(net)}</span>' for net in networks
+        ]
+        description = "Ağlar: " + ", ".join(networks)
+        if any(s.get("_custom") for s in self._all_stations):
+            items.append("★&nbsp;Özel&nbsp;istasyon")
+            description += ". Yıldız: kullanıcı tarafından eklenen istasyon; rengi ait olduğu ağı gösterir."
+        self._map_legend.setText("Ağlar: " + " &nbsp; ".join(items) if items else "")
+        self._map_legend.setVisible(bool(items))
+        self._map_legend.setAccessibleDescription(description)
+        self._map_legend.setToolTip(description + " Harita, arama filtresinden bağımsız tüm kataloğu gösterir.")
 
     def resizeEvent(self, event) -> None:
         if hasattr(self, "_toolbar_layout"):
@@ -416,6 +424,7 @@ class StationsController(QWidget):
                     item.widget().deleteLater()
             lay.addWidget(canvas)
             self._canvas = canvas
+            self._update_map_legend()
         except Exception:
             pass
 

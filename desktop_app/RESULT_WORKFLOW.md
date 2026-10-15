@@ -29,6 +29,13 @@ query, selection and existing Matplotlib canvas. The catalogue map uses equal
 degree scales and fits a 2:1 world rectangle; this equirectangular projection
 does not preserve distances or areas on the Earth.
 
+The catalogue's network-color key is a wrapping Qt text row below the canvas,
+outside geographic coordinates. It describes the full catalogue even while
+the table is filtered. A star identifies a custom station; its color still
+identifies its network. Unknown network codes use the same fallback color as
+their plotted markers. The key refreshes after a successful map rebuild and
+hides for an empty catalogue. Its text is escaped before rich-text rendering.
+
 ## Mission overview
 
 New installations open **Görev görünümü**. Saved safe workspace pages remain

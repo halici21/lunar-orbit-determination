@@ -43,6 +43,10 @@ seçimden ağ kaydetme/düzenleme/silme. Sayfayı aşağı kaydırarak tabloya e
 koordinat ve hata sütunları için tablonun kendi yatay kaydırıcısını kullanın.
 Pencere boyutu değiştiğinde arama ve seçili istasyon korunur.
 
+Haritanın altındaki **Ağlar** satırı nokta renklerini açıklar; arama sırasında
+da tüm haritanın anahtarıdır. **★ Özel istasyon** işaretin türünü belirtir;
+yıldızın rengi yine ait olduğu ağı gösterir.
+
 ## Yörünge, harita ve Gantt
 
 Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.

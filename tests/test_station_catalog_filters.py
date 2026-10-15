@@ -131,6 +131,7 @@ def test_catalogue_map_preserves_degree_scale_and_actual_coordinates(qt_app, siz
     try:
         canvas.resize(*size); canvas.show(); qt_app.processEvents(); canvas.draw()
         axes = canvas.figure.axes[0]
+        assert axes.get_legend() is None  # The key must not cover any geography.
         origin, east, north = axes.transData.transform([(0, 0), (10, 0), (0, 10)])
         assert east[0] - origin[0] == pytest.approx(north[1] - origin[1], abs=1e-8)
         assert axes.get_xlim() == (-180, 180) and axes.get_ylim() == (-90, 90)
@@ -140,3 +141,25 @@ def test_catalogue_map_preserves_degree_scale_and_actual_coordinates(qt_app, siz
             assert tuple(markers[station["name"]].get_offsets()[0]) == (station["lon_deg"], station["lat_deg"])
     finally:
         canvas.close(); qt_app.processEvents()
+
+
+def test_map_key_describes_full_catalogue_and_custom_shape_without_hidden_networks(page):
+    from PyQt5.QtGui import QTextDocument
+
+    def text():
+        document = QTextDocument()
+        document.setHtml(page._map_legend.text())
+        return document.toPlainText().replace("\u00a0", " ")
+
+    assert all(net in text() for net in ("DSN", "ESA", "ITU", "KGS", "RUS", "ISRO"))
+    before = page._map_legend.text()
+    page._search.setText("DSN")
+    assert page._map_legend.text() == before  # The map still shows all stations.
+    page._all_stations = [dict(page._all_stations[0], network="OTHER<tag>", _custom=True)]
+    page._update_map_legend()
+    assert "OTHER<tag>" in text() and "★ Özel istasyon" in text()
+    assert "DSN" not in text() and "OTHER&lt;tag&gt;" in page._map_legend.text()
+    assert "rengi ait olduğu ağı gösterir" in page._map_legend.accessibleDescription()
+    page._all_stations = []
+    page._update_map_legend()
+    assert page._map_legend.isHidden() and not page._map_legend.text()

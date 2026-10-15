@@ -12,6 +12,7 @@
 
 - [Install and use on Windows (Türkçe)](windows-quickstart.md)
 - [Station catalogue responsive layout](development/station-layout_2026-10-15.md)
+- [Station map key: unobstructed geography and custom markers](development/station-legend_2026-10-15.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
