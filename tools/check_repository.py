@@ -49,7 +49,7 @@ def main() -> int:
     import lunar_od
     if not Path(lunar_od.__file__).resolve().is_relative_to(ROOT / 'src/lunar_od'):
         errors.append(f'Library imported from another checkout: {lunar_od.__file__}')
-    if (ROOT / 'lunar_od').exists():
+    if (ROOT / 'lunar_od/__init__.py').is_file():
         errors.append('Obsolete root package shadows the src package')
     print(f'{len(manifest["files"])} migrated paths; {preserved} preserved byte identities; '
           f'{len(documents)} documents / {link_count} local links checked.')
