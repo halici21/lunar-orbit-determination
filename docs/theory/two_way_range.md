@@ -1,9 +1,9 @@
 # Two-Way Range Observable (M3)
 
 This document defines the converged two-way range measurement model
-implemented in `lunar_od/two_way_range.py` and its estimator integration.
+implemented in `src/lunar_od/two_way_range.py` and its estimator integration.
 It is separate from the two-way counted-Doppler model
-(`docs/two_way_counted_doppler.md`); the legacy counted-Doppler solver
+(`docs/theory/two_way_counted_doppler.md`); the legacy counted-Doppler solver
 `solve_two_way_light_time` is not modified by M3.
 
 ## 1. Event contract

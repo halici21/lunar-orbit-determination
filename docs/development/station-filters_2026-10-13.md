@@ -24,9 +24,9 @@ shortcut.
   fits a small viewport; the existing station page still requires horizontal
   and vertical scrolling in small windows. Compact reflow is future work.
 
-![DSN search: three visible rows and one selection](images/desktop-stations-filtered.png)
+![DSN search: three visible rows and one selection](../images/desktop-stations-filtered.png)
 
-![Zero matches: recovery guidance and disabled export](images/desktop-stations-empty.png)
+![Zero matches: recovery guidance and disabled export](../images/desktop-stations-empty.png)
 
 ## Verification
 

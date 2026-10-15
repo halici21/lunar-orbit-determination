@@ -44,7 +44,7 @@ The selected light palette and every existing scientific tool remain available.
 Wide and narrow screenshots were inspected after native Qt rendering.
 The small viewport has no horizontal scroll range. See the
 [sanitized render receipt](mission-usability-receipt_2026-10-11.json) and
-[complete narrow page capture](images/desktop-mission-narrow.png).
+[complete narrow page capture](../images/desktop-mission-narrow.png).
 
 Public regression:
 

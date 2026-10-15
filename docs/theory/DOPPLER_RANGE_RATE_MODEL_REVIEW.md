@@ -10,20 +10,20 @@ current tree.
 ## 1. Summary of what the code currently implements
 
 Two physically distinct range-rate observables, selected by
-`RangeRatePhysicsConfig.mode` ([radiometrics.py](lunar_od/radiometrics.py)):
+`RangeRatePhysicsConfig.mode` ([radiometrics.py](../../src/lunar_od/radiometrics.py)):
 
 ### `geometric_instantaneous`
-- `instantaneous_geometric_range_rate(r_rel, v_rel)` ([radiometrics.py:101](lunar_od/radiometrics.py#L101))
+- `instantaneous_geometric_range_rate(r_rel, v_rel)` ([radiometrics.py:101](../../src/lunar_od/radiometrics.py#L101))
   returns `ρ̇ = (ρ⃗·ρ̇⃗)/|ρ⃗|`.
 - Built in the **ECEF (ITRF93) rotating frame**: the spacecraft 6-state is rotated
   to ECEF with the 6×6 `sxform`, and `ρ̇⃗ = v_sat_ecef` because the station is fixed
   in ECEF (`v_station_ecef = 0`). Earth-rotation transport of the station is thus
-  captured exactly ([measurements.py:524-538](lunar_od/measurements.py#L524-L538)).
+  captured exactly ([measurements.py:524-538](../../src/lunar_od/measurements.py#L524-L538)).
 - This is the **one-way instantaneous** line-of-sight range-rate — the simplified
   textbook reference model.
 
 ### `two_way_counted_doppler`
-- `two_way_counted_doppler_observable(...)` ([radiometrics.py:111](lunar_od/radiometrics.py#L111)):
+- `two_way_counted_doppler_observable(...)` ([radiometrics.py:111](../../src/lunar_od/radiometrics.py#L111)):
   evaluates the **round-trip light-time at the two count-interval endpoints**
   `t_mid ± Tc/2` and forms the **averaged differenced range**
   `ρ_rate = [τ_RT(t_end) − τ_RT(t_start)] / Tc`. It is **not** an instantaneous
@@ -32,7 +32,7 @@ Two physically distinct range-rate observables, selected by
   `f_D = turnaround_ratio · f_uplink · ρ_rate` (`output_unit="hz"`) or its
   m/s-equivalent `c·ρ_rate/2` (`output_unit="mps_equivalent"`, the default OD
   observable).
-- `solve_two_way_light_time(...)` ([radiometrics.py:287](lunar_od/radiometrics.py#L287))
+- `solve_two_way_light_time(...)` ([radiometrics.py:287](../../src/lunar_od/radiometrics.py#L287))
   solves a genuine **three-epoch** problem with **separately converged uplink and
   downlink legs**:
   - downlink `t3 → t2`: `t2 = t3 − |r_sc(t2) − r_st(t3)|/c` (iterated),
@@ -43,21 +43,21 @@ Two physically distinct range-rate observables, selected by
 - **Coherent turnaround ratio**, **constant uplink frequency**, **transponder
   delay**, and a **station clock model** (constant offset + linear drift, applied
   to the receive endpoints via `_clock_corrected_receive_time`,
-  [radiometrics.py:381](lunar_od/radiometrics.py#L381)) are all included.
+  [radiometrics.py:381](../../src/lunar_od/radiometrics.py#L381)) are all included.
 - A `local_state_model` switch (`"ode"` default, or `"taylor3"` for `Tc ≤ 60 s`)
   controls the local spacecraft-state model around the bounce.
 
 ### Analytic Jacobians
-- geometric: local analytic 4×6 `H̃` ([measurements.py:777](lunar_od/measurements.py#L777))
+- geometric: local analytic 4×6 `H̃` ([measurements.py:777](../../src/lunar_od/measurements.py#L777))
   mapped to the arc initial state through the STM.
 - two-way: the range-rate row is replaced by the **analytic counted-Doppler
   initial-state partials** `two_way_counted_doppler_initial_state_jacobian`
-  ([radiometrics.py:164](lunar_od/radiometrics.py#L164)), which differences the
+  ([radiometrics.py:164](../../src/lunar_od/radiometrics.py#L164)), which differences the
   per-endpoint `round_trip_light_time_initial_state_jacobian`
-  ([radiometrics.py:209](lunar_od/radiometrics.py#L209)) — this carries the
+  ([radiometrics.py:209](../../src/lunar_od/radiometrics.py#L209)) — this carries the
   count-interval endpoints, the implicit uplink/downlink light-time partials
   (`dt1_dx`, `dt2_dx`), the bounce-time dependence, and the STM. Wired in the
-  estimators at [estimators.py:984-1008](lunar_od/estimators.py#L984-L1008). A
+  estimators at [estimators.py:984-1008](../../src/lunar_od/estimators.py#L984-L1008). A
   finite-difference Jacobian is kept as a validation reference.
 
 ---
@@ -109,7 +109,7 @@ Status key: **Implemented** / **Partial** / **Missing** / **N/A**.
 ### Instrumentation
 | Effect | Status | Note |
 |---|---|---|
-| Transponder delay | Implemented | between uplink/downlink legs ([radiometrics.py:328](lunar_od/radiometrics.py#L328)) |
+| Transponder delay | Implemented | between uplink/downlink legs ([radiometrics.py:328](../../src/lunar_od/radiometrics.py#L328)) |
 | Station clock offset | Implemented | constant offset on receive endpoints |
 | Station clock drift | Implemented | linear drift about a reference time |
 | Frequency ramping / ramp tables | Missing | constant uplink frequency assumed |
@@ -131,10 +131,10 @@ Status key: **Implemented** / **Partial** / **Missing** / **N/A**.
 `PassGeometry.range_rate_physics` and every consumer reads it:
 
 - generation: `generate_range_rate_measurements` branches on the mode
-  ([measurements.py:537-549](lunar_od/measurements.py#L537-L549));
+  ([measurements.py:537-549](../../src/lunar_od/measurements.py#L537-L549));
 - residual prediction: `compute_range_rate_residuals` branches on the **same**
   config and calls the **same** `two_way_counted_doppler_observable`
-  ([measurements.py:637-649](lunar_od/measurements.py#L637-L649));
+  ([measurements.py:637-649](../../src/lunar_od/measurements.py#L637-L649));
 - the arc builder carries the physics into the pass geometry
   (`test_build_measurement_arcs_carries_two_way_range_rate_physics`).
 

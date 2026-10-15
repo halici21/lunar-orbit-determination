@@ -2,9 +2,9 @@
 
 ## Public checks on each push / PR
 
-[Public checks workflow](../.github/workflows/public-checks.yml) runs on Windows
+[Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,
-then calls [run_public_checks.py](../tools/run_public_checks.py).
+then calls [run_public_checks.py](../../tools/run_public_checks.py).
 
 The runner selects the documented test modules in its TEST_FILES list. It clears
 PYTHONPATH and redirects project, campaign, gravity and kernel overrides to
@@ -29,33 +29,33 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest station-catalogue regression](station-filters_2026-10-13.md): 1,803 passed
+[Latest station-catalogue regression](../development/station-filters_2026-10-13.md): 1,803 passed
 checks, 29 skipped (1,686 named cases and 146 subtest checks), zero failures/errors.
 The 275-case public gate includes all four station-search/export cases and all
 35 mission cases.
-[Previous map regression](map-layout_2026-10-12.md): 1,799 passed checks, 29 skipped
+[Previous map regression](../development/map-layout_2026-10-12.md): 1,799 passed checks, 29 skipped
 (1,682 named cases and 146 subtest checks), zero failures/errors. The 271-case
 public gate includes all 35 mission cases, including map proportions and labels.
-[Previous orbit-label regression](orbit-labels_2026-10-12.md): 1,795 passed checks,
+[Previous orbit-label regression](../development/orbit-labels_2026-10-12.md): 1,795 passed checks,
 29 skipped (1,678 named cases and 146 subtest checks), zero failures/errors.
 The 267-case public gate includes all 31 mission and seven large-workspace cases.
-[Previous first-run regression](mission-onboarding_2026-10-12.md): 1,793 passed
+[Previous first-run regression](../development/mission-onboarding_2026-10-12.md): 1,793 passed
 checks, 29 skipped (1,676 named cases and 146 subtest checks), zero failures/errors.
 The 265-case public gate includes all 31 mission and four result-summary cases.
-[Previous status-display regression](mission-status_2026-10-11.md): 1,792 passed
+[Previous status-display regression](../development/mission-status_2026-10-11.md): 1,792 passed
 checks, 29 skipped (1,675 named cases and 146 subtest checks), zero failures/errors.
 The 264-case public gate includes all 30 mission and four result-summary cases.
-[Latest usability regression](mission-usability_2026-10-11.md): 1,787 passed
+[Latest usability regression](../development/mission-usability_2026-10-11.md): 1,787 passed
 checks, 29 skipped (1,670 named cases and 146 subtest checks), zero failures/errors;
 the final 259-case public gate includes all 26 mission cases and the final
 760×420 layout adjustment.
-[Latest mission regression](mission-overview_2026-10-11.md): 1,783 passed checks
+[Latest mission regression](../development/mission-overview_2026-10-11.md): 1,783 passed checks
 and 29 skipped (JUnit includes 146 subtest checks); the final 256-case public gate
 includes all 23 mission cases. The full gate collected 22 initial mission cases;
 the final report-compaction regression was validated in the final public gate.
-[Previous readiness regression](environment-readiness_2026-10-10.md): 1,759 passed
+[Previous readiness regression](../development/environment-readiness_2026-10-10.md): 1,759 passed
 and 29 skipped; the 233-case public gate includes all 14 readiness cases.
-[The prior clean-install record](main_workspace_readiness_2026-10-10.md) recorded
+[The prior clean-install record](../development/main_workspace_readiness_2026-10-10.md) recorded
 1,747 passed and 29 skipped. Full local executions reused existing external data.
 
 From the repository root with the validated environment and required data:

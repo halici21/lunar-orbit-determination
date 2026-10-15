@@ -1,6 +1,6 @@
 # Performance Optimization Plan
 
-> Historical performance plan. Test counts, command paths and task status belong to the original plan. Current setup and checks: [README](README.md), [verification](docs/verification.md).
+> Historical performance plan. Test counts, command paths and task status belong to the original plan. Current setup and checks: [README](../../README.md), [verification](../validation/verification.md).
 
 Scope: computational speed improvements only. Mathematical results must be bit-identical (or within floating-point rounding) before and after each task. Run `python -m pytest python_port/tests/ -q` after every task — must stay at 172 passed.
 
@@ -10,9 +10,9 @@ Excluded from this plan: light-time correction (correctness), rank-revealing QR 
 
 ## TASK-P1 — Analytical J₂ Gravity-Gradient Tensor
 
-**File:** `python_port/lunar_od/dynamics.py`  
-**Function:** `zonal_j2_gravity_gradient(r_bf, mu, radius, j2)`  
-**Current cost:** 6 extra `zonal_j2_acceleration(...)` calls per Jacobian evaluation (finite-difference).  
+**File:** `python_port/src/lunar_od/dynamics.py`
+**Function:** `zonal_j2_gravity_gradient(r_bf, mu, radius, j2)`
+**Current cost:** 6 extra `zonal_j2_acceleration(...)` calls per Jacobian evaluation (finite-difference).
 **Target:** Replace with a single closed-form tensor evaluation.
 
 ### Closed-form expression (body-fixed frame, z = pole axis)
@@ -56,8 +56,8 @@ Total: `G = G_pm + G_j2` where `G_pm[i,j] = (μ/r³)(3*r_bf[i]*r_bf[j]/r² - δ[
 
 ## TASK-P2 — Numba Fast Path for J₂
 
-**File:** `python_port/lunar_od/dynamics.py` (and `accelerated.py` if Numba kernels live there)  
-**Current behavior:** `use_fast = _FAST_DYNAMICS and not j2_moon` — J₂ disables Numba entirely.  
+**File:** `python_port/src/lunar_od/dynamics.py` (and `accelerated.py` if Numba kernels live there)
+**Current behavior:** `use_fast = _FAST_DYNAMICS and not j2_moon` — J₂ disables Numba entirely.
 **Target:** Inline J₂ into the JIT kernel; restore ~10× ODE RHS speedup for J₂-enabled scenarios.
 
 ### Steps
@@ -111,9 +111,9 @@ Result must match the pre-TASK value to 1e-10 relative.
 
 ## TASK-P3 — Pre-Computed STM Cache for BLS/SRIF Iterations
 
-**File:** `python_port/lunar_od/estimators.py`  
-**Functions:** `estimate_position_bls_lm`, `estimate_range_rate_bls_lm`, `estimate_position_srif`, `estimate_range_rate_srif`  
-**Current cost:** Full 42-state ODE integration on **every** BLS/SRIF iteration.  
+**File:** `python_port/src/lunar_od/estimators.py`
+**Functions:** `estimate_position_bls_lm`, `estimate_range_rate_bls_lm`, `estimate_position_srif`, `estimate_range_rate_srif`
+**Current cost:** Full 42-state ODE integration on **every** BLS/SRIF iteration.
 **Target:** Integrate the augmented state once (first iteration); reuse the STM array for all subsequent iterations.
 
 ### Change pattern (apply identically to all 4 functions)
@@ -159,9 +159,9 @@ Initialize `_stm_cache = None`, `_stm_invalid = False` before the loop.
 
 ## TASK-P4 — Vectorized Measurement Jacobian Assembly
 
-**File:** `python_port/lunar_od/measurements.py`  
-**Functions:** `compute_position_residuals_analytic`, `compute_range_rate_residuals_analytic`  
-**Current cost:** Python loop over N epochs to build H matrix and residual vector.  
+**File:** `python_port/src/lunar_od/measurements.py`
+**Functions:** `compute_position_residuals_analytic`, `compute_range_rate_residuals_analytic`
+**Current cost:** Python loop over N epochs to build H matrix and residual vector.
 **Target:** Batch numpy operations — no Python epoch loop.
 
 ### Position Jacobian (vectorized)
@@ -211,9 +211,9 @@ Apply the same approach to range-rate Jacobian (additional velocity-dependent ro
 
 ## TASK-P5 — SR-UKF Sigma-Point STM Linearization
 
-**File:** `python_port/lunar_od/filters.py`  
-**Function:** `square_root_ukf_predict(...)` (or equivalent predict step)  
-**Current cost:** 2n+1 = 13 full ODE integrations per predict step.  
+**File:** `python_port/src/lunar_od/filters.py`
+**Function:** `square_root_ukf_predict(...)` (or equivalent predict step)
+**Current cost:** 2n+1 = 13 full ODE integrations per predict step.
 **Target:** 2 ODE calls (1 state + 1 augmented); sigma points linearized via STM.
 
 ### Change
@@ -253,9 +253,9 @@ else:
 
 ## TASK-P6 — Cold-Start Arc Parallelization
 
-**File:** `python_port/lunar_od/scenarios.py`  
-**Functions:** `run_batch_arc_sequence(...)`, `run_srif_arc_sequence(...)`  
-**Current cost:** Serial arc loop even when arcs are fully independent.  
+**File:** `python_port/src/lunar_od/scenarios.py`
+**Functions:** `run_batch_arc_sequence(...)`, `run_srif_arc_sequence(...)`
+**Current cost:** Serial arc loop even when arcs are fully independent.
 **Target:** `ProcessPoolExecutor` over cold-start arcs.
 
 ### Change

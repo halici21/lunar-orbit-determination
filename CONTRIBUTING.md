@@ -10,9 +10,16 @@ Install the validated Windows environment using setup_windows.cmd, or follow
 [the quickstart](docs/windows-quickstart.md). The exact dependency profile is
 [requirements-validated-windows.txt](requirements-validated-windows.txt).
 
+For a library development environment, run `python -m pip install -e .`
+and `python -m pip install -r requirements-dev.txt`. The pinned Windows
+profile includes the desktop dependencies. See [repository layout and artifact
+policy](docs/development/repository-layout.md).
+
 ## Before sharing changes
 
     python -m pip check
+    python tools/check_repository.py
+    python -m pytest -p tests.desktop_preferences -ra
     python tools/run_public_checks.py --junitxml outputs/public-checks.xml
     git diff --check
 

@@ -1,6 +1,6 @@
 # Lunar Orbit Determination Project Context
 
-> Historical project context, verified 2026-07-11. Its branch and implementation-status claims describe that snapshot; use the current [README](README.md), [Phase 17 status](docs/phase17_authoritative_status.md) and [consolidation audit](docs/branch_consolidation_2026-10-10/README.md) for current state.
+> Historical project context, verified 2026-07-11. Its branch and implementation-status claims describe that snapshot; use the current [README](../../README.md), [Phase 17 status](../../studies/phase17/reports/phase17_authoritative_status.md) and [consolidation audit](branch_consolidation_2026-10-10/README.md) for current state.
 
 > Canonical onboarding document for future Claude sessions. Read this before
 > changing anything in the repository.
@@ -48,17 +48,17 @@ Current state of work:
   `origin/main` = `3867105`. The working branch has **never been pushed**.
 - Branch: `feature/lunar-j2-force-models`, HEAD `5401db8`
   ("Add lunar gravity sensitivity campaign"), 13 commits ahead of `main`.
-- Untracked (intentional): `PROJECT_CONTEXT.md` (this file),
+- Untracked (intentional): `docs/development/PROJECT_CONTEXT.md` (this file),
   `.claude/settings.json`, `exports/` (visible artifact copy of the phase 6 J2
   campaign).
 - Modified working tree (as of 2026-07-11): 42 files. **Two distinct groups:**
   1. **Whitespace/line-ending churn only** — all 21 `.claude/skills/*/SKILL.md`,
-     `SPICE_CN_CNPLUS_VALIDATION.md`, `UI_README.md`, `docs/*.md`,
+     `docs/validation/SPICE_CN_CNPLUS_VALIDATION.md`, `docs/development/UI_README.md`, `docs/*.md`,
      `desktop_app/ui/pages/*.ui`, `desktop_app/models/scenario_model.py`,
-     `lunar_od/thesis_matrix.py`, `lunar_od/visibility.py`. Verified:
+     `src/lunar_od/thesis_matrix.py`, `src/lunar_od/visibility.py`. Verified:
      `git diff --stat --ignore-all-space` collapses these to zero.
   2. **Substantive parallel measurement-model work** (~1,063 insertions):
-     `lunar_od/measurements.py`, `estimators.py`, `filters.py`,
+     `src/lunar_od/measurements.py`, `estimators.py`, `filters.py`,
      `scenario_config.py`, `scenarios.py`, `__init__.py`, `reporting.py`,
      `desktop_app/controllers/analysis_controller.py`,
      `examples/run_scenario_config.py`, `tests/test_measurements.py`,
@@ -579,10 +579,10 @@ files as of 2026-07-11 (authoritative set = `git status` / `git diff`, not
 this list):
 
 ```text
-lunar_od/measurements.py        lunar_od/estimators.py
-lunar_od/filters.py             lunar_od/scenario_config.py (fields on top of 13B2a)
-lunar_od/scenarios.py           lunar_od/__init__.py
-lunar_od/reporting.py           desktop_app/controllers/analysis_controller.py
+src/lunar_od/measurements.py        src/lunar_od/estimators.py
+src/lunar_od/filters.py             src/lunar_od/scenario_config.py (fields on top of 13B2a)
+src/lunar_od/scenarios.py           src/lunar_od/__init__.py
+src/lunar_od/reporting.py           desktop_app/controllers/analysis_controller.py
 examples/run_scenario_config.py tests/test_measurements.py
 tests/test_reporting.py         tests/test_scenario_config.py
 ```
@@ -637,7 +637,7 @@ checkpoints.
 
 ## 22. Instructions for Future Claude Sessions
 
-1. Read `PROJECT_CONTEXT.md` before changing the project.
+1. Read `docs/development/PROJECT_CONTEXT.md` before changing the project.
 2. Check `git status` before every task.
 3. Never overwrite or stage unrelated uncommitted work (Section 20).
 4. Never use `git add .` — commits are explicit file lists at user-requested

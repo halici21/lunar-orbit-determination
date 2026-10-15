@@ -13,7 +13,7 @@ Phase 17-GEO design-matrix cache.
 
 The only genuine clutter was **179 cache files (5,752,114 bytes)** in five `__pycache__/`
 directories. They were deleted one path at a time, each recorded in
-`artifacts/repository_hygiene/deletion_manifest.csv`. **Nothing else was deleted and nothing was
+`docs/development/repository_hygiene/deletion_manifest.csv`. **Nothing else was deleted and nothing was
 moved.** Every other file is either active, provenance, or evidence.
 
 The five exact-duplicate groups are all intentional. The two untracked R1O-D orphan scripts are
@@ -76,9 +76,9 @@ after the folder rename (`git worktree repair`), and `git status` succeeds in al
 | `feature/phase17-r-k-srp-estimation` | 595f5b9 | in sync | 0/16 | no | 2026-09-23 | ACTIVE |
 | `feature/lunar-j2-force-models` | 632560d | gone | 20/0 | yes | 2026-08-02 | POSSIBLY_STALE (checked out in `python_port`; cannot be deleted while checked out) |
 | `archive/worktree-snapshots-2026-09-24` | a25d6fa | pushed | 0/3 | no | 2026-09-24 | HISTORICAL_KEEP (only copy of former worktree-local content) |
-| `wip/phase17-r-estimator-integration` | 13e75f1 | in sync | 12/1 | no | 2026-09-14 | HISTORICAL_KEEP (cited in `docs/phase17_r1m_multi_arc_identifiability.md`) |
-| `integration/phase17-canonical` | fea476f | none | 0/0 | yes | 2026-09-14 | HISTORICAL_KEEP (cited in `08_manifests/phase17_canonical_integration_manifest.txt`) |
-| `feature/phase14-17ar-qualified` | 0e785f6 | none | 11/0 | yes | 2026-09-14 | HISTORICAL_KEEP (cited in `08_manifests/phase14_17ar_reconstruction_manifest.txt`) |
+| `wip/phase17-r-estimator-integration` | 13e75f1 | in sync | 12/1 | no | 2026-09-14 | HISTORICAL_KEEP (cited in `studies/phase17/reports/phase17_r1m_multi_arc_identifiability.md`) |
+| `integration/phase17-canonical` | fea476f | none | 0/0 | yes | 2026-09-14 | HISTORICAL_KEEP (cited in `studies/phase17/provenance/phase17_canonical_integration_manifest.txt`) |
+| `feature/phase14-17ar-qualified` | 0e785f6 | none | 11/0 | yes | 2026-09-14 | HISTORICAL_KEEP (cited in `studies/phase17/provenance/phase14_17ar_reconstruction_manifest.txt`) |
 | `feature/lunar-high-order-gravity-closure` | fc13cc4 | gone | 12/0 | yes | 2026-08-13 | SAFE_DELETE_CANDIDATE |
 | `feature/r0b-force-contract-parity` | 9dd19c3 | gone | 35/0 | yes | 2026-07-30 | SAFE_DELETE_CANDIDATE |
 | `feature/r1-covariance-observability-parity` | 6e88015 | gone | 31/0 | yes | 2026-07-30 | SAFE_DELETE_CANDIDATE |
@@ -164,13 +164,13 @@ erroneous paths, remain byte-identical so that each phase's executed code stays 
 - **Phase reports, contracts and errata (KEEP_PROVENANCE):** R1, R1G, R1M, R1COV, R1O, R1O erratum, R1O-D (report + literature contract), R1O-OPT (report + contract), R1O-R, GEO (report + contract), R1–R4 long-arc qualification, and the P2 canonical integration report.
 - **Current technical docs (KEEP_ACTIVE):** frames, light-time Jacobians, SRP, two-way range/Doppler, SPICE cross-validation and stellar aberration.
 
-Root-level `.md` files: `README.md`, `CLAUDE.md`, `PROJECT_CONTEXT.md`, `plan.md`, `UI_README.md`,
-`PYQT5_DESKTOP_APP_README.md` (protected) and `PYQT5_DESKTOP_APP_BRIEF.md` are KEEP_ACTIVE.
-`DOPPLER_RANGE_RATE_MODEL_REVIEW.md`, `SPICE_CN_CNPLUS_VALIDATION.md` and
-`LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` are KEEP_PROVENANCE.
+Root-level `.md` files: `README.md`, `CLAUDE.md`, `docs/development/PROJECT_CONTEXT.md`, `docs/development/plan.md`, `docs/development/UI_README.md`,
+`docs/development/PYQT5_DESKTOP_APP_README.md` (protected) and `docs/development/PYQT5_DESKTOP_APP_BRIEF.md` are KEEP_ACTIVE.
+`docs/theory/DOPPLER_RANGE_RATE_MODEL_REVIEW.md`, `docs/validation/SPICE_CN_CNPLUS_VALIDATION.md` and
+`docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` are KEEP_PROVENANCE.
 
 Those last three were considered for a move to `docs/` and **not moved**, for three reasons:
-- They are cited by path from skills (`lunar-od-literature-review`, `lunar-od-model-review`), `PROJECT_CONTEXT.md` and `docs/frame_architecture_contracts_and_inconsistencies.md`.
+- They are cited by path from skills (`lunar-od-literature-review`, `lunar-od-model-review`), `docs/development/PROJECT_CONTEXT.md` and `docs/theory/frame_architecture_contracts_and_inconsistencies.md`.
 - They are identical on `main`, so moving them only here would create branch divergence purely for cosmetics.
 - Rule 24: do not over-organize.
 
@@ -185,7 +185,7 @@ worktree**. It exists untracked in the sibling `python_port` worktree, and a byt
 `artifacts/`: 141 tracked files, 4.2 MB, class KEEP_GENERATED_EVIDENCE. They are phase evidence (CSV/JSON/PNG) for R1, R1G, R1M, R1COV, R1O, R1O-D, R1O-OPT, R1O-R and GEO. Several are pinned by SHA-256 in phase manifests (`r1od_manifest.json`, the GEO predeclared-grid hash, and others).
 
 `results/phase17_geo_cache/`: 62 `.npz` design-matrix caches, 9.3 MB, gitignored, class KEEP_GENERATED_EVIDENCE.
-- They are read by `examples/phase17_geo_figures.py` and `examples/phase17_geo_fixture_attribution.py`.
+- They are read by `studies/phase17/scripts/phase17_geo_figures.py` and `studies/phase17/scripts/phase17_geo_fixture_attribution.py`.
 - Regenerating them requires re-propagating the full predeclared GEO grid (`phase17_geo_campaign.py`), so they are cached evidence, not junk.
 
 `08_manifests/`: 4 phase manifests, KEEP_PROVENANCE.
@@ -213,8 +213,8 @@ Byte-identical groups (SHA-256). **None deleted**, because each duplicate is int
 
 | duplicate | authoritative / partner | SHA-256 (prefix) | why both stay |
 |---|---|---|---|
-| `docs/figures/phase17_geo/f3_altitude.csv` | `artifacts/phase17_geo_altitude.csv` | 89e444f4 | `phase17_geo_figures.py` deliberately writes the figure data next to the figure and into the artifact set |
-| `docs/figures/phase17_geo/f4_inclination.csv` | `artifacts/phase17_geo_inclination.csv` | 8382865f | same |
+| `studies/phase17/results/figures/phase17_geo/f3_altitude.csv` | `studies/phase17/results/phase17_geo_altitude.csv` | 89e444f4 | `phase17_geo_figures.py` deliberately writes the figure data next to the figure and into the artifact set |
+| `studies/phase17/results/figures/phase17_geo/f4_inclination.csv` | `studies/phase17/results/phase17_geo_inclination.csv` | 8382865f | same |
 | `results/phase17_geo_cache/FIXTURE_PUBLISHED.npz` | `FIXTURE_CAMPAIGN_TABLE.npz` | 315cb9d8 | their identity **is the result** `phase17_geo_fixture_attribution.py` checks (lines 64–65) |
 | `results/phase17_geo_cache/G3_i90.0_b00.npz` | `G1_b00.npz` | 387edcc8 | physically identical grid cases; cache is looked up by case ID |
 | `results/phase17_geo_cache/G2_alt100_b20_fix{D,N}.npz` | `G1_b20.npz` | 19c1c238 | same |
@@ -230,9 +230,9 @@ Byte-identical groups (SHA-256). **None deleted**, because each duplicate is int
 | `examples/phase17_r1od_qualification.py` | ec36d2327ba7…04f13f6 | 14,168 B |
 | `examples/phase17_r1od_fd_convergence.py` | f48fd6de0254…21bbb6 | 6,408 B |
 
-- **Why they are untracked:** it is deliberate and documented. `artifacts/r1od_manifest.json` lists both under `orphaned_scripts_not_committed` ("reference a superseded pre-rewrite delta_dor.py API"), and `docs/phase17_r1o_r_stm_layout_repair.md` §5 records them as left untouched. `.graphifyignore` excludes both by name.
-- **Are they runnable?** No. They import `spacecraft_differential_delay`, `delta_dor_observable`, `delta_dor_k_column` and `transmit_time_consistency_check`, none of which exist in the current `lunar_od/delta_dor.py` (only `QuasarDirection` survives).
-- **Tracked equivalent:** `examples/phase17_r1od_jacobian_and_k.py` now writes the same artifacts that `qualification.py` used to write (`r1od_jacobian_fd_sweep.csv`, `r1od_k_sensitivity_fd.csv`, `r1od_qualification_summary.json`). The manifest-pinned hashes belong to the tracked producer.
+- **Why they are untracked:** it is deliberate and documented. `studies/phase17/results/r1od_manifest.json` lists both under `orphaned_scripts_not_committed` ("reference a superseded pre-rewrite delta_dor.py API"), and `studies/phase17/reports/phase17_r1o_r_stm_layout_repair.md` §5 records them as left untouched. `.graphifyignore` excludes both by name.
+- **Are they runnable?** No. They import `spacecraft_differential_delay`, `delta_dor_observable`, `delta_dor_k_column` and `transmit_time_consistency_check`, none of which exist in the current `src/lunar_od/delta_dor.py` (only `QuasarDirection` survives).
+- **Tracked equivalent:** `studies/phase17/scripts/phase17_r1od_jacobian_and_k.py` now writes the same artifacts that `qualification.py` used to write (`r1od_jacobian_fd_sweep.csv`, `r1od_k_sensitivity_fd.csv`, `r1od_qualification_summary.json`). The manifest-pinned hashes belong to the tracked producer.
 - **Outputs of `fd_convergence.py`:** `r1od_fd_convergence_{state,k}.csv` exist nowhere.
 - **Did later phases copy their logic?** Their helper `phi_6x6_history` and the case labels `W15_ddor`/`W15_fd` appear in no other file.
 - **Unique content:** `fd_convergence.py`'s docstring records the first-pass FD finding (relative error rising monotonically from 9.97e-4 to 1.25 as the step shrank, i.e. the plateau was never reached). That finding is **not** stated in the R1O-D report.
@@ -259,7 +259,7 @@ existed in the target worktree.
 | `artifacts/` | 4.2 MB | yes | yes | by reports/manifests | partly | no; keep |
 | `docs/figures/` | 1.7 MB | yes | yes | by reports | yes (GEO), no (lt_*) | no; keep |
 
-Largest tracked file: `docs/figures/phase17_geo/f6_srp_rtn_and_eclipse_timelines.png` (0.32 MB).
+Largest tracked file: `studies/phase17/results/figures/phase17_geo/f6_srp_rtn_and_eclipse_timelines.png` (0.32 MB).
 The worktree has no large binaries.
 
 Workspace level (read-only, outside this worktree):
@@ -269,10 +269,10 @@ Workspace level (read-only, outside this worktree):
 
 ## 21. Files Deleted
 
-179 files, all DELETE_CACHE_TEMP. Each row of `artifacts/repository_hygiene/deletion_manifest.csv`
+179 files, all DELETE_CACHE_TEMP. Each row of `docs/development/repository_hygiene/deletion_manifest.csv`
 records path, size, SHA-256, classification, reason, the regenerating source module, the
 reference-search result and tracked status. The deletion script
-(`artifacts/repository_hygiene/hygiene_delete_cache.py`) had three safeguards:
+(`tools/repository_hygiene/hygiene_delete_cache.py`) had three safeguards:
 - It processed only five named directories.
 - It refused any file that was tracked or not git-ignored.
 - It removed a directory only with `os.rmdir` after the directory was empty.
@@ -290,7 +290,7 @@ These were all kept unchanged:
 - All phase reports, errata and literature contracts (R1 through GEO).
 - `08_manifests/`, all of `artifacts/`, `docs/figures/` and `results/phase17_geo_cache/`.
 - Every phase script, including historically superseded ones.
-- The protected files: `PYQT5_DESKTOP_APP_README.md`, `examples/r2_measurement_fidelity_validation.py`, and the GEO contract, report, figures and artifacts.
+- The protected files: `docs/development/PYQT5_DESKTOP_APP_README.md`, `examples/r2_measurement_fidelity_validation.py`, and the GEO contract, report, figures and artifacts.
 - The two R1O-D orphans.
 
 ## 24. Files Requiring Owner Review
@@ -326,11 +326,11 @@ Checked Markdown links and repo-relative path mentions in all tracked `.md/.py/.
 
 - **New broken references introduced by cleanup: 0** (the pre and post sets are identical).
 - Pre-existing findings, all documented and none touched:
-  - 2 "links" in `docs/phase17_r1o_r_stm_layout_repair.md` L80–81 are false positives (`[:3](t)` math inside a code block).
+  - 2 "links" in `studies/phase17/reports/phase17_r1o_r_stm_layout_repair.md` L80–81 are false positives (`[:3](t)` math inside a code block).
   - 17 mentions of `results/phase6|12b|13g/...` are output paths written by scripts into gitignored `results/`, so they are absent locally by design.
   - `artifacts/r1m_holdout.csv` is intentionally withheld (the R1M report §53 says so).
   - 2 illustrative paths appear in the Graphify skill's extraction spec.
-  - **One genuine stale reference:** the `lunar_od/lunar_landmark_optical.py:371` docstring cites `examples/phase17_r1o_opt_light_time.py`, which exists in no commit. The test it describes lives in `examples/phase17_r1o_opt_oracles.py` (§8 of the R1O-OPT report). It was not fixed, because that is production code (see Owner Review).
+  - **One genuine stale reference:** the `src/lunar_od/lunar_landmark_optical.py:371` docstring cites `examples/phase17_r1o_opt_light_time.py`, which exists in no commit. The test it describes lives in `studies/phase17/scripts/phase17_r1o_opt_oracles.py` (§8 of the R1O-OPT report). It was not fixed, because that is production code (see Owner Review).
 - **Absolute paths:** 42 lines in 31 tracked files hard-code `…/Documents/Python/Grad/…`. They resolve through the hidden `Grad` junction created in the 2026-09-24 folder rename, so they are working, not broken. Rewriting them would change historical scripts and reports, so they were left as they are.
 
 ## 29. Test / Import Validation
@@ -459,11 +459,11 @@ LOCAL_REPOSITORY_HYGIENE_GATE = PASS
 | `examples/phase17_r1od_fd_convergence.py` | untracked | REVIEW_REQUIRED | kept | holds first-pass FD history not in report | same | none |
 | `results/phase17_geo_cache/*.npz` (62) | ignored | KEEP_GENERATED_EVIDENCE | kept | GEO cached designs; costly regeneration | `phase17_geo_{campaign,figures,fixture_attribution}.py` | none |
 | `graphify-out/` | ignored | KEEP_ACTIVE | kept | discovery tool output | `CLAUDE.md` | `graphify update .` |
-| `docs/figures/phase17_geo/f3_altitude.csv`, `f4_inclination.csv` | tracked | KEEP_GENERATED_EVIDENCE | kept | intentional duplicate of `artifacts/phase17_geo_{altitude,inclination}.csv` | `phase17_geo_figures.py` | both authoritative by design |
+| `studies/phase17/results/figures/phase17_geo/f3_altitude.csv`, `f4_inclination.csv` | tracked | KEEP_GENERATED_EVIDENCE | kept | intentional duplicate of `artifacts/phase17_geo_{altitude,inclination}.csv` | `phase17_geo_figures.py` | both authoritative by design |
 | `artifacts/phase17r1_*.png`, `artifacts/phase17r1g_*.png` (14) | tracked | KEEP_GENERATED_EVIDENCE | kept | phase evidence; producer missing | committed with R1/R1G report + manifest | none |
 | `docs/figures/lt_demo.png`, `lt_jacobian_check.png` | tracked | KEEP_PROVENANCE | kept | historical feature figures, uncited | none | none |
-| `DOPPLER_RANGE_RATE_MODEL_REVIEW.md`, `SPICE_CN_CNPLUS_VALIDATION.md`, `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` | tracked | KEEP_PROVENANCE | not moved | cited by path; identical on `main` | skills, `PROJECT_CONTEXT.md`, frame docs | — |
-| `PYQT5_DESKTOP_APP_README.md`, `examples/r2_measurement_fidelity_validation.py` | tracked | KEEP_ACTIVE / KEEP_PROVENANCE | kept | protected | — | — |
+| `docs/theory/DOPPLER_RANGE_RATE_MODEL_REVIEW.md`, `docs/validation/SPICE_CN_CNPLUS_VALIDATION.md`, `docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` | tracked | KEEP_PROVENANCE | not moved | cited by path; identical on `main` | skills, `docs/development/PROJECT_CONTEXT.md`, frame docs | — |
+| `docs/development/PYQT5_DESKTOP_APP_README.md`, `examples/r2_measurement_fidelity_validation.py` | tracked | KEEP_ACTIVE / KEEP_PROVENANCE | kept | protected | — | — |
 | `docs/phase17_geo_*`, `docs/figures/phase17_geo/`, `artifacts/phase17_geo_*` | tracked | KEEP_PROVENANCE / KEEP_GENERATED_EVIDENCE | kept | latest scientific evidence | GEO scripts, report | — |
 
 # OWNER REVIEW REQUIRED
@@ -480,10 +480,10 @@ LOCAL_REPOSITORY_HYGIENE_GATE = PASS
    - *Why uncertain:* the figures cannot be regenerated from the repository.
    - *Recommended:* keep them; if the plotting code is found (e.g. in a thesis-side notebook), commit it.
    - *Risk if removed:* irrecoverable figures.
-3. **`lunar_od/lunar_landmark_optical.py:371`** docstring cites nonexistent `examples/phase17_r1o_opt_light_time.py`
+3. **`src/lunar_od/lunar_landmark_optical.py:371`** docstring cites nonexistent `examples/phase17_r1o_opt_light_time.py`
    - *What it is:* a stale reference in production code.
    - *Why not fixed:* this task must not change production code.
-   - *Recommended:* change the reference to `examples/phase17_r1o_opt_oracles.py` in a separate docs-only commit.
+   - *Recommended:* change the reference to `studies/phase17/scripts/phase17_r1o_opt_oracles.py` in a separate docs-only commit.
    - *Risk:* none to behavior; misleading documentation.
 4. **12 fully-merged local branches** (§6)
    - *What they are:* completed R0–R4 and fix branches, all contained in `origin/main`.

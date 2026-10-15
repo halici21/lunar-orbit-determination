@@ -20,7 +20,7 @@ describe incomplete loaded data and were misleading on a fresh workspace.
   guidance and invalidates the previously drawn data.
 - No layout, palette, scientific calculation or artifact contract changed.
 
-![Initial mission view with opening instructions](images/desktop-mission-empty.png)
+![Initial mission view with opening instructions](../images/desktop-mission-empty.png)
 
 ## Verification
 

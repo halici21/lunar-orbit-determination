@@ -9,7 +9,7 @@ no external or remembered numbers are used.
 
 The implicit light-time sensitivity (`d(tau)/dx0` from the implicit
 light-time equation) is implemented and documented in
-`docs/one_way_light_time_jacobians.md`: receive-time-tagged measurements,
+`docs/theory/one_way_light_time_jacobians.md`: receive-time-tagged measurements,
 station and J2000->ITRF93 transform at receive time, spacecraft state and
 STM at the converged transmit time, STM position block evaluated at the
 transmit epoch (never the receive epoch).
@@ -26,13 +26,13 @@ Closed by commit `4f98d83` ("Close M2.3 and frame audit with real Windows
 SPICE validation"). The apparent line-of-sight sensitivity chain
 (light-time corrected LOS -> optional stellar aberration -> receive-epoch
 frame transform -> topocentric az/el) is covered by
-`docs/one_way_light_time_jacobians.md` and the stellar-aberration V&V suite
-(`docs/spice_cross_validation.md`: `apply_stellar_aberration` vs SPICE
+`docs/theory/one_way_light_time_jacobians.md` and the stellar-aberration V&V suite
+(`docs/validation/spice_cross_validation.md`: `apply_stellar_aberration` vs SPICE
 `stelab`, arcsecond-exact in controlled geometries).
 
 ## Frame audit: CLOSED — no correctness bug found
 
-`docs/frame_transformations.md` (audit dated 2026-07-11): "no
+`docs/theory/frame_transformations.md` (audit dated 2026-07-11): "no
 frame-correctness bug was found in the production one-way measurement
 chain." The contract (left-multiplication with target-from-source
 operators, SI units, epoch conventions) is locked by
@@ -41,8 +41,8 @@ operators, SI units, epoch conventions) is locked by
 
 ## M3 — Converged two-way range observable: IMPLEMENTED AND VALIDATED
 
-Reference: `docs/two_way_range.md`; implementation
-`lunar_od/two_way_range.py`; tests `tests/test_two_way_range.py` (27) and
+Reference: `docs/theory/two_way_range.md`; implementation
+`src/lunar_od/two_way_range.py`; tests `tests/test_two_way_range.py` (27) and
 `tests/test_two_way_range_integration.py` (16).
 
 Event contract (fixed receive tag `t3`):
@@ -151,9 +151,9 @@ reference in `test_estimators.py`.
 
 ## Known limitations / technical debt
 
-- `lunar_od/two_way_range.py` imports the **private** cubic-Hermite helpers
+- `src/lunar_od/two_way_range.py` imports the **private** cubic-Hermite helpers
   `_interp_state` and `_interp_state_transition_position` from
-  `lunar_od/radiometrics.py`; promoting them to a shared public
+  `src/lunar_od/radiometrics.py`; promoting them to a shared public
   interpolation module is deferred technical debt (no refactor in M3).
 - Same uplink and downlink station only; fixed coordinate-time transponder
   delay (no drift, relativistic terms, proper-time conversion, or delay

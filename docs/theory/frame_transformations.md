@@ -275,7 +275,7 @@ use the linearly interpolated 6x6 transforms and Earth histories quantified
 above. P0B-2 performs no automatic history extension.
 
 **M3 two-way range exception (2026-07-11):** the converged two-way range
-observable (`lunar_od/two_way_range.py`, `docs/two_way_range.md`) does NOT
+observable (`src/lunar_od/two_way_range.py`, `docs/theory/two_way_range.md`) does NOT
 inherit this interpolation. Its production policy is exact event-epoch
 `spice.sxform` at the station uplink (`t1`) and downlink (`t3`) events; the
 Earth-center translation keeps a separately reported cubic-Hermite ephemeris

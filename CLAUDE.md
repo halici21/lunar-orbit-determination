@@ -110,7 +110,7 @@ Also invisible to the graph, so verify in source:
   `propagate_state_with_k_sensitivity` -> `nom48[:, 42:48]` ->
   `_two_way_range_k_srp_column`) and the column-major STM block `[6:42]` have no
   edge. The Phase 17-R1O storage-order defect lived exactly there.
-- `lunar_od/__init__.py` re-exports everything, so any two exported functions look
+- `src/lunar_od/__init__.py` re-exports everything, so any two exported functions look
   two hops apart through it. Discard paths routed through `__init__.py`.
 - Physical and numerical meaning: units, frames, epochs, `order="F"` layouts,
   tolerances. Communities are unlabeled ("Community N"; no LLM backend configured).

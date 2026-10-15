@@ -14,9 +14,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(sys.argv[1]).resolve()
-CACHE_DIRS = ["examples/__pycache__", "lunar_od/__pycache__", "lunar_od/reference_config/__pycache__",
-              "lunar_od/rf/__pycache__", "tests/__pycache__"]
-MANIFEST = ROOT / "artifacts" / "repository_hygiene" / "deletion_manifest.csv"
+CACHE_DIRS = ["examples/__pycache__", "src/lunar_od/__pycache__", "src/lunar_od/reference_config/__pycache__",
+              "src/lunar_od/rf/__pycache__", "tests/__pycache__"]
+MANIFEST = ROOT / "outputs" / "repository_hygiene" / "deletion_manifest.csv"
 REF_RESULT = ("git grep: no code/test/doc reference to cache files; README.md:449 only lists "
               "__pycache__/ as ignored")
 

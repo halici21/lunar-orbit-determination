@@ -35,6 +35,12 @@ jobs:
             desktop_app/requirements_desktop.txt
       - name: Install validated dependencies
         run: python -m pip install -r requirements-validated-windows.txt
+      - name: Install editable library
+        run: python -m pip install -e .
+      - name: Repository paths and scientific record identity
+        run: python tools/check_repository.py
+      - name: Build library wheel
+        run: python -m pip wheel --no-deps . --wheel-dir outputs/wheels
       - name: Check dependencies
         run: python -m pip check
       - name: Public regressions

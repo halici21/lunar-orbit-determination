@@ -145,7 +145,7 @@ the **main** worktree via the out-of-repo `pytest.ini` `pythonpath`; the two
 | Repository code and docs at `eb92461` | authoritative; all file:line citations refer to it |
 | Existing test suite | executed (Section 2.2); coverage mapped in Appendix D |
 | `measurement_models_physics_derivatives_and_gaps_AUDIT_REFERENCE.md` (repo-external copy at `C:/Users/erayh/Documents/Python/Grad/`) | **uncommitted documentation reference copied from the main worktree** — not part of the production repository, not an authoritative committed document; every frame-relevant claim adopted from it was independently re-verified against the committed code |
-| `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` | tracked at `eb92461` (176 lines); committed doc source |
+| `docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` | tracked at `eb92461` (176 lines); committed doc source |
 | NAIF / IERS contracts | Appendix E, with per-source contract mapping |
 
 ---
@@ -214,7 +214,7 @@ Task Section 6 questions, answered with evidence:
 6. **`pxform`/`sxform` swapped roles** — none found; `pxform`/rotation-block
    for directions, positions, and accelerations; `sxform` + solve wherever a
    station **velocity** is consumed.
-7. **Docs correctness** — `docs/frame_transformations.md` §1–§2 states the
+7. **Docs correctness** — `docs/theory/frame_transformations.md` §1–§2 states the
    position-rotation vs state-transform split correctly and matches the code.
 
 `np.linalg.inv` does not appear anywhere in `lunar_od/` (grep: zero hits).
@@ -278,7 +278,7 @@ intentional, profile-labeled velocity-only approximation.
 
 ## 6. Measurement-model epoch matrix
 
-Reconstructed from code; agrees with `docs/frame_transformations.md` §5 and
+Reconstructed from code; agrees with `docs/theory/frame_transformations.md` §5 and
 with the external reference §26 (independently re-verified):
 
 | Model | Time tag | Spacecraft epoch | Station epoch | Transform epoch | Observer-vel epoch | STM epoch | Origin-translation epoch | Exact / interpolated |
@@ -401,7 +401,7 @@ light-time-unaware by design (SR-04/VG-06).
 
 **Preserved distinction:** M3 uses exact event-epoch `sxform`; legacy
 counted-Doppler uses an interpolated transform/pass-grid station state. This
-split is intentional (documented in `docs/two_way_range.md` §5 and the
+split is intentional (documented in `docs/theory/two_way_range.md` §5 and the
 counted-Doppler doc note) but creates a real fidelity difference between the
 two models, quantified in Section 11.
 
@@ -411,7 +411,7 @@ Answers to the task's Section 10 questions:
    (the table above); differences are intentional and documented for
    M3-vs-counted, under-documented for the UKF local path (VG-04).
 2. The M3-exact vs counted-interpolated split is **intentional** and
-   documented (`docs/two_way_range.md` §5, counted-Doppler doc note); the
+   documented (`docs/theory/two_way_range.md` §5, counted-Doppler doc note); the
    external reference records it as "intentional split, not a bug".
 3. The UKF local 1–5 s grid is **not** freshly sampled: transforms and Earth
    states are linearly re-sampled from the coarse pass grid, so local density
@@ -760,12 +760,12 @@ a later architecture phase.
 
 | Claim | Location | Actual behavior | Type | Severity | Correction |
 |---|---|---|---|---|---|
-| "linear interpolation over the propagated state history" | `docs/two_way_counted_doppler.md` derivation section | spacecraft state/STM interpolation is cubic Hermite (`_interp_state`); transforms/Earth are linear | docs drift | MEDIUM | **corrected by P0B-2D2** with per-quantity methods and closed-support policy |
+| "linear interpolation over the propagated state history" | `docs/theory/two_way_counted_doppler.md` derivation section | spacecraft state/STM interpolation is cubic Hermite (`_interp_state`); transforms/Earth are linear | docs drift | MEDIUM | **corrected by P0B-2D2** with per-quantity methods and closed-support policy |
 | Position-pass light-time tolerance/max-iter metadata | `measurement_model_metadata` | baseline mismatch resolved by P0A; position reports one-way constants (1e-12/10), range-rate reports its own config | metadata (FA-02) | MEDIUM | **corrected by P0A** |
 | M3 metadata completeness in results | `reporting.py` CSV columns | M2 fields only; no two-way convention/delay/event columns | traceability (FA-07) | MEDIUM | add M3 columns/manifest |
 | "ECEF" naming | production identifiers/docstrings | frame is ITRF93 | naming (FA-05) | LOW | docstring/comment clarification |
 | Nonzero-delay counted Doppler | legacy counted profile configuration | P0A rejects nonzero delay because separate `t2u`/`t2d` event geometry is not represented by the single-bounce model | physics/API safety | HIGH | short-term rejection complete; implement four-event counted Doppler separately |
-| "Frame audit: CLOSED — no correctness bug found" | `LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` §Frame audit | true for the M2-era frame-direction scope; later parity/policy findings FA-01, FA-03A, and FA-03B are now resolved by P0A/P0B-1/P0B-2 | scope drift | LOW | retain the narrower frame-direction claim and the dated resolution record |
+| "Frame audit: CLOSED — no correctness bug found" | `docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` §Frame audit | true for the M2-era frame-direction scope; later parity/policy findings FA-01, FA-03A, and FA-03B are now resolved by P0A/P0B-1/P0B-2 | scope drift | LOW | retain the narrower frame-direction claim and the dated resolution record |
 | CN pre-grid extrapolation "just before the grid start" | `_apparent_position_observable` docstring | **resolved by P0B-2:** strict closed support raises or drops instead of extrapolating; caller-owned pre-roll is required | docs vs behavior | MEDIUM | corrected in code/docstring and P0B-2D2 model documentation |
 
 ---

@@ -1,134 +1,111 @@
 # Lunar OD
 
-Lunar orbit determination research framework with a native Windows desktop
-workspace. Configure scenarios, run BLS-LM / SRIF / SR-UKF experiments, inspect
-recorded results, and compare runs with their saved settings and source metadata.
-
 [![Public checks](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml/badge.svg)](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml)
-[MIT license](LICENSE) · [Releases](https://github.com/halici21/lunar-orbit-determination/releases) · [Documentation](docs/README.md)
+[MIT](LICENSE) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
-![Lunar OD mission view with recorded orbit, stations and measurement Gantt](docs/images/desktop-mission.png)
+Lunar OD is research software for lunar orbit determination and tracking-design
+studies, with a native Windows desktop workspace for configuring scenarios,
+running estimators, and inspecting recorded results.
 
-## Start on Windows
+The Python library includes lunar and third-body dynamics, state-transition and
+SRP sensitivity propagation, station visibility, range/angles/range-rate and
+qualified two-way observables, BLS-LM, SRIF, and SR-UKF. Optional gravity and
+measurement extensions have individual qualification limits.
 
-1. Install **64-bit Python 3.13** from [python.org](https://www.python.org/downloads/windows/).
-2. Download a source ZIP from [Releases](https://github.com/halici21/lunar-orbit-determination/releases), or clone this repository. Extract the ZIP before running anything.
-3. Double-click **setup_windows.cmd** to install the pinned environment in this folder.
-4. Double-click **launch_lunar_od.cmd** to open the desktop app.
+![Desktop mission view](docs/images/desktop-mission.png)
 
-The launcher runs setup on first use if no environment exists. Setup requires
-internet access. This distribution uses Python; a standalone EXE installer is
-not provided.
+## Install
 
-**Türkçe:** [Windows kurulum ve kullanım rehberi](docs/windows-quickstart.md).
+The reference environment is Windows x86_64 and Python 3.13.2. Core package
+metadata permits Python 3.10+, but other versions/platforms are not covered by
+the desktop reference qualification.
 
-Or from PowerShell in the repository root:
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-validated-windows.txt
+.\.venv\Scripts\python.exe -m pip install -e .
+```
 
-    py -3.13 -m venv .venv
-    .\.venv\Scripts\python.exe -m pip install -r requirements-validated-windows.txt
-    .\.venv\Scripts\python.exe desktop_app/main.py
+For library-only use, install with `python -m pip install -e .` in your virtual
+environment; add `-r requirements-dev.txt` for development. The import name is
+`lunar_od`. No `PYTHONPATH` override is needed.
 
-The UI can open without SPICE data. Scientific runs require the
-[SPICE kernels](docs/windows-quickstart.md#spice-kernels); kernels and historical
-campaign data are not bundled. The validated environment is Windows x86_64,
-Python 3.13.2; other platforms are not covered by this desktop release.
+On Windows, `setup_windows.cmd` installs the pinned environment and editable
+package; `launch_lunar_od.cmd` starts the desktop app. See the
+[Windows guide (Türkçe)](docs/windows-quickstart.md).
 
-## Desktop workflow
+## Minimal example
 
-| Screen | Use |
-| --- | --- |
-| Görev görünümü | Play stored orbit samples alongside Earth stations and the recorded measurement Gantt |
-| İstasyonlar / Temas planı / Yüzey izi | Inspect the catalogue, compute independent visibility, or explore the lunar surface track |
-| Senaryo | Configure a reproducible scenario or derive one from a saved run |
-| Çalıştır | Run in a separate process; inspect logs and cancellation status |
-| Sonuçlar | Inspect recorded states, errors, metadata and source provenance |
-| Arşiv | Find existing runs and reopen their verified artifacts |
-| Karşılaştırma | Compare exactly matched records; export and reopen the workspace |
-| Ayarlar / Ortam | Check runtime and kernels; save the kernel directory for subsequent jobs |
+```python
+from lunar_od import geodetic_to_ecef_wgs84
 
-On main, startup and Scenario Builder preflight report missing dependencies or
-kernels before computation; see [readiness checks](docs/environment-readiness_2026-10-10.md).
-This feature postdates the v0.1.0-alpha.1 source ZIP.
+# Equator, Greenwich, zero ellipsoidal height; coordinates in metres.
+station_xyz_m = geodetic_to_ecef_wgs84(0.0, 0.0, 0.0)
+print(station_xyz_m)
+```
 
-Modern and Orchid themes are available in Settings. Station, visibility and
-surface-track tools are now visible in the main sidebar; other specialist pages
-remain expandable. New runs record actual measurement epochs for the mission
-Gantt. Legacy runs without those epochs show an explicit missing-data message.
-Station selection also works through the keyboard-accessible dropdown and
-Gantt row labels. Mission plots stack vertically in narrow windows.
-See the [mission guide](docs/mission-overview_2026-10-11.md),
-[usability iteration](docs/mission-usability_2026-10-11.md) and the
-[desktop workflow and data contracts](desktop_app/RESULT_WORKFLOW.md).
-The mission caption also exposes process completion and recorded arc-success
-fields, with a direct result-inspector action; see the
-[status iteration](docs/mission-status_2026-10-11.md).
-The initial view explains how to begin; loaded runs retain specific missing-data
-messages. See [first-run guidance](docs/mission-onboarding_2026-10-12.md).
-Orbit legends, controls and recorded metadata also remain readable in narrow
-plots and at high zoom; see [plot readability](docs/orbit-labels_2026-10-12.md).
-The mission map keeps consistent proportions and offers bounded, clickable
-station names; see [map usability](docs/map-layout_2026-10-12.md).
-Catalogue search now explains row counts and empty results; CSV exports the
-filtered table. See [station search/export](docs/station-filters_2026-10-13.md).
+```powershell
+python examples/scenario_config_cli.py --schema
+python examples/run_scenario_config.py config.json --dry-run
+python desktop_app/main.py
+```
 
-The current entry point is desktop_app/main.py. The older Tkinter and local web
-tools remain for reference; see [legacy tools](docs/legacy-tools.md). There is no
-hosted web application for the current desktop workflow.
+The desktop can open without SPICE data. Scientific scenarios require the
+[kernel setup](docs/windows-quickstart.md#spice-kernels); historical campaigns
+may additionally require external data described in [data/README.md](data/README.md).
 
-## What is verified
+## Repository layout
 
-- **Local combined suite, 2026-10-13:** 1,803 passed checks, 29 skipped, zero failures/errors.
-  Final public gate: 275 passed.
-- **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
-  desktop artifact, process, archive, comparison, rendering and session checks.
-  External data paths are isolated; this gate uses committed fixtures only.
-- **Real desktop workflow:** short recorded runs, derivation, comparison, export
-  and reopening were exercised. Eight existing single-arc runs remained readable.
+```text
+src/lunar_od/           importable scientific library
+tests/                  unit, integration, regression and science checks
+examples/               runnable examples and retained compatibility drivers
+studies/phase17/        scripts, configs, reports, results and provenance
+docs/                   theory, validation, research and development guidance
+desktop_app/            native application (separate from the library)
+tools/                  setup, verification and maintenance utilities
+fixtures/               small committed reference inputs
+data/                   external-data policy (large data are not bundled)
+archive/                immutable historical preservation material
+```
 
-[Local verification record](docs/station-filters_2026-10-13.md) ·
-[Public CI scope](docs/verification.md) ·
-[Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
+See the [architecture and artifact policy](docs/development/repository-layout.md)
+and [Phase 17 guide](studies/phase17/README.md) for reproduction and historical
+path resolution. Local generated runs go to ignored `results/` or `outputs/`.
 
-Passing UI tests or completing a process does not establish estimator convergence.
-The deliberately short BLS workflow runs retained operational_success=False.
-Long real-run acceptance and optional data-heavy scientific campaigns remain
-separate.
+## Validation
 
-Run the public checks in the installed environment:
+```powershell
+python -m pip check
+python tools/check_repository.py
+python tools/run_public_checks.py --junitxml outputs/public-checks.xml
+python -m pytest -p tests.desktop_preferences -ra
+```
 
-    .\.venv\Scripts\python.exe tools/run_public_checks.py --junitxml outputs/public-checks.xml
+The public CI gate uses committed fixtures and isolates external campaign data.
+The full suite includes scientific qualification checks; unavailable external
+inputs produce the suite's existing skips. Long campaigns are manual. See
+[verification scope](docs/validation/verification.md),
+[test categories](tests/README.md), and the
+[migration verification record](docs/development/repository-professionalization.md).
 
-## Repository map
+## Research status and limitations
 
-| Path | Contents |
-| --- | --- |
-| lunar_od/ | Scientific library: propagation, observables, estimation and diagnostics |
-| desktop_app/ | Current PyQt5 application and artifact workspace |
-| examples/ | Scenario runners and research/qualification scripts |
-| tests/, fixtures/ | Regressions and committed reference fixtures |
-| docs/ | User guides, scientific contracts and qualification reports |
-| artifacts/, 08_manifests/ | Committed scientific evidence and provenance |
-| archive/ | Preserved historical work; not active implementation |
-| tools/ | Public checks and Windows setup helpers |
-| results/ | Local generated runs; created as needed and ignored by Git |
+Results are primarily synthetic validation and model self-consistency studies.
+Passing tests, UI checks, or process completion do not establish operational
+navigation accuracy or estimator convergence. This project has no claim of
+flight qualification or real-mission validation. External tool comparisons
+qualify only their documented assumptions.
 
-## Research and development
+For current scientific conclusions, superseded results and known defects, start
+with the [authoritative Phase 17 status](studies/phase17/reports/phase17_authoritative_status.md)
+and [defect ledger](studies/phase17/reports/phase17_harden_defect_ledger.md).
+The [baseline research guide](docs/research/research-guide.md) explains the
+models and earlier experiment families.
 
-The framework supports Moon-centered propagation, station visibility, synthetic
-tracking, and batch/sequential estimation. Baseline and optional models have
-different fidelity and qualification limits; see the
-[research guide](docs/research-guide.md) and
-[authoritative scientific status](docs/phase17_authoritative_status.md).
+## Citation and license
 
-Use **main** for current development. Previous branch tips are preserved under
-branch-history/2026-10-10/ tags. Historical snapshots do not replace current code.
-[Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) ·
-[Branch consolidation audit](docs/branch_consolidation_2026-10-10/README.md)
-
-## License and citation
-
-[MIT License](LICENSE), copyright 2026 Cemil Eray Halıcı.
-
-For academic use, cite the related Lunar Orbit Determination graduation project
-and the commit/tag used to produce your results. A stable DOI or formal release
-citation is not registered in this repository.
+Use [CITATION.cff](CITATION.cff) and record the exact Git commit, study
+configuration, inputs and seeds used. No DOI is currently declared.
+Copyright and reuse terms are in the [MIT license](LICENSE). Third-party data
+and dependencies retain their own terms.

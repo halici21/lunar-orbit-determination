@@ -70,7 +70,7 @@ Local JUnit report SHA-256 receipts:
 Reopen the desktop app. Click **Ortam** in the bottom status bar or navigate to
 **Ayarlar → Hesaplama ortamı**. Select a kernel directory or restore automatic
 lookup. The selection is saved immediately and applies to subsequent child jobs.
-See [Windows quickstart](windows-quickstart.md#ortam-kontrolü).
+See [Windows quickstart](../windows-quickstart.md#ortam-kontrolü).
 
 The previously published v0.1.0-alpha.1 ZIP predates this change. Use the current
 main checkout for this feature; no existing release asset was replaced.

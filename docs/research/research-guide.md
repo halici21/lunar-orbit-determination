@@ -2,12 +2,12 @@
 
 This guide carries the baseline scientific overview and experiment catalog from
 the earlier README. Current qualified extensions and their limits are documented
-in [the authoritative Phase 17 status](phase17_authoritative_status.md) and the
+in [the authoritative Phase 17 status](../../studies/phase17/reports/phase17_authoritative_status.md) and the
 individual qualification reports. The baseline overview is not a complete
 inventory of every optional force or measurement model.
 
 Commands below run from the repository root. SPICE-backed examples require the
-[kernel setup](windows-quickstart.md#spice-kernels). CSV/PNG outputs go to results/.
+[kernel setup](../windows-quickstart.md#spice-kernels). CSV/PNG outputs go to results/.
 Long campaigns are separate from the public CI gate.
 
 ## Scientific Model

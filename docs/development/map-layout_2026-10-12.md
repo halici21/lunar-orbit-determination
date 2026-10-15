@@ -25,9 +25,9 @@ right edge and allowing nearby names to collide.
   distinguish their centers. This is a pixel hit-test rule, not a change to
   scientific coordinates or numerical tolerances.
 
-![Small Modern map with Canberra selected](images/desktop-map-minimum.png)
+![Small Modern map with Canberra selected](../images/desktop-map-minimum.png)
 
-![Orchid map with ITU selected at display scale 2](images/desktop-map-orchid.png)
+![Orchid map with ITU selected at display scale 2](../images/desktop-map-orchid.png)
 
 ## Verification
 

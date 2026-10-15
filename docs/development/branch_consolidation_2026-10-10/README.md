@@ -46,7 +46,7 @@ conflicted. The current research versions were retained after reviewing the
 changes: the WIP would remove the SRP position gradient from the variational
 equations, restore superseded estimator/covariance code, and reintroduce fixed
 machine paths. Exact WIP versions and SHA-256 hashes are preserved in
-[the resolution manifest](../../archive/branch_consolidation_2026-10-10/wip_resolution.json).
+[the resolution manifest](../../../archive/branch_consolidation_2026-10-10/wip_resolution.json).
 No independent nonconflicting WIP change remained to transplant.
 
 Integration invariants verified with Git:
@@ -75,7 +75,7 @@ tests qualify the combined tree.
 ## Pending work preservation
 
 Three dirty worktrees were snapshotted under
-[the consolidation archive](../../archive/branch_consolidation_2026-10-10/README.md).
+[the consolidation archive](../../../archive/branch_consolidation_2026-10-10/README.md).
 Their original files remain in place. The snapshots include unfinished BLS1
 physics work and a newer workflow document; these are not activated in main.
 Snapshots carry file hashes and base commits. The phase17r0 patch was verified

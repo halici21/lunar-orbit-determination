@@ -1,7 +1,7 @@
 """Read-only repository inventory for the local hygiene audit.
 
 Usage: python hygiene_inventory.py <worktree> <pre|post>
-Writes artifacts/repository_hygiene/<phase>_cleanup_inventory.json and _files.csv.
+Writes outputs/repository_hygiene/<phase>_cleanup_inventory.json and _files.csv.
 """
 from __future__ import annotations
 
@@ -18,14 +18,14 @@ from pathlib import Path
 
 ROOT = Path(sys.argv[1]).resolve()
 PHASE = sys.argv[2]
-OUT = ROOT / "artifacts" / "repository_hygiene"
+OUT = ROOT / "outputs" / "repository_hygiene"
 TEXT_EXT = {".py", ".md", ".json", ".txt", ".ini", ".toml", ".cfg", ".yml", ".yaml",
             ".ui", ".qss", ".html", ".js", ".css", ".sh", ".ps1", ".bat", ".csv"}
-PROTECTED = {"PYQT5_DESKTOP_APP_README.md", "examples/r2_measurement_fidelity_validation.py",
-             "docs/phase17_geo_literature_contract.md",
-             "docs/phase17_geo_geometry_identifiability.md"}
+PROTECTED = {"docs/development/PYQT5_DESKTOP_APP_README.md", "examples/r2_measurement_fidelity_validation.py",
+             "studies/phase17/reports/phase17_geo_literature_contract.md",
+             "studies/phase17/reports/phase17_geo_geometry_identifiability.md"}
 ORPHANS = {"examples/phase17_r1od_fd_convergence.py", "examples/phase17_r1od_qualification.py"}
-HYGIENE_OWN = ("artifacts/repository_hygiene/", "docs/local_repository_hygiene_status_report.md")
+HYGIENE_OWN = ("outputs/repository_hygiene/", "docs/development/local_repository_hygiene_status_report.md")
 
 
 def git(*args: str) -> str:
@@ -105,7 +105,7 @@ def classify(f: str, status: str) -> tuple[str, str, str]:
         return "DELETE_CACHE_TEMP", "delete", "Python bytecode cache; regenerated on import; gitignored"
     if f in ORPHANS:
         return ("REVIEW_REQUIRED", "keep",
-                "untracked R1O-D orphan; recorded in artifacts/r1od_manifest.json "
+                "untracked R1O-D orphan; recorded in studies/phase17/results/r1od_manifest.json "
                 "'orphaned_scripts_not_committed'; imports removed delta_dor API; holds "
                 "first-pass FD history not in the R1O-D report")
     if f in PROTECTED:
@@ -117,16 +117,20 @@ def classify(f: str, status: str) -> tuple[str, str, str]:
         return ("KEEP_GENERATED_EVIDENCE", "keep",
                 "GEO cached design matrices read by phase17_geo_figures/fixture_attribution; "
                 "regeneration needs full grid re-propagation")
-    if top == "artifacts":
+    if f.startswith("studies/phase17/results/"):
         return "KEEP_GENERATED_EVIDENCE", "keep", "phase evidence artifact (tracked)"
     if f.startswith("docs/figures/"):
         return "KEEP_GENERATED_EVIDENCE", "keep", "report figure / figure data"
-    if top == "08_manifests":
+    if f.startswith(("studies/phase17/provenance/", "studies/phase17/configs/")):
         return "KEEP_PROVENANCE", "keep", "phase manifest"
     if top == "docs":
         if re.match(r"docs/(phase\d|r\d|p0b|.*erratum|.*literature_contract|.*qualification|.*validation)", f):
             return "KEEP_PROVENANCE", "keep", "phase report / contract / erratum"
         return "KEEP_ACTIVE", "keep", "current technical documentation"
+    if f.startswith("src/lunar_od/"):
+        return "KEEP_ACTIVE", "keep", "production source"
+    if f.startswith("studies/phase17/scripts/"):
+        return "KEEP_PROVENANCE", "keep", "study reproduction script"
     if top == "examples":
         if name.endswith("_core.py"):
             return "KEEP_ACTIVE", "keep", "shared phase analysis helper imported by later phases"
@@ -140,8 +144,8 @@ def classify(f: str, status: str) -> tuple[str, str, str]:
                                        "ui": "web UI asset", "tests": "test suite",
                                        "fixtures": "test/data fixture", ".claude": "project skills (canonical)"}[top]
     if "/" not in f:
-        if name in {"DOPPLER_RANGE_RATE_MODEL_REVIEW.md", "SPICE_CN_CNPLUS_VALIDATION.md",
-                    "LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md"}:
+        if name in {"docs/theory/DOPPLER_RANGE_RATE_MODEL_REVIEW.md", "docs/validation/SPICE_CN_CNPLUS_VALIDATION.md",
+                    "docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md"}:
             return "KEEP_PROVENANCE", "keep", "root-level review/validation record (identical on main)"
         return "KEEP_ACTIVE", "keep", "root project/config file"
     return "UNKNOWN", "keep", "no rule matched"

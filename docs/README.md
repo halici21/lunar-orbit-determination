@@ -1,42 +1,18 @@
 # Documentation
 
-## Install and use
+- [Install and use on Windows (Türkçe)](windows-quickstart.md)
+- [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
+- [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
+- [Validation and public CI](validation/verification.md)
+- [Baseline research guide](research/research-guide.md)
+- [Phase 17 study and reproduction](../studies/phase17/README.md)
+- [Authoritative scientific status](../studies/phase17/reports/phase17_authoritative_status.md)
+- [Repository architecture and artifact policy](development/repository-layout.md)
+- [Migration audit and verification](development/repository-professionalization.md)
+- [Development evidence and branch consolidation](development/branch_consolidation_2026-10-10/README.md)
+- [Earlier interfaces](legacy-tools.md)
+- [Contributing](../CONTRIBUTING.md) · [Changelog](../CHANGELOG.md) · [Citation](../CITATION.cff)
 
-- [Windows installation and usage — Türkçe](windows-quickstart.md)
-- [Mission overview: user flow, data scope and verification](mission-overview_2026-10-11.md)
-- [Mission usability iteration: station selection and narrow layout](mission-usability_2026-10-11.md)
-- [Mission status iteration: completion, success and result details](mission-status_2026-10-11.md)
-- [First-run guidance and accessible plot placeholders](mission-onboarding_2026-10-12.md)
-- [Orbit labels: narrow plots, zoom and display scaling](orbit-labels_2026-10-12.md)
-- [Mission map: consistent proportions and clickable station labels](map-layout_2026-10-12.md)
-- [Station catalogue: search, empty results and CSV scope](station-filters_2026-10-13.md)
-- [Desktop workflow and scientific display contracts](../desktop_app/RESULT_WORKFLOW.md)
-- [Public CI scope and scientific verification](verification.md)
-- [Earlier interfaces and historical documents](legacy-tools.md)
-
-## Research
-
-- [Baseline models and experiment catalog](research-guide.md)
-- [Authoritative Phase 17 status](phase17_authoritative_status.md)
-- [Frame transformations](frame_transformations.md)
-- [One-way light-time Jacobians](one_way_light_time_jacobians.md)
-- [Two-way range](two_way_range.md)
-- [Frame validation results and gaps](frame_validation_results_and_test_gaps.md)
-
-Qualification reports describe specific assumptions and acceptance criteria.
-Use the report matching the model/configuration; a passing historical baseline
-does not qualify every newer optional extension.
-
-## Repository history and evidence
-
-- [Branch consolidation audit](branch_consolidation_2026-10-10/README.md)
-- [Latest combined workspace validation](main_workspace_readiness_2026-10-10.md)
-- [Desktop environment readiness](environment-readiness_2026-10-10.md)
-- [Public repository readiness](repository-readiness_2026-10-10.md)
-- [Contributing](../CONTRIBUTING.md)
-- [Changelog](../CHANGELOG.md)
-
-artifacts/ and 08_manifests/ hold committed scientific evidence and provenance.
-archive/ holds historical preservation material. results/ holds local generated
-runs and is ignored by Git. Historical qualification documents retain their
-original numbers and paths.
+Qualification applies to the assumptions and configuration in each report.
+Historical archives and machine-readable records preserve original paths;
+use the [migration manifest](development/path-migration.json) for current locations.

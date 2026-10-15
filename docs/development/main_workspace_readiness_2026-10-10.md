@@ -34,7 +34,7 @@ to the clean venv, and `pip check` reported no broken requirements.
 SPICE kernels, optional gravity files and historical campaign data are external
 inputs, not installed by pip. This verification reuses existing project data.
 A fresh clone without those inputs cannot reproduce all data-dependent campaigns.
-See the SPICE setup in [README](../README.md#spice-kernel-setup) and the earlier
+See the SPICE setup in [README](../../README.md#spice-kernel-setup) and the earlier
 [consolidation validation](branch_consolidation_2026-10-10/validation.json).
 Windows `core.autocrlf=true` matches the recorded reference checkout.
 
@@ -81,4 +81,4 @@ Local timing under concurrent tests does not establish overall solver/startup sp
 In **Arşiv**, choose the results directory from the earlier checkout. It is indexed
 and opened in place, and its path is saved after a normal close. No copying, moving
 or rewriting of result files is required. The UI validates each source through the
-normal loaders. See [result workflow](../desktop_app/RESULT_WORKFLOW.md).
+normal loaders. See [result workflow](../../desktop_app/RESULT_WORKFLOW.md).

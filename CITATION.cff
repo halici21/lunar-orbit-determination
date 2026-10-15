@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "Please cite the software and identify the commit and study configuration used."
+type: software
+title: "Lunar OD: lunar orbit determination research framework"
+authors:
+  - family-names: Halıcı
+    given-names: Cemil Eray
+repository-code: "https://github.com/halici21/lunar-orbit-determination"
+url: "https://github.com/halici21/lunar-orbit-determination"
+license: MIT

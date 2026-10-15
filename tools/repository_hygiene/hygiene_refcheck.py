@@ -21,14 +21,14 @@ exists_any = lambda rel: (ROOT / rel).exists()  # noqa: E731
 MD_LINK = re.compile(r"\[[^\]]*\]\(([^)\s#]+)(?:#[^)]*)?\)")
 # repo-relative paths named in prose/code: top-level dir + at least one segment + extension
 PATH_MENTION = re.compile(
-    r"(?<![\w./-])((?:artifacts|docs|examples|tests|lunar_od|desktop_app|fixtures|08_manifests|results)"
+    r"(?<![\w./-])((?:studies|src|docs|examples|tests|desktop_app|fixtures|results|outputs)"
     r"/[\w./-]+\.(?:py|md|json|csv|png|svg|txt|npz|pdf))")
 ABS_GRAD = re.compile(r"(?i)Documents[\\/]{1,2}Python[\\/]{1,2}Grad(?![\w-])")
 
 broken_links, broken_mentions, abs_grad = [], [], []
 for f in tracked:
     p = ROOT / f
-    if p.suffix not in {".md", ".py", ".json", ".txt"} or f.startswith("artifacts/repository_hygiene/"):
+    if p.suffix not in {".md", ".py", ".json", ".txt"} or f.startswith("outputs/repository_hygiene/"):
         continue
     text = p.read_text(encoding="utf-8", errors="replace")
     for i, line in enumerate(text.splitlines(), 1):

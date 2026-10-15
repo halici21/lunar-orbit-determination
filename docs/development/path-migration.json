@@ -1,0 +1,2742 @@
+{
+  "base_commit": "f27db9da3c58aef413737bd4da5be14dcd8a7e15",
+  "representation": "SHA-256 of filtered checkout bytes (core.autocrlf=true)",
+  "note": "Historical paths inside immutable records resolve through this table. No scientific record was re-frozen.",
+  "files": {
+    "08_manifests/phase14_17ar_reconstruction_manifest.txt": {
+      "path": "studies/phase17/provenance/phase14_17ar_reconstruction_manifest.txt",
+      "original_sha256": "f10cbd199a38aeed5be079fc636276421134777343681adc87cacf36c02912c5",
+      "byte_preserved": true
+    },
+    "08_manifests/phase17_canonical_integration_manifest.txt": {
+      "path": "studies/phase17/provenance/phase17_canonical_integration_manifest.txt",
+      "original_sha256": "5d7468dddad3d8452bf57c6474dacdfd8943f3b9db25951d57425fc9a591e65e",
+      "byte_preserved": true
+    },
+    "08_manifests/phase17r1_observability_manifest.txt": {
+      "path": "studies/phase17/provenance/phase17r1_observability_manifest.txt",
+      "original_sha256": "3383332010e4f158c64163f78ccb9188217e5c964534f1a79ae3e10524bd61bc",
+      "byte_preserved": true
+    },
+    "08_manifests/phase17r1g_geometry_manifest.txt": {
+      "path": "studies/phase17/provenance/phase17r1g_geometry_manifest.txt",
+      "original_sha256": "2e90f762e557a0e9ecc1adfeb2f60390a017b3d610f7c572b5e27175ed91a5d2",
+      "byte_preserved": true
+    },
+    "DOPPLER_RANGE_RATE_MODEL_REVIEW.md": {
+      "path": "docs/theory/DOPPLER_RANGE_RATE_MODEL_REVIEW.md",
+      "original_sha256": "d8dc9dbaa6adc337314827c6ae8592aa4e3c57d53baaed4f2dcf1f6551d8df68",
+      "byte_preserved": false
+    },
+    "LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md": {
+      "path": "docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md",
+      "original_sha256": "0cad7e86a40f6507e3029d598ea00428caf0d289da28d6a5d1817dd6fafeb2e6",
+      "byte_preserved": false
+    },
+    "PROJECT_CONTEXT.md": {
+      "path": "docs/development/PROJECT_CONTEXT.md",
+      "original_sha256": "d27f65dec68959ff458d5bb73559932b3b1069a0389f9afdde1b3eba970aea05",
+      "byte_preserved": false
+    },
+    "PYQT5_DESKTOP_APP_BRIEF.md": {
+      "path": "docs/development/PYQT5_DESKTOP_APP_BRIEF.md",
+      "original_sha256": "71838402bfe4822b484dbbf9904a23a8724036774337e2579c8aa42c7b79ab8c",
+      "byte_preserved": false
+    },
+    "PYQT5_DESKTOP_APP_README.md": {
+      "path": "docs/development/PYQT5_DESKTOP_APP_README.md",
+      "original_sha256": "9485ad8ce5bbb9826def58e8d3fbcca0a695177401bc4a77e9d39e8333d57086",
+      "byte_preserved": false
+    },
+    "SPICE_CN_CNPLUS_VALIDATION.md": {
+      "path": "docs/validation/SPICE_CN_CNPLUS_VALIDATION.md",
+      "original_sha256": "44b63fdd82deb4c5c99fdb350c2026247b33ab1d797d5821967d4747faa220dc",
+      "byte_preserved": false
+    },
+    "UI_README.md": {
+      "path": "docs/development/UI_README.md",
+      "original_sha256": "84d811bd4ed8ec723b38dbfed34d529d9cfe8b25af4996e0760d402cb8608fb2",
+      "byte_preserved": false
+    },
+    "artifacts/geometry_matrix.csv": {
+      "path": "studies/phase17/results/geometry_matrix.csv",
+      "original_sha256": "4041ebbb72c68cb9adc5afbe3fde40c18510b0c7df606905d9613112273bd0e9",
+      "byte_preserved": true
+    },
+    "artifacts/k_sensitivity_by_case.csv": {
+      "path": "studies/phase17/results/k_sensitivity_by_case.csv",
+      "original_sha256": "bd8c32787072fa27aca72ea59a17fd802494a00d8292204064b390a0c5c7470b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_bls1_qualification.json": {
+      "path": "studies/phase17/results/phase17_bls1_qualification.json",
+      "original_sha256": "1c4a1ccbf60dda2698a909e66b83c0712bd29a11c7d94466734bd33fecac81af",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_closeout_verification.txt": {
+      "path": "studies/phase17/results/phase17_closeout_verification.txt",
+      "original_sha256": "b2ae97b8b6913405e527d9ffbdd0690db85b46a0ad74aceea0d7ec7493bc197a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d23_acceptance.json": {
+      "path": "studies/phase17/results/phase17_d23_acceptance.json",
+      "original_sha256": "438630b92590e6867488eb57b10ffa182dd49132dc2ffda9d44deb25558ca313",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d23_cd1_fd_rerun.json": {
+      "path": "studies/phase17/results/phase17_d23_cd1_fd_rerun.json",
+      "original_sha256": "babf2849b30464f4b05ec168bf6cb38f01eeb085a6cfd0c0b8f9c45b4495e450",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d23_cells.json": {
+      "path": "studies/phase17/results/phase17_d23_cells.json",
+      "original_sha256": "5190ca3eeea2476841cb2c5ca7023fb1ccef5d5d02521bc3baecf55d61f45555",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d23_epoch_scan.json": {
+      "path": "studies/phase17/results/phase17_d23_epoch_scan.json",
+      "original_sha256": "c87bd0edfb1be6d1e87b33292413ea2c5219e70372f44560dffa4e76c303653d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d23_et_exact_diagnostic.json": {
+      "path": "studies/phase17/results/phase17_d23_et_exact_diagnostic.json",
+      "original_sha256": "74feca86a2f21f984289296b7ab19bca7ee6ef8ddfe48482045d403de2aa8561",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d23_qualification.json": {
+      "path": "studies/phase17/results/phase17_d23_qualification.json",
+      "original_sha256": "fc1baa396dcb192d472232ab4ac67f3aaa5ea532068fb0861673db2558c459ee",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d25_e2e.json": {
+      "path": "studies/phase17/results/phase17_d25_e2e.json",
+      "original_sha256": "b59066938b4825aac6ef565ef9e2674f5d4a4b1ac1d743287e640d3abc2a8ab1",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d25_posthoc_fd_columns.npz": {
+      "path": "studies/phase17/results/phase17_d25_posthoc_fd_columns.npz",
+      "original_sha256": "357148c0716442388513e145e8e95df18aff8c657def480d16ed384e516ea40c",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d25_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_d25_predeclaration.json",
+      "original_sha256": "0c417d29d9395cc8535d33016a1ff5c4df0be0ffcab3780728d56995f8f2f70f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d25_qualification.json": {
+      "path": "studies/phase17/results/phase17_d25_qualification.json",
+      "original_sha256": "65824fcdcc16ce659eafc8aa2162ebec401e391023ba4c24e7525da6d4dc3645",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d25_stage_i.json": {
+      "path": "studies/phase17/results/phase17_d25_stage_i.json",
+      "original_sha256": "1961622e6b9abb50839c5f60517290ccf555903986d3fba1cf0be5e8970ef91b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d27_qualification.json": {
+      "path": "studies/phase17/results/phase17_d27_qualification.json",
+      "original_sha256": "599b2d02ff6e3a20043be22c3184c849f0761e8cb961cdfcae1298e2de5c830b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d28_invariance_new.json": {
+      "path": "studies/phase17/results/phase17_d28_invariance_new.json",
+      "original_sha256": "5447611ef76de3ede2dbb72513067af4c9cecc192d50e48246f6ad554bbbd6a6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d28_invariance_old.json": {
+      "path": "studies/phase17/results/phase17_d28_invariance_old.json",
+      "original_sha256": "ea6c6e9d1d586935ec533dd754baf66becf03d005b970ac97d8d5caca3f6f7c5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d28_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_d28_predeclaration.json",
+      "original_sha256": "d115941de7090ad877b25f112eba1c0fe33e08939c332b386dcc124286572ad6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d28_qualification.json": {
+      "path": "studies/phase17/results/phase17_d28_qualification.json",
+      "original_sha256": "d34fc2364f693c55154dfab78ddf1db20c5c855800b235575cfaac99f08027ee",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d28_scenarios_new.json": {
+      "path": "studies/phase17/results/phase17_d28_scenarios_new.json",
+      "original_sha256": "9f21068c315fa036a63da58e485d31e8fec8589f5354367c45475d4d9b88eb7f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d28_scenarios_old.json": {
+      "path": "studies/phase17/results/phase17_d28_scenarios_old.json",
+      "original_sha256": "0c69acb9ba3d8c672009b3508d3ddbc348030aedc4b2e5099fdba1463b0bb27f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d29_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_d29_predeclaration.json",
+      "original_sha256": "3fcceaff060d400cd92d39583fe161f86d8e1c674a16bbd8e6e8c0896eaffa8a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d29_qualification.json": {
+      "path": "studies/phase17/results/phase17_d29_qualification.json",
+      "original_sha256": "88122db646f3c65f03ff7303176002c67ca264bb16b205d90dbff0a4361d8c0f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d29_run_new.json": {
+      "path": "studies/phase17/results/phase17_d29_run_new.json",
+      "original_sha256": "437456070e323e20b66e13562b0acb98a46e30b9bc1d659e4b004fd4b3714ba5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_d29_run_old.json": {
+      "path": "studies/phase17/results/phase17_d29_run_old.json",
+      "original_sha256": "650fa5f38ef188e7a0062ac04188a63827b9bd155ca676f60513b2e144fe50d4",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_high_fidelity.json": {
+      "path": "studies/phase17/results/phase17_f1_high_fidelity.json",
+      "original_sha256": "635b3289f3646f4731010bdcef936acfeaa042ce2dfd49a70a677e2de2204f12",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_k_sensitivity_oracle.json": {
+      "path": "studies/phase17/results/phase17_f1_k_sensitivity_oracle.json",
+      "original_sha256": "0e73f8dcb7159ae101e588a25a1431d9f9af4b776679b8bd1f6997fee434a4f7",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_local_gradient_oracle.json": {
+      "path": "studies/phase17/results/phase17_f1_local_gradient_oracle.json",
+      "original_sha256": "252d47dce505c94543001155450dfeea2ae003a31009d500f240b9988de5baa1",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_measurement_derivatives.json": {
+      "path": "studies/phase17/results/phase17_f1_measurement_derivatives.json",
+      "original_sha256": "ca06e45576abd6268e9fdd8fa29eea53945e8a2090d7783796b256c32b872100",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_f1_predeclaration.json",
+      "original_sha256": "3497e8efce877742b207bf8b676222847508b24ae7342ee767581dbe479aa078",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_science_materiality.json": {
+      "path": "studies/phase17/results/phase17_f1_science_materiality.json",
+      "original_sha256": "3f60a73a2893dd5cb458802472ae659772c391350aaa6d2a6a091548da973dca",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_state_parity.json": {
+      "path": "studies/phase17/results/phase17_f1_state_parity.json",
+      "original_sha256": "1fa14e1a9cec2651ab291c66a77e9f258786c8fc345e241c23a1eeb40f9c51d9",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_stm_oracle.json": {
+      "path": "studies/phase17/results/phase17_f1_stm_oracle.json",
+      "original_sha256": "ec51ece7b76b3aecb4276f032345cc0b386cfe3d1f3025ca938f56c5c598f023",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_task_state.json": {
+      "path": "studies/phase17/results/phase17_f1_task_state.json",
+      "original_sha256": "eb4e3724ebbbf8f790cc70cbece30911ef1e98b2e496b99911379a1adf0b2995",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_f1_verification.json": {
+      "path": "studies/phase17/results/phase17_f1_verification.json",
+      "original_sha256": "6d19efa0c1c1b8eeb8b8b228e3407700b16510872f205ef85db97d5d4e35352d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_fxr_epoch_audit.json": {
+      "path": "studies/phase17/results/phase17_fxr_epoch_audit.json",
+      "original_sha256": "0cd45e7c64b35fe2778759c291822fd84317edc8f45af95d363677b2ec7e0a38",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_fxr_g5_audit.json": {
+      "path": "studies/phase17/results/phase17_fxr_g5_audit.json",
+      "original_sha256": "0e5a676e17069206217401ceb68a0adf52f6651675f9d9eded854f954a316638",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_fxr_graphify_discovery.md": {
+      "path": "studies/phase17/results/phase17_fxr_graphify_discovery.md",
+      "original_sha256": "79a352b18b8307e7b06d4e9337f138fc74586b4ff449b3ad6700c0f8387cca63",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_fxr_manifest.json": {
+      "path": "studies/phase17/results/phase17_fxr_manifest.json",
+      "original_sha256": "8ab251478a77bd03d5a9fbb976a25a397e88a69df36d3df40734a053eeacae12",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_fxr_requalification.json": {
+      "path": "studies/phase17/results/phase17_fxr_requalification.json",
+      "original_sha256": "17d849b6b4ee30bb909877d28296c04f8e01d73f37342b371e83c97dca75c442",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_altitude.csv": {
+      "path": "studies/phase17/results/phase17_geo_altitude.csv",
+      "original_sha256": "89e444f4a3c583dd2ebd81d1e9356ddf5dc7296bedece8f6e21f17d0cab30efd",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_baseline.json": {
+      "path": "studies/phase17/results/phase17_geo_baseline.json",
+      "original_sha256": "f94aa519ac32f815c712658f5b355802f5e5c1eceecadd5645d13bbaaccf71ae",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_beta_eclipse.csv": {
+      "path": "studies/phase17/results/phase17_geo_beta_eclipse.csv",
+      "original_sha256": "8fbc1695c0ac31f3fb7d76a53e4f6b131d18a6bf985fa47b75f7e4f0abcfecca",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_fixture_attribution.json": {
+      "path": "studies/phase17/results/phase17_geo_fixture_attribution.json",
+      "original_sha256": "39425d12bcf906a12fd39ac8efa68cec1d7efc7fd02d10b872cc5e0ab82aa218",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_graphify_discovery.md": {
+      "path": "studies/phase17/results/phase17_geo_graphify_discovery.md",
+      "original_sha256": "27c7c63a7bae1618467932712de43f2f2327d13e8ef48c934ea7b7981fa237ac",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_inclination.csv": {
+      "path": "studies/phase17/results/phase17_geo_inclination.csv",
+      "original_sha256": "8382865f9d07d9ed5580570983e548b240c4a79935c5d07fee6f1efeb601ec70",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_information_metrics.csv": {
+      "path": "studies/phase17/results/phase17_geo_information_metrics.csv",
+      "original_sha256": "4b9e6680c7fc67d418bd8df7490ac40c81360783ad2e6683e808db8b9285948b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_jacobian_checks.csv": {
+      "path": "studies/phase17/results/phase17_geo_jacobian_checks.csv",
+      "original_sha256": "eb517c917e082b0b546f8b59c60ad04b7991b167972d4ce0b1cb06563d2f039b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_jacobian_checks.json": {
+      "path": "studies/phase17/results/phase17_geo_jacobian_checks.json",
+      "original_sha256": "fd911a668ae7f2411906be558e34e76172a0c24145fbb81e5fc9c14b7e63b1c1",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_jacobian_diagnosis.json": {
+      "path": "studies/phase17/results/phase17_geo_jacobian_diagnosis.json",
+      "original_sha256": "6e211f6100cdb24bff7571aedc0ecb17def9c034935078e1efa80369fc14582c",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_k_magnitude_control.csv": {
+      "path": "studies/phase17/results/phase17_geo_k_magnitude_control.csv",
+      "original_sha256": "5fd097f3f00aab2f45dd514c3393d0767c0e195e376ce2fab5848fcc75666c3e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_manifest.json": {
+      "path": "studies/phase17/results/phase17_geo_manifest.json",
+      "original_sha256": "9a6ebea2f06402b455c125c2063fcfc54e646ba6884278a96df0da8043e38757",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_matched_count.csv": {
+      "path": "studies/phase17/results/phase17_geo_matched_count.csv",
+      "original_sha256": "63da385eccbb8edd020c01d8075524c8c44341cb898d98abbb340ba0d575d42a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_phase_robustness.json": {
+      "path": "studies/phase17/results/phase17_geo_phase_robustness.json",
+      "original_sha256": "e9d209c6660d12d72aff769e1e6ac4a2072492bd7cbdfeb1fc36f1fd1415ec7d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_predeclared_grid.json": {
+      "path": "studies/phase17/configs/phase17_geo_predeclared_grid.json",
+      "original_sha256": "df65557f8287501aaccfcc7c907ced2de21b975583bf3f683135396907132d0a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_representative_cases.json": {
+      "path": "studies/phase17/results/phase17_geo_representative_cases.json",
+      "original_sha256": "e61402ba16eb9be46b3dcc2c5043e48c71c233ff2c864aa37b21ed28ebd6646b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_results.json": {
+      "path": "studies/phase17/results/phase17_geo_results.json",
+      "original_sha256": "a2bb092909178ed6ed671f3f08259d53e18889e6d065d2c7b7f0d49b13ecf4dc",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_geo_tracking_geometry.csv": {
+      "path": "studies/phase17/results/phase17_geo_tracking_geometry.csv",
+      "original_sha256": "d4b73d1ad98992df35b0f089f1f74e133b32523a1c2f8d00aa63bd1b76efd736",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_checklist.md": {
+      "path": "studies/phase17/results/phase17_harden_checklist.md",
+      "original_sha256": "4bf04b6563526624342297e3da5dc723ae204921bdc5d0d75adf6dc49baab014",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_cross_measurement.json": {
+      "path": "studies/phase17/results/phase17_harden_cross_measurement.json",
+      "original_sha256": "c6fd118aebdd45e9fb8757d847a5e06b2b1865f82f3d8d69824f986e0026d6e2",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_ddor_event_ledger.json": {
+      "path": "studies/phase17/results/phase17_harden_ddor_event_ledger.json",
+      "original_sha256": "d03ed08be12602eb3555846ff1bd188d456aeddd2105061db42ff45cb1c288c4",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_defects.json": {
+      "path": "studies/phase17/results/phase17_harden_defects.json",
+      "original_sha256": "1eb16205a6d0f8dde8a4a853483ecfd3dc7ce606b7236067a0bdbb4ea1398335",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_derivatives.json": {
+      "path": "studies/phase17/results/phase17_harden_derivatives.json",
+      "original_sha256": "3588334dff295d8c4b62fca2dd58e23503b8de9f3aa0851da86fca3a5d5a23e6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_doppler_event_ledger.json": {
+      "path": "studies/phase17/results/phase17_harden_doppler_event_ledger.json",
+      "original_sha256": "c383fe997aee613ef129f844192dd19a9d8a04e7919c629ba1aeb444ab0f2b16",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_optical_event_ledger.json": {
+      "path": "studies/phase17/results/phase17_harden_optical_event_ledger.json",
+      "original_sha256": "78bac8d4bef3e74c2f303c0ebee4baf15574e4f7ab7fda6a7cb6946ffc5b0dc1",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_physical_contracts.csv": {
+      "path": "studies/phase17/results/phase17_harden_physical_contracts.csv",
+      "original_sha256": "59e01ad9b272ee0f9d69c8b7628e0a6abc531f3ee4fdb9a204a5fef15ce803c8",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_range_event_ledger.json": {
+      "path": "studies/phase17/results/phase17_harden_range_event_ledger.json",
+      "original_sha256": "ea8c8764cb64764871f3cde460d861d8d614b13fbfa66ec7701cbf0d7b9529b9",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_range_jacobian_decomposition.json": {
+      "path": "studies/phase17/results/phase17_harden_range_jacobian_decomposition.json",
+      "original_sha256": "718233bcedc95a9727b3ae49502c76a4d6e89d2fb9b255775a190fa64619bece",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_range_jacobian_oracle_convergence.json": {
+      "path": "studies/phase17/results/phase17_harden_range_jacobian_oracle_convergence.json",
+      "original_sha256": "2ffec6af0b165884e2d657a4e7b2847fa60a53fb34a33948c32785d8877155a6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_range_jacobian_srp_gradient_prediction.json": {
+      "path": "studies/phase17/results/phase17_harden_range_jacobian_srp_gradient_prediction.json",
+      "original_sha256": "866ce7405a891bb50ab1636b344d2ec769f3bcd9f1581d253c1b7518737dd79e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_harden_visibility_requalification.json": {
+      "path": "studies/phase17/results/phase17_harden_visibility_requalification.json",
+      "original_sha256": "eab8968fdadb8562ba821ea9293637221b315e4bc344ac1384812b0bc48b89e2",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kgm_anchor.json": {
+      "path": "studies/phase17/results/phase17_kgm_anchor.json",
+      "original_sha256": "d77600fe5d0fcad536befaffc5b9ca14112efec4bced6adeefce210995478f0e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kgm_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_kgm_predeclaration.json",
+      "original_sha256": "8d2f8850f59d8e608812c8ad07539191f9160bd33590025b6d897ac8220d6490",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kgm_raw_results.json": {
+      "path": "studies/phase17/results/phase17_kgm_raw_results.json",
+      "original_sha256": "9a4415b5a992e8ddf8cda551dda14cc86edbfb6ec24d1f9b070d4de01754c1c3",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kgm_summary.json": {
+      "path": "studies/phase17/results/phase17_kgm_summary.json",
+      "original_sha256": "f6eaecf5a4dab93bcf2f469ef2626e52e4a596879d7eb789897e0ad7f175d7f6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp1_fd_oracle.json": {
+      "path": "studies/phase17/results/phase17_kp1_fd_oracle.json",
+      "original_sha256": "20e728a9412d6d3faaca542a0139eec19a4956a96ef25c1f804dbaf367d6f24f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp1_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_kp1_predeclaration.json",
+      "original_sha256": "649d3a636698dd99c2b9503fca5a1929a86fdcbc501112a291f091bb9ab5e322",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp1_primary_results.csv": {
+      "path": "studies/phase17/results/phase17_kp1_primary_results.csv",
+      "original_sha256": "681e5a24d61c77481d9663c9fcdfa99bf20addda056fca729e422c38dca8bb65",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp1_raw_results.json": {
+      "path": "studies/phase17/results/phase17_kp1_raw_results.json",
+      "original_sha256": "845d9d1d968941bf2519892865cceb1c532c9f8cc14cdfcff16d10c60867892d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp1_summary.json": {
+      "path": "studies/phase17/results/phase17_kp1_summary.json",
+      "original_sha256": "8537c5c0cf0fb194c41e72631df813e21046da3ae55b9c154a896d635c095325",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp2_posthoc_basin.json": {
+      "path": "studies/phase17/results/phase17_kp2_posthoc_basin.json",
+      "original_sha256": "89e54f30203395f4d75cf00b05f8c10740092b24d34ac43aed80b0c06341436d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp2_posthoc_verification.json": {
+      "path": "studies/phase17/results/phase17_kp2_posthoc_verification.json",
+      "original_sha256": "d746df658cbb62fd6c50da68dcfa5ea04e1eb4fee2b74e89ed18fa3924bbfb8f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp2_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_kp2_predeclaration.json",
+      "original_sha256": "6f914db9c937eaf238e04a96926acefabf390446b0909f014b9b98c47f464e8e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp2_raw_results.json": {
+      "path": "studies/phase17/results/phase17_kp2_raw_results.json",
+      "original_sha256": "0347476888abf12d284828c9563453ad492e4b78c157e51d18bfd55dbf14b308",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_kp2_summary.json": {
+      "path": "studies/phase17/results/phase17_kp2_summary.json",
+      "original_sha256": "c871fd9251818a077c2eb3a2bddf63d9d97617d25bcb3354560c9c227802265d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/CANON_k0_alpha0.3.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/CANON_k0_alpha0.3.json",
+      "original_sha256": "1df4884a8cca46ece2bdfbf663ddf5341d7649a5bba090bfb58a76dd2d4a27f0",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/CANON_k0_alpha1.0.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/CANON_k0_alpha1.0.json",
+      "original_sha256": "947ee1fabb2d412b0c41c68f87ae6021076dd7baf8fa2151662f57e19e1412fa",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/CANON_k0_baseline.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/CANON_k0_baseline.json",
+      "original_sha256": "589d5c9af39a4f765b059df962b34327a909739d193f96d321a66f3ff9c1c571",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_alpha0.3.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_alpha0.3.json",
+      "original_sha256": "e0b90ff09ab481777c9cd075b9bc53045e49b64af59d3401aa4cc8acf750c140",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_alpha1.0.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_alpha1.0.json",
+      "original_sha256": "8849d2a8f35b16f64c7229a49086123bc3ef03065896eacac7f6edf186c5b535",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_baseline.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_baseline.json",
+      "original_sha256": "9e8fb39f41c28156f3e3935b798889bc643b752320c7fa8950fb0243b46f5184",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O2_FULL_SUN_HIGH_BETA_k0_alpha0.3.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O2_FULL_SUN_HIGH_BETA_k0_alpha0.3.json",
+      "original_sha256": "015eacee000b6c568c28830593db7192f17c1a7b6b75b88c95bf650d3c4da57e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O2_FULL_SUN_HIGH_BETA_k0_alpha1.0.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O2_FULL_SUN_HIGH_BETA_k0_alpha1.0.json",
+      "original_sha256": "a48964f1f43b2d4e36e4cf942809621ccefc7050a208b623c0723ba79ce0e40e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O2_FULL_SUN_HIGH_BETA_k0_baseline.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O2_FULL_SUN_HIGH_BETA_k0_baseline.json",
+      "original_sha256": "86494c4396cc0cf9937eda0f3cdbc57b9996c6b427691a7286ace6760078c77a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_alpha0.3.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_alpha0.3.json",
+      "original_sha256": "7abc94c1173abaf49a4085801f8347b31aafc31cfb6df9c7ab738eb7958a90ba",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_alpha1.0.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_alpha1.0.json",
+      "original_sha256": "85d418a1e977281157edca66feae397105f6c913b2dcb607cf9480a735ae8821",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_baseline.json": {
+      "path": "studies/phase17/results/phase17_mm_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_baseline.json",
+      "original_sha256": "6183a802952d11f79cdbd5f994384d49573d35f540e7ae9558e45a1d114abb6e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_mm_predeclaration.json",
+      "original_sha256": "06962cf852f6c2f7e95511dec7d385503984adb3009709ae9ec59923eae9c112",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_probe.json": {
+      "path": "studies/phase17/results/phase17_mm_probe.json",
+      "original_sha256": "8fafd1491c46f742269e8dca78d9a940f25af244ee90e27019257fc06ebcc854",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_probe_gravity.json": {
+      "path": "studies/phase17/results/phase17_mm_probe_gravity.json",
+      "original_sha256": "7fbd9f9ad25232aa2124f1dc3d1f0608b7f562d4a3f254ba8e8eebbc7ffaee93",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_probe_gravity_100_200.json": {
+      "path": "studies/phase17/results/phase17_mm_probe_gravity_100_200.json",
+      "original_sha256": "c309e7fee38e02a007821844f1497d8cc6fe3b8534648c6adfd163d5af54191b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_probe_gravity_fielddiff_100.json": {
+      "path": "studies/phase17/results/phase17_mm_probe_gravity_fielddiff_100.json",
+      "original_sha256": "ed3dece947c72aa3f195324b538d3640662c74d11de8a8dfee8c16ca0876b8d4",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_probe_gravity_fielddiff_200.json": {
+      "path": "studies/phase17/results/phase17_mm_probe_gravity_fielddiff_200.json",
+      "original_sha256": "6b307916f874db00a1457a1f0faf823ad94a6887c878c1e5d4e35e285b6201f6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_mm_summary.json": {
+      "path": "studies/phase17/results/phase17_mm_summary.json",
+      "original_sha256": "4b086ea839a04426cff97935fdd708d03e333107252823f9003a72ddf7e0fb47",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_closure.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_closure.json",
+      "original_sha256": "48364af50008d7dcc7c68d3e0bc84b0fa23fa15a47ba175157465fbd73435adc",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_closure_raw.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_closure_raw.json",
+      "original_sha256": "dbd5154b5d86f5b425a69a17f1b5267974d6570afea99e3544fc0103ba799d86",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_delta_heatmap.png": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_delta_heatmap.png",
+      "original_sha256": "934d4d88d3ce0740be5d4693080945326ffab526ed3a4ed4720f5cf672c777fb",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_fd_oracle.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_fd_oracle.json",
+      "original_sha256": "01ee17785844ceb440310b356e1eb6a2e99bcd41a3df86c5ff196e417aea4b5a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_fidelity_decomposition.csv": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_fidelity_decomposition.csv",
+      "original_sha256": "71ee0a80193059b22267735ca93b15949ddb3df4a9e5901bbdad447f931bbcaf",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_ibf01_rerun.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_ibf01_rerun.json",
+      "original_sha256": "5d73af2eb43fa60849d2a4012466751a0c7b6d771e988c8cb84e89fd007a0dd9",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_independent_rebuild.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_independent_rebuild.json",
+      "original_sha256": "39daf1f29eef3bb43f576cf1bdcf8f2ce2be6219a790fcf8de652f631b836b6f",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_information_geometry.png": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_information_geometry.png",
+      "original_sha256": "04236f517baecc6aac91e5979e7aad1511c850a1b60db7e1c10b694898f7d65a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_noise_sweep.csv": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_noise_sweep.csv",
+      "original_sha256": "c8fe8cfaa262b8d737d5df6d58d50d5c14040102c805e92e5947f7282ad0ba02",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_nuisance_impact.png": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_nuisance_impact.png",
+      "original_sha256": "9d15d7097a18ef18fff516f28b9cd608e9be1ead068ae92c98bb0cd3f8726af4",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_nuisance_results.csv": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_nuisance_results.csv",
+      "original_sha256": "86d756fe51f316bf3c437ea269af3427886288856911192fb69aa9c6ad71f239",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_r1o_cd1_predeclaration.json",
+      "original_sha256": "c9e219479551c7207f68aae2711644790696ab3c9d9794883deafc715c95cac9",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_primary_results.csv": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_primary_results.csv",
+      "original_sha256": "d40bb0555d912ce3d69c22160a695fbc31d5638ee5e2dbebbd9d49dffe1f42d5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_raw_results.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_raw_results.json",
+      "original_sha256": "f077b2335ea1233cdca2e0abe85858767c691d52b9d045fbe595ed3447025190",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_summary.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_summary.json",
+      "original_sha256": "5f312b53588300f1aa66f694a01601fcda4533197f9c79a02462582f6973f516",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_task_state.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_task_state.json",
+      "original_sha256": "4544baa4572388407d6fc008621c2ed9bbcb74477df3b5b1136ba7c7433427c3",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_time_localization.json": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_time_localization.json",
+      "original_sha256": "3de3e1dd28d8a03032de4809d6af257c2747c673cbf3ddd8d51ee50c8164ed5b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1o_cd1_time_localization.png": {
+      "path": "studies/phase17/results/phase17_r1o_cd1_time_localization.png",
+      "original_sha256": "15ceb55ea1729e4865ab278ae0182435146946619c88d5fab5392616acaed357",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_case_summary.csv": {
+      "path": "studies/phase17/results/phase17_r1od2_case_summary.csv",
+      "original_sha256": "39af3aaded2fadd2671e9d0e98d76a506a07577024365f37b250d3c7c14f9e39",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_delta_vs_baseline_angle.png": {
+      "path": "studies/phase17/results/phase17_r1od2_delta_vs_baseline_angle.png",
+      "original_sha256": "db0ca8e2a05d6f729b9423c3b12275dc1810020663fee62a7b75ea768072ac3e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_delta_vs_epoch.png": {
+      "path": "studies/phase17/results/phase17_r1od2_delta_vs_epoch.png",
+      "original_sha256": "ebf66c094d823db3e11056c8d29bd05453808f79e19990d1a95d01109054d201",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_fd.json": {
+      "path": "studies/phase17/results/phase17_r1od2_fd.json",
+      "original_sha256": "872b320e5b73cc3a244e307490c1a7dd32bac2b310a34e6b9e6462a9d209e6a5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_fd_k_refinement.json": {
+      "path": "studies/phase17/results/phase17_r1od2_fd_k_refinement.json",
+      "original_sha256": "04fcdb252563c4204c6668e54b41399f5d7f8ad95e5a343ff4e948cffa26d7b6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_fd_sweep.png": {
+      "path": "studies/phase17/results/phase17_r1od2_fd_sweep.png",
+      "original_sha256": "391503ea98b01ac72685d817f4592083ff34bfb8853c6fd9b9dead4ed725df2e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_fidelity.json": {
+      "path": "studies/phase17/results/phase17_r1od2_fidelity.json",
+      "original_sha256": "8445f66388e447c8c90fb1b1013a8c2fe8d861b0dcbb797b05e085bad53d5a15",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_manifest.json": {
+      "path": "studies/phase17/results/phase17_r1od2_manifest.json",
+      "original_sha256": "c13bac1219e9647b13615191c42d5d28b5edb013c3c440bda3b0428f17b41ee5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_nuisance.png": {
+      "path": "studies/phase17/results/phase17_r1od2_nuisance.png",
+      "original_sha256": "6399120ccededfa75e69387c7ece8bbc382fce11921a06e17ceb8799f8cf96a3",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_orbit_families.png": {
+      "path": "studies/phase17/results/phase17_r1od2_orbit_families.png",
+      "original_sha256": "e0097962bd98d7a2ea98c683642ea1b7e7fc826a254f53f1692f91a2d804c873",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_pair_f_perp.png": {
+      "path": "studies/phase17/results/phase17_r1od2_pair_f_perp.png",
+      "original_sha256": "bc3bd7577a76122fcbfc688ad2c0a9e40addc85a13e0ff8a012d049fe3feba0e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_precision.png": {
+      "path": "studies/phase17/results/phase17_r1od2_precision.png",
+      "original_sha256": "3c1543731a6d29bb2272fdee64bfbbdd1f2594be68134162034548e74235f16e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_predeclared_grid.json": {
+      "path": "studies/phase17/configs/phase17_r1od2_predeclared_grid.json",
+      "original_sha256": "808eb1e4668aee8c8e4c95431f216f0027fb1b33006e867e3a3070c82de6a49b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_production_vs_surrogate.png": {
+      "path": "studies/phase17/results/phase17_r1od2_production_vs_surrogate.png",
+      "original_sha256": "3673054a194d26d921cbd122f4182196e029ca8ffc50fdb93d5b092e77599726",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_quasar_position_angle.png": {
+      "path": "studies/phase17/results/phase17_r1od2_quasar_position_angle.png",
+      "original_sha256": "37bdbc02e79b0ac740b89df93f7767d895f217010da6a9a3ecf7c78eedfb6241",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_quasar_separation.png": {
+      "path": "studies/phase17/results/phase17_r1od2_quasar_separation.png",
+      "original_sha256": "5da687627e6a367e732b3336b961a5c978321f75b94d706386c225a49f7e5509",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_results.json": {
+      "path": "studies/phase17/results/phase17_r1od2_results.json",
+      "original_sha256": "661eabdb318ce595650246152d6ee4d73b26a61b92b9b804c7443b103a101fe5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od2_summary.json": {
+      "path": "studies/phase17/results/phase17_r1od2_summary.json",
+      "original_sha256": "411782444704c7e9ee7ae29ec267bd0d6c01d7e36c27753dc310b73cb464c140",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_bias_results.csv": {
+      "path": "studies/phase17/results/phase17_r1od3_bias_results.csv",
+      "original_sha256": "c514011563ebc75c784000ae524115f0e599b71216b422af716c7493a3cb6dae",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_delta_vs_phase.png": {
+      "path": "studies/phase17/results/phase17_r1od3_delta_vs_phase.png",
+      "original_sha256": "5bdde861e3ad0b4c4c5851af4c55a2266d063e13636102baec865514aafa747a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_delta_vs_session_hours.png": {
+      "path": "studies/phase17/results/phase17_r1od3_delta_vs_session_hours.png",
+      "original_sha256": "694e1af380cfe8160aa0780dc5654af41d98ba0d615f79f41c5d061a1d98a7de",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_epoch_geometry.csv": {
+      "path": "studies/phase17/results/phase17_r1od3_epoch_geometry.csv",
+      "original_sha256": "08ccb4c1d852d9877e5b72e3e840b87edee77349a6a3cde2a112ced01629b181",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_high_fidelity.json": {
+      "path": "studies/phase17/results/phase17_r1od3_high_fidelity.json",
+      "original_sha256": "089cb8c126ab6ca87426c1e6841ddd2ba864bdb532ebd42d4f2661c67011bbe3",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_joint_baseline_results.csv": {
+      "path": "studies/phase17/results/phase17_r1od3_joint_baseline_results.csv",
+      "original_sha256": "6d779bcd4e9a42d3c857c81e56fb8b25a5d256cfdaae79b814add1724ff2aa52",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_orbit_robustness.json": {
+      "path": "studies/phase17/results/phase17_r1od3_orbit_robustness.json",
+      "original_sha256": "b8dcc9b37733143dc809e610fa9115efe1a2213a4342ae8b36571809f063e30e",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_predeclared_grid.json": {
+      "path": "studies/phase17/configs/phase17_r1od3_predeclared_grid.json",
+      "original_sha256": "21e40feda737637673d842d81903fc2bc2bf9d0cb66605cc05d9c3a4214ba6d5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_predictor_analysis.json": {
+      "path": "studies/phase17/results/phase17_r1od3_predictor_analysis.json",
+      "original_sha256": "7513b56b7a041d9d1a274145d062a5be4f6fe991818e5b71174b822f046e698c",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_primary_results.csv": {
+      "path": "studies/phase17/results/phase17_r1od3_primary_results.csv",
+      "original_sha256": "b33f57342f77ee961c43b91af6cd309746c85d2965951ca8b70b71ff6e18cedc",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_raw_results.json": {
+      "path": "studies/phase17/results/phase17_r1od3_raw_results.json",
+      "original_sha256": "7d6e6a1430cb214c8a495c5abacd444d55bf66fd31ebd49385f19ad32cb12d7b",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_sessions.csv": {
+      "path": "studies/phase17/results/phase17_r1od3_sessions.csv",
+      "original_sha256": "55c50ed1f2afb1f89881fda4f80bed5ee226db722d356ba4d7c95874e710e017",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_summary.json": {
+      "path": "studies/phase17/results/phase17_r1od3_summary.json",
+      "original_sha256": "bf6119c49911dfb1e2c2fd82bafab07eb35241b890cf04567de96bbf5a4d07fd",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od3_task_state.json": {
+      "path": "studies/phase17/results/phase17_r1od3_task_state.json",
+      "original_sha256": "d9fef010579a6cd0da0304f90703221759ebc55ebf9305c7c0d91ec635a30958",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_calibration.csv": {
+      "path": "studies/phase17/results/phase17_r1od4_calibration.csv",
+      "original_sha256": "932db2a1818101698121992e26083e578882aea953021396ce85ea94c0f77f91",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_calibration_map.png": {
+      "path": "studies/phase17/results/phase17_r1od4_calibration_map.png",
+      "original_sha256": "63547a588a61f536b0d9d4388ed7d78404bb6e7fb8e9e7fd81aa1b13b0f81e25",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_canonical_fidelity.csv": {
+      "path": "studies/phase17/results/phase17_r1od4_canonical_fidelity.csv",
+      "original_sha256": "298d6ac9a787721b0f90a0039ed3e060fe1d27d811955dc94539fdeb3d48d8e7",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_canonical_phase_map.png": {
+      "path": "studies/phase17/results/phase17_r1od4_canonical_phase_map.png",
+      "original_sha256": "4ff77757f3a5963555047f8d1c2ac97b751a80d5be445337308229bb129779d2",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_epoch_grid.csv": {
+      "path": "studies/phase17/configs/phase17_r1od4_epoch_grid.csv",
+      "original_sha256": "eda1ec1d428c0c017f89f56f37b8eb09fac2b5414e0c75fbbc692924ae61852d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_first_vs_all_mechanism.png": {
+      "path": "studies/phase17/results/phase17_r1od4_first_vs_all_mechanism.png",
+      "original_sha256": "45eccdde70907e87deb36aa758cae71bbab065ff62be8d2e70957715615a1d89",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_independent_rebuild.json": {
+      "path": "studies/phase17/results/phase17_r1od4_independent_rebuild.json",
+      "original_sha256": "883cef0e53de99d1677dd6d0bf0b04556578495f611c88f2c6b17b56fa4d2585",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_mechanism.json": {
+      "path": "studies/phase17/results/phase17_r1od4_mechanism.json",
+      "original_sha256": "bf32d83f2cc0d30eed37b25742e5c08f2c4ba9ce432264515a158bba5c6c5817",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_orbit_phase_heatmap.png": {
+      "path": "studies/phase17/results/phase17_r1od4_orbit_phase_heatmap.png",
+      "original_sha256": "a757301f231305a3c216d7285f3a94d411fc666e412bd4b0765ab52cc85b72b5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_orbit_robustness.csv": {
+      "path": "studies/phase17/results/phase17_r1od4_orbit_robustness.csv",
+      "original_sha256": "d868d91a13af07a1a630cedf940249e886d888ffd023e4ec37f802d7f0c4a359",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_r1od4_predeclaration.json",
+      "original_sha256": "32fe7bcbd5742b82ab528481dc5ccb473f900c8918cda5b08d55e25c63a75e38",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_raw_results.json": {
+      "path": "studies/phase17/results/phase17_r1od4_raw_results.json",
+      "original_sha256": "3079629d70b8ea0282a14c59769ee8680af854414d10280dff95ffbe0d012edf",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_sessions.csv": {
+      "path": "studies/phase17/results/phase17_r1od4_sessions.csv",
+      "original_sha256": "69b87d5c4b17b79e91513fcaf9764e54bf4261f9959d5ac2214387b047607b46",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_summary.json": {
+      "path": "studies/phase17/results/phase17_r1od4_summary.json",
+      "original_sha256": "c57eab1da1a2b6bbc7c60bcf78ade653d3aec68560f9fa2ae0e3216575af2850",
+      "byte_preserved": true
+    },
+    "artifacts/phase17_r1od4_task_state.json": {
+      "path": "studies/phase17/results/phase17_r1od4_task_state.json",
+      "original_sha256": "f2cce22c770c188e4bcd974350a220f38b3ac7c71c47eff642a836645be67f2a",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_holdout_error.png": {
+      "path": "studies/phase17/results/phase17r1_holdout_error.png",
+      "original_sha256": "6498a102de7b7548dd897192e03ea67f9a8d740386d3d46fba775308b27e691d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_holdout_metrics.csv": {
+      "path": "studies/phase17/results/phase17r1_holdout_metrics.csv",
+      "original_sha256": "63937ad2a18a7b5fbba012896c7625e5a907ee4a2100119b5d87877ea64e3577",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_k_posterior.png": {
+      "path": "studies/phase17/results/phase17r1_k_posterior.png",
+      "original_sha256": "9e07196735fe528fec6b6374e22cc19a05752cda878aa006c0b531c96b5a232d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_k_rtn_correlations.png": {
+      "path": "studies/phase17/results/phase17r1_k_rtn_correlations.png",
+      "original_sha256": "e5a5ace9846b7594d1f9d2418068723be093672151b7958702d550fd984f85ad",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_observability.json": {
+      "path": "studies/phase17/results/phase17r1_observability.json",
+      "original_sha256": "83a37b5774c02aeec50fe493499b90bee18a9a3be26e64a7a44043824c9b64bb",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_prior_sensitivity.csv": {
+      "path": "studies/phase17/results/phase17r1_prior_sensitivity.csv",
+      "original_sha256": "69e65fb8bf5485419d4b669652f53b2c1b90231df4016f6344ffdc754fd95956",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_residual_comparison.png": {
+      "path": "studies/phase17/results/phase17r1_residual_comparison.png",
+      "original_sha256": "6336f9448c3d49e8ed9ce8a8af86d29a32d1afd106ba81983065c4913da9e7c8",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_rtn_covariance.png": {
+      "path": "studies/phase17/results/phase17r1_rtn_covariance.png",
+      "original_sha256": "0f97e96ae19d936e332cf4e887262edf4ebe4efff3afb5d55a768860ef459134",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1_singular_values.png": {
+      "path": "studies/phase17/results/phase17r1_singular_values.png",
+      "original_sha256": "e7dc1553c03aab96ab65d7aaa31fa144ff69ccdced5316fb1c2df4e563760087",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_campaign_config.json": {
+      "path": "studies/phase17/configs/phase17r1g_campaign_config.json",
+      "original_sha256": "b18406b16a4ce04d592274c4f19fbc5d22843bce0e456346975ae4e069f26818",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_conditional_k_information_vs_arc.png": {
+      "path": "studies/phase17/results/phase17r1g_conditional_k_information_vs_arc.png",
+      "original_sha256": "5a7e0763e1ead3755585d6de2cdbcf78bb5d00c399f8002e2494b2dc99f19da5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_geometry_results.json": {
+      "path": "studies/phase17/results/phase17r1g_geometry_results.json",
+      "original_sha256": "3edcb511f5ee01e7c8a1b5f434f14f8b05f7218cf8813600f5b3627fb68a94b5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_holdout_by_case.csv": {
+      "path": "studies/phase17/results/phase17r1g_holdout_by_case.csv",
+      "original_sha256": "54d6277c47459151d73a5801b1c9b5a15de962c4306880f95df4835fb433cacb",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_holdout_error_vs_arc.png": {
+      "path": "studies/phase17/results/phase17r1g_holdout_error_vs_arc.png",
+      "original_sha256": "6d8da6f953708fcbc2aed9500d8d755638a90de2feae959f6b2100a9861d00e1",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_k_estimate_uncertainty_by_arc.png": {
+      "path": "studies/phase17/results/phase17r1g_k_estimate_uncertainty_by_arc.png",
+      "original_sha256": "6d7d4f01cb0008ee5d6bac24c81637fd56a5ea9b0e2406728223cdf607ed8d92",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_measurement_family_information.png": {
+      "path": "studies/phase17/results/phase17r1g_measurement_family_information.png",
+      "original_sha256": "5b6e2daf700e7a99994d40917de23f8f404848b5e98933266a1e49e91eacb0c6",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_observability_by_case.csv": {
+      "path": "studies/phase17/results/phase17r1g_observability_by_case.csv",
+      "original_sha256": "7312fc4a9239524baa91d74fcaab404e5b26ad6ba382a308aa74e916ed8e8a8d",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_scaled_condition_vs_arc.png": {
+      "path": "studies/phase17/results/phase17r1g_scaled_condition_vs_arc.png",
+      "original_sha256": "195f5c7a4ac8b0c36c0c2ea00a50a5dc61fbda6d426cfaf8dd4900ff8cc99d63",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_selected_holdout_comparison.png": {
+      "path": "studies/phase17/results/phase17r1g_selected_holdout_comparison.png",
+      "original_sha256": "d50c8798621d4feda999c7148580d1f9ef0c216913e9847ba89b60c407082c44",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_sigma_k_vs_arc.png": {
+      "path": "studies/phase17/results/phase17r1g_sigma_k_vs_arc.png",
+      "original_sha256": "884e61ebfe143b0c98f3eb5c64aa9c14bf1534e1e897626654f2639fbd46d8d5",
+      "byte_preserved": true
+    },
+    "artifacts/phase17r1g_weakest_mode_k_alignment.png": {
+      "path": "studies/phase17/results/phase17r1g_weakest_mode_k_alignment.png",
+      "original_sha256": "346253c581a6f03fb7b9975ff4c636797bed4bd5d19088dde3023bfe19a1db26",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_abc_results.json": {
+      "path": "studies/phase17/results/r1cov_abc_results.json",
+      "original_sha256": "4d6bf393b464ec56eb3c5337e3c82f7dbb300df450f9977fb9ec1a2368b5bceb",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_callsite_inventory.csv": {
+      "path": "studies/phase17/results/r1cov_callsite_inventory.csv",
+      "original_sha256": "6231d7ea331b0a17ec911a8cff018332f7ac1ff1c3672aa183779154deea42e7",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_config.json": {
+      "path": "studies/phase17/configs/r1cov_config.json",
+      "original_sha256": "0d1e79143899ed77305f98f5fe315067da80f9c62d9fc0040e619e9ef2e82af5",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_defect_reproduction.csv": {
+      "path": "studies/phase17/results/r1cov_defect_reproduction.csv",
+      "original_sha256": "a2aacd62dac7c643b83ce898c47e0f36e71ce9175a7156253819c2872bb12153",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_design_singular_spectrum.png": {
+      "path": "studies/phase17/results/r1cov_design_singular_spectrum.png",
+      "original_sha256": "ec74475c28bd09c3111e69c16c4cc0280d2187aa40c5cb268b29b3229cd01427",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_eigenvalues_vs_floor.png": {
+      "path": "studies/phase17/results/r1cov_eigenvalues_vs_floor.png",
+      "original_sha256": "e3f5bead2bb0b7d29960cd04f97870e4977969457d5ddeb0583654b757b96f97",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_high_precision_oracle.csv": {
+      "path": "studies/phase17/results/r1cov_high_precision_oracle.csv",
+      "original_sha256": "c5f2a9e369c81058047490e05fd3cd06a7c84820029e794086a6bd91ff8059da",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_historical_correction_table.csv": {
+      "path": "studies/phase17/results/r1cov_historical_correction_table.csv",
+      "original_sha256": "23f2b4438ef2f3e618c6651e6a636092b4815998b9eba587196ea5708fee2a01",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_manifest.json": {
+      "path": "studies/phase17/results/r1cov_manifest.json",
+      "original_sha256": "80f5bf8a1d18992c5b6cd9adae327dac2cd1b7a576910d38c53df8b9abee9169",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_old_vs_qualified_sigma_k.png": {
+      "path": "studies/phase17/results/r1cov_old_vs_qualified_sigma_k.png",
+      "original_sha256": "37cb0dd049596ddedc256d8fe9ab9b90fc83ed0354943c12ee49a49fd39a2fa2",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_oracle_prior_cases.csv": {
+      "path": "studies/phase17/results/r1cov_oracle_prior_cases.csv",
+      "original_sha256": "f2eefaac179c121637ac8d7040694ab7f5cc402fc6861d8aa9b1ca99f94540b4",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_pinv_characterization.csv": {
+      "path": "studies/phase17/results/r1cov_pinv_characterization.csv",
+      "original_sha256": "83652f97ae411d332088206087c93a1cd8ea10f533d808df4963eb7c24149a1d",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_posterior_vs_prior.png": {
+      "path": "studies/phase17/results/r1cov_posterior_vs_prior.png",
+      "original_sha256": "e1eb3973a66dfbd8dde4c829b8a7325f3d2e5f8f00f34e417e4778659b929200",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_prior_response.csv": {
+      "path": "studies/phase17/results/r1cov_prior_response.csv",
+      "original_sha256": "382750b4d0c1f446efa583caa16fd5bc111020081cdde9373b52888f353744d9",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_prior_sweep.csv": {
+      "path": "studies/phase17/results/r1cov_prior_sweep.csv",
+      "original_sha256": "712a6a4ad8ab9a6e8336ed677179d78606bbc6e4cae4505c64d67e110a163e7d",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_qr_vs_oracle.csv": {
+      "path": "studies/phase17/results/r1cov_qr_vs_oracle.csv",
+      "original_sha256": "3216e7a20419283602054716dc08b23c90df704372c33e94cb0af10d15961930",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_qr_vs_oracle_error.png": {
+      "path": "studies/phase17/results/r1cov_qr_vs_oracle_error.png",
+      "original_sha256": "3379e5a15e4d41c37cceeeca8f39e9d010f57161492443641c56e512569b95ad",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_rank_controls.csv": {
+      "path": "studies/phase17/results/r1cov_rank_controls.csv",
+      "original_sha256": "e05937b58ff15f709cde024e9b1e94be6f4c59898f3ad0085b0c8604526927e5",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_requalification.csv": {
+      "path": "studies/phase17/results/r1cov_requalification.csv",
+      "original_sha256": "86e0c9196b982b4cc948cd4cd59bdd7d0b11050f0ce50bd891ea615bcc8719f8",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_requalification.json": {
+      "path": "studies/phase17/results/r1cov_requalification.json",
+      "original_sha256": "f0a32eb4a6f23f57e3e45b379349e3836cdc3902e3e0c62eb31a5961db3f71da",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_scaling_invariance.csv": {
+      "path": "studies/phase17/results/r1cov_scaling_invariance.csv",
+      "original_sha256": "cc656e17787dac126c69c59a07b09a59cd29ab24fe26d6360463ffc55889c930",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_sigma_k_vs_scaling.png": {
+      "path": "studies/phase17/results/r1cov_sigma_k_vs_scaling.png",
+      "original_sha256": "5a899bc91debbda3bd3a8939f1297342e38bcf89e1549ffef8639775de135ebd",
+      "byte_preserved": true
+    },
+    "artifacts/r1cov_srif_covariance.csv": {
+      "path": "studies/phase17/results/r1cov_srif_covariance.csv",
+      "original_sha256": "75f343a9d155841de60d07072faeafa740440f91de2b2463f3ccab82a64491e5",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_arc_length_sweep.csv": {
+      "path": "studies/phase17/results/r1g_arc_length_sweep.csv",
+      "original_sha256": "026e124dd01cdfcf5550ab1677fe43ab65c1b556b90a4a243856c2254a9ca41a",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_campaign_config.json": {
+      "path": "studies/phase17/configs/r1g_campaign_config.json",
+      "original_sha256": "e040c67063dc8fba06a3d5b0d2662d42d6de95268c5685f828066f7913dc01a1",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_geometry_matrix.csv": {
+      "path": "studies/phase17/results/r1g_geometry_matrix.csv",
+      "original_sha256": "fa6cea234f76ce91a962bad95fef1900cffe63e9249b0d697fcf7824a96b63e1",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_holdout_by_case.csv": {
+      "path": "studies/phase17/results/r1g_holdout_by_case.csv",
+      "original_sha256": "f9e69587d1df320a37d25e8896c2fa51ccf558c39accb7fc2c80cd3e7bc486da",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_k_sensitivity_growth.csv": {
+      "path": "studies/phase17/results/r1g_k_sensitivity_growth.csv",
+      "original_sha256": "53730e20fa71a165e56bd016066d45e7177f97fad31035963c41cec50b5a04ff",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_measurement_comparison.csv": {
+      "path": "studies/phase17/results/r1g_measurement_comparison.csv",
+      "original_sha256": "4d2c71ed912a6f5efbc0320bb469937f08df603a779e7c048216dd3d9ed63523",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_prior_sensitivity.csv": {
+      "path": "studies/phase17/results/r1g_prior_sensitivity.csv",
+      "original_sha256": "2aa95d600965f73cd7195be26f264f7716ede1614a97fa9a3c3762e6dfdfd5fb",
+      "byte_preserved": true
+    },
+    "artifacts/r1g_selected_case_estimators.csv": {
+      "path": "studies/phase17/results/r1g_selected_case_estimators.csv",
+      "original_sha256": "e00016ba2f6c95862db1fa4f5e72a58ec1f39787960ddb8c1ce31ca49f2c2c85",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_conditional_k_vs_arcs.png": {
+      "path": "studies/phase17/results/r1m_conditional_k_vs_arcs.png",
+      "original_sha256": "ec6b33e56a37d09de3b9b14ec8504b13b0516de1eac5ee426d33175cdb759beb",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_config.json": {
+      "path": "studies/phase17/configs/r1m_config.json",
+      "original_sha256": "500fc5e647cde37dd531611259308e475c2c3f7fa2e5af38521ec6820ce46e5d",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_covariance_diagnostic.json": {
+      "path": "studies/phase17/results/r1m_covariance_diagnostic.json",
+      "original_sha256": "b2df455bdb65cd07f2810faa45cff993254e9a1f2407e1a2ee0974bd88947ab9",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_covariance_methods.csv": {
+      "path": "studies/phase17/results/r1m_covariance_methods.csv",
+      "original_sha256": "13b167d64c9ecc8f69c211c3aac39ec1834ca41c2a867304d8aca36788a8fbe3",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_eigen_spectrum_vs_floor.png": {
+      "path": "studies/phase17/results/r1m_eigen_spectrum_vs_floor.png",
+      "original_sha256": "01390dd604eb4d3c292d842dddf0eb2924ede346e26dca37a42f2fb050155539",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_elapsed_time_control.csv": {
+      "path": "studies/phase17/results/r1m_elapsed_time_control.csv",
+      "original_sha256": "c59830824ee1cb96c3ec71ce06cb623e353a9f3fc857a4461312cbc70af4e53a",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_elapsed_time_control.png": {
+      "path": "studies/phase17/results/r1m_elapsed_time_control.png",
+      "original_sha256": "865ad650dc98010a3597485130c1de6be02b26a4e9d8c9b18b77692fad9acacc",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_floor_diagnostic.csv": {
+      "path": "studies/phase17/results/r1m_floor_diagnostic.csv",
+      "original_sha256": "655d471ae16f9c131df7ad5c40acd8234157908194b3f5556d6033b992bb38cc",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_manifest.json": {
+      "path": "studies/phase17/results/r1m_manifest.json",
+      "original_sha256": "72f3d55cc53ff09d53cf03dc414c0c2a8fae4b39fdb30cc2c8d53fa76692f998",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_model_a_fairness.csv": {
+      "path": "studies/phase17/results/r1m_model_a_fairness.csv",
+      "original_sha256": "f8087f9ade6f7bdb058466db5b6668f0052801f3dbe37e75d1d12bd23336fc33",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_model_a_window_length.png": {
+      "path": "studies/phase17/results/r1m_model_a_window_length.png",
+      "original_sha256": "792d8b9943b8f3cf274afada94c68d90476ff04ae05da685589410a961aae9c7",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_multi_arc_information.csv": {
+      "path": "studies/phase17/results/r1m_multi_arc_information.csv",
+      "original_sha256": "d4712d08795026daab3485a7914669fade5fbbe2fccefe0307cc4b12704e4161",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_multi_arc_results.json": {
+      "path": "studies/phase17/results/r1m_multi_arc_results.json",
+      "original_sha256": "156fae692003d6d7fa830fd7fee176eb826a70c49bff10fd85e5641196ddd50c",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_multi_arc_singular_values.csv": {
+      "path": "studies/phase17/results/r1m_multi_arc_singular_values.csv",
+      "original_sha256": "789e5acda2b61907d91155c9a22dc55c7b639749c69cc3b8cfeb59c6f3d21f6e",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_orthogonal_fraction_vs_arc.png": {
+      "path": "studies/phase17/results/r1m_orthogonal_fraction_vs_arc.png",
+      "original_sha256": "2d2c007e43caba543b56601fe6fe933262c3e76a99c6ca46ffac23b35d494fd5",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_orthogonal_fraction_vs_arcs.png": {
+      "path": "studies/phase17/results/r1m_orthogonal_fraction_vs_arcs.png",
+      "original_sha256": "cd2f22662ae20dc282cf4a215a13975705057e10616f0830098b570e8cb176d6",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_pure_vs_linked.png": {
+      "path": "studies/phase17/results/r1m_pure_vs_linked.png",
+      "original_sha256": "69427e4193de29f2b48d1e748630be767e743088dda6e655dbe92445b03c41ea",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_pure_vs_linked_multi_arc.csv": {
+      "path": "studies/phase17/results/r1m_pure_vs_linked_multi_arc.csv",
+      "original_sha256": "825aebd6bcb12abb3352f94677426bbb914f4a2b8e89f01f06944730201fd46f",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_rank_tolerance.csv": {
+      "path": "studies/phase17/results/r1m_rank_tolerance.csv",
+      "original_sha256": "1fbb1f8d0aaee8a5539b827897963a4a5d117b6d290a39cbdcd042752d2e9827",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_scaling_audit.csv": {
+      "path": "studies/phase17/results/r1m_scaling_audit.csv",
+      "original_sha256": "6529589e1899696b8c87760358ae1361a849b51abdc08abb5cfe602222af8162",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_schur_sum_rule.csv": {
+      "path": "studies/phase17/results/r1m_schur_sum_rule.csv",
+      "original_sha256": "6b86b6e32aa456ddfbf5c2b0505a9c98a67e0c7f8d56a24b41c12f4d0b0aca6c",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_sigma_k_by_method.png": {
+      "path": "studies/phase17/results/r1m_sigma_k_by_method.png",
+      "original_sha256": "4b2d3a02e924599df9a2cfbd56aa3a7c5a67fb11edeb3a44a74016effb53a04a",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_sigma_k_data_only.csv": {
+      "path": "studies/phase17/results/r1m_sigma_k_data_only.csv",
+      "original_sha256": "7d98bb9acc357e03b423c990190fc80cb00d5ad08ed881312d96fede2270222f",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_single_arc_projection.csv": {
+      "path": "studies/phase17/results/r1m_single_arc_projection.csv",
+      "original_sha256": "2135be3ebc22223f43ff35fc1ead177296cf696a2078b93aabb00039b85a0ac6",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_smallest_singular_vs_arcs.png": {
+      "path": "studies/phase17/results/r1m_smallest_singular_vs_arcs.png",
+      "original_sha256": "4f957970c44f017c2803df0a75e1343c463558376af831bff422ccb2e99ef0aa",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_square_root_conditioning.csv": {
+      "path": "studies/phase17/results/r1m_square_root_conditioning.csv",
+      "original_sha256": "293726664eaad3c50ff3a84227403ca77382544996a8554be43a90d91e9132f4",
+      "byte_preserved": true
+    },
+    "artifacts/r1m_weakest_mode_k_vs_arcs.png": {
+      "path": "studies/phase17/results/r1m_weakest_mode_k_vs_arcs.png",
+      "original_sha256": "3619a63dec44c3fee49de81b3a210d67a60ca1b7e9947832a4b7dd961d39f648",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_baseline.csv": {
+      "path": "studies/phase17/results/r1o_baseline.csv",
+      "original_sha256": "458d2db27fed4810daf7fc7a5b9b9b39fc09749b730d5107e56982e06092d171",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_baseline.json": {
+      "path": "studies/phase17/results/r1o_baseline.json",
+      "original_sha256": "15ae5fca062c5970eeb417bb5aaeb1d32225d3bba24eeef04b5f7c4bc989baf8",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_celestial_los.csv": {
+      "path": "studies/phase17/results/r1o_celestial_los.csv",
+      "original_sha256": "99f69349b14b2efd86984181604d0049cb871fb7548044cc6ba9723e6f0af186",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_celestial_summary.json": {
+      "path": "studies/phase17/results/r1o_celestial_summary.json",
+      "original_sha256": "ba42d5b756d6fea9fdc6a6190c1953fc3106c2082a9546f8b4442563dba596b1",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_conditional_k_vs_precision.png": {
+      "path": "studies/phase17/results/r1o_conditional_k_vs_precision.png",
+      "original_sha256": "0803a8319b68e6cb453204a70658d27f8c136d4f7e49aa4575873b8dd3435f94",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_config.json": {
+      "path": "studies/phase17/configs/r1o_config.json",
+      "original_sha256": "61c50da0e2a1bd52338448faf0e273b2b6e5b0954ada8361a17f7be8e235cb63",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_confirmation.csv": {
+      "path": "studies/phase17/results/r1o_confirmation.csv",
+      "original_sha256": "87e17518f4f518ab816df935921de213c02cf34a02c55435a147fa2b0dab5928",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_covariance_crosscheck.csv": {
+      "path": "studies/phase17/results/r1o_covariance_crosscheck.csv",
+      "original_sha256": "69acee4a8deb24aaa364c1cac120a2d3cb427313a4b82f9782bd3e017e231172",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_crosscheck_summary.json": {
+      "path": "studies/phase17/results/r1o_crosscheck_summary.json",
+      "original_sha256": "9628ed32b06dc49c7acbcb3cd5a0ddb19627b6cd9174ab0e8186dc30c405360a",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_ddor_sigma_vs_noise.png": {
+      "path": "studies/phase17/results/r1o_ddor_sigma_vs_noise.png",
+      "original_sha256": "4fb45eaa5c0131a1aefba81af34d64e09ad640cc0716ac6ee8618aa93014f148",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_ddor_summary.json": {
+      "path": "studies/phase17/results/r1o_ddor_summary.json",
+      "original_sha256": "1c876ce2e0efefff45d0b255fd798cf63f2d74dc4a80f90790cc03bcd8b78db5",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_ddor_sweep.csv": {
+      "path": "studies/phase17/results/r1o_ddor_sweep.csv",
+      "original_sha256": "8937bc71a4ccd41d69c13fd72fb63b74f5cb1c1340f59d710e0fab0c2594debd",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_magnitude_vs_direction.png": {
+      "path": "studies/phase17/results/r1o_magnitude_vs_direction.png",
+      "original_sha256": "a59d2f44f8194512daa6cd322572d69cadeadb05896f31e9f98a84a90b51ca5b",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_manifest.json": {
+      "path": "studies/phase17/results/r1o_manifest.json",
+      "original_sha256": "2f001631465a746c794bb5e8f7918629982373c1fcb30c44d7028e735af0341a",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_metrics_by_observable.png": {
+      "path": "studies/phase17/results/r1o_metrics_by_observable.png",
+      "original_sha256": "723cb3510de8b28ab019b5308a686c9950c89de93077aa81833142218b287a81",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_observable_comparison.csv": {
+      "path": "studies/phase17/results/r1o_observable_comparison.csv",
+      "original_sha256": "c4edd9301473afb7d7de67371e7415e92adfe640d54bf9a0a50382b6c8541627",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_bridge.json": {
+      "path": "studies/phase17/results/r1o_opt_bridge.json",
+      "original_sha256": "180167d4579b1f958b9e12c42556f9eba3e27f902aaad7cd44fe391cce9a4d87",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_bridge.txt": {
+      "path": "studies/phase17/results/r1o_opt_bridge.txt",
+      "original_sha256": "1debc692a9fb4260eff472fcc8ea1f3cdc33aea9e977b44cf3e208c71dd88cd2",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_campaign.json": {
+      "path": "studies/phase17/results/r1o_opt_campaign.json",
+      "original_sha256": "f4167c7fa2056091210baa23e2536ee275acc2162fc502d8dde679becd08bcbd",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_campaign.txt": {
+      "path": "studies/phase17/results/r1o_opt_campaign.txt",
+      "original_sha256": "c2938303a7c16da769a2120d6bc7fdf6026311ade839d2af53db18db8f256d1a",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_jacobian_and_k.txt": {
+      "path": "studies/phase17/results/r1o_opt_jacobian_and_k.txt",
+      "original_sha256": "5203dd627a13fa92664ceae64c5f6aabddb09b7c5d451c2ea4f6e151ea462c9a",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_manifest.json": {
+      "path": "studies/phase17/results/r1o_opt_manifest.json",
+      "original_sha256": "959a54c53bd925f0b0e48d43c4855942c4e672688759b99e6ae8de9d5d7bdd76",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_opt_oracles.txt": {
+      "path": "studies/phase17/results/r1o_opt_oracles.txt",
+      "original_sha256": "5e683accf8f73cc36f7464e831448a638423b594c5d8b74eddae499878a21f27",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_optical_landmark_sweep.csv": {
+      "path": "studies/phase17/results/r1o_optical_landmark_sweep.csv",
+      "original_sha256": "e158ed5c96a39331bb4e4a078220ec6f6cff988bc0273e74a6eaa58dd07b276a",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_optical_sigma_vs_noise.png": {
+      "path": "studies/phase17/results/r1o_optical_sigma_vs_noise.png",
+      "original_sha256": "164e91f8df4a1b0e42048fda3154de47db76c40cc43c2b113cfd10b839b30a85",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_optical_summary.json": {
+      "path": "studies/phase17/results/r1o_optical_summary.json",
+      "original_sha256": "25aee2e8744e272ed8a37c00a22116825bc247f7a4064d8f1d838ccde90395d5",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_r_manifest.json": {
+      "path": "studies/phase17/results/r1o_r_manifest.json",
+      "original_sha256": "9da5cfd1419d3d58e44c2db8d6ad0eef7be92f8b6cd5b8b92c0110517cfe936f",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_r_requalification.json": {
+      "path": "studies/phase17/results/r1o_r_requalification.json",
+      "original_sha256": "658c6b6125123262ff83ca01c30d8c6a52b0c1faf4985302027deb4bd913f9f9",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_r_stm_oracle.json": {
+      "path": "studies/phase17/results/r1o_r_stm_oracle.json",
+      "original_sha256": "b938135a55c9087c07100beb63d8af5ee5a5e57dee3661837c8e96c2861051a7",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_selected_candidates.csv": {
+      "path": "studies/phase17/results/r1o_selected_candidates.csv",
+      "original_sha256": "14ac97d436b360c97ef44625877ca424a087ee20782c9bf9b7f37c22b21f4321",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_singular_spectra.png": {
+      "path": "studies/phase17/results/r1o_singular_spectra.png",
+      "original_sha256": "88c505192985a208fb7c4b81aede64f157f176392184d8cedc70064f85ebca6e",
+      "byte_preserved": true
+    },
+    "artifacts/r1o_window_probe.csv": {
+      "path": "studies/phase17/results/r1o_window_probe.csv",
+      "original_sha256": "4ff942c21b7b9a9d111e69d66c60db26383fd84e0a5a8a187d4ce45307b2f95c",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_campaign_summary.json": {
+      "path": "studies/phase17/results/r1od_campaign_summary.json",
+      "original_sha256": "15c82a4177d5ed7270c2cf943e078bf59be4ebe6bd32f57dd573a5184b774d64",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_jacobian_fd_sweep.csv": {
+      "path": "studies/phase17/results/r1od_jacobian_fd_sweep.csv",
+      "original_sha256": "defdaeba2a4def037f0335be7cb7bcc17df5a6e6cb961be6a8122b745ecfe6b0",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_k_sensitivity_fd.csv": {
+      "path": "studies/phase17/results/r1od_k_sensitivity_fd.csv",
+      "original_sha256": "d1ae918b4491580fc77fe8260a010234f17f1cf87cda1576ac44388a5960ce3b",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_manifest.json": {
+      "path": "studies/phase17/results/r1od_manifest.json",
+      "original_sha256": "01c31128b89fc53432c09a780f9106b44cc704461ee9c57b580ac37e14a40d6b",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_oracle_gates.json": {
+      "path": "studies/phase17/results/r1od_oracle_gates.json",
+      "original_sha256": "d54d124d89278a36eaaf70ebda2b765c4749fbee5aa7b60b35c70341d247194f",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_qualification_summary.json": {
+      "path": "studies/phase17/results/r1od_qualification_summary.json",
+      "original_sha256": "467edbc16183011131bd7e78f54f63e1f9b238612bd865cf0a0fda3bbabd0f0c",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_random_noise_study.csv": {
+      "path": "studies/phase17/results/r1od_random_noise_study.csv",
+      "original_sha256": "d385f272aebf392f67d98e0efb39d95c707640247a542fa082e8eef0c0a0a8e8",
+      "byte_preserved": true
+    },
+    "artifacts/r1od_systematic_residual_study.csv": {
+      "path": "studies/phase17/results/r1od_systematic_residual_study.csv",
+      "original_sha256": "407d59fc9c7551da7cc203e71af15394b6654f606c1e346b4d5ab2d7e8450c48",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/deletion_manifest.csv": {
+      "path": "docs/development/repository_hygiene/deletion_manifest.csv",
+      "original_sha256": "d6dd5d64dea562b6322fb17dcf18c16bdc08bdc44c37228986b22a7d30a84ae6",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/hygiene_delete_cache.py": {
+      "path": "tools/repository_hygiene/hygiene_delete_cache.py",
+      "original_sha256": "b0fa353d34f44443e83c48ca8a2a76f73dd232b1137c55bf2fa18b178212ad22",
+      "byte_preserved": false
+    },
+    "artifacts/repository_hygiene/hygiene_inventory.py": {
+      "path": "tools/repository_hygiene/hygiene_inventory.py",
+      "original_sha256": "a6a3f1735d1cdd8580a14470eb39285b0842c3800440de932a4a171f949bf4dd",
+      "byte_preserved": false
+    },
+    "artifacts/repository_hygiene/hygiene_refcheck.py": {
+      "path": "tools/repository_hygiene/hygiene_refcheck.py",
+      "original_sha256": "881b6216c3b4c14a7e9c217b8eed02ba4fcf22e11b55108c4c87132964fa0473",
+      "byte_preserved": false
+    },
+    "artifacts/repository_hygiene/post_cleanup_files.csv": {
+      "path": "docs/development/repository_hygiene/post_cleanup_files.csv",
+      "original_sha256": "4ee7cca58f8e8a5e3f76c50b3b535c9b98832727e59728e668d0424485aa4d71",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/post_cleanup_inventory.json": {
+      "path": "docs/development/repository_hygiene/post_cleanup_inventory.json",
+      "original_sha256": "ef15ad2cb2aceb6a1c69f6e058aef8d1cb668088cc55008aced97d573a35f972",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/pre_cleanup_files.csv": {
+      "path": "docs/development/repository_hygiene/pre_cleanup_files.csv",
+      "original_sha256": "37689dc64e72acda52c45e40afcc5c9b98e7af208f6cfc5ed59f0b39d5fa8e34",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/pre_cleanup_inventory.json": {
+      "path": "docs/development/repository_hygiene/pre_cleanup_inventory.json",
+      "original_sha256": "aafa4cd4fd686c1ccdb196315c78a143a31bb59182a61c9cf96638b6d9f7d806",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/reference_check_post.json": {
+      "path": "docs/development/repository_hygiene/reference_check_post.json",
+      "original_sha256": "a4a3fe028fbb3723b419c105186325fed27dec07844787ef36a2b4d304efa150",
+      "byte_preserved": true
+    },
+    "artifacts/repository_hygiene/reference_check_pre.json": {
+      "path": "docs/development/repository_hygiene/reference_check_pre.json",
+      "original_sha256": "a4a3fe028fbb3723b419c105186325fed27dec07844787ef36a2b4d304efa150",
+      "byte_preserved": true
+    },
+    "artifacts/selected_geometry_estimator_comparison.csv": {
+      "path": "studies/phase17/results/selected_geometry_estimator_comparison.csv",
+      "original_sha256": "ac21a700df8a53db771d526347494078955833d7310335b1ad921d37a80f2e30",
+      "byte_preserved": true
+    },
+    "docs/branch_consolidation_2026-10-10/README.md": {
+      "path": "docs/development/branch_consolidation_2026-10-10/README.md",
+      "original_sha256": "e3bec42e395e2252ee24f8cdc4d1c62b915e4e7201045c6ad91265f30bcc5d46",
+      "byte_preserved": false
+    },
+    "docs/branch_consolidation_2026-10-10/branch_audit.json": {
+      "path": "docs/development/branch_consolidation_2026-10-10/branch_audit.json",
+      "original_sha256": "8adba5c52a8c8f607b9916cada2fa416878006fab61f3105c92de7411b75feda",
+      "byte_preserved": false
+    },
+    "docs/branch_consolidation_2026-10-10/desktop_refreeze.json": {
+      "path": "docs/development/branch_consolidation_2026-10-10/desktop_refreeze.json",
+      "original_sha256": "0b7ec852d6c0b5da846092aa1c5ee7543c93951897e8d6ec7176a27952dcb68f",
+      "byte_preserved": false
+    },
+    "docs/branch_consolidation_2026-10-10/environment.json": {
+      "path": "docs/development/branch_consolidation_2026-10-10/environment.json",
+      "original_sha256": "502901b418fa83f9cf4b5196e191be13952722412202a0d43a56282539f28798",
+      "byte_preserved": false
+    },
+    "docs/branch_consolidation_2026-10-10/hygiene.json": {
+      "path": "docs/development/branch_consolidation_2026-10-10/hygiene.json",
+      "original_sha256": "d750b987dd91b4d9c6699966f63cc06c89eb59f8156a772307f1410007666745",
+      "byte_preserved": false
+    },
+    "docs/branch_consolidation_2026-10-10/validation.json": {
+      "path": "docs/development/branch_consolidation_2026-10-10/validation.json",
+      "original_sha256": "8de65524442cbb09c08e67209a90acf7d513597e24607f66bc39ecf77436205e",
+      "byte_preserved": false
+    },
+    "docs/environment-readiness_2026-10-10.md": {
+      "path": "docs/development/environment-readiness_2026-10-10.md",
+      "original_sha256": "08629840ebff49610b7b47e3c122e3de293a640073376ab57fe06c2f5f4a9736",
+      "byte_preserved": false
+    },
+    "docs/figures/phase17_geo/f1_beta.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f1_beta.csv",
+      "original_sha256": "2690dfa306448459e14e93f73f2eb417fb39ea59184aa03d627e2c3fd975f9a1",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f1_beta_direction_vs_magnitude.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f1_beta_direction_vs_magnitude.png",
+      "original_sha256": "9dc053e80c5730f31ceb1d567fac6904a6db164b7b3d27a55baddd10220415d6",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f2_eclipse.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f2_eclipse.csv",
+      "original_sha256": "ad4e311db3097c7f3890d25dda5f40482fb35a7cb53dd9d4263343e2d9db5715",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f2_fperp_vs_eclipse_fraction.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f2_fperp_vs_eclipse_fraction.png",
+      "original_sha256": "13a1fd48b0fb72498e429959e2303d926462b4a893fc579c1193606c74d015bf",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f3_altitude.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f3_altitude.csv",
+      "original_sha256": "89e444f4a3c583dd2ebd81d1e9356ddf5dc7296bedece8f6e21f17d0cab30efd",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f3_altitude.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f3_altitude.png",
+      "original_sha256": "39b8c494fe50b86ef20e097c7e576af71abeb249dc318a1f8fb5724b8bcc0192",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f4_inclination.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f4_inclination.csv",
+      "original_sha256": "8382865f9d07d9ed5580570983e548b240c4a79935c5d07fee6f1efeb601ec70",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f4_inclination.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f4_inclination.png",
+      "original_sha256": "71c82dbe5ab04957930ddbd5a371fc0821015dace26fe91f3ceeded475b2ca98",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f5_full_vs_matched_count.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f5_full_vs_matched_count.png",
+      "original_sha256": "1efee6a008e90995b528ff77bbf58e4f1eb29a09fb978afcc5f7151bad02a752",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f5_matched.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f5_matched.csv",
+      "original_sha256": "1eccbbc21dcf27046105a33fbd00a147b808ee5a2d26173b9e24d42443131e02",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f6_srp_rtn.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f6_srp_rtn.csv",
+      "original_sha256": "6f646b890f67a4330a2c2f5bc3b751b514c6e3e62faba21ec6ad2b8e2a87e46c",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f6_srp_rtn_and_eclipse_timelines.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f6_srp_rtn_and_eclipse_timelines.png",
+      "original_sha256": "86ecb38f745b0e742ce7404af9254b1b936aa8dc34980b72b7ba7c2ef7b27a75",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f7_earth_view.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f7_earth_view.csv",
+      "original_sha256": "c78bc70fdb2d5787b247a9557f12d202a96bed6af2d5a9a17495c3859766c2e5",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f7_earth_view_and_network.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f7_earth_view_and_network.png",
+      "original_sha256": "db4152c74d1e4c6e8d373978f7a9fd8269fef2df8ee2a81f73981a163ecd0ce7",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f8_fixture.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f8_fixture.csv",
+      "original_sha256": "1de90969174fe86cdb19050d2ad52a67c99c28e5aa5c5dc0c18c2dc1e428e85a",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f8_fixture_attribution.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f8_fixture_attribution.png",
+      "original_sha256": "a8321b81243b7bf6bc1aa90d5e49e3610b9f9c4a0a235c7d50536d7f34828e61",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f9_k_control.csv": {
+      "path": "studies/phase17/results/figures/phase17_geo/f9_k_control.csv",
+      "original_sha256": "ee502e0f6bc676e464a8c45c961cee737198fb0d4759feaee5fca5f9265d5c26",
+      "byte_preserved": true
+    },
+    "docs/figures/phase17_geo/f9_k_magnitude_control.png": {
+      "path": "studies/phase17/results/figures/phase17_geo/f9_k_magnitude_control.png",
+      "original_sha256": "f7eeec9205deb2d2a52efbf4072e4671a9f89b425532b3a72bd4a9ced603c0a8",
+      "byte_preserved": true
+    },
+    "docs/frame_architecture_contracts_and_inconsistencies.md": {
+      "path": "docs/theory/frame_architecture_contracts_and_inconsistencies.md",
+      "original_sha256": "3a48b2cf8c475bea215d55d0596494c4685df9f0a9b77501bd517e720884378b",
+      "byte_preserved": false
+    },
+    "docs/frame_transformations.md": {
+      "path": "docs/theory/frame_transformations.md",
+      "original_sha256": "064ba91047b0a858a056c7a01300813ece45e2ddf9dbe78bf3dcc6acfa4c60ae",
+      "byte_preserved": false
+    },
+    "docs/frame_validation_results_and_test_gaps.md": {
+      "path": "docs/validation/frame_validation_results_and_test_gaps.md",
+      "original_sha256": "f442f38de80c03923660e8a6017e217a48ab697ef3061df7ff0f731153129ad1",
+      "byte_preserved": false
+    },
+    "docs/git_phase_p2_canonical_integration_report.md": {
+      "path": "docs/development/git_phase_p2_canonical_integration_report.md",
+      "original_sha256": "0979080649c1d8c91d3f544036aaeec18e10d91c967383c6e9e2e2b9619b2c9f",
+      "byte_preserved": false
+    },
+    "docs/local_repository_hygiene_status_report.md": {
+      "path": "docs/development/local_repository_hygiene_status_report.md",
+      "original_sha256": "2b9eaed6a9e669a576fc95b297c4ff6ef21a4065590508a3a64550f6e435bd16",
+      "byte_preserved": false
+    },
+    "docs/main_workspace_readiness_2026-10-10.md": {
+      "path": "docs/development/main_workspace_readiness_2026-10-10.md",
+      "original_sha256": "1dd0a26010f3034357a96537b114287a2db4b2a4a87dfef6006cef066aa92fca",
+      "byte_preserved": false
+    },
+    "docs/main_workspace_validation_2026-10-10.json": {
+      "path": "docs/development/main_workspace_validation_2026-10-10.json",
+      "original_sha256": "5dd9edb6d6bfec473700fb2f59eea9f137a3f871a6b73c320e4e341b3624ecbd",
+      "byte_preserved": false
+    },
+    "docs/map-layout-receipt_2026-10-12.json": {
+      "path": "docs/development/map-layout-receipt_2026-10-12.json",
+      "original_sha256": "86fb1ae60465490dbef874368385f1a686b8ab740c9734c9bba9bd456b03678c",
+      "byte_preserved": false
+    },
+    "docs/map-layout_2026-10-12.md": {
+      "path": "docs/development/map-layout_2026-10-12.md",
+      "original_sha256": "d97fd7b345e82d782b9b8b92615cbd854321d724c781fa5946200ded7d812173",
+      "byte_preserved": false
+    },
+    "docs/mission-onboarding-receipt_2026-10-12.json": {
+      "path": "docs/development/mission-onboarding-receipt_2026-10-12.json",
+      "original_sha256": "26446266773f78bbfde17deecdb50d297501793781308276a9f6d9a487fed4d7",
+      "byte_preserved": false
+    },
+    "docs/mission-onboarding_2026-10-12.md": {
+      "path": "docs/development/mission-onboarding_2026-10-12.md",
+      "original_sha256": "4ac15bc1d2c949cf3c295c1951682572c7fc14492fca3a116ac6c742d75bac40",
+      "byte_preserved": false
+    },
+    "docs/mission-overview_2026-10-11.md": {
+      "path": "docs/development/mission-overview_2026-10-11.md",
+      "original_sha256": "f361390a02ae08dbd4fc2ed845cc4852e28731adb1763eb924d526b2b6102af5",
+      "byte_preserved": false
+    },
+    "docs/mission-status-receipt_2026-10-11.json": {
+      "path": "docs/development/mission-status-receipt_2026-10-11.json",
+      "original_sha256": "f771c7d1d42fbb6a470010999d38960dd4de787f37fccf701aa0726f4bfd7f83",
+      "byte_preserved": false
+    },
+    "docs/mission-status_2026-10-11.md": {
+      "path": "docs/development/mission-status_2026-10-11.md",
+      "original_sha256": "36f1a85ed37101cc9744894d65cda41dee968da4ec3e0cb6c8b75ffcce170eb8",
+      "byte_preserved": false
+    },
+    "docs/mission-ui-receipt_2026-10-11.json": {
+      "path": "docs/development/mission-ui-receipt_2026-10-11.json",
+      "original_sha256": "ee0c0383c0e1e32d0b3b60850e1a61207317afeb11a33857f553c2f7d83553d6",
+      "byte_preserved": false
+    },
+    "docs/mission-usability-receipt_2026-10-11.json": {
+      "path": "docs/development/mission-usability-receipt_2026-10-11.json",
+      "original_sha256": "ad0ce2066b55e5d40c0360f47a713c6c44147dc8f3fdd816cf2a45449b2479e6",
+      "byte_preserved": false
+    },
+    "docs/mission-usability_2026-10-11.md": {
+      "path": "docs/development/mission-usability_2026-10-11.md",
+      "original_sha256": "768c5827f4e104e570e32e56b8228dcf4d4cfb017d69797ab694c7bd3f03851c",
+      "byte_preserved": false
+    },
+    "docs/one_way_light_time_jacobians.md": {
+      "path": "docs/theory/one_way_light_time_jacobians.md",
+      "original_sha256": "d94a8b29175599a3ab3881382528176a35382a289e24606cc20f441e43408650",
+      "byte_preserved": false
+    },
+    "docs/orbit-labels-receipt_2026-10-12.json": {
+      "path": "docs/development/orbit-labels-receipt_2026-10-12.json",
+      "original_sha256": "ce0612cb53b03b50a1fc7e3c9e5bc2891509063a1982c07829639a85fad87c8a",
+      "byte_preserved": false
+    },
+    "docs/orbit-labels_2026-10-12.md": {
+      "path": "docs/development/orbit-labels_2026-10-12.md",
+      "original_sha256": "2d9094bfb680eaed8473724577cf34e7a4fa2d7aac11669af272709b58b8f002",
+      "byte_preserved": false
+    },
+    "docs/phase17_authoritative_status.md": {
+      "path": "studies/phase17/reports/phase17_authoritative_status.md",
+      "original_sha256": "0c61beddc42d3d292a4fa11de433b8e6ce9231f7ac4ee4975ed7d3736cb90137",
+      "byte_preserved": false
+    },
+    "docs/phase17_f1_srp_variational_gradient_qualification.md": {
+      "path": "studies/phase17/reports/phase17_f1_srp_variational_gradient_qualification.md",
+      "original_sha256": "fa8e9b407ed5f207909a7bfc3d8baa0e93260379345d3dafde452725b9cd02cc",
+      "byte_preserved": false
+    },
+    "docs/phase17_fxr_earth_epoch_fixture_erratum.md": {
+      "path": "studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md",
+      "original_sha256": "596693226647551dba8557cf571e1c3147aac20f2d615ef3d71b5b5b16f7ec30",
+      "byte_preserved": false
+    },
+    "docs/phase17_fxr_earth_epoch_fixture_requalification.md": {
+      "path": "studies/phase17/reports/phase17_fxr_earth_epoch_fixture_requalification.md",
+      "original_sha256": "92cf207536403d049478e917ee5c57d45f057ae9c3a470976c5f192fe4419a18",
+      "byte_preserved": false
+    },
+    "docs/phase17_geo_geometry_identifiability.md": {
+      "path": "studies/phase17/reports/phase17_geo_geometry_identifiability.md",
+      "original_sha256": "3367e041f6f5ec137cc6844937fa3d8cc4b393409adeaf2087519c4360038f24",
+      "byte_preserved": false
+    },
+    "docs/phase17_geo_literature_contract.md": {
+      "path": "studies/phase17/reports/phase17_geo_literature_contract.md",
+      "original_sha256": "e90b2d45d962878627a6bebd051fc0be87f3903e95732d2c2586d7fc5f7b787a",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_bls1_production_bls_recovery.md": {
+      "path": "studies/phase17/reports/phase17_harden_bls1_production_bls_recovery.md",
+      "original_sha256": "733112d030a4c83004f09dc1ba7f37b72d4e288942b70fea6b47d4b7b67e0e6d",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_closure_report.md": {
+      "path": "studies/phase17/reports/phase17_harden_closure_report.md",
+      "original_sha256": "9b62e2195655c5d8b57239c49c1a8b4962d9785a845559da708e1c8afacc0bb6",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_d23_repair_qualification.md": {
+      "path": "studies/phase17/reports/phase17_harden_d23_repair_qualification.md",
+      "original_sha256": "bc3312afb96e4e4fe5e3a83f0258478cfc52b29445befcbab95403b3f38c4644",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_d25_posterior_covariance_consistency.md": {
+      "path": "studies/phase17/reports/phase17_harden_d25_posterior_covariance_consistency.md",
+      "original_sha256": "b3683e53e93c0d0777816f61157fadf96dcad102cb0ed8be0321f9bf5c2743ba",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_d27_convergence_status.md": {
+      "path": "studies/phase17/reports/phase17_harden_d27_convergence_status.md",
+      "original_sha256": "d254a8767ec034cd8075343a217cf6f2a225da5d5b9cdb7706460036b3c5393a",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_d28_prior_covariance_contract.md": {
+      "path": "studies/phase17/reports/phase17_harden_d28_prior_covariance_contract.md",
+      "original_sha256": "b86e151ab871cdac2357a3e9c90f946609cfe5e05c7531748de133733838a0b9",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_d29_srif_k_prior_contract.md": {
+      "path": "studies/phase17/reports/phase17_harden_d29_srif_k_prior_contract.md",
+      "original_sha256": "45ea9cb204a1a2b1af637357d545707dabe4c27ea985fa3e2729f8093d79ad36",
+      "byte_preserved": false
+    },
+    "docs/phase17_harden_defect_ledger.md": {
+      "path": "studies/phase17/reports/phase17_harden_defect_ledger.md",
+      "original_sha256": "1d0d51a4786ab0975b1b0d7014d2349524f7a3fb995ab2459b015375f3a88aff",
+      "byte_preserved": false
+    },
+    "docs/phase17_k_closeout_and_model_mismatch_pivot.md": {
+      "path": "studies/phase17/reports/phase17_k_closeout_and_model_mismatch_pivot.md",
+      "original_sha256": "0bd4a64f6c28f2ea490ee614a0f8ae1897e45723764099bcd942fb46fc18e6b1",
+      "byte_preserved": false
+    },
+    "docs/phase17_kp1_alternative_k_parameterization_characterization.md": {
+      "path": "studies/phase17/reports/phase17_kp1_alternative_k_parameterization_characterization.md",
+      "original_sha256": "a81b5fc1bda25413b757a328f5143a02acc13b76c53ceec7050895d8f2d480a0",
+      "byte_preserved": false
+    },
+    "docs/phase17_kp2_nonlinear_m3_recovery_confirmation.md": {
+      "path": "studies/phase17/reports/phase17_kp2_nonlinear_m3_recovery_confirmation.md",
+      "original_sha256": "d84956f1bf8e97569e115ab186c9219161e1cdc51dae95f924a4e7b07f7657f1",
+      "byte_preserved": false
+    },
+    "docs/phase17_mm_gravity_masquerade_falsification.md": {
+      "path": "studies/phase17/reports/phase17_mm_gravity_masquerade_falsification.md",
+      "original_sha256": "72b60c50023fbc28f080d900c3fa7da06d23874b224c83a8672811e32c58d4b5",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1_observability_holdout_report.md": {
+      "path": "studies/phase17/reports/phase17_r1_observability_holdout_report.md",
+      "original_sha256": "46ff0b00497abdffb5dacb42a26eb9df3e6a4e5c9e16e16e6b97ab5a3f7cbfe5",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1cov_square_root_covariance.md": {
+      "path": "studies/phase17/reports/phase17_r1cov_square_root_covariance.md",
+      "original_sha256": "1fd45fe8090c0014d3b669b7d5cf376893b78875d70ad1f8b2d517e03af28c8c",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1g_geometry_arc_study.md": {
+      "path": "studies/phase17/reports/phase17_r1g_geometry_arc_study.md",
+      "original_sha256": "76ecf4be144e235f2efd41af79de334650f96245fc4fe0f8a755aa573d1f861e",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1m_multi_arc_identifiability.md": {
+      "path": "studies/phase17/reports/phase17_r1m_multi_arc_identifiability.md",
+      "original_sha256": "e573aef943fc44df6b258236e06b3cd842d8d9387231078ab710002a60ea8585",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_additional_observable_feasibility.md": {
+      "path": "studies/phase17/reports/phase17_r1o_additional_observable_feasibility.md",
+      "original_sha256": "d6124cc2fe56fb63acdf933d72f46640342281c6d668405facf6315c36abf80c",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_cd1_counted_doppler_characterization.md": {
+      "path": "studies/phase17/reports/phase17_r1o_cd1_counted_doppler_characterization.md",
+      "original_sha256": "d31f13a850b653e283869eebcd6519557f1b705f38da6447ead83c663bf63a66",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_cd1_literature_contract.md": {
+      "path": "studies/phase17/reports/phase17_r1o_cd1_literature_contract.md",
+      "original_sha256": "74d4d2d6d6e62e931bd3a72aa5d6571c6d77f93663e2f3e7b58752b07e2cae1a",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_opt_literature_contract.md": {
+      "path": "studies/phase17/reports/phase17_r1o_opt_literature_contract.md",
+      "original_sha256": "c2e4c9112441812d73df3e47ae2b07f9a715b695dc3e218c47a881dbd8c70a4c",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_opt_production_optical_qualification.md": {
+      "path": "studies/phase17/reports/phase17_r1o_opt_production_optical_qualification.md",
+      "original_sha256": "2d408e34c60439021e7a342f8fd94bf56e0fb63a3b43aae8135c95336eba1b54",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_r_stm_layout_repair.md": {
+      "path": "studies/phase17/reports/phase17_r1o_r_stm_layout_repair.md",
+      "original_sha256": "c144937c2d3de22f9fce2e34efd97206451e76b390ed2d8de81bd37554df28c3",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1o_scientific_erratum.md": {
+      "path": "studies/phase17/reports/phase17_r1o_scientific_erratum.md",
+      "original_sha256": "27546a85bb86b9a91dc679e061e1ae5f104034bf158f14c955a6baac9f70d951",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od2_ddor_robustness_qualification.md": {
+      "path": "studies/phase17/reports/phase17_r1od2_ddor_robustness_qualification.md",
+      "original_sha256": "3324db038233fdc3daac97b296820d42d10de6928cc6a0cd5a6a00337473ffaa",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od2_literature_contract.md": {
+      "path": "studies/phase17/reports/phase17_r1od2_literature_contract.md",
+      "original_sha256": "627215b529c584c9de09f9fbd45c9e160a794d441b3a160f6c20102585ebfa51",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od3_literature_contract.md": {
+      "path": "studies/phase17/reports/phase17_r1od3_literature_contract.md",
+      "original_sha256": "cff30426ac3b18b92795ddf4da0d7903ccd2f3bd088b501f711ba42ff908e311",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od3_tracking_design_characterization.md": {
+      "path": "studies/phase17/reports/phase17_r1od3_tracking_design_characterization.md",
+      "original_sha256": "d3522fb5ce5d6c1ee53d264c951b9e88c384db00152e31ca8cc64c74c2de4743",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od4_gm_window_confirmatory_qualification.md": {
+      "path": "studies/phase17/reports/phase17_r1od4_gm_window_confirmatory_qualification.md",
+      "original_sha256": "766d024ea90c95c86f2e8fddc88568c040c5aada9b5ba724d96725547f548447",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od_literature_contract.md": {
+      "path": "studies/phase17/reports/phase17_r1od_literature_contract.md",
+      "original_sha256": "9ea87986d5b7b9339b423e4e39521b761db299bfcd052f29d5a62571b16fb4c5",
+      "byte_preserved": false
+    },
+    "docs/phase17_r1od_production_ddor_qualification.md": {
+      "path": "studies/phase17/reports/phase17_r1od_production_ddor_qualification.md",
+      "original_sha256": "ade31b8a6e90bed8824167c68dd928714d29699909bbf151aa3a9ef09bbb7a67",
+      "byte_preserved": false
+    },
+    "docs/r1_r4_long_arc_qualification.md": {
+      "path": "docs/validation/r1_r4_long_arc_qualification.md",
+      "original_sha256": "9ecbf8ff687e81180471e1e0e019fdb7b55b148fad5120108a789f7128172a62",
+      "byte_preserved": false
+    },
+    "docs/repository-readiness_2026-10-10.md": {
+      "path": "docs/development/repository-readiness_2026-10-10.md",
+      "original_sha256": "c97c0fb1a2ad6d3a0957cb3eb1c6ce62c007e1e13d3c7dea9e431af2738a0755",
+      "byte_preserved": false
+    },
+    "docs/research-guide.md": {
+      "path": "docs/research/research-guide.md",
+      "original_sha256": "0eeb523ee0fb78a5ac196eb1d6a43af1494e12a7704b6d39b3c8f732dbec8dfc",
+      "byte_preserved": false
+    },
+    "docs/solar_radiation_pressure.md": {
+      "path": "docs/theory/solar_radiation_pressure.md",
+      "original_sha256": "f1e54a97d6e8482b877008988491ac32b948319485a6e939fc110f6ae20ef8c3",
+      "byte_preserved": false
+    },
+    "docs/spice_cross_validation.md": {
+      "path": "docs/validation/spice_cross_validation.md",
+      "original_sha256": "cfd9b262d41ae9a2501647c891f84941d35d81268c281114bd8abfe290dc4dfd",
+      "byte_preserved": false
+    },
+    "docs/station-filters-receipt_2026-10-13.json": {
+      "path": "docs/development/station-filters-receipt_2026-10-13.json",
+      "original_sha256": "da12fb5e2dbf9ee39cfcdac2fdfc5d7d41bf0167ab4c5551f3d5f51aeaa9156c",
+      "byte_preserved": false
+    },
+    "docs/station-filters_2026-10-13.md": {
+      "path": "docs/development/station-filters_2026-10-13.md",
+      "original_sha256": "f6bf20c1fa03f7c14060df5cc56d5b05f1ab610665470136acc95a2d333f3625",
+      "byte_preserved": false
+    },
+    "docs/stellar_aberration_od_impact.md": {
+      "path": "docs/theory/stellar_aberration_od_impact.md",
+      "original_sha256": "4ee0c96193ce48b6a1558af516a5122e885f34b34c5239f2637bc1f8895e480d",
+      "byte_preserved": false
+    },
+    "docs/two_way_counted_doppler.md": {
+      "path": "docs/theory/two_way_counted_doppler.md",
+      "original_sha256": "e87e67e79ecbcf826fcdca1808f75b0abc28e5abde3ce53f91cb1cc2a1f3aec5",
+      "byte_preserved": false
+    },
+    "docs/two_way_range.md": {
+      "path": "docs/theory/two_way_range.md",
+      "original_sha256": "5eebfb9b8da5b9048a4092dbe06ee6a7c0630d0ae10b91f82e2ea59071c938a5",
+      "byte_preserved": false
+    },
+    "docs/verification.md": {
+      "path": "docs/validation/verification.md",
+      "original_sha256": "871d7ec6926e604ef50b55e9fa10a295a8ad13530d5d1bf8591bed9a513ccc38",
+      "byte_preserved": false
+    },
+    "examples/phase17_bls1_qualification.py": {
+      "path": "studies/phase17/scripts/phase17_bls1_qualification.py",
+      "original_sha256": "6355d6f6d0b5be6b046101dfdb7ab16521f5ac4b8bca02e170e349b311052226",
+      "byte_preserved": false
+    },
+    "examples/phase17_d23_qualification.py": {
+      "path": "studies/phase17/scripts/phase17_d23_qualification.py",
+      "original_sha256": "1cef42399fd0371678d1a9fc697b4f684ef27117259d132a17d5aad98251c753",
+      "byte_preserved": false
+    },
+    "examples/phase17_d25_qualification.py": {
+      "path": "studies/phase17/scripts/phase17_d25_qualification.py",
+      "original_sha256": "fa9c2877aeeaa6c36b402fbacbaa075479a2710d4372e8d5c608d23dc1e86e77",
+      "byte_preserved": false
+    },
+    "examples/phase17_d27_qualification.py": {
+      "path": "studies/phase17/scripts/phase17_d27_qualification.py",
+      "original_sha256": "ee44bd9257482abc35114abcaba73752a81a6b89ffbb67cd611496ea00818efa",
+      "byte_preserved": false
+    },
+    "examples/phase17_d28_qualification.py": {
+      "path": "studies/phase17/scripts/phase17_d28_qualification.py",
+      "original_sha256": "cbdaf982408a622ce8fadc99079c28d6d3f360434f7aef0a0e53c8ed900819b8",
+      "byte_preserved": false
+    },
+    "examples/phase17_d29_qualification.py": {
+      "path": "studies/phase17/scripts/phase17_d29_qualification.py",
+      "original_sha256": "c154d70f0049f6936610f88d72e623c5ec1fd6c30203835b0161f8533d16a55c",
+      "byte_preserved": false
+    },
+    "examples/phase17_f1_local_gradient_oracle.py": {
+      "path": "studies/phase17/scripts/phase17_f1_local_gradient_oracle.py",
+      "original_sha256": "53b550c51444a8f6535c347e524066e988289c6d655f794c614bfa60311734e1",
+      "byte_preserved": false
+    },
+    "examples/phase17_f1_materiality.py": {
+      "path": "studies/phase17/scripts/phase17_f1_materiality.py",
+      "original_sha256": "56b4e8ce9640585c188ed0b99130f3a4ed038f9c38fd98748688625c72f9805e",
+      "byte_preserved": false
+    },
+    "examples/phase17_f1_materiality_compare.py": {
+      "path": "studies/phase17/scripts/phase17_f1_materiality_compare.py",
+      "original_sha256": "8d1eb6ed3c9b7126957349423e1261bd6c8025e09772c8813d0cacd4718d9951",
+      "byte_preserved": false
+    },
+    "examples/phase17_f1_parity.py": {
+      "path": "studies/phase17/scripts/phase17_f1_parity.py",
+      "original_sha256": "ce66af7de73b898db2115b08952ee451af5a94ee167a1d53eedb794d60b52ddf",
+      "byte_preserved": false
+    },
+    "examples/phase17_f1_variational_oracle.py": {
+      "path": "studies/phase17/scripts/phase17_f1_variational_oracle.py",
+      "original_sha256": "7a4e885ec43db14f586e7840d5259241d26a93251e730e8bb43a967eeb6cd7be",
+      "byte_preserved": false
+    },
+    "examples/phase17_fxr_epoch_audit.py": {
+      "path": "studies/phase17/scripts/phase17_fxr_epoch_audit.py",
+      "original_sha256": "335925022c8b299f9ca65d944be44343c8f62df21da464f924cecc59355557d4",
+      "byte_preserved": false
+    },
+    "examples/phase17_fxr_g5_audit.py": {
+      "path": "studies/phase17/scripts/phase17_fxr_g5_audit.py",
+      "original_sha256": "bd5454f1104235fac4df794d3e754e49a97d958fa10e3560d2e9275ae2cd2bd9",
+      "byte_preserved": false
+    },
+    "examples/phase17_fxr_requalification.py": {
+      "path": "studies/phase17/scripts/phase17_fxr_requalification.py",
+      "original_sha256": "f72a01b3721c8798cc366c419cd290e339530a67d28b058800ba4e70962ea165",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_geo_campaign.py",
+      "original_sha256": "410114e2476060875dec384b9abb6ae260323cc1f781af8c2093e74950228ac3",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_core.py": {
+      "path": "studies/phase17/scripts/phase17_geo_core.py",
+      "original_sha256": "f9103b68aa8a18d208ee7402da2a312f262e7302a2bc5f8d3982137fe988a2ff",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_figures.py": {
+      "path": "studies/phase17/scripts/phase17_geo_figures.py",
+      "original_sha256": "c0eded435c777ef2221831b3d343c1f30c7321206bbbebb1cc341fbb0e057e3d",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_fixture_attribution.py": {
+      "path": "studies/phase17/scripts/phase17_geo_fixture_attribution.py",
+      "original_sha256": "bee8e838c02e538c472f87b4e6c9ac6830c924839cc86f3d334dd8052bbf9ff8",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_grid.py": {
+      "path": "studies/phase17/scripts/phase17_geo_grid.py",
+      "original_sha256": "9e9994a613ef668abc6a0f025cd639d5cc1772f160af58c45520cf3828aa0afe",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_jacobian_checks.py": {
+      "path": "studies/phase17/scripts/phase17_geo_jacobian_checks.py",
+      "original_sha256": "a582f0f23d4f9094c8de14de6724b2b0d48b7d12b3617ca4df322cf25f28faf4",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_jacobian_diagnosis.py": {
+      "path": "studies/phase17/scripts/phase17_geo_jacobian_diagnosis.py",
+      "original_sha256": "8c3c02492e52f793f3f13d9f6d42ac9156b17bdd983c93d70b8208defbf2c6f0",
+      "byte_preserved": false
+    },
+    "examples/phase17_geo_phase_robustness.py": {
+      "path": "studies/phase17/scripts/phase17_geo_phase_robustness.py",
+      "original_sha256": "bac4c68cb957cd6c85ded6064585a82a23cd24626c8b478f98661d8a03924ba8",
+      "byte_preserved": false
+    },
+    "examples/phase17_harden_events_and_derivatives.py": {
+      "path": "studies/phase17/scripts/phase17_harden_events_and_derivatives.py",
+      "original_sha256": "a8491b2ed058bf46ffaedecc3bc96ede28e9d7095f2140530f8b7e0be2d7cdcc",
+      "byte_preserved": false
+    },
+    "examples/phase17_harden_ledger.py": {
+      "path": "studies/phase17/scripts/phase17_harden_ledger.py",
+      "original_sha256": "eb75c337342cd8c911bb067b750540644b9a867684057d724d346f9b11be3c58",
+      "byte_preserved": false
+    },
+    "examples/phase17_harden_range_jacobian.py": {
+      "path": "studies/phase17/scripts/phase17_harden_range_jacobian.py",
+      "original_sha256": "34a1d26d39369df99d3835c77ac0120f0c45d1b77e2c2e86a937b81dc80a5649",
+      "byte_preserved": false
+    },
+    "examples/phase17_harden_visibility_requalification.py": {
+      "path": "studies/phase17/scripts/phase17_harden_visibility_requalification.py",
+      "original_sha256": "bf6ca7342eb8d0a4865fdbc5142b5ab0e62bb6ee56ef059863bb9fd755f768aa",
+      "byte_preserved": false
+    },
+    "examples/phase17_kgm_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_kgm_campaign.py",
+      "original_sha256": "95a5ebc9ec4e1a59f4217fd12459ba6d03da6852d874f65aa410de983666b6d7",
+      "byte_preserved": false
+    },
+    "examples/phase17_kgm_core.py": {
+      "path": "studies/phase17/scripts/phase17_kgm_core.py",
+      "original_sha256": "ad19ee3466c834913fcd921cb24dcecdc67405e5cb919303695ab86f5c77d369",
+      "byte_preserved": false
+    },
+    "examples/phase17_kp1_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_kp1_campaign.py",
+      "original_sha256": "a880eb08b8bf49446f8fb9f0558f96bcb839cf9c2fbb74dd08b6f42b1d0f28de",
+      "byte_preserved": false
+    },
+    "examples/phase17_kp1_core.py": {
+      "path": "studies/phase17/scripts/phase17_kp1_core.py",
+      "original_sha256": "ae0cf62d898abddefdf88a48240039360ae5061d382f4b4654805210a4e46465",
+      "byte_preserved": false
+    },
+    "examples/phase17_kp1_predeclare.py": {
+      "path": "studies/phase17/scripts/phase17_kp1_predeclare.py",
+      "original_sha256": "722906089d29665d7fe16f6a4b5c4d5d06c8d04bdc43ef438ff6472811e24d75",
+      "byte_preserved": false
+    },
+    "examples/phase17_kp2_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_kp2_campaign.py",
+      "original_sha256": "388d750d6caa11bfba0f63f37c9437cf0795e978aa39b25247279ce5e297a52c",
+      "byte_preserved": false
+    },
+    "examples/phase17_kp2_core.py": {
+      "path": "studies/phase17/scripts/phase17_kp2_core.py",
+      "original_sha256": "e58683c6ce93e6290b3d245857050debd22660ce5db6b9373895b09a7adb315f",
+      "byte_preserved": false
+    },
+    "examples/phase17_kp2_predeclare.py": {
+      "path": "studies/phase17/scripts/phase17_kp2_predeclare.py",
+      "original_sha256": "c6a7476228085cfc669784cd00e99da226a3756c59930769a27c37256e6e9ef4",
+      "byte_preserved": false
+    },
+    "examples/phase17_mm_experiment.py": {
+      "path": "studies/phase17/scripts/phase17_mm_experiment.py",
+      "original_sha256": "71b3c0866ef66edbe8c6e1164df03158d1b74ae696722e3f22922fd0d38ba6b7",
+      "byte_preserved": false
+    },
+    "examples/phase17_mm_probe.py": {
+      "path": "studies/phase17/scripts/phase17_mm_probe.py",
+      "original_sha256": "00b290d3febdd3bbd10d83a57f2562be1ba133bcb2397dc6e66cc698940f233f",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_abc.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_abc.py",
+      "original_sha256": "e4ee3d1b77585ee1b3563cf8b75ab7ee5bd8a5213a1c9dbbd246cb441ff0d1f8",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_core.py",
+      "original_sha256": "c5e96804f91aaeae6d4e5921a2dcbf5883097805598230d033a416f33e45a9f1",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_d_srif.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_d_srif.py",
+      "original_sha256": "6acf79d70be8fdf32002a900cba86ad5cd51b1d1fc5642a12773167a9010003d",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_e_rank.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_e_rank.py",
+      "original_sha256": "b4f9d4c9223ad1661929306be7672e819213e465b47d8db4a0700f2c671b82db",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_f_callsites.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_f_callsites.py",
+      "original_sha256": "8beec7e0d9671038aa862dc6697471453812656dd5215356f82e017b19c9dffb",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_g_requalify.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_g_requalify.py",
+      "original_sha256": "8447ec2035a82c9261e3e604a22f21e216377ff6a4a6e5a99dbcd7833a26a0e1",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1cov_h_artifacts.py": {
+      "path": "studies/phase17/scripts/phase17_r1cov_h_artifacts.py",
+      "original_sha256": "f98b4f69dc591510900f36c43219cd9175b8971a7b72e638e5c9fc8439a8cc4b",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1m_addendum.py": {
+      "path": "studies/phase17/scripts/phase17_r1m_addendum.py",
+      "original_sha256": "7e26c063a7d0ba233cf76b82254b29bad01678557e64e92dba4dc649875f6a22",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1m_config_and_spectra.py": {
+      "path": "studies/phase17/scripts/phase17_r1m_config_and_spectra.py",
+      "original_sha256": "9d2f0faf545c0c900566d9fb21dcad23b4e6c7e024fe099bad89f3095ecb4756",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1m_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1m_core.py",
+      "original_sha256": "7f95dd0987577baeac688eb0bfca085293b54927ed8fa64db8586c30e513228b",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1m_covariance_diagnostic.py": {
+      "path": "studies/phase17/scripts/phase17_r1m_covariance_diagnostic.py",
+      "original_sha256": "927b729c1809335fa6c617862a4387ae8b5e9bb61737bd2890230972701315a7",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1m_figures2.py": {
+      "path": "studies/phase17/scripts/phase17_r1m_figures2.py",
+      "original_sha256": "c392b29749c8aee08c4a2d4d2a5d65675f4b53f82372f9832bcbb2735bdfa4d1",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1m_multi_arc_study.py": {
+      "path": "studies/phase17/scripts/phase17_r1m_multi_arc_study.py",
+      "original_sha256": "2e59f6f5bf4d001ef6947e7bc461a8ea6f80dfe65bcb15d25f26cebe8551d394",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_baseline.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_baseline.py",
+      "original_sha256": "c1cafa7a89f63bac5cb71b0f8fec4fad7612069f178f4f6b989de4a3d8f1d2b1",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_cd1_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_cd1_campaign.py",
+      "original_sha256": "5dbedcc2a53270dd3a04e5b7901b6cd2e1983a08dd578e448d52565b81986719",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_cd1_closure.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_cd1_closure.py",
+      "original_sha256": "42647c95df90b08c7bc69b846af68effa2433c2448e38d6f814a840a187431b8",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_cd1_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_cd1_core.py",
+      "original_sha256": "02b2bae5df8db20bd7bf8cb2475bddf1934f568c86bd402641aaab107f74563b",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_cd1_predeclare.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_cd1_predeclare.py",
+      "original_sha256": "0802902568a5cf220f28cf057fb5c8b9d57b90e4029b9c1b04eee2dcd4a4ac70",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_celestial.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_celestial.py",
+      "original_sha256": "4b51ed559d898fa5f3144b9318e392461c0c28905607c7275ea82e4a59536c8a",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_comparison.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_comparison.py",
+      "original_sha256": "fc9bb8882b7c17cdf667d172ec173ad3e2cf535f68090f41dfdb371969ad35d6",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_confirmation.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_confirmation.py",
+      "original_sha256": "c84318b5db0c47cc2ef417e198a59123e34f404634249aa1b5440ed9f01dc051",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_core.py",
+      "original_sha256": "8e41d88a154fbe569f34e55f60bd3ba719fd436a2a450900ef5b0c9ae594ad78",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_crosscheck.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_crosscheck.py",
+      "original_sha256": "565d2649009db7c1f23f259a31b2a0b99ecac0f0f644db7bda899ce391df6144",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_ddor.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_ddor.py",
+      "original_sha256": "9953ad3af901d58ac3fe854e6abf33750b9d0146a2701e3855b8b13a0e3b7691",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_landmark.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_landmark.py",
+      "original_sha256": "2a9b2ac71b1958344bb4556e6d0bd8a4efffebb0e2e507d850c7bf122d4cf1ad",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_opt_bridge.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_opt_bridge.py",
+      "original_sha256": "5923a869730333124d19fa1348bf4198e348b80eed39ae28324df9c53afbb2de",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_opt_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_opt_campaign.py",
+      "original_sha256": "5eff5431b4c61780c3de0c9eacc617f036fbb88a769e03225821e428797d650a",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_opt_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_opt_core.py",
+      "original_sha256": "c1b6103335ca53b43b5ae58d9e27cf52de55f46546cf8952c105d2c970a08509",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_opt_jacobian_and_k.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_opt_jacobian_and_k.py",
+      "original_sha256": "91bcfc39447ab03fc775b2433560388d1b0d0ac9539d8c8e673ab1d9dd47926a",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_opt_oracles.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_opt_oracles.py",
+      "original_sha256": "51479a0edb53aa90ff4e2af0ff10a2c67593c6d0b41969a9da3953a764833a44",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_r_requalification.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_r_requalification.py",
+      "original_sha256": "415e0b9f47304075a2cc820f08b43374e7a25887d115e533d2ce759819c3d76d",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1o_r_stm_oracle.py": {
+      "path": "studies/phase17/scripts/phase17_r1o_r_stm_oracle.py",
+      "original_sha256": "98782967d622473c2f1c21113a0f77a930d0f77239274c2cb70097ad31fdeff0",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_campaign.py",
+      "original_sha256": "0c1fc1696a26aa035a4706777081fa8fa2239f350bf7f8520b1ee5cc8ccb1e74",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_core.py",
+      "original_sha256": "ddf13466e893ec057e860cd802898101788cc70190af6aac29b008d00d2c9dbd",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_fd.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_fd.py",
+      "original_sha256": "399a85c2c096bb9610a1231e637bdeb41db855ba92e4f9658c374940efb0cf1c",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_fidelity.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_fidelity.py",
+      "original_sha256": "cd53262dfcb1185a574cc7a742c35c245eae5d3fcc0b39fd7c08805bf8ebba21",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_figures.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_figures.py",
+      "original_sha256": "e0b9ad49f85a548d0d49f6e19ba8a421b6afa0836b5f7f9cf68530bc4e464372",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_grid.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_grid.py",
+      "original_sha256": "de52837255bfabd160e8d7ff453430f304a704f22702fee5fb9e876a4b3fc580",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od2_summary.py": {
+      "path": "studies/phase17/scripts/phase17_r1od2_summary.py",
+      "original_sha256": "d1b7c82b2630cb54e81519d35a9c1e7e8175796288c1c0725151b0f21c67f34b",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od3_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_r1od3_campaign.py",
+      "original_sha256": "0d913aa0709ba38d99a285b476c040aefb9454681be05d50b120bd8545caf290",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od3_core.py": {
+      "path": "studies/phase17/scripts/phase17_r1od3_core.py",
+      "original_sha256": "47ef329b26d18d9e6b4909a7541a27794bc3edf1d8657e16a39e8ddd4dec8cf0",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od3_grid.py": {
+      "path": "studies/phase17/scripts/phase17_r1od3_grid.py",
+      "original_sha256": "46c477c6c89c14f835f58a7491863fb2e21eeaf92c2e2c3a80409851441a9eef",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od4_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_r1od4_campaign.py",
+      "original_sha256": "9d5a055ad560f008a1fd728e8a5221ff0558d5ed24a316d4a01799260c9228fd",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od4_predeclare.py": {
+      "path": "studies/phase17/scripts/phase17_r1od4_predeclare.py",
+      "original_sha256": "b41c2545f5c92dd520d7f4472dcad049af20182a8f9c1fc530c2b00e4134ce5e",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od_anchor_convention_check.py": {
+      "path": "studies/phase17/scripts/phase17_r1od_anchor_convention_check.py",
+      "original_sha256": "c7789d982830b09d3b7baf671db2612c09d06bf71837e747c6749e89ef37095c",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od_campaign.py": {
+      "path": "studies/phase17/scripts/phase17_r1od_campaign.py",
+      "original_sha256": "de882c9d03c7ddc2c3f5237309b5e37452dc97a79407b6adb5fd992477fa0d7a",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od_jacobian_and_k.py": {
+      "path": "studies/phase17/scripts/phase17_r1od_jacobian_and_k.py",
+      "original_sha256": "72640a86b9963c141f5b993a33574791878a8948e833ce7c9a612c3e39b2bff6",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od_oracles.py": {
+      "path": "studies/phase17/scripts/phase17_r1od_oracles.py",
+      "original_sha256": "b0ba4e01da1e6f7f588f3817c9e36d30b3ed4f93615b03da35d8e2247b7b7739",
+      "byte_preserved": false
+    },
+    "examples/phase17_r1od_surrogate_bridge.py": {
+      "path": "studies/phase17/scripts/phase17_r1od_surrogate_bridge.py",
+      "original_sha256": "2e5f762539db4821d44337183d1631c9ccecad8ab1f462b1262b8793e8a64833",
+      "byte_preserved": false
+    },
+    "lunar_od/__init__.py": {
+      "path": "src/lunar_od/__init__.py",
+      "original_sha256": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
+      "byte_preserved": true
+    },
+    "lunar_od/accelerated.py": {
+      "path": "src/lunar_od/accelerated.py",
+      "original_sha256": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
+      "byte_preserved": true
+    },
+    "lunar_od/adaptive_tuning.py": {
+      "path": "src/lunar_od/adaptive_tuning.py",
+      "original_sha256": "708bddb864509872a87802c9c38abe09c8bb71aa3a112ce5b036d0347295ff4f",
+      "byte_preserved": true
+    },
+    "lunar_od/config.py": {
+      "path": "src/lunar_od/config.py",
+      "original_sha256": "fc5d180941fd6acc9b6630232a2d23d2c3c81b9855c43b85e61ad84dcb1a0a4e",
+      "byte_preserved": true
+    },
+    "lunar_od/constants.py": {
+      "path": "src/lunar_od/constants.py",
+      "original_sha256": "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
+      "byte_preserved": true
+    },
+    "lunar_od/delta_dor.py": {
+      "path": "src/lunar_od/delta_dor.py",
+      "original_sha256": "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b",
+      "byte_preserved": true
+    },
+    "lunar_od/diagnostics.py": {
+      "path": "src/lunar_od/diagnostics.py",
+      "original_sha256": "e5f2e07ba1056b5e27d040966136b6f497c26e86a21f21e176cf3f7e4dd49324",
+      "byte_preserved": true
+    },
+    "lunar_od/dynamics.py": {
+      "path": "src/lunar_od/dynamics.py",
+      "original_sha256": "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
+      "byte_preserved": true
+    },
+    "lunar_od/ephemeris.py": {
+      "path": "src/lunar_od/ephemeris.py",
+      "original_sha256": "a85f60e5822c795fad1afa42aa42c7d240fe49b670cf1cb75114f14995286745",
+      "byte_preserved": true
+    },
+    "lunar_od/estimators.py": {
+      "path": "src/lunar_od/estimators.py",
+      "original_sha256": "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
+      "byte_preserved": true
+    },
+    "lunar_od/filters.py": {
+      "path": "src/lunar_od/filters.py",
+      "original_sha256": "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
+      "byte_preserved": true
+    },
+    "lunar_od/force_contract.py": {
+      "path": "src/lunar_od/force_contract.py",
+      "original_sha256": "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
+      "byte_preserved": true
+    },
+    "lunar_od/force_models.py": {
+      "path": "src/lunar_od/force_models.py",
+      "original_sha256": "c1412fe22ac7bed580ca3fa1ffaa7a794cc508b0f0a985a10106f36d6a7d2389",
+      "byte_preserved": true
+    },
+    "lunar_od/geometry.py": {
+      "path": "src/lunar_od/geometry.py",
+      "original_sha256": "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf",
+      "byte_preserved": true
+    },
+    "lunar_od/gravity_harmonics.py": {
+      "path": "src/lunar_od/gravity_harmonics.py",
+      "original_sha256": "6695a1127d90a65f02831df81ffb889904fc05178c9045f8f96c2bbb3045feb9",
+      "byte_preserved": true
+    },
+    "lunar_od/gravity_model_loader.py": {
+      "path": "src/lunar_od/gravity_model_loader.py",
+      "original_sha256": "067fd1aada108bdcd3982bafe1e2b98f880841798dd9b4d80ae17ca4b2d7df27",
+      "byte_preserved": false
+    },
+    "lunar_od/history_domain.py": {
+      "path": "src/lunar_od/history_domain.py",
+      "original_sha256": "0f71dcd94175050c7b83dca50586ea37c1e395231c746778609a005a2eac8db4",
+      "byte_preserved": true
+    },
+    "lunar_od/lunar_frames.py": {
+      "path": "src/lunar_od/lunar_frames.py",
+      "original_sha256": "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4",
+      "byte_preserved": true
+    },
+    "lunar_od/lunar_landmark_optical.py": {
+      "path": "src/lunar_od/lunar_landmark_optical.py",
+      "original_sha256": "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36",
+      "byte_preserved": true
+    },
+    "lunar_od/measurement_contracts.py": {
+      "path": "src/lunar_od/measurement_contracts.py",
+      "original_sha256": "f0e625a2577ea242c9aa57b74dc435fb1330973cda849e13871585418a73764a",
+      "byte_preserved": true
+    },
+    "lunar_od/measurement_ingestion.py": {
+      "path": "src/lunar_od/measurement_ingestion.py",
+      "original_sha256": "61ee6920a0c82006656ac48fa1a59b9c02508132df6d6249acfe75984ff16979",
+      "byte_preserved": true
+    },
+    "lunar_od/measurements.py": {
+      "path": "src/lunar_od/measurements.py",
+      "original_sha256": "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
+      "byte_preserved": true
+    },
+    "lunar_od/monte_carlo.py": {
+      "path": "src/lunar_od/monte_carlo.py",
+      "original_sha256": "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
+      "byte_preserved": true
+    },
+    "lunar_od/noise_models.py": {
+      "path": "src/lunar_od/noise_models.py",
+      "original_sha256": "440b679adaab7b3aca702bfbc2b62c39b28a19968ec64cd220127be9bbf694bb",
+      "byte_preserved": true
+    },
+    "lunar_od/observability.py": {
+      "path": "src/lunar_od/observability.py",
+      "original_sha256": "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f",
+      "byte_preserved": true
+    },
+    "lunar_od/orbit.py": {
+      "path": "src/lunar_od/orbit.py",
+      "original_sha256": "bd8a4a8780068bbf662759a03bb1fdc825b46fb6e41e558b77af6face692e0a0",
+      "byte_preserved": true
+    },
+    "lunar_od/project_paths.py": {
+      "path": "src/lunar_od/project_paths.py",
+      "original_sha256": "db9b16f07f1555fcab4a47667ec0e34c0d8cce9261b215439e472cf7f4464261",
+      "byte_preserved": false
+    },
+    "lunar_od/q_tuning.py": {
+      "path": "src/lunar_od/q_tuning.py",
+      "original_sha256": "3ee6ea0788af2f5468107f0742450e884b20e2905732aad99792497f9eca27d2",
+      "byte_preserved": true
+    },
+    "lunar_od/radiometrics.py": {
+      "path": "src/lunar_od/radiometrics.py",
+      "original_sha256": "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/__init__.py": {
+      "path": "src/lunar_od/reference_config/__init__.py",
+      "original_sha256": "8e38138f3ed90a830d9555ff6bf2c88820a643e12c8b2e763c81c48696e6e756",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/errors.py": {
+      "path": "src/lunar_od/reference_config/errors.py",
+      "original_sha256": "19feef7cc28a88efa351a426f206056ebd691f6ec5ec3329e92a4da6c8ea08f9",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/fingerprint.py": {
+      "path": "src/lunar_od/reference_config/fingerprint.py",
+      "original_sha256": "b3cfba3a6185b0957d39bc110b3685e4d6ea01859a875ba316315f36ad5167a0",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/loader.py": {
+      "path": "src/lunar_od/reference_config/loader.py",
+      "original_sha256": "8dbfacf3b2c42df87dd19d4b34b6640fa5e802ac8d9acde188a6667b4367b609",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/model.py": {
+      "path": "src/lunar_od/reference_config/model.py",
+      "original_sha256": "d336bb74bde478f7b14ae12fb00b892c7b3c120f1b26dcec242cf8c5f0a99136",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/registry.py": {
+      "path": "src/lunar_od/reference_config/registry.py",
+      "original_sha256": "380edfc8a01a012256b9fd6acdb2e5084e4439bec174162657415639497df863",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/reporting.py": {
+      "path": "src/lunar_od/reference_config/reporting.py",
+      "original_sha256": "8423424e822c69e7d7ed8eb53d8e956cd59a1c31382fede312aca629c5b0431e",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/schema.py": {
+      "path": "src/lunar_od/reference_config/schema.py",
+      "original_sha256": "2fd5eae93a5c8cf2e6a43c29cca98605fd7954c0c750068fe09fc4081384c246",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/validation.py": {
+      "path": "src/lunar_od/reference_config/validation.py",
+      "original_sha256": "648dc248923844473c339eb8e3760cc860ad631eb9603a43712ada0bed3fd196",
+      "byte_preserved": true
+    },
+    "lunar_od/reference_config/vocabulary.py": {
+      "path": "src/lunar_od/reference_config/vocabulary.py",
+      "original_sha256": "b1674b6b7b11e71e0ffa0b002e5e87d0ca896a37e1a8706a25d771114d31cada",
+      "byte_preserved": true
+    },
+    "lunar_od/reporting.py": {
+      "path": "src/lunar_od/reporting.py",
+      "original_sha256": "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
+      "byte_preserved": true
+    },
+    "lunar_od/rf/__init__.py": {
+      "path": "src/lunar_od/rf/__init__.py",
+      "original_sha256": "82abf4845babfdb2fbba459f8d62d56342ca0c6e48d778450e2b9660e8e61f8a",
+      "byte_preserved": true
+    },
+    "lunar_od/rf/doppler_noise.py": {
+      "path": "src/lunar_od/rf/doppler_noise.py",
+      "original_sha256": "5e1aa3f119a581c0473ed985a22415423a65f772a8a2affe0ea8f5a6e73d5ea1",
+      "byte_preserved": true
+    },
+    "lunar_od/rf/environment.py": {
+      "path": "src/lunar_od/rf/environment.py",
+      "original_sha256": "4ca5dea470d4003e66c19b2446928532901e84e90b8fb9571c6866defa1fe921",
+      "byte_preserved": true
+    },
+    "lunar_od/rf/link_budget.py": {
+      "path": "src/lunar_od/rf/link_budget.py",
+      "original_sha256": "7a4b50b3a6b804d7d5a916bab4d4de15813b6e79c10c055af9ca23ee770592bc",
+      "byte_preserved": true
+    },
+    "lunar_od/rf/reference.py": {
+      "path": "src/lunar_od/rf/reference.py",
+      "original_sha256": "99a3a15e41268c8014c64236b610d144415499cb3c5b56742e0def005d6cb5d0",
+      "byte_preserved": true
+    },
+    "lunar_od/rf/types.py": {
+      "path": "src/lunar_od/rf/types.py",
+      "original_sha256": "9c5a7538409015c0b19263fe81e99f96cf02de7d955e272911a18c7811ac40f7",
+      "byte_preserved": true
+    },
+    "lunar_od/scenario_config.py": {
+      "path": "src/lunar_od/scenario_config.py",
+      "original_sha256": "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
+      "byte_preserved": true
+    },
+    "lunar_od/scenarios.py": {
+      "path": "src/lunar_od/scenarios.py",
+      "original_sha256": "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
+      "byte_preserved": true
+    },
+    "lunar_od/spice_loader.py": {
+      "path": "src/lunar_od/spice_loader.py",
+      "original_sha256": "98ed4603517b44d5c9ab2b7626e370ae5409a5014d10e942c5222e0d04965862",
+      "byte_preserved": false
+    },
+    "lunar_od/srp.py": {
+      "path": "src/lunar_od/srp.py",
+      "original_sha256": "9f9986d2a66a264b8eb6acba18e5a1e865718995f7f600ce98f08b3e95a6335a",
+      "byte_preserved": true
+    },
+    "lunar_od/thesis_matrix.py": {
+      "path": "src/lunar_od/thesis_matrix.py",
+      "original_sha256": "e9437f7d57c746057910927f063bfa9b0def75a22382f007befd68408fd3e3ea",
+      "byte_preserved": true
+    },
+    "lunar_od/two_way_counted_doppler.py": {
+      "path": "src/lunar_od/two_way_counted_doppler.py",
+      "original_sha256": "f499038b57f1cd6a1c3f1696aafc0e3ef951234d89f91706c8dcad2109b759dc",
+      "byte_preserved": true
+    },
+    "lunar_od/two_way_counted_doppler_reference.py": {
+      "path": "src/lunar_od/two_way_counted_doppler_reference.py",
+      "original_sha256": "8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa",
+      "byte_preserved": true
+    },
+    "lunar_od/two_way_range.py": {
+      "path": "src/lunar_od/two_way_range.py",
+      "original_sha256": "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995",
+      "byte_preserved": true
+    },
+    "lunar_od/visibility.py": {
+      "path": "src/lunar_od/visibility.py",
+      "original_sha256": "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a",
+      "byte_preserved": true
+    },
+    "plan.md": {
+      "path": "docs/development/plan.md",
+      "original_sha256": "c3b5e1ba84787a5bcb1415b0a9f70a76fab30276f2837ddb36ff1de3c9ab4dfe",
+      "byte_preserved": false
+    },
+    "examples/run_scenario_config.py": {
+      "path": "examples/run_scenario_config.py",
+      "original_sha256": "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
+      "byte_preserved": true
+    },
+    "examples/r1_covariance_observability_validation.py": {
+      "path": "examples/r1_covariance_observability_validation.py",
+      "original_sha256": "85d492ecd59f3c8aa5fbc574fc2a4d655a40c95c30f4634dc7e3dedde4c7e95c",
+      "byte_preserved": true
+    },
+    "desktop_app/controllers/analysis_controller.py": {
+      "path": "desktop_app/controllers/analysis_controller.py",
+      "original_sha256": "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33",
+      "byte_preserved": true
+    }
+  }
+}

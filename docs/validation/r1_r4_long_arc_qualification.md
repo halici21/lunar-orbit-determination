@@ -22,7 +22,7 @@ Geometry is assembled **only** from accepted repository fixtures:
 
 * the single accepted lunar orbit definition, `r0 = 1737.4e3 + 100e3` m, as used
   throughout `tests/test_estimators.py`;
-* the accepted `RANGE_RATE_STATION_DEFS` coordinates in `lunar_od/config.py`;
+* the accepted `RANGE_RATE_STATION_DEFS` coordinates in `src/lunar_od/config.py`;
 * different orbital phase along that same accepted orbit.
 
 Eight accepted stations are selected to span the Earth-rotation velocity

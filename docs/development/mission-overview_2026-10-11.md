@@ -4,7 +4,7 @@ Base: c7e18a3d9c736d9113b574d19e740469ee77b7fc. Native desktop/UI and
 artifact display changes. Scientific modules, measurement equations, solvers,
 fixtures, numerical tolerances and scientific skip policy are unchanged.
 
-![Recorded orbit, Earth stations and measurement Gantt](images/desktop-mission.png)
+![Recorded orbit, Earth stations and measurement Gantt](../images/desktop-mission.png)
 
 ## What changed
 
@@ -29,8 +29,8 @@ fixtures, numerical tolerances and scientific skip policy are unchanged.
   windows; cancelling the timer fixed it. The regression is included in CI.
 
 First-run and archived-result instructions are in the
-[Turkish Windows guide](windows-quickstart.md#yörünge-harita-ve-gantt).
-The [artifact contract](../desktop_app/RESULT_WORKFLOW.md#mission-overview)
+[Turkish Windows guide](../windows-quickstart.md#yörünge-harita-ve-gantt).
+The [artifact contract](../../desktop_app/RESULT_WORKFLOW.md#mission-overview)
 describes units, grouping, hashes, size limits and legacy behavior.
 
 ## Display scope

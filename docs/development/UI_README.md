@@ -1,6 +1,6 @@
 # Lunar OD Python Port - Arayüz Tasarım README
 
-> Historical design / implementation brief. Current application: [README](README.md), [desktop workflow](desktop_app/RESULT_WORKFLOW.md). See [legacy status](docs/legacy-tools.md).
+> Historical design / implementation brief. Current application: [README](../../README.md), [desktop workflow](../../desktop_app/RESULT_WORKFLOW.md). See [legacy status](../legacy-tools.md).
 
 Bu doküman, Lunar OD Python portu için geliştirilecek bir kullanıcı arayüzünün
 hangi proje bileşenlerini göstermesi, hangi ayarları kullanıcıya açması ve hangi

@@ -19,9 +19,9 @@ paint into the labels because there was no dedicated plot viewport.
 - The drawing scale now fits that viewport. At the minimum 350×230 plot size,
   the complete orbit is smaller; zoom remains available without covering text.
 
-![Minimum native orbit plot](images/desktop-orbit-minimum.png)
+![Minimum native orbit plot](../images/desktop-orbit-minimum.png)
 
-![Orchid plot at four-times zoom and two-times display scale](images/desktop-orbit-zoom-orchid.png)
+![Orchid plot at four-times zoom and two-times display scale](../images/desktop-orbit-zoom-orchid.png)
 
 ## Verification
 

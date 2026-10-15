@@ -75,7 +75,7 @@ The CN difference equals, to within metres, the distance the **Moon moves (relat
 
 ## 4. The stellar-aberration (CN -> CN+S) rotation matches SPICE
 
-Despite the CN frame offset, the `+S` rotation each model applies on top of its own CN agrees, confirming the stellar-aberration operator itself is correct (cf. the `spice.stelab` operator check in `docs/spice_cross_validation.md`):
+Despite the CN frame offset, the `+S` rotation each model applies on top of its own CN agrees, confirming the stellar-aberration operator itself is correct (cf. the `spice.stelab` operator check in `docs/validation/spice_cross_validation.md`):
 
 | # | station | our CN->CN+S [arcsec] | SPICE CN->CN+S [arcsec] | diff [arcsec] |
 |---:|---|---:|---:|---:|

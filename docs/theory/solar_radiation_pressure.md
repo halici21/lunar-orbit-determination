@@ -1,6 +1,6 @@
 # Solar radiation pressure
 
-Cannonball SRP with a conical lunar shadow, in `lunar_od/srp.py`. Opt-in and
+Cannonball SRP with a conical lunar shadow, in `src/lunar_od/srp.py`. Opt-in and
 default-off: a propagation that does not pass `srp=` runs exactly the force
 model it ran before this existed.
 
@@ -95,7 +95,7 @@ P(d)  = P_1AU * (AU / d)^2
 ```
 
 `u` points from the Sun to the spacecraft, so the force is anti-solar. `P_1AU`,
-`AU_M` and `R_SUN_M` live in `lunar_od/constants.py` with their sources.
+`AU_M` and `R_SUN_M` live in `src/lunar_od/constants.py` with their sources.
 
 The true instantaneous Sun distance is used. Holding it at one astronomical unit
 biases the magnitude by about 2.1% on the project's reference arc, so there is

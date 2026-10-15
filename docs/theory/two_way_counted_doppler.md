@@ -65,8 +65,8 @@ Single-bounce note: the legacy solver keeps **one** spacecraft bounce state,
 so `r_sc(t2)` is used for both the downlink and uplink legs. P0A rejects every
 nonzero `transponder_delay_s` for this profile; representing delay requires
 separate `t2u`/`t2d` spacecraft states and remains future four-event work. The
-M3 two-way range model (`docs/two_way_range.md`,
-`lunar_od/two_way_range.py`) already evaluates those separate events and its
+M3 two-way range model (`docs/theory/two_way_range.md`,
+`src/lunar_od/two_way_range.py`) already evaluates those separate events and its
 nonzero-delay support is unchanged. At zero delay the two solvers agree to the
 measured transform-interpolation bound (4.9e-10 s round-trip light time on a
 10 s pass grid).
@@ -308,7 +308,7 @@ deliberate opt-in, never a degradation path.
   same cubic-Hermite Earth as M3 range and ΔDOR. Linear interpolation is not
   symmetric about the count interval at the uplink transmit epochs, and left a
   near-constant ~1.7–1.8e-3 m/s value offset
-  (`docs/phase17_harden_d23_repair_qualification.md`). The byte-frozen model S
+  (`studies/phase17/reports/phase17_harden_d23_repair_qualification.md`). The byte-frozen model S
   keeps the linear policy; R3-P04/P05 now compare event arithmetic with a
   shared station provider;
 * the spacecraft state and STM stay on **cubic Hermite** interpolation;
@@ -368,9 +368,9 @@ remains defined on the ground receive epochs.
 
 ### Composition boundary
 
-`lunar_od/two_way_counted_doppler.py` composes the accepted M3 event solver and
-its uniform 3x3 implicit sensitivity read-only; `lunar_od/two_way_range.py` and
-`lunar_od/two_way_counted_doppler_reference.py` stay byte-identical. M3's
+`src/lunar_od/two_way_counted_doppler.py` composes the accepted M3 event solver and
+its uniform 3x3 implicit sensitivity read-only; `src/lunar_od/two_way_range.py` and
+`src/lunar_od/two_way_counted_doppler_reference.py` stay byte-identical. M3's
 station-provider *factory* is deliberately **not** used, because it interpolates
 the Earth-centre ephemeris with cubic Hermite while counted Doppler requires
 **linear**; R4 injects the accepted R3 `CountedDopplerStationStateProvider`

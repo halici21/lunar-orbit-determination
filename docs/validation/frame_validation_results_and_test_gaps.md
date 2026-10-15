@@ -47,7 +47,7 @@ Focused-session evidence from
 | pytest rootdir | `C:/Users/erayh/Documents/Python/Grad` |
 | pytest config | `C:/Users/erayh/Documents/Python/Grad/pytest.ini` |
 | repository root | `C:/Users/erayh/Documents/Python/Grad/python_port_measurement_fix` |
-| `lunar_od.__file__` | isolated `python_port_measurement_fix/lunar_od/__init__.py` |
+| `lunar_od.__file__` | isolated `python_port_measurement_fix/src/lunar_od/__init__.py` |
 | effective pytest `pythonpath` | `[]` |
 | relevant `sys.path` entry | isolated worktree only |
 
@@ -73,7 +73,7 @@ python -m pytest --override-ini=pythonpath= tests/
 Before that run, both imports were checked:
 
 ```text
-.../python_port_measurement_fix/lunar_od/__init__.py
+.../python_port_measurement_fix/src/lunar_od/__init__.py
 .../python_port_measurement_fix/desktop_app/app.py
 ```
 
