@@ -2,7 +2,7 @@
 
 Tests retain their existing flat paths and pytest node identities because
 many science and desktop tests reuse helpers across files. Default discovery
-is `tests/` in the worktree-local `pytest.ini`; no tests were removed or hidden
+is `tests/` in the worktree-local `pyproject.toml`; no tests were removed or hidden
 as part of repository reorganization.
 
 | Group | Representative files |

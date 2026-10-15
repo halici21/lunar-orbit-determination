@@ -4,7 +4,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     groups:
       action-updates:
         patterns: ['*']
@@ -12,10 +12,11 @@ updates:
     directories: ['/', '/requirements', '/desktop_app']
     schedule:
       interval: monthly
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     groups:
       documentation-and-development:
         patterns: [mkdocs, pytest, pytest-qt, build, packaging, setuptools]
       scientific-and-desktop:
         patterns: ['*']
-    # Every update is reviewed and tested. No automatic merge of scientific pins.
+    # Routine version PRs are paused to keep main as the only persistent branch.
+    # Dependency alerts and mandatory PR dependency review remain enabled.

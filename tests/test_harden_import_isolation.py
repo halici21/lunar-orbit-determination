@@ -95,5 +95,5 @@ def test_plain_invocation_without_pythonpath_isolates():
 
 def test_pytest_uses_the_worktree_config(pytestconfig):
     assert pytestconfig.inipath is not None
-    assert Path(pytestconfig.inipath).resolve() == ROOT / "pytest.ini"
+    assert Path(pytestconfig.inipath).resolve() == ROOT / "pyproject.toml"
     assert pytestconfig.getini("pythonpath") == []

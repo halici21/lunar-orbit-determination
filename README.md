@@ -152,6 +152,6 @@ configuration, inputs and seeds used. No DOI is currently declared.
 Copyright and reuse terms are in the [MIT license](LICENSE). Third-party data
 and dependencies retain their own terms.
 
-See the [roadmap](ROADMAP.md), [contribution guide](CONTRIBUTING.md) and
+See the [roadmap](docs/roadmap.md), [contribution guide](.github/CONTRIBUTING.md) and
 [release procedure](docs/development/releases.md) for the next research and
 delivery milestones.

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Reduce root files from 16 to 10: group roadmap/changelog in `docs/`,
+  contributing guidance in `.github/`, project instructions in `.claude/`,
+  and the MkDocs configuration in `docs/`. Consolidate pytest options into
+  `pyproject.toml`, preserving test discovery and worktree import isolation.
+- Pause routine dependency update PRs and remove the three unmerged bot
+  branches; retain dependency alerts, required review and all current pins.
+
 ## 0.1.0-alpha.4 — 2026-10-16
 
 - Exclude generated Python/Numba caches from portable content identities and ZIPs;
@@ -90,7 +97,7 @@
   report without starting computation. Timeout, shutdown and inconsistent reports
   cannot trigger a pending solver launch.
 - Fourteen readiness/GUI/process regression cases added to the public gate.
-- [Readiness implementation and verification](docs/development/environment-readiness_2026-10-10.md).
+- [Readiness implementation and verification](../docs/development/environment-readiness_2026-10-10.md).
 
 These changes are on main; the existing 0.1.0-alpha.1 source asset is immutable
 and predates this feature.
@@ -119,5 +126,5 @@ packaging remain outstanding.
 ## Historical research
 
 Phase-specific scientific changes and validation are documented in
-`studies/phase17/` and the durable `docs/` guides. [The branch consolidation report](docs/development/branch_consolidation_2026-10-10/README.md)
+`studies/phase17/` and the durable `docs/` guides. [The branch consolidation report](../docs/development/branch_consolidation_2026-10-10/README.md)
 records imported history and preserved pending work.

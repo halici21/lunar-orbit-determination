@@ -1,6 +1,6 @@
 """Phase 17-HARDEN: pin every test import to THIS worktree (FA-06).
 
-The worktree-local ``pytest.ini`` stops pytest from reading the workspace-root
+The worktree-local ``pyproject.toml`` stops pytest from reading the workspace-root
 ini (whose ``pythonpath`` pointed at the sibling ``python_port`` checkout).
 This conftest restores the two import roots that ini used to provide, but for
 this worktree: the repository root first, then ``desktop_app``.

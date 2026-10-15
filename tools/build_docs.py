@@ -25,8 +25,8 @@ PAGES = {
     "validation.md": "docs/site/validation.md",
     "api.md": "docs/site/api.md",
     "studies.md": "docs/site/studies.md",
-    "roadmap.md": "ROADMAP.md",
-    "contributing.md": "CONTRIBUTING.md",
+    "roadmap.md": "docs/roadmap.md",
+    "contributing.md": ".github/CONTRIBUTING.md",
 }
 
 
@@ -70,7 +70,7 @@ def build(strict):
         assets = staging / "assets"
         assets.mkdir(exist_ok=True)
         shutil.copy2(ROOT / "docs/site/site.css", assets / "site.css")
-        config = load_config(config_file=str(ROOT / "mkdocs.yml"),
+        config = load_config(config_file=str(ROOT / "docs/mkdocs.yml"),
                              docs_dir=str(staging), strict=strict)
         mkdocs_build(config)
     print(f"Built {len(PAGES)} curated pages at {output / 'site'}")

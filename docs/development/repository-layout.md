@@ -23,6 +23,13 @@ Durable documentation is split into `docs/theory/`, `docs/validation/`,
 `docs/research/`, and `docs/development/`. Phase-specific reports stay with the
 study. Desktop screenshots remain shared documentation assets.
 
+The roadmap, changelog and MkDocs configuration also live in `docs/`.
+Contribution guidance is in `.github/CONTRIBUTING.md`; project instructions
+are in `.claude/CLAUDE.md`. Pytest options share `pyproject.toml` with package
+metadata, preserving worktree-local discovery without a second root config.
+The [root cleanup guide](root-layout-cleanup.md) records the current paths and
+the ten retained root files.
+
 Optional dependency profiles are grouped under `requirements/`. The standard
 root `requirements.txt`, editable installation and Windows setup/launch entry
 points remain in place. See the [profile index](../../requirements/README.md).
