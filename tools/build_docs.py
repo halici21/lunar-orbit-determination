@@ -18,6 +18,7 @@ PAGES = {
     "index.md": "docs/site/index.md",
     "quickstart.md": "docs/tutorials/quickstart.md",
     "results.md": "docs/research/results-gallery.md",
+    "benchmark.md": "docs/research/paired-benchmark.md",
     "support.md": "docs/validation/support-matrix.md",
     "theory.md": "docs/site/theory.md",
     "validation.md": "docs/site/validation.md",

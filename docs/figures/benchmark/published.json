@@ -1,0 +1,14 @@
+{
+  "source_summary_sha256": "d113c9302e997763876b7b1206fba2bbf45e8370a0d3ff8d99f36d2d16d77c1d",
+  "producing_commit": "732fda80114fe7e073e641314215b19704a92d1f",
+  "artifact_sha256": {
+    "position-distribution.png": "9a14ffcf5102191b5cef731b66901f48779f523fa258e36eb7a2dcf40009e0e0",
+    "position-distribution.svg": "dd4d75b5f166cf1acb98802304aba7e85655058cfc98f1b446dc524e308c5f90",
+    "raw-trials.zip": "5e515ec78c48850bd64dceb5d807a60d4c04b06118031b976e1b2dcfcae300e4",
+    "runtime-distribution.png": "60c9a46a526057c48f17ece93b5b0c6a6c479781a3644d0d2fc9375ab3181cb8",
+    "runtime-distribution.svg": "96cf74e5106b667349ec181bf33b1b782706ac518f3daf51318ffccbdff6af3e",
+    "summary.json": "d113c9302e997763876b7b1206fba2bbf45e8370a0d3ff8d99f36d2d16d77c1d",
+    "trials.csv": "5618b0390e2f83397ccbb74c3bbfe3a9a5446b1dc427d7a4c976136a6fa15d97",
+    "trials.json": "a6d0241e18fa3cb457a8dda5f7883e233d8fa4e1d1022ff08e24208410e031e7"
+  }
+}

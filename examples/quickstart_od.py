@@ -57,7 +57,7 @@ def source_identity():
         release_record = ROOT / "SOURCE_REVISION.json"
         if release_record.is_file():
             commit = json.loads(release_record.read_text())["git_commit"]
-    files = [Path(__file__), *sorted((ROOT / "src/lunar_od").rglob("*.py"))]
+    files = [Path(__file__).resolve(), *sorted((ROOT / "src/lunar_od").rglob("*.py"))]
     return {"git_commit": commit, "git_dirty": dirty,
             "source_sha256": {p.relative_to(ROOT).as_posix(): sha256(p) for p in files}}
 

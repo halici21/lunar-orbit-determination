@@ -17,15 +17,18 @@ def main(bundle):
         raise RuntimeError("Qualification must use the bundled interpreter")
     app_root = bundle / "app"
     record = json.loads((bundle / "BUNDLE_MANIFEST.json").read_text(encoding="utf-8"))
+    print(f"Checking {len(record['files_sha256'])} bundled file identities...", flush=True)
     for name, expected in record["files_sha256"].items():
         if hashlib.sha256((bundle / name).read_bytes()).hexdigest() != expected:
             raise ValueError(f"Bundle content changed: {name}")
     if record["source"]["working_tree_dirty"]:
         raise ValueError("Dirty source bundle cannot pass release qualification")
+    print("Bundle identities verified; importing scientific and Qt packages...", flush=True)
     os.environ.pop("PYTHONPATH", None)
     os.environ.pop("PYTHONHOME", None)
     os.environ["PATH"] = os.environ.get("SystemRoot", "C:/Windows") + "/System32"
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    os.environ["QT_QPA_FONTDIR"] = os.environ.get("SystemRoot", "C:/Windows") + "/Fonts"
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     for key in ("LUNAR_OD_KERNEL_DIR", "LUNAR_OD_CAMPAIGN_ROOT", "LUNAR_OD_GRAVITY_ROOT", "LUNAR_OD_PROJECT_ROOT"):
         folder = bundle / "qualification" / key
@@ -42,6 +45,7 @@ def main(bundle):
     import lunar_od
     if not Path(lunar_od.__file__).resolve().is_relative_to(app_root):
         raise ValueError("Scientific library escaped the portable bundle")
+    print("Imports passed; checking QProcess and desktop workflow...", flush=True)
     from PyQt5.QtCore import QSettings
     from PyQt5.QtWidgets import QApplication
     settings_dir = bundle / "qualification/settings"

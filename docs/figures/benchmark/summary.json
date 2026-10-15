@@ -1,0 +1,623 @@
+{
+  "schema": "lunar-od-paired-benchmark-result-v1",
+  "pilot": false,
+  "complete": true,
+  "timed_out": false,
+  "truth_level": 0,
+  "elapsed_s": 63.8694805999985,
+  "plan": {
+    "schema": "lunar-od-paired-benchmark-v1",
+    "seeds": [
+      41000,
+      41001,
+      41002,
+      41003,
+      41004,
+      41005,
+      41006,
+      41007,
+      41008,
+      41009,
+      41010,
+      41011,
+      41012,
+      41013,
+      41014,
+      41015,
+      41016,
+      41017,
+      41018,
+      41019,
+      41020,
+      41021,
+      41022,
+      41023,
+      41024,
+      41025,
+      41026,
+      41027,
+      41028,
+      41029,
+      41030,
+      41031
+    ],
+    "noise_scales": [
+      1.0,
+      3.0
+    ],
+    "initial_std_m_mps": [
+      200.0,
+      200.0,
+      200.0,
+      0.1,
+      0.1,
+      0.1
+    ],
+    "ukf": {
+      "alpha": 0.35,
+      "beta": 2.0,
+      "kappa": 0.0,
+      "jitter": 1e-12
+    },
+    "success_position_m": 1000.0,
+    "success_velocity_mps": 1.0,
+    "outlier_position_m": 500.0,
+    "max_elapsed_s": 1800
+  },
+  "plan_sha256": "48ebfa14dd124824dcde86c34072eff4b90db832a5466a628bd91f3bf2f9f280",
+  "base_config": {
+    "seed": 20261015,
+    "noise_enabled": true,
+    "duration_s": 1800,
+    "sample_step_s": 60,
+    "mu_moon_m3_s2": 4902800066000.0,
+    "initial_state_m_mps": [
+      1837400.0,
+      30000.0,
+      -20000.0,
+      -15.0,
+      1633.5,
+      4.0
+    ],
+    "initial_error_m_mps": [
+      150.0,
+      -100.0,
+      80.0,
+      0.05,
+      -0.04,
+      0.03
+    ],
+    "earth_position_m": [
+      384400000.0,
+      0.0,
+      0.0
+    ],
+    "stations_lat_lon_deg": [
+      [
+        15.0,
+        160.0
+      ],
+      [
+        -25.0,
+        200.0
+      ],
+      [
+        45.0,
+        180.0
+      ],
+      [
+        -35.0,
+        150.0
+      ]
+    ],
+    "sigma_range_m": 5.0,
+    "sigma_angle_rad": 1e-05,
+    "max_iter": 40,
+    "rtol": 1e-11,
+    "atol": 1e-12
+  },
+  "base_config_sha256": "55511c0e7ee23563750ff9c7736fdcc9dcbb9fc8d2c48e9c4b458e0ffb437442",
+  "source": {
+    "git_commit": "732fda80114fe7e073e641314215b19704a92d1f",
+    "git_dirty": false,
+    "source_sha256": {
+      "examples/quickstart_od.py": "9d8944cb742eb77fc0058aac5dc9f2e9312388b4f035b9f0000716fa17de6dc7",
+      "src/lunar_od/__init__.py": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
+      "src/lunar_od/accelerated.py": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
+      "src/lunar_od/adaptive_tuning.py": "708bddb864509872a87802c9c38abe09c8bb71aa3a112ce5b036d0347295ff4f",
+      "src/lunar_od/config.py": "fc5d180941fd6acc9b6630232a2d23d2c3c81b9855c43b85e61ad84dcb1a0a4e",
+      "src/lunar_od/constants.py": "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
+      "src/lunar_od/delta_dor.py": "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b",
+      "src/lunar_od/diagnostics.py": "e5f2e07ba1056b5e27d040966136b6f497c26e86a21f21e176cf3f7e4dd49324",
+      "src/lunar_od/dynamics.py": "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
+      "src/lunar_od/ephemeris.py": "a85f60e5822c795fad1afa42aa42c7d240fe49b670cf1cb75114f14995286745",
+      "src/lunar_od/estimators.py": "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
+      "src/lunar_od/filters.py": "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
+      "src/lunar_od/force_contract.py": "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
+      "src/lunar_od/force_models.py": "c1412fe22ac7bed580ca3fa1ffaa7a794cc508b0f0a985a10106f36d6a7d2389",
+      "src/lunar_od/geometry.py": "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf",
+      "src/lunar_od/gravity_harmonics.py": "6695a1127d90a65f02831df81ffb889904fc05178c9045f8f96c2bbb3045feb9",
+      "src/lunar_od/gravity_model_loader.py": "8c4d1708a6545b37c434cac23a388399c0372f8a7bb6f838a951b6f2af543e48",
+      "src/lunar_od/history_domain.py": "0f71dcd94175050c7b83dca50586ea37c1e395231c746778609a005a2eac8db4",
+      "src/lunar_od/lunar_frames.py": "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4",
+      "src/lunar_od/lunar_landmark_optical.py": "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36",
+      "src/lunar_od/measurement_contracts.py": "f0e625a2577ea242c9aa57b74dc435fb1330973cda849e13871585418a73764a",
+      "src/lunar_od/measurement_ingestion.py": "61ee6920a0c82006656ac48fa1a59b9c02508132df6d6249acfe75984ff16979",
+      "src/lunar_od/measurements.py": "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
+      "src/lunar_od/monte_carlo.py": "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
+      "src/lunar_od/noise_models.py": "440b679adaab7b3aca702bfbc2b62c39b28a19968ec64cd220127be9bbf694bb",
+      "src/lunar_od/observability.py": "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f",
+      "src/lunar_od/orbit.py": "bd8a4a8780068bbf662759a03bb1fdc825b46fb6e41e558b77af6face692e0a0",
+      "src/lunar_od/project_paths.py": "d388335c1923f15438a82c7c09825c352d9fb161feb6b8949fd1f2410fb9869b",
+      "src/lunar_od/q_tuning.py": "3ee6ea0788af2f5468107f0742450e884b20e2905732aad99792497f9eca27d2",
+      "src/lunar_od/radiometrics.py": "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
+      "src/lunar_od/reference_config/__init__.py": "8e38138f3ed90a830d9555ff6bf2c88820a643e12c8b2e763c81c48696e6e756",
+      "src/lunar_od/reference_config/errors.py": "19feef7cc28a88efa351a426f206056ebd691f6ec5ec3329e92a4da6c8ea08f9",
+      "src/lunar_od/reference_config/fingerprint.py": "b3cfba3a6185b0957d39bc110b3685e4d6ea01859a875ba316315f36ad5167a0",
+      "src/lunar_od/reference_config/loader.py": "8dbfacf3b2c42df87dd19d4b34b6640fa5e802ac8d9acde188a6667b4367b609",
+      "src/lunar_od/reference_config/model.py": "d336bb74bde478f7b14ae12fb00b892c7b3c120f1b26dcec242cf8c5f0a99136",
+      "src/lunar_od/reference_config/registry.py": "380edfc8a01a012256b9fd6acdb2e5084e4439bec174162657415639497df863",
+      "src/lunar_od/reference_config/reporting.py": "8423424e822c69e7d7ed8eb53d8e956cd59a1c31382fede312aca629c5b0431e",
+      "src/lunar_od/reference_config/schema.py": "2fd5eae93a5c8cf2e6a43c29cca98605fd7954c0c750068fe09fc4081384c246",
+      "src/lunar_od/reference_config/validation.py": "648dc248923844473c339eb8e3760cc860ad631eb9603a43712ada0bed3fd196",
+      "src/lunar_od/reference_config/vocabulary.py": "b1674b6b7b11e71e0ffa0b002e5e87d0ca896a37e1a8706a25d771114d31cada",
+      "src/lunar_od/reporting.py": "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
+      "src/lunar_od/rf/__init__.py": "82abf4845babfdb2fbba459f8d62d56342ca0c6e48d778450e2b9660e8e61f8a",
+      "src/lunar_od/rf/doppler_noise.py": "5e1aa3f119a581c0473ed985a22415423a65f772a8a2affe0ea8f5a6e73d5ea1",
+      "src/lunar_od/rf/environment.py": "4ca5dea470d4003e66c19b2446928532901e84e90b8fb9571c6866defa1fe921",
+      "src/lunar_od/rf/link_budget.py": "7a4b50b3a6b804d7d5a916bab4d4de15813b6e79c10c055af9ca23ee770592bc",
+      "src/lunar_od/rf/reference.py": "99a3a15e41268c8014c64236b610d144415499cb3c5b56742e0def005d6cb5d0",
+      "src/lunar_od/rf/types.py": "9c5a7538409015c0b19263fe81e99f96cf02de7d955e272911a18c7811ac40f7",
+      "src/lunar_od/scenario_config.py": "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
+      "src/lunar_od/scenarios.py": "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
+      "src/lunar_od/spice_loader.py": "fa57dd282371ca0138fa02a58dbac947d86e85dbf7efa3cc326eb53e0b1a88b9",
+      "src/lunar_od/srp.py": "9f9986d2a66a264b8eb6acba18e5a1e865718995f7f600ce98f08b3e95a6335a",
+      "src/lunar_od/thesis_matrix.py": "e9437f7d57c746057910927f063bfa9b0def75a22382f007befd68408fd3e3ea",
+      "src/lunar_od/two_way_counted_doppler.py": "f499038b57f1cd6a1c3f1696aafc0e3ef951234d89f91706c8dcad2109b759dc",
+      "src/lunar_od/two_way_counted_doppler_reference.py": "8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa",
+      "src/lunar_od/two_way_range.py": "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995",
+      "src/lunar_od/visibility.py": "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a",
+      "examples/benchmark_estimators.py": "6ac8ffff0eb71dd00683af25c6a7819dcb778feedc7f2e89f4c58be77f85403f",
+      "docs/research/paired-benchmark-plan.md": "fc6e711294f3006d5af5dbba065d709fea6755d0f3b3f8779c44f18693fcab14"
+    }
+  },
+  "environment": {
+    "python": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 116 Stepping 1, AuthenticAMD",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1"
+  },
+  "analysis": {
+    "groups": {
+      "noise=1/BLS-LM": {
+        "attempted": 32,
+        "successes": 32,
+        "success_fraction": 1.0,
+        "failure_fraction": 0.0,
+        "exceptions": [],
+        "solver_termination_fraction": 1.0,
+        "outlier_fraction": 0.0,
+        "position_error_m": {
+          "n": 32,
+          "mean": 59.353168542184704,
+          "std": 33.259498911363394,
+          "min": 17.426475848072183,
+          "p5": 21.60308443403809,
+          "median": 53.25503104892297,
+          "p95": 129.05252486791215,
+          "max": 132.6251105172196
+        },
+        "velocity_error_mps": {
+          "n": 32,
+          "mean": 0.06582848921820073,
+          "std": 0.03718849208730319,
+          "min": 0.0023809700750013403,
+          "p5": 0.022195610859825302,
+          "median": 0.06488293167147555,
+          "p95": 0.10464135388424897,
+          "max": 0.19607949666761287
+        },
+        "runtime_s": {
+          "n": 32,
+          "mean": 0.04037143125970033,
+          "std": 0.013716811123594368,
+          "min": 0.01800599996931851,
+          "p5": 0.02217177499551326,
+          "median": 0.039772900054231286,
+          "p95": 0.0665731499902904,
+          "max": 0.07142390008084476
+        },
+        "nees": {
+          "n": 32,
+          "mean": 5.005420477232931,
+          "std": 2.315539351844304,
+          "min": 1.5065932753495583,
+          "p5": 1.9992984468327524,
+          "median": 4.632715697892674,
+          "p95": 8.637070403047302,
+          "max": 11.829248894959303
+        },
+        "mean_nees_95_interval": [
+          4.860019263437153,
+          7.25828585147222
+        ]
+      },
+      "noise=1/SRIF": {
+        "attempted": 32,
+        "successes": 32,
+        "success_fraction": 1.0,
+        "failure_fraction": 0.0,
+        "exceptions": [],
+        "solver_termination_fraction": 0.25,
+        "outlier_fraction": 0.0,
+        "position_error_m": {
+          "n": 32,
+          "mean": 59.2531752574894,
+          "std": 33.2360116626388,
+          "min": 17.426448097488066,
+          "p5": 21.603086311435188,
+          "median": 52.27952270495747,
+          "p95": 128.68656690990534,
+          "max": 132.6251040688709
+        },
+        "velocity_error_mps": {
+          "n": 32,
+          "mean": 0.06559858714503061,
+          "std": 0.03715377044936508,
+          "min": 0.002380946707294935,
+          "p5": 0.022195614137303945,
+          "median": 0.06306371953199971,
+          "p95": 0.10338756785164596,
+          "max": 0.19607946902675502
+        },
+        "runtime_s": {
+          "n": 32,
+          "mean": 0.14865934061890584,
+          "std": 0.03486743946537031,
+          "min": 0.08879619999788702,
+          "p5": 0.09484572004294023,
+          "median": 0.1527547999867238,
+          "p95": 0.20158555996022187,
+          "max": 0.21546229999512434
+        },
+        "nees": {
+          "n": 32,
+          "mean": 4.991926018144106,
+          "std": 2.316633720980181,
+          "min": 1.5065933852963225,
+          "p5": 1.9992977994071857,
+          "median": 4.632715391916922,
+          "p95": 8.643123373044578,
+          "max": 11.82924453482577
+        },
+        "mean_nees_95_interval": [
+          4.860019263437153,
+          7.25828585147222
+        ]
+      },
+      "noise=1/SR-UKF": {
+        "attempted": 32,
+        "successes": 32,
+        "success_fraction": 1.0,
+        "failure_fraction": 0.0,
+        "exceptions": [],
+        "solver_termination_fraction": 1.0,
+        "outlier_fraction": 0.0,
+        "position_error_m": {
+          "n": 32,
+          "mean": 59.234074894922685,
+          "std": 33.20838799793213,
+          "min": 17.471779401140417,
+          "p5": 21.598045376504686,
+          "median": 52.24732984324568,
+          "p95": 128.48591479126844,
+          "max": 132.54791035457717
+        },
+        "velocity_error_mps": {
+          "n": 32,
+          "mean": 0.06556780431209897,
+          "std": 0.03714052502845916,
+          "min": 0.002445968836188182,
+          "p5": 0.022246959610016985,
+          "median": 0.06304482819816248,
+          "p95": 0.103323652419021,
+          "max": 0.19607426137409256
+        },
+        "runtime_s": {
+          "n": 32,
+          "mean": 0.7547354593625641,
+          "std": 0.10959146862825937,
+          "min": 0.4470406000036746,
+          "p5": 0.5360039050283376,
+          "median": 0.7566589000052772,
+          "p95": 0.8785226300125941,
+          "max": 0.9267578999279067
+        },
+        "nees": {
+          "n": 32,
+          "mean": 4.988829853036938,
+          "std": 2.3138635132083474,
+          "min": 1.5071770106036961,
+          "p5": 2.0008759026230742,
+          "median": 4.634341274060955,
+          "p95": 8.634508480870377,
+          "max": 11.825758147806283
+        },
+        "mean_nees_95_interval": [
+          4.860019263437153,
+          7.25828585147222
+        ]
+      },
+      "noise=3/BLS-LM": {
+        "attempted": 32,
+        "successes": 32,
+        "success_fraction": 1.0,
+        "failure_fraction": 0.0,
+        "exceptions": [],
+        "solver_termination_fraction": 1.0,
+        "outlier_fraction": 0.0,
+        "position_error_m": {
+          "n": 32,
+          "mean": 102.08011521529176,
+          "std": 53.76154691704665,
+          "min": 20.845787482857794,
+          "p5": 21.218257396910982,
+          "median": 98.9973366072314,
+          "p95": 176.21081013168362,
+          "max": 248.91843345203333
+        },
+        "velocity_error_mps": {
+          "n": 32,
+          "mean": 0.15104259698791306,
+          "std": 0.08874427568474857,
+          "min": 0.009831384498799124,
+          "p5": 0.04171361045310023,
+          "median": 0.13240627828711582,
+          "p95": 0.2987742268505466,
+          "max": 0.44146532706154656
+        },
+        "runtime_s": {
+          "n": 32,
+          "mean": 0.044348690622427966,
+          "std": 0.017332659936493394,
+          "min": 0.026106599951162934,
+          "p5": 0.027317879989277573,
+          "median": 0.04034400003729388,
+          "p95": 0.0729984300560318,
+          "max": 0.11153599992394447
+        },
+        "nees": {
+          "n": 32,
+          "mean": 5.306054305095903,
+          "std": 2.6471551407994838,
+          "min": 1.7894889307610047,
+          "p5": 2.178659785055749,
+          "median": 5.027709527832619,
+          "p95": 9.386210553448,
+          "max": 13.433892766433194
+        },
+        "mean_nees_95_interval": [
+          4.860019263437153,
+          7.25828585147222
+        ]
+      },
+      "noise=3/SRIF": {
+        "attempted": 32,
+        "successes": 32,
+        "success_fraction": 1.0,
+        "failure_fraction": 0.0,
+        "exceptions": [],
+        "solver_termination_fraction": 0.4375,
+        "outlier_fraction": 0.0,
+        "position_error_m": {
+          "n": 32,
+          "mean": 100.77531749254369,
+          "std": 50.02485378348923,
+          "min": 20.869592426845962,
+          "p5": 21.216956988502123,
+          "median": 96.92212788798784,
+          "p95": 176.04125712916328,
+          "max": 205.77987478813063
+        },
+        "velocity_error_mps": {
+          "n": 32,
+          "mean": 0.14892926204080453,
+          "std": 0.08350265717016929,
+          "min": 0.009825635352291822,
+          "p5": 0.04171360043218884,
+          "median": 0.13205570571427944,
+          "p95": 0.2987742359290005,
+          "max": 0.3847151427844788
+        },
+        "runtime_s": {
+          "n": 32,
+          "mean": 0.16059440625394927,
+          "std": 0.03973419088432872,
+          "min": 0.07653189997654408,
+          "p5": 0.09803837999934331,
+          "median": 0.15217334998305887,
+          "p95": 0.21321127497358247,
+          "max": 0.23956569994334131
+        },
+        "nees": {
+          "n": 32,
+          "mean": 5.174965566460936,
+          "std": 2.3693078381125536,
+          "min": 1.7894888097598696,
+          "p5": 2.1773822538440286,
+          "median": 5.116079275229161,
+          "p95": 9.38620897426851,
+          "max": 10.025755885383305
+        },
+        "mean_nees_95_interval": [
+          4.860019263437153,
+          7.25828585147222
+        ]
+      },
+      "noise=3/SR-UKF": {
+        "attempted": 32,
+        "successes": 32,
+        "success_fraction": 1.0,
+        "failure_fraction": 0.0,
+        "exceptions": [],
+        "solver_termination_fraction": 1.0,
+        "outlier_fraction": 0.0,
+        "position_error_m": {
+          "n": 32,
+          "mean": 100.7609043474656,
+          "std": 50.028647104903804,
+          "min": 20.83156518977053,
+          "p5": 21.225205367189027,
+          "median": 96.93072022546514,
+          "p95": 176.02514915391708,
+          "max": 205.78387019818712
+        },
+        "velocity_error_mps": {
+          "n": 32,
+          "mean": 0.1489134689340971,
+          "std": 0.08349953731701881,
+          "min": 0.009840908359608973,
+          "p5": 0.04169825976701589,
+          "median": 0.1320290498653879,
+          "p95": 0.29875855349472935,
+          "max": 0.3847217499988847
+        },
+        "runtime_s": {
+          "n": 32,
+          "mean": 0.8049255062614975,
+          "std": 0.14671494702635957,
+          "min": 0.5757124000228941,
+          "p5": 0.6116686350142118,
+          "median": 0.8159850000520237,
+          "p95": 1.0483839299587998,
+          "max": 1.1590022000018507
+        },
+        "nees": {
+          "n": 32,
+          "mean": 5.175453225968695,
+          "std": 2.369505994513075,
+          "min": 1.7877292410662515,
+          "p5": 2.1784101895404575,
+          "median": 5.11666479048278,
+          "p95": 9.383481759852723,
+          "max": 10.026309965715155
+        },
+        "mean_nees_95_interval": [
+          4.860019263437153,
+          7.25828585147222
+        ]
+      }
+    },
+    "paired_position_difference_m": {
+      "noise=1/SRIF-minus-BLS-LM": {
+        "n": 32,
+        "mean": -0.099993284695304,
+        "std": 0.3799034285038027,
+        "min": -1.9510463573353363,
+        "p5": -0.6661638223425875,
+        "median": 5.774790778900751e-08,
+        "p95": 0.04202974526549936,
+        "max": 0.2133095171451025
+      },
+      "noise=1/SR-UKF-minus-BLS-LM": {
+        "n": 32,
+        "mean": -0.11909364726202287,
+        "std": 0.40378037402783223,
+        "min": -1.984795448792383,
+        "p5": -0.7797883833379771,
+        "median": -0.023877685805643978,
+        "p95": 0.12954255821576444,
+        "max": 0.16136468626107003
+      },
+      "noise=3/SRIF-minus-BLS-LM": {
+        "n": 32,
+        "mean": -1.3047977227480647,
+        "std": 8.557752728082129,
+        "min": -43.1385586639027,
+        "p5": -6.687019976802861,
+        "median": -2.0154472863964656e-06,
+        "p95": 4.85543346572384,
+        "max": 14.240212409626228
+      },
+      "noise=3/SR-UKF-minus-BLS-LM": {
+        "n": 32,
+        "mean": -1.319210867826142,
+        "std": 8.554413086793796,
+        "min": -43.13456325384621,
+        "p5": -6.706105449883272,
+        "median": -0.005010570636953204,
+        "p95": 4.736229706960277,
+        "max": 14.228096847892719
+      }
+    }
+  },
+  "artifact_sha256": {
+    "seed-41000-noise-1.npz": "6e5a2586d072f49d322018a65d84c53a568f6e7a6a6626ec55aa880fe88c57e5",
+    "seed-41000-noise-3.npz": "c8dcb33882039200b80a9cac81e6ef7184845c066bcd01a67ee513fecefaeceb",
+    "seed-41001-noise-1.npz": "c7ff91a846155460ac0fcf2d7950bb5b5116dc324259bba05c90dc00cedf4ff0",
+    "seed-41001-noise-3.npz": "6c2541f526712b68bba6389f0055c692da876ee534cc121cd696fccd8ec0b890",
+    "seed-41002-noise-1.npz": "0c330fc1789b053701ca2bad9f2b859a4365417ddadd29f49bb5cdafc53a21c4",
+    "seed-41002-noise-3.npz": "74144a20cd68d154b04f735175e836177059d276ed0346961dba4d21ed85dc5b",
+    "seed-41003-noise-1.npz": "99d582b5a1975cc7e568ef8745555381533733189140a017bcad9d82796f7234",
+    "seed-41003-noise-3.npz": "61007c605553c9915dab5809fa2bdb1ff25f9b471db410a21fd61e9e2f09cb5f",
+    "seed-41004-noise-1.npz": "2019dda3964bbdf4c2756871601508fc0f5bb4d8ed23e90e10586a6874cfd8cc",
+    "seed-41004-noise-3.npz": "af0fcf1ff2c07de530a1dfc62c0ae4dcaaf22caae6bdd0989bffd31b8b9152e5",
+    "seed-41005-noise-1.npz": "f9fc26a18ca69185de66796f1d79ec746e04e88eb0aa416605cda95285ae42f8",
+    "seed-41005-noise-3.npz": "a4f80b27de93ed1b624b2f3c58bd821b728b35060c510f8c595ca1fc308e160f",
+    "seed-41006-noise-1.npz": "a6673d8f822ce890d2fdbededa64f9b3066545836ea46b4732e3cf58f65e8021",
+    "seed-41006-noise-3.npz": "7b02fad1947a9bf1836e7be2253b680f13b18d77bb28edab3d88a9ecee223906",
+    "seed-41007-noise-1.npz": "333074cff77a0525b49cf64b705d313624e4dfc31bf2c563cd1279d9c76b2af9",
+    "seed-41007-noise-3.npz": "5a0f52cec17434c5f64e4d3fe46661cdc1200b7329571cf1339cb5bc7ee410b4",
+    "seed-41008-noise-1.npz": "a854b0f984aa1d7f48516aedf789061b39ee2e9e43f4b7eb2e3f7a52122ecec4",
+    "seed-41008-noise-3.npz": "6e58f3d56de359486d838946d904b3a1e90e02ddc68642b414d6b335a4ec3ef4",
+    "seed-41009-noise-1.npz": "73184661923370dfaa92b9333344c52660dab093ac94fab427b2570e7c2aa6f3",
+    "seed-41009-noise-3.npz": "c9e43586e43605561dc6a64bff14e3b02c4dcb41c8c986349c8f696348c17d89",
+    "seed-41010-noise-1.npz": "159a1d4b4a6ffa54c0bb3be237976a8c3e9e49df555daa5de65f1a8f0d92ecbf",
+    "seed-41010-noise-3.npz": "7afeebf5c0cf2790601001012075d58355823779f69f27082f32c6f867a3f630",
+    "seed-41011-noise-1.npz": "a469eafc75db688431b567e5b265a5db08c2d8d1e3c74c066a89ee539035a6f4",
+    "seed-41011-noise-3.npz": "87d97819d7b149f25aa23583b1a3e2f539148990bc1cdb7e1f350dd103ed29fa",
+    "seed-41012-noise-1.npz": "78c5835a7de214c005e899d6820e69d2ea2b622ffa55762d5c9f63727acd609e",
+    "seed-41012-noise-3.npz": "78c50a060db3aad3fe4b1931e1b447d9128b124271bd9156cac275de3ab703a0",
+    "seed-41013-noise-1.npz": "292a1fbc8b3d18eaae7b9f7312f31776d18060b84b162d02fbfee691aef65cf8",
+    "seed-41013-noise-3.npz": "73cfd345d9c030a73b15ce7578662a2ea13b2e3d7796b75919f169cc86ce1e51",
+    "seed-41014-noise-1.npz": "f0b0c7d0741ddcf5c8206d150265e852b2d5e144e959b5fbc3e82169b5eaa9a8",
+    "seed-41014-noise-3.npz": "a540f1c900c106b0393c73a91e44ff81252cb3930f061d04c2894d38f12486d3",
+    "seed-41015-noise-1.npz": "bd8063672a9f9ff0e5278becf40b0a9169d73060805b26631494ecf6dc5ec025",
+    "seed-41015-noise-3.npz": "52b659d3352aaac82b5cf90e085b1edd90da096990bf340163798ab4bc8a415d",
+    "seed-41016-noise-1.npz": "0c27c7b9e175e98d573a0ac9d1e78df6834d7ad8cac13b9cd054d0ecadbf3adf",
+    "seed-41016-noise-3.npz": "a3f5c114202f98a1a3be051d5c5cce14b1fe4d70a7fdfc6c09553f9b16aced75",
+    "seed-41017-noise-1.npz": "e5b3b6bb361f0a1baf7fe8883840838e1dc92d4f5c623d54361754840f74ca99",
+    "seed-41017-noise-3.npz": "a1e1cb2c3287357aa747971075eb2ea63305cbda25d1e0c32d6bd01cc0d9b10b",
+    "seed-41018-noise-1.npz": "cd305378f01099d0787b3796555d4bed00713e91da10e674e6352c3428737a0e",
+    "seed-41018-noise-3.npz": "36dce704ef30d3948a00766c9b9edade5f788b7aa2b94268a06a37349459e9c4",
+    "seed-41019-noise-1.npz": "10805dc005f475c7d2756abd2d1e6a0829262f895e9e5829a04c7059c9fc14d5",
+    "seed-41019-noise-3.npz": "4d97c96f0db832e0ae092fbe40e32668e162652bda266ca0813ee583d035ea37",
+    "seed-41020-noise-1.npz": "8131c9b3e34ebea65ecd72d417bc8a5c4c9b013e18d327208496dd7b3c6fc4bd",
+    "seed-41020-noise-3.npz": "a1c03ce74e26b8b8498590dfc010b6a7a3318739c8c404cc9c377ee1fcf36334",
+    "seed-41021-noise-1.npz": "24a1b644d4913ce80354409f591757c8fc74e53ccb4fe157c146b990ea379ffb",
+    "seed-41021-noise-3.npz": "6921b1ed9ab9e68b986fb0b9a38573178af2dd216266f8cb85b7d1b8028ea0c0",
+    "seed-41022-noise-1.npz": "008fbdbd0f1cc1c846a392a03bc4c97ec06710141fdb9dca97470c1f66cda377",
+    "seed-41022-noise-3.npz": "dd2f825ad3832a80a2d992a729c501045b02e812b2a269be2243ddf8e7b15fc2",
+    "seed-41023-noise-1.npz": "87037decfbddfdb9f7b848dfdee9da7dc02d43389b0dec6665f1b04faf799fe3",
+    "seed-41023-noise-3.npz": "53a4f59d8a20b007cd3f56313e3f1d9a2de2c547e7920e4ed41bffd74b3db042",
+    "seed-41024-noise-1.npz": "5600a5af0ebfb1eaed62c81d9e41870269083097fbaf96b9d32e151b41e04833",
+    "seed-41024-noise-3.npz": "89e2636d7ccfb554519a2462ec0c6c2eab541bc96c7692fb7598dfe2d2dd1e60",
+    "seed-41025-noise-1.npz": "a60957fc60d30edd40a5b0edaedf64570a787db77a354fdd6eaa929e1624e692",
+    "seed-41025-noise-3.npz": "becc587142b1924c277c8f299df0b474d2d09a84125ec51b05024f31822b6407",
+    "seed-41026-noise-1.npz": "df832ccf7a2cd19303402526c4456f424f950453eb4176d8db793c6ef5e1de69",
+    "seed-41026-noise-3.npz": "0ad1bbcb1db11bc7067787da920cb21771a748b8d26e226ef869b3f32886a77a",
+    "seed-41027-noise-1.npz": "24faf766e12708f9141dbc24eec86ecd1f42fbbbd52171ae7e132b6fba5c6296",
+    "seed-41027-noise-3.npz": "b62bb303a97b06cf4199665ca411000406683653d4eb8ad211b6f18545bb3c59",
+    "seed-41028-noise-1.npz": "1e8cf0f757a13a27d5b2dbd4c2297bcf4b0214d6ea603178b553012190225e03",
+    "seed-41028-noise-3.npz": "bbf399a1880b689eb96e973b356153f06aa77071663ca78c9489ba7deec87009",
+    "seed-41029-noise-1.npz": "64436196f4a16aa1fd1e7e346060eb90062cb420c5a81084e0ad4228e4c75888",
+    "seed-41029-noise-3.npz": "0fef47c9c24e22d5abf557d4403100d4a60ba0f2fd1b0d288fec22f59de4187b",
+    "seed-41030-noise-1.npz": "c33eb323fd1eeceff6523bb35706d67de24ebfbf513c601334e5b5e24982208d",
+    "seed-41030-noise-3.npz": "3c208041c5bddae1de3222d5558f4baf65dc153c1618a3b6ae734b73c033836a",
+    "seed-41031-noise-1.npz": "335054e0c717c7c86052c2b5947d2871df508c6b3f20c30fe47d6bc3a0fff965",
+    "seed-41031-noise-3.npz": "382e76d3d2aa39ba36fcb81ade6ed6bc051cc8686af5f3a3dda2561f09b57f53",
+    "trials.csv": "5618b0390e2f83397ccbb74c3bbfe3a9a5446b1dc427d7a4c976136a6fa15d97",
+    "trials.json": "a6d0241e18fa3cb457a8dda5f7883e233d8fa4e1d1022ff08e24208410e031e7"
+  }
+}

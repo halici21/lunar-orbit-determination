@@ -43,11 +43,7 @@ jobs:
           cd "$RUNNER_TEMP"
           python check_library_install.py
       - name: Kernel-independent library regression
-        run: >-
-          python -m pytest tests/test_config.py tests/test_geometry.py tests/test_orbit.py
-          tests/test_dynamics.py tests/test_estimators.py tests/test_filters.py
-          tests/test_measurements.py tests/test_quickstart.py -q -ra
-          --junitxml=outputs/library.xml
+        run: python tools/run_library_checks.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
