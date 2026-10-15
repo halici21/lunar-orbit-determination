@@ -446,7 +446,7 @@ class RunMonitorController(QWidget):
             folder = Path(self._job_context["folder"]).resolve()
             completion = json.loads((folder / "completed.json").read_text(encoding="utf-8"))
             if (info.get("schema") != "lunar-od-completed-job-v1" or info.get("run_id") != self._job_context["run_id"]
-                    or path.parent != folder or not path.name.endswith("_arc_solutions.csv")
+                    or path.parent != folder or not path.name.endswith(("_arc_solutions.csv", "_ukf_updates.csv"))
                     or not path.is_file() or completion != info):
                 raise ValueError("Koşu kimliği veya tamamlanma kaydı uyuşmuyor.")
             self._pending_result = path

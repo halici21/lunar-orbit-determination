@@ -18,10 +18,10 @@ jobs:
     timeout-minutes: 20
     env:
       MPLBACKEND: Agg
-      LUNAR_OD_KERNEL_DIR: ${{ runner.temp }}/no-kernels
-      LUNAR_OD_CAMPAIGN_ROOT: ${{ runner.temp }}/no-campaign
-      LUNAR_OD_GRAVITY_ROOT: ${{ runner.temp }}/no-gravity
-      LUNAR_OD_PROJECT_ROOT: ${{ runner.temp }}/no-project
+      LUNAR_OD_KERNEL_DIR: ${{ github.workspace }}/outputs/no-kernels
+      LUNAR_OD_CAMPAIGN_ROOT: ${{ github.workspace }}/outputs/no-campaign
+      LUNAR_OD_GRAVITY_ROOT: ${{ github.workspace }}/outputs/no-gravity
+      LUNAR_OD_PROJECT_ROOT: ${{ github.workspace }}/outputs/no-project
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
