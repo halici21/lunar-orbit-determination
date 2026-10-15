@@ -2,10 +2,16 @@
 
 ## Dependency changes
 
-[Dependabot configuration](../../.github/dependabot.yml) checks GitHub Actions
-weekly and Python manifests monthly, with a small open-PR limit. Documentation
-and development tools are grouped separately from scientific/desktop dependencies.
-It proposes updates; no automatic merge is configured.
+[Dependabot configuration](../../.github/dependabot.yml) pauses routine version-update
+pull requests (`open-pull-requests-limit: 0`) for both GitHub Actions and Python.
+This keeps `main` as the only persistent branch. The existing three bot proposals
+were closed without merging their dependency changes. Automatic security-fix PRs
+are also disabled in repository settings; dependency alerts and the mandatory PR
+dependency review remain enabled. Review alerts and proposed version changes
+manually, qualify a focused update branch, then delete it after merging.
+
+To resume routine version proposals deliberately, raise the limits in that
+configuration. No automatic merge is configured.
 
 The pinned `requirements/windows.txt` profile remains the scientific/desktop
 reference. Updating it requires passing public, library and package qualification

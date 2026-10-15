@@ -1,8 +1,45 @@
-# Root layout cleanup — 2026-10-15
+# Root layout cleanup
 
-The repository root now has **16 tracked files instead of 22**. Optional
-dependency profiles are grouped under `requirements/`; the earlier Tkinter and
-HTTP entry points and web resources are grouped under `legacy/`.
+The repository root now has **10 tracked files**, down from 16 after the first
+cleanup and 22 before it. Optional dependency profiles are grouped under
+`requirements/`; the earlier Tkinter and HTTP entry points and web resources are
+grouped under `legacy/`.
+
+## Document and configuration consolidation — 2026-10-16
+
+| Former location | Current location |
+|---|---|
+| `CHANGELOG.md` | [docs/changelog.md](../changelog.md) |
+| `ROADMAP.md` | [docs/roadmap.md](../roadmap.md) |
+| `CONTRIBUTING.md` | [.github/CONTRIBUTING.md](../../.github/CONTRIBUTING.md) |
+| `CLAUDE.md` | [.claude/CLAUDE.md](../../.claude/CLAUDE.md) |
+| `mkdocs.yml` | [docs/mkdocs.yml](../mkdocs.yml) |
+| `pytest.ini` | `[tool.pytest.ini_options]` in [pyproject.toml](../../pyproject.toml) |
+
+GitHub recognizes the contribution guide in `.github/`; project instructions
+remain in Claude's supported `.claude/CLAUDE.md` location. The usual
+`python tools/build_docs.py --strict` command still builds the site in
+`outputs/site/`. Pytest retains the same `tests/` discovery, `-q` default and
+no injected `pythonpath`; the import-isolation regression checks the new
+configuration file explicitly. Historical reports describing the earlier
+`pytest.ini` repair keep their original wording.
+
+The remaining root files are `README.md`, `LICENSE`, `CITATION.cff`,
+`pyproject.toml`, `requirements.txt`, the two Windows commands and the three
+Git/Graphify control files. These preserve the repository landing page,
+citation discovery, package installation and established Windows entry points.
+Source, tests, examples, studies, fixtures, data policy and the desktop
+application retain their existing top-level ownership and paths.
+
+The three unmerged Dependabot version proposals are closed and their branches
+removed. Routine version PRs are paused so they do not recreate the extra
+branches; alerts and required dependency review remain active. See the
+[maintenance policy](maintenance.md). Published tags and release assets are
+unchanged.
+
+## Dependency and legacy grouping — 2026-10-15
+
+The first pass reduced root files from 22 to 16 using the moves below.
 
 ## Current entry points
 

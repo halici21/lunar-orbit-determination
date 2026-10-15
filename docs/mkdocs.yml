@@ -4,8 +4,8 @@ site_url: https://halici21.github.io/lunar-orbit-determination/
 repo_url: https://github.com/halici21/lunar-orbit-determination
 repo_name: halici21/lunar-orbit-determination
 edit_uri: ""
-docs_dir: outputs/docs-source
-site_dir: outputs/site
+docs_dir: ../outputs/docs-source
+site_dir: ../outputs/site
 theme:
   name: readthedocs
   highlightjs: true

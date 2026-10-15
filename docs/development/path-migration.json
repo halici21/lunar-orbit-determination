@@ -2899,6 +2899,42 @@
       "original_sha256": "67f446b9ee873358199d43014cc3ede5a0655338dbfd695d7f899b067beccb98",
       "byte_preserved": true,
       "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "CHANGELOG.md": {
+      "path": "docs/changelog.md",
+      "byte_preserved": false,
+      "original_sha256": "389ea654822b1d6cb649c625af9b78ed4443cc6bd9b794bb82057666e7744dae",
+      "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016"
+    },
+    "ROADMAP.md": {
+      "path": "docs/roadmap.md",
+      "byte_preserved": false,
+      "original_sha256": "a5279bcad1620b86b8a75ba80f28e51d75474d711fd5dbce7ca555459f63a80c",
+      "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016"
+    },
+    "CONTRIBUTING.md": {
+      "path": ".github/CONTRIBUTING.md",
+      "byte_preserved": false,
+      "original_sha256": "4d77a89eab8f5a5ba61eb86e5de213e3a7da0474e95e7663f2d954d41d9fb811",
+      "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016"
+    },
+    "CLAUDE.md": {
+      "path": ".claude/CLAUDE.md",
+      "byte_preserved": false,
+      "original_sha256": "a9f6ce50ecc56c31708e0fa7bdedb235da2de2860344541cf8f2c3ed76e9f26a",
+      "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016"
+    },
+    "mkdocs.yml": {
+      "path": "docs/mkdocs.yml",
+      "byte_preserved": false,
+      "original_sha256": "d6a90c5ce1d1ac3837ef90c3244e1cd93ad55108a1b421be34711df6c0e56199",
+      "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016"
+    },
+    "pytest.ini": {
+      "path": "pyproject.toml",
+      "byte_preserved": false,
+      "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016",
+      "note": "Configuration consolidated into [tool.pytest.ini_options]; testpaths/addopts and no-pythonpath policy preserved."
     }
   }
 }

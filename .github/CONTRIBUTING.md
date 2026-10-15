@@ -1,6 +1,6 @@
 # Contributing
 
-See the [maintenance and verification tiers](docs/development/maintenance.md)
+See the [maintenance and verification tiers](../docs/development/maintenance.md)
 for dependency-update review, the library platform matrix and release gates.
 
 Use main as the current development base. Keep changes focused and describe
@@ -9,20 +9,20 @@ Use a small pull request for review.
 
 `main` is the integration branch. Use a short-lived branch for a focused change;
 merge after required CI checks, then delete the merged branch. The
-[roadmap](ROADMAP.md) gives concrete acceptance criteria for open work. Use the
+[roadmap](../docs/roadmap.md) gives concrete acceptance criteria for open work. Use the
 scientific-inconsistency issue form for model/result discrepancies and the bug
 form for installation or application behavior.
 
 ## Set up
 
 Install the validated Windows environment using setup_windows.cmd, or follow
-[the quickstart](docs/windows-quickstart.md). The exact dependency profile is
-[requirements/windows.txt](requirements/windows.txt).
+[the quickstart](../docs/windows-quickstart.md). The exact dependency profile is
+[requirements/windows.txt](../requirements/windows.txt).
 
 For a library development environment, run `python -m pip install -e .`
 and `python -m pip install -r requirements/dev.txt`. The pinned Windows
 profile includes the desktop dependencies. See [repository layout and artifact
-policy](docs/development/repository-layout.md).
+policy](../docs/development/repository-layout.md).
 
 ## Before sharing changes
 
@@ -34,7 +34,7 @@ policy](docs/development/repository-layout.md).
 
 Public checks deliberately isolate external data. For scientific changes, run
 the relevant qualification tests/campaigns as well. Follow the repository's
-[project instructions](CLAUDE.md), regression plan and numerical contracts.
+[project instructions](../.claude/CLAUDE.md), regression plan and numerical contracts.
 Do not loosen an assertion or update a frozen hash simply to make tests pass.
 
 For UI work, keep long calculations off the UI thread, preserve typed settings,
@@ -62,9 +62,9 @@ fixture where possible; remove credentials and private paths from attachments.
 
 Documentation changes should pass `python tools/build_docs.py --strict` after
 installing `requirements/docs.txt`. Tutorial/gallery regeneration is explicit;
-see the [gallery source trail](docs/research/results-gallery.md).
+see the [gallery source trail](../docs/research/results-gallery.md).
 
-Follow the [release and DOI procedure](docs/development/releases.md).
+Follow the [release and DOI procedure](../docs/development/releases.md).
 
 Source prereleases require a passing public CI gate and a clean Windows setup
 check. They require Python 3.13 and external kernels for SPICE-backed runs.

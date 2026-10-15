@@ -7,14 +7,14 @@ acceptance criteria rather than dates or promises. Track work in
 ## Available now
 
 - Installable scientific library and native Windows desktop workspace.
-- [Data-free, seeded batch-fit tutorial](docs/tutorials/quickstart.md) with traceable plots and CSVs.
-- [Support matrix](docs/validation/support-matrix.md), public regression CI and searchable documentation.
+- [Data-free, seeded batch-fit tutorial](../docs/tutorials/quickstart.md) with traceable plots and CSVs.
+- [Support matrix](../docs/validation/support-matrix.md), public regression CI and searchable documentation.
 - Preserved study records with current/superseded conclusions and known defects.
-- [Real desktop tutorial and recorded workflow](docs/tutorials/desktop.md), including a data-free child-process solve.
-- [Source-generated API signatures and numerical contracts](docs/site/api.md).
-- Windows/Linux library qualification for Python 3.10–3.13, controlled dependency PRs and dependency review.
-- [Predeclared 64-trial BLS-LM/SRIF/SR-UKF experiment](docs/research/paired-benchmark.md), with raw inputs and caveats.
-- Python-bundled Windows portable preview and [gated release automation](docs/development/releases.md).
+- [Real desktop tutorial and recorded workflow](../docs/tutorials/desktop.md), including a data-free child-process solve.
+- [Source-generated API signatures and numerical contracts](../docs/site/api.md).
+- Windows/Linux library qualification for Python 3.10–3.13, dependency alerts and mandatory PR dependency review.
+- [Predeclared 64-trial BLS-LM/SRIF/SR-UKF experiment](../docs/research/paired-benchmark.md), with raw inputs and caveats.
+- Python-bundled Windows portable preview and [gated release automation](../docs/development/releases.md).
 
 ## Next research milestones
 

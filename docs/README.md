@@ -6,7 +6,7 @@
 - [Results gallery and reproduction](research/results-gallery.md)
 - [Estimator/model support matrix](validation/support-matrix.md)
 - [Python API map](site/api.md)
-- [Roadmap](../ROADMAP.md)
+- [Roadmap](roadmap.md)
 - [Release and DOI procedure](development/releases.md)
 - [Root layout cleanup and command migration](development/root-layout-cleanup.md)
 
@@ -23,7 +23,7 @@
 - [Migration audit and verification](development/repository-professionalization.md)
 - [Development evidence and branch consolidation](development/branch_consolidation_2026-10-10/README.md)
 - [Earlier interfaces](legacy-tools.md)
-- [Contributing](../CONTRIBUTING.md) · [Changelog](../CHANGELOG.md) · [Citation](../CITATION.cff)
+- [Contributing](../.github/CONTRIBUTING.md) · [Changelog](changelog.md) · [Citation](../CITATION.cff)
 
 Qualification applies to the assumptions and configuration in each report.
 Historical archives and machine-readable records preserve original paths;
