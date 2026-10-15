@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Lunar OD native desktop application.
+"""Earlier Lunar OD Tkinter desktop tool, retained for compatibility.
 
-This is a real desktop GUI: no browser, no HTTP server, no webview wrapper.
-Run from the repository root or from ``python_port``:
+The maintained desktop is desktop_app/main.py. Run this earlier tool with:
 
-    python python_port/lunar_od_app.py
+    python legacy/lunar_od_app.py
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ from pathlib import Path
 from tkinter import ttk
 from typing import Any
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+SCRIPT_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = SCRIPT_DIR.parent
 RESULTS_DIR = SCRIPT_DIR / "results"
 WORLD_MAP_PATH = PROJECT_ROOT / "dunya-haritasi-dilsiz.png"
@@ -192,7 +191,7 @@ class LunarODDesktopApp(tk.Tk):
         self.ukf_bias_freeze_relative_information = tk.StringVar(value="1e-12")
         self.ukf_bias_regularize_relative_information = tk.StringVar(value="1e-5")
         self.ukf_bias_regularization_std = tk.StringVar(value="1.0")
-        self.output_dir = tk.StringVar(value="python_port/results")
+        self.output_dir = tk.StringVar(value="results")
         self.world_map_image: tk.PhotoImage | None = None
         self.map_image_cache: dict[int, tk.PhotoImage] = {}
         self.nav_items: dict[str, tk.Label] = {}
@@ -1542,7 +1541,7 @@ class LunarODDesktopApp(tk.Tk):
         except Exception as exc:
             self.validation_label.configure(text=f"Cannot write invalid scenario: {exc}", foreground=COLORS["red"])
             return
-        out_dir = PROJECT_ROOT / "python_port" / "results"
+        out_dir = RESULTS_DIR
         out_dir.mkdir(parents=True, exist_ok=True)
         path = out_dir / f"{config.name}.scenario.json"
         path.write_text(json.dumps(config.to_dict(), indent=2) + "\n", encoding="utf-8")

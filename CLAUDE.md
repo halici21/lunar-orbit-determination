@@ -15,6 +15,11 @@ Historical source identities and archived records keep their original keys.
 Skill copies were not edited across other sessions' worktrees during this
 migration; their older location examples require this translation.
 
+Optional dependency profiles now live in `requirements/`; the root
+`requirements.txt` remains the core dependency source. Earlier Tkinter/HTTP
+entry points and web assets live under `legacy/`. Windows setup/launch commands
+are unchanged; see the profile and legacy README files for current manual paths.
+
 ## Mandatory Skill Discovery and Routing
 
 Before analyzing, editing, or validating project code, evaluate all available

@@ -1,4 +1,4 @@
--r requirements.txt
+-r ../requirements.txt
 pytest>=8
 
 # Optional for richer Qt-specific assertions. The current smoke tests do not

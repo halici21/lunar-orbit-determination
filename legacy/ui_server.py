@@ -5,7 +5,7 @@ Serves the single-page web UI and exposes JSON API endpoints for
 inspecting results, launching experiments, and querying configuration.
 
 Usage:
-    python python_port/ui_server.py [--port 8420]
+    python legacy/ui_server.py [--port 8420]
 
 Only stdlib + the project-local ``lunar_od`` package are required.
 """
@@ -32,13 +32,13 @@ from urllib.parse import unquote, urlparse
 # ---------------------------------------------------------------------------
 # Path setup — make sure ``lunar_od`` is importable regardless of cwd.
 # ---------------------------------------------------------------------------
-_THIS_DIR = Path(__file__).resolve().parent          # python_port/
-_PROJECT_ROOT = _THIS_DIR.parent                     # Grad/
+_THIS_DIR = Path(__file__).resolve().parents[1]      # this checkout
+_PROJECT_ROOT = _THIS_DIR.parent                     # optional external map
 if str(_THIS_DIR) not in sys.path:
     sys.path.insert(0, str(_THIS_DIR))
 
 # Directories we serve from
-_UI_DIR = _THIS_DIR / "ui"
+_UI_DIR = Path(__file__).resolve().parent / "ui"
 _RESULTS_DIR = _THIS_DIR / "results"
 _WORLD_MAP_PATH = _PROJECT_ROOT / "dunya-haritasi-dilsiz.png"
 
@@ -216,11 +216,11 @@ def _run_test_status() -> dict[str, Any]:
     try:
         result = subprocess.run(
             [sys.executable, "-m", "unittest", "discover", "-s",
-             "python_port/tests", "-t", "python_port"],
+             str(_THIS_DIR / "tests"), "-t", str(_THIS_DIR)],
             capture_output=True,
             text=True,
             timeout=120,
-            cwd=str(_PROJECT_ROOT),
+            cwd=str(_THIS_DIR),
         )
         output = result.stderr or result.stdout
         # Parse unittest output for counts
@@ -471,14 +471,14 @@ class LunarODHandler(BaseHTTPRequestHandler):
                 500, f"Experiment {experiment_id!r} has no script defined")
             return
 
-        cmd = [sys.executable, f"python_port/examples/{script}"]
+        cmd = [sys.executable, str(_THIS_DIR / "examples" / script)]
 
         if dry_run:
             self._send_json({
                 "status": "dry_run",
                 "message": f"Would run: {' '.join(cmd)}",
                 "command": cmd,
-                "cwd": str(_PROJECT_ROOT),
+                "cwd": str(_THIS_DIR),
             })
             return
 
@@ -486,7 +486,7 @@ class LunarODHandler(BaseHTTPRequestHandler):
         try:
             proc = subprocess.Popen(
                 cmd,
-                cwd=str(_PROJECT_ROOT),
+                cwd=str(_THIS_DIR),
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )

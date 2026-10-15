@@ -2851,6 +2851,54 @@
       "original_sha256": "81b3a5f6659bd8f0643ec49864793fa78e24f079d8e2c2cd8ce3013119b952b2",
       "byte_preserved": true,
       "introduced_at": "3f46c6c"
+    },
+    "requirements-accelerated.txt": {
+      "path": "requirements/accelerated.txt",
+      "original_sha256": "574e23888f514f2463e8156b3f9dd449108f92eadd3689facd56f4479f19052c",
+      "byte_preserved": false,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "requirements-dev.txt": {
+      "path": "requirements/dev.txt",
+      "original_sha256": "ef4acf7b59093c3780f321e71c32a4edf91c8d2e79a5b055f33e6937949fae2f",
+      "byte_preserved": false,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "requirements-docs.txt": {
+      "path": "requirements/docs.txt",
+      "original_sha256": "3a8888e235de1bf136ec373c6c689e48f3fc90dc8b3b58bdfe26d58600626b5c",
+      "byte_preserved": true,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "requirements-validated-windows.txt": {
+      "path": "requirements/windows.txt",
+      "original_sha256": "40010b5f4c525236741a9d87e09f55f0b7aea2e6d2f50dbefc87602c5b07fc3d",
+      "byte_preserved": false,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "lunar_od_app.py": {
+      "path": "legacy/lunar_od_app.py",
+      "original_sha256": "f16040be8f316caa4643cdd84d24333fe882fdd7b1f68bcffa59c9884f1e2bde",
+      "byte_preserved": false,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "ui_server.py": {
+      "path": "legacy/ui_server.py",
+      "original_sha256": "fa02a1fdb39ece1fcc8ac41bbbb22f2e68af3c56df9bf7e5db601bc1fdcb135e",
+      "byte_preserved": false,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "ui/index.html": {
+      "path": "legacy/ui/index.html",
+      "original_sha256": "fa4654c9ddf0a71130e2afe144e1034abedc923236e1147e8f83f61cb7a28ec3",
+      "byte_preserved": true,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
+    },
+    "ui/assets/lunar-icon.svg": {
+      "path": "legacy/ui/assets/lunar-icon.svg",
+      "original_sha256": "67f446b9ee873358199d43014cc3ede5a0655338dbfd695d7f899b067beccb98",
+      "byte_preserved": true,
+      "original_commit": "627730af6c3af188995951e04e93abaa2fe1c913"
     }
   }
 }

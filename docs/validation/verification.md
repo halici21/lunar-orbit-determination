@@ -2,6 +2,13 @@
 
 ## Public checks on each push / PR
 
+The current dependency profile is `requirements/windows.txt`; optional profiles
+are indexed in [requirements/README.md](../../requirements/README.md).
+The public gate now includes the seeded OD tutorial, earlier-interface asset and
+checkout-path tests, and the relocated desktop reference-profile check: 290 passed
+in the [root layout cleanup](../development/root-layout-cleanup.md) verification.
+Historical records below retain their original counts and commands.
+
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,
 then calls [run_public_checks.py](../../tools/run_public_checks.py).

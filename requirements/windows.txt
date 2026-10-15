@@ -1,8 +1,8 @@
 # Validated on Windows x86_64, CPython 3.13.
 # Numerical reference: docs/development/branch_consolidation_2026-10-10/environment.json
-# Install from a fresh venv: python -m pip install -r requirements-validated-windows.txt
--r requirements-accelerated.txt
--r desktop_app/requirements_desktop.txt
+# Install from a fresh venv: python -m pip install -r requirements/windows.txt
+-r accelerated.txt
+-r ../desktop_app/requirements_desktop.txt
 
 # Exact versions used by the combined scientific and native desktop checks.
 # pytest is sufficient for the recorded suite; pytest-qt is an optional dev tool.

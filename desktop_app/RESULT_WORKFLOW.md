@@ -366,7 +366,7 @@ Zero baseline errors never produce a fabricated percentage.
 
 ## Verification
 
-Install requirements-validated-windows.txt for the recorded Windows environment.
+Install requirements/windows.txt for the recorded Windows environment.
 From the repo root on
 PowerShell, run:
 
