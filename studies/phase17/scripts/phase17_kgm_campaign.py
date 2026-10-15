@@ -1,11 +1,11 @@
 """PHASE 17-KGM - final K closeout: bounded stochastic (Gauss-Markov) K_SRP experiment.
 
-    python examples/phase17_kgm_campaign.py --predeclare     # write + hash the predeclaration (commit it first)
-    python examples/phase17_kgm_campaign.py --anchor         # GM-core vs KP2-core construction anchor (simplified)
-    python examples/phase17_kgm_campaign.py --run            # the declared high-fidelity jobs
-    python examples/phase17_kgm_campaign.py --analyse        # classification from the raw results
+    python studies/phase17/scripts/phase17_kgm_campaign.py --predeclare     # write + hash the predeclaration (commit it first)
+    python studies/phase17/scripts/phase17_kgm_campaign.py --anchor         # GM-core vs KP2-core construction anchor (simplified)
+    python studies/phase17/scripts/phase17_kgm_campaign.py --run            # the declared high-fidelity jobs
+    python studies/phase17/scripts/phase17_kgm_campaign.py --analyse        # classification from the raw results
 
-Every rule is in artifacts/phase17_kgm_predeclaration.json.  M3 results on T0/T1 are READ from the
+Every rule is in studies/phase17/configs/phase17_kgm_predeclaration.json.  M3 results on T0/T1 are READ from the
 frozen KP2 raw results (identical data: same cell, truth, seeds); nothing in KP2 is re-run or changed.
 """
 from __future__ import annotations
@@ -30,7 +30,7 @@ import phase17_kp2_core as K2  # noqa: E402
 
 K = P.K
 ART = K2.ARTIFACTS
-PRE = ART / "phase17_kgm_predeclaration.json"
+PRE = ART.parent / "configs" / "phase17_kgm_predeclaration.json"
 RAW = ART / "phase17_kgm_raw_results.json"
 SUMMARY = ART / "phase17_kgm_summary.json"
 HF = P.HF
@@ -69,7 +69,7 @@ PREDECLARATION = dict(
     seeds="per (cell, truth): rng([KP2 cell index, truth index, 0]) with truth index T0=0, T1=1, T3_GM=3 "
           "(T0/T1: same truth K(t), same draws as KP2; the truth is propagated with 15 instead of 3 segment "
           "restarts, which differ only at integrator-noise level)",
-    m3_comparison=("M3 (KP2 solver, unchanged) on T0/T1 read from artifacts/phase17_kp2_raw_results.json; "
+    m3_comparison=("M3 (KP2 solver, unchanged) on T0/T1 read from studies/phase17/results/phase17_kp2_raw_results.json; "
                    "M3 on T3_GM solved here on the same data"),
     metrics=dict(
         recovered_m3_projection=("converged and chi2_err <= 13.82 and chi2_detect >= 13.82 on the 2-dof M3 "

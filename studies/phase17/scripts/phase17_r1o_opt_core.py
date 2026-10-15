@@ -1,7 +1,7 @@
 """PHASE 17-R1O-OPT - shared fixtures for the PRODUCTION optical measurement.
 
 ANALYSIS SPACE ONLY.  Nothing here modifies production code; it EXECUTES the
-new production module `lunar_od/lunar_landmark_optical.py` against the
+new production module `src/lunar_od/lunar_landmark_optical.py` against the
 already-qualified campaign trajectory (Phase 17-R1M/17-R1COV/17-R1O) and the
 already-qualified MOON_PA_DE440 frame path.
 

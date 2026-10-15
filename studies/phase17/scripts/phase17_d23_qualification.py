@@ -18,12 +18,12 @@ Solver floor:
     production solver vs model S solver with the SAME linear provider: two
     independent implementations on identical inputs.
 
-Acceptance criteria are frozen in artifacts/phase17_d23_acceptance.json
+Acceptance criteria are frozen in studies/phase17/results/phase17_d23_acceptance.json
 (hash-pinned) before the repaired run.
 
-    python examples/phase17_d23_qualification.py
-    python examples/phase17_d23_qualification.py --analyse-only   # needs the uncommitted 18.8 MB per-row raw;
-                                                                  # artifacts/phase17_d23_cells.json is the compact record
+    python studies/phase17/scripts/phase17_d23_qualification.py
+    python studies/phase17/scripts/phase17_d23_qualification.py --analyse-only   # needs the uncommitted 18.8 MB per-row raw;
+                                                                  # studies/phase17/results/phase17_d23_cells.json is the compact record
 """
 from __future__ import annotations
 
@@ -409,7 +409,7 @@ def main() -> None:
     ap.add_argument("--analyse-only", action="store_true")
     ap.add_argument("--workers", type=int, default=K.N_WORKERS)
     ap.add_argument("--reuse-fd", action="store_true",
-                    help="reuse artifacts/phase17_d23_cd1_fd_rerun.json (computed on the same repaired production)")
+                    help="reuse studies/phase17/results/phase17_d23_cd1_fd_rerun.json (computed on the same repaired production)")
     ap.add_argument("--epoch-scan", action="store_true",
                     help="post-hoc: production Hermite Earth vs ET-exact and raw SPICE at 7 points in EVERY grid "
                          "interval of all 24 epochs (the Earth grid depends on the epoch only, not the orbit)")
@@ -422,7 +422,7 @@ def main() -> None:
         K._init()
         from lunar_od.radiometrics import _interp_state
         from phase17_r1m_core import EARTH_FIXTURE_CANONICAL, _spice_earth_state_mci, measurement_earth_ephemeris
-        g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+        g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
         x0 = [x["x0"] for x in g["geometries"] if x["case_id"] == "CANON"][0]
         fracs = (0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95)
         rows = []
@@ -456,7 +456,7 @@ def main() -> None:
         print(json.dumps({k: v for k, v in out.items() if k != "epochs"}, indent=1))
         return
     if args.et_exact_diagnostic:
-        g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+        g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
         x0s = {x["case_id"]: x["x0"] for x in g["geometries"] if x["case_id"] in K.ORBITS}
         specs = [dict(orbit=o, x0=x0s[o], k=k) for o in K.ORBITS for k in (0, 6, 12, 18)]
         with ProcessPoolExecutor(max_workers=args.workers, initializer=K._init) as ex:
@@ -475,7 +475,7 @@ def main() -> None:
     else:
         import hashlib
         pre = CD.load_predeclaration(K.PREDECLARATION_SHA256)
-        g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+        g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
         x0s = {x["case_id"]: x["x0"] for x in g["geometries"] if x["case_id"] in K.ORBITS}
         for o, x0 in x0s.items():
             assert hashlib.sha256(json.dumps(x0).encode()).hexdigest() == pre["orbits"]["set"][o]["x0_sha256"]

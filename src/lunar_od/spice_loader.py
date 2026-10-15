@@ -98,7 +98,7 @@ def require_moon_pa_de440(et_s: float) -> None:
 
 def default_kernel_candidates() -> list[Path]:
     """Return kernel directories in the same priority order as MATLAB."""
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = Path(__file__).resolve().parents[3]
     candidates: list[Path] = []
 
     env_kernel_dir = os.environ.get("LUNAR_OD_KERNEL_DIR")

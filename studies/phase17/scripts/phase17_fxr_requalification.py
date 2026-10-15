@@ -20,7 +20,7 @@ arms are LEGACY/FROZEN (reproduction), CANONICAL/FROZEN (only the 5.83 d
 offset repaired) and CANONICAL/MEASUREMENT_EPOCH (fully consistent).
 
 Run:  PYTHONPATH="<worktree>;<od_covariance_campaign>/06_scripts"
-      python examples/phase17_fxr_requalification.py
+      python studies/phase17/scripts/phase17_fxr_requalification.py
 """
 from __future__ import annotations
 
@@ -40,13 +40,13 @@ import numpy as np
 #: default to the production visibility contract, so reproducing the published
 #: FXR artifacts requires naming the superseded rule explicitly.  The
 #: authoritative corrected numbers are Phase 17-R1O-D2's (see
-#: docs/phase17_authoritative_status.md).
+#: studies/phase17/reports/phase17_authoritative_status.md).
 _LEGACY_RULE = "ELEVATION_ONLY_HISTORICAL_R1OD"
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ROOT = HERE.parent
-ARTIFACTS = ROOT / "artifacts"
+ROOT = HERE.parents[2]
+ARTIFACTS = ROOT / "studies" / "phase17" / "results"
 
 DSN3 = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 DDOR_PAIR = ("Goldstone DSN", "Canberra DSN")
@@ -55,7 +55,7 @@ C_LIGHT = 299792458.0
 FIXTURES = ("LEGACY", "CANONICAL")
 
 #: GEO s-Jacobian characterization: largest |f_perp(analytic) - f_perp(FD design)|
-#: measured on the canonical fixture (artifacts/phase17_geo_jacobian_diagnosis.json).
+#: measured on the canonical fixture (studies/phase17/results/phase17_geo_jacobian_diagnosis.json).
 JACOBIAN_F_PERP_BOUND = 3.77e-06
 #: Relative sigma_K/K analytic-vs-FD difference measured by GEO (same artifact).
 JACOBIAN_SIGMA_REL_BOUND = 1.6e-05
@@ -693,7 +693,7 @@ def main() -> None:
 
     (ARTIFACTS / "phase17_fxr_requalification.json").write_text(
         json.dumps(out, indent=1, default=float))
-    print("\nwrote artifacts/phase17_fxr_requalification.json")
+    print("\nwrote studies/phase17/results/phase17_fxr_requalification.json")
 
     # ---------------- printed summary ----------------
     print("\nR1M single arcs (f_perp, I_K|x, QR sigma_K/K, n, station)")

@@ -1,6 +1,6 @@
 """Phase 17-MM - the mismatch truth field is exactly a_GL + alpha (a_GR - a_GL).
 
-The masquerade experiment (examples/phase17_mm_experiment.py) builds its truth field by mixing two GRAIL
+The masquerade experiment (studies/phase17/scripts/phase17_mm_experiment.py) builds its truth field by mixing two GRAIL
 solutions with different GM in GL1800F's normalisation; the engine's perturbing acceleration is linear in
 mu R^n C_nm, so the rescaled mixture must reproduce the acceleration mixture exactly.
 """
@@ -24,7 +24,7 @@ GR = gravity_data_root() / "grgm1200l" / "gggrx_1200l_sha.tab"
 
 
 def _mixed_field():
-    src = (ROOT / "examples" / "phase17_mm_experiment.py").read_text(encoding="utf-8")
+    src = (ROOT / "studies" / "phase17" / "scripts" / "phase17_mm_experiment.py").read_text(encoding="utf-8")
     ns = {}
     start = src.index("def mixed_field(")
     end = src.index("\ndef _fields(")
@@ -52,7 +52,7 @@ def test_mixed_truth_field_is_the_acceleration_mixture():
 
 
 def test_predeclaration_freezes_the_decision_rule():
-    pre = json.loads((ROOT / "artifacts" / "phase17_mm_predeclaration.json").read_text(encoding="utf-8"))
+    pre = json.loads((ROOT / "studies" / "phase17" / "configs" / "phase17_mm_predeclaration.json").read_text(encoding="utf-8"))
     assert pre["design"]["alpha"] == [1.0, 0.3]
     assert [c[:2] for c in pre["design"]["cells"]] == [["CANON", 0], ["O1_LOW_BETA_ECLIPSE_RICH", 12],
                                                        ["O2_FULL_SUN_HIGH_BETA", 0], ["O5_FAVOURABLE_GEO_MAX_FPERP", 0]]

@@ -10,8 +10,8 @@ import hashlib
 import json
 from pathlib import Path
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"
-PATH = ARTIFACTS / "phase17_r1od4_predeclaration.json"
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"
+PATH = ARTIFACTS.parent / "configs" / "phase17_r1od4_predeclaration.json"
 
 
 def canonical_sha256(d: dict) -> str:
@@ -20,7 +20,7 @@ def canonical_sha256(d: dict) -> str:
 
 
 def _x0_hashes() -> dict:
-    g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     ids = ("CANON", "O1_LOW_BETA_ECLIPSE_RICH", "O2_FULL_SUN_HIGH_BETA", "O3_HIGH_ALTITUDE_500KM",
            "O5_FAVOURABLE_GEO_MAX_FPERP")
     return {x["case_id"]: dict(source=x["source"], x0_sha256=hashlib.sha256(json.dumps(x["x0"]).encode()).hexdigest())
@@ -33,7 +33,7 @@ PRE = {
     "phase": "17-R1O-D4 Goldstone-Madrid narrow-window confirmatory robustness qualification",
     "written_before_any_d4_k_metric": True,
     "entering_head": "89942a618731ab44151a4b9c3396540f1949105a",
-    "hypothesis_source": "D3 secondary observation (docs/phase17_r1od3_tracking_design_characterization.md s22): "
+    "hypothesis_source": "D3 secondary observation (studies/phase17/reports/phase17_r1od3_tracking_design_characterization.md s22): "
                          "GM FIRST_SESSION STRONG at D3 k = 5, 6, 7 (75/90/105 deg), C1 nominal, simplified dynamics; "
                          "exploratory, 1 of 13 patterns (multiple-comparison exposed)",
     "d3_primary_conclusion_not_reopened": True,
@@ -75,7 +75,7 @@ PRE = {
                   "O2_FULL_SUN_HIGH_BETA": "FULL_SUN / HIGH_BETA", "O3_HIGH_ALTITUDE_500KM": "HIGH_ALTITUDE",
                   "O5_FAVOURABLE_GEO_MAX_FPERP": "PREVIOUSLY FAVOURABLE / HIGH f_perp"},
         "count": 5,
-        "source": "artifacts/phase17_r1od2_predeclared_grid.json (D2 / GEO predeclared configurations), unchanged",
+        "source": "studies/phase17/configs/phase17_r1od2_predeclared_grid.json (D2 / GEO predeclared configurations), unchanged",
     },
     "dynamics": {
         "HIGH_FIDELITY": "examples/phase17_r1od2_fidelity.propagate_fidelity: GL1800F 50x50 MOON_PA_DE440 + Earth and "
@@ -173,7 +173,7 @@ PRE = {
                                  "E bias-column ownership", "F independent lstsq reconstruction of range + DDOR + bias + "
                                  "prior + whitening for every primary cell", "G D3 anchor reproduction at 75/90/105/"
                                  "135/150 (canonical SIMPLIFIED, FIRST and ALL, all five calibrations) vs "
-                                 "artifacts/phase17_r1od3_primary_results.csv to 1e-12"],
+                                 "studies/phase17/results/phase17_r1od3_primary_results.csv to 1e-12"],
     "metrics": ["range n_obs", "GM visibility-window count", "qualified session count", "normal-point count",
                 "range f_perp", "DDOR-only f_perp", "combined f_perp", "delta f_perp", "theta_K", "I(K|x)", "sigma_K",
                 "sigma_K/K", "||b_K||", "design singular values", "condition number", "weakest right-singular K component",

@@ -2,8 +2,8 @@
 convention against Moyer's own OD-level formulation.
 
 CONTEXT (discovered mid-phase, from an earlier abandoned attempt's literature
-research that survived as docs/phase17_r1od_literature_contract.md after its
-own lunar_od/delta_dor.py was overwritten by this phase's from-scratch
+research that survived as studies/phase17/reports/phase17_r1od_literature_contract.md after its
+own src/lunar_od/delta_dor.py was overwritten by this phase's from-scratch
 implementation): the governing spec's own s17 diagram anchors DDOR on a
 COMMON SPACECRAFT TRANSMIT event (what this phase's `solve_common_transmit_
 event` implements). Moyer's actual Section 11.4.1 OD-level formulation

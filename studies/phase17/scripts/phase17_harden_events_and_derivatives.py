@@ -12,10 +12,10 @@ attitude -- attitude is an independently measured input, not a function of the
 estimated state).  K columns: re-propagation with K +/- dK.
 
 Outputs: artifacts/phase17_harden_{range,doppler,ddor,optical}_event_ledger.json,
-artifacts/phase17_harden_derivatives.json, artifacts/phase17_harden_cross_measurement.json
+studies/phase17/results/phase17_harden_derivatives.json, studies/phase17/results/phase17_harden_cross_measurement.json
 
 ``--f1`` (Phase 17-F1 requalification): identical checks plus a two-way range
-block, written ONLY to artifacts/phase17_f1_measurement_derivatives.json under a
+block, written ONLY to studies/phase17/results/phase17_f1_measurement_derivatives.json under a
 run tag; the HARDEN artifacts (the pre-F1 evidence) are left untouched.
   --rtol X            analytic (48-state) AND oracle (6-state) tolerance
                       (default: science analytic 1e-12, oracle 1e-13)
@@ -34,7 +34,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 RTOL_ORACLE = 1e-13
 F1_MODE = "--f1" in sys.argv
 RTOL_ANALYTIC = None                    # None = the science default of propagate_nom48

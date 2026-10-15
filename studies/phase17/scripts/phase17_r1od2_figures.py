@@ -15,7 +15,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-ART = Path(__file__).resolve().parent.parent / "artifacts"
+ART = Path(__file__).resolve().parent.parent / "studies" / "phase17" / "results"
 OKABE = {"GC": "#0072B2", "GM": "#E69F00", "range": "#555555", "surr": "#009E73", "b3": "#D55E00",
          "b4": "#CC79A7"}
 PRIMARY_ORDER = ["CANON", "E1_FIRST_QUARTER_PLUS", "E2_HALF_SYNODIC", "E3_THREE_QUARTER",

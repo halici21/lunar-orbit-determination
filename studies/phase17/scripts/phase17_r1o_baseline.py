@@ -46,7 +46,7 @@ from phase17_r1m_core import (  # noqa: E402
 )
 from phase17_r1o_core import combined_metrics, relative_error  # noqa: E402
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 W15_ORBITS = 15.0
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 OUT: dict = {}

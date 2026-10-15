@@ -1,6 +1,6 @@
 """PHASE 17-GEO s19/s45 - freeze the geometry grid BEFORE any K metric exists.
 
-Writes artifacts/phase17_geo_predeclared_grid.json.  This script computes only
+Writes studies/phase17/configs/phase17_geo_predeclared_grid.json.  This script computes only
 geometry (states, beta, Earth-view angle); it imports no information-metric code
 and propagates nothing.  The campaign script refuses to run a case that is not in
 this file, and records this file's SHA-256 next to every result.
@@ -17,7 +17,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 
 import phase17_geo_core as G  # noqa: E402
 from phase17_r1m_core import K_TRUTH, campaign_epoch, campaign_initial_state  # noqa: E402
@@ -53,7 +53,7 @@ THRESHOLDS = {
 
 PREDICTIONS = {
     "G5_k_magnitude": (
-        "The force is exactly linear in K (a = K g, lunar_od/srp.py), and the K column is dz/dK, "
+        "The force is exactly linear in K (a = K g, src/lunar_od/srp.py), and the K column is dz/dK, "
         "which depends on K only through the negligible K-induced change of the linearisation "
         "trajectory.  Predicted BEFORE running: ||b_K||, f_perp, theta_K, I_K|x and absolute "
         "sigma_K are invariant to <1e-3 relative; sigma_K/K scales as 1/K.  Classification: "
@@ -209,7 +209,7 @@ def main() -> None:
         quarter_epoch_et=et0 + QUARTER_OFFSET_DAYS * 86400.0,
         thresholds=THRESHOLDS, predictions=PREDICTIONS, rules=RULES, cases=cases)
     ARTIFACTS.mkdir(exist_ok=True)
-    out = ARTIFACTS / "phase17_geo_predeclared_grid.json"
+    out = ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json"
     text = json.dumps(grid, indent=1)
     out.write_text(text)
     print("wrote", out, "sha256", hashlib.sha256(text.encode()).hexdigest())

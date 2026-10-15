@@ -26,7 +26,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 TOLS = ((1e-12, 1e-13), (1e-13, 1e-14), (1e-14, 1e-15))
 CASES = ("G0_consistent", "G2_alt30_b20_fixD", "G3_i26.7_b00")
 
@@ -71,7 +71,7 @@ def run(job) -> dict:
 
 
 def main() -> None:
-    grid = json.loads((ARTIFACTS / "phase17_geo_predeclared_grid.json").read_text())
+    grid = json.loads((ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json").read_text())
     by = {c["id"]: c for c in grid["cases"]}
     jobs = [(by[c], tol) for c in CASES for tol in TOLS]
     with ProcessPoolExecutor(max_workers=len(jobs), initializer=_init) as ex:

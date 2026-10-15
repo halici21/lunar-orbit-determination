@@ -27,9 +27,9 @@ def test_a_later_bridge_edit_still_fails_the_provenance_gate(tmp_path):
     protected = set(campaign.R2_CURRENT_TREE_PROTECTED_PATHS)
     protected.update(campaign.CLOSURE_REFROZEN_CURRENT_TREE_SHA256)
     for name in protected:
-        target = tmp_path / name
+        target = tmp_path / campaign.current_source_path(name)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((ROOT / name).read_bytes())
+        target.write_bytes((ROOT / campaign.current_source_path(name)).read_bytes())
     assert all(row["pass"] for row in campaign.build_r2_current_tree_protection_rows(tmp_path))
     path = tmp_path / BRIDGE
     path.write_bytes(path.read_bytes() + b"\n# unauthorized later edit\n")

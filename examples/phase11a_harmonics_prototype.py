@@ -19,7 +19,7 @@ coefficient sets (nmax <= 3, plus an nmax=8 recursion cross-check):
 
 Scope / constraints (Phase 11A, approved)
 -----------------------------------------
-- Prototype ONLY.  No production module; ``lunar_od/dynamics.py``,
+- Prototype ONLY.  No production module; ``src/lunar_od/dynamics.py``,
   ``accelerated.py``, ``force_models.py``, ``scenario_config.py`` untouched.
 - No GRAIL file download, no coefficient-file loader.
 - Fixed frame / identity rotation only.  **This is acceptable ONLY for a

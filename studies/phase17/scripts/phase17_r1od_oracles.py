@@ -1,7 +1,7 @@
 """PHASE 17-R1O-D - geometric, spacecraft-event, and quasar-delay oracles.
 
 ANALYSIS SPACE ONLY (this script). It qualifies the NEW production module
-`lunar_od/delta_dor.py` by exercising it against independent, hand-verifiable
+`src/lunar_od/delta_dor.py` by exercising it against independent, hand-verifiable
 truths, per R1O-D s35/s36/s21/s19.
 
 All position models below are expressed as LOCAL, BOUNDED motion about a
@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 
 from lunar_od.delta_dor import (
     QuasarDirection,

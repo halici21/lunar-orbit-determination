@@ -44,7 +44,7 @@ states at the SAME ET origin the production model uses for the Earth rotation
 (`EarthEphemerisCoverageError`) instead of clamping.  The defective fixture is
 kept, only by explicit request, as `EARTH_FIXTURE_LEGACY_OFFSET_CLAMPED` so
 the published R1M..R1O-R numbers stay reproducible.  See
-docs/phase17_fxr_earth_epoch_fixture_erratum.md.
+studies/phase17/reports/phase17_fxr_earth_epoch_fixture_erratum.md.
 
 The dynamics are untouched: `build_range_arc` runs with mu_earth = mu_sun = 0,
 so the constant `earth_at` it hands the propagator is never used as a force.

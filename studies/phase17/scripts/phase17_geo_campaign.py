@@ -1,6 +1,6 @@
 """PHASE 17-GEO - run the predeclared geometry grid (G0-G5 + eclipse counterfactual).
 
-ANALYSIS SPACE ONLY.  Reads artifacts/phase17_geo_predeclared_grid.json and refuses
+ANALYSIS SPACE ONLY.  Reads studies/phase17/configs/phase17_geo_predeclared_grid.json and refuses
 to run unless its SHA-256 equals the frozen v2 hash below: cases cannot be moved
 after results exist.  Per case it builds the production two-way range arc,
 checks physical validity, records geometry/eclipse/tracking descriptors, and
@@ -8,7 +8,7 @@ computes the QR-only information metrics.  Design matrices are cached under
 results/phase17_geo_cache/ (gitignored) so the matched-count, classification and
 figure stages never re-propagate.
 
-Usage:  python examples/phase17_geo_campaign.py [--workers 8] [--only ID ...]
+Usage:  python studies/phase17/scripts/phase17_geo_campaign.py [--workers 8] [--only ID ...]
 """
 from __future__ import annotations
 
@@ -27,10 +27,10 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ROOT = HERE.parent
-ARTIFACTS = ROOT / "artifacts"
+ROOT = HERE.parents[2]
+ARTIFACTS = ROOT / "studies" / "phase17" / "results"
 CACHE = ROOT / "results" / "phase17_geo_cache"
-GRID_FILE = ARTIFACTS / "phase17_geo_predeclared_grid.json"
+GRID_FILE = ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json"
 GRID_V2_SHA256 = "2ba87a471c6b303e7d39a0607daed60bca693b21cb6075642ed7b64e4c7e754d"
 
 

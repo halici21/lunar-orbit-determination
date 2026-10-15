@@ -44,7 +44,7 @@ from lunar_od.measurements import _station_relative_state_j2000_at_receive_epoch
 
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 DDOR_PAIR = ("Goldstone DSN", "Canberra DSN")
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 #: R1O-D as published: Earth centre frozen at the arc start (t = 0).
 EARTH_ANCHOR_FROZEN_ARC_START = "FROZEN_ARC_START"
 #: Epoch-consistent: Earth centre at each measurement-grid epoch (FXR).

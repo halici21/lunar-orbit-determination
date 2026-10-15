@@ -24,7 +24,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 PHASES = (0, 45, 90, 135, 180, 225, 270, 315)
 SWEEP_IDS = ("G3_i26.7_bcan", "G3_i90.0_bcan", "G1_b88")
 
@@ -64,7 +64,7 @@ def main() -> None:
     from phase17_r1m_core import campaign_initial_state
 
     load_spice_kernels(None, clear=True)
-    grid = json.loads((ARTIFACTS / "phase17_geo_predeclared_grid.json").read_text())
+    grid = json.loads((ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json").read_text())
     by_id = {c["id"]: c for c in grid["cases"]}
     jobs = []
     for cid in SWEEP_IDS:

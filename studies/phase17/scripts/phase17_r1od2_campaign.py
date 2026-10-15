@@ -1,10 +1,10 @@
 """PHASE 17-R1O-D2 - run the predeclared robustness grid (D0-D6, surrogate bridge).
 
-ANALYSIS SPACE ONLY.  Reads artifacts/phase17_r1od2_predeclared_grid.json and
+ANALYSIS SPACE ONLY.  Reads studies/phase17/configs/phase17_r1od2_predeclared_grid.json and
 refuses to run if its LF-normalized SHA-256 differs from the committed value.
 One worker per geometry; every worker installs the legacy-Earth guard.
 
-Outputs: artifacts/phase17_r1od2_results.json (+ CSV summaries).
+Outputs: studies/phase17/results/phase17_r1od2_results.json (+ CSV summaries).
 """
 from __future__ import annotations
 
@@ -21,8 +21,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
-GRID_PATH = ARTIFACTS / "phase17_r1od2_predeclared_grid.json"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
+GRID_PATH = ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json"
 GRID_SHA256_LF = "2a99c50e95c49bc4c1837787c328bcc2537fa653a2e933bf5a9ea39221c07c11"
 SIGMA_NOMINAL_SYS_S = 0.033e-9
 SIGMA_STRESS_S = 1.0e-9

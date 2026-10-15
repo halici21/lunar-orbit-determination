@@ -31,7 +31,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 VARIANTS = (("SRP_CONICAL_PENUMBRA", 0.01, "CONICAL_PENUMBRA"),
             ("SRP_NO_SHADOW", 0.01, "NO_SHADOW"),
             ("NO_SRP_K0", 0.0, "CONICAL_PENUMBRA"))

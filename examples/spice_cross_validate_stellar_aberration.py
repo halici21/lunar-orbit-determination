@@ -15,7 +15,7 @@ Controlled geometries sweep the LOS/velocity angle (orthogonal, oblique,
 (anti-)parallel) -- the quantity stellar aberration actually depends on;
 SPICE-fixture geometries add realistic Earth-station -> lunar-orbiter lines of
 sight with the true SSB observer velocity. The script regenerates
-``docs/spice_cross_validation.md``.
+``docs/validation/spice_cross_validation.md``.
 
 Run from the project root (SPICE kernels required for the fixture section)::
 
@@ -30,7 +30,6 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import spiceypy as spice  # noqa: E402
 
@@ -51,7 +50,7 @@ from lunar_od.measurements import (  # noqa: E402
 
 PYTHON_PORT = Path(__file__).resolve().parents[1]
 FIXTURE = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
-OUT = PYTHON_PORT / "docs" / "spice_cross_validation.md"
+OUT = PYTHON_PORT / "docs" / "validation" / "spice_cross_validation.md"
 ARCSEC = np.degrees(1.0) * 3600.0
 
 

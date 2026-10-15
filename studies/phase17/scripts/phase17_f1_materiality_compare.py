@@ -1,15 +1,15 @@
 """PHASE 17-F1 - pre/post comparison of the materiality runs (no computation of physics).
 
-Reads artifacts/phase17_f1_science_materiality.json ("pre", "post" from
+Reads studies/phase17/results/phase17_f1_science_materiality.json ("pre", "post" from
 phase17_f1_materiality.py), applies the predeclared rules of
-artifacts/phase17_f1_predeclaration.json and writes the "comparison" block.
+studies/phase17/configs/phase17_f1_predeclaration.json and writes the "comparison" block.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"
 KEYS = ("f_perp", "theta_k_deg", "conditional_k_information", "sigma_k", "sigma_k_frac", "k_column_norm",
         "weakest_mode_k_component")
 
@@ -17,7 +17,7 @@ KEYS = ("f_perp", "theta_k_deg", "conditional_k_information", "sigma_k", "sigma_
 def main() -> None:
     path = ARTIFACTS / "phase17_f1_science_materiality.json"
     store = json.loads(path.read_text(encoding="utf-8"))
-    decl = json.loads((ARTIFACTS / "phase17_f1_predeclaration.json").read_text(encoding="utf-8"))
+    decl = json.loads((ARTIFACTS.parent / "configs" / "phase17_f1_predeclaration.json").read_text(encoding="utf-8"))
     pre, post = store["pre"], store["post"]
     cells, class_changes = [], []
     for case, p in pre["d2_primary"].items():
@@ -65,7 +65,7 @@ def main() -> None:
                                d2_class_changes=class_changes, canonical=canonical, geo_spot=geo,
                                GEO_ESCALATED_TO_FULL_GRID=escalate,
                                F1_SCIENCE_MATERIALITY_CLASS=label,
-                               authoritative_precision_note="docs/phase17_authoritative_status.md quotes f_perp "
+                               authoritative_precision_note="studies/phase17/reports/phase17_authoritative_status.md quotes f_perp "
                                                             "to 6 decimals; any move >= 5e-7 changes a quoted digit")
     path.write_text(json.dumps(store, indent=1, default=float), encoding="utf-8")
     print("D2 cells", len(cells), "class changes", class_changes)

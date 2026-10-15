@@ -134,7 +134,7 @@ def chain_to_augmented_columns(
     MUST be unflattened with order="F".  Until Phase 17-R1O-R this line used
     NumPy's default C order, which silently substitutes Phi^T -- Phi is not
     symmetric, and every surrogate state-design row R1O published was built
-    from the transpose.  `examples/phase17_r1o_r_stm_oracle.py` establishes the
+    from the transpose.  `studies/phase17/scripts/phase17_r1o_r_stm_oracle.py` establishes the
     contract by measurement (re-propagated finite differences, no variational
     block), and `tests/test_r1o_stm_layout.py` protects it permanently.
     """

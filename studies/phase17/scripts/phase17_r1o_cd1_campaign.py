@@ -1,12 +1,12 @@
 """PHASE 17-R1O-CD1 - production counted-Doppler K_SRP complementarity: campaign.
 
-Every rule comes from artifacts/phase17_r1o_cd1_predeclaration.json (hash-pinned,
+Every rule comes from studies/phase17/configs/phase17_r1o_cd1_predeclaration.json (hash-pinned,
 committed before any CD1 K metric).  Matrix: 5 orbits x 24 D3 epochs x
 {HIGH_FIDELITY (primary), SIMPLIFIED (control)}; production range baseline
 recomputed on every propagation; production two-way counted Doppler.
 
-    python examples/phase17_r1o_cd1_campaign.py            # campaign + FD + analysis
-    python examples/phase17_r1o_cd1_campaign.py --analyse-only
+    python studies/phase17/scripts/phase17_r1o_cd1_campaign.py            # campaign + FD + analysis
+    python studies/phase17/scripts/phase17_r1o_cd1_campaign.py --analyse-only
 """
 from __future__ import annotations
 
@@ -389,7 +389,7 @@ def main() -> None:
     args = ap.parse_args()
     pre = CD.load_predeclaration(PREDECLARATION_SHA256)
     import hashlib
-    g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     x0s = {}
     for x in g["geometries"]:
         if x["case_id"] in ORBITS:

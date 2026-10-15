@@ -32,7 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))

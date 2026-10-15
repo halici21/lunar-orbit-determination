@@ -3,10 +3,10 @@
 REQUALIFICATION ONLY, NO NEW SCIENCE.  The same script runs twice: once on the
 entering dynamics (``--tag pre``) and once after the SRP position gradient is
 added to the variational equations (``--tag post``).  Nothing but
-``lunar_od/dynamics.py`` / ``lunar_od/srp.py`` differs between the two runs, so
+``src/lunar_od/dynamics.py`` / ``src/lunar_od/srp.py`` differs between the two runs, so
 every difference is attributable to the variational correction.
 
-Population (predeclared in artifacts/phase17_f1_predeclaration.json):
+Population (predeclared in studies/phase17/configs/phase17_f1_predeclaration.json):
   * D2 PRIMARY: the 9 predeclared D2 geometries x {Goldstone-Canberra,
     Goldstone-Madrid}, production visibility rows, dense angular 5 nrad,
     classes by the D2 rules (relative_gain_class, absolute_class);
@@ -14,7 +14,7 @@ Population (predeclared in artifacts/phase17_f1_predeclaration.json):
   * GEO spot check: the 5 frozen cases, range-only, GEO classes against the
     post-run G0_consistent f_ref.
 
-Output: artifacts/phase17_f1_science_materiality.json, key = tag.
+Output: studies/phase17/results/phase17_f1_science_materiality.json, key = tag.
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 OUT = ARTIFACTS / "phase17_f1_science_materiality.json"
 
 D2_KEYS = ("n_obs", "f_perp", "theta_k_deg", "conditional_k_information", "i_kk", "k_column_norm",
@@ -84,9 +84,9 @@ def main() -> None:
     ap.add_argument("--tag", required=True, choices=("pre", "post"))
     args = ap.parse_args()
     import phase17_geo_campaign as GC
-    decl = json.loads((ARTIFACTS / "phase17_f1_predeclaration.json").read_text(encoding="utf-8"))
-    d2grid = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
-    geogrid = json.loads((ARTIFACTS / "phase17_geo_predeclared_grid.json").read_text(encoding="utf-8"))
+    decl = json.loads((ARTIFACTS.parent / "configs" / "phase17_f1_predeclaration.json").read_text(encoding="utf-8"))
+    d2grid = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    geogrid = json.loads((ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json").read_text(encoding="utf-8"))
     sel = decl["geo_spot_check"]["selected"]
     geo_cases = [c for c in geogrid["cases"] if c["id"] in set(sel.values())]
     assert len(geo_cases) == len(set(sel.values())), "a frozen GEO case is missing from the grid"
@@ -104,9 +104,9 @@ def main() -> None:
         g["class_full"] = GC.classify(g["d"], g["f_perp"])
     import subprocess
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True,
-                          cwd=HERE.parent).stdout.strip()
+                          cwd=HERE.parents[2]).stdout.strip()
     dirty = subprocess.run(["git", "status", "--short", "lunar_od"], capture_output=True, text=True,
-                           cwd=HERE.parent).stdout.strip()
+                           cwd=HERE.parents[2]).stdout.strip()
     result = dict(head=head, lunar_od_uncommitted=dirty, elapsed_s=time.time() - t0,
                   d2_primary={r["case"]: r for r in d2}, geo_spot={g["id"]: g for g in geo})
     store = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {}

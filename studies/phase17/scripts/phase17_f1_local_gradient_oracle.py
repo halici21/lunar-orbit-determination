@@ -26,7 +26,7 @@ Points (two Sun directions, two altitudes behind the Moon):
   (external / internal tangency, finiteness + one-sided behaviour),
   K in {0, 0.01, 0.037}, and NO_SHADOW.
 
-Output: artifacts/phase17_f1_local_gradient_oracle.json
+Output: studies/phase17/results/phase17_f1_local_gradient_oracle.json
 """
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 STEPS = (1e-2, 1e-1, 1.0, 10.0, 1e2, 1e3, 1e4)
 GATE = 1e-6
 

@@ -243,7 +243,7 @@ if __name__ == "__main__":
     out = run()
     import json
 
-    art = HERE.parent / "artifacts"
+    art = HERE.parents[2] / "studies" / "phase17" / "results"
     art.mkdir(exist_ok=True)
     (art / "r1o_r_stm_oracle.json").write_text(json.dumps(out, indent=2))
     print(f"\nwrote {art / 'r1o_r_stm_oracle.json'}")

@@ -37,7 +37,7 @@ from phase17_r1o_core import (  # noqa: E402
     position_jacobian_fd,
 )
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 W15_ORBITS = 15.0
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 NOISE_SWEEP_URAD = (10.0, 100.0, 1000.0)

@@ -29,7 +29,7 @@ def main() -> None:
                     "components are distinguishable from the six-state initial condition and from each other "
                     "under the qualified range + counted-Doppler set?",
         "literature": {
-            "source_contract": "docs/phase17_geo_literature_contract.md (S1 Slojkowski NTRS 20140008968, "
+            "source_contract": "studies/phase17/reports/phase17_geo_literature_contract.md (S1 Slojkowski NTRS 20140008968, "
                                "S2 Slojkowski-Lowe-Woodburn ISSFD 2015; full text read in GEO)",
             "LITERATURE_RESULT": [
                 "S1 s6.3: SRP variations due to variable spacecraft area are time-dependent dynamical errors "

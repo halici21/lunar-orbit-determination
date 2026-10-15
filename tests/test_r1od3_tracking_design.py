@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
@@ -46,7 +46,7 @@ def test_uniform_epoch_grid_includes_the_canonical_epoch_exactly():
     with pytest.raises(ValueError):
         D3.epoch_et(24, GRID)
     # D2's quarter epochs are grid points 6, 12, 18
-    d2 = json.loads((D3.ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    d2 = json.loads((D3.ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     d2et = {x["case_id"]: x["et0"] for x in d2["geometries"]}
     for k, cid in ((6, "E1_FIRST_QUARTER_PLUS"), (12, "E2_HALF_SYNODIC"), (18, "E3_THREE_QUARTER")):
         assert abs(D3.epoch_et(k, GRID) - d2et[cid]) < 1e-3

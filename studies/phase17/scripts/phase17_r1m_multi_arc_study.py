@@ -87,7 +87,7 @@ CAMPAIGNS = {
 #: mean anything; auto-selecting "the best station per arc" would silently give
 #: Model A and Model B different data.
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 OUT: dict = {}
 
 

@@ -41,7 +41,7 @@ from phase17_r1cov_core import (  # noqa: E402
     square_root_covariance,
 )
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 CASES = (("G0", 1.3), ("G1", 2.0), ("G3", 5.0))
 N = 7
 

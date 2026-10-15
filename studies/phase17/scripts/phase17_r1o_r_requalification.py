@@ -57,7 +57,7 @@ from phase17_r1o_core import (  # noqa: E402
     combined_metrics, position_jacobian_fd,
 )
 
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 
 # ---- R1O's OWN published configuration, copied from its scripts -----------
 # phase17_r1o_landmark.py s53/s87, phase17_r1o_ddor.py s48/s83,
@@ -359,7 +359,7 @@ def main() -> None:
           % (b_hk_h.size, bool(np.array_equal(b_hk_h, b_hk_c))))
     print("  HISTORICAL: %s" % _fmt(m_b_h))
     print("  CORRECTED : %s" % _fmt(m_b_c))
-    print("  NOTE: production ΔDOR (lunar_od/delta_dor.py) is NOT touched by")
+    print("  NOTE: production ΔDOR (src/lunar_od/delta_dor.py) is NOT touched by")
     print("        this phase -- only the surrogate side of the bridge moves.")
     results["r1od_bridge_surrogate"] = {
         "historical": m_b_h, "corrected": m_b_c, "n_rows": int(b_hk_h.size)}

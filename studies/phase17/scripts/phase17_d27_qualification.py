@@ -1,6 +1,6 @@
 """Phase 17-HARDEN-D27: qualification of the BLS-LM convergence/status contract.
 
-Writes artifacts/phase17_d27_qualification.json (never the BLS1 artifact).
+Writes studies/phase17/results/phase17_d27_qualification.json (never the BLS1 artifact).
 
   --simplified  the KP2 cross-check problem in SIMPLIFIED dynamics (the BLS1 ablation's data: same
                 a priori, same noise draws) solved by the CURRENT production estimator:
@@ -14,7 +14,7 @@ Writes artifacts/phase17_d27_qualification.json (never the BLS1 artifact).
                                genuine-failure case; must stay DampingLimit
                 Each row carries the production decrement and the BLS1 independent GN remainder in sigma.
   --hf          the production decrement at the STORED high-fidelity production solution of the frozen KP2
-                job (artifacts/phase17_bls1_qualification.json, high_fidelity.production), with the job's
+                job (studies/phase17/results/phase17_bls1_qualification.json, high_fidelity.production), with the job's
                 exact data rebuilt (rng [98, 0, 0]); and at the declared a priori for contrast.
 """
 from __future__ import annotations

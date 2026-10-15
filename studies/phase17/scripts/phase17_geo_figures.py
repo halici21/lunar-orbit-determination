@@ -1,6 +1,6 @@
 """PHASE 17-GEO - stage artifacts (s61) and figures (s60).
 
-ANALYSIS SPACE ONLY.  Reads artifacts/phase17_geo_results.json (+ fixture
+ANALYSIS SPACE ONLY.  Reads studies/phase17/results/phase17_geo_results.json (+ fixture
 attribution, phase robustness) and the cached design matrices.  Traceability
 (R1 invariant): every figure is drawn from its own CSV written alongside it, and
 before anything is plotted each case's f_perp is RECOMPUTED from its cached
@@ -20,10 +20,10 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ROOT = HERE.parent
-ART = ROOT / "artifacts"
+ROOT = HERE.parents[2]
+ART = ROOT / "studies" / "phase17" / "results"
 CACHE = ROOT / "results" / "phase17_geo_cache"
-FIG = ROOT / "docs" / "figures" / "phase17_geo"
+FIG = ROOT / "studies" / "phase17" / "results" / "figures" / "phase17_geo"
 
 OKABE = dict(blue="#0072B2", orange="#E69F00", green="#009E73", vermil="#D55E00",
              purple="#CC79A7", sky="#56B4E9", yellow="#F0E442", black="#000000")
@@ -128,7 +128,7 @@ def main() -> None:
     FIG.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({"font.size": 9, "axes.spines.top": False, "axes.spines.right": False})
     f_ref = by["G0_consistent"]["full_f_perp"]
-    beta_b = json.loads((ART / "phase17_geo_predeclared_grid.json").read_text())["full_sun_boundary_beta_deg"]
+    beta_b = json.loads((ART.parent / "configs" / "phase17_geo_predeclared_grid.json").read_text())["full_sun_boundary_beta_deg"]
 
     # ---- F1 beta: direction vs magnitude ---------------------------------
     g1 = sorted([x for x in rows if x["stage"] == "G1"], key=lambda x: x["beta_mid_deg"])

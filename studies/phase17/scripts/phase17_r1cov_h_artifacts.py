@@ -16,14 +16,14 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 from phase17_r1cov_core import (  # noqa: E402
     K_INDEX, condition_numbers, exact_covariance, floored_covariance,
     relative_error, scale_matrix, square_root_covariance,
 )
 
-ARTIFACTS = REPO / "artifacts"
+ARTIFACTS = REPO / "studies" / "phase17" / "results"
 PRIOR_SWEEP = np.geomspace(1e-4, 1e2, 25)
 
 
@@ -78,14 +78,14 @@ def main() -> None:
         epoch=dict(campaign_et0=et0, orbit_period_s=t_orbit),
         scaling=dict(position_m=1e6, velocity_m_s=1e3, k_srp_m2_per_kg=1e-2),
         production_change=dict(
-            files=["lunar_od/estimators.py"],
+            files=["src/lunar_od/estimators.py"],
             call_sites_modified=2,
             call_sites_protected=26,
             srukf_modified=False,
             default_six_state_modified=False,
             scenarios_duplicate_helper_modified=False),
     )
-    (ARTIFACTS / "r1cov_config.json").write_text(json.dumps(cfg, indent=2, default=float))
+    (ARTIFACTS.parent / "configs" / "r1cov_config.json").write_text(json.dumps(cfg, indent=2, default=float))
     print("wrote r1cov_config.json")
 
     # ---------------- historical correction table (s46) ---------------

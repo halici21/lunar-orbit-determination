@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
@@ -144,7 +144,7 @@ def test_first_session_is_the_chronologically_earliest_qualifying_window():
 # frozen orbits and dynamics
 # ----------------------------------------------------------------------
 def test_orbit_initial_states_are_frozen():
-    d2 = json.loads((D3.ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    d2 = json.loads((D3.ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     got = {g["case_id"]: hashlib.sha256(json.dumps(g["x0"]).encode()).hexdigest() for g in d2["geometries"]
            if g["case_id"] in PRE["orbits"]["set"]}
     assert got == {k: v["x0_sha256"] for k, v in PRE["orbits"]["set"].items()}

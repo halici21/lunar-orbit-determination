@@ -1,6 +1,6 @@
 """PHASE 17-R1O-D4 - Goldstone-Madrid narrow-window confirmatory robustness qualification.
 
-Every rule comes from artifacts/phase17_r1od4_predeclaration.json (hash-pinned,
+Every rule comes from studies/phase17/configs/phase17_r1od4_predeclaration.json (hash-pinned,
 committed before any D4 metric).  GM_ONLY; FIRST_SESSION (primary) and
 ALL_FEASIBLE_SESSIONS (reference); 22 phases 60-165 deg; 5 orbits; SIMPLIFIED and
 HIGH_FIDELITY dynamics for every cell; C0 / C1 half, nominal, double / C2.
@@ -28,7 +28,7 @@ sys.path.insert(0, str(HERE))
 import phase17_r1od3_core as D3  # noqa: E402
 
 ARTIFACTS = D3.ARTIFACTS
-PRE_PATH = ARTIFACTS / "phase17_r1od4_predeclaration.json"
+PRE_PATH = ARTIFACTS.parent / "configs" / "phase17_r1od4_predeclaration.json"
 PREDECLARATION_SHA256 = "3a48bc212f2b5b0b26f15953dfd6c2e2cc230a2fdf042cb9cd1e77772c8b9084"
 CANONICAL_ET0 = 857806356.99998
 SYNODIC_S = 2551442.8896
@@ -241,7 +241,7 @@ def main() -> None:
         results = json.loads((ARTIFACTS / "phase17_r1od4_raw_results.json").read_text(encoding="utf-8"))
         analyse(pre, results, phases, order, args.catalog, None)
         return
-    d2 = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    d2 = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     orbits = {}
     for g in d2["geometries"]:
         if g["case_id"] in pre["orbits"]["set"]:
@@ -453,7 +453,7 @@ def analyse(pre, results, phases, order, catalog, elapsed) -> None:
                    if r["cells"][s].get("feasible"))
 
     # ---------------- CSV artifacts
-    with (ARTIFACTS / "phase17_r1od4_epoch_grid.csv").open("w", newline="") as fh:
+    with (ARTIFACTS.parent / "configs" / "phase17_r1od4_epoch_grid.csv").open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["phase_deg", "et0", "d3_k_equivalent", "d3_anchor", "moon_geocentric_dec_deg",
                     "sc_dec_first_deg", "sun_earth_sc_first_deg", "gm_visibility_windows", "gm_qualified_sessions",

@@ -1,10 +1,10 @@
 """PHASE 17-KP2 - nonlinear M3 K_SRP recovery confirmation: campaign, verification, analysis.
 
-Every rule is in artifacts/phase17_kp2_predeclaration.json (hash-pinned, committed before any
+Every rule is in studies/phase17/configs/phase17_kp2_predeclaration.json (hash-pinned, committed before any
 high-fidelity recovery result).  Counted-Doppler VALUES are used on the D23-qualified path.
 
-    python examples/phase17_kp2_campaign.py            # all jobs + analysis
-    python examples/phase17_kp2_campaign.py --analyse-only
+    python studies/phase17/scripts/phase17_kp2_campaign.py            # all jobs + analysis
+    python studies/phase17/scripts/phase17_kp2_campaign.py --analyse-only
 """
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ RAW_PATH = ARTIFACTS / "phase17_kp2_raw_results.json"
 
 
 def x0s() -> dict:
-    g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     return {x["case_id"]: x["x0"] for x in g["geometries"] if x["case_id"] in K.ORBITS}
 
 

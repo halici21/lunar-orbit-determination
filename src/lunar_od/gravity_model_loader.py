@@ -87,7 +87,7 @@ _TIME_VARIABLE_KEYS = {"gfct", "trnd", "asin", "acos", "dot"}
 # ---------------------------------------------------------------------------
 def default_gravity_candidates() -> list[Path]:
     """Gravity-model directories in priority order (env var first)."""
-    package_root = Path(__file__).resolve().parents[1]   # <python_port>
+    package_root = Path(__file__).resolve().parents[2]   # repository root
     candidates: list[Path] = []
     env_dir = os.environ.get("LUNAR_OD_GRAVITY_DIR")
     if env_dir:

@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
@@ -335,7 +335,7 @@ def test_no_direct_calls_to_the_unchecked_range_generator():
     AST-based, so only real call sites count (not strings or comments)."""
     import ast
     offenders = []
-    for path in sorted(EXAMPLES.glob("phase17_*.py")) + [ROOT / "lunar_od" / "scenarios.py"]:
+    for path in sorted(EXAMPLES.glob("phase17_*.py")) + [ROOT / "src" / "lunar_od" / "scenarios.py"]:
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Call):
                 f = node.func
@@ -348,4 +348,4 @@ def test_no_direct_calls_to_the_unchecked_range_generator():
 def test_frozen_range_module_is_untouched_by_harden():
     import hashlib
     frozen = "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995"
-    assert hashlib.sha256((ROOT / "lunar_od" / "two_way_range.py").read_bytes()).hexdigest() == frozen
+    assert hashlib.sha256((ROOT / "src" / "lunar_od" / "two_way_range.py").read_bytes()).hexdigest() == frozen

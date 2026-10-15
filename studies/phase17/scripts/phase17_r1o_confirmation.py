@@ -28,7 +28,7 @@ import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
 from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
 from phase17_r1o_core import build_ddor_arc, build_landmark_arc, combined_metrics  # noqa: E402
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 
 

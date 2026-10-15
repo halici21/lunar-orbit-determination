@@ -1,11 +1,11 @@
 """PHASE 17-KP1 - alternative K_SRP parameterizations: campaign, verification and analysis.
 
-Every rule comes from artifacts/phase17_kp1_predeclaration.json (hash-pinned,
+Every rule comes from studies/phase17/configs/phase17_kp1_predeclaration.json (hash-pinned,
 committed before any separation metric).  Analysis only: production code is
 not modified; counted-Doppler VALUES are never used.
 
-    python examples/phase17_kp1_campaign.py                 # cells + FD + analysis
-    python examples/phase17_kp1_campaign.py --analyse-only
+    python studies/phase17/scripts/phase17_kp1_campaign.py                 # cells + FD + analysis
+    python studies/phase17/scripts/phase17_kp1_campaign.py --analyse-only
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ RAW_PATH = ARTIFACTS / "phase17_kp1_raw_results.json"
 
 def x0_set(pre: dict) -> dict:
     import hashlib
-    g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     x0s = {x["case_id"]: x["x0"] for x in g["geometries"] if x["case_id"] in K.ORBITS}
     for o, x0 in x0s.items():
         assert hashlib.sha256(json.dumps(x0).encode()).hexdigest() == pre["population"]["orbits"]["set"][o]["x0_sha256"]

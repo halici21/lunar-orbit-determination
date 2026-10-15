@@ -16,13 +16,13 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
 import phase17_kp2_core as K2  # noqa: E402
 
-SUMMARY = ROOT / "artifacts" / "phase17_kp2_summary.json"
+SUMMARY = ROOT / "studies" / "phase17" / "results" / "phase17_kp2_summary.json"
 
 
 def chi_threshold():
@@ -140,11 +140,11 @@ def test_committed_campaign_evidence_is_internally_consistent():
         assert s["gates"][gate] == "PASS", gate
     # the two frozen verification failures are reported as computed, with their post-hoc adjudication pinned
     assert s["gates"]["FD"] == "FAIL" and s["gates"]["PRODUCTION_BLS"] == "FAIL"
-    post = json.loads((ROOT / "artifacts" / "phase17_kp2_posthoc_verification.json").read_text(encoding="utf-8"))
+    post = json.loads((ROOT / "studies" / "phase17" / "results" / "phase17_kp2_posthoc_verification.json").read_text(encoding="utf-8"))
     assert post["fd_tight"]["worst"] <= 1e-4                          # FD exceedance = oracle integration floor
     assert post["bls_stationarity"]["status"] == "Converged"
     assert max(abs(x) for x in post["bls_stationarity"]["diff_over_sigma"]) <= 0.02   # same LS solution
-    basin = json.loads((ROOT / "artifacts" / "phase17_kp2_posthoc_basin.json").read_text(encoding="utf-8"))
+    basin = json.loads((ROOT / "studies" / "phase17" / "results" / "phase17_kp2_posthoc_basin.json").read_text(encoding="utf-8"))
     assert basin["metrics"]["converged"] and basin["metrics"]["chi2_var_err"] <= chi_threshold()
     chi = K2.CHI2_2_999
     for t in s["trials"]:

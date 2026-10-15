@@ -19,7 +19,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 SYNODIC_MONTH_D = 29.530589
 GEO_ORBIT_CASES = {
     "O1_LOW_BETA_ECLIPSE_RICH": "G1_b00",
@@ -51,7 +51,7 @@ def main() -> None:
         geos.append(dict(case_id=name, family="epoch", et0=et0 + k * SYNODIC_MONTH_D / 4 * 86400.0,
                          x0=x0, duration_s=dur, shadow_model="CONICAL_PENUMBRA", k_srp=M.K_TRUTH,
                          source="same J2000/LME state vector as CANON, epoch + %d/4 synodic month" % k))
-    grid_geo = json.loads((ARTIFACTS / "phase17_geo_predeclared_grid.json").read_text())
+    grid_geo = json.loads((ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json").read_text())
     by_id = {c["id"]: c for c in grid_geo["cases"]}
     for name, gid in GEO_ORBIT_CASES.items():
         c = by_id[gid]
@@ -167,7 +167,7 @@ def main() -> None:
                                   note="GEO; carried, not investigated"),
     )
     text = json.dumps(grid, indent=1, default=float)
-    path = ARTIFACTS / "phase17_r1od2_predeclared_grid.json"
+    path = ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json"
     path.write_text(text, encoding="utf-8", newline="\n")
     sha = hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest()
     print("wrote", path, "sha256(LF) =", sha)

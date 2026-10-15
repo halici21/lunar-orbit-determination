@@ -16,7 +16,7 @@ The production ΔDOR numbers themselves are Phase 17-R1O-D2's (range 0.091508,
 combined 0.172351, sigma_K/K 7.46%); this script restates them from D2's artifact
 and does not recompute them.
 
-Output: artifacts/phase17_harden_visibility_requalification.json
+Output: studies/phase17/results/phase17_harden_visibility_requalification.json
 """
 from __future__ import annotations
 
@@ -29,8 +29,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ROOT = HERE.parent
-ARTIFACTS = ROOT / "artifacts"
+ROOT = HERE.parents[2]
+ARTIFACTS = ROOT / "studies" / "phase17" / "results"
 
 import phase17_r1m_core as M  # noqa: E402
 
@@ -90,7 +90,7 @@ def main() -> None:
     d2 = json.loads((ARTIFACTS / "phase17_r1od2_summary.json").read_text(encoding="utf-8"))
     canon = next(r for r in d2["primary_population"] if r["case"] == "CANON" and r["pair"] == "GC")
     out["production_ddor_authoritative"] = {
-        "source": "artifacts/phase17_r1od2_summary.json primary_population CANON/GC",
+        "source": "studies/phase17/results/phase17_r1od2_summary.json primary_population CANON/GC",
         "range_only_f_perp": canon["range_f"], "combined_f_perp": canon["comb_f"],
         "delta_f_perp": canon["delta"], "sigma_k_over_k": canon["sigma_frac"],
         "historical_intermediate_f_perp": pub["ddor_surrogate_5nrad"]["orthogonal_fraction"],

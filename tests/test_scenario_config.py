@@ -579,7 +579,7 @@ class R3ScenarioConfigurationContract(unittest.TestCase):
 
     def test_p15_no_cli_or_desktop_source_change_was_required(self):
         """Both entry points route through scenario_range_rate_physics_config."""
-        root = Path(scenario_config_module.__file__).resolve().parents[1]
+        root = Path(scenario_config_module.__file__).resolve().parents[2]
         for relative in (
             "examples/run_scenario_config.py",
             "desktop_app/controllers/analysis_controller.py",
@@ -658,8 +658,8 @@ class R3DefaultChangeDisclosure(unittest.TestCase):
         self.assertTrue(np.isfinite(exact_value))
 
     def test_p23_documentation_states_that_old_files_change_behaviour(self):
-        root = Path(scenario_config_module.__file__).resolve().parents[1]
-        doc = (root / "docs" / "two_way_counted_doppler.md").read_text(encoding="utf-8")
+        root = Path(scenario_config_module.__file__).resolve().parents[2]
+        doc = (root / "docs" / "theory" / "two_way_counted_doppler.md").read_text(encoding="utf-8")
         lowered = doc.lower()
         self.assertIn("station_state_method", lowered)
         self.assertIn("exact_event_epoch_sxform", lowered)

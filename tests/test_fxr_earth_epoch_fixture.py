@@ -216,7 +216,7 @@ def test_canonical_fixture_gives_the_fxr_range_baseline(w15, w15_pre_f1):
     """FXR / GEO-G0 consistent: 960 obs, f_perp 0.0915, sigma_K/K 25.4%.
 
     FXR's 0.091508 reproduces exactly under the pre-F1 variational model; the
-    authoritative post-F1 value (docs/phase17_authoritative_status.md) is 0.091502."""
+    authoritative post-F1 value (studies/phase17/reports/phase17_authoritative_status.md) is 0.091502."""
     arc = w15[M.EARTH_FIXTURE_CANONICAL]
     assert arc.n_obs == 960
     assert _schedule_sha(arc.obs) == (

@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 from lunar_od.constants import R_MOON_M  # noqa: E402
 import phase17_r1m_core as _M  # noqa: E402  (HARDEN legacy quarantine)
@@ -23,7 +23,7 @@ from phase17_r1o_core import (  # noqa: E402
     build_ddor_arc, build_landmark_arc, information_matrix, scale_matrix, spectrum,
 )
 
-ARTIFACTS = REPO / "artifacts"
+ARTIFACTS = REPO / "studies" / "phase17" / "results"
 
 
 def git(*a):
@@ -194,7 +194,7 @@ def main() -> None:
         window=dict(g1_continuity_orbits=2.0,
                    w15_common_campaign_orbits=15.0,
                    w15_cadence_s=90.0,
-                   window_selection_probe="artifacts/r1o_window_probe.csv"),
+                   window_selection_probe="studies/phase17/results/r1o_window_probe.csv"),
         ddor=dict(baseline_pair=["Goldstone DSN", "Canberra DSN"],
                   min_elevation_deg=10.0,
                   noise_sweep_nrad=[1, 2, 3, 5, 10, 20, 30, 50, 100, 300],
@@ -217,7 +217,7 @@ def main() -> None:
                    "covariance via R1COV's qualified QR square-root path, never "
                    "the floored normal-matrix inverse",
     )
-    (ARTIFACTS / "r1o_config.json").write_text(json.dumps(cfg, indent=2, default=float))
+    (ARTIFACTS.parent / "configs" / "r1o_config.json").write_text(json.dumps(cfg, indent=2, default=float))
     print("\n  wrote r1o_config.json")
 
     # ---------------- figures (s53) ---------------------------------------

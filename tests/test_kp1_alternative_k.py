@@ -15,14 +15,14 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
 import phase17_kp1_core as KP  # noqa: E402
 
 PINNED = "4f7f2632706f3c07e2444043d827c79ba2d5f9aa79ac36d4c6a6ab8ec906e495"
-SUMMARY_PATH = ROOT / "artifacts" / "phase17_kp1_summary.json"
+SUMMARY_PATH = ROOT / "studies" / "phase17" / "results" / "phase17_kp1_summary.json"
 
 
 # ----------------------------------------------------------------------

@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
-ARTIFACTS = ROOT / "artifacts"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
+ARTIFACTS = ROOT / "studies" / "phase17" / "results"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 

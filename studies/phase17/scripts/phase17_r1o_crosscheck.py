@@ -28,7 +28,7 @@ from phase17_r1o_core import build_ddor_arc, build_landmark_arc  # noqa: E402
 from phase17_r1o_core import K_TRUTH, scale_matrix, square_root_covariance  # noqa: E402
 from phase17_r1o_core import orthogonal_decomposition, whitened  # noqa: E402
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 W15_ORBITS = 15.0
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 

@@ -20,7 +20,6 @@ from time import perf_counter
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from lunar_od import (  # noqa: E402

@@ -12,7 +12,7 @@ dx/dK, i.e. the state-sensitivity basis K is compared against -- change.
 
 Cases (predeclared): CANON GC, O2_FULL_SUN_HIGH_BETA GC, and the primary-
 population case with the smallest dense-5-nrad delta (selected by rule from
-artifacts/phase17_r1od2_results.json).
+studies/phase17/results/phase17_r1od2_results.json).
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 SIGMA_OPS_S = 0.048e-9
 NMAX = 50
 
@@ -108,7 +108,7 @@ def run_case(spec) -> dict:
 
 
 def main() -> None:
-    grid = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text())
+    grid = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text())
     res = json.loads((ARTIFACTS / "phase17_r1od2_results.json").read_text())["geometries"]
     geos = {g["case_id"]: g for g in grid["geometries"]}
     prim = [(cid, p, r["pairs"][p]["dense_angular"]["5"]["delta_f_perp"])

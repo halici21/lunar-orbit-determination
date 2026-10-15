@@ -39,8 +39,8 @@ OMEGA_EM = 2.6617e-6                  # rad/s, sidereal month
 OMEGA_E = 7.292115e-5                 # rad/s
 H_GRID = 90.0                         # s, the Phase-17 grid
 TC = 60.0
-VALUE_GATE_MPS = 1e-7                 # artifacts/phase17_d23_acceptance.json
-QUALIFICATION = ROOT / "artifacts" / "phase17_d23_qualification.json"
+VALUE_GATE_MPS = 1e-7                 # studies/phase17/results/phase17_d23_acceptance.json
+QUALIFICATION = ROOT / "studies" / "phase17" / "results" / "phase17_d23_qualification.json"
 
 
 @dataclass(frozen=True)
@@ -197,6 +197,6 @@ def test_committed_population_qualification_is_reported_strictly():
     ulp_et, v_earth = 1.1920928955078125e-07, 1.1e3
     assert q["epochs"]["hermite_pos_err_max_m"] <= v_earth * ulp_et / 2.0
     # ... and the same frozen 1e-6 m criterion holds at exactly representable epochs
-    scan = json.loads((ROOT / "artifacts" / "phase17_d23_epoch_scan.json").read_text(encoding="utf-8"))
+    scan = json.loads((ROOT / "studies" / "phase17" / "results" / "phase17_d23_epoch_scan.json").read_text(encoding="utf-8"))
     assert scan["et_rounding_max_s"] < 1e-12 and scan["points"] > 1.9e5
     assert scan["hermite_vs_et_exact_max_m"] <= 1e-6

@@ -39,8 +39,8 @@ from phase17_r1m_multi_arc_study import (  # noqa: E402
     model_b_information,
 )
 
-REPO = Path(__file__).resolve().parents[1]   # HARDEN-D10: was a machine-specific literal
-ARTIFACTS = REPO / "artifacts"
+REPO = Path(__file__).resolve().parents[3]   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = REPO / "studies" / "phase17" / "results"
 SINGLE_CASES = (("G0", 1.3), ("G1", 2.0), ("G2", 3.0), ("G3", 5.0))
 
 
@@ -81,12 +81,12 @@ def main() -> None:
                       stations=list(ALL_STATIONS),
                       single_arc_cases={k: v for k, v in SINGLE_CASES}),
         frozen_production_files=[
-            "lunar_od/dynamics.py", "lunar_od/two_way_range.py",
-            "lunar_od/radiometrics.py",
-            "lunar_od/two_way_counted_doppler_reference.py",
-            "lunar_od/estimators.py", "lunar_od/filters.py"],
+            "src/lunar_od/dynamics.py", "src/lunar_od/two_way_range.py",
+            "src/lunar_od/radiometrics.py",
+            "src/lunar_od/two_way_counted_doppler_reference.py",
+            "src/lunar_od/estimators.py", "src/lunar_od/filters.py"],
     )
-    (ARTIFACTS / "r1m_config.json").write_text(json.dumps(cfg, indent=2,
+    (ARTIFACTS.parent / "configs" / "r1m_config.json").write_text(json.dumps(cfg, indent=2,
                                                           default=float))
     print("wrote r1m_config.json  (head %s, main %s)"
           % (cfg["git"]["head"][:12], cfg["git"]["main"][:12]))

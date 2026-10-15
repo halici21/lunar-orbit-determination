@@ -1,10 +1,10 @@
 """Phase 17-MM: gravity-field model-mismatch masquerade falsification (K-closeout report section 3.4).
 
-Design, thresholds and outcome rule are frozen in artifacts/phase17_mm_predeclaration.json.
+Design, thresholds and outcome rule are frozen in studies/phase17/configs/phase17_mm_predeclaration.json.
 
   --run [--workers N]   4 baseline re-evaluations (truth = model, stored KP2 T0 solutions) + 8 mismatch solves;
                         resume-safe: one JSON per job in artifacts/phase17_mm_jobs/
-  --analyse             apply the predeclared rule -> artifacts/phase17_mm_summary.json
+  --analyse             apply the predeclared rule -> studies/phase17/results/phase17_mm_summary.json
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ import phase17_kp2_core as K2  # noqa: E402
 
 ART = P.ARTIFACTS
 JOBS = ART / "phase17_mm_jobs"
-PRE = ART / "phase17_mm_predeclaration.json"
+PRE = ART.parent / "configs" / "phase17_mm_predeclaration.json"
 CELLS = (("CANON", 0, 0), ("O1_LOW_BETA_ECLIPSE_RICH", 12, 3), ("O2_FULL_SUN_HIGH_BETA", 0, 4),
          ("O5_FAVOURABLE_GEO_MAX_FPERP", 0, 8))
 ALPHAS = (1.0, 0.3)

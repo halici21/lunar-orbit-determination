@@ -1,6 +1,6 @@
 """Phase 17-HARDEN-BLS1: qualification of the repaired production BLS K_SRP path.
 
-Modes (each writes one section of artifacts/phase17_bls1_qualification.json):
+Modes (each writes one section of studies/phase17/results/phase17_bls1_qualification.json):
 
   --hf        the FROZEN KP2 production-BLS verification job (``job_bls``, unchanged:
               CANON k0 HF, T0, range only, scalar K, no prior, the declared a priori)

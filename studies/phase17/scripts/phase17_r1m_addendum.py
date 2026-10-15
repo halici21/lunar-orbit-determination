@@ -39,7 +39,7 @@ from phase17_r1m_multi_arc_study import (  # noqa: E402
     ALL_STATIONS, model_a_information, model_b_information,
 )
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 #: Model-A fairness control: same 2-arc / 3-arc pattern, but arcs long enough
 #: that a single one of them would already be R1G's best stable case.
 #: Starts are spaced so that 2.0-orbit windows leave a real 0.5-orbit gap and

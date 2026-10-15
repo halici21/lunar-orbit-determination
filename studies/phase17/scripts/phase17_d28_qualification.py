@@ -1,6 +1,6 @@
 """Phase 17-HARDEN-D28: qualification of the no-explicit-prior posterior contract.
 
-Gates are frozen in artifacts/phase17_d28_predeclaration.json.
+Gates are frozen in studies/phase17/configs/phase17_d28_predeclaration.json.
 
 Modes:
   --scenarios --code old|new   run the scenario hand-off matrix of tests/test_scenarios.py
@@ -8,7 +8,7 @@ Modes:
                                cold / hot / formal / sqrt_formal, two arcs, seeded noise) with the
                                pre-D28 estimators (3959f7a, exec'd into lunar_od.estimators BEFORE
                                lunar_od.scenarios binds them) or the current module; writes one JSON each
-  --compare                    per-arc differences old vs new -> artifacts/phase17_d28_qualification.json
+  --compare                    per-arc differences old vs new -> studies/phase17/results/phase17_d28_qualification.json
 
 In a formal / sqrt_formal chain arc 1 runs with no explicit prior and its posterior becomes arc 2's
 EXPLICIT prior, so D28 can move arc 2's estimate. That is a downstream consequence of the corrected
@@ -25,10 +25,10 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 warnings.simplefilter("ignore")
-ART = ROOT / "artifacts"
+ART = ROOT / "studies" / "phase17" / "results"
 OUT = ART / "phase17_d28_qualification.json"
 PRE_D28 = "3959f7a"
 
@@ -126,9 +126,9 @@ def compare_invariance() -> dict:
 
 def kp2_materiality() -> dict:
     """KP2 CANON k0 HF K path at the BLS1 production solution: the repaired production design saved by D25
-    (artifacts/phase17_d25_posthoc_fd_columns.npz), posterior with the historical default diagonal vs data-only,
+    (studies/phase17/results/phase17_d25_posthoc_fd_columns.npz), posterior with the historical default diagonal vs data-only,
     and the frozen KP2 sigma criterion against the KP2 solver's sigma (data-only by construction)."""
-    sys.path.insert(0, str(ROOT / "examples"))
+    sys.path.insert(0, str(ROOT / "studies" / "phase17" / "scripts"))
     import lunar_od.estimators as E
     import phase17_kp2_core as K2
     d = np.load(ART / "phase17_d25_posthoc_fd_columns.npz")["design"]

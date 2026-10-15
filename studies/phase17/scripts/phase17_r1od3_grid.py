@@ -11,8 +11,8 @@ import hashlib
 import json
 from pathlib import Path
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"
-PATH = ARTIFACTS / "phase17_r1od3_predeclared_grid.json"
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"
+PATH = ARTIFACTS.parent / "configs" / "phase17_r1od3_predeclared_grid.json"
 
 #: D2's synodic month (E1-E3 offsets = k/4 of it): 29.530589 d.
 SYNODIC_S = 2551442.8896
@@ -232,7 +232,7 @@ GRID = {
     },
     "continuity_checks": {
         "canonical": "k = 0 CANON: range f_perp 0.091502 and DENSE_ANGULAR 5 nrad GC combined 0.172343 must reproduce "
-                     "docs/phase17_authoritative_status.md (post-F1) to 1e-6",
+                     "studies/phase17/reports/phase17_authoritative_status.md (post-F1) to 1e-6",
     },
     "real_source_overlay": {
         "catalog": "DSN 810-005 Module 107 Rev. F Table 3 (ICRF3-SX), coordinates only",

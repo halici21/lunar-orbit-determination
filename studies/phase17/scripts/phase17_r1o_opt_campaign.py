@@ -27,7 +27,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 
 from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
 from phase17_r1o_core import combined_metrics  # noqa: E402
@@ -315,7 +315,7 @@ def main() -> None:
 
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     (ARTIFACTS / "r1o_opt_campaign.json").write_text(json.dumps(RESULTS, indent=2, default=float))
-    print("\n  wrote artifacts/r1o_opt_campaign.json")
+    print("\n  wrote studies/phase17/results/r1o_opt_campaign.json")
 
 
 if __name__ == "__main__":

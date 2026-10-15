@@ -34,7 +34,7 @@ longer reproduces the f_perp ~ 0.8766 this script reported and its
 
 To reproduce this script's published output, check out commit 887efa6 or
 earlier.  For the authoritative historical-vs-corrected comparison, use
-`examples/phase17_r1o_r_requalification.py`, which reproduces the defective
+`studies/phase17/scripts/phase17_r1o_r_requalification.py`, which reproduces the defective
 path explicitly (by feeding the repaired helper vec_F(Phi^T)) instead of
 depending on the helper still being broken, and which runs on R1O's own
 three-station published configuration rather than this script's single-station
@@ -50,7 +50,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 
 from phase17_r1m_core import build_range_arc, campaign_epoch  # noqa: E402
 from phase17_r1o_core import (  # noqa: E402
@@ -231,7 +231,7 @@ def main() -> None:
         "k_column_unaffected_by_transposition": k_col_identical,
     }
     (ARTIFACTS / "r1o_opt_bridge.json").write_text(json.dumps(out, indent=2))
-    print("\n  wrote artifacts/r1o_opt_bridge.json")
+    print("\n  wrote studies/phase17/results/r1o_opt_bridge.json")
 
 
 if __name__ == "__main__":

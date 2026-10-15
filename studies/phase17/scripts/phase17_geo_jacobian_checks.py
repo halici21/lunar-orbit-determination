@@ -27,7 +27,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 STEP_FACTORS = (4.0, 2.0, 1.0, 0.5, 0.25)
 BASE_POS_M, BASE_VEL_MPS = 1.0, 1e-3
 FLOOR_MULTIPLE = 10.0
@@ -87,7 +87,7 @@ def run(case: dict) -> dict:
 
 
 def main() -> None:
-    grid = json.loads((ARTIFACTS / "phase17_geo_predeclared_grid.json").read_text())
+    grid = json.loads((ARTIFACTS.parent / "configs" / "phase17_geo_predeclared_grid.json").read_text())
     ids = grid["rules"]["jacobian_fd_cases"]
     cases = [c for c in grid["cases"] if c["id"] in ids]
     with ProcessPoolExecutor(max_workers=len(cases), initializer=_init) as ex:

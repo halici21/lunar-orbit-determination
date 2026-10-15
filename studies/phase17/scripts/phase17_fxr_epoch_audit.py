@@ -15,7 +15,7 @@ Configuration = the published R1O/R1O-D/R1O-R/GEO-G0 range baseline:
 15 orbits, Goldstone + Madrid + Canberra, 90 s cadence.
 
 Run:  PYTHONPATH="<worktree>;<od_covariance_campaign>/06_scripts"
-      python examples/phase17_fxr_epoch_audit.py
+      python studies/phase17/scripts/phase17_fxr_epoch_audit.py
 """
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ROOT = HERE.parent
-ARTIFACTS = ROOT / "artifacts"
+ROOT = HERE.parents[2]
+ARTIFACTS = ROOT / "studies" / "phase17" / "results"
 GEO_CACHE = ROOT / "results" / "phase17_geo_cache"
 from lunar_od.project_paths import campaign_root, ephemeris_mat  # noqa: E402  (HARDEN-D10)
 
@@ -367,7 +367,7 @@ def main() -> None:
     )
     (ARTIFACTS / "phase17_fxr_epoch_audit.json").write_text(
         json.dumps(summary, indent=1, default=float))
-    print("\n  wrote artifacts/phase17_fxr_epoch_audit.json")
+    print("\n  wrote studies/phase17/results/phase17_fxr_epoch_audit.json")
 
 
 if __name__ == "__main__":

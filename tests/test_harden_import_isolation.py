@@ -38,7 +38,7 @@ def _sibling_entries() -> list[str]:
                 and not Path(p).resolve().is_relative_to(ROOT)]
     siblings += [p for p in sys.path
                  if p and Path(p).resolve().parent == ROOT.parent
-                 and Path(p).resolve() != ROOT and (Path(p) / "lunar_od").exists()]
+                 and Path(p).resolve() != ROOT and (Path(p) / "src" / "lunar_od").exists()]
     # anything INSIDE another python_port* checkout (e.g. <sibling>/examples)
     siblings += [p for p in sys.path
                  if p and not Path(p).resolve().is_relative_to(ROOT)

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lunar-orbit-determination"
+version = "0.1.0a1"
+description = "Lunar orbit determination research framework"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Cemil Eray Halıcı"}]
+dynamic = ["dependencies"]
+
+[project.urls]
+Repository = "https://github.com/halici21/lunar-orbit-determination"
+Issues = "https://github.com/halici21/lunar-orbit-determination/issues"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["lunar_od*"]
+namespaces = false

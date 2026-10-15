@@ -288,4 +288,4 @@ def test_f1_refreeze_is_additive_and_history_is_preserved():
     assert r2.CLOSURE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("d0f7ab02")
     new = r2.PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
-    assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == new
+    assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new

@@ -33,8 +33,8 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-ARTIFACTS = HERE.parent / "artifacts"
-PRE_PATH = ARTIFACTS / "phase17_kp1_predeclaration.json"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
+PRE_PATH = ARTIFACTS.parent / "configs" / "phase17_kp1_predeclaration.json"
 
 K_TRUTH = 0.01                       # m^2/kg, SYNTHETIC_CAMPAIGN_TRUTH
 STATE_SCALE = np.array([1e6, 1e6, 1e6, 1e3, 1e3, 1e3])

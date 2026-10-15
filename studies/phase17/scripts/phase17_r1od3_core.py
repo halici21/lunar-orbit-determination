@@ -15,7 +15,7 @@ What is new here is BOOKKEEPING, and it is kept auditable:
                 exactly that session's rows;
   * resources : Goldstone complex-level no-overlap between GC and GM sessions.
 
-The predeclared grid (artifacts/phase17_r1od3_predeclared_grid.json) is
+The predeclared grid (studies/phase17/configs/phase17_r1od3_predeclared_grid.json) is
 verified against its pinned canonical hash before anything runs.
 """
 from __future__ import annotations
@@ -31,8 +31,8 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
-GRID_PATH = ARTIFACTS / "phase17_r1od3_predeclared_grid.json"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
+GRID_PATH = ARTIFACTS.parent / "configs" / "phase17_r1od3_predeclared_grid.json"
 GRID_SHA256 = "a651c4ded63d0fac7a375ee7b6c2bc20c84eabefbb6958e9846ab323c8720003"
 
 import phase17_r1od2_core as D2  # noqa: E402

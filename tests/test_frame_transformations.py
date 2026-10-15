@@ -1,6 +1,6 @@
 """SPICE-free frame-transformation contract tests (frame audit, 2026-07).
 
-Locks the conventions documented in ``docs/frame_transformations.md``:
+Locks the conventions documented in ``docs/theory/frame_transformations.md``:
 SEZ basis properties, cardinal azimuth/elevation directions, rotation
 invariants, zenith singularity policies, degree/radian anchors, the
 ``J_SEZ = C_SEZ<-F C_F<-I J_I`` chain, and mutation detection (transpose,

@@ -34,8 +34,8 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-ARTIFACTS = HERE.parent / "artifacts"
-PRE_PATH = ARTIFACTS / "phase17_r1o_cd1_predeclaration.json"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
+PRE_PATH = ARTIFACTS.parent / "configs" / "phase17_r1o_cd1_predeclaration.json"
 
 GRID_CADENCE_S = 90.0
 TC_PRIMARY_S = 60.0

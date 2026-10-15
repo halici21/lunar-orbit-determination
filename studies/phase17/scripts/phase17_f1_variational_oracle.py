@@ -1,6 +1,6 @@
 """PHASE 17-F1 - STM and K-sensitivity qualification against independent re-propagation.
 
-Setup traceable to Phase 17-HARDEN D05 (examples/phase17_harden_range_jacobian.py):
+Setup traceable to Phase 17-HARDEN D05 (studies/phase17/scripts/phase17_harden_range_jacobian.py):
 canonical campaign x0 and epoch, GEO/D2 canonical force model (Moon point mass +
 lunar J2 + cannonball SRP, conical penumbra), 90 s grid, 4 orbits.
 
@@ -32,7 +32,7 @@ FIXED-STEP ORACLE (added after the adaptive K oracle proved noise-limited):
   K and x0 and differencing it carries no step-pattern noise.  Its own
   discretisation error is shown to converge (dt = 2 s and 1 s).
 
-Outputs: artifacts/phase17_f1_stm_oracle.json, artifacts/phase17_f1_k_sensitivity_oracle.json
+Outputs: studies/phase17/results/phase17_f1_stm_oracle.json, studies/phase17/results/phase17_f1_k_sensitivity_oracle.json
 """
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 RTOLS = (1e-13, 1e-14, 3e-15)
 STEPS = {"pos": (1.0, 10.0, 100.0), "vel": (1e-3, 1e-2, 1e-1)}
 #: 1e-4 .. 3e-3 were the first sweep; it was roundoff/integration-noise limited
@@ -72,7 +72,7 @@ def _case(name):
     et0, t_orbit = M.campaign_epoch()
     x0 = M.campaign_initial_state()
     if name == "FULL_SUN_4ORB":
-        g = next(g for g in json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json")
+        g = next(g for g in json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json")
                                        .read_text(encoding="utf-8"))["geometries"]
                  if g["case_id"] == "O2_FULL_SUN_HIGH_BETA")
         et0, x0 = float(g["et0"]), np.asarray(g["x0"], float)

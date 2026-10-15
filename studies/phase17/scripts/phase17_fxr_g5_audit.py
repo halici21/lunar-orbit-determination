@@ -24,7 +24,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 
 
 def main() -> None:
@@ -83,7 +83,7 @@ def main() -> None:
               % (t["id"], t["k"], t["f_perp"], t["k_column_norm"], t["sigma_k_abs"],
                  t["alt_mean_km"]))
     (ARTIFACTS / "phase17_fxr_g5_audit.json").write_text(json.dumps(out, indent=1, default=float))
-    print("  wrote artifacts/phase17_fxr_g5_audit.json")
+    print("  wrote studies/phase17/results/phase17_fxr_g5_audit.json")
 
 
 if __name__ == "__main__":

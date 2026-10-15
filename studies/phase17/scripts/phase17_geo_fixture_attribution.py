@@ -25,7 +25,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 
 
 def _init():
@@ -52,7 +52,7 @@ def run(mode: str) -> dict:
         arc = G.build_geo_range_arc(x0, et0, D, label=mode, earth_mode=mode)
         h_x0, h_k, w, obs = arc.h_x0, arc.h_k, arc.w, arc.obs
     m = G.information_metrics(h_x0, h_k, w)
-    np.savez_compressed(HERE.parent / "results" / "phase17_geo_cache" / f"FIXTURE_{mode}.npz",
+    np.savez_compressed(HERE.parents[2] / "results" / "phase17_geo_cache" / f"FIXTURE_{mode}.npz",
                         h_x0=h_x0, h_k=h_k, w=w, obs=obs)
     return dict(mode=mode, n_obs=m["n_obs"], f_perp=m["f_perp"], theta_k_deg=m["theta_k_deg"],
                 conditional_k_information=m["conditional_k_information"],
@@ -60,11 +60,11 @@ def run(mode: str) -> dict:
 
 
 def main() -> None:
-    (HERE.parent / "results" / "phase17_geo_cache").mkdir(parents=True, exist_ok=True)
+    (HERE.parents[2] / "results" / "phase17_geo_cache").mkdir(parents=True, exist_ok=True)
     modes = ["PUBLISHED", "CAMPAIGN_TABLE", "OFFSET_ONLY", "CLAMP_ONLY", "CONSISTENT"]
     with ProcessPoolExecutor(max_workers=5, initializer=_init) as ex:
         rows = list(ex.map(run, modes))
-    cache = HERE.parent / "results" / "phase17_geo_cache"
+    cache = HERE.parents[2] / "results" / "phase17_geo_cache"
     a = np.load(cache / "FIXTURE_PUBLISHED.npz")
     b = np.load(cache / "FIXTURE_CAMPAIGN_TABLE.npz")
     same_shape = a["h_x0"].shape == b["h_x0"].shape

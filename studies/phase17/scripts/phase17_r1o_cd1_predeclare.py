@@ -20,7 +20,7 @@ ORBITS = ("CANON", "O1_LOW_BETA_ECLIPSE_RICH", "O2_FULL_SUN_HIGH_BETA", "O3_HIGH
 
 
 def _x0_hashes() -> dict:
-    g = json.loads((CD.ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    g = json.loads((CD.ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     return {x["case_id"]: dict(source=x["source"], x0_sha256=hashlib.sha256(json.dumps(x["x0"]).encode()).hexdigest())
             for x in g["geometries"] if x["case_id"] in ORBITS}
 
@@ -28,13 +28,13 @@ def _x0_hashes() -> dict:
 def main() -> None:
     if OUT.exists():
         raise SystemExit("predeclaration exists; refusing to overwrite %s" % OUT)
-    d3grid = json.loads((CD.ARTIFACTS / "phase17_r1od3_predeclared_grid.json").read_text(encoding="utf-8"))
+    d3grid = json.loads((CD.ARTIFACTS.parent / "configs" / "phase17_r1od3_predeclared_grid.json").read_text(encoding="utf-8"))
     pre = {
         "phase": "17-R1O-CD1 production counted-Doppler K_SRP complementarity characterization",
         "written_before_any_cd1_k_metric": True,
         "entering_head": "cfa1ce7293c60024c9ee04dfeca801ef7ba72c5d",
         "truth_level": "SYNTHETIC_CAMPAIGN_TRUTH (K_truth = 0.01 m^2/kg, constant scalar K; no reparameterization)",
-        "literature": {"contract": "docs/phase17_r1o_cd1_literature_contract.md",
+        "literature": {"contract": "studies/phase17/reports/phase17_r1o_cd1_literature_contract.md",
                        "dsn_module": "810-005 Module 202 Rev. E (2022-07-19), sha256 29a66259...4708",
                        "moyer": "DESCANSO Monograph 2, s10.2.3.1.2 / s13.3"},
         "observable": {
@@ -50,7 +50,7 @@ def main() -> None:
                        "k": list(range(24)), "spacing_deg": 15.0,
                        "et0": "canonical_et0 + k * synodic_month_s / 24 (phase17_r1od3_core.epoch_et)",
                        "canonical_epoch_included": "k = 0 exactly"},
-        "orbits": {"set": _x0_hashes(), "source": "artifacts/phase17_r1od2_predeclared_grid.json (D4 set, unchanged)"},
+        "orbits": {"set": _x0_hashes(), "source": "studies/phase17/configs/phase17_r1od2_predeclared_grid.json (D4 set, unchanged)"},
         "arc": {"duration": "15 canonical orbits", "grid_s": 90.0, "k_srp": 0.01, "shadow": "CONICAL_PENUMBRA"},
         "dynamics": {
             "PRIMARY": "HIGH_FIDELITY: phase17_r1od2_fidelity.propagate_fidelity (GL1800F 50x50 MOON_PA_DE440, "
@@ -62,8 +62,8 @@ def main() -> None:
         "range_baseline": {"definition": "phase17_r1od2_core.build_range_block on the SAME propagation (orbit, "
                                          "epoch, dynamics, visibility), production two-way range, DSN3, "
                                          "sigma 5 m (station.sigma_range_m), no range bias",
-                           "anchors": ["CANON SIMPLIFIED range f_perp, all 24 k, vs artifacts/phase17_r1od3_primary_results.csv (1e-12)",
-                                       "all orbits HF and SIMPLIFIED range f_perp at k = 4..11 vs artifacts/phase17_r1od4_raw_results.json (1e-12)"]},
+                           "anchors": ["CANON SIMPLIFIED range f_perp, all 24 k, vs studies/phase17/results/phase17_r1od3_primary_results.csv (1e-12)",
+                                       "all orbits HF and SIMPLIFIED range f_perp at k = 4..11 vs studies/phase17/results/phase17_r1od4_raw_results.json (1e-12)"]},
         "doppler_schedule": {
             "PRIMARY": "ALL_VISIBLE: one row per (90 s grid node, DSN3 station visible there) - the production "
                        "candidate rule - kept only if every grid node from floor(t_mid - Tc/2) to ceil(t_mid + Tc/2) "

@@ -22,8 +22,8 @@ modified.
    Gram matrix G of the whitened [state | nuisance | K] design, by integer
    Bareiss elimination (float64 inputs are dyadic, so there is zero arithmetic error).
 
-    python examples/phase17_r1o_cd1_closure.py              # both, full population
-    python examples/phase17_r1o_cd1_closure.py --analyse-only
+    python studies/phase17/scripts/phase17_r1o_cd1_closure.py              # both, full population
+    python studies/phase17/scripts/phase17_r1o_cd1_closure.py --analyse-only
 """
 from __future__ import annotations
 
@@ -309,7 +309,7 @@ def main() -> None:
         cells = json.loads(RAW_PATH.read_text(encoding="utf-8"))
     else:
         import hashlib
-        g = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+        g = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
         x0s = {x["case_id"]: x["x0"] for x in g["geometries"] if x["case_id"] in K.ORBITS}
         for o, x0 in x0s.items():
             assert hashlib.sha256(json.dumps(x0).encode()).hexdigest() == pre["orbits"]["set"][o]["x0_sha256"], o

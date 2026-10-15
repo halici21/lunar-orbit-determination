@@ -6,7 +6,7 @@ Stage B  6 representative orbits x epochs {0, 6, 12, 18} (+ window centre by rul
          primary patterns, C0 / C1 nominal.
 Stage C  4 rule-selected high-fidelity cases.
 
-Every rule comes from artifacts/phase17_r1od3_predeclared_grid.json (hash-checked).
+Every rule comes from studies/phase17/configs/phase17_r1od3_predeclared_grid.json (hash-checked).
 ``--catalog PATH`` enables the DSN-107F coordinate overlay (else UNRESOLVED).
 """
 from __future__ import annotations
@@ -226,7 +226,7 @@ def main() -> None:
     t_start = time.time()
     import phase17_r1m_core as M
     canon_x0 = M.campaign_initial_state().tolist()
-    d2grid = json.loads((ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    d2grid = json.loads((ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     orbit_x0 = {"CANON": canon_x0}
     for g in d2grid["geometries"]:
         if g["case_id"] in grid["stage_B_orbit_robustness"]["orbits"]:

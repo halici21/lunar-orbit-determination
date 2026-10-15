@@ -49,7 +49,7 @@ from phase17_r1o_core import (  # noqa: E402
     K_TRUTH, assert_no_direct_k_dependence, build_landmark_arc, combined_metrics,
 )
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 W15_ORBITS = 15.0
 ALL_STATIONS = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 #: microradians, 1-sigma per tangent-plane angle -- see module docstring

@@ -30,8 +30,8 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-ARTIFACTS = HERE.parent / "artifacts"
-PRE_PATH = ARTIFACTS / "phase17_kp2_predeclaration.json"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
+PRE_PATH = ARTIFACTS.parent / "configs" / "phase17_kp2_predeclaration.json"
 
 K0 = 0.01                                     # m^2/kg, SYNTHETIC_CAMPAIGN_TRUTH common level
 TRUTHS = {"T0_CONSTANT": (0.0, 0.0, 0.0),     # fractional segment deviations, zero mean

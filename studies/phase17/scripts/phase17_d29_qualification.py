@@ -1,11 +1,11 @@
 """Phase 17-HARDEN-D29: qualification of the SRIF K-path prior contract.
 
-Gates are frozen in artifacts/phase17_d29_predeclaration.json.
+Gates are frozen in studies/phase17/configs/phase17_d29_predeclaration.json.
 
   --run --code old|new   SRIF / BLS cases on the 3.3 h single-station fixture (SRP-only dynamics, seeded 5 m
                          noise) with the pre-D29 estimators (b5d59b8, exec'd and rebound in every loaded lunar_od
                          module) or the current module -> artifacts/phase17_d29_run_{old,new}.json
-  --compare              gates G1-G6 + materiality -> artifacts/phase17_d29_qualification.json
+  --compare              gates G1-G6 + materiality -> studies/phase17/results/phase17_d29_qualification.json
 """
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 warnings.simplefilter("ignore")
-ART = ROOT / "artifacts"
+ART = ROOT / "studies" / "phase17" / "results"
 OUT = ART / "phase17_d29_qualification.json"
 PRE_D29 = "b5d59b8"
 K0, SIG_K = 0.01, 0.005

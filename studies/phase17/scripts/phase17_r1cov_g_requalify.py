@@ -23,13 +23,13 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent
+REPO = HERE.parents[2]
 sys.path.insert(0, str(HERE))
 from phase17_r1cov_core import (  # noqa: E402
     K_INDEX, exact_covariance, relative_error, scale_matrix,
 )
 
-ARTIFACTS = REPO / "artifacts"
+ARTIFACTS = REPO / "studies" / "phase17" / "results"
 # HARDEN-D10: was one session's scratchpad literal; PHASE17_SCRATCH overrides.
 SCRATCH = Path(__import__("os").environ.get(
     "PHASE17_SCRATCH", Path(__import__("tempfile").gettempdir()) / "phase17_r1cov_g"))
@@ -68,7 +68,7 @@ def load_pre_repair_estimators():
     spec = importlib.util.spec_from_loader(name, loader=None)
     mod = importlib.util.module_from_spec(spec)
     mod.__package__ = "lunar_od"
-    mod.__file__ = str(REPO / "lunar_od" / "estimators.py") + " @" + BASELINE_REF
+    mod.__file__ = str(REPO / "src" / "lunar_od" / "estimators.py") + " @" + BASELINE_REF
     sys.modules[name] = mod
     exec(compile(src, mod.__file__, "exec"), mod.__dict__)
     return mod

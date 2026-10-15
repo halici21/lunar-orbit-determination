@@ -14,8 +14,8 @@ import csv
 import re
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]   # HARDEN-D10: was a machine-specific literal
-ARTIFACTS = REPO / "artifacts"
+REPO = Path(__file__).resolve().parents[3]   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = REPO / "studies" / "phase17" / "results"
 HELPERS = ("_safe_covariance_from_information", "_sqrt_information_from_information")
 
 #: Which enclosing functions are the K_SRP solve-for paths.  Only these may be
@@ -41,7 +41,7 @@ def classify(path: Path, func: str, line_text: str, in_k_branch: bool) -> str:
     p = path.as_posix()
     if "/tests/" in p:
         return "TEST_UTILITY"
-    if "/examples/" in p:
+    if "/examples/" in p or "/studies/" in p:
         return "ANALYSIS_ONLY_CALLER"
     if "scenarios.py" in p:
         return "OTHER_ESTIMATOR_PATH_duplicate_helper_in_scenarios"
@@ -52,8 +52,9 @@ def classify(path: Path, func: str, line_text: str, in_k_branch: bool) -> str:
 
 def main() -> None:
     rows = []
-    for path in sorted(REPO.glob("lunar_od/*.py")) + \
-            sorted(REPO.glob("tests/*.py")) + sorted(REPO.glob("examples/*.py")):
+    for path in sorted(REPO.glob("src/lunar_od/*.py")) + \
+            sorted(REPO.glob("tests/*.py")) + sorted(REPO.glob("examples/*.py")) + \
+            sorted(REPO.glob("studies/phase17/scripts/*.py")):
         try:
             src = path.read_text(encoding="utf-8", errors="replace")
         except OSError:

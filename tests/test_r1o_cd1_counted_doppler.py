@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "studies" / "phase17" / "scripts"
 if str(EXAMPLES) not in sys.path:
     sys.path.insert(0, str(EXAMPLES))
 
@@ -52,7 +52,7 @@ def test_predeclaration_hash_is_pinned_and_tampering_is_refused(tmp_path):
 def test_matrix_is_five_frozen_orbits_by_24_d3_epochs():
     assert set(C.ORBITS) == set(PRE["orbits"]["set"])
     assert len(C.ORBITS) == 5 and C.EPOCHS == tuple(range(24)) == tuple(PRE["epoch_grid"]["k"])
-    d2 = json.loads((CD.ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
+    d2 = json.loads((CD.ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8"))
     got = {g["case_id"]: hashlib.sha256(json.dumps(g["x0"]).encode()).hexdigest() for g in d2["geometries"]
            if g["case_id"] in C.ORBITS}
     assert got == {k: v["x0_sha256"] for k, v in PRE["orbits"]["set"].items()}

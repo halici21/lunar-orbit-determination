@@ -1,11 +1,11 @@
 """Phase 17-HARDEN-D25: qualification of the posterior-covariance dynamics contract.
 
-Gates are frozen in artifacts/phase17_d25_predeclaration.json (written before any number here).
+Gates are frozen in studies/phase17/configs/phase17_d25_predeclaration.json (written before any number here).
 
-Modes (each writes one section of artifacts/phase17_d25_qualification.json):
+Modes (each writes one section of studies/phase17/results/phase17_d25_qualification.json):
 
   --kp2    KP2 CANON k0 high-fidelity K path at the BLS1 production solution (taken from
-           artifacts/phase17_bls1_qualification.json, i.e. reached from the declared a priori):
+           studies/phase17/results/phase17_bls1_qualification.json, i.e. reached from the declared a priori):
            repaired vs pre-D25 production posterior, O1 independent assembly, O2 central finite
            differences of the solve's own nonlinear model, and the frozen KP2 sigma criterion
            against a fresh KP2 solver run on the same data.
@@ -219,7 +219,7 @@ def run_kp2() -> dict:
         G4_positive_control=abs(o2_pre["sigma_rel"][6]) > 1e-2,
         G5_frozen_sigma=bool(np.max(np.abs(ratio - 1)) <= 0.01))
     return dict(
-        point="BLS1 production solution from the declared a priori (artifacts/phase17_bls1_qualification.json)",
+        point="BLS1 production solution from the declared a priori (studies/phase17/results/phase17_bls1_qualification.json)",
         sigma_repaired=np.sqrt(np.diag(rep)).tolist(), sigma_pre_d25=np.sqrt(np.diag(pre)).tolist(),
         o1_vs_repaired=o1, o2_vs_repaired=o2_rep, o2_vs_pre_d25=o2_pre,
         fd=dict(tol=FD_TOL, steps=FD_STEPS.tolist()),
@@ -325,11 +325,11 @@ def run_invariance() -> dict:
     import subprocess
 
     from lunar_od.srp import SRPOptions
-    sys.path.insert(0, str(HERE.parent))
+    sys.path.insert(0, str(HERE.parents[2]))
     from tests import test_harden_d25_posterior_dynamics_contract as T
     T.setup_module(None)
     src = subprocess.run(["git", "show", "742576f:lunar_od/estimators.py"], capture_output=True, text=True,
-                         cwd=HERE.parent, check=True).stdout
+                         cwd=HERE.parents[2], check=True).stdout
     old = dict(E.__dict__)
     exec(compile(src, E.__file__, "exec"), old)                 # production module untouched
     fx = T._build_fixture()

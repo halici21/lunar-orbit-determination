@@ -41,7 +41,7 @@ from phase17_r1m_core import (  # noqa: E402
     whitened,
 )
 
-ARTIFACTS = Path(__file__).resolve().parents[1] / "artifacts"   # HARDEN-D10: was a machine-specific literal
+ARTIFACTS = Path(__file__).resolve().parents[3] / "studies" / "phase17" / "results"   # HARDEN-D10: was a machine-specific literal
 CASES = (("G0", 1.3), ("G1", 2.0))
 #: physically equivalent K scales for the invariance audit (s20)
 K_SCALES = (5e-3, 1e-2, 2e-2)

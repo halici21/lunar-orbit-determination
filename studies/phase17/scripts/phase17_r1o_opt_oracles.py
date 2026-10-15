@@ -1,7 +1,7 @@
 """PHASE 17-R1O-OPT - camera/attitude/visibility/light-time oracles.
 
 ANALYSIS SPACE ONLY.  Qualifies the NEW production module
-`lunar_od/lunar_landmark_optical.py` against hand-verifiable synthetic
+`src/lunar_od/lunar_landmark_optical.py` against hand-verifiable synthetic
 geometry (s13/s16 camera projection oracle, s16 attitude frame gate) and
 against the real campaign trajectory (s73 analytic-Jacobian FD check, s24-25
 light-time significance test).

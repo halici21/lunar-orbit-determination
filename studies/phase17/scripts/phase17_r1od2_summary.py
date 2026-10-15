@@ -1,7 +1,7 @@
 """PHASE 17-R1O-D2 s36-s41 - robustness summary and predeclared outcome rules.
 
 Reads only the D2 artifacts; applies the grid's predeclared classification and
-outcome rules mechanically.  Writes artifacts/phase17_r1od2_summary.json.
+outcome rules mechanically.  Writes studies/phase17/results/phase17_r1od2_summary.json.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 
-ART = Path(__file__).resolve().parent.parent / "artifacts"
+ART = Path(__file__).resolve().parent.parent / "studies" / "phase17" / "results"
 CLASSES = ("STRONG_DIRECTION_GAIN", "MODEST_DIRECTION_GAIN", "MAGNITUDE_ONLY", "DIRECTION_LOSS")
 
 

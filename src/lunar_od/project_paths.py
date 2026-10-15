@@ -28,12 +28,12 @@ GRAVITY_ROOT_ENV = "LUNAR_OD_GRAVITY_ROOT"
 
 def repo_root() -> Path:
     """The repository/worktree containing this package."""
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parents[2]
 
 
 def artifacts_dir() -> Path:
     """The repository's committed artifacts directory (always inside the repo)."""
-    return repo_root() / "artifacts"
+    return repo_root() / "studies" / "phase17" / "results"
 
 
 def _env_path(name: str, default: Path) -> Path:
@@ -99,6 +99,14 @@ def import_campaign_module():
     root = repo_root()
     if not _inside(lunar_od.__file__, root):
         raise CrossCheckoutImportError("lunar_od bound to %s, not %s" % (lunar_od.__file__, root))
+    # The external campaign is a historical script tree, not an installed
+    # package. Keep its two import roots confined to this guarded loader so
+    # standalone study drivers work with the same overrides as pytest.
+    scripts = campaign_root() / "06_scripts"
+    if (scripts / (CAMPAIGN_MODULE + ".py")).is_file():
+        for path in (scripts, root / "examples"):
+            if str(path) not in sys.path:
+                sys.path.append(str(path))
     module = importlib.import_module(CAMPAIGN_MODULE)
     sys.path[:] = [p for p in sys.path if not is_foreign_checkout_path(p)]
     for name in ("propagate_state", "generate_two_way_range_measurements"):

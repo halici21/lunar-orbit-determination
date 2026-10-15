@@ -33,12 +33,12 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-ARTIFACTS = HERE.parent / "artifacts"
+ARTIFACTS = HERE.parents[2] / "studies" / "phase17" / "results"
 GRID_SHA256_LF = "2a99c50e95c49bc4c1837787c328bcc2537fa653a2e933bf5a9ea39221c07c11"
 
 
 def _grid() -> dict:
-    text = (ARTIFACTS / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8")
+    text = (ARTIFACTS.parent / "configs" / "phase17_r1od2_predeclared_grid.json").read_text(encoding="utf-8")
     assert hashlib.sha256(text.replace("\r\n", "\n").encode()).hexdigest() == GRID_SHA256_LF
     return json.loads(text)
 
