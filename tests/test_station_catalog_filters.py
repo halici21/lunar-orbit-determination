@@ -4,7 +4,7 @@ import csv
 from unittest.mock import patch
 
 import pytest
-from PyQt5.QtCore import Qt, QSettings
+from PyQt5.QtCore import Qt, QSettings, QPoint, QRect
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
@@ -12,14 +12,19 @@ from controllers import stations_controller as stations
 
 
 @pytest.fixture
-def page(tmp_path):
+def qt_app():
     app = QApplication.instance() or QApplication([])
+    yield app
+
+
+@pytest.fixture
+def page(tmp_path, qt_app):
     settings = QSettings(str(tmp_path / "stations.ini"), QSettings.IniFormat)
     with patch.object(stations, "_SETTINGS", settings), patch.object(stations.StationsController, "_build_map_widget"):
         widget = stations.StationsController()
-        widget.show(); app.processEvents()
+        widget.show(); qt_app.processEvents()
         yield widget
-        widget.close(); app.processEvents()
+        widget.close(); qt_app.processEvents()
 
 
 def test_empty_station_search_never_exports_hidden_catalogue(page):
@@ -75,3 +80,63 @@ def test_empty_catalogue_explains_source_or_addition_instead_of_search(page):
     assert "İstasyon kataloğu boş" in page._filter_status.text()
     assert "Aramayı temizleyin" not in page._filter_status.text()
     assert page._btn_add.isEnabled() and not page._btn_export.isEnabled()
+
+
+@pytest.mark.parametrize("size", [(760, 420), (910, 465)])
+def test_narrow_station_window_keeps_actions_and_selection_without_page_horizontal_scroll(qt_app, tmp_path, size):
+    from app import MainWindow
+
+    settings = QSettings(str(tmp_path / "stations-window.ini"), QSettings.IniFormat)
+    with patch.object(stations, "_SETTINGS", settings), patch.object(stations.StationsController, "_build_map_widget"):
+        window = MainWindow()
+        try:
+            window.resize(1480, 1000); window.show(); window.environment.shutdown()
+            window.navigate("stations"); qt_app.processEvents()
+            page = window._pages["stations"]
+            page._search.setText("DSN"); page.stationsTable.selectRow(0)
+            before = copy.deepcopy(page._all_stations)
+            table = page.stationsTable
+            visible = [[table.item(r, c).text() for c in range(7)] for r in range(3)]
+            selected = table.item(table.currentRow(), 0).text()
+            for width, height in (size, (1480, 1000), size):
+                window.resize(width, height); qt_app.processEvents()
+                assert window.pageScroll.horizontalScrollBar().maximum() == 0
+                for control in (page._search, page._btn_export, page._btn_add,
+                                page._btn_save_net, page._btn_edit, page._btn_delete):
+                    rect = QRect(control.mapTo(page._toolbar, QPoint(0, 0)), control.size())
+                    assert page._toolbar.rect().contains(rect), (control.text(), rect)
+                assert page._search.text() == "DSN"
+                assert table.item(table.currentRow(), 0).text() == selected
+                assert [[table.item(r, c).text() for c in range(7)] for r in range(3)] == visible
+                assert all(not table.isColumnHidden(c) for c in range(7))
+                assert page._all_stations == before
+                assert page._btn_save_net.isEnabled() and page._btn_edit.isEnabled()
+                assert not page._btn_delete.isEnabled()
+            # Other scientific forms retain their existing scrolling policy.
+            window.navigate("scenario"); qt_app.processEvents()
+            assert window.pageScroll.horizontalScrollBar().maximum() > 0
+            window.navigate("stations"); qt_app.processEvents()
+            assert window.pageScroll.horizontalScrollBar().maximum() == 0
+        finally:
+            window.close(); qt_app.processEvents()
+
+
+@pytest.mark.parametrize("size", [(520, 300), (1120, 440)])
+def test_catalogue_map_preserves_degree_scale_and_actual_coordinates(qt_app, size):
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+    from matplotlib.collections import PathCollection
+
+    catalogue = stations._load_stations()
+    canvas = FigureCanvasQTAgg(stations._build_map(catalogue))
+    try:
+        canvas.resize(*size); canvas.show(); qt_app.processEvents(); canvas.draw()
+        axes = canvas.figure.axes[0]
+        origin, east, north = axes.transData.transform([(0, 0), (10, 0), (0, 10)])
+        assert east[0] - origin[0] == pytest.approx(north[1] - origin[1], abs=1e-8)
+        assert axes.get_xlim() == (-180, 180) and axes.get_ylim() == (-90, 90)
+        markers = {artist.get_label(): artist for artist in axes.collections if isinstance(artist, PathCollection)}
+        assert set(markers) == {station["name"] for station in catalogue}
+        for station in catalogue:
+            assert tuple(markers[station["name"]].get_offsets()[0]) == (station["lon_deg"], station["lat_deg"])
+    finally:
+        canvas.close(); qt_app.processEvents()

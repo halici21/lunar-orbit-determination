@@ -70,6 +70,8 @@ The mission map keeps consistent proportions and offers bounded, clickable
 station names; see [map usability](docs/map-layout_2026-10-12.md).
 Catalogue search now explains row counts and empty results; CSV exports the
 filtered table. See [station search/export](docs/station-filters_2026-10-13.md).
+Catalogue controls now stack on narrow windows and the map retains its proportions;
+see [station layout](docs/station-layout_2026-10-15.md).
 
 The current entry point is desktop_app/main.py. The older Tkinter and local web
 tools remain for reference; see [legacy tools](docs/legacy-tools.md). There is no
@@ -77,15 +79,15 @@ hosted web application for the current desktop workflow.
 
 ## What is verified
 
-- **Local combined suite, 2026-10-13:** 1,803 passed checks, 29 skipped, zero failures/errors.
-  Final public gate: 275 passed.
+- **Local combined suite, 2026-10-15:** 1,840 passed checks, 29 skipped, zero failures/errors.
+  Final public gate: 279 passed.
 - **Public checks:** core geometry/orbit/dynamics/configuration regressions plus
   desktop artifact, process, archive, comparison, rendering and session checks.
   External data paths are isolated; this gate uses committed fixtures only.
 - **Real desktop workflow:** short recorded runs, derivation, comparison, export
   and reopening were exercised. Eight existing single-arc runs remained readable.
 
-[Local verification record](docs/station-filters_2026-10-13.md) ·
+[Local verification record](docs/station-layout_2026-10-15.md) ·
 [Public CI scope](docs/verification.md) ·
 [Latest Actions runs](https://github.com/halici21/lunar-orbit-determination/actions)
 

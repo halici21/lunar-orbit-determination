@@ -36,6 +36,11 @@ geri getirir. Alt metin görünen/toplam ve seçili istasyon sayısını göster
 **Export CSV**, seçili satırları değil, filtrelenmiş tablonun tamamını aktarır;
 eşleşme yoksa düğme devre dışıdır. Bu sayfadaki harita tüm kataloğu gösterir.
 
+Dar pencerede istasyon araçları iki satıra yerleşir: arama/CSV/ekleme ve
+seçimden ağ kaydetme/düzenleme/silme. Sayfayı aşağı kaydırarak tabloya erişin;
+koordinat ve hata sütunları için tablonun kendi yatay kaydırıcısını kullanın.
+Pencere boyutu değiştiğinde arama ve seçili istasyon korunur.
+
 ## Yörünge, harita ve Gantt
 
 Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.

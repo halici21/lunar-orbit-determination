@@ -10,6 +10,7 @@
 - [Orbit labels: narrow plots, zoom and display scaling](orbit-labels_2026-10-12.md)
 - [Mission map: consistent proportions and clickable station labels](map-layout_2026-10-12.md)
 - [Station catalogue: search, empty results and CSV scope](station-filters_2026-10-13.md)
+- [Station catalogue: narrow windows and map proportions](station-layout_2026-10-15.md)
 - [Desktop workflow and scientific display contracts](../desktop_app/RESULT_WORKFLOW.md)
 - [Public CI scope and scientific verification](verification.md)
 - [Earlier interfaces and historical documents](legacy-tools.md)
