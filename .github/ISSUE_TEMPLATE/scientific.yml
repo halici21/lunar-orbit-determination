@@ -1,0 +1,30 @@
+name: Scientific inconsistency
+description: Report an observable, frame, estimator or result discrepancy with its assumptions.
+labels: [research]
+body:
+  - type: textarea
+    id: source
+    attributes:
+      label: Source and reproduction
+      description: Commit/tag, driver, saved config, seed, command, input provenance and relevant artifact hashes.
+    validations:
+      required: true
+  - type: textarea
+    id: model
+    attributes:
+      label: Model contract
+      description: Frames, epochs/time scale, units, force model, observable profile, station-state method and estimator settings.
+    validations:
+      required: true
+  - type: textarea
+    id: discrepancy
+    attributes:
+      label: Expected reference and measured discrepancy
+      description: Identify the oracle/truth level, numerical values and tolerances. Separate same-model consistency from independent validation.
+    validations:
+      required: true
+  - type: textarea
+    id: limits
+    attributes:
+      label: Known limits and affected results
+      description: Relevant qualification reports, missing inputs, superseded results and whether the issue survives another seed or numerical tolerance.

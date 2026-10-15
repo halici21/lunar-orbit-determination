@@ -9,7 +9,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_FILES = (
-    "test_config.py", "test_geometry.py", "test_orbit.py", "test_dynamics.py",
+    "test_config.py", "test_geometry.py", "test_orbit.py", "test_dynamics.py", "test_quickstart.py",
     "test_scenario_config.py", "test_scenario_config_harmonics.py",
     "test_compact_recovery.py", "test_desktop_workflow.py", "test_large_workspace.py",
     "test_recorded_run_workspace.py", "test_result_summary.py",

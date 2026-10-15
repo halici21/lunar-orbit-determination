@@ -1,0 +1,2 @@
+# Documentation tooling is separate from the scientific/runtime environment.
+mkdocs==1.6.1

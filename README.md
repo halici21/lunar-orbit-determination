@@ -1,11 +1,13 @@
-# Lunar OD
+# Lunar Orbit Determination
 
 [![Public checks](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml/badge.svg)](https://github.com/halici21/lunar-orbit-determination/actions/workflows/public-checks.yml)
-[MIT](LICENSE) · [Documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
+[![Documentation](https://github.com/halici21/lunar-orbit-determination/actions/workflows/documentation.yml/badge.svg)](https://halici21.github.io/lunar-orbit-determination/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Lunar OD is research software for lunar orbit determination and tracking-design
-studies, with a native Windows desktop workspace for configuring scenarios,
-running estimators, and inspecting recorded results.
+**[Quickstart](docs/tutorials/quickstart.md) · [Results](docs/research/results-gallery.md) · [Documentation](https://halici21.github.io/lunar-orbit-determination/) · [Download](https://github.com/halici21/lunar-orbit-determination/releases)**
+
+Reproduce lunar orbit determination experiments and inspect recorded tracking
+results through a Python library and native Windows desktop workspace.
 
 The Python library includes lunar and third-body dynamics, state-transition and
 SRP sensitivity propagation, station visibility, range/angles/range-rate and
@@ -13,6 +15,18 @@ qualified two-way observables, BLS-LM, SRIF, and SR-UKF. Optional gravity and
 measurement extensions have individual qualification limits.
 
 ![Desktop mission view](docs/images/desktop-mission.png)
+
+| Build experiments | Fit orbital states | Inspect the evidence |
+|---|---|---|
+| Dynamics, tracking geometry and seeded observations | BLS-LM, SRIF and SR-UKF within their supported profiles | Residuals, recorded comparisons and traceable study artifacts |
+
+![Time reveal of the recorded batch-fit error curves](docs/figures/quickstart/fit-preview.gif)
+
+A small, data-free example fits **the same observations** with BLS-LM and SRIF.
+The [gallery](docs/research/results-gallery.md) includes residuals, source data and
+recorded station visibility. This is a one-seed, same-model demonstration;
+scientific qualification is stated separately in the
+[support matrix](docs/validation/support-matrix.md).
 
 ## Install
 
@@ -34,15 +48,17 @@ On Windows, `setup_windows.cmd` installs the pinned environment and editable
 package; `launch_lunar_od.cmd` starts the desktop app. See the
 [Windows guide (Türkçe)](docs/windows-quickstart.md).
 
-## Minimal example
+## First orbit determination fit
 
-```python
-from lunar_od import geodetic_to_ecef_wgs84
-
-# Equator, Greenwich, zero ellipsoidal height; coordinates in metres.
-station_xyz_m = geodetic_to_ecef_wgs84(0.0, 0.0, 0.0)
-print(station_xyz_m)
+```powershell
+python examples/quickstart_od.py
 ```
+
+No kernels or gravity downloads are required. The example saves CSVs, PNG/SVG
+figures, the config, seed, environment and source hashes under `outputs/quickstart/`.
+Follow the [tutorial](docs/tutorials/quickstart.md) for expected output and model limits.
+
+For configured scenarios and the desktop:
 
 ```powershell
 python examples/scenario_config_cli.py --schema
@@ -112,3 +128,7 @@ Use [CITATION.cff](CITATION.cff) and record the exact Git commit, study
 configuration, inputs and seeds used. No DOI is currently declared.
 Copyright and reuse terms are in the [MIT license](LICENSE). Third-party data
 and dependencies retain their own terms.
+
+See the [roadmap](ROADMAP.md), [contribution guide](CONTRIBUTING.md) and
+[release procedure](docs/development/releases.md) for the next research and
+delivery milestones.

@@ -51,6 +51,16 @@ def main() -> int:
         errors.append(f'Library imported from another checkout: {lunar_od.__file__}')
     if (ROOT / 'lunar_od/__init__.py').is_file():
         errors.append('Obsolete root package shadows the src package')
+    gallery = ROOT / 'docs/figures/quickstart'
+    if gallery.is_dir():
+        summary = json.loads((gallery / 'summary.json').read_text(encoding='utf-8'))
+        for name, digest in summary['artifact_sha256'].items():
+            path = gallery / name
+            if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                errors.append(f'Curated tutorial artifact changed: {name}')
+        source = json.loads((gallery / 'visibility-source.json').read_text(encoding='utf-8'))
+        if hashlib.sha256((ROOT / source['source']).read_bytes()).hexdigest() != source['source_sha256']:
+            errors.append('Curated visibility fixture identity changed')
     print(f'{len(manifest["files"])} migrated paths; {preserved} preserved byte identities; '
           f'{len(documents)} documents / {link_count} local links checked.')
     for error in errors:

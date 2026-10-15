@@ -1,0 +1,29 @@
+site_name: Lunar Orbit Determination
+site_description: Reproducible lunar orbit determination experiments and a native desktop workspace.
+site_url: https://halici21.github.io/lunar-orbit-determination/
+repo_url: https://github.com/halici21/lunar-orbit-determination
+repo_name: halici21/lunar-orbit-determination
+edit_uri: ""
+docs_dir: outputs/docs-source
+site_dir: outputs/site
+theme:
+  name: readthedocs
+  highlightjs: true
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Results gallery: results.md
+  - Support matrix: support.md
+  - Theory: theory.md
+  - Validation: validation.md
+  - Python API: api.md
+  - Research studies: studies.md
+  - Roadmap: roadmap.md
+  - Contributing: contributing.md
+plugins:
+  - search
+markdown_extensions:
+  - tables
+  - admonition
+extra_css:
+  - assets/site.css

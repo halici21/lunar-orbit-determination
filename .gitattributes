@@ -1,1 +1,3 @@
 graphify-out/graph.json merge=graphify
+# Curated evidence hashes identify exact bytes, including CSV/SVG line endings.
+docs/figures/quickstart/* -text
