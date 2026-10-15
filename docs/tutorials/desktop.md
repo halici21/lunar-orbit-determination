@@ -71,3 +71,6 @@ gravity fields or historical private campaign inputs. Follow the
 `Verify.cmd` independently checks the bundled files/imports, real QProcess
 execution, cancellation, tutorial calculation and desktop shutdown. It records
 results under the portable application's `qualification/` directory.
+`LunarOD.cmd --check` runs the same checks without a final pause. Generated
+interpreter caches are runtime state; immutable files are checked before and
+after normal application execution.

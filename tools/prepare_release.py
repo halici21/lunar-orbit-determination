@@ -79,8 +79,9 @@ def prepare(version, skip_public=False):
         with zipfile.ZipFile(portable) as archive:
             archive.extractall(scratch / "portable")
         bundle = scratch / "portable/LunarOD"
-        run([bundle / "runtime/python.exe", bundle / "app/tools/qualify_windows_portable.py",
-             "--bundle", bundle], cwd=scratch, env=env)
+        # Test the actual launcher from its relocated cwd, including spaces/&.
+        run([os.environ.get("COMSPEC", "cmd.exe"), "/d", "/c", "LunarOD.cmd", "--check"],
+            cwd=bundle, env=env)
         portable_report = json.loads((bundle / "qualification/verification.json").read_text(encoding="utf-8"))
     report = {"schema": "lunar-od-release-verification-v1", "version": version, "source_commit": commit,
         "public_checks": "previously verified exact source" if skip_public else "passed in release build",

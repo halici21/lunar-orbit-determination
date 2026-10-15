@@ -43,6 +43,12 @@ asserts the imported library/interpreter come from the bundle. This tests indepe
 from the runner's Python installation; it is not qualification of every Windows
 edition or SPICE-backed scenario.
 
+Generated Python/Numba caches are excluded from the ZIP and immutable content
+identities. Qualification explicitly enables ordinary bytecode writes, executes
+the real `LunarOD.cmd --check` launcher in the relocated directory, and verifies
+the distributed files again after imports and desktop use. Cache creation must
+not produce a false integrity failure; source/binary changes still fail.
+
 Run locally from a clean committed Windows/Python 3.13 checkout:
 
 ```text

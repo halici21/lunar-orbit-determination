@@ -18,9 +18,11 @@ def main(bundle):
     app_root = bundle / "app"
     record = json.loads((bundle / "BUNDLE_MANIFEST.json").read_text(encoding="utf-8"))
     print(f"Checking {len(record['files_sha256'])} bundled file identities...", flush=True)
-    for name, expected in record["files_sha256"].items():
-        if hashlib.sha256((bundle / name).read_bytes()).hexdigest() != expected:
-            raise ValueError(f"Bundle content changed: {name}")
+    def verify_files():
+        for name, expected in record["files_sha256"].items():
+            if hashlib.sha256((bundle / name).read_bytes()).hexdigest() != expected:
+                raise ValueError(f"Bundle content changed: {name}")
+    verify_files()
     if record["source"]["working_tree_dirty"]:
         raise ValueError("Dirty source bundle cannot pass release qualification")
     print("Bundle identities verified; importing scientific and Qt packages...", flush=True)
@@ -29,7 +31,8 @@ def main(bundle):
     os.environ["PATH"] = os.environ.get("SystemRoot", "C:/Windows") + "/System32"
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
     os.environ["QT_QPA_FONTDIR"] = os.environ.get("SystemRoot", "C:/Windows") + "/Fonts"
-    os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
+    os.environ.pop("PYTHONDONTWRITEBYTECODE", None)
+    sys.dont_write_bytecode = False
     for key in ("LUNAR_OD_KERNEL_DIR", "LUNAR_OD_CAMPAIGN_ROOT", "LUNAR_OD_GRAVITY_ROOT", "LUNAR_OD_PROJECT_ROOT"):
         folder = bundle / "qualification" / key
         folder.mkdir(parents=True, exist_ok=True)
@@ -71,7 +74,7 @@ def main(bundle):
     worker.finished.connect(codes.append)
     worker.output_line.connect(lines.append)
     worker.error_line.connect(lines.append)
-    worker.run(str(interpreter), ["-c", "import lunar_od,sys; print(sys.executable); print(lunar_od.__file__)"])
+    worker.run(str(interpreter), ["-E", "-c", "import lunar_od,sys,pandas; assert not sys.dont_write_bytecode; print(sys.executable); print(lunar_od.__file__)"])
     wait(lambda: bool(codes))
     if codes[-1] != 0 or not any(str(bundle).lower() in line.lower() for line in lines):
         raise RuntimeError(f"Bundled QProcess imports failed: {lines}")
@@ -99,12 +102,20 @@ def main(bundle):
     qt.processEvents()
     if window.environment.busy or monitor._worker.is_running:
         raise RuntimeError("Desktop shutdown left a child running")
+    # Normal imports may populate caches. Distributed source/binaries must still match.
+    generated_caches = list((bundle / "runtime/Lib/site-packages").rglob("*.pyc"))
+    if not generated_caches:
+        raise RuntimeError("Qualification did not exercise ordinary bytecode cache creation")
+    verify_files()
     report = {"schema": "lunar-od-portable-qualification-v1", "passed": True,
         "source_commit": record["source"]["git_commit"], "python": sys.version,
         "interpreter": str(interpreter), "library": str(lunar_od.__file__),
         "verified_files": len(record["files_sha256"]), "external_python_path": os.environ["PATH"],
         "checks": ["bundle hashes", "scientific and Qt imports", "QProcess bundled child",
-                   "QProcess cancellation", "desktop launch", "124-update scientific tutorial", "desktop shutdown"],
+                   "QProcess cancellation", "desktop launch", "124-update scientific tutorial", "desktop shutdown",
+                   "immutable file hashes after normal cache-writing imports and application use"],
+        "cache_policy": record["cache_policy"],
+        "generated_cache_files_after_use": len(generated_caches),
         "tutorial_final_position_error_m": result.updates[-1]["position_error_m"],
         "kernel_setup": "empty explicit directory; tutorial requires no kernels"}
     path = bundle / "qualification/verification.json"
