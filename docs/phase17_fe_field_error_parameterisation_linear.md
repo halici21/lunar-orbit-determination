@@ -97,3 +97,15 @@ needs a predeclared prior width and rule.
 
 - Gates V1 and V3 pass (§0). Production code is unchanged in this phase.
 - `tests/test_mm_truth_field.py` and the full test suite are unaffected (analysis-layer script only).
+
+## 6. Addendum (Phase 17-FE-P, 2026-10-15)
+
+§3 reading 1 says CANON k0 at α = 0.3 is the only N = 0 cell whose significant false variation keeps the residual near
+the window. FE-L's own cell data (unchanged, reproduced exactly by FE-P gate P5) show two more:
+
+- O2 k12 at α = 0.3: fv 141, residual 39.5;
+- O3 k0 at α = 1: fv 141, residual 17.0.
+
+Both residuals are far below the MM windows (115–145), and neither cell was in the MM run set. This is linear and not
+nonlinearly confirmed. The FE-L decision (`FE_SUPPRESSES_BUT_COSTS_VARIATION`) does not use residuals and stands. See
+`docs/phase17_fep_external_gravity_prior.md` §3.3.
