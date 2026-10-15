@@ -16,7 +16,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "desktop_app")]
 
 import imageio_ffmpeg
 import numpy as np
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import QSettings, Qt, QCoreApplication, QEvent
 from PyQt5.QtGui import QFont, QImage
 from PyQt5.QtWidgets import QApplication, QLabel
 from PyQt5.QtTest import QTest
@@ -38,6 +38,7 @@ def record(output):
     window.statusBar.insertPermanentWidget(0, caption, 1)
     window.show()
     qt.processEvents()
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
     size = window.grab().size()
     video = output / "desktop-walkthrough.mp4"
     writer = imageio_ffmpeg.write_frames(str(video), (size.width(), size.height()), fps=8,
@@ -98,6 +99,7 @@ def record(output):
                 caption.setText("Tekrar üretilebilir: Örnek menüsü → çalıştır → sonuçları incele → karşılaştır")
                 actions.add("end")
             qt.processEvents()
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
             image = window.grab().toImage().convertToFormat(QImage.Format_RGB888)
             bits = image.bits()
             bits.setsize(image.height() * image.bytesPerLine())
@@ -122,6 +124,13 @@ def record(output):
         "execution": "Real QProcess and scientific estimators, no mocked result values",
         "result_sources": [str(result_path), str(other)],
         "steps": sorted(actions), "video_sha256": hashlib.sha256(video.read_bytes()).hexdigest()}
+    from examples.quickstart_od import source_identity
+    report["source"] = source_identity()
+    report["source"]["source_sha256"].update({name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+        for name in ("tools/record_desktop_walkthrough.py", "desktop_app/app.py",
+                     "examples/desktop_tutorial.py", "examples/benchmark_estimators.py")})
+    report["result_sha256"] = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                               for path in (result_path, other)}
     (output / "recording.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(f"Recorded {video}: all workflow stages verified", flush=True)
     return report

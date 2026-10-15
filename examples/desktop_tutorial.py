@@ -49,6 +49,8 @@ def run(output, run_id):
                "options": {"measurement_seed": seed, "cold_start_seed": seed}}
         (output / job_name).write_text(json.dumps(job, indent=2), encoding="utf-8")
         source = source_identity()
+        source["source_sha256"].update({name: sha256(ROOT / name) for name in
+            ("examples/desktop_tutorial.py", "examples/benchmark_estimators.py")})
         manifest = {"schema": "lunar-od-result-v1", "units": {"time": "s", "position": "m", "velocity": "m/s"},
             "origin": "Moon", "frame": "Synthetic inertial / identity Earth-fixed transform",
             "epoch": "Synthetic t=0", "time_scale": "elapsed seconds", "seed": seed, "cold_start_seed": seed,
