@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 $lunarRoot = Split-Path -Parent $PSScriptRoot
 $lunarVenv = Join-Path $lunarRoot '.venv'
 $lunarPython = Join-Path $lunarVenv 'Scripts\python.exe'
-$lunarRequirements = Join-Path $lunarRoot 'requirements-validated-windows.txt'
+$lunarRequirements = Join-Path $lunarRoot 'requirements/windows.txt'
 
 function Assert-LunarPython([string]$Executable) {
     & $Executable -c "import sys, struct; assert sys.version_info[:2] == (3,13) and struct.calcsize('P') == 8, 'Lunar OD requires 64-bit Python 3.13'; assert sys.prefix != sys.base_prefix, 'A virtual environment is required'"

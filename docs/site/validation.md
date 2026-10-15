@@ -31,7 +31,7 @@ remain explicit manual runs rather than default CI jobs.
 ## Documentation and release
 
 ```powershell
-python -m pip install -r requirements-docs.txt
+python -m pip install -r requirements/docs.txt
 python tools/build_docs.py --strict
 ```
 

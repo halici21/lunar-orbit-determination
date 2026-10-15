@@ -8,6 +8,7 @@
 - [Python API map](site/api.md)
 - [Roadmap](../ROADMAP.md)
 - [Release and DOI procedure](development/releases.md)
+- [Root layout cleanup and command migration](development/root-layout-cleanup.md)
 
 - [Install and use on Windows (Türkçe)](windows-quickstart.md)
 - [Station catalogue responsive layout](development/station-layout_2026-10-15.md)

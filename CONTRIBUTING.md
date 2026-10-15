@@ -14,10 +14,10 @@ form for installation or application behavior.
 
 Install the validated Windows environment using setup_windows.cmd, or follow
 [the quickstart](docs/windows-quickstart.md). The exact dependency profile is
-[requirements-validated-windows.txt](requirements-validated-windows.txt).
+[requirements/windows.txt](requirements/windows.txt).
 
 For a library development environment, run `python -m pip install -e .`
-and `python -m pip install -r requirements-dev.txt`. The pinned Windows
+and `python -m pip install -r requirements/dev.txt`. The pinned Windows
 profile includes the desktop dependencies. See [repository layout and artifact
 policy](docs/development/repository-layout.md).
 
@@ -58,7 +58,7 @@ fixture where possible; remove credentials and private paths from attachments.
 ## Releases
 
 Documentation changes should pass `python tools/build_docs.py --strict` after
-installing `requirements-docs.txt`. Tutorial/gallery regeneration is explicit;
+installing `requirements/docs.txt`. Tutorial/gallery regeneration is explicit;
 see the [gallery source trail](docs/research/results-gallery.md).
 
 Follow the [release and DOI procedure](docs/development/releases.md).

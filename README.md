@@ -36,12 +36,12 @@ the desktop reference qualification.
 
 ```powershell
 py -3.13 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-validated-windows.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements/windows.txt
 .\.venv\Scripts\python.exe -m pip install -e .
 ```
 
 For library-only use, install with `python -m pip install -e .` in your virtual
-environment; add `-r requirements-dev.txt` for development. The import name is
+environment; add `-r requirements/dev.txt` for development. The import name is
 `lunar_od`. No `PYTHONPATH` override is needed.
 
 On Windows, `setup_windows.cmd` installs the pinned environment and editable
@@ -83,11 +83,17 @@ tools/                  setup, verification and maintenance utilities
 fixtures/               small committed reference inputs
 data/                   external-data policy (large data are not bundled)
 archive/                immutable historical preservation material
+requirements/          optional, development, docs and pinned Windows profiles
+legacy/                earlier Tkinter and HTTP interfaces
 ```
 
 See the [architecture and artifact policy](docs/development/repository-layout.md)
 and [Phase 17 guide](studies/phase17/README.md) for reproduction and historical
 path resolution. Local generated runs go to ignored `results/` or `outputs/`.
+
+The root `requirements.txt` remains the standard core dependency file.
+See [dependency profiles](requirements/README.md) and
+[earlier interface commands](legacy/README.md) for the grouped optional tools.
 
 The station catalogue adapts its actions and map to narrow windows; see the
 [layout guide](docs/development/station-layout_2026-10-15.md).

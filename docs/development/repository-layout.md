@@ -23,6 +23,12 @@ Durable documentation is split into `docs/theory/`, `docs/validation/`,
 `docs/research/`, and `docs/development/`. Phase-specific reports stay with the
 study. Desktop screenshots remain shared documentation assets.
 
+Optional dependency profiles are grouped under `requirements/`. The standard
+root `requirements.txt`, editable installation and Windows setup/launch entry
+points remain in place. See the [profile index](../../requirements/README.md).
+Earlier Tkinter/HTTP implementations and web assets live under `legacy/`;
+[their command mapping](../../legacy/README.md) documents the changed paths.
+
 ## Artifact classes
 
 | Class | Policy | Location |

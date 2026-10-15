@@ -6,17 +6,18 @@ The current workflow is documented in [RESULT_WORKFLOW.md](../desktop_app/RESULT
 
 | File or directory | Status |
 | --- | --- |
-| lunar_od_app.py | Earlier Tkinter desktop tool; not the current recorded-run workspace |
-| ui_server.py and ui/ | Earlier local HTTP/HTML tool; not the current PyQt5 workflow or a hosted site |
+| [legacy/lunar_od_app.py](../legacy/lunar_od_app.py) | Earlier Tkinter desktop tool; not the current recorded-run workspace |
+| [legacy/ui_server.py](../legacy/ui_server.py) and [legacy/ui/](../legacy/ui/index.html) | Earlier local HTTP/HTML tool; not the current PyQt5 workflow or a hosted site |
 | docs/development/UI_README.md | Historical interface proposal |
 | docs/development/PYQT5_DESKTOP_APP_BRIEF.md | Earlier desktop implementation brief |
 | docs/development/PYQT5_DESKTOP_APP_README.md | Earlier desktop implementation brief, despite the README filename |
 | docs/development/plan.md and docs/development/PROJECT_CONTEXT.md | Development planning/context; check dates and qualification reports before relying on status claims |
 | archive/ | Preserved worktree snapshots and conflict evidence, not executable production modules |
 
-Earlier tools are retained in their original locations to preserve references
-and regression coverage. They are not part of the new public desktop acceptance
-gate. They may still run, but do not have the current artifact/session contract.
+Earlier tools are grouped under `legacy/`; [the migration guide](../legacy/README.md)
+lists their new commands. The maintained Windows setup/launch commands are
+unchanged. Targeted regressions check legacy HTTP resources and checkout-local
+paths; these tools do not have the current artifact/session contract.
 
 Historical documents can mention old branch names, python_port paths, test
 counts, models and planned features. Current installation guidance is in the root

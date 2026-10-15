@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Group optional/development/docs/Windows dependency profiles under `requirements/`
+  while retaining the standard core `requirements.txt` and Windows launch commands.
+- Move the earlier Tkinter/HTTP tools and web assets to `legacy/`; document their
+  new command paths and keep result/test/experiment paths in the current checkout.
+- Preserve dependency specifiers, pinned versions and scientific implementation;
+  add asset-serving, legacy path and relocated preflight-profile regressions.
+
 ## 0.1.0-alpha.2 — 2026-10-15
 
 - Add a data-free, seeded BLS-LM/SRIF orbit-fit tutorial with observations,

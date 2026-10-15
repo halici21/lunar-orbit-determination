@@ -50,6 +50,19 @@ def test_explicit_missing_directory_cannot_fall_back(tmp_path, file_only, monkey
     assert len(report["kernels"]) == 10
 
 
+def test_runtime_checks_read_the_relocated_reference_profile(monkeypatch):
+    pins = {}
+    for line in (readiness.ROOT / "requirements/windows.txt").read_text().splitlines():
+        if "==" in line and not line.startswith("#"):
+            name, value = line.split("==", 1)
+            pins[name] = value
+    monkeypatch.setattr(readiness.importlib, "import_module", lambda name: object())
+    monkeypatch.setattr(readiness.importlib.metadata, "version", pins.__getitem__)
+    checks = readiness._runtime_checks()
+    assert {check["name"] for check in checks[1:]} == set(readiness.PACKAGES)
+    assert all(check["status"] == "ok" for check in checks[1:])
+
+
 def test_empty_kernel_and_directory_named_as_kernel_block_spice(tmp_path, file_only, monkeypatch):
     folder = make_kernels(tmp_path / "kernels")
     (folder / REQUIRED_KERNELS[1]).write_bytes(b"")

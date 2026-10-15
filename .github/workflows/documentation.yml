@@ -25,8 +25,8 @@ jobs:
         with:
           python-version: '3.13'
           cache: pip
-          cache-dependency-path: requirements-docs.txt
-      - run: python -m pip install -r requirements-docs.txt
+          cache-dependency-path: requirements/docs.txt
+      - run: python -m pip install -r requirements/docs.txt
       - run: python tools/build_docs.py --strict
       - name: Upload Pages site
         if: github.event_name != 'pull_request'

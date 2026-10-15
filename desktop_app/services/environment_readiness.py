@@ -32,7 +32,7 @@ def apply_kernel_preference(settings, inherited: str | None) -> str:
 
 def _runtime_checks():
     pins = {}
-    for line in (ROOT / "requirements-validated-windows.txt").read_text(encoding="utf-8").splitlines():
+    for line in (ROOT / "requirements" / "windows.txt").read_text(encoding="utf-8").splitlines():
         if "==" in line and not line.startswith("#"):
             name, version = line.split("==", 1)
             pins[name] = version

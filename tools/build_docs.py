@@ -1,7 +1,7 @@
 """Build a curated documentation site from canonical repository Markdown.
 
 python tools/build_docs.py --strict
-Requires requirements-docs.txt; no scientific dependencies or external data.
+Requires requirements/docs.txt; no scientific dependencies or external data.
 """
 from __future__ import annotations
 import argparse
