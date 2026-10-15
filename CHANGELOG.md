@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-## 0.1.0-alpha.3 — 2026-10-15
+## 0.1.0-alpha.4 — 2026-10-16
+
+- Exclude generated Python/Numba caches from portable content identities and ZIPs;
+  verify immutable files again after ordinary imports and desktop execution.
+- Exercise the actual relocated `LunarOD.cmd --check` launcher, preserve literal
+  Windows command-file line endings and quote the bundle directory safely.
+- The alpha.3 source tag was retained as an unpublished candidate; its binary
+  publication was cancelled after the cache-integrity defect was reproduced.
 
 - Add a Python-bundled Windows x64 portable application and a real, data-free
   desktop tutorial with execution, cancellation and recorded-comparison checks.

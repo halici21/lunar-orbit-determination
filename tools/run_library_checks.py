@@ -8,7 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 FILES = ("test_config.py", "test_geometry.py", "test_orbit.py", "test_dynamics.py",
          "test_estimators.py", "test_filters.py", "test_measurements.py", "test_quickstart.py",
-         "test_paired_benchmark.py")
+         "test_paired_benchmark.py", "test_release_manifest.py")
 # These four existing integration tests load external kernels unconditionally.
 # Their fixture-related names do not mean that their ephemerides are bundled.
 KERNEL_INTEGRATIONS = (
