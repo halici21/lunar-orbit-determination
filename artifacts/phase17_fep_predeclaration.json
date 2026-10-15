@@ -1,0 +1,50 @@
+{
+ "phase": "Phase 17-FE-P - external gravity prior and the gravity / K-variation degeneracy (linear, FE-L machinery)",
+ "written": "2026-10-15, after the prior construction and BEFORE any FE-P science output was computed",
+ "prior": {
+  "GRAVITY_PRIOR_SOURCE": "GL1800F per-coefficient uncertainty columns in the estimator's own coefficient file python_port/data/gravity/gl1800f/jggrx_1800f_sha.tab (PDS JGGRX_1800F_SHA, columns 5-6: uncertainty of C_nm, S_nm); parsed independently of the loader",
+  "mapping": "unambiguous: the estimator field IS GL1800F from the same file - fully normalised, R = 1738 km, GM 4902.8003063302 km3/s2, DE440 principal axes (MOON_PA_DE440), degree-2/3 coefficients without the permanent tide; the FE corrections dC_nm, dS_nm are in exactly this normalisation",
+  "GRAVITY_PRIOR_SEMANTICS": "zero-mean Gaussian prior on the FE corrections dC_nm, dS_nm (centre = the GL1800F value the estimator already uses); the label does not state whether the uncertainties are formal or calibrated - treated as the published per-coefficient uncertainty",
+  "PRIOR_COVARIANCE_FORM": "diagonal (no GL1800F coefficient covariance is available in the repository) - labelled APPROXIMATION",
+  "PRIMARY_PRIOR_SCALE": "x1 (the published sigmas as they are)",
+  "PRIOR_SENSITIVITY_SET": "x10, x100 (robustness variants for possible optimism of published sigmas; chosen before any FE-P output; they do not change the primary outcome)",
+  "secondary_stress_scale": "sigma_nm = |dC_nm(GRGM1200L - GL1800F)| (and dS), labelled STRESS / bracketing only - it is the controlled mismatch direction itself, not an uncertainty",
+  "construction_fact_recorded_before_scoring": "the MM mismatch GRGM1200L - GL1800F (rescaled to GL mu/R) at degrees 2-6 is |dC|/sigma_GL1800F = median 5696, min 82.9 (S22), max 65362: the controlled mismatch lies far outside GL1800F's published uncertainty"
+ },
+ "design": {
+  "cells": "the 10 KP2 / FE-L cells, HIGH_FIDELITY, the FE-L design (x0 + a priori, M3 K, free per-pass Doppler bias, range 5 m, Doppler 1e-4 m/s)",
+  "N": [4, 6],
+  "prior_rows": "one whitened row per FE coefficient: 1/sigma_nm on that column, right-hand side 0; nothing else changed",
+  "mismatch_primary": "alpha (GRGM1200L - GL1800F) at degree 50, alpha in {0.3, 1} (the MM/FE-L construction)",
+  "configs_scored": "N in {4, 6} x prior {x1 primary, x10, x100} + stress {|dC|} (secondary)"
+ },
+ "metrics": {
+  "fv_chi2": "linear false-variation chi2 (2 dof) of the mismatch, posterior variation covariance of the regularised design",
+  "noncentrality": "T1_STEP / T2_MIDDLE expected chi2_detect",
+  "resid_chi2": "unabsorbed mismatch chi2 in the DATA rows only (prior-row penalty reported separately)",
+  "diagnostics": "sigma_v, field-parameter posterior sigma / prior sigma (information gain), max |corr(K variation, field)|"
+ },
+ "secondary_diagnostic_prior_consistent_errors": "PRIOR_CONSISTENT_MASQUERADE_RISK: 20 seeded draws per scale x1, x10, x100 of a random field error dC_nm, dS_nm ~ N(0, (scale sigma_nm)^2) over degrees 2..50 (seed [cell, scale_index, draw]); false-variation chi2 under the standard fixed-field KP2 design (N = 0) and under the primary FE-P configs; reported as median / max / fraction >= 13.82. Not part of the classification",
+ "classification": {
+  "cell_resolved(cfg)": "fv_chi2 < 13.82 for alpha = 0.3 and 1 AND noncentrality >= 13.82 for every truth that is eligible in that cell (FE-L N = 0 eligibility: noncentrality(N=0) >= 13.82)",
+  "SUPPRESSES(cfg)": "fv_chi2 < 13.82 for both alpha in all 10 cells",
+  "PRESERVES(cfg)": "noncentrality >= 13.82 for every eligible (cell, truth)",
+  "rule (on the PRIMARY scale x1, N in {4, 6})": [
+   "FE_PRIOR_INCONCLUSIVE if any validation gate P1-P5 fails",
+   "FE_PRIOR_RESOLVES_DEGENERACY if some N has SUPPRESSES and PRESERVES",
+   "FE_PRIOR_SUPPRESSES_BUT_COSTS_VARIATION if some N has SUPPRESSES (but not PRESERVES)",
+   "FE_PRIOR_PARTIALLY_RESOLVES_DEGENERACY if some N resolves >= 5 of the 10 cells",
+   "FE_PRIOR_TOO_WEAK_TO_SUPPRESS otherwise"
+  ],
+  "sensitivity_and_stress": "classified with the same rule and reported; they never replace the primary outcome"
+ },
+ "gates": {
+  "P1_normal_equations": "for one cell and N = 6: (A^T A) of the regularised whitened design equals the independently assembled data information + diag(1/sigma^2) on the FE block, <= 1e-10 relative",
+  "P2_weak_limit": "prior sigma x 1e8: every fv_chi2 / noncentrality reproduces the FE-L data-only value of the same N within 1e-6 relative (or 1e-6 absolute below 1)",
+  "P3_strong_limit": "prior sigma x 1e-8: reproduces N = 0 within 1e-6 relative (or 1e-6 absolute below 1)",
+  "P4_sigma_mapping": "the sigma vector in coefficient order equals an independent re-parse of the .tab lines (exact), spot values C20 4.593682635805e-12, C21 1.303864780869e-12, S21 1.390771628190e-12",
+  "P5_FE_L_reproduction": "with no prior, the recomputed designs reproduce the committed FE-L cell metrics (fv_chi2, noncentrality) within 1e-8 relative"
+ },
+ "nonlinear_confirmation": "only if the primary outcome is FE_PRIOR_RESOLVES_DEGENERACY",
+ "not_claimed": ["the common K level", "that GRGM1200L - GL1800F is a realistic gravity uncertainty", "formal-sigma reduction as evidence of separability", "generalisation from favourable geometry"]
+}
