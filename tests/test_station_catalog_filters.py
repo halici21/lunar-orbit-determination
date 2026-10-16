@@ -4,7 +4,7 @@ import csv
 from unittest.mock import patch
 
 import pytest
-from PyQt5.QtCore import Qt, QSettings, QPoint, QRect
+from PyQt5.QtCore import Qt, QSettings, QPoint, QRect, QItemSelectionModel
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
@@ -163,3 +163,67 @@ def test_map_key_describes_full_catalogue_and_custom_shape_without_hidden_networ
     page._all_stations = []
     page._update_map_legend()
     assert page._map_legend.isHidden() and not page._map_legend.text()
+
+
+@pytest.mark.parametrize("column", [0, 2])
+def test_sorted_filter_rebuild_keeps_coordinates_with_their_station(page, column):
+    table = page.stationsTable
+    expected = {s["name"]: (s["network"], f"{s['lat_deg']:.2f}", f"{s['lon_deg']:.2f}")
+                for s in page._all_stations}
+    table.sortItems(column, Qt.DescendingOrder)
+    for query in ("DSN", "", "ESA", ""):
+        page._search.setText(query)
+        actual_names = set()
+        for row in range(table.rowCount()):
+            name = table.item(row, 0).text()
+            actual_names.add(name)
+            assert tuple(table.item(row, c).text() for c in (1, 2, 3)) == expected[name]
+        assert len(actual_names) == table.rowCount()
+        assert actual_names == {s["name"] for s in page._filtered_stations}
+        assert table.isSortingEnabled() and not page._selected_rows()
+
+
+def test_sorted_row_actions_use_visible_station_and_preserve_other_catalogue_entries(page):
+    from PyQt5.QtWidgets import QDialog, QMessageBox
+
+    original = copy.deepcopy(page._all_stations)
+    custom = dict(original[0], name="ZZZ Custom", network="OTHER", _custom=True)
+    page._all_stations.append(custom)
+    page._apply_filter("")
+    table = page.stationsTable
+    table.sortItems(0, Qt.DescendingOrder)
+    table.selectRow(0)
+    assert table.item(0, 0).text() == "ZZZ Custom" and page._btn_delete.isEnabled()
+    with patch.object(stations, "_StationDialog") as dialog:
+        dialog.return_value.exec_.return_value = QDialog.Rejected
+        page._edit_station()
+        assert dialog.call_args.kwargs["station"] == custom
+    table.selectRow(1)
+    assert table.item(1, 0).text() == "Ussuriisk RUS" and not page._btn_delete.isEnabled()
+    table.clearSelection()
+    for row in (0, 1):
+        table.selectionModel().select(table.model().index(row, 0),
+                                      QItemSelectionModel.Select | QItemSelectionModel.Rows)
+    with patch.object(stations.QInputDialog, "getText", return_value=("sorted-proof", True)), \
+         patch.object(QMessageBox, "information"):
+        page._save_network_preset()
+    assert stations._load_custom_networks()["sorted-proof"] == ["ZZZ Custom", "Ussuriisk RUS"]
+    table.selectRow(0)
+    with patch.object(QMessageBox, "question", return_value=QMessageBox.Yes), \
+         patch.object(QMessageBox, "information"):
+        page._delete_station()
+    assert page._all_stations == original
+    assert "ZZZ Custom" not in {table.item(r, 0).text() for r in range(table.rowCount())}
+
+
+def test_map_pick_after_sorting_selects_named_station_instead_of_source_row_number(page):
+    from types import SimpleNamespace
+    from matplotlib.collections import PathCollection
+
+    page._search.setText("DSN")
+    page.stationsTable.sortItems(0, Qt.DescendingOrder)
+    page._on_map_pick(SimpleNamespace(artist=PathCollection([], label="Madrid DSN")))
+    assert page._search.text() == "" and page.stationsTable.rowCount() == 15
+    selected = page.stationsTable.currentRow()
+    assert page.stationsTable.item(selected, 0).text() == "Madrid DSN"
+    assert not page._btn_delete.isEnabled() and page._btn_edit.isEnabled()

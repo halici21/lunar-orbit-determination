@@ -9,8 +9,10 @@ checkout-path tests, and the relocated desktop reference-profile check: 290 pass
 in the [root layout cleanup](../development/root-layout-cleanup.md) verification.
 Historical records below retain their original counts and commands.
 
-The [latest desktop map-key gate](../development/station-legend_2026-10-15.md)
+The [earlier desktop map-key gate](../development/station-legend_2026-10-15.md)
 passed 291 public cases; the 290-case count above describes the earlier cleanup.
+The [latest station row-identity gate](../development/station-sorting_2026-10-16.md)
+passed 301 public cases on the current repository/portable layout.
 
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,
@@ -39,7 +41,11 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest station-key regression](../development/station-legend_2026-10-15.md):
+[Latest station row-identity regression](../development/station-sorting_2026-10-16.md):
+1,862 passed checks, 29 skipped (1,745 named cases and 146 subtest
+checks), zero failures/errors. The 301-case public gate includes all 13 station
+cases and all 35 mission cases.
+[Previous station-key regression](../development/station-legend_2026-10-15.md):
 1,852 passed checks, 29 skipped (1,735 named cases and 146 subtest
 checks), zero failures/errors. The 291-case public gate includes all nine station
 cases and all 35 mission cases on the current src/profile layout.
