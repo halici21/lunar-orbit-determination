@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Sort station coordinates and uncertainties numerically at stored precision;
+  preserve undefined versus zero values and add unit-bearing precision tooltips.
 - Keep station identities and coordinate cells together when sorting/filtering
   the catalogue. Edit/delete/preset actions and map picks resolve the displayed
   station; rebuilding the table clears an earlier selection.

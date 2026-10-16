@@ -1,0 +1,297 @@
+{
+  "base_commit": "89ce0423ce44b04f02f505cec6fdb03c99a2edc3",
+  "reproduction": {
+    "before": {
+      "base": "89ce0423ce44b04f02f505cec6fdb03c99a2edc3",
+      "ascending_latitudes_deg": [
+        12.9,
+        -29.04,
+        -31.05,
+        35.3,
+        -35.4,
+        -35.78,
+        36.38,
+        40.43,
+        40.45,
+        41.101,
+        44.02,
+        45.19,
+        55.87,
+        7.25,
+        78.23
+      ],
+      "expected_latitudes_deg": [
+        -35.78,
+        -35.4,
+        -31.05,
+        -29.04,
+        7.25,
+        12.9,
+        35.3,
+        36.38,
+        40.43,
+        40.45,
+        41.101,
+        44.02,
+        45.19,
+        55.87,
+        78.23
+      ],
+      "correct_numeric_order": false
+    },
+    "after": {
+      "base": "89ce0423ce44b04f02f505cec6fdb03c99a2edc3",
+      "ascending_latitudes_deg": [
+        -35.78,
+        -35.4,
+        -31.05,
+        -29.04,
+        7.25,
+        12.9,
+        35.3,
+        36.38,
+        40.43,
+        40.45,
+        41.101,
+        44.02,
+        45.19,
+        55.87,
+        78.23
+      ],
+      "expected_latitudes_deg": [
+        -35.78,
+        -35.4,
+        -31.05,
+        -29.04,
+        7.25,
+        12.9,
+        35.3,
+        36.38,
+        40.43,
+        40.45,
+        41.101,
+        44.02,
+        45.19,
+        55.87,
+        78.23
+      ],
+      "correct_numeric_order": true
+    }
+  },
+  "local_junit": {
+    "targeted": {
+      "tests": 55,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 18.812,
+      "named_cases": 55,
+      "sha256": "7d35196c39ca5debe214d18cf8d196d36a41bd721fef29f6dea76aa2d846dbb5"
+    },
+    "public": {
+      "tests": 306,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 88.958,
+      "named_cases": 306,
+      "sha256": "e28c0dd717a818834dae414b0da09ed76a7806540c15be6b944ba21df87fa388"
+    },
+    "full": {
+      "tests": 1896,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 951.294,
+      "named_cases": 1750,
+      "sha256": "a9e5710142db468361ee9f777c08ce404c8fbc12d9cea6016fe5b33ca91cdaf3"
+    }
+  },
+  "native_station_review": [
+    {
+      "numeric_header_pointer_click_verified": true,
+      "ascending_latitude_station_names": [
+        "Malargue ESA",
+        "Canberra DSN",
+        "New Norcia ESA",
+        "Dongara KGS",
+        "Chuuk KGS",
+        "Byalalu ISRO",
+        "Goldstone DSN",
+        "Daejeon KGS",
+        "Madrid DSN",
+        "Cebreros ESA",
+        "ITU Ayazaga",
+        "Ussuriisk RUS",
+        "Evpatoria RUS",
+        "Bear Lakes RUS",
+        "Svalbard KGS"
+      ],
+      "theme": "modern",
+      "dpr": 1.0,
+      "catalogue_count": 15,
+      "filtered_export_count": 3,
+      "exported_names": [
+        "Canberra DSN",
+        "Goldstone DSN",
+        "Madrid DSN"
+      ],
+      "empty_filter_blocks_export": true,
+      "keyboard_find_verified": true,
+      "small_controls_reachable": true,
+      "catalogue_source_hash_unchanged": true,
+      "matplotlib_map_present": true,
+      "page_horizontal_scroll_maximum": 0,
+      "map_pointer_selection_verified": true,
+      "canvas_reused_on_resize": true,
+      "all_seven_columns_retained": true,
+      "sorted_edit_target_verified": "Ussuriisk RUS",
+      "sorted_preset_names_verified": [
+        "Ussuriisk RUS",
+        "Svalbard KGS"
+      ],
+      "sorted_custom_delete_cancel_verified": true,
+      "legend_outside_map": true,
+      "custom_and_unknown_network_key_refreshed": true,
+      "wide_narrow_wide_selection_retained": true
+    },
+    {
+      "numeric_header_pointer_click_verified": true,
+      "ascending_latitude_station_names": [
+        "Malargue ESA",
+        "Canberra DSN",
+        "New Norcia ESA",
+        "Dongara KGS",
+        "Chuuk KGS",
+        "Byalalu ISRO",
+        "Goldstone DSN",
+        "Daejeon KGS",
+        "Madrid DSN",
+        "Cebreros ESA",
+        "ITU Ayazaga",
+        "Ussuriisk RUS",
+        "Evpatoria RUS",
+        "Bear Lakes RUS",
+        "Svalbard KGS"
+      ],
+      "theme": "orchid",
+      "dpr": 2.0,
+      "catalogue_count": 15,
+      "filtered_export_count": 3,
+      "exported_names": [
+        "Canberra DSN",
+        "Goldstone DSN",
+        "Madrid DSN"
+      ],
+      "empty_filter_blocks_export": true,
+      "keyboard_find_verified": true,
+      "small_controls_reachable": true,
+      "catalogue_source_hash_unchanged": true,
+      "matplotlib_map_present": true,
+      "page_horizontal_scroll_maximum": 0,
+      "map_pointer_selection_verified": true,
+      "canvas_reused_on_resize": true,
+      "all_seven_columns_retained": true,
+      "sorted_edit_target_verified": "Ussuriisk RUS",
+      "sorted_preset_names_verified": [
+        "Ussuriisk RUS",
+        "Svalbard KGS"
+      ],
+      "sorted_custom_delete_cancel_verified": true,
+      "legend_outside_map": true,
+      "custom_and_unknown_network_key_refreshed": true,
+      "wide_narrow_wide_selection_retained": true
+    }
+  ],
+  "saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "qualification_scope": "UI and software regression; existing solver observations synthetic; no new scientific campaign"
+}

@@ -51,6 +51,10 @@ Tablo başlıklarına tıklayarak görünümü sıralayabilirsiniz. Düzenleme, 
 seçimden ağ kaydetme işlemleri ekranda seçili istasyonları kullanır. Aramayı
 değiştirdiğinizde seçim temizlenir; işlemden önce satırı yeniden seçin.
 
+Enlem/boylam ve belirsizlik sütunları kayıtlı sayısal duyarlıkla sıralanır.
+Hücrenin üzerine gelerek tam değeri ve birimini görün. **—**, tanımlı olmayan
+değerdir; artan sıralamada sonda, azalan sıralamada baştadır. Sıfırdan ayrıdır.
+
 ## Yörünge, harita ve Gantt
 
 Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.
