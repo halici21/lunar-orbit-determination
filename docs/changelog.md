@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep station identities and coordinate cells together when sorting/filtering
+  the catalogue. Edit/delete/preset actions and map picks resolve the displayed
+  station; rebuilding the table clears an earlier selection.
 - Reduce root files from 16 to 10: group roadmap/changelog in `docs/`,
   contributing guidance in `.github/`, project instructions in `.claude/`,
   and the MkDocs configuration in `docs/`. Consolidate pytest options into

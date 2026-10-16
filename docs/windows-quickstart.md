@@ -47,6 +47,10 @@ Haritanın altındaki **Ağlar** satırı nokta renklerini açıklar; arama sır
 da tüm haritanın anahtarıdır. **★ Özel istasyon** işaretin türünü belirtir;
 yıldızın rengi yine ait olduğu ağı gösterir.
 
+Tablo başlıklarına tıklayarak görünümü sıralayabilirsiniz. Düzenleme, silme ve
+seçimden ağ kaydetme işlemleri ekranda seçili istasyonları kullanır. Aramayı
+değiştirdiğinizde seçim temizlenir; işlemden önce satırı yeniden seçin.
+
 ## Yörünge, harita ve Gantt
 
 Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.

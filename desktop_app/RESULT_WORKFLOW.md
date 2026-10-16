@@ -20,6 +20,12 @@ all filtered rows, independent of the selected rows, and is disabled for an
 empty result. Its map continues to show the full catalogue, as the search help
 states. This catalogue filter does not change a scenario or recorded-run geometry.
 
+Sorted rows retain a stable reference to their filtered source record. Edit,
+delete and network-preset actions resolve the displayed row through that
+reference; map picks locate the named station in the current visual order.
+Filtering/rebuilding clears the earlier selection, preventing a row number from
+silently selecting a different station. CSV still exports all filtered records.
+
 Catalogue-wide actions (search/export/add) and selection actions (network preset,
 edit/delete) stack into two rows when they cannot fit side by side. The outer
 catalogue page fits the 760×420 minimum window without horizontal scrolling;

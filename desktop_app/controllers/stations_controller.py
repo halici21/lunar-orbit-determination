@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     QDoubleSpinBox, QDialogButtonBox, QMessageBox, QComboBox, QInputDialog,
     QFileDialog, QShortcut, QSizePolicy, QBoxLayout,
 )
-from PyQt5.QtCore import Qt, QSettings
+from PyQt5.QtCore import Qt, QSettings, QSignalBlocker
 from PyQt5.QtGui import QColor, QKeySequence
 from PyQt5 import uic
 
@@ -443,16 +443,21 @@ class StationsController(QWidget):
         self._search.clear()
         self._search.blockSignals(False)
         self._populate_table(self._all_stations)
-        for row, s in enumerate(self._filtered_stations):
-            if s["name"] == station_name:
+        for row in range(self.stationsTable.rowCount()):
+            if self._station_at_row(row)["name"] == station_name:
                 self.stationsTable.selectRow(row)
                 self.stationsTable.scrollToItem(self.stationsTable.item(row, 0))
                 break
 
     # ------------------------------------------------------------------
     def _populate_table(self, stations: list[dict]) -> None:
-        self._filtered_stations = stations
         tbl = self.stationsTable
+        # Sorting during cell insertion can move a name before its values arrive.
+        selection_blocker = QSignalBlocker(tbl.selectionModel())
+        sorting = tbl.isSortingEnabled()
+        tbl.setSortingEnabled(False)
+        tbl.clearSelection()
+        self._filtered_stations = stations
         tbl.setColumnCount(len(_COL_HEADERS))
         tbl.setHorizontalHeaderLabels(_COL_HEADERS)
         tbl.setRowCount(len(stations))
@@ -479,6 +484,7 @@ class StationsController(QWidget):
                 return item
 
             name_item = cell(s["name"], bold=is_custom)
+            name_item.setData(Qt.UserRole, row)
             if is_custom:
                 name_item.setForeground(QColor(C.YELLOW))
                 name_item.setToolTip("Custom station (saved in settings)")
@@ -500,6 +506,8 @@ class StationsController(QWidget):
             rr_mm = rr * 1e3 if rr is not None else None
             tbl.setItem(row, 6, cell(f"{rr_mm:.3f}" if rr_mm is not None else "—"))
 
+        tbl.setSortingEnabled(sorting)
+        del selection_blocker
         self._on_selection()
 
     def _apply_filter(self, text: str) -> None:
@@ -533,13 +541,18 @@ class StationsController(QWidget):
         single_selected = len(rows) == 1
         self._btn_edit.setEnabled(single_selected)
         if single_selected:
-            station = self._filtered_stations[rows[0]]
+            station = self._station_at_row(rows[0])
             self._btn_delete.setEnabled(station.get("_custom", False))
         else:
             self._btn_delete.setEnabled(False)
 
     def _selected_rows(self) -> list[int]:
         return sorted({idx.row() for idx in self.stationsTable.selectedIndexes()})
+
+    def _station_at_row(self, row: int) -> dict:
+        """Resolve a visual row after sorting through its stable source index."""
+        index = self.stationsTable.item(row, 0).data(Qt.UserRole)
+        return self._filtered_stations[index]
 
     # ------------------------------------------------------------------
     def _add_station(self) -> None:
@@ -557,7 +570,7 @@ class StationsController(QWidget):
         rows = self._selected_rows()
         if len(rows) != 1:
             return
-        station = self._filtered_stations[rows[0]]
+        station = self._station_at_row(rows[0])
         dlg = _StationDialog(station=station, parent=self)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.result_station()
@@ -581,7 +594,7 @@ class StationsController(QWidget):
         rows = self._selected_rows()
         if len(rows) != 1:
             return
-        station = self._filtered_stations[rows[0]]
+        station = self._station_at_row(rows[0])
         if not station.get("_custom"):
             QMessageBox.information(self, "Cannot delete",
                 "Only custom stations can be deleted.\n"
@@ -630,7 +643,7 @@ class StationsController(QWidget):
         rows = self._selected_rows()
         if not rows:
             return
-        selected_names = [self._filtered_stations[r]["name"] for r in rows]
+        selected_names = [self._station_at_row(r)["name"] for r in rows]
         name, ok = QInputDialog.getText(
             self, "Save Network Preset",
             f"Preset name for {len(selected_names)} station(s):",
