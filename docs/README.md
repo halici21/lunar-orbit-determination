@@ -15,6 +15,7 @@
 - [Station map key: unobstructed geography and custom markers](development/station-legend_2026-10-15.md)
 - [Station row identity after sorting and filtering](development/station-sorting_2026-10-16.md)
 - [Station numeric ordering and missing values](development/station-numeric-sort_2026-10-16.md)
+- [Catalogue map labels and exact name selection](development/station-map-labels_2026-10-16.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
