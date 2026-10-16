@@ -26,6 +26,12 @@ reference; map picks locate the named station in the current visual order.
 Filtering/rebuilding clears the earlier selection, preventing a row number from
 silently selecting a different station. CSV still exports all filtered records.
 
+Coordinate and uncertainty headers sort full numeric values independently of
+display rounding. Numeric cells are right-aligned; hover for their full value
+and displayed unit. Undefined values (—) sort last ascending and first
+descending, separately from zero. CSV retains source values, units and filtered
+source order.
+
 Catalogue-wide actions (search/export/add) and selection actions (network preset,
 edit/delete) stack into two rows when they cannot fit side by side. The outer
 catalogue page fits the 760×420 minimum window without horizontal scrolling;

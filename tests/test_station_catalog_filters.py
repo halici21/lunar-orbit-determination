@@ -227,3 +227,54 @@ def test_map_pick_after_sorting_selects_named_station_instead_of_source_row_numb
     selected = page.stationsTable.currentRow()
     assert page.stationsTable.item(selected, 0).text() == "Madrid DSN"
     assert not page._btn_delete.isEnabled() and page._btn_edit.isEnabled()
+
+
+@pytest.mark.parametrize("column,field,values,ascending", [
+    (2, "lat_deg", [-20, -2, 2, 10, 0, 60, -70], [6, 0, 1, 4, 2, 3, 5]),
+    (3, "lon_deg", [-100, -20, -2, 2, 10, 0, 60], [0, 1, 2, 5, 3, 4, 6]),
+    (4, "sigma_range_m", [None, 10, 2, 0, 1.04, 1.03, 0.1], [3, 6, 5, 4, 2, 1, 0]),
+    (5, "sigma_angle_rad", [None, .01, .002, 0, .0010004, .0010003, .0001], [3, 6, 5, 4, 2, 1, 0]),
+    (6, "sigma_rr_mps", [None, .01, .002, 0, .0010004, .0010003, .0001], [3, 6, 5, 4, 2, 1, 0]),
+])
+def test_station_numeric_sort_orders_signed_values_and_precision_without_changing_records(
+        page, tmp_path, column, field, values, ascending):
+    """Hand-ordered records distinguish numbers from formatted strings and missing data."""
+    template = page._all_stations[0]
+    catalogue = [dict(template, name=f"Row {i}", **{field: value}) for i, value in enumerate(values)]
+    page._all_stations = catalogue
+    before = copy.deepcopy(catalogue)
+    page._apply_filter("")
+    table = page.stationsTable
+    for direction, indices in ((Qt.AscendingOrder, ascending),
+                               (Qt.DescendingOrder, list(reversed(ascending)))):
+        table.sortItems(column, direction)
+        assert [table.item(r, 0).text() for r in range(len(values))] == [f"Row {i}" for i in indices]
+        for row, index in enumerate(indices):
+            assert page._station_at_row(row) == catalogue[index]
+        table.selectRow(2)
+        with patch.object(stations, "_StationDialog") as dialog:
+            dialog.return_value.exec_.return_value = stations.QDialog.Rejected
+            page._edit_station()
+        assert dialog.call_args.kwargs["station"] == catalogue[indices[2]]
+        page._search.setText("Row 1")
+        assert table.rowCount() == 1 and table.item(0, 0).text() == "Row 1"
+        page._search.clear()
+        assert [table.item(r, 0).text() for r in range(len(values))] == [f"Row {i}" for i in indices]
+    if column >= 4:
+        missing_row = next(r for r in range(len(values)) if table.item(r, 0).text() == "Row 0")
+        assert table.item(missing_row, column).text() == "—"
+        assert "Tanımlı değil" in table.item(missing_row, column).toolTip()
+        rounded_rows = [next(r for r in range(len(values)) if table.item(r, 0).text() == f"Row {i}")
+                        for i in (4, 5)]
+        high, low = [table.item(r, column) for r in rounded_rows]
+        assert high.text() == low.text() and high.toolTip() != low.toolTip()
+    assert "sayısal" in table.horizontalHeaderItem(column).toolTip()
+    target = tmp_path / "numeric-sort.csv"
+    with patch.object(stations.QFileDialog, "getSaveFileName", return_value=(str(target), "CSV")), \
+         patch.object(stations.QMessageBox, "information"):
+        page._export_csv()
+    with target.open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert [r["name"] for r in rows] == [r["name"] for r in catalogue]
+    assert [r[field] for r in rows] == ["" if value is None else str(value) for value in values]
+    assert page._all_stations == before

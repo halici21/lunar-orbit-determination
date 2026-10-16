@@ -151,6 +151,25 @@ def _build_map(stations: list[dict]):
     return fig
 
 
+class _StationNumericItem(QTableWidgetItem):
+    """Keep display precision separate from numeric ordering and absent values."""
+
+    def __init__(self, value: float | None, decimals: int, unit: str,
+                 color: QColor | None = None) -> None:
+        super().__init__(f"{value:.{decimals}f}" if value is not None else "—")
+        self.setData(Qt.UserRole, value)
+        self.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.setToolTip(f"{value} {unit}" if value is not None else "Tanımlı değil (—)")
+        if color is not None:
+            self.setForeground(color)
+
+    def __lt__(self, other: QTableWidgetItem) -> bool:
+        value, other_value = self.data(Qt.UserRole), other.data(Qt.UserRole)
+        # Missing sorts after every number ascending; descending reverses that order.
+        return ((value is None, value if value is not None else 0.0)
+                < (other_value is None, other_value if other_value is not None else 0.0))
+
+
 # ---------------------------------------------------------------------------
 class _StationDialog(QDialog):
     """Add / edit a station record."""
@@ -464,6 +483,12 @@ class StationsController(QWidget):
         tbl.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         for col in range(1, len(_COL_HEADERS)):
             tbl.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeToContents)
+            if col >= 2:
+                tbl.horizontalHeaderItem(col).setToolTip(
+                    "Başlığa tıklayarak kayıtlı değerin tam duyarlığıyla sayısal sıralayın. "
+                    "—: tanımlı değil; artan sıralamada sonda, azalan sıralamada başta. "
+                    "Hücrenin üzerine gelerek yuvarlanmamış değeri ve birimini görün."
+                )
 
         for row, s in enumerate(stations):
             net = s["network"]
@@ -490,21 +515,21 @@ class StationsController(QWidget):
                 name_item.setToolTip("Custom station (saved in settings)")
             tbl.setItem(row, 0, name_item)
             tbl.setItem(row, 1, cell(net, net_color))
-            tbl.setItem(row, 2, cell(f"{s['lat_deg']:.2f}"))
-            tbl.setItem(row, 3, cell(f"{s['lon_deg']:.2f}"))
+            tbl.setItem(row, 2, _StationNumericItem(s["lat_deg"], 2, "°"))
+            tbl.setItem(row, 3, _StationNumericItem(s["lon_deg"], 2, "°"))
 
             sr = s["sigma_range_m"]
             sr_color = QColor(C.YELLOW) if sr and sr > 10 else QColor(C.GREEN)
-            tbl.setItem(row, 4, cell(f"{sr:.1f}" if sr is not None else "—", sr_color))
+            tbl.setItem(row, 4, _StationNumericItem(sr, 1, "m", sr_color))
 
             sa = s["sigma_angle_rad"]
             sa_mrad = sa * 1e3 if sa is not None else None
             sa_color = QColor(C.YELLOW) if sa_mrad and sa_mrad > 0.05 else QColor(C.GREEN)
-            tbl.setItem(row, 5, cell(f"{sa_mrad:.3f}" if sa_mrad is not None else "—", sa_color))
+            tbl.setItem(row, 5, _StationNumericItem(sa_mrad, 3, "mrad", sa_color))
 
             rr = s["sigma_rr_mps"]
             rr_mm = rr * 1e3 if rr is not None else None
-            tbl.setItem(row, 6, cell(f"{rr_mm:.3f}" if rr_mm is not None else "—"))
+            tbl.setItem(row, 6, _StationNumericItem(rr_mm, 3, "mm/s"))
 
         tbl.setSortingEnabled(sorting)
         del selection_blocker
