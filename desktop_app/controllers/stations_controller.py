@@ -106,6 +106,8 @@ def _build_map(stations: list[dict]):
     matplotlib.use("Qt5Agg")
     import matplotlib.pyplot as plt
     from matplotlib.figure import Figure
+    from matplotlib.text import Text
+    from widgets.catalogue_map_labels import CatalogueMapLabels
 
     with plt.rc_context(_MPL_STYLE):
         fig = Figure(figsize=(11, 4.5), tight_layout={"pad": 0.8})
@@ -124,17 +126,23 @@ def _build_map(stations: list[dict]):
     for lat in [66.5, -66.5]:
         ax.axhline(lat, color=C.BORDER_POLAR, linewidth=0.6, linestyle=":", zorder=3)
 
+    labels = []
     for s in stations:
         color = _NET_COLORS.get(s["network"], _DEFAULT_COLOR)
         marker = "*" if s.get("_custom") else "o"
         ax.scatter(s["lon_deg"], s["lat_deg"], c=color, s=120 if marker == "o" else 200,
                    zorder=6, edgecolors=C.TEXT_SECONDARY, linewidth=0.7, marker=marker,
                    picker=5, label=s["name"])
-        short = s["name"].split()[0]
-        ax.annotate(short, (s["lon_deg"], s["lat_deg"]),
-                    xytext=(6, 5), textcoords="offset points",
-                    fontsize=FONT.SIZE_XS - 0.5, color=color, zorder=7,
-                    fontfamily=FONT.MONO)
+        name = s["name"].removesuffix(" " + s["network"])
+        label = ax.annotate(name, (s["lon_deg"], s["lat_deg"]),
+                            xytext=(10, 10), textcoords="offset points",
+                            fontsize=FONT.SIZE_XS - 0.5, color=color, zorder=7,
+                            fontfamily="sans-serif", picker=Text.contains, gid=s["name"], parse_math=False,
+                            arrowprops={"arrowstyle": "-", "color": C.TEXT_MUTED,
+                                        "linewidth": .5, "shrinkA": 2, "shrinkB": 7})
+        label.set_in_layout(False)
+        labels.append(label)
+    CatalogueMapLabels(ax, labels)
 
     ax.set_xlim(-180, 180)
     ax.set_ylim(-90, 90)
@@ -390,7 +398,9 @@ class StationsController(QWidget):
         if any(s.get("_custom") for s in self._all_stations):
             items.append("★&nbsp;Özel&nbsp;istasyon")
             description += ". Yıldız: kullanıcı tarafından eklenen istasyon; rengi ait olduğu ağı gösterir."
-        self._map_legend.setText("Ağlar: " + " &nbsp; ".join(items) if items else "")
+        help_text = "Nokta / ad: tabloda seç. Alan yetmezse bazı adlar gizlenir; tüm istasyonlar tabloda kalır."
+        description += ". " + help_text
+        self._map_legend.setText("Ağlar: " + " &nbsp; ".join(items) + " · Nokta / ad: seç" if items else "")
         self._map_legend.setVisible(bool(items))
         self._map_legend.setAccessibleDescription(description)
         self._map_legend.setToolTip(description + " Harita, arama filtresinden bağımsız tüm kataloğu gösterir.")
@@ -450,11 +460,15 @@ class StationsController(QWidget):
     def _on_map_pick(self, event) -> None:
         try:
             from matplotlib.collections import PathCollection
+            from matplotlib.text import Annotation
         except ImportError:
             return
-        if not isinstance(event.artist, PathCollection):
+        if isinstance(event.artist, Annotation):
+            station_name = event.artist.get_gid()
+        elif isinstance(event.artist, PathCollection):
+            station_name = event.artist.get_label()
+        else:
             return
-        station_name = event.artist.get_label()
         if not station_name or station_name.startswith("_"):
             return
         # Clear search filter and reset to all stations so the row is visible

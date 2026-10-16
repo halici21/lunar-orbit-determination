@@ -48,6 +48,12 @@ identifies its network. Unknown network codes use the same fallback color as
 their plotted markers. The key refreshes after a successful map rebuild and
 hides for an empty catalogue. Its text is escaped before rich-text rendering.
 
+Catalogue names avoid map edges, other text and station markers using the actual
+renderer size. Multiword city names are retained; thin leaders attach displaced
+text to unchanged geographic points. Click a name or marker to select its full
+source record in the table. Leaders themselves are not selection targets. Dense
+or oversized custom names may hide; all markers and table records remain.
+
 ## Mission overview
 
 New installations open **Görev görünümü**. Saved safe workspace pages remain

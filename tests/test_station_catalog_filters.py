@@ -278,3 +278,90 @@ def test_station_numeric_sort_orders_signed_values_and_precision_without_changin
     assert [r["name"] for r in rows] == [r["name"] for r in catalogue]
     assert [r[field] for r in rows] == ["" if value is None else str(value) for value in values]
     assert page._all_stations == before
+
+
+@pytest.mark.parametrize("size", [(520, 300), (1120, 440)])
+def test_catalogue_station_labels_fit_map_without_covering_each_other_or_moving_markers(qt_app, size):
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+    from matplotlib.text import Annotation, Text
+
+    catalogue = stations._load_stations()
+    canvas = FigureCanvasQTAgg(stations._build_map(catalogue))
+    try:
+        canvas.resize(*size); canvas.show(); qt_app.processEvents(); canvas.draw()
+        axes = canvas.figure.axes[0]
+        renderer = canvas.get_renderer()
+        labels = [a for a in axes.texts if isinstance(a, Annotation) and a.get_visible()]
+        boxes = [Text.get_window_extent(a, renderer) for a in labels]
+        assert len(labels) == len(catalogue)
+        assert all(axes.bbox.contains(b.x0, b.y0) and axes.bbox.contains(b.x1, b.y1) for b in boxes)
+        assert not any(a.overlaps(b) for i, a in enumerate(boxes) for b in boxes[i+1:])
+        expected = {s["name"]: (s["lon_deg"], s["lat_deg"]) for s in catalogue}
+        assert {a.get_gid(): a.xy for a in labels} == expected
+        # Labels cannot conceal even a neighboring station's exact marker center.
+        centers = axes.transData.transform(list(expected.values()))
+        assert not any(box.contains(x, y) for box in boxes for x, y in centers)
+        # A leader line must not steal a marker click; only the name is pickable.
+        from matplotlib.backend_bases import MouseEvent
+        for label, box in zip(labels, boxes):
+            picker = label.get_picker()
+            x, y = axes.transData.transform(label.xy)
+            assert not picker(label, MouseEvent("button_press_event", canvas, x, y))[0]
+            assert picker(label, MouseEvent("button_press_event", canvas,
+                                           (box.x0+box.x1)/2, (box.y0+box.y1)/2))[0]
+        assert any(a.get_text() == "New Norcia" for a in labels)
+        # Layout must be deterministic across repeated draws and a resize round trip.
+        positions = {a.get_gid(): a.get_position() for a in labels}
+        canvas.draw()
+        assert {a.get_gid(): a.get_position() for a in labels} == positions
+        canvas.resize(760, 360); qt_app.processEvents(); canvas.draw()
+        canvas.resize(*size); qt_app.processEvents(); canvas.draw()
+        assert {a.get_gid(): a.get_position() for a in labels} == positions
+    finally:
+        canvas.close(); qt_app.processEvents()
+
+
+def test_station_label_pick_uses_full_identity_through_a_sorted_filter(page):
+    from types import SimpleNamespace
+    from matplotlib.text import Annotation
+
+    page._search.setText("DSN")
+    page.stationsTable.sortItems(2, Qt.DescendingOrder)
+    label = Annotation("Cebreros", (0, 0), gid="Cebreros ESA")
+    page._on_map_pick(SimpleNamespace(artist=label))
+    assert page._search.text() == ""
+    selected = page.stationsTable.currentRow()
+    assert page.stationsTable.item(selected, 0).text() == "Cebreros ESA"
+    assert page._station_at_row(selected)["name"] == "Cebreros ESA"
+    assert page._btn_edit.isEnabled() and not page._btn_delete.isEnabled()
+
+
+def test_dense_and_edge_custom_labels_keep_every_exact_marker_without_text_overflow(qt_app):
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+    from matplotlib.collections import PathCollection
+    from matplotlib.text import Annotation, Text
+
+    template = stations._load_stations()[0]
+    catalogue = [dict(template, name=f"Cluster station {i}", lat_deg=40, lon_deg=-4, _custom=True)
+                 for i in range(24)]
+    catalogue += [dict(template, name="Özel $x$ <station>", lat_deg=89.8, lon_deg=179.8, _custom=True),
+                  dict(template, name="Very long station name " * 30, lat_deg=-89.8, lon_deg=-179.8)]
+    before = copy.deepcopy(catalogue)
+    canvas = FigureCanvasQTAgg(stations._build_map(catalogue))
+    try:
+        canvas.resize(520, 300); canvas.show(); qt_app.processEvents(); canvas.draw()
+        axes = canvas.figure.axes[0]
+        annotations = [a for a in axes.texts if isinstance(a, Annotation)]
+        visible = [a for a in annotations if a.get_visible()]
+        assert 0 < len(visible) < len(catalogue)  # Only optional names may hide.
+        boxes = [Text.get_window_extent(a, canvas.get_renderer()) for a in visible]
+        assert all(axes.bbox.contains(b.x0, b.y0) and axes.bbox.contains(b.x1, b.y1) for b in boxes)
+        assert not any(a.overlaps(b) for i, a in enumerate(boxes) for b in boxes[i+1:])
+        markers = {a.get_label(): tuple(a.get_offsets()[0]) for a in axes.collections
+                   if isinstance(a, PathCollection)}
+        assert markers == {s["name"]: (s["lon_deg"], s["lat_deg"]) for s in catalogue}
+        assert len(annotations) == len(catalogue) and all(a.get_picker() for a in annotations)
+        assert all(not a.get_parse_math() for a in annotations)
+        assert catalogue == before
+    finally:
+        canvas.close(); qt_app.processEvents()

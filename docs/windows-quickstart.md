@@ -47,6 +47,11 @@ Haritanın altındaki **Ağlar** satırı nokta renklerini açıklar; arama sır
 da tüm haritanın anahtarıdır. **★ Özel istasyon** işaretin türünü belirtir;
 yıldızın rengi yine ait olduğu ağı gösterir.
 
+Haritadaki **noktaya veya istasyon adına** tıklayarak tablodaki kaydı seçin.
+Adlar birbirini ve noktaları kapatmadan yerleşir; ince çizgiler adın ait olduğu
+konumu gösterir. Noktaların koordinatları değişmez. Çok yoğun/uzun özel adlar
+sığmazsa gizlenebilir; bütün istasyonlara tablodan erişebilirsiniz.
+
 Tablo başlıklarına tıklayarak görünümü sıralayabilirsiniz. Düzenleme, silme ve
 seçimden ağ kaydetme işlemleri ekranda seçili istasyonları kullanır. Aramayı
 değiştirdiğinizde seçim temizlenir; işlemden önce satırı yeniden seçin.

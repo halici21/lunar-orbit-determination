@@ -13,8 +13,10 @@ The [earlier desktop map-key gate](../development/station-legend_2026-10-15.md)
 passed 291 public cases; the 290-case count above describes the earlier cleanup.
 The [earlier station row-identity gate](../development/station-sorting_2026-10-16.md)
 passed 301 public cases on the current repository/portable layout.
-The [latest numeric-sort gate](../development/station-numeric-sort_2026-10-16.md)
+The [earlier numeric-sort gate](../development/station-numeric-sort_2026-10-16.md)
 passed 306 public cases, including all 18 station catalogue cases.
+The [latest catalogue label gate](../development/station-map-labels_2026-10-16.md)
+passed 310 public cases, including all 22 station catalogue cases.
 
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,
@@ -43,7 +45,11 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest station numeric-order regression](../development/station-numeric-sort_2026-10-16.md):
+[Latest catalogue label regression](../development/station-map-labels_2026-10-16.md):
+1,871 passed checks, 29 skipped (1,754 named cases and
+146 subtest checks), zero failures/errors. The 310-case public gate includes
+all 22 station cases and all 35 mission cases.
+[Previous station numeric-order regression](../development/station-numeric-sort_2026-10-16.md):
 1,867 passed checks, 29 skipped (1,750 named cases and
 146 subtest checks), zero failures/errors. The 306-case public gate includes
 all 18 station cases and all 35 mission cases.
