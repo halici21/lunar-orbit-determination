@@ -178,3 +178,61 @@ def test_visibility_empty_selection_scope_and_keyboard_parameter_labels(page):
     assert widget.elevSpin.hasFocus() or widget.elevSpin.lineEdit().hasFocus()
     assert widget.elevLabel.buddy() is widget.elevSpin
     assert "ham" in widget.gapSpin.toolTip()
+
+@pytest.mark.parametrize("size", [(910, 465), (760, 420)])
+def test_visibility_small_window_keeps_full_width_controls_and_plot_without_panning(page, size):
+    from app import MainWindow
+    from PyQt5.QtCore import QPoint, QRect
+    widget, app, settings = page
+    with patch("app.QSettings", return_value=settings):
+        window = MainWindow()
+        window.environment.shutdown()
+        window.resize(1480, 1000)
+        window.show(); window.navigate("visibility")
+        app.processEvents()
+        view = window._pages["visibility"]
+        view._deselect_all(); view._checkboxes["Madrid DSN"].setChecked(True)
+        view.durationSpin.setValue(1)
+        data = payload(); complete(view, data)
+        figure, context = view._fig, view._result_context.text()
+        try:
+            window.resize(*size)
+            for _ in range(4): app.processEvents()
+            assert window.pageScroll.horizontalScrollBar().maximum() == 0
+            viewport = window.pageScroll.viewport()
+            for control in (view.selectAllBtn, view.deselectAllBtn, view.durationSpin,
+                            view.elevSpin, view.gapSpin, view.computeBtn,
+                            view.exportPngBtn, view.exportCsvBtn):
+                window.pageScroll.ensureWidgetVisible(control, 0, 0)
+                app.processEvents()
+                rect = QRect(control.mapTo(viewport, QPoint(0, 0)), control.size())
+                assert 0 <= rect.left() and rect.right() < viewport.width(), control.objectName()
+                assert control.isVisible() and control.isEnabled()
+                local = QRect(control.mapTo(view.controlPanel, QPoint(0, 0)), control.size())
+                assert view.controlPanel.rect().contains(local), control.objectName()
+                assert not control.visibleRegion().isEmpty(), control.objectName()
+            assert view.controlPanel.geometry().bottom() < view.chartPanel.geometry().top()
+            view._log("Computation log becomes visible in the small layout")
+            for _ in range(4): app.processEvents()
+            assert view.controlPanel.geometry().bottom() < view.chartPanel.geometry().top()
+            assert view.controlPanel.rect().contains(view._log_edit.geometry())
+            window.pageScroll.ensureWidgetVisible(view._canvas, 0, 0)
+            app.processEvents()
+            rect = QRect(view._canvas.mapTo(viewport, QPoint(0, 0)), view._canvas.size())
+            assert 0 <= rect.left() and rect.right() < viewport.width()
+            assert view._canvas.height() >= 280
+            window.pageScroll.verticalScrollBar().setValue(window.pageScroll.verticalScrollBar().maximum())
+            app.processEvents()
+            bottom = view._canvas.mapTo(viewport, QPoint(0, view._canvas.height())).y()
+            assert bottom <= viewport.height()
+            assert view._last_data is data and view._fig is figure
+            assert view._result_context.text() == context
+            window.resize(1480, 1000)
+            for _ in range(4): app.processEvents()
+            assert view.controlPanel.geometry().right() < view.chartPanel.geometry().left()
+            assert window.pageScroll.horizontalScrollBar().maximum() == 0
+            assert view._last_data is data and view._fig is figure
+            window.navigate("dynamics"); app.processEvents()
+            assert window.pageStack.minimumWidth() == 960
+        finally:
+            window.close(); app.processEvents()

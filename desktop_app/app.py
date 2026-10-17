@@ -120,7 +120,7 @@ class _VisiblePageStack(QStackedWidget):
 
     def minimumSizeHint(self):
         page = self.currentWidget()
-        return page.minimumSizeHint() if page else QSize(960, 720)
+        return page.minimumSizeHint().expandedTo(QSize(0, 720)) if page else QSize(960, 720)
 
     def heightForWidth(self, width):
         page = self.currentWidget()
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
         self.pageStack = _VisiblePageStack()
         self.pageStack.setObjectName("pageStack")
         original_stack.deleteLater()
-        self.pageStack.setMinimumSize(960, 720)
+        self.pageStack.setMinimumWidth(960)
         self.pageScroll.setWidget(self.pageStack)
 
         self._settings = QSettings("LunarOD", "DesktopApp")
@@ -366,9 +366,9 @@ class MainWindow(QMainWindow):
             other.setSizePolicy(other._workspace_size_policy if other is page else
                                 QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored))
         self.pageStack.setCurrentWidget(page)
-        # Mission plots and catalogue controls can stack; other forms retain
+        # Mission plots, catalogue and visibility panels can stack; other forms retain
         # their existing scrollable minimum width.
-        self.pageStack.setMinimumWidth(540 if page_id in {"mission", "stations"} else 960)
+        self.pageStack.setMinimumWidth(540 if page_id in {"mission", "stations", "visibility"} else 960)
         self.pageStack.updateGeometry()
         self.pageScroll.verticalScrollBar().setValue(0)
         self.pageScroll.horizontalScrollBar().setValue(0)

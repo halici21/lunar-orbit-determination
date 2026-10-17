@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Stack visibility settings and the Gantt plot in small windows; retain full
+  controls and lower-axis access with vertical scrolling and no outer panning.
+
 - Show the visibility result’s submitted settings and example-source scope; mark
   edits, lock pending requests and retain matching CSV/PNG data on failure.
 - Keep catalogue map names inside the world map without overlapping other names

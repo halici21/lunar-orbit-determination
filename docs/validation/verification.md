@@ -17,8 +17,10 @@ The [earlier numeric-sort gate](../development/station-numeric-sort_2026-10-16.m
 passed 306 public cases, including all 18 station catalogue cases.
 The [earlier catalogue label gate](../development/station-map-labels_2026-10-16.md)
 passed 310 public cases, including all 22 station catalogue cases.
-The [latest visibility-context gate](../development/visibility-context_2026-10-16.md)
+The [earlier visibility-context gate](../development/visibility-context_2026-10-16.md)
 passed 320 public cases, adding ten visibility request/result identity checks.
+The [latest responsive visibility gate](../development/visibility-responsive_2026-10-17.md)
+passed 322 public cases, including both small-window integration checks.
 
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,

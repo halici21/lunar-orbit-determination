@@ -280,6 +280,31 @@ class VisibilityController(QWidget):
             checkbox.toggled.connect(self._inputs_changed)
         self._inputs_changed()
 
+    def resizeEvent(self, event) -> None:
+        self._adapt_layout()
+        super().resizeEvent(event)
+
+    def _adapt_layout(self) -> None:
+        if not hasattr(self, "splitter"):
+            return
+        narrow = self.width() < 900
+        orientation = Qt.Vertical if narrow else Qt.Horizontal
+        if self.splitter.orientation() != orientation:
+            self.controlPanel.setMaximumWidth(16777215 if narrow else 320)
+            self.stationScrollArea.setMaximumHeight(160 if narrow else 16777215)
+            self.splitter.setOrientation(orientation)
+            self.splitter.setSizes([self.controlPanel.minimumSizeHint().height(), 520]
+                                   if narrow else [320, max(400, self.width() - 320)])
+        # Keep the complete form and a readable plot in the outer vertical scroll.
+        # Re-evaluate when the computation log or result context becomes visible.
+        height = (self.controlLayout.minimumSize().height()
+                  + max(520, self.chartLayout.minimumSize().height())
+                  + self.splitter.handleWidth()) if narrow else 0
+        self.setMinimumHeight(height)
+
+    def minimumSizeHint(self):
+        return super().minimumSizeHint().expandedTo(self.minimumSize())
+
     def _build_result_context(self) -> None:
         self._scope_note = QLabel(
             "Sabit örnek başlangıç yörüngesi · SPICE ile ayrı görünürlük hesabı · "
@@ -343,6 +368,7 @@ class VisibilityController(QWidget):
             self._result_context.setAccessibleDescription(details + "\n" + body)
         self._result_context.setText("\n".join(part for part in (message, body) if part))
         self._result_context.setVisible(bool(message or body))
+        self._adapt_layout()
 
     def _build_export_buttons(self) -> None:
         row = QHBoxLayout()
@@ -374,6 +400,7 @@ class VisibilityController(QWidget):
         self._log_edit.setVisible(True)
         self._log_edit.appendPlainText(msg)
         self._log_edit.ensureCursorVisible()
+        self._adapt_layout()
 
     def on_shown(self) -> None:
         self._sync_duration_from_settings()
