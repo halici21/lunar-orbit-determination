@@ -50,6 +50,7 @@
        <item>
         <widget class="QScrollArea" name="stationScrollArea">
          <property name="widgetResizable"><bool>true</bool></property>
+         <property name="minimumHeight"><number>120</number></property>
          <property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
          <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
          <widget class="QWidget" name="stationScrollWidget">
@@ -157,7 +158,7 @@
        <property name="bottomMargin"><number>0</number></property>
        <item>
         <widget class="QWidget" name="canvasHolder">
-         <property name="minimumWidth"><number>400</number></property>
+         <property name="minimumHeight"><number>360</number></property>
         </widget>
        </item>
       </layout>

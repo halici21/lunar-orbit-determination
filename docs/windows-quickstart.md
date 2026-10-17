@@ -70,7 +70,9 @@ gösterir; istasyon adları başlığın araç ipucunda bulunur. Ayarları deği
 grafik/dışa aktarımın önceki hesaba ait olduğu belirtilir. Hesap veya grafik
 hatasında önceki eşleşen sonuç korunur. Grafik/CSV ham görünürlük maskesidir.
 Kayıtlı koşunun ölçüm Gantt’ını **Görev görünümü** sayfasından açın.
-Dar pencerede mevcut kaydırıcılarla araçlara erişin.
+Dar pencerede ayarlar ve Gantt alt alta yerleşir; aşağı kaydırarak hesaplama,
+dışa aktarım ve grafiğin alt eksenine erişin. Bu sayfada sağa-sola kaydırmak gerekmez.
+İstasyon listesinin kendi kaydırıcısı korunur. Geniş pencerede paneller yan yanadır.
 
 ## Yörünge, harita ve Gantt
 
