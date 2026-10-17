@@ -60,6 +60,18 @@ Enlem/boylam ve belirsizlik sütunları kayıtlı sayısal duyarlıkla sıralan�
 Hücrenin üzerine gelerek tam değeri ve birimini görün. **—**, tanımlı olmayan
 değerdir; artan sıralamada sonda, azalan sıralamada baştadır. Sıfırdan ayrıdır.
 
+## Bağımsız temas planı
+
+**Temas planı**, sabit örnek başlangıç yörüngesinden SPICE ile ayrı görünürlük
+hesabı yapar (10 dk örnekleme). İstasyonları ve birimli ayarları seçip
+**Görünürlüğü hesapla** düğmesine basın. Alt+S/E/B ilgili parametreye geçer.
+Hesap sürerken girişler kilitlenir. Sonuç başlığı T0/UTC ve kullanılan ayarları
+gösterir; istasyon adları başlığın araç ipucunda bulunur. Ayarları değiştirirseniz
+grafik/dışa aktarımın önceki hesaba ait olduğu belirtilir. Hesap veya grafik
+hatasında önceki eşleşen sonuç korunur. Grafik/CSV ham görünürlük maskesidir.
+Kayıtlı koşunun ölçüm Gantt’ını **Görev görünümü** sayfasından açın.
+Dar pencerede mevcut kaydırıcılarla araçlara erişin.
+
 ## Yörünge, harita ve Gantt
 
 Bu ekran **main** sürümündedir; v0.1.0-alpha.1 ZIP paketi bu değişikliği içermez.

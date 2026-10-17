@@ -54,6 +54,19 @@ text to unchanged geographic points. Click a name or marker to select its full
 source record in the table. Leaders themselves are not selection targets. Dense
 or oversized custom names may hide; all markers and table records remain.
 
+## Independent visibility planning
+
+**Temas planı** uses the fixed example initial state and existing SPICE worker,
+with 600-second geometric-visibility samples. Mission is the recorded-run
+measurement timeline. The caption shows epoch and submitted duration/elevation/
+gap settings; its tooltip lists the actual stations. Request controls lock while
+pending. Later edits mark the displayed/exported prior request; restoring values
+clears the warning. Data/figure/context are promoted after plotting succeeds.
+Calculation or plot failure retains the known previous pair, or keeps exports
+disabled when none exists. CSV/PNG schemas are unchanged; the UI snapshot is not
+a persistent manifest. Alt+S/E/B focuses duration/elevation/gap. Small windows
+retain existing page scrollbars; all parameter/export controls remain reachable.
+
 ## Mission overview
 
 New installations open **Görev görünümü**. Saved safe workspace pages remain
