@@ -1,0 +1,245 @@
+{
+  "base_commit": "93921e7bcf1123820d03f429edd4a01cc9c470e4",
+  "local_junit": {
+    "targeted": {
+      "tests": 65,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 9.717,
+      "named_cases": 65,
+      "sha256": "49989c9b604e6f21607f8f2d7a70cc15d75dbdf8058f325cb551084702aa6f87"
+    },
+    "public": {
+      "tests": 327,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 64.343,
+      "named_cases": 327,
+      "sha256": "32e9294353920642b1d62089c7acd9a7305266e606e56188a68ba318260d98cf"
+    },
+    "full": {
+      "tests": 1917,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 610.339,
+      "named_cases": 1771,
+      "sha256": "69039784f407455c47d7fd43af298fa206c2246d9f4e86e3d67fbb3fc954f5da"
+    }
+  },
+  "native_review": [
+    {
+      "base": "93921e7bcf1123820d03f429edd4a01cc9c470e4",
+      "theme": "modern",
+      "dpr": 1.0,
+      "fixture_sha256": "945535ac6afcd7ac5994dfd2bce2fa5572aff4410898cbaa490b1f484be9ade7",
+      "protected_source_hashes": {
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "_export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "_generate_track": "b2612fb1e43d55227e7ad46317eb62d9e393f8abab8baba621a2a62dce02d9d1"
+      },
+      "actual_worker_runtime_s": 0.6897254000068642,
+      "spice_samples": 361,
+      "spice_station_names": [
+        "Madrid DSN",
+        "Canberra DSN"
+      ],
+      "spice_epoch": "2027-03-02 23:32:37",
+      "spice_csv_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "analytical_samples": 340,
+      "analytical_csv_sha256": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+      "original_serializers_byte_identical": true,
+      "original_plot_geometry_identical": true,
+      "source_arrays_unchanged": true,
+      "analytical_before_title": "Selenographic Ground Track — 0 days  |  Coverage: 0%",
+      "analytical_after_title": "Selenographic Ground Track — 0.1 days  |  Visibility not computed",
+      "analytical_note": "Analitik iki cisim ön incelemesi · t=0 yerel başlangıç, UTC epoku yok · sabit hızlı Z dönüşüyle yaklaşık Ay yüzey izi. İstasyon görünürlüğü hesaplanmadı; analitik CSV iletişim uygunluğu için kullanılamaz.",
+      "animation_advanced": true,
+      "model_note_follows_displayed_source": true,
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "controls_reachable": true,
+          "horizontal_scroll_maximum": 252
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "controls_reachable": true,
+          "horizontal_scroll_maximum": 402
+        }
+      ],
+      "qualification_scope": "Example geometric SPICE calculation and analytical preview; not recorded spacecraft telemetry or contact qualification"
+    },
+    {
+      "base": "93921e7bcf1123820d03f429edd4a01cc9c470e4",
+      "theme": "orchid",
+      "dpr": 2.0,
+      "fixture_sha256": "945535ac6afcd7ac5994dfd2bce2fa5572aff4410898cbaa490b1f484be9ade7",
+      "protected_source_hashes": {
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "_export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "_generate_track": "b2612fb1e43d55227e7ad46317eb62d9e393f8abab8baba621a2a62dce02d9d1"
+      },
+      "actual_worker_runtime_s": 0.8440339000080712,
+      "spice_samples": 361,
+      "spice_station_names": [
+        "Madrid DSN",
+        "Canberra DSN"
+      ],
+      "spice_epoch": "2027-03-02 23:32:37",
+      "spice_csv_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "analytical_samples": 340,
+      "analytical_csv_sha256": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+      "original_serializers_byte_identical": true,
+      "original_plot_geometry_identical": true,
+      "source_arrays_unchanged": true,
+      "analytical_before_title": "Selenographic Ground Track — 0 days  |  Coverage: 0%",
+      "analytical_after_title": "Selenographic Ground Track — 0.1 days  |  Visibility not computed",
+      "analytical_note": "Analitik iki cisim ön incelemesi · t=0 yerel başlangıç, UTC epoku yok · sabit hızlı Z dönüşüyle yaklaşık Ay yüzey izi. İstasyon görünürlüğü hesaplanmadı; analitik CSV iletişim uygunluğu için kullanılamaz.",
+      "animation_advanced": true,
+      "model_note_follows_displayed_source": true,
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "controls_reachable": true,
+          "horizontal_scroll_maximum": 252
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "controls_reachable": true,
+          "horizontal_scroll_maximum": 402
+        }
+      ],
+      "qualification_scope": "Example geometric SPICE calculation and analytical preview; not recorded spacecraft telemetry or contact qualification"
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "scope": "UI model/visibility/duration labels only. No scientific qualification or real telemetry claim."
+}
