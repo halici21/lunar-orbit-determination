@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Distinguish uncomputed analytical ground-track visibility from a calculated zero;
+  identify SPICE versus approximate analytical sources and retain fractional days.
+
 - Stack visibility settings and the Gantt plot in small windows; retain full
   controls and lower-axis access with vertical scrolling and no outer panning.
 

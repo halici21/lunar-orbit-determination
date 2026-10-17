@@ -119,6 +119,20 @@ Kayıtlı durum ve kuvvet manifesti yoksa yörünge/periyot uydurulmaz. Eğim J2
 kaydı için J2000 XY düzlemine göredir; Ay ekvatoruna göre eğim değildir.
 Truth yörüngesi senaryonun referans hareketidir, gerçek görev telemetrisi değildir.
 
+## Yüzey izi: iki ayrı model
+
+**Yörünge tasarımı**, analitik iki cisim ön incelemesidir. Ay dönüşü yaklaşık,
+sabit hızlı Z dönüşüdür; t=0 yerel başlangıçtır ve UTC epoku yoktur. İstasyon
+görünürlüğü hesaplanmaz. Bu nedenle “Visibility not computed” gösterilir;
+analitik CSV iletişim uygunluğu için kullanılamaz.
+
+**SPICE örneğini hesapla**, sabit örnek başlangıçtan ayrı bir hesap yapar;
+tasarımcıdaki elemanları devralmaz. Kaynak epok, IAU_MOON ve 4 dk örnekleme
+grafiğin üstünde belirtilir. “Visible samples”, görünür bulunan geometrik
+örneklerin oranıdır; kesintisiz temas süresi veya gerçek görev telemetrisi değildir.
+Kayıtlı koşunun yörüngesini **Görev görünümü** üzerinden inceleyin.
+Yüzey izi sayfasında dar pencerede mevcut yatay/dikey kaydırıcılar kullanılır.
+
 ## Ortam kontrolü
 
 Açılışta alt çubuktaki **Ortam** düğmesi kontrol durumunu gösterir.

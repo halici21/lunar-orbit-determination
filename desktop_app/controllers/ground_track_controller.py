@@ -382,6 +382,7 @@ def _build_static_figure(data: dict) -> "Figure":
     # Coverage stats
     covered = int(np.any(vis_mask, axis=0).sum()) if vis_mask.size else 0
     pct = 100.0 * covered / max(n, 1)
+    visibility_text = f"Visible samples: {pct:.0f}%" if vis_mask.size else "Visibility not computed"
 
     # Axes
     ax.set_xlim(-180, 180)
@@ -392,8 +393,8 @@ def _build_static_figure(data: dict) -> "Figure":
     ax.set_xlabel("Selenographic Longitude (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_ylabel("Selenographic Latitude (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_title(
-        f"Selenographic Ground Track — {data['duration_days']:.0f} days  "
-        f"|  Coverage: {pct:.0f}%",
+        f"Selenographic Ground Track — {data['duration_days']:g} days  "
+        f"|  {visibility_text}",
         color=C.TEXT_SECONDARY, fontsize=FONT.SIZE_SM,
     )
     for sp in ax.spines.values():
@@ -410,7 +411,8 @@ def _build_static_figure(data: dict) -> "Figure":
         for net, col in seen_nets.items()
     ]
     handles += [
-        Patch(facecolor=_NO_VIS_COLOR, label="No coverage"),
+        Patch(facecolor=_NO_VIS_COLOR, label="No sample visibility" if vis_mask.size
+              else "Visibility not computed"),
         Line2D([0], [0], marker="o", color=C.GREEN,  linestyle="None", ms=6, label="Start"),
         Line2D([0], [0], marker="s", color=C.YELLOW, linestyle="None", ms=5, label="End"),
     ]
@@ -838,16 +840,17 @@ class _OrbitDesigner(QWidget):
         gen_btn.setStyleSheet(_btn_ss)
         gen_btn.setMinimumHeight(38)
         gen_btn.setToolTip(
-            "Propagate this Keplerian orbit and display the selenographic ground track.\n"
-            "Simplified model (no n-body perturbations). Use 'Compute Ground Track'\n"
-            "on the Ground Track tab for accurate SPICE-based results."
+            "Analitik iki cisim yörüngesinin yaklaşık yüzey izini üretir.\n"
+            "UTC epoku ve istasyon görünürlüğü yoktur. SPICE hesabı ayrı bir\n"
+            "örnek başlangıç kullanır; buradaki elemanları devralmaz."
         )
         gen_btn.clicked.connect(self._generate_track)
         ctrl_lay.addWidget(gen_btn)
 
         note = QLabel(
-            "Keplerian only — no n-body perturbations or realistic ephemeris.\n"
-            "Good for orbit design; use SPICE computation for accurate results."
+            "Analitik iki cisim ön incelemesi. Ay dönüşü sabit hızlı Z dönüşüdür;\n"
+            "t=0 yerel başlangıçtır, UTC epoku ve istasyon görünürlüğü yoktur.\n"
+            "SPICE hesabı ayrı örnek başlangıç kullanır; bu elemanları devralmaz."
         )
         note.setWordWrap(True)
         note.setStyleSheet(f"color:{C.TEXT_TICK}; font-size:10px;")
@@ -998,12 +1001,27 @@ class GroundTrackController(QWidget):
         self.selectAllBtn.clicked.connect(self._select_all)
         self.deselectAllBtn.clicked.connect(self._deselect_all)
         self.computeBtn.clicked.connect(self._compute)
+        self.computeBtn.setText("SPICE örneğini hesapla")
         self.playBtn.clicked.connect(self._play_pause)
         self.resetBtn.clicked.connect(self._reset_anim)
         self._build_export_buttons()
         self._build_log_panel()
         self._set_status("Select stations and compute.", C.TEXT_MUTED)
         self._init_placeholder()
+        self._build_model_notes()
+
+    def _build_model_notes(self) -> None:
+        self._scope_note = QLabel(
+            "Bu araçlar ayrı örnek/ön inceleme modelleridir; kayıtlı koşunun yörüngesi Görev görünümündedir."
+        )
+        self._model_note = QLabel("İstasyonları seçip SPICE hesabını çalıştırın veya Yörünge tasarımı sekmesini açın.")
+        self._model_note.setAccessibleName("Görünen yüzey izinin modeli ve kaynağı")
+        self._model_note.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        for index, label in enumerate((self._scope_note, self._model_note)):
+            label.setWordWrap(True)
+            label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
+            label.setStyleSheet(f"color:{C.TEXT_SECONDARY}; font-size:{FONT.SIZE_SM}px; padding:8px 12px;")
+            self.chartLayout.insertWidget(index, label)
 
     def _build_log_panel(self) -> None:
         self._log_edit = QPlainTextEdit()
@@ -1131,7 +1149,7 @@ class GroundTrackController(QWidget):
         dur = data["duration_days"]
         covered = int(np.any(data["vis_mask"], axis=0).sum()) if data["vis_mask"].size else 0
         pct = 100.0 * covered / max(n, 1)
-        done_msg = f"{n} points, {dur:.0f} days — coverage {pct:.0f}%"
+        done_msg = f"{n} points, {dur:.0f} days — visible samples {pct:.0f}%"
         self._set_status(done_msg, C.GREEN)
         self._log(f"Done: {done_msg}")
 
@@ -1164,6 +1182,11 @@ class GroundTrackController(QWidget):
         self._anim_idx = 0
         self.animGroup.setEnabled(True)
         self.playBtn.setText("▶ Play")
+        self._model_note.setText(
+            f"SPICE · sabit örnek başlangıç ({FIXTURE.name}) · T0 {data['epoch_utc']} UTC · "
+            f"IAU_MOON · {_SAMPLE_STEP_S / 60:g} dk geometrik örnekleme. "
+            "Tasarımcıdaki elemanlar bu hesaba aktarılmaz."
+        )
 
     def _on_fail(self, msg: str) -> None:
         self.computeBtn.setEnabled(True)
@@ -1236,7 +1259,7 @@ class GroundTrackController(QWidget):
             lines.append("Tracking:")
             lines.extend(f"  {n}" for n in vis_names[:4])
         else:
-            lines.append("(no coverage)")
+            lines.append("No sample visibility" if self._data["vis_mask"].size else "Visibility not computed")
         self._anim_label.set_text("\n".join(lines))
 
         if self._canvas:
@@ -1352,9 +1375,9 @@ class GroundTrackController(QWidget):
             f"QTabWidget::pane {{ border:none; }}"
         )
         self.mainLayout.removeWidget(self.splitter)
-        self._tab_widget.addTab(self.splitter, "Ground Track")
+        self._tab_widget.addTab(self.splitter, "Yüzey izi")
         self._orbit_designer = _OrbitDesigner(self)
-        self._tab_widget.addTab(self._orbit_designer, "Orbit Designer")
+        self._tab_widget.addTab(self._orbit_designer, "Yörünge tasarımı")
         self.mainLayout.addWidget(self._tab_widget)
 
     def _show_keplerian_track(self, data: dict, elems: dict) -> None:
@@ -1394,6 +1417,11 @@ class GroundTrackController(QWidget):
         self._anim_idx = 0
         self.animGroup.setEnabled(True)
         self.playBtn.setText("▶ Play")
+        self._model_note.setText(
+            "Analitik iki cisim ön incelemesi · t=0 yerel başlangıç, UTC epoku yok · "
+            "sabit hızlı Z dönüşüyle yaklaşık Ay yüzey izi. İstasyon görünürlüğü hesaplanmadı; "
+            "analitik CSV iletişim uygunluğu için kullanılamaz."
+        )
         if self._tab_widget is not None:
             self._tab_widget.setCurrentIndex(0)
 
