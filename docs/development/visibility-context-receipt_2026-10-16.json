@@ -1,0 +1,248 @@
+{
+  "base_commit": "3c17a49f662d951b3bb07aa8cf3c97ab4da8b44e",
+  "controlled_reproduction": {
+    "base_commit": "3c17a49f662d951b3bb07aa8cf3c97ab4da8b44e",
+    "before": {
+      "plot_stations": [
+        "Madrid DSN"
+      ],
+      "csv_stations": [
+        "Goldstone DSN"
+      ],
+      "data_duration_days": 2,
+      "mixed_result": true
+    },
+    "after": {
+      "plot_stations": [
+        "Madrid DSN"
+      ],
+      "csv_stations": [
+        "Madrid DSN"
+      ],
+      "data_duration_days": 1,
+      "mixed_result": false
+    }
+  },
+  "local_junit": {
+    "targeted": {
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 6.755,
+      "named_cases": 58,
+      "sha256": "d719b37935974e368627a363966c07700d32020c46b6db7ac8982953ca0f0595"
+    },
+    "public": {
+      "tests": 320,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 56.585,
+      "named_cases": 320,
+      "sha256": "3eb40ba2d1d77565295fa09b147b34903c4107354133856db53024c456a89683"
+    },
+    "full": {
+      "tests": 1910,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 570.872,
+      "named_cases": 1764,
+      "sha256": "cd01b99ab6ff919b1a4f6e630fba41c0de0e6fce5b32ac4399db4c7835da41a3"
+    }
+  },
+  "native_visibility_review": [
+    {
+      "theme": "modern",
+      "dpr": 1.0,
+      "input_fixture_sha256": "945535ac6afcd7ac5994dfd2bce2fa5572aff4410898cbaa490b1f484be9ade7",
+      "request": {
+        "duration_days": 1,
+        "min_elevation_deg": 10,
+        "max_gap_min": 30
+      },
+      "states": 145,
+      "station_names": [
+        "Madrid DSN",
+        "Canberra DSN"
+      ],
+      "epoch_utc": "2027-03-02 23:32:37",
+      "sample_step_s": 600,
+      "wall_time_s": 0.8610916000034194,
+      "data_kind": "computed geometric visibility from fixed example initial state; not recorded measurements",
+      "actual_worker_success": true,
+      "busy_inputs_locked": true,
+      "keyboard_edit_kept_previous_result": true,
+      "injected_worker_failure_preserved_result": true,
+      "injected_plot_failure_preserved_matching_exports": true,
+      "raw_csv_sha256": "8d8d960b3af9d339d3aeed29f7ee83ac20c3a0bc59cd309f8871795b3cadc897",
+      "protected_source_hashes": {
+        "_VisWorker": "b3bb956af625527b935243023f4468375ee05ad17356d78f3a6c03f90a57c0e3",
+        "_draw_gantt": "6f13dee7fd355dd8173406251837350d73cdff56d48ea51ee48a236599e28bc8",
+        "_export_png": "f66c78b72282be4e89e22147bd2b2d9ce9fd193590d92f71524357d9d4cb4b27",
+        "_export_csv": "a9702b939ef120925f236685942c98918954ac971e80a9a83c1fbff8e8c5c97e"
+      },
+      "source_fixture_unchanged": true,
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "horizontal_scroll_maximum": 252,
+          "controls_reachable": true
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "horizontal_scroll_maximum": 402,
+          "controls_reachable": true
+        }
+      ]
+    },
+    {
+      "theme": "orchid",
+      "dpr": 2.0,
+      "input_fixture_sha256": "945535ac6afcd7ac5994dfd2bce2fa5572aff4410898cbaa490b1f484be9ade7",
+      "request": {
+        "duration_days": 1,
+        "min_elevation_deg": 10,
+        "max_gap_min": 30
+      },
+      "states": 145,
+      "station_names": [
+        "Madrid DSN",
+        "Canberra DSN"
+      ],
+      "epoch_utc": "2027-03-02 23:32:37",
+      "sample_step_s": 600,
+      "wall_time_s": 1.0263303999963682,
+      "data_kind": "computed geometric visibility from fixed example initial state; not recorded measurements",
+      "actual_worker_success": true,
+      "busy_inputs_locked": true,
+      "keyboard_edit_kept_previous_result": true,
+      "injected_worker_failure_preserved_result": true,
+      "injected_plot_failure_preserved_matching_exports": true,
+      "raw_csv_sha256": "8d8d960b3af9d339d3aeed29f7ee83ac20c3a0bc59cd309f8871795b3cadc897",
+      "protected_source_hashes": {
+        "_VisWorker": "b3bb956af625527b935243023f4468375ee05ad17356d78f3a6c03f90a57c0e3",
+        "_draw_gantt": "6f13dee7fd355dd8173406251837350d73cdff56d48ea51ee48a236599e28bc8",
+        "_export_png": "f66c78b72282be4e89e22147bd2b2d9ce9fd193590d92f71524357d9d4cb4b27",
+        "_export_csv": "a9702b939ef120925f236685942c98918954ac971e80a9a83c1fbff8e8c5c97e"
+      },
+      "source_fixture_unchanged": true,
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "horizontal_scroll_maximum": 252,
+          "controls_reachable": true
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "horizontal_scroll_maximum": 402,
+          "controls_reachable": true
+        }
+      ]
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "qualification_scope": "UI result identity; bounded geometric visibility from example initial state; no real telemetry or estimator qualification"
+}

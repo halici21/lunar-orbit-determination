@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QCheckBox, QSizePolicy,
-    QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QPlainTextEdit,
+    QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QPlainTextEdit, QFormLayout,
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QColor
@@ -247,6 +247,9 @@ class VisibilityController(QWidget):
         self._canvas = None
         self._fig = None
         self._last_data: dict | None = None
+        self._busy = False
+        self._pending_inputs = None
+        self._result_inputs = None
         self._setup()
 
     def _setup(self) -> None:
@@ -256,8 +259,90 @@ class VisibilityController(QWidget):
         self.computeBtn.clicked.connect(self._compute)
         self._build_export_buttons()
         self._build_log_panel()
-        self._set_status("Select stations and click 'Compute Gantt'.", C.TEXT_MUTED)
+        self._build_result_context()
         self._init_canvas_placeholder()
+        self.stationHeaderLabel.setText("İstasyonlar")
+        self.selectAllBtn.setText("Tümünü seç")
+        self.deselectAllBtn.setText("Seçimi kaldır")
+        self.paramsGroup.setTitle("Hesap ayarları")
+        self.computeBtn.setText("Görünürlüğü hesapla")
+        self.paramsFormLayout.setRowWrapPolicy(QFormLayout.WrapLongRows)
+        for label, control, text in (
+            (self.durationLabel, self.durationSpin, "&Süre (gün)"),
+            (self.elevLabel, self.elevSpin, "&En az yükseliş (°)"),
+            (self.gapLabel, self.gapSpin, "&Boşluk eşiği (dk)"),
+        ):
+            label.setText(text)
+            label.setBuddy(control)
+            control.valueChanged.connect(self._inputs_changed)
+        self.gapSpin.setToolTip("Analize iletilen boşluk eşiği. Grafik ve CSV ham görünürlük maskesini gösterir.")
+        for checkbox in self._checkboxes.values():
+            checkbox.toggled.connect(self._inputs_changed)
+        self._inputs_changed()
+
+    def _build_result_context(self) -> None:
+        self._scope_note = QLabel(
+            "Sabit örnek başlangıç yörüngesi · SPICE ile ayrı görünürlük hesabı · "
+            f"{_SAMPLE_STEP_S / 60:g} dk örnekleme. "
+            "Kayıtlı koşunun ölçüm takvimi: Görev görünümü."
+        )
+        self._result_context = QLabel()
+        self._result_context.setAccessibleName("Görünen görünürlük sonucunun kaynağı ve hesap ayarları")
+        self._result_context.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        for index, label in enumerate((self._scope_note, self._result_context)):
+            label.setWordWrap(True)
+            label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
+            label.setStyleSheet(f"color:{C.TEXT_SECONDARY}; font-size:{FONT.SIZE_SM}px; padding:8px 12px;")
+            self.chartLayout.insertWidget(index, label)
+
+    def _input_snapshot(self):
+        return (tuple(n for n, cb in self._checkboxes.items() if cb.isChecked()),
+                self.durationSpin.value(), self.elevSpin.value(), self.gapSpin.value())
+
+    def _set_busy(self, busy: bool) -> None:
+        self._busy = busy
+        for widget in (self.paramsGroup, self.stationScrollArea, self.selectAllBtn, self.deselectAllBtn):
+            widget.setEnabled(not busy)
+        self.computeBtn.setEnabled(not busy and bool(self._input_snapshot()[0]))
+        self.progressBar.setVisible(busy)
+        self.exportCsvBtn.setEnabled(not busy and self._last_data is not None)
+        self.exportPngBtn.setEnabled(not busy and self._last_data is not None and self._fig is not None)
+
+    def _inputs_changed(self) -> None:
+        if self._busy:
+            return
+        selected = bool(self._input_snapshot()[0])
+        self.computeBtn.setEnabled(selected)
+        if not selected:
+            self._set_status("En az bir istasyon seçin.", C.YELLOW)
+        elif self._last_data is None:
+            self._set_status("İstasyonları ve ayarları seçip hesaplayın.", C.TEXT_MUTED)
+        elif self._input_snapshot() != self._result_inputs:
+            self._set_status("Ayarlar değişti; yeniden hesaplayın.", C.YELLOW)
+        else:
+            self._set_status("Son sonuç hazır.", C.GREEN)
+        self._refresh_result_context()
+
+    def _refresh_result_context(self, message: str = "") -> None:
+        if self._busy:
+            message = ("Yeni hesap sürüyor; görünen grafik önceki sonuç." if self._last_data is not None
+                       else "Hesap sürüyor; sonuç bekleniyor.")
+        elif not message and self._last_data is not None and self._input_snapshot() != self._result_inputs:
+            message = "Ayarlar değişti; grafik ve dışa aktarım önceki sonuç. Yeniden hesaplayın."
+        body = ""
+        if self._last_data is not None:
+            data = self._last_data
+            body = (f"Son sonuç · T0 {data['epoch_utc']} UTC · {data['duration_days']:g} gün · "
+                    f"{len(data['station_names'])} istasyon")
+            if self._result_inputs is not None:
+                body += f" · en az yükseliş {self._result_inputs[2]:g}° · boşluk eşiği {self._result_inputs[3]:g} dk"
+            else:
+                body += " · hesap ayarları kaydedilmemiş"
+            details = f"Kaynak başlangıç: {FIXTURE.name}\nİstasyonlar: " + ", ".join(data['station_names'])
+            self._result_context.setToolTip(details)
+            self._result_context.setAccessibleDescription(details + "\n" + body)
+        self._result_context.setText("\n".join(part for part in (message, body) if part))
+        self._result_context.setVisible(bool(message or body))
 
     def _build_export_buttons(self) -> None:
         row = QHBoxLayout()
@@ -294,6 +379,8 @@ class VisibilityController(QWidget):
         self._sync_duration_from_settings()
 
     def _sync_duration_from_settings(self) -> None:
+        if self._busy:
+            return
         from PyQt5.QtCore import QSettings
         s = QSettings("LunarOD", "DesktopApp")
         try:
@@ -350,7 +437,7 @@ class VisibilityController(QWidget):
 
     # ------------------------------------------------------------------
     def _compute(self) -> None:
-        if self._worker and self._worker.isRunning():
+        if self._busy or (self._worker and self._worker.isRunning()):
             return
 
         selected = [n for n, cb in self._checkboxes.items() if cb.isChecked()]
@@ -358,8 +445,9 @@ class VisibilityController(QWidget):
             self._set_status("Select at least one station.", C.YELLOW)
             return
 
-        self.computeBtn.setEnabled(False)
-        self.progressBar.setVisible(True)
+        self._pending_inputs = self._input_snapshot()
+        self._set_busy(True)
+        self._refresh_result_context()
         self._log_edit.clear()
         self._log(f"Starting: {len(selected)} station(s), {self.durationSpin.value():.0f} days")
         self._set_status(f"{len(selected)} station(s), {self.durationSpin.value():.0f} days…", C.BLUE)
@@ -380,19 +468,27 @@ class VisibilityController(QWidget):
         self._log(msg)
 
     def _on_result(self, data: dict) -> None:
-        self.computeBtn.setEnabled(True)
-        self.progressBar.setVisible(False)
+        if not self._show_gantt(data):
+            self._pending_inputs = None
+            self._set_busy(False)
+            self._refresh_result_context("Grafik oluşturulamadı; görünen grafik ve dışa aktarım önceki sonuç."
+                                         if self._last_data is not None else "Sonuç üretilmedi; yeniden hesaplayın.")
+            return
         self._last_data = data
-        self.exportCsvBtn.setEnabled(True)
+        self._result_inputs = self._pending_inputs
+        self._pending_inputs = None
+        self._set_busy(False)
         n = len(data["station_names"])
         done_msg = f"Done — {n} station(s), {data['duration_days']:.0f} days"
         self._set_status(done_msg, C.GREEN)
         self._log(done_msg)
-        self._show_gantt(data)
+        self._refresh_result_context()
 
     def _on_fail(self, msg: str) -> None:
-        self.computeBtn.setEnabled(True)
-        self.progressBar.setVisible(False)
+        self._pending_inputs = None
+        self._set_busy(False)
+        self._refresh_result_context("Yeni hesap başarısız; görünen grafik ve dışa aktarım önceki sonuç."
+                                     if self._last_data is not None else "Sonuç üretilmedi; ayarları ve SPICE dosyalarını kontrol edin.")
         short = msg.splitlines()[0][:120] if msg else "Unknown error"
         self._set_status(f"Error: {short}", C.RED)
         self._log(f"FAILED: {short}")
@@ -402,13 +498,14 @@ class VisibilityController(QWidget):
     def _init_canvas_placeholder(self) -> None:
         lay = QVBoxLayout(self.canvasHolder)
         lay.setContentsMargins(0, 0, 0, 0)
-        placeholder = QLabel("Gantt chart will appear here.\nSelect stations on the left and compute.")
+        placeholder = QLabel("İstasyonları seçin; görünürlüğü hesaplayın.\nSPICE dosyalarını Ayarlar → Hesaplama ortamı bölümünden kontrol edebilirsiniz.")
+        placeholder.setWordWrap(True)
         placeholder.setAlignment(Qt.AlignCenter)
         placeholder.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_LG}px;")
         lay.addWidget(placeholder)
         self._placeholder_label = placeholder
 
-    def _show_gantt(self, data: dict) -> None:
+    def _show_gantt(self, data: dict) -> bool:
         try:
             from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
             fig    = _draw_gantt(data)
@@ -421,7 +518,7 @@ class VisibilityController(QWidget):
             )
         except Exception as exc:
             self._set_status(f"Plot error: {exc}", C.RED)
-            return
+            return False
 
         # Replace existing canvas
         lay = self.canvasHolder.layout()
@@ -434,7 +531,7 @@ class VisibilityController(QWidget):
         lay.addWidget(canvas)
         self._canvas = canvas
         self._fig = fig
-        self.exportPngBtn.setEnabled(True)
+        return True
 
     def _export_png(self) -> None:
         if self._fig is None:

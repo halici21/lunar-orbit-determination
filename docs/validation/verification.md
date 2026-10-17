@@ -15,8 +15,10 @@ The [earlier station row-identity gate](../development/station-sorting_2026-10-1
 passed 301 public cases on the current repository/portable layout.
 The [earlier numeric-sort gate](../development/station-numeric-sort_2026-10-16.md)
 passed 306 public cases, including all 18 station catalogue cases.
-The [latest catalogue label gate](../development/station-map-labels_2026-10-16.md)
+The [earlier catalogue label gate](../development/station-map-labels_2026-10-16.md)
 passed 310 public cases, including all 22 station catalogue cases.
+The [latest visibility-context gate](../development/visibility-context_2026-10-16.md)
+passed 320 public cases, adding ten visibility request/result identity checks.
 
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,
@@ -45,7 +47,11 @@ The checked-in numerical assertions and tolerances are unchanged.
 
 ## Full local research regression
 
-[Latest catalogue label regression](../development/station-map-labels_2026-10-16.md):
+[Latest visibility-context regression](../development/visibility-context_2026-10-16.md):
+1,881 passed checks, 29 skipped (1,764 named cases and
+146 subtest checks), zero failures/errors. The 320-case public gate includes
+ten visibility, 22 station and 35 mission cases.
+[Previous catalogue label regression](../development/station-map-labels_2026-10-16.md):
 1,871 passed checks, 29 skipped (1,754 named cases and
 146 subtest checks), zero failures/errors. The 310-case public gate includes
 all 22 station cases and all 35 mission cases.
