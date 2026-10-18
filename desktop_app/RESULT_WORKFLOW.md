@@ -448,3 +448,14 @@ coverage, statistical validation, or convergence. Output permission checks creat
 no files and cannot guarantee a later write. High-degree gravity/campaign assets
 are outside this baseline check. Historical script launches from Run Monitor retain
 their own validation; the automatic run gate applies to Scenario Builder.
+
+## Ground-track window sizes
+
+**Yüzey izi** and **Yörünge tasarımı** keep their side-by-side layouts in a wide
+window. With less than 900 px of page content width, the controls appear above
+the plot. Use the page's vertical scrollbar to reach Compute, Play/Reset,
+exports and the displayed-result source/settings, or the designer's Generate
+button and 3-D preview. The station list retains its own bounded scroll.
+Resizing preserves the current result and parameters. These remain separate
+SPICE/analytical examples; the saved run's linked orbit and measurement-sample
+Gantt belong to **Görev görünümü**.

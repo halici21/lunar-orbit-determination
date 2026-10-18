@@ -22,6 +22,7 @@
 - [Ground-track hidden timers and preserved playback position](development/ground-track-timers_2026-10-18.md)
 - [Ground-track matching results and exports after render errors](development/ground-track-result-pair_2026-10-18.md)
 - [Ground-track request settings, pending models and result provenance](development/ground-track-request-context_2026-10-18.md)
+- [Responsive ground-track and orbit-designer forms](development/ground-track-responsive_2026-10-19.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
