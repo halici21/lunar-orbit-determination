@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep the initially hidden orbit designer idle; pause ground-track playback on
+  page/tab changes and window close, retaining the position for manual Play.
+
 - Distinguish uncomputed analytical ground-track visibility from a calculated zero;
   identify SPICE versus approximate analytical sources and retain fractional days.
 

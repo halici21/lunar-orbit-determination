@@ -721,7 +721,7 @@ class _OrbitDesigner(QWidget):
         self._display_elems = dict(self._target_elems)
         self._init_preview_canvas()
         self._redraw_preview(self._display_elems)
-        self._preview_timer.start()
+        # showEvent starts rotation only when this tab is actually visible.
 
     # ------------------------------------------------------------------
     def _build(self) -> None:
@@ -1003,6 +1003,7 @@ class GroundTrackController(QWidget):
         self.computeBtn.clicked.connect(self._compute)
         self.computeBtn.setText("SPICE örneğini hesapla")
         self.playBtn.clicked.connect(self._play_pause)
+        self.playBtn.setToolTip("Sekme veya sayfa değişince oynatma durur; Play ile aynı konumdan devam edin.")
         self.resetBtn.clicked.connect(self._reset_anim)
         self._build_export_buttons()
         self._build_log_panel()
@@ -1201,12 +1202,27 @@ class GroundTrackController(QWidget):
     # Animation
     # ------------------------------------------------------------------
 
+    def _pause_playback(self) -> None:
+        self._anim_timer.stop()
+        self.playBtn.setText("▶ Play")
+
+    def hideEvent(self, event) -> None:
+        self._pause_playback()
+        super().hideEvent(event)
+
+    def shutdown(self) -> None:
+        self._pause_playback()
+        self._orbit_designer._preview_timer.stop()
+
+    def _on_tab_changed(self, index: int) -> None:
+        if index != 0:
+            self._pause_playback()
+
     def _play_pause(self) -> None:
-        if self._data is None:
+        if self._data is None or not self.isVisible() or self._tab_widget.currentIndex() != 0:
             return
         if self._anim_timer.isActive():
-            self._anim_timer.stop()
-            self.playBtn.setText("▶ Play")
+            self._pause_playback()
         else:
             interval_ms = max(40, 200 // self.speedSpin.value())
             self._anim_timer.start(interval_ms)
@@ -1378,6 +1394,7 @@ class GroundTrackController(QWidget):
         self._tab_widget.addTab(self.splitter, "Yüzey izi")
         self._orbit_designer = _OrbitDesigner(self)
         self._tab_widget.addTab(self._orbit_designer, "Yörünge tasarımı")
+        self._tab_widget.currentChanged.connect(self._on_tab_changed)
         self.mainLayout.addWidget(self._tab_widget)
 
     def _show_keplerian_track(self, data: dict, elems: dict) -> None:
