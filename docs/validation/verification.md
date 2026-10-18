@@ -25,8 +25,10 @@ The [earlier ground-track model gate](../development/ground-track-models_2026-10
 passed 327 public cases, adding five missing-versus-zero/model-label checks.
 The [earlier ground-track lifecycle gate](../development/ground-track-timers_2026-10-18.md)
 passed 331 public cases, adding four timer/pause/close integration checks.
-The [latest ground-track result gate](../development/ground-track-result-pair_2026-10-18.md)
+The [earlier ground-track result gate](../development/ground-track-result-pair_2026-10-18.md)
 passed 343 public cases, adding 12 render-failure/retention/retry checks.
+The [latest ground-track workflow gate](../development/ground-track-request-context_2026-10-18.md)
+passed 356 public cases, adding 13 request/context/model-ordering checks.
 
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,

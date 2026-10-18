@@ -1,0 +1,294 @@
+{
+  "base_commit": "2b66d9d572fe9abd8593dc3c1eb04d4e14eb35f6",
+  "baseline_native_probe": {
+    "request_duration_days": 1.0,
+    "visible_duration_after_settings_resync_days": 7.0,
+    "request_controls_stayed_enabled": true,
+    "analytical_generation_replaced_result_while_spice_pending": true,
+    "later_spice_overwrote_analytical_result": true,
+    "result_inputs_caption_absent": true
+  },
+  "local_junit": {
+    "before": {
+      "tests": 13,
+      "failures": 13,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 7.126,
+      "named_cases": 13,
+      "sha256": "d0b26727fd56bfcd5a4151120dd7f622947f977bd72c63e0be023d2729b0b3f3"
+    },
+    "targeted": {
+      "tests": 94,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 26.219,
+      "named_cases": 94,
+      "sha256": "b639a2c1be5845c70e8dc1567ac67a411e6662dc2a7553b112076f0346c3afad"
+    },
+    "public": {
+      "tests": 356,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 79.587,
+      "named_cases": 356,
+      "sha256": "506f8a1f5f112aa2c4cc232aa9aacbc0f5bd7dad6e018b0456c516c6d38b8603"
+    },
+    "full": {
+      "tests": 1946,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 499.194,
+      "named_cases": 1800,
+      "sha256": "f82f8ccce78bbe916cb27b53e68695c070e511e5277324ea05fd2cf969aae5cc"
+    }
+  },
+  "native_review": [
+    {
+      "base_commit": "2b66d9d572fe9abd8593dc3c1eb04d4e14eb35f6",
+      "theme": "modern",
+      "dpr": 1.0,
+      "pending_inputs_and_generate_locked": true,
+      "settings_resync_skipped_while_pending": true,
+      "no_analytical_propagation_while_pending": true,
+      "old_figure_canvas_and_index_retained_after_failure": true,
+      "retained_caption_actual_elevation_deg": 10,
+      "edited_pending_elevation_deg": 20,
+      "csv_bytes_unchanged": true,
+      "png_export_succeeded": true,
+      "manual_resume_and_retry_worked": true,
+      "analytical_samples": 340,
+      "analytical_own_metadata_preserved_on_spice_edits": true,
+      "source_csv_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "source_samples": 361,
+      "source_kind": "Controlled request orchestration replaying a prior hashed SPICE example; not new propagation or telemetry qualification",
+      "protected_source_hashes": {
+        "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+        "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+        "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+        "_draw_moon_bg": "4fb19d8d581f67837d06ce8374b3e51b25ae5fe33f072e6be5632f3751c2a316",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_build_static_figure": "58f8aa125b2634af902b09551ef9c5ea38b64952a2f1bcef90e02d1a8e82d495",
+        "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f",
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "GroundTrackController._install_result": "48711ab9e6f1a20b8cd1f65ce227c8d3e2ce81ead012f78ca739734b46ebc31e",
+        "GroundTrackController._pause_playback": "85308b5e241b309f41805eaabc1044c77bef80df49a27be1f23488ad7e1e0267",
+        "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+        "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+        "GroundTrackController._on_tab_changed": "714dba44690db4745ccdbb303f285505497f324c9466d030bacbf74d3a7fd7cb",
+        "GroundTrackController._play_pause": "7856625baa3d9c5af83c668ba89cee0d7eb5ea0334a7515a6d0ef440b33d2abb",
+        "GroundTrackController._reset_anim": "ff3f2f4468461593e1a8e9ebf9db62503dc4cc8c0bcbefb05c4b5bf9b81a9042",
+        "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+        "GroundTrackController._set_canvas": "40c4cfe7c2b5398805f7f63c8065c4011789f22b121c98c34ed9b5fc191ec0dc",
+        "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+        "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+        "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+        "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547"
+      },
+      "analytical_generation_body_unchanged_after_busy_guard": true,
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "controls_reachable": true,
+          "context_label_not_internally_clipped": true,
+          "horizontal_scroll_maximum": 252
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "controls_reachable": true,
+          "context_label_not_internally_clipped": true,
+          "horizontal_scroll_maximum": 402
+        }
+      ]
+    },
+    {
+      "base_commit": "2b66d9d572fe9abd8593dc3c1eb04d4e14eb35f6",
+      "theme": "orchid",
+      "dpr": 2.0,
+      "pending_inputs_and_generate_locked": true,
+      "settings_resync_skipped_while_pending": true,
+      "no_analytical_propagation_while_pending": true,
+      "old_figure_canvas_and_index_retained_after_failure": true,
+      "retained_caption_actual_elevation_deg": 10,
+      "edited_pending_elevation_deg": 20,
+      "csv_bytes_unchanged": true,
+      "png_export_succeeded": true,
+      "manual_resume_and_retry_worked": true,
+      "analytical_samples": 340,
+      "analytical_own_metadata_preserved_on_spice_edits": true,
+      "source_csv_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "source_samples": 361,
+      "source_kind": "Controlled request orchestration replaying a prior hashed SPICE example; not new propagation or telemetry qualification",
+      "protected_source_hashes": {
+        "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+        "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+        "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+        "_draw_moon_bg": "4fb19d8d581f67837d06ce8374b3e51b25ae5fe33f072e6be5632f3751c2a316",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_build_static_figure": "58f8aa125b2634af902b09551ef9c5ea38b64952a2f1bcef90e02d1a8e82d495",
+        "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f",
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "GroundTrackController._install_result": "48711ab9e6f1a20b8cd1f65ce227c8d3e2ce81ead012f78ca739734b46ebc31e",
+        "GroundTrackController._pause_playback": "85308b5e241b309f41805eaabc1044c77bef80df49a27be1f23488ad7e1e0267",
+        "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+        "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+        "GroundTrackController._on_tab_changed": "714dba44690db4745ccdbb303f285505497f324c9466d030bacbf74d3a7fd7cb",
+        "GroundTrackController._play_pause": "7856625baa3d9c5af83c668ba89cee0d7eb5ea0334a7515a6d0ef440b33d2abb",
+        "GroundTrackController._reset_anim": "ff3f2f4468461593e1a8e9ebf9db62503dc4cc8c0bcbefb05c4b5bf9b81a9042",
+        "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+        "GroundTrackController._set_canvas": "40c4cfe7c2b5398805f7f63c8065c4011789f22b121c98c34ed9b5fc191ec0dc",
+        "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+        "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+        "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+        "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547"
+      },
+      "analytical_generation_body_unchanged_after_busy_guard": true,
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "controls_reachable": true,
+          "context_label_not_internally_clipped": true,
+          "horizontal_scroll_maximum": 252
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "controls_reachable": true,
+          "context_label_not_internally_clipped": true,
+          "horizontal_scroll_maximum": 402
+        }
+      ]
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "scope": "Ground-track request orchestration and displayed-result input provenance only. Native request replay uses a prior hashed SPICE example, not new SPICE propagation or spacecraft telemetry."
+}
