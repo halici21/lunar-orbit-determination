@@ -1,0 +1,302 @@
+{
+  "base_commit": "dfdaf4ba17247ed7c82c063e304bdabe95a79bb7",
+  "baseline_native_probe": {
+    "initial_hidden_designer": {
+      "designer_visible": false,
+      "preview_active": true,
+      "callbacks": 8
+    },
+    "hidden_page": {
+      "page_visible": false,
+      "preview_active": true,
+      "playback_active": true,
+      "preview_callbacks": 5,
+      "playback_callbacks": 5,
+      "index_before": 6,
+      "index_after": 21
+    }
+  },
+  "local_junit": {
+    "before": {
+      "tests": 4,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 4.386,
+      "named_cases": 4,
+      "sha256": "9039988b203131b548ed39fe3032e5b7a0d84563b126d35d8d7df8054ccb9d98"
+    },
+    "targeted": {
+      "tests": 69,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 11.841,
+      "named_cases": 69,
+      "sha256": "e1154ea0604af75f17d35dea3577ba213bdf4c1e57d78abe4cdea71078de2dcd"
+    },
+    "public": {
+      "tests": 331,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 59.448,
+      "named_cases": 331,
+      "sha256": "535c3472980cf329c693e0370380315496bb3bfada7618767d7126207f7fa4b5"
+    },
+    "full": {
+      "tests": 1921,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 391.46,
+      "named_cases": 1775,
+      "sha256": "2bdffb9eb7cd13bd02f92f265af5d69cfe60616b33bd40d2520f3ddbcd9e4118"
+    }
+  },
+  "native_review": [
+    {
+      "base_commit": "dfdaf4ba17247ed7c82c063e304bdabe95a79bb7",
+      "theme": "modern",
+      "dpr": 1.0,
+      "initial_hidden_designer": {
+        "preview_callbacks": 0,
+        "phase_unchanged": true
+      },
+      "visible_preview_callbacks": 4,
+      "hidden_page": {
+        "playback_callbacks": 0,
+        "preview_callbacks": 0,
+        "index_before": 9,
+        "index_after": 9
+      },
+      "paused_on_tab_switch": true,
+      "manual_resume_and_reset_work": true,
+      "close_stops_retained_timers": true,
+      "source_csv_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "source_samples": 361,
+      "source_kind": "Replayed prior unchanged-worker SPICE example output; not recorded telemetry or a new propagation",
+      "data_arrays_and_csv_unchanged": true,
+      "data_and_figure_objects_retained": true,
+      "protected_source_hashes": {
+        "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+        "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+        "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+        "_draw_moon_bg": "4fb19d8d581f67837d06ce8374b3e51b25ae5fe33f072e6be5632f3751c2a316",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_build_static_figure": "58f8aa125b2634af902b09551ef9c5ea38b64952a2f1bcef90e02d1a8e82d495",
+        "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f",
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "GroundTrackController._on_data": "9b4a1278a0ee94747555ebf0608162ded0e8f53d4ddcf5748d288786467ad3ce",
+        "GroundTrackController._reset_anim": "ff3f2f4468461593e1a8e9ebf9db62503dc4cc8c0bcbefb05c4b5bf9b81a9042",
+        "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+        "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "GroundTrackController._show_keplerian_track": "8d3274a26648742724fd0baf1e224ce6eb8cc21563b51609a22d96d849168cd1",
+        "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+        "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+        "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+        "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+        "_OrbitDesigner._generate_track": "b2612fb1e43d55227e7ad46317eb62d9e393f8abab8baba621a2a62dce02d9d1"
+      },
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "controls_reachable": true,
+          "hidden_timer_callbacks": 0,
+          "horizontal_scroll_maximum": 252
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "controls_reachable": true,
+          "hidden_timer_callbacks": 0,
+          "horizontal_scroll_maximum": 402
+        }
+      ]
+    },
+    {
+      "base_commit": "dfdaf4ba17247ed7c82c063e304bdabe95a79bb7",
+      "theme": "orchid",
+      "dpr": 2.0,
+      "initial_hidden_designer": {
+        "preview_callbacks": 0,
+        "phase_unchanged": true
+      },
+      "visible_preview_callbacks": 3,
+      "hidden_page": {
+        "playback_callbacks": 0,
+        "preview_callbacks": 0,
+        "index_before": 6,
+        "index_after": 6
+      },
+      "paused_on_tab_switch": true,
+      "manual_resume_and_reset_work": true,
+      "close_stops_retained_timers": true,
+      "source_csv_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "source_samples": 361,
+      "source_kind": "Replayed prior unchanged-worker SPICE example output; not recorded telemetry or a new propagation",
+      "data_arrays_and_csv_unchanged": true,
+      "data_and_figure_objects_retained": true,
+      "protected_source_hashes": {
+        "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+        "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+        "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+        "_draw_moon_bg": "4fb19d8d581f67837d06ce8374b3e51b25ae5fe33f072e6be5632f3751c2a316",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_build_static_figure": "58f8aa125b2634af902b09551ef9c5ea38b64952a2f1bcef90e02d1a8e82d495",
+        "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f",
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "GroundTrackController._on_data": "9b4a1278a0ee94747555ebf0608162ded0e8f53d4ddcf5748d288786467ad3ce",
+        "GroundTrackController._reset_anim": "ff3f2f4468461593e1a8e9ebf9db62503dc4cc8c0bcbefb05c4b5bf9b81a9042",
+        "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+        "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "GroundTrackController._show_keplerian_track": "8d3274a26648742724fd0baf1e224ce6eb8cc21563b51609a22d96d849168cd1",
+        "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+        "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+        "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+        "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+        "_OrbitDesigner._generate_track": "b2612fb1e43d55227e7ad46317eb62d9e393f8abab8baba621a2a62dce02d9d1"
+      },
+      "narrow_windows": [
+        {
+          "window": [
+            910,
+            465
+          ],
+          "controls_reachable": true,
+          "hidden_timer_callbacks": 0,
+          "horizontal_scroll_maximum": 252
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "controls_reachable": true,
+          "hidden_timer_callbacks": 0,
+          "horizontal_scroll_maximum": 402
+        }
+      ]
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "scope": "Qt timer lifecycle only. Existing computed-example CSV replay and synthetic solver-output UI checks; no new propagation or telemetry qualification."
+}

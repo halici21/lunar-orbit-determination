@@ -21,8 +21,10 @@ The [earlier visibility-context gate](../development/visibility-context_2026-10-
 passed 320 public cases, adding ten visibility request/result identity checks.
 The [earlier responsive visibility gate](../development/visibility-responsive_2026-10-17.md)
 passed 322 public cases, including both small-window integration checks.
-The [latest ground-track model gate](../development/ground-track-models_2026-10-18.md)
+The [earlier ground-track model gate](../development/ground-track-models_2026-10-18.md)
 passed 327 public cases, adding five missing-versus-zero/model-label checks.
+The [latest ground-track lifecycle gate](../development/ground-track-timers_2026-10-18.md)
+passed 331 public cases, adding four timer/pause/close integration checks.
 
 [Public checks workflow](../../.github/workflows/public-checks.yml) runs on Windows
 with Python 3.13.2 and the validated pinned dependencies. It checks installation,

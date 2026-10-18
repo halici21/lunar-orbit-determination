@@ -132,6 +132,9 @@ grafiğin üstünde belirtilir. “Visible samples”, görünür bulunan geomet
 örneklerin oranıdır; kesintisiz temas süresi veya gerçek görev telemetrisi değildir.
 Kayıtlı koşunun yörüngesini **Görev görünümü** üzerinden inceleyin.
 Yüzey izi sayfasında dar pencerede mevcut yatay/dikey kaydırıcılar kullanılır.
+Sayfa veya sekme değiştirince yüzey izi oynatması durur; dönüşte **Play** ile
+aynı konumdan devam edin. Gizli yörünge tasarımı önizlemesi sürekli dönmez;
+sekmesi açılınca dönmeye başlar. **Reset**, oynatmayı durdurup başa alır.
 
 ## Ortam kontrolü
 

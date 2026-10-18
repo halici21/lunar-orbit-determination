@@ -19,6 +19,7 @@
 - [Visibility result context and export identity](development/visibility-context_2026-10-16.md)
 - [Responsive visibility workspace and scroll reach](development/visibility-responsive_2026-10-17.md)
 - [Ground-track model, visibility and duration labels](development/ground-track-models_2026-10-18.md)
+- [Ground-track hidden timers and preserved playback position](development/ground-track-timers_2026-10-18.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
