@@ -145,21 +145,43 @@ def test_failed_or_foreign_completion_cannot_open_previous_results(app, tmp_path
         monitor.close()
 
 
-def test_qprocess_keeps_ui_alive_and_flushes_last_line(app):
+def test_qprocess_keeps_ui_alive_and_flushes_last_line(app, tmp_path):
     worker = ProcessWorker()
     lines, finished, ticks = [], [], []
     worker.output_line.connect(lines.append)
     worker.finished.connect(finished.append)
     timer = QTimer()
     timer.timeout.connect(lambda: ticks.append(1))
+    release = tmp_path / "ui-observed-ticks"
+    child = (
+        "import sys,time\nfrom pathlib import Path\n"
+        "release=Path(sys.argv[1])\n"
+        "print('ready',flush=True)\n"
+        "deadline=time.monotonic()+10\n"
+        "while not release.exists():\n"
+        "    if time.monotonic()>deadline: raise TimeoutError('UI did not release child')\n"
+        "    time.sleep(.01)\n"
+        "print('last',end='',flush=True)\n"
+    )
     timer.start(10)
-    worker.run(sys.executable, ["-u", "-c", "import time; time.sleep(.15); print('last', end='', flush=True)"])
-    assert worker.is_running  # QProcess.Starting is also busy
-    wait(app, lambda: bool(finished))
-    timer.stop()
-    assert finished == [0]
-    assert lines == ["last"]
-    assert len(ticks) >= 5
+    try:
+        worker.run(sys.executable, ["-u", "-c", child, str(release)])
+        assert worker.is_running  # QProcess.Starting is also busy
+        wait(app, lambda: "ready" in lines)
+        ticks.clear()
+        # Observe five callbacks while the ready child is still alive. A fixed
+        # child sleep races Windows scheduling and Qt's coalesced timer events.
+        wait(app, lambda: len(ticks) >= 5 and worker.is_running)
+        release.touch()
+        wait(app, lambda: bool(finished))
+        assert finished == [0]
+        assert lines == ["ready", "last"]
+        assert len(ticks) >= 5
+    finally:
+        timer.stop()
+        if worker.is_running:
+            worker.cancel()
+            wait(app, lambda: not worker.is_running)
 
 
 def test_qprocess_failed_start_restores_monitor(app, tmp_path):

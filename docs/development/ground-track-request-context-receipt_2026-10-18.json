@@ -32,9 +32,9 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "time_s": 79.587,
+      "time_s": 70.824,
       "named_cases": 356,
-      "sha256": "506f8a1f5f112aa2c4cc232aa9aacbc0f5bd7dad6e018b0456c516c6d38b8603"
+      "sha256": "f3a7bba0ad412c9421579f84c6b2332131154c115c61aab6aafebadb90f31ca0"
     },
     "full": {
       "tests": 1946,
@@ -43,7 +43,27 @@
       "skipped": 29,
       "time_s": 499.194,
       "named_cases": 1800,
-      "sha256": "f82f8ccce78bbe916cb27b53e68695c070e511e5277324ea05fd2cf969aae5cc"
+      "sha256": "f82f8ccce78bbe916cb27b53e68695c070e511e5277324ea05fd2cf969aae5cc",
+      "source_commit": "8fe4e6b0af399e5b8bcfa4e9b16be64b80c1fb82",
+      "revision_note": "Full feature run preceded the test-only QProcess handshake correction. Production source is unchanged; final public gate includes the corrected case."
+    },
+    "public_before_process_oracle_fix": {
+      "tests": 356,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 79.587,
+      "named_cases": 356,
+      "sha256": "506f8a1f5f112aa2c4cc232aa9aacbc0f5bd7dad6e018b0456c516c6d38b8603"
+    },
+    "process_workflow": {
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 1.609,
+      "named_cases": 20,
+      "sha256": "e76db326d7cfef5942cf77f6942e4874a917f8101de7d303255b72ac3d763668"
     }
   },
   "native_review": [
@@ -290,5 +310,70 @@
     "verified_source_files": 48,
     "all_sources_unchanged": true
   },
-  "scope": "Ground-track request orchestration and displayed-result input provenance only. Native request replay uses a prior hashed SPICE example, not new SPICE propagation or spacecraft telemetry."
+  "scope": "Ground-track request orchestration and displayed-result input provenance only. Native request replay uses a prior hashed SPICE example, not new SPICE propagation or spacecraft telemetry.",
+  "process_oracle_correction": {
+    "initial_hosted_release_run": 39163455739,
+    "failing_case": "test_qprocess_keeps_ui_alive_and_flushes_last_line",
+    "hosted_observed_callbacks": 1,
+    "required_callbacks": 5,
+    "controlled_baseline": {
+      "failed": true,
+      "total_test_timer_callbacks": 0,
+      "parent_scheduling_delay_s": 0.4
+    },
+    "handshake_delayed_parent_checks": [
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 10
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 9
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 9
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 9
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 8
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 8
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 8
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 8
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 10
+      },
+      {
+        "parent_scheduling_delay_s": 0.4,
+        "passed": true,
+        "total_test_timer_callbacks": 9
+      }
+    ],
+    "production_worker_normalized_source_sha256": "e87bd37d81930cf85179ad2c3c18332a82bda1195982b9a95ee4ac809985f264",
+    "oracle": "Five test timer callbacks after child ready and before GUI releases child; original five-second parent waits and assertions retained. No scheduling-duration assumption or test retries."
+  }
 }

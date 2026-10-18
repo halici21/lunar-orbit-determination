@@ -79,15 +79,20 @@ tolerance was changed.
     python -m pytest -p tests.desktop_preferences tests -q -ra --junitxml outputs/full.xml
 
 Targeted: **94 passed** (26.219 s).
-Public: **356 passed** (79.587 s), including the new 13 cases.
+Final public: **356 passed** (70.824 s), including the new 13 cases.
 Full: **1,917 passed checks**, **29 existing skips**, zero failures/errors
 (499.194 s). JUnit contains 1,946 checks:
 1800 named cases plus 146 subtest checks.
 
+The full feature run was on `8fe4e6b0af399e5b8bcfa4e9b16be64b80c1fb82`.
+Production source did not change after it. A subsequent test-only QProcess
+oracle correction was checked by all 20 desktop-workflow cases and the final
+356-case public gate; the scientific suite was not repeated for that test-only edit.
+
 | Local JUnit | SHA-256 |
 | --- | --- |
 | Targeted | `b639a2c1be5845c70e8dc1567ac67a411e6662dc2a7553b112076f0346c3afad` |
-| Public | `506f8a1f5f112aa2c4cc232aa9aacbc0f5bd7dad6e018b0456c516c6d38b8603` |
+| Public | `f3a7bba0ad412c9421579f84c6b2332131154c115c61aab6aafebadb90f31ca0` |
 | Full | `f82f8ccce78bbe916cb27b53e68695c070e511e5277324ea05fd2cf969aae5cc` |
 
 Native offscreen Qt review passed Modern (scale 1) and Orchid (scale 2), at
@@ -112,6 +117,29 @@ No dependency or CI workflow was added. Existing hosted public, docs, library,
 dependency and release PR gates must pass before normal protected merge. Local
 strict docs were not run because MkDocs is absent from the scientific runtime;
 the hosted docs gate supplies that check. No long campaign was run.
+
+## Release-gate correction
+
+The first hosted Release qualification run
+[39163455739](https://github.com/halici21/lunar-orbit-determination/actions/runs/39163455739)
+failed the existing `test_qprocess_keeps_ui_alive_and_flushes_last_line`: its
+10 ms timer observed only one callback before a child with a fixed 150 ms sleep
+exited. The independent hosted public gate passed on the same feature head.
+A controlled 400 ms parent scheduling pause reproduced the old failure locally
+with fewer than five callbacks, identifying the timing assumption directly.
+
+Replace that fixed child sleep with a ready/release file handshake: after the
+child reports ready, the UI must observe **five callbacks while it is still
+running** before releasing it. Keep the five-second parent waits, zero exit
+status and final unterminated-line flush assertions. Stop/cancel resources in
+`finally`; no test is skipped, retried or suppressed, and no threshold is widened.
+The production ProcessWorker is unchanged as normalized source. All ten
+independent checks with a 400 ms delayed parent passed; this is an oracle
+robustness check, not a UI latency benchmark.
+
+The final desktop-workflow gate passed **20 cases** (1.609 s),
+SHA-256 `e76db326d7cfef5942cf77f6942e4874a917f8101de7d303255b72ac3d763668`. The final **356-case public gate** also passed.
+Existing hosted Release qualification must pass on the corrected head before merge.
 
 ## Limits and next work
 
