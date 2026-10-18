@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Retain matching ground-track data, canvas, exports and paused playback position
+  after a detected render failure; explain when the previous result is retained.
+
 - Keep the initially hidden orbit designer idle; pause ground-track playback on
   page/tab changes and window close, retaining the position for manual Play.
 
