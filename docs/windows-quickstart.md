@@ -135,6 +135,9 @@ Yüzey izi sayfasında dar pencerede mevcut yatay/dikey kaydırıcılar kullanı
 Sayfa veya sekme değiştirince yüzey izi oynatması durur; dönüşte **Play** ile
 aynı konumdan devam edin. Gizli yörünge tasarımı önizlemesi sürekli dönmez;
 sekmesi açılınca dönmeye başlar. **Reset**, oynatmayı durdurup başa alır.
+Yeni hesap veya grafik oluşturma başarısızsa ekrandaki grafik ve CSV/PNG önceki
+sonuç olarak korunur; hata metni bunu belirtir. **Play** önceki konumdan devam eder.
+Henüz başarılı sonuç yoksa dışa aktarım ve oynatma kapalı kalır.
 
 ## Ortam kontrolü
 

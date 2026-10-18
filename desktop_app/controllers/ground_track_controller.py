@@ -1141,11 +1141,10 @@ class GroundTrackController(QWidget):
         self._log(msg)
 
     def _on_data(self, data: dict) -> None:
+        if not self._install_result(data):
+            return
         self.computeBtn.setEnabled(True)
         self.progressBar.setVisible(False)
-        self._data = data
-        # Pre-compute pass boundaries once; used both in drawing and animation tail
-        self._data["_pass_bounds"] = _pass_boundaries(data["lats"], data["lons"])
         n = len(data["lons"])
         dur = data["duration_days"]
         covered = int(np.any(data["vis_mask"], axis=0).sum()) if data["vis_mask"].size else 0
@@ -1153,50 +1152,59 @@ class GroundTrackController(QWidget):
         done_msg = f"{n} points, {dur:.0f} days — visible samples {pct:.0f}%"
         self._set_status(done_msg, C.GREEN)
         self._log(f"Done: {done_msg}")
-
-        fig = _build_static_figure(data)
-        self._fig = fig
-        self._set_canvas(fig)
-        self.exportPngBtn.setEnabled(True)
-        self.exportCsvBtn.setEnabled(True)
-
-        # Prepare animated artists on the same axes
-        self._anim_ax = fig.axes[0]
-        self._anim_dot,  = self._anim_ax.plot([], [], "o", color="white",
-                                                ms=8, zorder=10,
-                                                markeredgecolor=C.CYAN,
-                                                markeredgewidth=1.5)
-        self._anim_tail, = self._anim_ax.plot([], [], "-", color=C.CYAN,
-                                               linewidth=2.2, alpha=_TAIL_ALPHA, zorder=9)
-        self._anim_label = self._anim_ax.text(
-            0.99, 0.97, "",
-            transform=self._anim_ax.transAxes,
-            ha="right", va="top",
-            color=C.TEXT_PRIMARY,
-            fontsize=FONT.SIZE_SM,
-            fontfamily=FONT.MONO,
-            bbox=dict(boxstyle="round,pad=0.3",
-                      facecolor=C.BG_PANEL, alpha=0.8,
-                      edgecolor=C.BORDER_MID),
-            zorder=11,
-        )
-        self._anim_idx = 0
-        self.animGroup.setEnabled(True)
-        self.playBtn.setText("▶ Play")
         self._model_note.setText(
             f"SPICE · sabit örnek başlangıç ({FIXTURE.name}) · T0 {data['epoch_utc']} UTC · "
             f"IAU_MOON · {_SAMPLE_STEP_S / 60:g} dk geometrik örnekleme. "
             "Tasarımcıdaki elemanlar bu hesaba aktarılmaz."
         )
 
+    def _install_result(self, data: dict) -> bool:
+        """Prepare and draw a candidate before replacing the displayed/exported pair."""
+        self._pause_playback()
+        try:
+            bounds = _pass_boundaries(data["lats"], data["lons"])
+            fig = _build_static_figure(data)
+            ax = fig.axes[0]
+            dot, = ax.plot([], [], "o", color="white", ms=8, zorder=10,
+                           markeredgecolor=C.CYAN, markeredgewidth=1.5)
+            tail, = ax.plot([], [], "-", color=C.CYAN, linewidth=2.2,
+                            alpha=_TAIL_ALPHA, zorder=9)
+            label = ax.text(
+                0.99, 0.97, "", transform=ax.transAxes, ha="right", va="top",
+                color=C.TEXT_PRIMARY, fontsize=FONT.SIZE_SM, fontfamily=FONT.MONO,
+                bbox=dict(boxstyle="round,pad=0.3", facecolor=C.BG_PANEL,
+                          alpha=0.8, edgecolor=C.BORDER_MID), zorder=11,
+            )
+            self._set_canvas(fig)
+        except Exception as exc:
+            import traceback
+            self._on_fail(f"{exc}\n\n{traceback.format_exc()}")
+            return False
+
+        data["_pass_bounds"] = bounds
+        self._data, self._fig = data, fig
+        self._anim_ax, self._anim_dot = ax, dot
+        self._anim_tail, self._anim_label = tail, label
+        self._anim_idx = 0
+        self.animGroup.setEnabled(True)
+        self.exportPngBtn.setEnabled(True)
+        self.exportCsvBtn.setEnabled(True)
+        return True
+
     def _on_fail(self, msg: str) -> None:
+        self._pause_playback()
         self.computeBtn.setEnabled(True)
         self.progressBar.setVisible(False)
-        self.animGroup.setEnabled(False)
+        retained = self._data is not None and self._fig is not None
+        self.animGroup.setEnabled(retained)
+        self.exportPngBtn.setEnabled(retained)
+        self.exportCsvBtn.setEnabled(retained)
         short = msg.splitlines()[0][:120] if msg else "Unknown error"
-        self._set_status(f"Error: {short}", C.RED)
-        self._log(f"FAILED: {short}")
-        _show_error_dialog(self, "Computation failed", msg)
+        context = ("Grafik ve dışa aktarım önceki sonuç; Play ile devam edebilirsiniz."
+                   if retained else "Sonuç üretilmedi; yeniden deneyin.")
+        self._set_status(f"Error: {short}\n{context}", C.RED)
+        self._log(f"FAILED: {short} — {context}")
+        _show_error_dialog(self, "Ground-track result failed", msg)
 
     # ------------------------------------------------------------------
     # Animation
@@ -1287,13 +1295,22 @@ class GroundTrackController(QWidget):
 
     def _set_canvas(self, fig: "Figure") -> None:
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
-        canvas  = FigureCanvasQTAgg(fig)
-        canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
-        toolbar.setStyleSheet(
-            f"QToolBar {{ background:{C.BG_PANEL}; border:none; }}"
-            f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
-        )
+        canvas = FigureCanvasQTAgg(fig)
+        toolbar = None
+        try:
+            canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
+            toolbar.setStyleSheet(
+                f"QToolBar {{ background:{C.BG_PANEL}; border:none; }}"
+                f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
+            )
+            # Catch first-paint failures while the previous canvas is still installed.
+            canvas.draw()
+        except Exception:
+            if toolbar is not None:
+                toolbar.deleteLater()
+            canvas.deleteLater()
+            raise
 
         lay = self.canvasHolder.layout()
         if lay is None:
@@ -1399,41 +1416,15 @@ class GroundTrackController(QWidget):
 
     def _show_keplerian_track(self, data: dict, elems: dict) -> None:
         """Display a Keplerian ground track coming from the Orbit Designer."""
-        self._anim_timer.stop()
-        self._data = data
-        n   = len(data["lons"])
+        if not self._install_result(data):
+            return
+        n = len(data["lons"])
         dur = data["duration_days"]
         self._set_status(
             f"Keplerian — {dur:.1f} d · {n} pts  "
             f"h={elems['alt_km']:.0f} km  e={elems['e']:.3f}  i={elems['inc_deg']:.0f}°",
             C.CYAN,
         )
-        fig = _build_static_figure(data)
-        self._fig = fig
-        self._set_canvas(fig)
-        self.exportPngBtn.setEnabled(True)
-        self.exportCsvBtn.setEnabled(True)
-
-        # Animated artists on the same axes
-        self._anim_ax = fig.axes[0]
-        self._anim_dot,  = self._anim_ax.plot([], [], "o", color="white",
-                                                ms=8, zorder=10,
-                                                markeredgecolor=C.CYAN,
-                                                markeredgewidth=1.5)
-        self._anim_tail, = self._anim_ax.plot([], [], "-", color=C.CYAN,
-                                               linewidth=2.2, alpha=_TAIL_ALPHA, zorder=9)
-        self._anim_label = self._anim_ax.text(
-            0.99, 0.97, "",
-            transform=self._anim_ax.transAxes,
-            ha="right", va="top", color=C.TEXT_PRIMARY,
-            fontsize=FONT.SIZE_SM, fontfamily=FONT.MONO,
-            bbox=dict(boxstyle="round,pad=0.3", facecolor=C.BG_PANEL,
-                      alpha=0.8, edgecolor=C.BORDER_MID),
-            zorder=11,
-        )
-        self._anim_idx = 0
-        self.animGroup.setEnabled(True)
-        self.playBtn.setText("▶ Play")
         self._model_note.setText(
             "Analitik iki cisim ön incelemesi · t=0 yerel başlangıç, UTC epoku yok · "
             "sabit hızlı Z dönüşüyle yaklaşık Ay yüzey izi. İstasyon görünürlüğü hesaplanmadı; "
