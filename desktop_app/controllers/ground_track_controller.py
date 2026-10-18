@@ -844,6 +844,9 @@ class _OrbitDesigner(QWidget):
             "UTC epoku ve istasyon görünürlüğü yoktur. SPICE hesabı ayrı bir\n"
             "örnek başlangıç kullanır; buradaki elemanları devralmaz."
         )
+        self._generate_btn = gen_btn
+        self._generate_text = gen_btn.text()
+        self._generate_tooltip = gen_btn.toolTip()
         gen_btn.clicked.connect(self._generate_track)
         ctrl_lay.addWidget(gen_btn)
 
@@ -934,6 +937,8 @@ class _OrbitDesigner(QWidget):
         self._preview_timer.stop()
 
     def _generate_track(self) -> None:
+        if self._gt._busy:
+            return
         elems = self._get_elements()
         dur   = self._dur_spin.value()
 
@@ -981,6 +986,11 @@ class GroundTrackController(QWidget):
         self._canvas     = None
         self._fig        = None
         self._data: dict | None = None
+        self._busy = False
+        self._pending_inputs = None
+        self._result_inputs = None
+        self._result_model = None
+        self._result_elements = None
 
         # Animation state
         self._anim_timer  = QTimer(self)
@@ -995,6 +1005,7 @@ class GroundTrackController(QWidget):
 
         self._setup()
         self._add_orbit_designer_tab()
+        self._inputs_changed()
 
     def _setup(self) -> None:
         self._build_checkboxes()
@@ -1010,6 +1021,12 @@ class GroundTrackController(QWidget):
         self._set_status("Select stations and compute.", C.TEXT_MUTED)
         self._init_placeholder()
         self._build_model_notes()
+        for spin in (self.durationSpin, self.elevSpin, self.gapSpin):
+            spin.valueChanged.connect(self._inputs_changed)
+        self.gapSpin.setToolTip(
+            "Görünürlük analizine aktarılan boşluk eşiği (dk). "
+            "Yüzey izi ve CSV ham örnek görünürlüğünü gösterir; boşluk doldurma uygulanmaz."
+        )
 
     def _build_model_notes(self) -> None:
         self._scope_note = QLabel(
@@ -1018,11 +1035,82 @@ class GroundTrackController(QWidget):
         self._model_note = QLabel("İstasyonları seçip SPICE hesabını çalıştırın veya Yörünge tasarımı sekmesini açın.")
         self._model_note.setAccessibleName("Görünen yüzey izinin modeli ve kaynağı")
         self._model_note.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
-        for index, label in enumerate((self._scope_note, self._model_note)):
+        self._result_context = QLabel()
+        self._result_context.setAccessibleName("Görünen yüzey izi sonucunun ayarları")
+        self._result_context.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        self._result_context.setVisible(False)
+        for index, label in enumerate((self._scope_note, self._model_note, self._result_context)):
             label.setWordWrap(True)
             label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
             label.setStyleSheet(f"color:{C.TEXT_SECONDARY}; font-size:{FONT.SIZE_SM}px; padding:8px 12px;")
             self.chartLayout.insertWidget(index, label)
+
+    def _input_snapshot(self):
+        return (tuple(n for n, cb in self._checkboxes.items() if cb.isChecked()),
+                self.durationSpin.value(), self.elevSpin.value(), self.gapSpin.value())
+
+    def _set_busy(self, busy: bool) -> None:
+        self._busy = busy
+        for control in (self.paramsGroup, self.stationScrollArea, self.selectAllBtn, self.deselectAllBtn):
+            control.setEnabled(not busy)
+        self.computeBtn.setEnabled(not busy and bool(self._input_snapshot()[0]))
+        self.progressBar.setVisible(busy)
+        retained = self._data is not None and self._fig is not None
+        self.animGroup.setEnabled(not busy and retained)
+        self.exportPngBtn.setEnabled(not busy and retained)
+        self.exportCsvBtn.setEnabled(not busy and retained)
+        designer = self._orbit_designer
+        designer._generate_btn.setEnabled(not busy)
+        designer._generate_btn.setText("SPICE hesabı sürüyor…" if busy else designer._generate_text)
+        designer._generate_btn.setToolTip(
+            "SPICE hesabı sürüyor; tamamlanınca analitik yüzey izi üretebilirsiniz."
+            if busy else designer._generate_tooltip
+        )
+
+    def _inputs_changed(self) -> None:
+        if self._busy:
+            return
+        selected = bool(self._input_snapshot()[0])
+        self.computeBtn.setEnabled(selected)
+        if not selected:
+            self._set_status("En az bir istasyon seçin.", C.YELLOW)
+        elif self._data is None:
+            self._set_status("İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.")
+        elif self._result_model == "spice" and self._result_inputs is not None and self._input_snapshot() != self._result_inputs:
+            self._set_status("SPICE ayarları değişti; yeniden hesaplayın.", C.YELLOW)
+        else:
+            self._set_status("Son sonuç hazır.", C.GREEN)
+        self._refresh_result_context()
+
+    def _refresh_result_context(self, message: str = "") -> None:
+        if self._busy:
+            message = ("Hesap sürüyor; görünen grafik önceki sonuç." if self._data is not None
+                       else "Hesap sürüyor; sonuç bekleniyor.")
+        elif (not message and self._result_model == "spice" and self._result_inputs is not None
+              and self._input_snapshot() != self._result_inputs):
+            message = "Ayarlar değişti; grafik ve dışa aktarım önceki sonuç. Yeniden hesaplayın."
+        body, details = "", ""
+        if self._data is not None:
+            data = self._data
+            if self._result_model == "analytical":
+                body = f"Görünen Analitik sonuç · {data['duration_days']:g} gün · {len(data['t_s'])} örnek"
+                labels = {"alt_km": "Yükseklik (km)", "e": "Dışmerkezlik", "inc_deg": "Eğim (°)",
+                          "raan_deg": "Çıkış düğümü (°)", "argp_deg": "Periapsis argümanı (°)",
+                          "nu0_deg": "Başlangıç gerçek anomalisi (°)"}
+                details = "\n".join(f"{labels.get(k, k)}: {v:g}" for k, v in (self._result_elements or {}).items())
+            else:
+                body = f"Görünen SPICE sonucu · {data['duration_days']:g} gün · {len(data['station_names'])} istasyon"
+                if self._result_inputs is not None:
+                    body += f" · en az yükseliş {self._result_inputs[2]:g}° · boşluk ayarı {self._result_inputs[3]:g} dk"
+                else:
+                    body += " · hesap ayarları kaydedilmemiş"
+                details = (f"Başlangıç kaynağı: {FIXTURE.name}\nİstasyonlar: " + ", ".join(data['station_names'])
+                           + "\nGrafik ve CSV ham örnek görünürlüğüdür; boşluk doldurma uygulanmaz.")
+        text = "\n".join(part for part in (message, body) if part)
+        self._result_context.setText(text)
+        self._result_context.setToolTip(details)
+        self._result_context.setAccessibleDescription(text + "\n" + details)
+        self._result_context.setVisible(bool(text))
 
     def _build_log_panel(self) -> None:
         self._log_edit = QPlainTextEdit()
@@ -1059,6 +1147,8 @@ class GroundTrackController(QWidget):
         self._sync_duration_from_settings()
 
     def _sync_duration_from_settings(self) -> None:
+        if self._busy:
+            return
         from PyQt5.QtCore import QSettings
         s = QSettings("LunarOD", "DesktopApp")
         try:
@@ -1095,6 +1185,7 @@ class GroundTrackController(QWidget):
                 )
                 layout.addWidget(cb)
                 self._checkboxes[s.name] = cb
+                cb.stateChanged.connect(self._inputs_changed)
         layout.addStretch()
 
     def _select_all(self) -> None:
@@ -1110,26 +1201,26 @@ class GroundTrackController(QWidget):
     # ------------------------------------------------------------------
 
     def _compute(self) -> None:
-        if self._worker and self._worker.isRunning():
+        if self._busy or (self._worker and self._worker.isRunning()):
             return
         selected = [n for n, cb in self._checkboxes.items() if cb.isChecked()]
         if not selected:
             self._set_status("Select at least one station.", C.YELLOW)
             return
 
-        self._anim_timer.stop()
-        self.computeBtn.setEnabled(False)
-        self.animGroup.setEnabled(False)
-        self.progressBar.setVisible(True)
+        self._pending_inputs = self._input_snapshot()
+        self._pause_playback()
+        self._set_busy(True)
+        self._refresh_result_context()
         self._log_edit.clear()
         self._log(f"Starting: {len(selected)} station(s), {self.durationSpin.value():.0f} days")
         self._set_status("Computing…", C.YELLOW)
 
         self._worker = _TrackWorker(
-            station_names=selected,
-            duration_days=self.durationSpin.value(),
-            elev_deg=self.elevSpin.value(),
-            max_gap_min=self.gapSpin.value(),
+            station_names=list(self._pending_inputs[0]),
+            duration_days=self._pending_inputs[1],
+            elev_deg=self._pending_inputs[2],
+            max_gap_min=self._pending_inputs[3],
         )
         self._worker.progress.connect(self._on_progress)
         self._worker.finished.connect(self._on_data)
@@ -1143,8 +1234,12 @@ class GroundTrackController(QWidget):
     def _on_data(self, data: dict) -> None:
         if not self._install_result(data):
             return
-        self.computeBtn.setEnabled(True)
-        self.progressBar.setVisible(False)
+        self._result_inputs = self._pending_inputs
+        self._result_model = "spice"
+        self._result_elements = None
+        self._pending_inputs = None
+        self._set_busy(False)
+        self._refresh_result_context()
         n = len(data["lons"])
         dur = data["duration_days"]
         covered = int(np.any(data["vis_mask"], axis=0).sum()) if data["vis_mask"].size else 0
@@ -1193,17 +1288,15 @@ class GroundTrackController(QWidget):
 
     def _on_fail(self, msg: str) -> None:
         self._pause_playback()
-        self.computeBtn.setEnabled(True)
-        self.progressBar.setVisible(False)
+        self._pending_inputs = None
+        self._set_busy(False)
         retained = self._data is not None and self._fig is not None
-        self.animGroup.setEnabled(retained)
-        self.exportPngBtn.setEnabled(retained)
-        self.exportCsvBtn.setEnabled(retained)
         short = msg.splitlines()[0][:120] if msg else "Unknown error"
         context = ("Grafik ve dışa aktarım önceki sonuç; Play ile devam edebilirsiniz."
                    if retained else "Sonuç üretilmedi; yeniden deneyin.")
         self._set_status(f"Error: {short}\n{context}", C.RED)
         self._log(f"FAILED: {short} — {context}")
+        self._refresh_result_context(context)
         _show_error_dialog(self, "Ground-track result failed", msg)
 
     # ------------------------------------------------------------------
@@ -1416,8 +1509,12 @@ class GroundTrackController(QWidget):
 
     def _show_keplerian_track(self, data: dict, elems: dict) -> None:
         """Display a Keplerian ground track coming from the Orbit Designer."""
-        if not self._install_result(data):
+        if self._busy or not self._install_result(data):
             return
+        self._result_model = "analytical"
+        self._result_inputs = None
+        self._result_elements = dict(elems)
+        self._refresh_result_context()
         n = len(data["lons"])
         dur = data["duration_days"]
         self._set_status(

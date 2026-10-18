@@ -139,6 +139,12 @@ Yeni hesap veya grafik oluşturma başarısızsa ekrandaki grafik ve CSV/PNG ön
 sonuç olarak korunur; hata metni bunu belirtir. **Play** önceki konumdan devam eder.
 Henüz başarılı sonuç yoksa dışa aktarım ve oynatma kapalı kalır.
 
+SPICE hesabı sürerken istek ayarları ve yeni analitik yüzey izi üretimi bekler;
+3B tasarım önizlemesi kullanılabilir. Sonuç başlığı görünen hesabın ayarlarını
+gösterir; istasyon adları ve analitik elemanlar araç ipucundadır. Ayarları
+değiştirince grafik/CSV’nin önceki sonuca ait olduğu belirtilir. Boşluk ayarı
+hesaba aktarılır; yüzey izi ve CSV ham örnek görünürlüğünü gösterir.
+
 ## Ortam kontrolü
 
 Açılışta alt çubuktaki **Ortam** düğmesi kontrol durumunu gösterir.

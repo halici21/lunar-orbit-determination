@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Synchronize the QProcess liveness test with child ready/release signals, retaining
+  five observed timer callbacks and the final partial-line flush assertion.
+
+- Capture ground-track request settings, explain edited versus displayed results,
+  and prevent analytical generation from overtaking a pending SPICE calculation.
+
 - Retain matching ground-track data, canvas, exports and paused playback position
   after a detected render failure; explain when the previous result is retained.
 
