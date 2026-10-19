@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QPlainTextEdit,
     QTabWidget, QScrollArea, QGroupBox, QFormLayout, QDoubleSpinBox, QSlider,
 )
-from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, QTimer, QSize, pyqtSignal
 from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
@@ -694,6 +694,20 @@ _OE_CONFIG: list[tuple] = [
 ]
 
 
+class _CurrentTabWidget(QTabWidget):
+    """Let the outer scroll area size to the visible tab, not a hidden tall form."""
+
+    def minimumSizeHint(self):
+        page = self.currentWidget()
+        hint = (page.minimumSizeHint().expandedTo(page.minimumSize())
+                if page is not None else QSize())
+        bar = self.tabBar().sizeHint()
+        return QSize(max(hint.width(), bar.width()), hint.height() + bar.height())
+
+    def sizeHint(self):
+        return self.minimumSizeHint()
+
+
 class _OrbitDesigner(QWidget):
     """Orbital-element editor with a live 3-D orbit preview."""
 
@@ -875,6 +889,31 @@ class _OrbitDesigner(QWidget):
         splitter.addWidget(ctrl_scroll)
         splitter.setSizes([440, 310])
         outer.addWidget(splitter)
+        self._layout_splitter = splitter
+        self._control_scroll = ctrl_scroll
+        self._control_inner = ctrl_inner
+
+    def _adapt_layout(self, narrow: bool) -> None:
+        splitter = self._layout_splitter
+        orientation = Qt.Vertical if narrow else Qt.Horizontal
+        self._control_scroll.setMinimumWidth(0 if narrow else 280)
+        self._control_scroll.setMaximumWidth(16777215 if narrow else 360)
+        self._preview_holder.setMinimumWidth(0 if narrow else 300)
+        self._preview_holder.setMinimumHeight(420 if narrow else 0)
+        width = max(1, self._gt.width() - 8)
+        form = self._control_inner.layout()
+        form_height = max(form.minimumSize().height(), form.heightForWidth(width))
+        # In a narrow window, use the page's single vertical scroll for the form
+        # and preview; do not hide Generate beneath a second scrolling panel.
+        self._control_scroll.setMinimumHeight(form_height if narrow else 0)
+        if splitter.orientation() != orientation:
+            splitter.setOrientation(orientation)
+            splitter.insertWidget(0, self._control_scroll if narrow else self._preview_holder)
+            splitter.setSizes([form_height, 420] if narrow else [440, 310])
+        self.setMinimumHeight(form_height + 420 + splitter.handleWidth() + 8 if narrow else 0)
+
+    def minimumSizeHint(self):
+        return super().minimumSizeHint().expandedTo(self.minimumSize())
 
     # ------------------------------------------------------------------
     def _get_elements(self) -> dict:
@@ -1007,6 +1046,39 @@ class GroundTrackController(QWidget):
         self._add_orbit_designer_tab()
         self._inputs_changed()
 
+    def resizeEvent(self, event) -> None:
+        self._adapt_layout()
+        super().resizeEvent(event)
+
+    def _adapt_layout(self) -> None:
+        if self._tab_widget is None or not hasattr(self, "_orbit_designer"):
+            return
+        narrow = self.width() < 900
+        orientation = Qt.Vertical if narrow else Qt.Horizontal
+        self.controlPanel.setMaximumWidth(16777215 if narrow else 320)
+        self.stationScrollArea.setMaximumHeight(160 if narrow else 16777215)
+        if self.splitter.orientation() != orientation:
+            self.splitter.setOrientation(orientation)
+            self.splitter.setSizes([self.controlPanel.minimumSizeHint().height(), 520]
+                                   if narrow else [320, max(400, self.width() - 320)])
+        self._orbit_designer._adapt_layout(narrow)
+        width = max(1, self.width())
+        chart_height = max(520, self.chartLayout.heightForWidth(width),
+                           self.chartLayout.minimumSize().height())
+        control_height = max(self.controlLayout.minimumSize().height(),
+                             self.controlLayout.heightForWidth(width))
+        track_height = (control_height + chart_height
+                        + self.splitter.handleWidth()) if narrow else 0
+        self.splitter.setMinimumHeight(track_height)
+        current = self._tab_widget.currentWidget()
+        self.setMinimumHeight(current.minimumHeight() + self._tab_widget.tabBar().sizeHint().height()
+                              if narrow else 0)
+        self._tab_widget.updateGeometry()
+        self.updateGeometry()
+
+    def minimumSizeHint(self):
+        return super().minimumSizeHint().expandedTo(self.minimumSize())
+
     def _setup(self) -> None:
         self._build_checkboxes()
         self.selectAllBtn.clicked.connect(self._select_all)
@@ -1111,6 +1183,7 @@ class GroundTrackController(QWidget):
         self._result_context.setToolTip(details)
         self._result_context.setAccessibleDescription(text + "\n" + details)
         self._result_context.setVisible(bool(text))
+        self._adapt_layout()
 
     def _build_log_panel(self) -> None:
         self._log_edit = QPlainTextEdit()
@@ -1129,6 +1202,7 @@ class GroundTrackController(QWidget):
         self._log_edit.setVisible(True)
         self._log_edit.appendPlainText(msg)
         self._log_edit.ensureCursorVisible()
+        self._adapt_layout()
 
     def _build_export_buttons(self) -> None:
         row = QHBoxLayout()
@@ -1318,6 +1392,7 @@ class GroundTrackController(QWidget):
     def _on_tab_changed(self, index: int) -> None:
         if index != 0:
             self._pause_playback()
+        self._adapt_layout()
 
     def _play_pause(self) -> None:
         if self._data is None or not self.isVisible() or self._tab_widget.currentIndex() != 0:
@@ -1435,6 +1510,7 @@ class GroundTrackController(QWidget):
         self.statusLabel.setStyleSheet(
             f"QLabel {{ color:{color}; font-size:{FONT.SIZE_MD}px; }}"
         )
+        self._adapt_layout()
 
     def _export_png(self) -> None:
         if self._fig is None:
@@ -1489,7 +1565,7 @@ class GroundTrackController(QWidget):
 
     def _add_orbit_designer_tab(self) -> None:
         """Wrap the existing splitter in a QTabWidget and add the Orbit Designer tab."""
-        self._tab_widget = QTabWidget(self)
+        self._tab_widget = _CurrentTabWidget(self)
         self._tab_widget.setStyleSheet(
             f"QTabBar::tab {{ background:{C.BG_SIDEBAR}; color:{C.TEXT_MUTED};"
             f" padding:6px 18px; font-size:12px; border:none;"
