@@ -29,9 +29,6 @@ _SAMPLE_STEP_S = 240.0    # 4-minute propagation step (smoother ground track)
 _EPHEM_STEP_S  = 3600.0   # 1-hour ephemeris grid
 
 _NO_VIS_COLOR  = "#2a3448"   # color for segments with no station coverage
-_MOON_BG       = "#111318"   # Moon surface background color
-_MOON_GRID     = "#1e2535"   # lat/lon grid lines
-_MOON_NEARSIDE = "#1a2240"   # subtle near-side highlight (lon ±90°)
 _TAIL_ALPHA    = 0.75        # animation tail opacity
 _TAIL_LEN      = 25          # number of trail points
 
@@ -203,28 +200,28 @@ class _TrackWorker(QThread):
 
 def _draw_moon_bg(ax) -> None:
     """Draw Moon map background: surface, near-side highlight, grid."""
-    ax.set_facecolor(_MOON_BG)
+    ax.set_facecolor(C.BG_PANEL)
 
     # Subtle near-side band (sub-Earth point at ~0°, 0° for tidally locked Moon)
     from matplotlib.patches import Rectangle
     near_patch = Rectangle(
         (-90, -90), 180, 180,
-        facecolor=_MOON_NEARSIDE, edgecolor="none", zorder=1, alpha=0.35,
+        facecolor=C.BG_HOVER, edgecolor="none", zorder=1, alpha=0.35,
     )
     ax.add_patch(near_patch)
 
     # Latitude / longitude grid
     for lat in range(-90, 91, 30):
         lw = 0.7 if lat == 0 else 0.3
-        ax.axhline(lat, color=_MOON_GRID, linewidth=lw, zorder=2)
+        ax.axhline(lat, color=C.BORDER_MAIN, linewidth=lw, zorder=2)
     for lon in range(-180, 181, 30):
         lw = 0.7 if lon == 0 else 0.3
-        ax.axvline(lon, color=_MOON_GRID, linewidth=lw, zorder=2)
+        ax.axvline(lon, color=C.BORDER_MAIN, linewidth=lw, zorder=2)
 
     # Sub-Earth label
     ax.text(
         2, 2, "● Sub-Earth",
-        color="#344060", fontsize=FONT.SIZE_XS,
+        color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS,
         fontfamily=FONT.MONO, zorder=3, va="bottom",
     )
 
@@ -334,7 +331,7 @@ def _build_static_figure(data: dict) -> "Figure":
     boundaries = _pass_boundaries(lats, lons)
 
     with plt.rc_context(MPL_DARK):
-        fig = Figure(figsize=(11, 5.5), tight_layout={"pad": 0.7})
+        fig = Figure(figsize=(11, 5.5), tight_layout={"pad": 0.7, "rect": (0, 0.13, 1, 1)})
         ax  = fig.add_subplot(111)
 
     _draw_moon_bg(ax)
@@ -393,8 +390,7 @@ def _build_static_figure(data: dict) -> "Figure":
     ax.set_xlabel("Selenographic Longitude (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_ylabel("Selenographic Latitude (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_title(
-        f"Selenographic Ground Track — {data['duration_days']:g} days  "
-        f"|  {visibility_text}",
+        f"Selenographic Ground Track\n{data['duration_days']:g} days · {visibility_text}",
         color=C.TEXT_SECONDARY, fontsize=FONT.SIZE_SM,
     )
     for sp in ax.spines.values():
@@ -424,12 +420,13 @@ def _build_static_figure(data: dict) -> "Figure":
     for t in leg.get_texts():
         t.set_color(C.TEXT_SECONDARY)
 
-    ax.text(
-        0.985, 0.025,
-        "Moon rotates ~27× slower than Earth — passes drift only ~1°/orbit,\n"
-        "so selenographic tracks stay near-vertical.",
-        transform=ax.transAxes, ha="right", va="bottom",
-        color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS - 1, alpha=0.9, zorder=8,
+    # Keep the explanation outside the data/legend area, including small canvases.
+    from textwrap import fill
+    fig.text(
+        0.07, 0.012,
+        fill("Moon rotates ~27× slower than Earth — passes drift only ~1°/orbit, "
+             "so selenographic tracks stay near-vertical.", width=60),
+        ha="left", va="bottom", color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS - 1,
     )
 
     return fig
