@@ -1064,6 +1064,8 @@ class GroundTrackController(QWidget):
                            self.chartLayout.minimumSize().height())
         control_height = max(self.controlLayout.minimumSize().height(),
                              self.controlLayout.heightForWidth(width))
+        # In a stack, give spare height to the plot rather than the form spacer.
+        self.controlPanel.setMaximumHeight(control_height if narrow else 16777215)
         track_height = (control_height + chart_height
                         + self.splitter.handleWidth()) if narrow else 0
         self.splitter.setMinimumHeight(track_height)
