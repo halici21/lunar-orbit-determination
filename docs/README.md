@@ -24,6 +24,7 @@
 - [Ground-track request settings, pending models and result provenance](development/ground-track-request-context_2026-10-18.md)
 - [Responsive ground-track and orbit-designer forms](development/ground-track-responsive_2026-10-19.md)
 - [Ground-track plot contrast and complete captions](development/ground-track-legibility_2026-10-19.md)
+- [Compact narrow ground-track controls and preserved state](development/ground-track-density_2026-10-20.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)

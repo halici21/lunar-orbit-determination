@@ -1,0 +1,962 @@
+{
+  "base_commit": "b5394646d55a29c9ab3b3337925238c8cf2a7168",
+  "local_junit": {
+    "before": {
+      "tests": 6,
+      "failures": 6,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 5.145,
+      "named_cases": 6,
+      "sha256": "46f7633fa80b5bd27c31e47fd5e4449e68506a90a289b215c70cb914fa7820c4"
+    },
+    "compact": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 41.859,
+      "named_cases": 10,
+      "sha256": "ad1f6e7982cb7372d14504fa70edaac2bf6d2f14b9e3e495b5017114c1d45f59"
+    },
+    "public": {
+      "tests": 374,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 120.511,
+      "named_cases": 374,
+      "sha256": "acf595eb6f98734db63b6d329c4c33700f557bfc365003b64a229d28d0af7d53"
+    },
+    "full": {
+      "tests": 1964,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 557.557,
+      "named_cases": 1818,
+      "sha256": "e24b8d93ffff0c0ced2956aecf2ada97e364e08b08d5041bb71b709d88811ded",
+      "existing_skip_categories": {
+        "opt_in_slow": 21,
+        "unavailable_external_data": 8
+      }
+    }
+  },
+  "initial_probe": [
+    {
+      "size": [
+        1480,
+        1000
+      ],
+      "panel_height": 857,
+      "minimum_hint": 736,
+      "layout_min": 736,
+      "layout_hfw": 771,
+      "status_to_log_gap": 116,
+      "station_height": 120,
+      "chart_height": 857,
+      "page_min": 0,
+      "page_height": 884,
+      "chart_y": 0
+    },
+    {
+      "size": [
+        910,
+        465
+      ],
+      "panel_height": 877,
+      "minimum_hint": 736,
+      "layout_min": 736,
+      "layout_hfw": 756,
+      "status_to_log_gap": 140,
+      "station_height": 131,
+      "chart_height": 619,
+      "page_min": 1524,
+      "page_height": 1524,
+      "chart_y": 878
+    },
+    {
+      "size": [
+        760,
+        420
+      ],
+      "panel_height": 901,
+      "minimum_hint": 736,
+      "layout_min": 736,
+      "layout_hfw": 756,
+      "status_to_log_gap": 152,
+      "station_height": 143,
+      "chart_height": 637,
+      "page_min": 1566,
+      "page_height": 1566,
+      "chart_y": 902
+    },
+    {
+      "cycle": 0,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 1,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 2,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 3,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 4,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 5,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 6,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    },
+    {
+      "cycle": 7,
+      "page_min": 1566,
+      "panel_height": 901,
+      "gap": 152
+    }
+  ],
+  "native_review": [
+    {
+      "palette": "modern",
+      "density_comparisons": [
+        {
+          "version": "before",
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 700,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 132,
+          "control_height": 872,
+          "chart_height": 607,
+          "canvas_height": 446,
+          "page_height": 1513,
+          "station_list_height": 122,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 132,
+          "control_height": 872,
+          "chart_height": 607,
+          "canvas_height": 446,
+          "page_height": 1513,
+          "station_list_height": 122,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 148,
+          "control_height": 889,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1546,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 148,
+          "control_height": 889,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1546,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 73,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 132,
+          "control_height": 890,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1547,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 132,
+          "control_height": 890,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1547,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 700,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 30,
+          "control_height": 768,
+          "chart_height": 711,
+          "canvas_height": 550,
+          "page_height": 1513,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 30,
+          "control_height": 768,
+          "chart_height": 711,
+          "canvas_height": 550,
+          "page_height": 1513,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 46,
+          "control_height": 784,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1546,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 46,
+          "control_height": 784,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1546,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 73,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 30,
+          "control_height": 785,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1547,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 30,
+          "control_height": 785,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1547,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        }
+      ],
+      "controller_ast_only_adds_one_maximum_height_call": true,
+      "base_commit": "b5394646d55a29c9ab3b3337925238c8cf2a7168",
+      "protected_source_hashes": {
+        "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+        "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+        "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+        "_draw_moon_bg": "2c3f180cbc39e478a433b75d2b3d753a6836a3b600eebdbee3dd67b31af4034f",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_build_static_figure": "1705aa07f332ae6d045a5b666e0f37b7dab1b8cc27d1f97a359ee11f2560dd0b",
+        "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f",
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "GroundTrackController._compute": "a0d5c545bacd0e67cea01fbc8fe05448df1d8e24ee3c19db9e096a22fc14b6fa",
+        "GroundTrackController._on_data": "10845c16d7a7c324f3280cba76679bf7f05558e21e39e53c3dc529f11bf79ad4",
+        "GroundTrackController._install_result": "48711ab9e6f1a20b8cd1f65ce227c8d3e2ce81ead012f78ca739734b46ebc31e",
+        "GroundTrackController._on_fail": "7a96871dd7cfb745f3777233f3372cce7fd9be80bcc175fbfdfc794127471813",
+        "GroundTrackController._pause_playback": "85308b5e241b309f41805eaabc1044c77bef80df49a27be1f23488ad7e1e0267",
+        "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+        "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+        "GroundTrackController._play_pause": "7856625baa3d9c5af83c668ba89cee0d7eb5ea0334a7515a6d0ef440b33d2abb",
+        "GroundTrackController._reset_anim": "ff3f2f4468461593e1a8e9ebf9db62503dc4cc8c0bcbefb05c4b5bf9b81a9042",
+        "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+        "GroundTrackController._set_canvas": "40c4cfe7c2b5398805f7f63c8065c4011789f22b121c98c34ed9b5fc191ec0dc",
+        "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+        "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+        "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+        "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+        "_OrbitDesigner._generate_track": "137fdf4f3eb6e2f7f501eb51a8a982e2ccc86be8984c1eac4eab12ba3a4e6f09",
+        "constants": "843100fdb92773fffcfb92148e688798c151b1ad997d603b7fcbd6103c709c9b"
+      },
+      "prior_spice_example_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "samples": 361,
+      "source": "Prior hashed SPICE example replayed through a controlled worker; no new SPICE propagation or spacecraft telemetry.",
+      "cases": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "horizontal_scroll_maximum": 0,
+          "track_canvas_height": 700,
+          "preview_height": 837,
+          "designer_inner_vertical_scroll": 0,
+          "data_figure_canvas_index_and_context_retained": true,
+          "controls_reachable": true
+        },
+        {
+          "window": [
+            910,
+            465
+          ],
+          "horizontal_scroll_maximum": 0,
+          "track_canvas_height": 550,
+          "preview_height": 420,
+          "designer_inner_vertical_scroll": 0,
+          "data_figure_canvas_index_and_context_retained": true,
+          "controls_reachable": true
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "horizontal_scroll_maximum": 0,
+          "track_canvas_height": 550,
+          "preview_height": 420,
+          "designer_inner_vertical_scroll": 0,
+          "data_figure_canvas_index_and_context_retained": true,
+          "controls_reachable": true
+        }
+      ],
+      "csv_byte_identical_after_resizes": true,
+      "keyboard_edit_and_explicit_analytical_generation": true,
+      "analytical_samples": 340,
+      "hidden_preview_timer_stopped": true,
+      "narrow_blank_and_pending_states_fit": true
+    },
+    {
+      "palette": "orchid",
+      "density_comparisons": [
+        {
+          "version": "before",
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 700,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 132,
+          "control_height": 872,
+          "chart_height": 607,
+          "canvas_height": 446,
+          "page_height": 1513,
+          "station_list_height": 122,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 132,
+          "control_height": 872,
+          "chart_height": 607,
+          "canvas_height": 446,
+          "page_height": 1513,
+          "station_list_height": 122,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 148,
+          "control_height": 889,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1546,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 148,
+          "control_height": 889,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1546,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 73,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 132,
+          "control_height": 890,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1547,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "before",
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 132,
+          "control_height": 890,
+          "chart_height": 623,
+          "canvas_height": 445,
+          "page_height": 1547,
+          "station_list_height": 123,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 700,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 30,
+          "control_height": 768,
+          "chart_height": 711,
+          "canvas_height": 550,
+          "page_height": 1513,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 30,
+          "control_height": 768,
+          "chart_height": 711,
+          "canvas_height": 550,
+          "page_height": 1513,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 107,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 46,
+          "control_height": 784,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1546,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 46,
+          "control_height": 784,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1546,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "gap_px": 73,
+          "control_height": 845,
+          "chart_height": 845,
+          "canvas_height": 683,
+          "page_height": 878,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "gap_px": 30,
+          "control_height": 785,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1547,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        },
+        {
+          "version": "after",
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "gap_px": 30,
+          "control_height": 785,
+          "chart_height": 728,
+          "canvas_height": 550,
+          "page_height": 1547,
+          "station_list_height": 120,
+          "all_controls_fit": true
+        }
+      ],
+      "controller_ast_only_adds_one_maximum_height_call": true,
+      "base_commit": "b5394646d55a29c9ab3b3337925238c8cf2a7168",
+      "protected_source_hashes": {
+        "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+        "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+        "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+        "_draw_moon_bg": "2c3f180cbc39e478a433b75d2b3d753a6836a3b600eebdbee3dd67b31af4034f",
+        "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+        "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+        "_build_static_figure": "1705aa07f332ae6d045a5b666e0f37b7dab1b8cc27d1f97a359ee11f2560dd0b",
+        "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+        "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+        "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+        "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+        "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+        "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+        "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+        "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+        "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+        "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+        "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f",
+        "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+        "GroundTrackController._compute": "a0d5c545bacd0e67cea01fbc8fe05448df1d8e24ee3c19db9e096a22fc14b6fa",
+        "GroundTrackController._on_data": "10845c16d7a7c324f3280cba76679bf7f05558e21e39e53c3dc529f11bf79ad4",
+        "GroundTrackController._install_result": "48711ab9e6f1a20b8cd1f65ce227c8d3e2ce81ead012f78ca739734b46ebc31e",
+        "GroundTrackController._on_fail": "7a96871dd7cfb745f3777233f3372cce7fd9be80bcc175fbfdfc794127471813",
+        "GroundTrackController._pause_playback": "85308b5e241b309f41805eaabc1044c77bef80df49a27be1f23488ad7e1e0267",
+        "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+        "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+        "GroundTrackController._play_pause": "7856625baa3d9c5af83c668ba89cee0d7eb5ea0334a7515a6d0ef440b33d2abb",
+        "GroundTrackController._reset_anim": "ff3f2f4468461593e1a8e9ebf9db62503dc4cc8c0bcbefb05c4b5bf9b81a9042",
+        "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+        "GroundTrackController._set_canvas": "40c4cfe7c2b5398805f7f63c8065c4011789f22b121c98c34ed9b5fc191ec0dc",
+        "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+        "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+        "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+        "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+        "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+        "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+        "_OrbitDesigner._generate_track": "137fdf4f3eb6e2f7f501eb51a8a982e2ccc86be8984c1eac4eab12ba3a4e6f09",
+        "constants": "843100fdb92773fffcfb92148e688798c151b1ad997d603b7fcbd6103c709c9b"
+      },
+      "prior_spice_example_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "samples": 361,
+      "source": "Prior hashed SPICE example replayed through a controlled worker; no new SPICE propagation or spacecraft telemetry.",
+      "cases": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "horizontal_scroll_maximum": 0,
+          "track_canvas_height": 700,
+          "preview_height": 837,
+          "designer_inner_vertical_scroll": 0,
+          "data_figure_canvas_index_and_context_retained": true,
+          "controls_reachable": true
+        },
+        {
+          "window": [
+            910,
+            465
+          ],
+          "horizontal_scroll_maximum": 0,
+          "track_canvas_height": 550,
+          "preview_height": 420,
+          "designer_inner_vertical_scroll": 0,
+          "data_figure_canvas_index_and_context_retained": true,
+          "controls_reachable": true
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "horizontal_scroll_maximum": 0,
+          "track_canvas_height": 550,
+          "preview_height": 420,
+          "designer_inner_vertical_scroll": 0,
+          "data_figure_canvas_index_and_context_retained": true,
+          "controls_reachable": true
+        }
+      ],
+      "csv_byte_identical_after_resizes": true,
+      "keyboard_edit_and_explicit_analytical_generation": true,
+      "analytical_samples": 340,
+      "hidden_preview_timer_stopped": true,
+      "narrow_blank_and_pending_states_fit": true
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "scope": "A maximum-height bound for the stacked control panel only; existing spare height goes to the plot. No overall page-height, solver performance or scientific-fit improvement claimed."
+}
