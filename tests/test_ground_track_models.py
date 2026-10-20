@@ -83,7 +83,7 @@ def test_spice_result_note_describes_actual_example_epoch_and_sample_scope(page)
     assert 'IAU_MOON' in note and '4 dk' in note
     assert 'kayıtlı' in widget._scope_note.text()
     assert widget._data is data
-    assert 'samples' in widget.statusLabel.text()
+    assert 'görünür örnekler %0' in widget.statusLabel.text()
     widget._anim_step()
     assert 'No sample visibility' in widget._anim_label.get_text()
     assert 'not computed' not in widget._anim_label.get_text()

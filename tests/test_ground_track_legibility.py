@@ -74,7 +74,7 @@ def test_ground_track_text_fits_canvas_and_keeps_data(palette, width, sampled, p
         assert not footer_box.overlaps(ax.get_legend().get_window_extent(renderer))
         assert not footer_box.overlaps(ax.xaxis.label.get_window_extent(renderer))
         title = ax.get_title()
-        assert "1 days" in title
+        assert "1 day ·" in title and "1 days" not in title
         assert ("Visible samples: 50%" if sampled else "Visibility not computed") in title
         assert "(°)" in ax.get_xlabel() and "(°)" in ax.get_ylabel()
         assert original == {k: data[k].tobytes() for k in original}

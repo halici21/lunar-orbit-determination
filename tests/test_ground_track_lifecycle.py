@@ -60,7 +60,7 @@ def test_leaving_playback_view_pauses_without_losing_result_or_export(window,tmp
     QTest.qWait(220)
     assert not page._anim_timer.isActive()
     assert page._anim_idx==index and len(spy)==count
-    assert 'Play' in page.playBtn.text()
+    assert page.playBtn.text() == 'Oynat'
     page._play_pause();assert not page._anim_timer.isActive()
     if destination=='mission':w.navigate('ground_track')
     else:page._tab_widget.setCurrentIndex(0)

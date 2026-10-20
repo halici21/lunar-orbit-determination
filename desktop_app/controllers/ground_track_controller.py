@@ -390,7 +390,8 @@ def _build_static_figure(data: dict) -> "Figure":
     ax.set_xlabel("Selenographic Longitude (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_ylabel("Selenographic Latitude (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_title(
-        f"Selenographic Ground Track\n{data['duration_days']:g} days · {visibility_text}",
+        f"Selenographic Ground Track\n{data['duration_days']:g} "
+        f"{'day' if data['duration_days'] == 1 else 'days'} · {visibility_text}",
         color=C.TEXT_SECONDARY, fontsize=FONT.SIZE_SM,
     )
     for sp in ax.spines.values():
@@ -1085,11 +1086,25 @@ class GroundTrackController(QWidget):
         self.computeBtn.clicked.connect(self._compute)
         self.computeBtn.setText("SPICE örneğini hesapla")
         self.playBtn.clicked.connect(self._play_pause)
-        self.playBtn.setToolTip("Sekme veya sayfa değişince oynatma durur; Play ile aynı konumdan devam edin.")
+        self.playBtn.setToolTip("Sekme veya sayfa değişince oynatma durur; Oynat ile aynı konumdan devam edin.")
         self.resetBtn.clicked.connect(self._reset_anim)
+        self.resetBtn.setToolTip("Göstergeyi başa alır; hesaplanan sonucu değiştirmez.")
+        self.speedSpin.setToolTip(
+            "Oynatma adımını ve çizim aralığını değiştirir; fiziksel zaman çarpanı değildir."
+        )
+        self.durationSpin.setToolTip(
+            "SPICE örneği için hesap süresi (gün); başlangıç epoku örnek veriden gelir."
+        )
+        self.elevSpin.setToolTip(
+            "İstasyonun yerel ufku üzerindeki en küçük yükseliş açısı (derece)."
+        )
+        self.computeBtn.setToolTip(
+            "Seçili istasyonlar için sabit örnek başlangıcından SPICE yüzey izi hesaplar. "
+            "Kayıtlı koşuyu ve tasarımcıdaki elemanları kullanmaz."
+        )
         self._build_export_buttons()
         self._build_log_panel()
-        self._set_status("Select stations and compute.", C.TEXT_MUTED)
+        self._set_status("İstasyonları seçip SPICE örneğini hesaplayın.", C.TEXT_MUTED)
         self._init_placeholder()
         self._build_model_notes()
         for spin in (self.durationSpin, self.elevSpin, self.gapSpin):
@@ -1188,7 +1203,7 @@ class GroundTrackController(QWidget):
         self._log_edit = QPlainTextEdit()
         self._log_edit.setReadOnly(True)
         self._log_edit.setFixedHeight(82)
-        self._log_edit.setPlaceholderText("Computation log…")
+        self._log_edit.setPlaceholderText("Hesap günlüğü…")
         self._log_edit.setStyleSheet(
             f"QPlainTextEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_MUTED};"
             f" font-family:Consolas,monospace; font-size:10px;"
@@ -1206,8 +1221,13 @@ class GroundTrackController(QWidget):
     def _build_export_buttons(self) -> None:
         row = QHBoxLayout()
         row.setSpacing(6)
-        self.exportPngBtn = QPushButton("Export PNG")
-        self.exportCsvBtn = QPushButton("Export CSV")
+        self.exportPngBtn = QPushButton("PNG kaydet")
+        self.exportCsvBtn = QPushButton("CSV kaydet")
+        self.exportPngBtn.setToolTip("Görünen grafiği PNG veya PDF olarak kaydeder.")
+        self.exportCsvBtn.setToolTip(
+            "Görünen sonucun zaman, Ay boylam/enlem ve ham görünürlük örneklerini kaydeder. "
+            "Analitik sonuçta istasyon görünürlüğü hesaplanmaz."
+        )
         self.exportPngBtn.setEnabled(False)
         self.exportCsvBtn.setEnabled(False)
         self.exportPngBtn.clicked.connect(self._export_png)
@@ -1278,7 +1298,7 @@ class GroundTrackController(QWidget):
             return
         selected = [n for n, cb in self._checkboxes.items() if cb.isChecked()]
         if not selected:
-            self._set_status("Select at least one station.", C.YELLOW)
+            self._set_status("En az bir istasyon seçin.", C.YELLOW)
             return
 
         self._pending_inputs = self._input_snapshot()
@@ -1286,8 +1306,8 @@ class GroundTrackController(QWidget):
         self._set_busy(True)
         self._refresh_result_context()
         self._log_edit.clear()
-        self._log(f"Starting: {len(selected)} station(s), {self.durationSpin.value():.0f} days")
-        self._set_status("Computing…", C.YELLOW)
+        self._log(f"Başlangıç: {len(selected)} istasyon · {self.durationSpin.value():g} gün")
+        self._set_status("SPICE hesabı sürüyor…", C.YELLOW)
 
         self._worker = _TrackWorker(
             station_names=list(self._pending_inputs[0]),
@@ -1317,9 +1337,9 @@ class GroundTrackController(QWidget):
         dur = data["duration_days"]
         covered = int(np.any(data["vis_mask"], axis=0).sum()) if data["vis_mask"].size else 0
         pct = 100.0 * covered / max(n, 1)
-        done_msg = f"{n} points, {dur:.0f} days — visible samples {pct:.0f}%"
+        done_msg = f"{n} örnek · {dur:g} gün · görünür örnekler %{pct:.0f}"
         self._set_status(done_msg, C.GREEN)
-        self._log(f"Done: {done_msg}")
+        self._log(f"Tamamlandı: {done_msg}")
         self._model_note.setText(
             f"SPICE · sabit örnek başlangıç ({FIXTURE.name}) · T0 {data['epoch_utc']} UTC · "
             f"IAU_MOON · {_SAMPLE_STEP_S / 60:g} dk geometrik örnekleme. "
@@ -1364,11 +1384,11 @@ class GroundTrackController(QWidget):
         self._pending_inputs = None
         self._set_busy(False)
         retained = self._data is not None and self._fig is not None
-        short = msg.splitlines()[0][:120] if msg else "Unknown error"
-        context = ("Grafik ve dışa aktarım önceki sonuç; Play ile devam edebilirsiniz."
+        short = msg.splitlines()[0][:120] if msg else "Bilinmeyen hata"
+        context = ("Grafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz."
                    if retained else "Sonuç üretilmedi; yeniden deneyin.")
-        self._set_status(f"Error: {short}\n{context}", C.RED)
-        self._log(f"FAILED: {short} — {context}")
+        self._set_status(f"Hata: {short}\n{context}", C.RED)
+        self._log(f"Hata: {short} — {context}")
         self._refresh_result_context(context)
         _show_error_dialog(self, "Ground-track result failed", msg)
 
@@ -1378,7 +1398,7 @@ class GroundTrackController(QWidget):
 
     def _pause_playback(self) -> None:
         self._anim_timer.stop()
-        self.playBtn.setText("▶ Play")
+        self.playBtn.setText("Oynat")
 
     def hideEvent(self, event) -> None:
         self._pause_playback()
@@ -1401,11 +1421,11 @@ class GroundTrackController(QWidget):
         else:
             interval_ms = max(40, 200 // self.speedSpin.value())
             self._anim_timer.start(interval_ms)
-            self.playBtn.setText("⏸ Pause")
+            self.playBtn.setText("Duraklat")
 
     def _reset_anim(self) -> None:
         self._anim_timer.stop()
-        self.playBtn.setText("▶ Play")
+        self.playBtn.setText("Oynat")
         self._anim_idx = 0
         if self._anim_dot is not None:
             self._anim_dot.set_data([], [])
@@ -1497,9 +1517,10 @@ class GroundTrackController(QWidget):
         lay = QVBoxLayout(self.canvasHolder)
         lay.setContentsMargins(0, 0, 0, 0)
         ph = QLabel(
-            "Ground track will appear here.\n"
-            "Select stations on the left and click 'Compute Ground Track'."
+            "Ay yüzey izi burada görünür.\n"
+            "İstasyonları seçin ve “SPICE örneğini hesapla” düğmesine basın."
         )
+        ph.setWordWrap(True)
         ph.setAlignment(Qt.AlignCenter)
         ph.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_LG}px;")
         lay.addWidget(ph)
