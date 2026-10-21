@@ -14,7 +14,7 @@
 ```
 PHASE17_FE_P_GATE              = P1 P3 P4 P5 PASS; P2 FAIL-as-computed (oracle: the predeclared x1e8 weak-limit multiplier is
                                  not yet asymptotic; deviation follows scale^-2 exactly and reaches 2.4e-8 at x1e12, §4).
-                                 Adjudicated QUALIFIED - pending owner acceptance
+                                 Adjudicated QUALIFIED - owner accepted 2026-10-21, gate PASS
 GRAVITY_PRIOR_SOURCE           = GL1800F per-coefficient uncertainty columns (jggrx_1800f_sha.tab, the estimator's own file)
 GRAVITY_PRIOR_SEMANTICS        = zero-mean Gaussian on dC_nm, dS_nm about the GL1800F values the estimator uses (published
                                  sigma; the file does not state formal vs calibrated)
@@ -24,8 +24,9 @@ PRIOR_SENSITIVITY_SET          = x10, x100 (+ secondary STRESS width |dC(GRGM120
 PRIOR_IMPLEMENTATION_STATUS    = QUALIFIED (normal equations 3e-16 / unit test 1e-13; strong limit 6e-12; sigma map exact;
                                  FE-L reproduced bit-for-bit; weak limit by scale^-2 convergence, see gate line)
 PHASE17_FE_P_OUTCOME           = FE_PRIOR_TOO_WEAK_TO_SUPPRESS (predeclared science rule on x1).
-                                 As-computed predeclared rule with the gate veto: FE_PRIOR_INCONCLUSIVE (P2), pending owner
-                                 adjudication; x1, x10 and x100 all give TOO_WEAK, so the P2 issue cannot change the decision
+                                 As-computed predeclared rule with the gate veto: FE_PRIOR_INCONCLUSIVE (P2); the owner accepted
+                                 the P2 adjudication on 2026-10-21, so the outcome stands as TOO_WEAK (x1, x10 and x100 all give
+                                 TOO_WEAK, so the P2 issue could not change the decision)
 FALSE_VARIATION_SUPPRESSION    = NOT SUPPRESSED at x1: identical to the fixed-field design (N = 0) to <= 3e-4 relative;
                                  8 of 10 cells keep fv_chi2 >= 13.82 at alpha = 1
 REAL_VARIATION_PRESERVATION    = PRESERVED (trivially: the prior keeps the field fixed, noncentrality = N = 0 value)
@@ -176,8 +177,8 @@ The deviation from the FE-L data-only value shrinks as scale⁻², which is what
 |---|---|---|---|---|---|---|
 | max relative deviation | 0.39 | 2.3e-2 | 2.4e-4 | 2.4e-6 | 2.4e-8 | 2.3e-10 |
 
-This is an oracle-scale issue, not an implementation defect. The gate is kept FAIL as computed; its acceptance is
-the owner's. Its effect on the decision is nil:
+This is an oracle-scale issue, not an implementation defect. The gate is kept FAIL as computed; **the owner accepted
+the adjudication on 2026-10-21 (gate PASS)**. Its effect on the decision is nil:
 - the primary ×1 prior is in the opposite regime (posterior/prior = 1.000);
 - ×1, ×10 and ×100 classify identically.
 
