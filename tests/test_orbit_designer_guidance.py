@@ -2,13 +2,50 @@
 from unittest.mock import patch
 
 import pytest
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QPoint, QRect, Qt
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QScrollArea
 
 from controllers import ground_track_controller as gt
 from tests.test_ground_track_layout import window, settle, reveal
 from tests.test_ground_track_workflow import export_rows
+
+
+@pytest.mark.parametrize("size", [(1480, 1000), (910, 465), (760, 420)])
+def test_designer_tab_and_backtab_expose_complete_controls_without_replacing_result(window, tmp_path, size):
+    view, page, app = window
+    view.resize(*size)
+    view.activateWindow()
+    designer = page._orbit_designer
+    page._tab_widget.setCurrentIndex(1)
+    settle(app)
+    original = (page._data, page._fig, page._canvas, page._anim_idx)
+    before = export_rows(page, tmp_path / "before-keyboard.csv")
+    ordered = [control for key in designer._spins
+               for control in (designer._sliders[key], designer._spins[key])]
+    ordered += [designer._dur_spin, designer._generate_btn]
+    # Start before the first field; all subsequent movement uses actual Qt keys.
+    designer._sliders["alt_km"].setFocus()
+    settle(app)
+    for expected, key in ([(control, Qt.Key_Tab) for control in ordered[1:]]
+                          + [(control, Qt.Key_Backtab) for control in ordered[-2::-1]]):
+        QTest.keyClick(app.focusWidget(), key)
+        settle(app)
+        assert expected.hasFocus(), (expected.accessibleName(), app.focusWidget())
+        ancestor = expected.parentWidget()
+        while ancestor is not None:
+            if isinstance(ancestor, QScrollArea):
+                viewport = ancestor.viewport()
+                rect = QRect(expected.mapTo(viewport, QPoint()), expected.size())
+                assert viewport.rect().contains(rect), (expected.accessibleName(), rect, viewport.rect())
+            ancestor = ancestor.parentWidget()
+        assert not expected.visibleRegion().isEmpty()
+    # Keyboard edits change only the preview until the explicit Generate action.
+    QTest.keyClick(designer._sliders["alt_km"], Qt.Key_Right)
+    assert designer._spins["alt_km"].value() > 200
+    assert (page._data, page._fig, page._canvas, page._anim_idx) == original
+    assert export_rows(page, tmp_path / "after-keyboard.csv") == before
+    assert view.pageScroll.horizontalScrollBar().maximum() == 0
 
 
 @pytest.mark.parametrize("size", [(1480, 1000), (760, 420)])
