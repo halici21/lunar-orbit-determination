@@ -683,13 +683,26 @@ def _configure_orbit_axis(ax, limit_km: float) -> None:
 
 # Orbital element slider config: (key, label, unit, lo, hi, default, step, decimals)
 _OE_CONFIG: list[tuple] = [
-    ("alt_km",   "Altitude (h)",      "km", 50,  9000, 200, 50,    0),
-    ("e",        "Eccentricity (e)",  "",   0,   0.9,  0.0, 0.001, 3),
-    ("inc_deg",  "Inclination (i)",   "°",  0,   180,  90,  1,     0),
-    ("raan_deg", "RAAN (Ω)",          "°",  0,   360,  0,   1,     0),
-    ("argp_deg", "Arg. Perigee (ω)",  "°",  0,   360,  0,   1,     0),
-    ("nu0_deg",  "True Anomaly (ν₀)", "°",  0,   360,  0,   1,     0),
+    ("alt_km",   "a − R_Ay",      "km", 50,  9000, 200, 50,    0),
+    ("e",        "Dışmerkezlik (e)",  "",   0,   0.9,  0.0, 0.001, 3),
+    ("inc_deg",  "Eğim (i)",   "°",  0,   180,  90,  1,     0),
+    ("raan_deg", "Çıkış düğümü (Ω)",          "°",  0,   360,  0,   1,     0),
+    ("argp_deg", "Periapsis argümanı (ω)",  "°",  0,   360,  0,   1,     0),
+    ("nu0_deg",  "Başlangıç gerçek anomalisi (ν₀)", "°",  0,   360,  0,   1,     0),
 ]
+
+
+# Human-readable descriptions of the analytical designer inputs.
+_OE_HELP = {
+    "alt_km": "a − R_Ay, yarı büyük eksen ile Ay yarıçapının farkıdır (km).\n"
+              "Dairesel yörüngede yüzey yüksekliğidir; e > 0 için anlık\n"
+              "veya periapsis yüksekliği değildir.",
+    "e": "Yörüngenin dairesellikten sapmasını belirleyen boyutsuz dışmerkezlik; e=0 daireseldir.",
+    "inc_deg": "Yörünge düzleminin referans XY düzlemine göre eğimi (derece).",
+    "raan_deg": "Çıkış düğümünün referans X ekseninden ölçülen açısı (derece).",
+    "argp_deg": "Yörünge düzleminde çıkış düğümünden periapsise ölçülen açı (derece).",
+    "nu0_deg": "Yerel t=0 başlangıcında periapsisten ölçülen gerçek anomali (derece).",
+}
 
 
 class _CurrentTabWidget(QTabWidget):
@@ -780,13 +793,14 @@ class _OrbitDesigner(QWidget):
         ctrl_lay.setContentsMargins(6, 6, 6, 6)
 
         # Orbital elements group
-        elems_box = QGroupBox("Orbital Elements")
+        elems_box = QGroupBox("Yörünge elemanları")
         elems_box.setStyleSheet(_box_ss)
         elems_lay = QVBoxLayout(elems_box)
         elems_lay.setSpacing(5)
 
         for key, label, unit, lo, hi, default, step, dec in _OE_CONFIG:
             lbl = QLabel(label + ":")
+            lbl.setWordWrap(True)
             lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
 
             spin = QDoubleSpinBox()
@@ -796,12 +810,22 @@ class _OrbitDesigner(QWidget):
             spin.setValue(default)
             spin.setFixedWidth(95)
             spin.setStyleSheet(_spin_ss)
+            help_text = _OE_HELP[key]
+            accessible_name = f"{label} ({unit})" if unit else label
+            lbl.setBuddy(spin)
+            lbl.setToolTip(help_text)
+            spin.setAccessibleName(accessible_name)
+            spin.setAccessibleDescription(help_text)
+            spin.setToolTip(help_text)
             if unit:
                 spin.setSuffix(f" {unit}")
 
             slider = QSlider(Qt.Horizontal)
             slider.setRange(0, 1000)
             slider.setStyleSheet(_slider_ss)
+            slider.setAccessibleName(accessible_name + " · sürgü")
+            slider.setAccessibleDescription(help_text)
+            slider.setToolTip(help_text)
             _rng = hi - lo
             slider.setValue(int((default - lo) / _rng * 1000) if _rng else 0)
 
@@ -835,20 +859,23 @@ class _OrbitDesigner(QWidget):
         ctrl_lay.addWidget(elems_box)
 
         # Duration group
-        dur_box = QGroupBox("Propagation")
+        dur_box = QGroupBox("İnceleme süresi")
         dur_box.setStyleSheet(_box_ss)
         dur_form = QFormLayout(dur_box)
         dur_form.setLabelAlignment(Qt.AlignRight)
         self._dur_spin = QDoubleSpinBox()
         self._dur_spin.setRange(0.1, 30)
         self._dur_spin.setValue(3.0)
-        self._dur_spin.setSuffix(" days")
+        self._dur_spin.setSuffix(" gün")
         self._dur_spin.setDecimals(1)
         self._dur_spin.setStyleSheet(_spin_ss)
-        dur_form.addRow("Duration:", self._dur_spin)
+        self._dur_spin.setAccessibleName("Analitik inceleme süresi (gün)")
+        self._dur_spin.setToolTip("Yerel t=0 başlangıcından hesap süresi; UTC epoku belirlemez.")
+        dur_form.addRow("Süre:", self._dur_spin)
         ctrl_lay.addWidget(dur_box)
 
-        gen_btn = QPushButton("▶  Generate Ground Track")
+        gen_btn = QPushButton("Analitik yüzey izi üret")
+        gen_btn.setObjectName("generateAnalyticalTrackButton")
         gen_btn.setStyleSheet(_btn_ss)
         gen_btn.setMinimumHeight(38)
         gen_btn.setToolTip(
@@ -863,6 +890,7 @@ class _OrbitDesigner(QWidget):
         ctrl_lay.addWidget(gen_btn)
 
         note = QLabel(
+            "a − R_Ay: yarı büyük eksen ile Ay yarıçapının farkı.\n"
             "Analitik iki cisim ön incelemesi. Ay dönüşü sabit hızlı Z dönüşüdür;\n"
             "t=0 yerel başlangıçtır, UTC epoku ve istasyon görünürlüğü yoktur.\n"
             "SPICE hesabı ayrı örnek başlangıç kullanır; bu elemanları devralmaz."
@@ -1209,7 +1237,7 @@ class GroundTrackController(QWidget):
             data = self._data
             if self._result_model == "analytical":
                 body = f"Görünen Analitik sonuç · {data['duration_days']:g} gün · {len(data['t_s'])} örnek"
-                labels = {"alt_km": "Yükseklik (km)", "e": "Dışmerkezlik", "inc_deg": "Eğim (°)",
+                labels = {"alt_km": "a − R_Ay (km)", "e": "Dışmerkezlik", "inc_deg": "Eğim (°)",
                           "raan_deg": "Çıkış düğümü (°)", "argp_deg": "Periapsis argümanı (°)",
                           "nu0_deg": "Başlangıç gerçek anomalisi (°)"}
                 details = "\n".join(f"{labels.get(k, k)}: {v:g}" for k, v in (self._result_elements or {}).items())
@@ -1643,8 +1671,8 @@ class GroundTrackController(QWidget):
         n = len(data["lons"])
         dur = data["duration_days"]
         self._set_status(
-            f"Keplerian — {dur:.1f} d · {n} pts  "
-            f"h={elems['alt_km']:.0f} km  e={elems['e']:.3f}  i={elems['inc_deg']:.0f}°",
+            f"Analitik · {dur:g} gün · {n} örnek  "
+            f"a − R_Ay={elems['alt_km']:.0f} km  e={elems['e']:.3f}  i={elems['inc_deg']:.0f}°",
             C.CYAN,
         )
         self._model_note.setText(
