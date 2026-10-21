@@ -17,9 +17,12 @@ the single shared contract used by every guarded legacy production boundary:
   aggregates.
 
 M3 (`lunar_od/two_way_range.py`) keeps its own validated four-event history
-contract and is intentionally NOT routed through this module. The low-level
-interpolators keep their generic behavior; guards wrap legacy *production*
-boundaries only.
+contract and is intentionally NOT routed through this module. Guards wrap
+legacy *production* boundaries; since Phase 17-HARDEN-D19 the generic
+low-level interpolators (``radiometrics._interp_vector`` and the edge branches
+built on it, ``filters._interp_pass_values``) additionally refuse requests
+outside the same closed support via :func:`require_supported_epoch`, which
+validates without moving the epoch.
 """
 
 from __future__ import annotations
@@ -33,6 +36,7 @@ __all__ = [
     "HistoryDomainError",
     "HistoryDomainDropRecord",
     "normalize_supported_epoch",
+    "require_supported_epoch",
     "guarded_history_callback",
     "summarize_history_domain_drops",
 ]
@@ -332,6 +336,53 @@ def normalize_supported_epoch(
         event_label=event_label,
         observation_index=observation_index,
     )
+
+
+def require_supported_epoch(
+    requested_epoch_s: float,
+    support_start_s: float,
+    support_end_s: float,
+    *,
+    history_name: str,
+    model_context: str,
+    consumer: str,
+    max_extrapolation_s: float = 0.0,
+) -> None:
+    """Raise unless ``requested_epoch_s`` is supported (Phase 17-HARDEN-D19).
+
+    With ``max_extrapolation_s == 0`` the acceptance set is exactly that of
+    :func:`normalize_supported_epoch` (closed support plus the fixed two-ULP
+    representation allowance). A positive ``max_extrapolation_s`` widens the
+    support symmetrically by that explicit, caller-documented bound. Either
+    way an accepted request is NOT moved: a generic interpolator keeps
+    evaluating exactly what it evaluated before this guard existed, so every
+    accepted value is bitwise unchanged. Anything farther outside, or
+    non-finite, raises :class:`HistoryDomainError` (diagnostics quoted against
+    the unwidened support) instead of being extrapolated.
+    """
+    margin = float(max_extrapolation_s)
+    if not (math.isfinite(margin) and margin >= 0.0):
+        raise ValueError(f"max_extrapolation_s must be finite and >= 0; got {max_extrapolation_s!r}.")
+    start = float(support_start_s)
+    end = float(support_end_s)
+    try:
+        normalize_supported_epoch(
+            requested_epoch_s,
+            start - margin,
+            end + margin,
+            history_name=history_name,
+            model_context=model_context,
+            consumer=consumer,
+        )
+    except HistoryDomainError:
+        raise HistoryDomainError.from_violation(
+            history_name=history_name,
+            requested_epoch_s=requested_epoch_s,
+            support_start_s=start,
+            support_end_s=end,
+            model_context=model_context,
+            consumer=consumer,
+        ) from None
 
 
 def guarded_history_callback(

@@ -24,6 +24,7 @@ ROOT_CAUSE = "ROOT_CAUSE_KNOWN_DOCUMENTED_APPROXIMATION"
 FOLLOWUP = "OPEN_RECOMMENDED_FOLLOWUP"
 KNOWN_APPROX = "KNOWN_DOCUMENTED_APPROXIMATION"
 FIXED_F1 = "FIXED_IN_PHASE17_F1"
+REPAIRED = "REPAIRED"
 
 DEFECTS = [
     dict(id="HARDEN-D01", title="STM unpacked in C order (Phi^T used for Phi)",
@@ -144,13 +145,31 @@ DEFECTS = [
          klass="REQUIRED_FOR_CORRECTNESS", repair="raises unless phi.shape == (6, 6)", regression="optical tests (156 passed)", reproduction="git show 2e8a53d"),
     dict(id="HARDEN-D18", title="Numba ephemeris lerp extrapolates beyond its grid",
          location="src/lunar_od/accelerated.py _lerp_vec3_numba / make_lerp_vec3", discovered="Phase 17-HARDEN audit",
-         root_cause="binary-search lerp uses the edge interval for out-of-grid t", effect="bounded in current use (propagation grids cover the arc); unbounded in principle",
-         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP", repair="not modified: accelerated.py is R2-protected", regression="none", reproduction="make_lerp_vec3(t, d)(t[-1] + 1e4)"),
+         root_cause="binary-search lerp uses the edge interval for out-of-grid t", effect="bounded in current use (propagation grids cover the arc); unbounded in principle. "
+         "Measured before the repair: 0 s overshoot of every fast-RK4 [t0, tf] request in the existing suite (only caller: dynamics.make_fast_sigma_propagator, UKF sigma steps); make_lerp_vec3 has no caller",
+         status=REPAIRED, klass="RECOMMENDED_FOLLOWUP",
+         repair="Phase 17-HARDEN-D18: rk4_6state and make_lerp_vec3 (numba and scipy fallback) raise ephemeris.EphemerisCoverageError beyond "
+         "EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S = 10 s (= HARDEN-D15 DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S, so the fast and PCHIP sigma propagators share one coverage contract); "
+         "Python wrappers only, every njit kernel byte-identical, accepted queries bitwise unchanged. accelerated.py re-frozen with OWNER AUTHORISATION (2026-10-21) for exactly this guard-only change: "
+         "PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256 e455b36b -> ae5dea08 in examples/r2_measurement_fidelity_validation.py",
+         regression="tests/test_harden_d18_d19_interpolation_bounds.py (test_d18_*); tests/test_r2_measurement_fidelity.py current-tree gate",
+         reproduction="make_lerp_vec3(t, d)(t[-1] + 1e4)  (now raises EphemerisCoverageError)"),
     dict(id="HARDEN-D19", title="Unbounded linear extrapolation helpers in radiometrics/filters",
          location="src/lunar_od/radiometrics.py _interp_vector/_interp_state (edge branch); src/lunar_od/filters.py _interp_pass_values",
          discovered="Phase 17-HARDEN audit", root_cause="edge branch extrapolates linearly without a bound (filters also interpolates rotation matrices linearly)",
-         effect="Phase-17 uses are bounded: ΔDOR t_tx now guarded (D16), t_B <= ~0.03 s past grid (~1e-5 m); filters path is not used by Phase-17 science",
-         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP", repair="route through lunar_od/history_domain bounds in a later phase", regression="none", reproduction="_interp_state(t, x, t[-1] + 100)"),
+         effect="Phase-17 uses are bounded: ΔDOR t_tx now guarded (D16), t_B <= ~0.03 s past grid (~1e-5 m) as an upper estimate; filters path is not used by Phase-17 science. "
+         "Measured before the repair (probe on every call): 0 s overshoot for every measurement-event lookup in the existing suite and in all 9 R1O-D2 grid geometries x 3 pairs x 2 row rules "
+         "(ΔDOR station B included). Out-of-grid requests seen: the legacy R1O-D campaign's backward light-time probe (phase17_r1od_campaign, 1.3 s before the grid; 0.004 s after it for station B) "
+         "and four test-side Earth callables inside scipy VODE right-hand sides, which step past the last output epoch (worst 87.8 s = 1.46 grid intervals)",
+         status=REPAIRED, klass="RECOMMENDED_FOLLOWUP",
+         repair="Phase 17-HARDEN-D19: history_domain.require_supported_epoch (same acceptance set as normalize_supported_epoch plus an optional explicit margin; never moves an accepted epoch). "
+         "radiometrics._interp_vector (hence _interp_matrix and the _interp_state / interp_state_history / _interp_state_transition_position edge branches) raises HistoryDomainError beyond "
+         "GENERIC_HISTORY_MAX_EXTRAPOLATION_S = 10 s (= HARDEN-D15 ephemeris margin: light-time pre-roll, incl. the qualified M3 Earth lookup at a pre-grid t1 in byte-frozen two_way_range.py); "
+         "callers needing more pass an explicit max_extrapolation_s (only the four VODE test fixtures: 300 s); NaN/inf epochs raise; "
+         "radiometrics._interp_array_and_slope and filters._interp_pass_values accept closed support + 2 ULP only (their production callers normalize first); "
+         "dead filters._interp_1d_linear_extrap removed. Accepted requests bitwise unchanged (per-call oracle against the origin/main implementation over the full suite)",
+         regression="tests/test_harden_d18_d19_interpolation_bounds.py (test_d19_*)",
+         reproduction="_interp_state(t, x, t[-1] + 100)  (60 s grid: now raises HistoryDomainError)"),
     dict(id="HARDEN-D20", title="Legacy analyze_visibility_gap carries three time origins; VisibilityConfig.epoch_utc redundant on the transform path",
          location="src/lunar_od/visibility.py", discovered="Phase 17-HARDEN audit", root_cause="legacy MATLAB-port API (GST from epoch_utc, Earth callable in scenario seconds, transforms from et0)",
          effect="none on the transform path used by Phase 17 (epoch_utc unused there)", status=FOLLOWUP, klass="OPTIONAL_CLEANUP",

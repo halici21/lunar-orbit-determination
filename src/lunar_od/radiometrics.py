@@ -8,11 +8,24 @@ from typing import Callable, Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
-from .history_domain import normalize_supported_epoch
+from .ephemeris import DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S
+from .history_domain import normalize_supported_epoch, require_supported_epoch
 
 C_LIGHT_MPS = 299792458.0
 DEFAULT_X_BAND_UPLINK_HZ = 7.2e9
 DEFAULT_X_BAND_TURNAROUND_RATIO = 880.0 / 749.0
+
+#: Phase 17-HARDEN-D19: default bound on the generic history interpolators'
+#: edge-interval linear extrapolation; farther requests raise
+#: HistoryDomainError.  It is the HARDEN-D15 ephemeris margin, which covers
+#: light-time pre-roll (two-way Earth-Moon light time < 3 s) and nothing more:
+#: the qualified M3 Earth lookup at a pre-grid uplink epoch t1 (two_way_range.py,
+#: byte-frozen) and the legacy R1O-D backward light-time probe (1.3 s measured)
+#: need it.  Every Phase-17 measurement-event lookup in the suite and in the
+#: R1O-D2 grid measured 0 s.  A caller that needs more passes an explicit
+#: ``max_extrapolation_s``.
+GENERIC_HISTORY_MAX_EXTRAPOLATION_S = DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S
+
 TAYLOR3_MAX_COUNT_INTERVAL_S = 60.0
 
 RangeRatePhysicsMode = Literal["geometric_instantaneous", "two_way_counted_doppler"]
@@ -1348,14 +1361,22 @@ def _guarded_spacecraft_stm_position(
     return _interp_state_transition_position(t_grid_s, phi_history, normalized)
 
 
-def _interp_state(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> np.ndarray:
+def _interp_state(
+    t_grid_s: ArrayLike,
+    state_history: ArrayLike,
+    t_s: float,
+    *,
+    max_extrapolation_s: float = GENERIC_HISTORY_MAX_EXTRAPOLATION_S,
+) -> np.ndarray:
     t_grid = np.asarray(t_grid_s, dtype=float).reshape(-1)
     states = np.asarray(state_history, dtype=float)
     if states.ndim != 2 or states.shape[0] != t_grid.size or states.shape[1] < 6:
         raise ValueError("state_history must have shape (N, 6+) matching t_grid_s.")
     t = float(t_s)
-    if t <= t_grid[0] or t >= t_grid[-1]:
-        return _interp_vector(t_grid, states, t)
+    # Written as "not interior" so a NaN epoch also takes the guarded edge path
+    # (HARDEN-D19); identical to "t <= t0 or t >= tN" for every finite t.
+    if not (t_grid[0] < t < t_grid[-1]):
+        return _interp_vector(t_grid, states, t, max_extrapolation_s=max_extrapolation_s)
 
     i1 = int(np.searchsorted(t_grid, t, side="right"))
     i0 = i1 - 1
@@ -1387,8 +1408,12 @@ def _interp_state(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> 
 
 
 def interp_state_history(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: float) -> np.ndarray:
-    """Cubic-Hermite (position+velocity) interpolation of a 6-state history with
-    linear extrapolation outside the grid. Shared helper for light-time models."""
+    """Cubic-Hermite (position+velocity) interpolation of a 6-state history.
+
+    Shared helper for light-time models. Outside the grid the edge interval is
+    extrapolated linearly up to ``GENERIC_HISTORY_MAX_EXTRAPOLATION_S``; farther
+    requests raise :class:`~lunar_od.history_domain.HistoryDomainError`
+    (HARDEN-D19)."""
     return _interp_state(t_grid_s, state_history, t_s)
 
 
@@ -1402,7 +1427,7 @@ def _interp_state_transition_position(
     if phi.shape != (t_grid.size, 6, 6):
         raise ValueError("phi_history must have shape (N, 6, 6) matching t_grid_s.")
     t = float(t_s)
-    if t <= t_grid[0] or t >= t_grid[-1]:
+    if not (t_grid[0] < t < t_grid[-1]):
         return _interp_matrix(t_grid, phi, t)[:3, :]
 
     i1 = int(np.searchsorted(t_grid, t, side="right"))
@@ -1428,6 +1453,16 @@ def _interp_array_and_slope(t_grid_s: ArrayLike, values: ArrayLike, t_s: float) 
         raise ValueError("At least two time samples are required for interpolation.")
 
     t = float(t_s)
+    # HARDEN-D19: the only caller normalizes onto closed support first, so no
+    # extrapolation margin is granted here.
+    require_supported_epoch(
+        t,
+        float(t_grid[0]),
+        float(t_grid[-1]),
+        history_name="interpolated_history",
+        model_context="counted_doppler_slope_interpolation",
+        consumer="radiometrics._interp_array_and_slope",
+    )
     if t <= t_grid[0]:
         i0, i1 = 0, 1
     elif t >= t_grid[-1]:
@@ -1445,13 +1480,34 @@ def _interp_array_and_slope(t_grid_s: ArrayLike, values: ArrayLike, t_s: float) 
     return value, slope
 
 
-def _interp_vector(t_grid_s: ArrayLike, values: ArrayLike, t_s: float) -> np.ndarray:
+def _interp_vector(
+    t_grid_s: ArrayLike,
+    values: ArrayLike,
+    t_s: float,
+    *,
+    max_extrapolation_s: float = GENERIC_HISTORY_MAX_EXTRAPOLATION_S,
+) -> np.ndarray:
     t_grid_s = np.asarray(t_grid_s, dtype=float).reshape(-1)
     values = np.asarray(values, dtype=float)
     if values.ndim == 1:
         values = values.reshape(-1, 1)
     if values.shape[0] != t_grid_s.size:
         raise ValueError("values must have the same number of rows as t_grid_s.")
+    # Phase 17-HARDEN-D19: the edge-interval extrapolation below is bounded by
+    # max_extrapolation_s; farther (or non-finite) requests raise instead of
+    # extrapolating without a bound.  _interp_matrix and the edge branches of
+    # _interp_state / _interp_state_transition_position all route through here.
+    t = float(t_s)
+    if t_grid_s.size >= 2 and not (t_grid_s[0] <= t <= t_grid_s[-1]):
+        require_supported_epoch(
+            t,
+            float(t_grid_s[0]),
+            float(t_grid_s[-1]),
+            history_name="interpolated_history",
+            model_context=f"generic_history_interpolation (max extrapolation {max_extrapolation_s!r} s)",
+            consumer="radiometrics._interp_vector",
+            max_extrapolation_s=max_extrapolation_s,
+        )
     return np.array([_interp_1d_linear_extrap(t_grid_s, values[:, col], float(t_s)) for col in range(values.shape[1])])
 
 

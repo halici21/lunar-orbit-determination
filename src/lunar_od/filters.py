@@ -15,7 +15,7 @@ from .dynamics import dynamics_jacobian_a_matrix, f3body_moon, propagate_augment
 
 _IDENTITY_6_COL: np.ndarray = np.eye(6).reshape(-1, order="F")
 from .geometry import ecef2razel_sez, wrap_to_pi
-from .history_domain import normalize_supported_epoch
+from .history_domain import normalize_supported_epoch, require_supported_epoch
 from .measurements import PassGeometry, _range_rate_companion_observable, normalize_companion_geometry
 from .radiometrics import (
     RangeRatePhysicsConfig,
@@ -2065,6 +2065,19 @@ def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: Ar
     original_shape = array.shape[1:]
     flat = array.reshape(source_t.size, -1)
     out = np.empty((target_t.size, flat.shape[1]), dtype=float)
+    # Phase 17-HARDEN-D19: the only production caller (_two_way_local_histories)
+    # normalizes its lookup interval onto closed support first, so the edge
+    # extrapolation below is reached only within the two-ULP representation
+    # allowance; any farther (or non-finite) target raises.
+    for target in target_t[~((target_t >= source_t[0]) & (target_t <= source_t[-1]))]:
+        require_supported_epoch(
+            float(target),
+            float(source_t[0]),
+            float(source_t[-1]),
+            history_name="ukf_pass_history",
+            model_context="ukf_pass_interpolation",
+            consumer="filters._interp_pass_values",
+        )
     left_mask = target_t < source_t[0]
     right_mask = target_t > source_t[-1]
     for col in range(flat.shape[1]):
@@ -2077,19 +2090,3 @@ def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: Ar
             sl = (col_vals[-1] - col_vals[-2]) / (source_t[-1] - source_t[-2])
             out[right_mask, col] = col_vals[-1] + sl * (target_t[right_mask] - source_t[-1])
     return out.reshape((target_t.size, *original_shape))
-
-
-def _interp_1d_linear_extrap(source_t: np.ndarray, values: np.ndarray, target_t: float) -> float:
-    if source_t.size < 2:
-        raise ValueError("At least two time samples are required for interpolation.")
-    if target_t <= source_t[0]:
-        i0, i1 = 0, 1
-    elif target_t >= source_t[-1]:
-        i0, i1 = source_t.size - 2, source_t.size - 1
-    else:
-        return float(np.interp(target_t, source_t, values))
-    dt = source_t[i1] - source_t[i0]
-    if dt == 0.0:
-        raise ValueError("source_t_s must be strictly increasing.")
-    slope = (values[i1] - values[i0]) / dt
-    return float(values[i0] + slope * (target_t - source_t[i0]))
