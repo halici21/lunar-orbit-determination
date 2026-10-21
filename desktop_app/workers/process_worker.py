@@ -32,6 +32,8 @@ class ProcessWorker(QObject):
         self._proc.readyReadStandardError.connect(self._read_stderr)
         self._proc.started.connect(self._on_started)
         self._proc.finished.connect(self._on_finished)
+        self._proc.errorOccurred.connect(self._on_error)
+        self._completion_emitted = False
 
         self._timer = QTimer(self)
         self._timer.setInterval(500)
@@ -51,6 +53,9 @@ class ProcessWorker(QObject):
         """Start the subprocess. No-op if already running."""
         if self._proc.state() != QProcess.NotRunning:
             return
+        self._completion_emitted = False
+        self._stdout_buf = ""
+        self._stderr_buf = ""
         if working_dir:
             self._proc.setWorkingDirectory(working_dir)
         if env is not None:
@@ -67,12 +72,12 @@ class ProcessWorker(QObject):
 
     def cancel(self) -> None:
         """Kill the running process."""
-        if self._proc.state() == QProcess.Running:
+        if self._proc.state() != QProcess.NotRunning:
             self._proc.kill()
 
     @property
     def is_running(self) -> bool:
-        return self._proc.state() == QProcess.Running
+        return self._proc.state() != QProcess.NotRunning
 
     # ------------------------------------------------------------------
     def _on_started(self) -> None:
@@ -84,12 +89,23 @@ class ProcessWorker(QObject):
 
     def _on_finished(self, exit_code: int, _status) -> None:
         self._timer.stop()
+        self._read_stdout()
+        self._read_stderr()
         # Flush any remaining buffered output
         self._flush(self._stdout_buf, stdout=True)
         self._stdout_buf = ""
         self._flush(self._stderr_buf, stdout=False)
         self._stderr_buf = ""
-        self.finished.emit(exit_code)
+        if not self._completion_emitted:
+            self._completion_emitted = True
+            self.finished.emit(exit_code if _status == QProcess.NormalExit else -1)
+
+    def _on_error(self, error):
+        self.error_line.emit(self._proc.errorString())
+        if error == QProcess.FailedToStart and not self._completion_emitted:
+            self._completion_emitted = True
+            self._timer.stop()
+            self.finished.emit(-1)
 
     def _on_tick(self) -> None:
         self.elapsed_tick.emit(time.monotonic() - self._start_time)

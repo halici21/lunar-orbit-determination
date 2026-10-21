@@ -1,4 +1,4 @@
-"""Central theme definitions — colours, fonts, matplotlib style.
+"""Compatibility color tokens, fonts and matplotlib style for native pages.
 
 Import this module anywhere you need palette values:
     from styles.theme import C, FONT, MPL_DARK, ACCENT, NET_COLORS
@@ -81,9 +81,9 @@ NET_COLORS: dict[str, str] = {
 class FONT:
     MONO     = "Consolas"     # log console, code previews, axis ticks
     UI       = ""             # empty = system default
-    SIZE_XS  = 8
-    SIZE_SM  = 10
-    SIZE_MD  = 11
+    SIZE_XS  = 11
+    SIZE_SM  = 12
+    SIZE_MD  = 13
     SIZE_LG  = 13
     SIZE_XL  = 19
     SIZE_H1  = 26             # metric card value
@@ -112,3 +112,7 @@ MPL_DARK: dict = {
 
 # Convenience: bar chart series colours in order
 BAR_COLORS = [C.BLUE, C.GREEN, C.YELLOW, C.RED, C.PURPLE, C.ORANGE, C.CYAN]
+
+# Preserve legacy tokens while defaulting all new windows to Modern.
+from styles.appearance import apply_palette
+apply_palette("modern")

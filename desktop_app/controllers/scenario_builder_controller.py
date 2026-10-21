@@ -4,15 +4,19 @@ import json
 import math
 import sys
 from pathlib import Path
+from dataclasses import replace, asdict
+from decimal import Decimal
 
 from PyQt5.QtWidgets import (
-    QWidget, QFileDialog, QMessageBox, QApplication, QLabel, QPushButton,
+    QWidget, QFileDialog, QMessageBox, QApplication, QLabel, QPushButton, QDoubleSpinBox,
 )
 from PyQt5.QtCore import Qt
 from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT, RESULTS_DIR
 from models.scenario_model import ScenarioModel, PRESETS
+from styles.artifact_workspace import ARTIFACT_STYLE
+from styles.theme import C
 
 UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "scenario_builder_page.ui"
 
@@ -21,11 +25,26 @@ class ScenarioBuilderController(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         uic.loadUi(str(UI_PATH), self)
+        self.setObjectName("artifactWorkspace")
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet(ARTIFACT_STYLE)
         self._current_model = ScenarioModel()
         self._updating_from_model = False
+        self._archive_origin = None
+        self._draft_before_archive = None
         self._setup()
+        self._simplify_layout()
 
     def _setup(self) -> None:
+        self.origin_label = QLabel()
+        self.origin_label.setWordWrap(True)
+        self.origin_label.setTextFormat(Qt.PlainText)
+        self.origin_label.setStyleSheet(f"color:{C.TEXT_PRIMARY}; padding:8px; background:{C.BG_PANEL};")
+        self.restore_draft_button = QPushButton("Önceki taslağa dön")
+        self.restore_draft_button.clicked.connect(self.restore_previous_draft)
+        self.previewLayout.insertWidget(0, self.origin_label)
+        self.previewLayout.insertWidget(1, self.restore_draft_button)
+        self._show_origin()
         # Populate preset combo
         self.presetCombo.addItem("— custom —")
         for name in PRESETS:
@@ -57,14 +76,16 @@ class ScenarioBuilderController(QWidget):
 
         # Arc count estimate label — added dynamically to arcGroup's form layout
         self._arc_count_label = QLabel("")
-        self._arc_count_label.setStyleSheet("QLabel { color: #00d4ff; font-size: 11px; }")
+        self._arc_count_label.setStyleSheet(f"QLabel {{ color:{C.TEXT_MUTED}; font-size:12px; }}")
         self.arcGroup.layout().addRow("Estimate:", self._arc_count_label)
 
         # Action buttons
         self.copyJsonBtn.clicked.connect(self._copy_json)
         self.exportJsonBtn.clicked.connect(self._export_json)
         self.importJsonBtn.clicked.connect(self._import_json)
+        self.runScenarioBtn.setProperty("primary", True)
         self.runScenarioBtn.clicked.connect(self._run_scenario)
+        self.runScenarioBtn.setToolTip("Formu yeni koşu kimliğiyle kaydet ve Run Monitor üzerinden çalıştır")
         if not hasattr(self, "openAnalysisBtn"):
             self.openAnalysisBtn = QPushButton("→ Open in Analysis")
             self.openAnalysisBtn.setToolTip(
@@ -109,6 +130,73 @@ class ScenarioBuilderController(QWidget):
         self._update_json()
         self._on_arc_mode_changed()
 
+    def _simplify_layout(self):
+        from PyQt5.QtWidgets import QVBoxLayout, QBoxLayout, QSizePolicy
+        self.layout().setDirection(QBoxLayout.TopToBottom)
+        self.layout().setContentsMargins(24, 12, 24, 16)
+        self.layout().setSpacing(12)
+        self.formScroll.setMaximumWidth(16777215)
+        form_layout = self.estimatorGroup.parentWidget().layout()
+        form_layout.setContentsMargins(0, 0, 20, 0)
+        form_layout.setSpacing(10)
+        for group in (self.presetsGroup, self.identityGroup, self.timeGroup, self.estimatorGroup):
+            group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.presetDescLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        self.advanced_form_toggle = QPushButton("Gelişmiş ayarlar · yaylar ve ölçümler")
+        self.advanced_form_toggle.setCheckable(True)
+        self.advanced_form = QWidget()
+        advanced_layout = QVBoxLayout(self.advanced_form)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        for group in (self.arcGroup, self.measGroup):
+            form_layout.removeWidget(group)
+            advanced_layout.addWidget(group)
+        form_layout.insertWidget(form_layout.count() - 1, self.advanced_form_toggle)
+        form_layout.insertWidget(form_layout.count() - 1, self.advanced_form)
+        self.advanced_form.hide()
+        self.advanced_form_toggle.toggled.connect(self.advanced_form.setVisible)
+        self.presetsGroup.setTitle("Başlangıç şablonu")
+        self.identityGroup.setTitle("Senaryo")
+        self.timeGroup.setTitle("Zaman aralığı")
+        self.estimatorGroup.setTitle("Kestirici")
+        self.runScenarioBtn.setText("Koşuyu başlat")
+        self.exportJsonBtn.setText("Ayarları kaydet")
+        self.importJsonBtn.setText("Ayarları aç")
+        self.openAnalysisBtn.setText("Analizde aç")
+        self.jsonLabel.setText("Etkin ayarlar · JSON")
+        self.copyJsonBtn.setText("Kopyala")
+        self.preview_toggle = QPushButton("JSON önizlemesi")
+        self.preview_toggle.setCheckable(True)
+        self.preview_toggle.setChecked(False)
+        # Keep all action buttons outside the optional technical preview.
+        self.previewLayout.removeItem(self.actionButtonsLayout)
+        actions = QWidget()
+        actions.setLayout(self.actionButtonsLayout)
+        self.previewLayout.removeWidget(self.openAnalysisBtn)
+        self.actionButtonsLayout.insertWidget(2, self.openAnalysisBtn)
+        self.layout().addWidget(actions)
+        # Provenance and draft recovery remain visible with the JSON panel closed.
+        self.previewLayout.removeWidget(self.origin_label)
+        self.previewLayout.removeWidget(self.restore_draft_button)
+        self.layout().insertWidget(0, self.restore_draft_button)
+        self.layout().insertWidget(0, self.origin_label)
+        toolbar = QWidget()
+        toolbar_layout = QVBoxLayout(toolbar)
+        toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        toolbar_layout.addWidget(self.preview_toggle, 0, Qt.AlignRight)
+        self.layout().insertWidget(0, toolbar)
+        self.layout().setStretchFactor(self.splitter, 1)
+        self.previewPanel.hide()
+        self.preview_toggle.toggled.connect(self.previewPanel.setVisible)
+        for button in (self.exportJsonBtn, self.importJsonBtn, self.openAnalysisBtn, self.runScenarioBtn):
+            button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.splitter.setSizes([650, 400])
+        for name, label in (
+            ("nameLabel", "Ad"), ("descLabel", "Açıklama"), ("outputDirLabel", "Çıktı klasörü"),
+            ("durationLabel", "Süre (gün)"), ("stepLabel", "Örnekleme (s)"),
+            ("seedLabel", "Rastgelelik tohumu"), ("estimatorLabel", "Yöntem"),
+            ("startModeLabel", "Başlangıç")):
+            getattr(self, name).setText(label)
+
     def on_shown(self) -> None:
         self._reload_network_presets()
 
@@ -126,8 +214,10 @@ class ScenarioBuilderController(QWidget):
             self.networkCombo.addItem(name)
         # Restore selection
         idx = self.networkCombo.findText(current)
-        if idx >= 0:
-            self.networkCombo.setCurrentIndex(idx)
+        if idx < 0 and current:
+            self.networkCombo.addItem(current)
+            idx = self.networkCombo.count() - 1
+        self.networkCombo.setCurrentIndex(idx)
 
     # ------------------------------------------------------------------
     def _on_arc_mode_changed(self, _text: str = "") -> None:
@@ -136,9 +226,10 @@ class ScenarioBuilderController(QWidget):
         for w in (self.arcDurLabel, self.arcDurSpin,
                   self.arcStrideLabel, self.arcStrideSpin):
             w.setVisible(is_prescribed)
-        # visibility-only fields
-        for w in (self.elevMaskLabel, self.elevMaskSpin,
-                  self.gapThreshLabel, self.gapThreshSpin):
+        # The station elevation mask applies to planned windows as well.
+        for w in (self.elevMaskLabel, self.elevMaskSpin):
+            w.setVisible(True)
+        for w in (self.gapThreshLabel, self.gapThreshSpin):
             w.setVisible(not is_prescribed)
         self._update_arc_count()
 
@@ -159,7 +250,8 @@ class ScenarioBuilderController(QWidget):
             count = int(total_h / stride_h) if stride_h > 0 else 0
             self._arc_count_label.setText(
                 f"~{count} arcs  "
-                f"({self.durationSpin.value():.1f} days ÷ {stride_h:.1f}h stride)"
+                f"({self.durationSpin.value():.1f} days ÷ {stride_h:.1f}h stride)\n"
+                "Planlı pencereler: yalnızca gerçekten görünen istasyonlardan ölçüm alınır."
             )
         else:
             gap_min = self.gapThreshSpin.value() / 60.0
@@ -171,6 +263,8 @@ class ScenarioBuilderController(QWidget):
 
     def _on_preset_selected(self, name: str) -> None:
         if name in PRESETS:
+            self._archive_origin = None
+            self._show_origin()
             self._current_model = ScenarioModel(**vars(PRESETS[name]))
             self.presetDescLabel.setText(self._current_model.description)
             self._model_to_widgets(self._current_model)
@@ -179,19 +273,26 @@ class ScenarioBuilderController(QWidget):
             self.presetDescLabel.setText("")
 
     def _model_to_widgets(self, model: ScenarioModel) -> None:
+        from services.archived_scenario import form_from_mapping
+        form_from_mapping(asdict(model))
+        numbers = ((self.durationSpin, model.duration_days), (self.stepSpin, model.state_step_s),
+            (self.seedSpin, model.random_seed), (self.arcDurSpin, model.arc_duration_h),
+            (self.arcStrideSpin, model.arc_stride_h), (self.elevMaskSpin, model.elevation_mask_deg),
+            (self.gapThreshSpin, model.gap_threshold_s))
+        # Check representability before touching the current draft. Never clip an
+        # archived value to a widget's old range or quietly round its precision.
+        for widget, value in numbers:
+            if max(0, -Decimal(str(value)).as_tuple().exponent) > 323:
+                raise ValueError("Kayıtlı sayı bu formun gösterim hassasiyetini aşıyor.")
+        self._current_model = model
         self._updating_from_model = True
         try:
             self.nameEdit.setText(model.name)
             self.descEdit.setText(model.description)
             self.outputDirEdit.setText(model.output_dir)
-            self.durationSpin.setValue(model.duration_days)
-            self.stepSpin.setValue(model.state_step_s)
-            self.seedSpin.setValue(model.random_seed)
+            for widget, value in numbers:
+                _set_number(widget, value)
             _set_combo(self.arcModeCombo, model.arc_mode)
-            self.arcDurSpin.setValue(model.arc_duration_h)
-            self.arcStrideSpin.setValue(model.arc_stride_h)
-            self.elevMaskSpin.setValue(model.elevation_mask_deg)
-            self.gapThreshSpin.setValue(model.gap_threshold_s)
             _set_combo(self.measTypeCombo, model.measurement_type)
             _set_combo(self.rrPhysicsCombo, model.range_rate_physics)
             _set_combo(self.networkCombo, model.network_name)
@@ -210,13 +311,13 @@ class ScenarioBuilderController(QWidget):
         is_position = self.measTypeCombo.currentText() == "position"
         light_time = is_position and self.lightTimeCheck.isChecked()
         stellar = light_time and self.stellarCheck.isChecked()
-        return ScenarioModel(
+        return replace(self._current_model,
             name=self.nameEdit.text().strip() or "unnamed",
             description=self.descEdit.text().strip(),
             output_dir=self.outputDirEdit.text().strip() or "results",
             duration_days=self.durationSpin.value(),
             state_step_s=self.stepSpin.value(),
-            random_seed=self.seedSpin.value(),
+            random_seed=int(self.seedSpin.value()),
             arc_mode=self.arcModeCombo.currentText(),
             arc_duration_h=self.arcDurSpin.value(),
             arc_stride_h=self.arcStrideSpin.value(),
@@ -266,8 +367,16 @@ class ScenarioBuilderController(QWidget):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 text = f.read()
+            payload = json.loads(text)
+            if not isinstance(payload, dict):
+                raise ValueError("Senaryo JSON nesne olmalı.")
+            unknown = set(payload) - set(ScenarioModel.__dataclass_fields__)
+            if unknown:
+                raise ValueError("Bu form JSON'unda desteklenmeyen alanlar var: " + ", ".join(sorted(unknown)))
             model = ScenarioModel.from_json(text)
             self._model_to_widgets(model)
+            self._archive_origin = None
+            self._show_origin()
             self._update_json()
             # Reset preset combo to custom
             self.presetCombo.setCurrentIndex(0)
@@ -285,31 +394,63 @@ class ScenarioBuilderController(QWidget):
                 analysis.apply_scenario_params(model)
 
     def _run_scenario(self) -> None:
-        """Export a temp JSON and launch scenario_config_cli.py with it."""
-        import tempfile
-        import os
+        """Persist the exact inputs and run the scientific backend in QProcess."""
+        from services.scenario_execution import prepare_desktop_job
         model = self._widgets_to_model()
-        tmp_file = Path(tempfile.mktemp(suffix=".json"))
-        tmp_file.write_text(model.to_json(), encoding="utf-8")
-
-        script = PYTHON_PORT / "examples" / "scenario_config_cli.py"
-        if not script.exists():
-            QMessageBox.warning(
-                self, "Script not found",
-                f"Could not find:\n{script}\n\nPlease run from the Run Monitor page.",
-            )
-            return
-
-        # Navigate to run monitor and launch
         main_win = self.window()
-        if hasattr(main_win, "navigate_and_run"):
-            main_win.navigate_and_run(str(script), extra_args=[str(tmp_file)], auto_start=True)
-        elif hasattr(main_win, "navigate"):
+        if not hasattr(main_win, "run_desktop_job"):
+            return
+        monitor = main_win._pages.get("run_monitor")
+        if monitor and monitor._worker.is_running:
             main_win.navigate("run_monitor")
+            main_win.set_status("Önce çalışan koşunun tamamlanmasını bekleyin veya iptal edin.")
+            return
+        try:
+            path, folder, run_id = prepare_desktop_job(model, PYTHON_PORT, derived_from=self._archive_origin)
+        except (ValueError, OSError) as exc:
+            QMessageBox.warning(self, "Koşu oluşturulamadı", str(exc))
+            return
+        main_win.run_desktop_job(path, folder, run_id)
+
+    def load_archived(self, archived):
+        previous = (replace(self._widgets_to_model()), self._archive_origin)
+        self._model_to_widgets(replace(archived.model))
+        self._draft_before_archive = previous
+        self._archive_origin = archived.origin
+        self.presetCombo.setCurrentIndex(0)
+        self._update_json()
+        self._show_origin()
+
+    def _show_origin(self):
+        self.origin_label.setVisible(self._archive_origin is not None)
+        self.restore_draft_button.setVisible(self._draft_before_archive is not None)
+        if self._archive_origin:
+            self.origin_label.setText(f"Kaynak koşu: {self._archive_origin['run_id']}\n"
+                "Ayarlar yeni taslağa alındı. Çalıştırınca yeni koşu kimliği ve değişiklik kaydı oluşturulur.")
+            self.origin_label.setToolTip(self._archive_origin["result_path"])
+
+    def restore_previous_draft(self):
+        if self._draft_before_archive:
+            model, origin = self._draft_before_archive
+            self._model_to_widgets(model)
+            self._archive_origin = origin
+            self._draft_before_archive = None
+            self.presetCombo.setCurrentIndex(0)
+            self._update_json()
+            self._show_origin()
 
 
 # -------------------------------------------------------------------------
 def _set_combo(combo, value: str) -> None:
     idx = combo.findText(value)
-    if idx >= 0:
-        combo.setCurrentIndex(idx)
+    if idx < 0:
+        combo.addItem(value)
+        idx = combo.count() - 1
+    combo.setCurrentIndex(idx)
+
+
+def _set_number(widget, value):
+    if isinstance(widget, QDoubleSpinBox):
+        widget.setDecimals(max(widget.decimals(), max(0, -Decimal(str(value)).as_tuple().exponent)))
+    widget.setRange(min(widget.minimum(), value), max(widget.maximum(), value))
+    widget.setValue(value)
