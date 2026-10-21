@@ -322,11 +322,18 @@ DEFECTS = [
          effect="from the truth start the K solve ends DampingLimit 1.95 sigma (chi2 +14.4, K 0.0078 vs 0.0051) from "
                 "the minimiser; correctly NOT certified by D27 (decrement 3.68). No authoritative result affected: "
                 "KP2 uses its own solver; the BLS1 / KP2 production job converges from the declared a priori",
-         status=FOLLOWUP, klass="RECOMMENDED_FOLLOWUP",
-         repair="none (an acceptance-noise-aware LM / step rule is an estimator-design change outside the K closeout)",
-         regression="none; the status is protected by the D27 genuine-failure tests",
-         reproduction="studies/phase17/scripts/phase17_d27_qualification.py --simplified (truth_start row); line search in "
-                      "studies/phase17/reports/phase17_harden_d27_convergence_status.md s4"),
+         status=REPAIRED, klass="RECOMMENDED_FOLLOWUP",
+         repair="Phase 17-HARDEN-D30 (predeclared, amendment A1): a candidate the caller-tolerance score rejects is "
+                "rescored with the incumbent at rtol/atol x 1e-2 before lambda is raised, only when its predicted "
+                "gain is >= 0.01 chi2; every historically accepted step is accepted identically; "
+                "acceptance_rescore_tolerance_factor=None restores the historical rule bitwise. truth_start: chi2 "
+                "916.82 -> 902.46, GN remainder 1.95 -> 0.06 sigma, Converged/STATIONARY_AT_DAMPING_LIMIT; "
+                "bad_jacobian stays DampingLimit (decrement 2510); studies/phase17/reports/"
+                "phase17_harden_d30_acceptance_noise.md",
+         regression="tests/test_harden_d30_acceptance_rescore.py; tests/test_estimator_lm_consistency.py "
+                    "(exact-optimum start, the A1 trigger)",
+         reproduction="studies/phase17/scripts/phase17_d30_qualification.py amended_A1 (historical rule: the "
+                      "'historical' rows, acceptance_rescore_tolerance_factor=None)"),
 ]
 
 # contract_id, quantity, producer, consumer, time_origin, frame, center, units, coverage, enforcement, tests
