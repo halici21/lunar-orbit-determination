@@ -55,7 +55,9 @@ def export_rows(widget, target):
 
 
 def generate_button(widget):
-    return next(b for b in widget._orbit_designer.findChildren(QPushButton) if "Generate Ground Track" in b.text())
+    button = widget._orbit_designer.findChild(QPushButton, "generateAnalyticalTrackButton")
+    assert button is widget._orbit_designer._generate_btn
+    return button
 
 
 def test_pending_ground_track_locks_request_controls_and_settings_resync(page):
@@ -74,7 +76,7 @@ def test_pending_ground_track_locks_request_controls_and_settings_resync(page):
     widget._compute(); assert widget._worker is worker
     worker.complete(payload())
     assert widget.paramsGroup.isEnabled() and widget.computeBtn.isEnabled() and button.isEnabled()
-    assert "Generate Ground Track" in button.text()
+    assert button.text() == "Analitik yüzey izi üret"
 
 
 def test_pending_spice_cannot_be_replaced_by_analytical_generation(page):
@@ -152,7 +154,7 @@ def test_analytical_result_has_its_own_captured_elements_and_ignores_spice_input
     designer=widget._orbit_designer; designer._dur_spin.setValue(.1); designer._generate_track()
     context=widget._result_context.text(); details=widget._result_context.toolTip()
     assert "Analitik" in context and "0.1 gün" in context
-    assert "Yükseklik (km)" in details and "Eğim (°)" in details
+    assert "a − R_Ay (km)" in details and "Eğim (°)" in details
     assert "Başlangıç gerçek anomalisi (°)" in details and "nu0_deg" not in details
     widget.elevSpin.setValue(20); widget.gapSpin.setValue(40)
     assert widget._result_context.text()==context
