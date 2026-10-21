@@ -23,5 +23,11 @@
  "outcome_rule": [
   "D30_REPAIRED if Q1, Q2, Q3, Q5 and Q6 pass",
   "D30_NOT_REPAIRED otherwise; the failing gate is reported as computed and the default stays historical (None) unless the owner decides otherwise"
- ]
+ ],
+ "amendment_A1": {
+  "written": "2026-10-21, after the first Q6 test result and BEFORE any Q1-Q5 number was read (the original-rule qualification run was already started; its output is kept unread until the amended run finishes, and both are reported)",
+  "trigger": "tests/test_estimator_lm_consistency.py::test_exact_optimum_start_neither_wanders_nor_claims_singularity: starting exactly on the minimiser, the tight rescore accepted a 7.9e-8 m move (it chases the tight integrator's own noise); the original rule fails Q6",
+  "change": "rescore only when the step's predicted decrease of the linearised scored objective (2 J_MAP units, i.e. chi2) is >= STATIONARITY_DECREMENT_TOL**2 = 0.01. A move of 0.1 posterior sigma from the minimiser changes chi2 by 0.01, so below this the step cannot matter at the D27 certification level",
+  "gates": "Q1-Q7 unchanged; evaluated for the amended rule (primary) and reported for the original rule"
+ }
 }
