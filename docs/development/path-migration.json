@@ -2935,6 +2935,108 @@
       "byte_preserved": false,
       "source_commit": "03ed4af61187eabc803d4d97e8bdf016f4973016",
       "note": "Configuration consolidated into [tool.pytest.ini_options]; testpaths/addopts and no-pythonpath policy preserved."
+    },
+    "artifacts/phase17_fep_p2_supplementary_1e12_1e13.json": {
+      "path": "studies/phase17/results/phase17_fep_p2_supplementary_1e12_1e13.json",
+      "original_sha256": "889ec4e4ed87d9d5e02f712bb9d246d5db5ba27fd6c4c87cf4b046424dfda725",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_fep_summary.json": {
+      "path": "studies/phase17/results/phase17_fep_summary.json",
+      "original_sha256": "e4ca8732c4d415c5ca2a346ac03010a6c03ddec5edb6151d1dac000ed12fd949",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_amplitude_window_posthoc.json": {
+      "path": "studies/phase17/results/phase17_mmg_amplitude_window_posthoc.json",
+      "original_sha256": "23f3a53817dc8be65af692957fb4f73f0e00182ca3f7bef8ce98192238162149",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_gate_L2_fine.json": {
+      "path": "studies/phase17/results/phase17_mmg_gate_L2_fine.json",
+      "original_sha256": "07469c0c1d31a6fde2729c8aa60928d0a3a7a51539c92dc084be6273ca87d846",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_jobs/CANON_k0_mismatch.json": {
+      "path": "studies/phase17/results/phase17_mmg_jobs/CANON_k0_mismatch.json",
+      "original_sha256": "24dd62c3ff504f89c8986e993239b3a201ca9fc77b70c5fb68f186751811de07",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_mismatch.json": {
+      "path": "studies/phase17/results/phase17_mmg_jobs/O1_LOW_BETA_ECLIPSE_RICH_k12_mismatch.json",
+      "original_sha256": "0c7941528be8ac5e10e22bc6467d22f15b52c759703e7addd27c1337dac7473c",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_jobs/O2_FULL_SUN_HIGH_BETA_k0_mismatch.json": {
+      "path": "studies/phase17/results/phase17_mmg_jobs/O2_FULL_SUN_HIGH_BETA_k0_mismatch.json",
+      "original_sha256": "4422ba782767a711708fa3ac3c021b06106a9190bf7f3dd40f349b932171e754",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_mismatch.json": {
+      "path": "studies/phase17/results/phase17_mmg_jobs/O5_FAVOURABLE_GEO_MAX_FPERP_k0_mismatch.json",
+      "original_sha256": "ff96c9b52867d45b307c66efffd6405e97349e532c163e2e4311715c08dbb7da",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_linear.json": {
+      "path": "studies/phase17/results/phase17_mmg_linear.json",
+      "original_sha256": "61c42a728e8708a3b0221656308c3fcabd8ac152bd45eaec02c3bd05cc31a699",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_linear_fine.json": {
+      "path": "studies/phase17/results/phase17_mmg_linear_fine.json",
+      "original_sha256": "255e8aedf0785794b767990ddf57da1f616355d458ca15f8f2f207d6c1c000fc",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_predeclaration.json": {
+      "path": "studies/phase17/configs/phase17_mmg_predeclaration.json",
+      "original_sha256": "87731762c13f702dfb37fc57602d46a1922afd922269299735ea0814de8b74e1",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_summary.json": {
+      "path": "studies/phase17/results/phase17_mmg_summary.json",
+      "original_sha256": "03c533ea7aaca8f4de12b165abd24d91aff913da155c432974613530ab371701",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "artifacts/phase17_mmg_upstream_mm_convolution_check.json": {
+      "path": "studies/phase17/results/phase17_mmg_upstream_mm_convolution_check.json",
+      "original_sha256": "4dff57d4b48718363d766648738c740480c3be8ee8a66b624d4d4a3a52918602",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "docs/phase17_fep_external_gravity_prior.md": {
+      "path": "studies/phase17/reports/phase17_fep_external_gravity_prior.md",
+      "original_sha256": "89c56877c39eab63e3ef99a3f8864f9f3fdc49dbdfe3d9eac2c41548235cc1e8",
+      "byte_preserved": false,
+      "introduced_at": "a00f776"
+    },
+    "docs/phase17_mmg_gl1800f_internal_omission.md": {
+      "path": "studies/phase17/reports/phase17_mmg_gl1800f_internal_omission.md",
+      "original_sha256": "a4448504acd535a6aac60795d800d4b874a031fc33993ee008c9178145d8b80c",
+      "byte_preserved": false,
+      "introduced_at": "a00f776"
+    },
+    "examples/phase17_fe_prior.py": {
+      "path": "studies/phase17/scripts/phase17_fe_prior.py",
+      "original_sha256": "ba13355af833780cb77b2ac3c3d3ccdd4af5cfe53c51bb68878fff2cde472d18",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
+    },
+    "examples/phase17_mmg_omission.py": {
+      "path": "studies/phase17/scripts/phase17_mmg_omission.py",
+      "original_sha256": "c01be0192b2f3e79277c18f2bd60ebf713c255a613618f9d69ced9b8e0e65c9b",
+      "byte_preserved": true,
+      "introduced_at": "a00f776"
     }
   }
 }

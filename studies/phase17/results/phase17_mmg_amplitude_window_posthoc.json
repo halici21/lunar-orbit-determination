@@ -1,0 +1,202 @@
+{
+ "CANON_k0": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.37571841796304256,
+   "beta_lo": 0.2351745707636201,
+   "beta_hi": 0.429017020199727,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 1.902814611746504,
+   "beta_lo": 0.0009428721307265254,
+   "beta_hi": 0.0038708287455339312,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.2696816325514464,
+   "beta_lo": 0.05640301352151201,
+   "beta_hi": 0.08717278320298488,
+   "window_open": true
+  }
+ },
+ "CANON_k12": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.001385317685858412,
+   "beta_lo": 1.6711415131785943,
+   "beta_hi": 0.17813234189298652,
+   "window_open": false
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 0.5358889450995118,
+   "beta_lo": 0.0008132043375860529,
+   "beta_hi": 0.0017048726586341803,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.6518079579036465,
+   "beta_lo": 0.04771277803336315,
+   "beta_hi": 0.11031876551988744,
+   "window_open": true
+  }
+ },
+ "O1_LOW_BETA_ECLIPSE_RICH_k0": {
+  "MM_GR_GL": {
+   "fv_over_resid": 6.085327913037513,
+   "beta_lo": 0.030648579780875863,
+   "beta_hi": 0.2247711314081963,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 0.6611160027558932,
+   "beta_lo": 0.0010833039547034269,
+   "beta_hi": 0.0026186493471674023,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.6051409557230084,
+   "beta_lo": 0.04916054718603942,
+   "beta_hi": 0.11369285328763541,
+   "window_open": true
+  }
+ },
+ "O1_LOW_BETA_ECLIPSE_RICH_k12": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.4510628226029529,
+   "beta_lo": 0.09626060426798187,
+   "beta_hi": 0.18663010783845874,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 0.14973297036375036,
+   "beta_lo": 0.0012808819435322651,
+   "beta_hi": 0.0014308115271083302,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.16647929994298868,
+   "beta_lo": 0.1154618499272703,
+   "beta_hi": 0.13599822455863594,
+   "window_open": true
+  }
+ },
+ "O2_FULL_SUN_HIGH_BETA_k0": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.7168338295092181,
+   "beta_lo": 0.10826287577269651,
+   "beta_hi": 0.29676101873806093,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 0.5038940336505514,
+   "beta_lo": 0.001159365441059403,
+   "beta_hi": 0.0026644526482020145,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.4584886408118651,
+   "beta_lo": 0.053331989074739364,
+   "beta_hi": 0.11691496918560826,
+   "window_open": true
+  }
+ },
+ "O2_FULL_SUN_HIGH_BETA_k12": {
+  "MM_GR_GL": {
+   "fv_over_resid": 3.581098881805191,
+   "beta_lo": 0.09377411764958367,
+   "beta_hi": 0.5178260388442981,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 0.4848056195490851,
+   "beta_lo": 0.0031318242175588616,
+   "beta_hi": 0.006363176106591619,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.03309666863006083,
+   "beta_lo": 0.16446066770931683,
+   "beta_hi": 0.08730657115266834,
+   "window_open": false
+  }
+ },
+ "O3_HIGH_ALTITUDE_500KM_k0": {
+  "MM_GR_GL": {
+   "fv_over_resid": 8.276124762236726,
+   "beta_lo": 0.3131757766113833,
+   "beta_hi": 2.785696761834891,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 1.9993195905094565,
+   "beta_lo": 54.342090477668336,
+   "beta_hi": 237.57985544213503,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.12119906245793631,
+   "beta_lo": 66983352.40918549,
+   "beta_hi": 72102225.77097666,
+   "window_open": true
+  }
+ },
+ "O3_HIGH_ALTITUDE_500KM_k12": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.11493998827432295,
+   "beta_lo": 1.2026919438820882,
+   "beta_hi": 1.2315666447980453,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 0.043424981892920135,
+   "beta_lo": 201.4293188790888,
+   "beta_hi": 126.7828321922476,
+   "window_open": false
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.2202217717130386,
+   "beta_lo": 113981512.55579203,
+   "beta_hi": 161559493.88284,
+   "window_open": true
+  }
+ },
+ "O5_FAVOURABLE_GEO_MAX_FPERP_k0": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.09536568967822166,
+   "beta_lo": 0.48665768772891127,
+   "beta_hi": 0.44727289950300153,
+   "window_open": false
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 2.53886318219438,
+   "beta_lo": 0.0009156079802349135,
+   "beta_hi": 0.0043419232024448735,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 0.2972853812993739,
+   "beta_lo": 0.08036180174587075,
+   "beta_hi": 0.13040353416521772,
+   "window_open": true
+  }
+ },
+ "O5_FAVOURABLE_GEO_MAX_FPERP_k12": {
+  "MM_GR_GL": {
+   "fv_over_resid": 0.42010981663107644,
+   "beta_lo": 0.11146593994127593,
+   "beta_hi": 0.20777276477961673,
+   "window_open": true
+  },
+  "OMIT_51_100": {
+   "fv_over_resid": 2.132739629207032,
+   "beta_lo": 0.0004377329099317267,
+   "beta_hi": 0.0018384132442047904,
+   "window_open": true
+  },
+  "OMIT_101_200": {
+   "fv_over_resid": 2.00327281385454,
+   "beta_lo": 0.027412686426137464,
+   "beta_hi": 0.11158007995642022,
+   "window_open": true
+  }
+ }
+}

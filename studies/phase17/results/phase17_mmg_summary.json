@@ -1,0 +1,38 @@
+{
+ "outcome": "MMG_INCONCLUSIVE",
+ "gates": {
+  "L1_max_rel": 0.0,
+  "L1_pass": true,
+  "L2": {
+   "rel": 3.4082536858746297,
+   "max_pos_diff_m": 200.00722013046618
+  },
+  "L2_pass": false
+ },
+ "rows": [
+  {
+   "cell": "CANON_k0",
+   "converged": false,
+   "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+   "masquerade": false
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH_k12",
+   "converged": false,
+   "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+   "masquerade": false
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA_k0",
+   "converged": false,
+   "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+   "masquerade": false
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP_k0",
+   "converged": false,
+   "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+   "masquerade": false
+  }
+ ]
+}

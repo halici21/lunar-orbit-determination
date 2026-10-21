@@ -1,0 +1,7 @@
+{
+ "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+ "orbit": "O2_FULL_SUN_HIGH_BETA",
+ "k": 0,
+ "ci": 4,
+ "kind": "mismatch"
+}

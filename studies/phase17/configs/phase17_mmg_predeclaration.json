@@ -1,0 +1,34 @@
+{
+ "phase": "Phase 17-MM-G - GL1800F-internal field error (truncation / omission) as the mismatch truth: MM masquerade test and FE-L / FE-P suppression, redone without the GRGM1200L - GL1800F convention difference",
+ "written": "2026-10-15, before any MM-G number was computed (owner request: use GL1800F only)",
+ "motivation": "MM / FE-L / FE-P used alpha (GRGM1200L - GL1800F) as the mismatch; FE-P showed it is a median 5700 sigma_GL1800F convention-scale difference. The estimator field is GL1800F 50x50; its own physically real model error is the omitted GL1800F content above degree 50",
+ "truth_fields": {
+  "primary_D100": "GL1800F 100x100 (C._M[100], same file, mu, R, frame MOON_PA_DE440): omission error = GL1800F degrees 51..100",
+  "secondary_D200_linear_only": "GL1800F 200x200 loaded from the same file (frame MOON_PA_DE440): omission degrees 51..200; linear only (the propagator is qualified to 100x100)",
+  "commission_reference": "GL1800F coefficient error at its published sigma (degrees 2..50) is already characterised by FE-P section 3.4; not repeated"
+ },
+ "estimator": "unchanged: KP2 M3, free per-pass Doppler bias, GL1800F 50x50, HIGH_FIDELITY, state prior, range 5 m, Doppler 1e-4 m/s",
+ "stage_1_linear": {
+  "cells": "the 10 KP2 / FE-L cells",
+  "mismatch_column": "a(GL1800F to degree D) - a(GL1800F 50x50) along the model trajectory, STM convolution, production range / counted-Doppler partials (the FE-L construction); D in {100, 200}; no alpha scaling (the omission is the real field content)",
+  "metrics": "fv_chi2 (2 dof), data-row residual chi2, under N = 0 (fixed field), FE N = 4, 6 data-only (FE-L analogue) and FE N = 4, 6 with the FE-P x1 GL1800F prior (FE-P analogue); noncentrality is the FE-L / FE-P value (mismatch-independent)",
+  "linear_masquerade(cell, D)": "fv_chi2 >= 13.82 AND residual chi2 <= 2 sqrt(2 N_data) under N = 0",
+  "gates": {
+   "L1_same_design": "the recomputed GRGM-mismatch column equals the FE-P design h_mm of the same cell within 1e-10 relative (proves the omission columns sit on the FE-P designs)",
+   "L2_linearity_D100": "CANON k0: convolution position history vs (truth-GL1800F-100 propagation - model propagation), relative <= 2e-2"
+  }
+ },
+ "stage_2_nonlinear": {
+  "truth": "primary_D100, through phase17_mm_experiment._truth_segment (HIGH_FIDELITY dynamics, KP2 HF_TOL)",
+  "run_set": "the 4 MM cells (CANON k0 ci0, O1 k12 ci3, O2 k0 ci4, O5 k0 ci8, the MM seeds, MM baselines reused) PLUS every further cell flagged linear_masquerade(cell, 100) in stage 1 (with a new KP2-T0 baseline job, same seed rule rng([ci, 0, 0])); the set is fixed by the stage-1 rule before any nonlinear run",
+  "measures": "MM measures and thresholds unchanged: chi2_detect >= 13.82; delta_chi2 <= 2 sqrt(2N); runs test reported",
+  "outcome_rule": [
+   "MMG_INCONCLUSIVE if a run that would decide the outcome did not converge (or a gate L1 / L2 fails)",
+   "MMG_OMISSION_MASQUERADES if some converged run has chi2_detect >= 13.82 AND delta_chi2 <= 2 sqrt(2N)",
+   "MMG_OMISSION_FALSE_VARIATION_DETECTABLE if some converged run has chi2_detect >= 13.82 but every such run has delta_chi2 > 2 sqrt(2N)",
+   "MMG_OMISSION_NEGLIGIBLE if no converged run reaches chi2_detect >= 13.82"
+  ]
+ },
+ "fe_redo_reporting": "for D = 100 and 200 (linear): SUPPRESSES(N, prior) = fv_chi2 < 13.82 in all 10 cells; PRESERVES is mismatch-independent and taken from FE-L (data-only: fails at N = 4, 6) and FE-P (x1 prior: holds). Reported, no new classification is added beyond the stage-2 outcome",
+ "not_claimed": ["the common K level", "that the GL1800F omission is the total real field error (GL1800F itself has commission error and its own omission above its resolved degree)", "generalisation beyond the 10 cells", "a nonlinear result for D = 200"]
+}
