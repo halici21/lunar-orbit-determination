@@ -28,6 +28,7 @@
 - [Ground-track first-use guidance and truthful time labels](development/ground-track-guidance_2026-10-20.md)
 - [Keyboard access and visible focus in SPICE surface-track settings](development/ground-track-keyboard_2026-10-21.md)
 - [Clear analytical-designer inputs and their source meaning](development/orbit-designer-guidance_2026-10-21.md)
+- [Complete keyboard focus in the analytical orbit designer](development/orbit-designer-keyboard_2026-10-21.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)

@@ -1135,7 +1135,8 @@ class GroundTrackController(QWidget):
         self._set_status("İstasyonları seçip SPICE örneğini hesaplayın.", C.TEXT_MUTED)
         self._init_placeholder()
         self._build_model_notes()
-        for control in (self.durationSpin, self.elevSpin, self.gapSpin, self.speedSpin):
+        self._keyboard_controls = (self.durationSpin, self.elevSpin, self.gapSpin, self.speedSpin)
+        for control in self._keyboard_controls:
             control.installEventFilter(self)
         for spin in (self.durationSpin, self.elevSpin, self.gapSpin):
             spin.valueChanged.connect(self._inputs_changed)
@@ -1153,10 +1154,10 @@ class GroundTrackController(QWidget):
 
     def _reveal_keyboard_focus(self) -> None:
         control = self.focusWidget()
-        if (control not in (self.durationSpin, self.elevSpin, self.gapSpin, self.speedSpin)
+        if (control not in self._keyboard_controls
                 or not control.hasFocus() or not self.isVisible()):
             return
-        parent = self.parentWidget()
+        parent = control.parentWidget()
         while parent is not None:
             if isinstance(parent, QScrollArea):
                 # Qt's default focus scrolling can expose only the text cursor.
@@ -1168,7 +1169,6 @@ class GroundTrackController(QWidget):
                     bar.setValue(bar.value() + top - 12)
                 elif bottom > viewport.height():
                     bar.setValue(bar.value() + bottom - viewport.height() + 12)
-                break
             parent = parent.parentWidget()
 
     def _build_model_notes(self) -> None:
@@ -1656,6 +1656,12 @@ class GroundTrackController(QWidget):
         self.mainLayout.removeWidget(self.splitter)
         self._tab_widget.addTab(self.splitter, "Yüzey izi")
         self._orbit_designer = _OrbitDesigner(self)
+        designer = self._orbit_designer
+        controls = (*designer._spins.values(), *designer._sliders.values(),
+                    designer._dur_spin, designer._generate_btn)
+        self._keyboard_controls += controls
+        for control in controls:
+            control.installEventFilter(self)
         self._tab_widget.addTab(self._orbit_designer, "Yörünge tasarımı")
         self._tab_widget.currentChanged.connect(self._on_tab_changed)
         self.mainLayout.addWidget(self._tab_widget)
