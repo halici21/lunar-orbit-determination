@@ -1,0 +1,1179 @@
+{
+  "base_commit": "6d35be159fcd7d3e50e70830baeffadf4a0d240e",
+  "scope": {
+    "base_commit": "6d35be159fcd7d3e50e70830baeffadf4a0d240e",
+    "controller_ast_matches_after_removing_only_focus_filter_import_and_registration": true,
+    "all_existing_calculation_rendering_and_export_code_unchanged": true,
+    "xml_matches_except_four_label_mnemonics_buddies_shortcut_tips_and_accessible_names": true,
+    "base_controller_sha256": "64bf2a5d71693ed6f8145de7f73d5ad3af94363ae1f5680a50dff4b5c9175c50",
+    "controller_sha256": "e0aebed2fec45b1e3060d7bb75a6a5f7c9f0cb04f813ce095b5ee46faad478e0",
+    "focus_filter_sources": {
+      "eventFilter": "def eventFilter(self, watched, event) -> bool:\n        if (event.type() == QEvent.FocusIn\n                and event.reason() in (Qt.ShortcutFocusReason, Qt.TabFocusReason, Qt.BacktabFocusReason)):\n            # Let Qt finish its own tab scrolling before exposing the full field.\n            QTimer.singleShot(0, self._reveal_keyboard_focus)\n        return super().eventFilter(watched, event)",
+      "_reveal_keyboard_focus": "def _reveal_keyboard_focus(self) -> None:\n        control = self.focusWidget()\n        if (control not in (self.durationSpin, self.elevSpin, self.gapSpin, self.speedSpin)\n                or not control.hasFocus() or not self.isVisible()):\n            return\n        parent = self.parentWidget()\n        while parent is not None:\n            if isinstance(parent, QScrollArea):\n                # Qt's default focus scrolling can expose only the text cursor.\n                viewport = parent.viewport()\n                top = control.mapTo(viewport, control.rect().topLeft()).y()\n                bottom = top + control.height()\n                bar = parent.verticalScrollBar()\n                if top < 0:\n                    bar.setValue(bar.value() + top - 12)\n                elif bottom > viewport.height():\n                    bar.setValue(bar.value() + bottom - viewport.height() + 12)\n                break\n            parent = parent.parentWidget()"
+    }
+  },
+  "local_junit": {
+    "before": {
+      "tests": 8,
+      "failures": 8,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 8.704,
+      "named_cases": 8,
+      "sha256": "556cc1bfdfc13ea5fd54b716b6d2dfb833e167d5f2d38a0b467346474f79e28f"
+    },
+    "keyboard": {
+      "tests": 8,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 5.786,
+      "named_cases": 8,
+      "sha256": "2ebbdd6f81d67856c80adc0ded3d9f865e3af7500ff8c94972476a79f4ef95f7"
+    },
+    "targeted": {
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 31.096,
+      "named_cases": 29,
+      "sha256": "4ec274480a5b623968c7b2940aba17635fc957c2ce89357f2b266ef420fff46f"
+    },
+    "public": {
+      "tests": 382,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 113.85,
+      "named_cases": 382,
+      "sha256": "5452b53693f82cad88918505e8229878e62ca083381d6349ecbf63e0afcb0f1c"
+    },
+    "full": {
+      "tests": 1972,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 619.786,
+      "named_cases": 1826,
+      "sha256": "c647c32be7907952c8c16a4445942bb3d63e602e57e18f5f8f04dd5167db5d33",
+      "existing_skip_categories": {
+        "opt_in_slow": 21,
+        "unavailable_external_data": 8
+      }
+    }
+  },
+  "native_review": [
+    {
+      "palette": "modern",
+      "version": "before",
+      "initial": {
+        "placeholder": "Ay yüzey izi burada görünür.\nİstasyonları seçin ve “SPICE örneğini hesapla” düğmesine basın.",
+        "compute": "SPICE örneğini hesapla",
+        "wrap": true,
+        "duration": "Süre (gün)",
+        "elevation": "Yükseliş eşiği (°)",
+        "gap": "Boşluk eşiği (dk)",
+        "play": "Oynat",
+        "reset": "Başa al"
+      },
+      "title": "Selenographic Ground Track\n1 day · Visible samples: 49%",
+      "cases": [
+        {
+          "state": "empty",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        }
+      ],
+      "keyboard": [
+        {
+          "field": "durationSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        }
+      ],
+      "samples": 361,
+      "source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "csv_byte_identical": true,
+      "array_bytes_unchanged": true,
+      "play_pause_reset": true,
+      "analytic_samples": 340,
+      "analytic_visibility_not_computed": true,
+      "source": "Prior hashed SPICE example replay through controlled worker; no new propagation or telemetry."
+    },
+    {
+      "palette": "modern",
+      "version": "after",
+      "initial": {
+        "placeholder": "Ay yüzey izi burada görünür.\nİstasyonları seçin ve “SPICE örneğini hesapla” düğmesine basın.",
+        "compute": "SPICE örneğini hesapla",
+        "wrap": true,
+        "duration": "&Süre (gün)",
+        "elevation": "&Yükseliş eşiği (°)",
+        "gap": "&Boşluk eşiği (dk)",
+        "play": "Oynat",
+        "reset": "Başa al"
+      },
+      "title": "Selenographic Ground Track\n1 day · Visible samples: 49%",
+      "cases": [
+        {
+          "state": "empty",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        }
+      ],
+      "keyboard": [
+        {
+          "field": "durationSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Süre (gün)"
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Yükseliş eşiği (°)"
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Boşluk eşiği (dk)"
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Hız ayarı"
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Süre (gün)"
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Yükseliş eşiği (°)"
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Boşluk eşiği (dk)"
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Hız ayarı"
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Süre (gün)"
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Yükseliş eşiği (°)"
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Boşluk eşiği (dk)"
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Hız ayarı"
+        }
+      ],
+      "samples": 361,
+      "source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "csv_byte_identical": true,
+      "array_bytes_unchanged": true,
+      "play_pause_reset": true,
+      "analytic_samples": 340,
+      "analytic_visibility_not_computed": true,
+      "source": "Prior hashed SPICE example replay through controlled worker; no new propagation or telemetry."
+    },
+    {
+      "palette": "orchid",
+      "version": "before",
+      "initial": {
+        "placeholder": "Ay yüzey izi burada görünür.\nİstasyonları seçin ve “SPICE örneğini hesapla” düğmesine basın.",
+        "compute": "SPICE örneğini hesapla",
+        "wrap": true,
+        "duration": "Süre (gün)",
+        "elevation": "Yükseliş eşiği (°)",
+        "gap": "Boşluk eşiği (dk)",
+        "play": "Oynat",
+        "reset": "Başa al"
+      },
+      "title": "Selenographic Ground Track\n1 day · Visible samples: 49%",
+      "cases": [
+        {
+          "state": "empty",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        }
+      ],
+      "keyboard": [
+        {
+          "field": "durationSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": false,
+          "accessible_name": ""
+        }
+      ],
+      "samples": 361,
+      "source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "csv_byte_identical": true,
+      "array_bytes_unchanged": true,
+      "play_pause_reset": true,
+      "analytic_samples": 340,
+      "analytic_visibility_not_computed": true,
+      "source": "Prior hashed SPICE example replay through controlled worker; no new propagation or telemetry."
+    },
+    {
+      "palette": "orchid",
+      "version": "after",
+      "initial": {
+        "placeholder": "Ay yüzey izi burada görünür.\nİstasyonları seçin ve “SPICE örneğini hesapla” düğmesine basın.",
+        "compute": "SPICE örneğini hesapla",
+        "wrap": true,
+        "duration": "&Süre (gün)",
+        "elevation": "&Yükseliş eşiği (°)",
+        "gap": "&Boşluk eşiği (dk)",
+        "play": "Oynat",
+        "reset": "Başa al"
+      },
+      "title": "Selenographic Ground Track\n1 day · Visible samples: 49%",
+      "cases": [
+        {
+          "state": "empty",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "empty",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "İstasyonları ve ayarları seçip SPICE örneğini hesaplayın.",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "ready",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "361 örnek · 1 gün · görünür örnekler %49",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "pending",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "SPICE hesabı sürüyor…",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            1480,
+            1000
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            910,
+            465
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        },
+        {
+          "state": "failed",
+          "window": [
+            760,
+            420
+          ],
+          "hscroll": 0,
+          "status": "Hata: Controlled worker failure\nGrafik ve dışa aktarım önceki sonuç; Oynat ile devam edebilirsiniz.",
+          "controls_fit": true
+        }
+      ],
+      "keyboard": [
+        {
+          "field": "durationSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Süre (gün)"
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Yükseliş eşiği (°)"
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Boşluk eşiği (dk)"
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            1480,
+            1000
+          ],
+          "focus_reached": true,
+          "accessible_name": "Hız ayarı"
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Süre (gün)"
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Yükseliş eşiği (°)"
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Boşluk eşiği (dk)"
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            910,
+            465
+          ],
+          "focus_reached": true,
+          "accessible_name": "Hız ayarı"
+        },
+        {
+          "field": "durationSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Süre (gün)"
+        },
+        {
+          "field": "elevSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Yükseliş eşiği (°)"
+        },
+        {
+          "field": "gapSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Boşluk eşiği (dk)"
+        },
+        {
+          "field": "speedSpin",
+          "window": [
+            760,
+            420
+          ],
+          "focus_reached": true,
+          "accessible_name": "Hız ayarı"
+        }
+      ],
+      "samples": 361,
+      "source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "csv_byte_identical": true,
+      "array_bytes_unchanged": true,
+      "play_pause_reset": true,
+      "analytic_samples": 340,
+      "analytic_visibility_not_computed": true,
+      "source": "Prior hashed SPICE example replay through controlled worker; no new propagation or telemetry."
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "scope_description": "Four native SPICE label shortcuts and full-field vertical focus scrolling only. Existing calculation/rendering/export code and constants unchanged; new focus methods plus registration/import only. Scientific inputs and animation timing unchanged."
+}

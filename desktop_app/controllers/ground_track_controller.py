@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QPlainTextEdit,
     QTabWidget, QScrollArea, QGroupBox, QFormLayout, QDoubleSpinBox, QSlider,
 )
-from PyQt5.QtCore import Qt, QThread, QTimer, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, QTimer, QSize, pyqtSignal, QEvent
 from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
@@ -1107,12 +1107,41 @@ class GroundTrackController(QWidget):
         self._set_status("İstasyonları seçip SPICE örneğini hesaplayın.", C.TEXT_MUTED)
         self._init_placeholder()
         self._build_model_notes()
+        for control in (self.durationSpin, self.elevSpin, self.gapSpin, self.speedSpin):
+            control.installEventFilter(self)
         for spin in (self.durationSpin, self.elevSpin, self.gapSpin):
             spin.valueChanged.connect(self._inputs_changed)
         self.gapSpin.setToolTip(
             "Görünürlük analizine aktarılan boşluk eşiği (dk). "
             "Yüzey izi ve CSV ham örnek görünürlüğünü gösterir; boşluk doldurma uygulanmaz."
         )
+
+    def eventFilter(self, watched, event) -> bool:
+        if (event.type() == QEvent.FocusIn
+                and event.reason() in (Qt.ShortcutFocusReason, Qt.TabFocusReason, Qt.BacktabFocusReason)):
+            # Let Qt finish its own tab scrolling before exposing the full field.
+            QTimer.singleShot(0, self._reveal_keyboard_focus)
+        return super().eventFilter(watched, event)
+
+    def _reveal_keyboard_focus(self) -> None:
+        control = self.focusWidget()
+        if (control not in (self.durationSpin, self.elevSpin, self.gapSpin, self.speedSpin)
+                or not control.hasFocus() or not self.isVisible()):
+            return
+        parent = self.parentWidget()
+        while parent is not None:
+            if isinstance(parent, QScrollArea):
+                # Qt's default focus scrolling can expose only the text cursor.
+                viewport = parent.viewport()
+                top = control.mapTo(viewport, control.rect().topLeft()).y()
+                bottom = top + control.height()
+                bar = parent.verticalScrollBar()
+                if top < 0:
+                    bar.setValue(bar.value() + top - 12)
+                elif bottom > viewport.height():
+                    bar.setValue(bar.value() + bottom - viewport.height() + 12)
+                break
+            parent = parent.parentWidget()
 
     def _build_model_notes(self) -> None:
         self._scope_note = QLabel(

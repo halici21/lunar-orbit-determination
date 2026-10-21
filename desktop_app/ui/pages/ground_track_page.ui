@@ -75,11 +75,14 @@
           <property name="bottomMargin"><number>10</number></property>
           <item row="0" column="0">
            <widget class="QLabel" name="durationLabel">
-            <property name="text"><string>Süre (gün)</string></property>
+            <property name="text"><string>&amp;Süre (gün)</string></property>
+            <property name="buddy"><cstring>durationSpin</cstring></property>
+            <property name="toolTip"><string>Alt+S: Süre (gün) alanına git.</string></property>
            </widget>
           </item>
           <item row="0" column="1">
            <widget class="QDoubleSpinBox" name="durationSpin">
+            <property name="accessibleName"><string>Süre (gün)</string></property>
             <property name="minimum"><double>1.0</double></property>
             <property name="maximum"><double>14.0</double></property>
             <property name="singleStep"><double>1.0</double></property>
@@ -88,11 +91,14 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="elevLabel">
-            <property name="text"><string>Yükseliş eşiği (°)</string></property>
+            <property name="text"><string>&amp;Yükseliş eşiği (°)</string></property>
+            <property name="buddy"><cstring>elevSpin</cstring></property>
+            <property name="toolTip"><string>Alt+Y: Yükseliş eşiği (°) alanına git.</string></property>
            </widget>
           </item>
           <item row="1" column="1">
            <widget class="QDoubleSpinBox" name="elevSpin">
+            <property name="accessibleName"><string>Yükseliş eşiği (°)</string></property>
             <property name="minimum"><double>0.0</double></property>
             <property name="maximum"><double>45.0</double></property>
             <property name="singleStep"><double>1.0</double></property>
@@ -101,11 +107,14 @@
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="gapLabel">
-            <property name="text"><string>Boşluk eşiği (dk)</string></property>
+            <property name="text"><string>&amp;Boşluk eşiği (dk)</string></property>
+            <property name="buddy"><cstring>gapSpin</cstring></property>
+            <property name="toolTip"><string>Alt+B: Boşluk eşiği (dk) alanına git.</string></property>
            </widget>
           </item>
           <item row="2" column="1">
            <widget class="QDoubleSpinBox" name="gapSpin">
+            <property name="accessibleName"><string>Boşluk eşiği (dk)</string></property>
             <property name="minimum"><double>0.0</double></property>
             <property name="maximum"><double>120.0</double></property>
             <property name="singleStep"><double>5.0</double></property>
@@ -137,11 +146,14 @@
            <layout class="QFormLayout" name="animFormLayout">
             <item row="0" column="0">
              <widget class="QLabel" name="speedLabel">
-              <property name="text"><string>Hız ayarı</string></property>
+              <property name="text"><string>&amp;Hız ayarı</string></property>
+              <property name="buddy"><cstring>speedSpin</cstring></property>
+              <property name="toolTip"><string>Alt+H: Hız ayarı alanına git.</string></property>
              </widget>
             </item>
             <item row="0" column="1">
              <widget class="QSpinBox" name="speedSpin">
+              <property name="accessibleName"><string>Hız ayarı</string></property>
               <property name="minimum"><number>1</number></property>
               <property name="maximum"><number>20</number></property>
               <property name="value"><number>3</number></property>
