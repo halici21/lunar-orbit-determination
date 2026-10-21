@@ -1,0 +1,7 @@
+{
+ "error": "RuntimeError('non-positive K candidate with no step to reduce')",
+ "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+ "k": 12,
+ "ci": 3,
+ "kind": "mismatch"
+}
