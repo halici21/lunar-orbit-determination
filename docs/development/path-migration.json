@@ -370,8 +370,10 @@
     },
     "artifacts/phase17_harden_defects.json": {
       "path": "studies/phase17/results/phase17_harden_defects.json",
-      "original_sha256": "1eb16205a6d0f8dde8a4a853483ecfd3dc7ce606b7236067a0bdbb4ea1398335",
-      "byte_preserved": true
+      "original_sha256": "9c5f56538bf4ee68aa649cfa8044525abc7fa123d0ea476fab5ff727e8ea6ca1",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "1eb16205a6d0f8dde8a4a853483ecfd3dc7ce606b7236067a0bdbb4ea1398335",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
     },
     "artifacts/phase17_harden_derivatives.json": {
       "path": "studies/phase17/results/phase17_harden_derivatives.json",
@@ -2450,8 +2452,10 @@
     },
     "lunar_od/accelerated.py": {
       "path": "src/lunar_od/accelerated.py",
-      "original_sha256": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
-      "byte_preserved": true
+      "original_sha256": "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/adaptive_tuning.py": {
       "path": "src/lunar_od/adaptive_tuning.py",
@@ -2495,8 +2499,10 @@
     },
     "lunar_od/filters.py": {
       "path": "src/lunar_od/filters.py",
-      "original_sha256": "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
-      "byte_preserved": true
+      "original_sha256": "d92d9975a7ef5ab49ee6723904261a8210643d19a5c55a2069ece6de38d8aa42",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/force_contract.py": {
       "path": "src/lunar_od/force_contract.py",
@@ -2525,8 +2531,10 @@
     },
     "lunar_od/history_domain.py": {
       "path": "src/lunar_od/history_domain.py",
-      "original_sha256": "0f71dcd94175050c7b83dca50586ea37c1e395231c746778609a005a2eac8db4",
-      "byte_preserved": true
+      "original_sha256": "97195d4685bfd051aaa0f411e57b0dd8172d41f7fa38fdaf6cc02ce27e4a36c7",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "0f71dcd94175050c7b83dca50586ea37c1e395231c746778609a005a2eac8db4",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/lunar_frames.py": {
       "path": "src/lunar_od/lunar_frames.py",
@@ -2585,8 +2593,10 @@
     },
     "lunar_od/radiometrics.py": {
       "path": "src/lunar_od/radiometrics.py",
-      "original_sha256": "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
-      "byte_preserved": true
+      "original_sha256": "185cfe9ce04a57929a2a9974f3250b5b0d990fba664d2b18a98c492020d1173d",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/reference_config/__init__.py": {
       "path": "src/lunar_od/reference_config/__init__.py",

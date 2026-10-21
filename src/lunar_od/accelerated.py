@@ -880,6 +880,10 @@ def rk4_6state(
     """
     c_bf_arr = np.eye(3, dtype=np.float64) if c_bf is None else np.asarray(c_bf, dtype=np.float64)
     c_bf_e_arr = np.eye(3, dtype=np.float64) if c_bf_earth is None else np.asarray(c_bf_earth, dtype=np.float64)
+    # HARDEN-D18: every RK4 stage epoch lies in [min(t0, tf), max(t0, tf)].
+    _require_ephemeris_grid_coverage(
+        t_grid, min(float(t0), float(tf)), max(float(t0), float(tf)), "rk4_6state"
+    )
     return _rk4_6state_numba(
         np.asarray(y0, dtype=np.float64),
         float(t0), float(tf), float(dt),
@@ -897,7 +901,9 @@ def make_lerp_vec3(t_grid: ArrayLike, data_grid: ArrayLike):
 
     Uses numba binary-search linear interpolation when available; falls back to
     scipy interp1d.  Suitable when the grid is dense enough that linear accuracy
-    suffices (roughly ≤ 1-minute spacing for Earth/Sun ephemerides).
+    suffices (roughly ≤ 1-minute spacing for Earth/Sun ephemerides).  Queries more
+    than ``EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S`` outside the grid raise
+    ``EphemerisCoverageError`` (HARDEN-D18).
     """
     t_g = np.asarray(t_grid, dtype=np.float64).reshape(-1)
     d_g = np.asarray(data_grid, dtype=np.float64)
@@ -907,13 +913,37 @@ def make_lerp_vec3(t_grid: ArrayLike, data_grid: ArrayLike):
         raise ValueError("t_grid and data_grid must have the same length.")
     if NUMBA_AVAILABLE:
         def interp(t: float) -> np.ndarray:
+            _require_ephemeris_grid_coverage(t_g, float(t), float(t), "make_lerp_vec3")
             return _lerp_vec3_numba(float(t), t_g, d_g)
     else:
         from scipy.interpolate import interp1d
         _f = interp1d(t_g, d_g, axis=0, kind="linear", fill_value="extrapolate")
         def interp(t: float) -> np.ndarray:
+            _require_ephemeris_grid_coverage(t_g, float(t), float(t), "make_lerp_vec3")
             return _f(float(t))
     return interp
+
+
+#: HARDEN-D18: how far past its grid the linear ephemeris interpolation above may
+#: be evaluated.  Equal to ephemeris.DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S
+#: (HARDEN-D15), so the fast and the PCHIP sigma propagators share one coverage
+#: contract; a regression test pins the equality.
+EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S = 10.0
+
+
+def _require_ephemeris_grid_coverage(t_grid, t_lo: float, t_hi: float, consumer: str) -> None:
+    """Raise EphemerisCoverageError when [t_lo, t_hi] leaves the margined grid."""
+    t_g = np.asarray(t_grid, dtype=np.float64).reshape(-1)
+    lo = float(t_g[0]) - EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S
+    hi = float(t_g[-1]) + EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S
+    if lo <= t_lo and t_hi <= hi:
+        return
+    from .ephemeris import EphemerisCoverageError
+    raise EphemerisCoverageError(
+        f"{consumer}: ephemeris grid queried over [{t_lo!r}, {t_hi!r}] s outside "
+        f"[{lo!r}, {hi!r}] s (grid {float(t_g[0])!r}..{float(t_g[-1])!r}, "
+        f"margin {EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S!r} s); refusing to extrapolate."
+    )
 
 
 # ---------------------------------------------------------------------------

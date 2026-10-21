@@ -82,6 +82,12 @@ def setUpModule():  # noqa: N802
     load_spice_kernels()
 
 
+#: HARDEN-D19 opt-in: the Earth callables below sit inside scipy VODE right-hand
+#: sides, which step past the last output epoch (worst measured 87.8 s in the
+#: suite), so they may extrapolate this far past t_pass instead of the 10 s default.
+_VODE_EPHEMERIS_OVERRUN_S = 300.0
+
+
 def _truth_setup(step_s: float = 60.0, duration_s: float = 1200.0):
     """Propagated LLO truth over a short pass with real Earth ephemeris."""
     import spiceypy as spice
@@ -104,13 +110,13 @@ def _truth_setup(step_s: float = 60.0, duration_s: float = 1200.0):
     def get_earth_pos(t):
         t_arr = np.atleast_1d(np.asarray(t, dtype=float))
         return np.array(
-            [_interp_state(t_pass, earth_states, float(ti))[:3] for ti in t_arr]
+            [_interp_state(t_pass, earth_states, float(ti), max_extrapolation_s=_VODE_EPHEMERIS_OVERRUN_S)[:3] for ti in t_arr]
         )
 
     def get_earth_vel(t):
         t_arr = np.atleast_1d(np.asarray(t, dtype=float))
         return np.array(
-            [_interp_state(t_pass, earth_states, float(ti))[3:] for ti in t_arr]
+            [_interp_state(t_pass, earth_states, float(ti), max_extrapolation_s=_VODE_EPHEMERIS_OVERRUN_S)[3:] for ti in t_arr]
         )
 
     def get_sun_pos(t):

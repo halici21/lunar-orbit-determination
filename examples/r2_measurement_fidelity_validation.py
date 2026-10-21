@@ -382,6 +382,34 @@ DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# --------------------------------------------------------------------------
+# Phase 17-HARDEN-D18 re-freeze (authorized by the owner on 2026-10-21 for
+# exactly this change: "guard-only change in src/lunar_od/accelerated.py,
+# EphemerisCoverageError beyond the 10 s margin, njit kernels byte-identical,
+# the new hash recorded in examples/r2_measurement_fidelity_validation.py")
+# --------------------------------------------------------------------------
+# lunar_od/accelerated.py, branch fix/harden-d18-d19-interp-bounds:
+#   rk4_6state, make_lerp_vec3      call the new _require_ephemeris_grid_coverage
+#       before evaluating (Python wrappers only)
+#   EPHEMERIS_GRID_EXTRAPOLATION_MARGIN_S = 10.0 (== HARDEN-D15's
+#       ephemeris.DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S)
+# Every @_optional_njit kernel (_lerp_vec3_numba, _rk4_6state_numba, ...) is
+# byte-identical, so every accepted query is bitwise unchanged.
+# Reason: HARDEN-D18 -- the binary-search lerp extrapolated the edge interval
+# without a bound outside its ephemeris grid.
+#
+#   old (closure re-freeze)  e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b
+#   new (HARDEN-D18)         ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+#
+# All earlier tables are left untouched as truthful historical records.  An
+# unauthorized future edit to accelerated.py still fails the gate.
+PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/accelerated.py":
+        "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+}
+
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -394,6 +422,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256:
+        return PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256:
         return DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE17_F1_REFROZEN_CURRENT_TREE_SHA256:
