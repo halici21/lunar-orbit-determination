@@ -52,6 +52,16 @@ def app():
 
 
 @pytest.fixture
+def window_settings(monkeypatch, tmp_path):
+    """Keep MainWindow off the user's saved workspace session."""
+    from PyQt5.QtCore import QSettings
+    import app as desktop
+    settings = QSettings(str(tmp_path / "main-window.ini"), QSettings.IniFormat)
+    monkeypatch.setattr(desktop, "QSettings", lambda *args, **kwargs: settings)
+    return settings
+
+
+@pytest.fixture
 def console(app):
     widget = TrackingConsoleController()
     widget.resize(1450, 920)
@@ -238,7 +248,7 @@ def test_worker_does_not_block_event_loop_and_cancel_discards_result(app, consol
     assert len(ticks) >= 5
 
 
-def test_main_window_creates_only_requested_pages(app):
+def test_main_window_creates_only_requested_pages(app, window_settings):
     from app import MainWindow
     window = MainWindow()
     try:
@@ -253,7 +263,7 @@ def test_main_window_creates_only_requested_pages(app):
         window.close()
 
 
-def test_main_window_routes_real_artifact_to_console(app, tmp_path):
+def test_main_window_routes_real_artifact_to_console(app, tmp_path, window_settings):
     from app import MainWindow
     window = MainWindow()
     path = make_run(tmp_path)
