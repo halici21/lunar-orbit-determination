@@ -30,7 +30,7 @@ warnings.simplefilter("ignore")
 import phase17_kp2_campaign as P  # noqa: E402
 import phase17_kp2_core as K2  # noqa: E402
 
-OUT = P.ARTIFACTS / "phase_c1_light_time_survey.json"
+OUT = P.ARTIFACTS / "phase_c1_light_time_survey_erratum1.json"   # the original record is kept unchanged
 C = 299792458.0
 TOL_S = 1e-15
 MAX_ITER = 60
@@ -50,15 +50,23 @@ class Frame:
         self.name, self.et0, self._spice = name, float(et0), spice
         self._cache: dict = {}
 
+    def _ssb(self, code: str, t: float) -> np.ndarray:
+        # Erratum 1: et0 + t is quantised at ulp(et0) ~ 1.2e-7 s (3.5 mm of lunar barycentric motion);
+        # read at the rounded epoch and move by velocity x the exact rounding error.
+        et = self.et0 + t
+        err = t - (et - self.et0)
+        s = np.asarray(self._spice.spkezr(code, et, "J2000", "NONE", "SSB")[0]) * 1e3
+        return s[:3] + s[3:] * err
+
     def offset(self, t: float) -> np.ndarray:
         if self.name == "MOON":
             return np.zeros(3)
         if t not in self._cache:
-            self._cache[t] = np.asarray(self._spice.spkpos("MOON", self.et0 + t, "J2000", "NONE", "SSB")[0]) * 1e3
+            self._cache[t] = self._ssb("MOON", t)
         return self._cache[t]
 
     def body(self, code: str, t: float) -> np.ndarray:
-        return np.asarray(self._spice.spkpos(code, self.et0 + t, "J2000", "NONE", "SSB")[0]) * 1e3
+        return self._ssb(code, t)
 
 
 def gm(code: str) -> float:
@@ -138,12 +146,13 @@ def two_way(frame, t3, st_pos, sc_pos, with_shapiro):
 
 
 def tdb_minus_tt_rate(et0: float, t: float) -> float:
+    """Erratum 1: analytic derivative of SPICE's TDB - TT = K sin(M + EB sin M) model (the original central
+    difference of unitim was dominated by ulp(et) ~ 1.2e-7 s quantisation)."""
     import spiceypy as spice
-    h = 100.0
-
-    def d(e):
-        return e - spice.unitim(e, "TDB", "TT")
-    return (d(et0 + t + h) - d(et0 + t - h)) / (2.0 * h)
+    k, eb = spice.gdpool("DELTET/K", 0, 1)[0], spice.gdpool("DELTET/EB", 0, 1)[0]
+    m0, m1 = spice.gdpool("DELTET/M", 0, 2)
+    m = m0 + m1 * (et0 + t)
+    return float(k * np.cos(m + eb * np.sin(m)) * (1.0 + eb * np.cos(m)) * m1)
 
 
 # ======================================================================

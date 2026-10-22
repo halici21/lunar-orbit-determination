@@ -8,6 +8,18 @@
   - `studies/phase17/scripts/phase_c1_light_time_survey.py`
 - **Production code changed:** none. This phase decides what C1's implementation step must contain.
 
+> **Erratum 1 (2026-10-22, §10).** Two defects in the survey code were found while qualifying the production
+> module, and both are fixed:
+> - **Epoch quantisation.** `et0 + t` is quantised at ulp(et0) ≈ 1.2e-7 s; at the Moon's ~30 km/s barycentric
+>   speed that is a 3.5 mm position step.
+>   - It caused the S4 "discontinuity". The cause given in §3 (DE421 record boundaries) is wrong.
+>   - It added up to ~1e-5 m/s of noise to the SSB Doppler terms.
+> - **Time-scale rate.** d(TDB−TT)/dt came from a finite difference of `unitim`, so it was quantisation noise.
+>   The TIME_SCALE term is 5.8 cm, not 23 cm.
+>
+> The rerun (`results/phase_c1_light_time_survey_erratum1.json`) changes no decision, and S4 now passes as
+> computed. The tables below keep the original values; §10 gives the corrected ones.
+
 ## 0. Final status
 
 ```
@@ -161,3 +173,56 @@ Bold marks entries ≥ 0.1, the predeclared OD-material threshold.
 - Media delays, station tides, the ITRF realisation, DE440 (C3–C5).
 - Angular observables and stellar aberration.
 - High-fidelity dynamics. Simplified dynamics only sets the geometry, and the terms are light-time physics.
+
+## 10. Erratum 1 (2026-10-22)
+
+**Found by:** qualifying `src/lunar_od/relativistic_light_time.py` (Phase C1-I).
+
+### Defect 1: epoch quantisation
+
+The survey evaluated SPICE at `et0 + t`. With et0 ≈ 8.6e8 s that sum is quantised at ulp ≈ 1.19e-7 s. The Moon moves
+~30 km/s relative to the SSB, so its barycentric position advances in steps of v × ulp = 3.46 mm, which matches the
+measured step.
+
+**Consequences:**
+- **S4.** The S4 two-cycle (CANON k0 row 821) is this step, not a DE421 record boundary. §3's cause is wrong. Its
+  sizes (3.5 mm; 0.6 mm on that row) are right.
+- **Doppler.** Random epoch steps across the 60 s count interval add up to ~1e-5 m/s of noise to every SSB Doppler
+  term.
+- **Range and delta-DOR.** The effect is at the mm and sub-0.01 nrad level.
+
+**Fix:** read the ephemeris at the rounded epoch, then move it by velocity × the exact rounding error (Fast2Sum).
+
+### Defect 2: the TT/TDB rate
+
+d(TDB−TT)/dTDB came from a ±100 s central difference of `unitim` at et ~ 8.6e8 s. Its noise (~ulp/200 s ≈ 6e-10)
+exceeds the true rate (≤ 3.4e-10).
+
+**Fix:** the analytic derivative of SPICE's own model, K sin(M + EB sin M), with the leapseconds-kernel DELTET
+constants.
+
+### Rerun and corrected values
+
+- **Evidence:** `results/phase_c1_light_time_survey_erratum1.json`. The script carries both fixes.
+- **Unchanged:** `results/phase_c1_light_time_survey.json` is kept as the original record.
+
+| quantity | original | corrected |
+|---|---|---|
+| S4 max residual | 3.9e-12 s (FAIL as computed; owner-accepted adjudication) | **1.0e-13 s (PASS as computed)** |
+| FRAME, counted Doppler | −86 … +106 µm/s (3.52 σ_DSN) | −68 … +87 µm/s (2.90 σ_DSN) |
+| TIME_SCALE, two-way range | ≤ 0.234 m (0.234 σ_DSN) | ≤ 0.058 m (0.058 σ_DSN) |
+| TIME_SCALE, counted Doppler | ≤ 1.2 µm/s | ≤ 0.29 µm/s |
+| TIME_SCALE, OD (R only, DSN) | 0.795 σ state / 0.100 σ K | 0.814 σ state / 0.158 σ K |
+| FRAME, OD (R+D, DSN) | 7.69 / 1.42 | 8.03 / 1.31 |
+| all other terms and every OD value | — | unchanged to ≤ 3 significant digits |
+
+**Decisions (unchanged):**
+- IMPLEMENT: FRAME, SHAPIRO_SUN, SHAPIRO_EARTH, TIME_SCALE. TIME_SCALE is no longer OBSERVABLE_MATERIAL; it remains
+  OD_MATERIAL at 0.81 σ.
+- DOCUMENT_ONLY: SHAPIRO_MOON, SHAPIRO_JUPITER.
+
+**Owner's S4 acceptance:** it rested on the wrong cause. With the fix, S4 passes as computed, so the adjudication is
+no longer needed.
+
+**Lesson recorded for the implementation:** every barycentric ephemeris read must use the exact-epoch correction.
+The production module does.
