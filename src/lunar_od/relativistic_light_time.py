@@ -630,15 +630,67 @@ def _pass_context(pass_geo):
     stations = [exact_epoch_station_state(lambda t, p=p: np.asarray(p.state(t), dtype=float), pass_geo.et0_s,
                                           pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps)
                 for p in _station_state_providers_for_pass(pass_geo)]
+    disp = (pass_geo.measurement_metadata or {}).get("station_displacement")
+    if disp is not None:
+        stations = [displaced_station_state(st, pass_geo.et0_s, s.r_ecef_m, **disp)
+                    for st, s in zip(stations, pass_geo.stations)]
     return pass_light_time_model(pass_geo), stations, BarycentricEphemeris(float(pass_geo.et0_s))
+
+
+#: Central-difference step [s] of the solid-tide displacement rate (the tide changes on hour scales).
+TIDE_RATE_STEP_S = 10.0
+
+
+def displaced_station_state(station_state: Callable, et0_s: float, r_ecef_m, *, solid_tide: bool = True,
+                            coordinate_frame: str = "ITRF93", include_scale: bool = True) -> Callable:
+    """Wrap a production station provider (Phase C3-I) with an Earth-fixed station offset rotated to J2000:
+
+    * ``coordinate_frame='ITRF2020'``: the provider's ECEF vector is read as ITRF 2020 and moved to ITRF 93 (the
+      frame of SPICE's Earth orientation) with :func:`lunar_od.station_frames.itrf2020_to_itrf93` at each epoch;
+      ``include_scale=False`` drops the EPSG scale (Orekit's transcription);
+    * ``solid_tide``: the IERS 2010 solid Earth tide (:func:`lunar_od.solid_tide.solid_tide_at_et`).
+
+    The offset d(t) enters as [R d, R' d + R d'] with R, R' from ``sxform('ITRF93', 'J2000')`` and d' a central
+    difference (h = TIDE_RATE_STEP_S) of the tide.
+    """
+    import spiceypy as spice
+
+    from .solid_tide import solid_tide_at_et
+    from .station_frames import itrf2020_to_itrf93
+
+    if coordinate_frame not in ("ITRF93", "ITRF2020"):
+        raise ValueError(f"coordinate_frame must be 'ITRF93' or 'ITRF2020'; got {coordinate_frame!r}.")
+    r = np.asarray(r_ecef_m, dtype=float).reshape(3)
+    et0 = float(et0_s)
+
+    def offset(t: float) -> np.ndarray:
+        d = np.zeros(3)
+        if coordinate_frame == "ITRF2020":
+            d = d + (itrf2020_to_itrf93(r, et0 + t, include_scale=include_scale) - r)
+        if solid_tide:
+            d = d + solid_tide_at_et(r, et0 + t)
+        return d
+
+    def state(t_s: float) -> np.ndarray:
+        t = float(t_s)
+        s = np.array(station_state(t), dtype=float)[:6]
+        x = np.asarray(spice.sxform("ITRF93", "J2000", et0 + t), dtype=float)
+        d = offset(t)
+        h = TIDE_RATE_STEP_S
+        d_dot = (offset(t + h) - offset(t - h)) / (2.0 * h)
+        s[:3] += x[:3, :3] @ d
+        s[3:] += x[3:, :3] @ d + x[3:, 3:] @ d_dot
+        return s
+    return state
 
 
 def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, stations, vis_mask_raw, get_earth_pos,
                                             get_earth_vel, et0, *, model: LightTimeModel = DSN_LIGHT_TIME_MODEL,
                                             noise: bool = True, rng: np.random.Generator | None = None,
                                             arc_id: int | None = None, config=None, noise_seed: int | None = None,
-                                            station_clock_offsets_s=None):
-    """Receive-tagged two-way range under ``model`` (default: the DSN model).
+                                            station_clock_offsets_s=None, station_displacement: dict | None = None):
+    """Receive-tagged two-way range under ``model`` (default: the DSN model). ``station_displacement`` (Phase
+    C3-I; keyword arguments of :func:`displaced_station_state`) is stored in the metadata like the clock offsets.
 
     The receive tags, station rows and dropped-row rule are the production generator's
     (``two_way_range.generate_two_way_range_measurements``, run noise-free); every value is then recomputed
@@ -659,6 +711,8 @@ def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, station
                     noise_enabled=bool(noise))
     if station_clock_offsets_s is not None:
         metadata["station_clock_offsets_s"] = [float(b) for b in station_clock_offsets_s]
+    if station_displacement is not None:
+        metadata["station_displacement"] = dict(station_displacement)
     pass_geo = replace(pass_geo, measurement_model_profile=TWO_WAY_SSB_PROFILE, measurement_metadata=metadata)
     _, station_states, eph = _pass_context(pass_geo)
     kw = pass_station_kwargs(pass_geo)
