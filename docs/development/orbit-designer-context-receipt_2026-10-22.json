@@ -1,0 +1,1114 @@
+{
+  "base_commit": "556c3fb76b597aa33bd35e0418cf655286fae571",
+  "scope": {
+    "base_commit": "556c3fb76b597aa33bd35e0418cf655286fae571",
+    "changed_methods": [
+      "GroundTrackController._reveal_keyboard_focus"
+    ],
+    "protected_source_hashes": {
+      "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+      "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+      "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+      "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+      "_draw_moon_bg": "2c3f180cbc39e478a433b75d2b3d753a6836a3b600eebdbee3dd67b31af4034f",
+      "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+      "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+      "_build_static_figure": "e184a5c93fe08c3da71afeb8b6229eba1188e020252eee871a0440e0ae15b7d7",
+      "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+      "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+      "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+      "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+      "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+      "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+      "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+      "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+      "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+      "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+      "_CurrentTabWidget.minimumSizeHint": "d2a097d4c9ed8e4f35169d6596e98ccfffcff7af07830b0c885415af89d0c7b6",
+      "_CurrentTabWidget.sizeHint": "ac2414afd83df34ded9e4f1744d14bde4cc94901c883ee278789a69d2fd5e6f3",
+      "_OrbitDesigner.__init__": "fc125f635aad141f2418e2d3cb47f75d5404cff1cf450dc1add20d8831e0f49d",
+      "_OrbitDesigner._build": "1ab609237640735e476a51b53f4589cfc80c2668bc0c22c918d1f974ccb19b41",
+      "_OrbitDesigner._adapt_layout": "3d563b56392622e869085277526543334164d9ca6581767b62edcb4b09d07941",
+      "_OrbitDesigner.minimumSizeHint": "ee61c755f0de94bba805b7e8a1c7adc9b9299776896e7f96b2f1aefe0f7c391b",
+      "_OrbitDesigner._get_elements": "76e6e66797fe9689812c7435aede90dc9e70cb7ed413c23beeed22585cd6245d",
+      "_OrbitDesigner._update_preview": "7e504496f2f12f7a100395d09088da14a55cb4dc84ceaf1fa2b79f582645b2e7",
+      "_OrbitDesigner._init_preview_canvas": "7bb5e7570a849490c48aeca96d1b5206dc5249f2fd655e49e3c42deca19487f9",
+      "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+      "_OrbitDesigner._set_preview_target": "55d3e97537e039fe2aff1de36e7597ca3bad53236ada8e6874eec8d1dd4c5d55",
+      "_OrbitDesigner._animate_preview": "c0fabeff0008f475ef20bba8bb5d714605bb7887f2f076ade4f007a8148adf19",
+      "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+      "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+      "_OrbitDesigner._generate_track": "137fdf4f3eb6e2f7f501eb51a8a982e2ccc86be8984c1eac4eab12ba3a4e6f09",
+      "GroundTrackController.__init__": "72b18969619f2645bbf7f49ef2777c037d732f180d31c2291ccfe5a709b291cf",
+      "GroundTrackController.resizeEvent": "3fee49d490f2c33eec0639979708d3c5aef5d3ef77b0f66adfe0cd0129335299",
+      "GroundTrackController._adapt_layout": "525677809ffd362ffb350183b26a3d186a44f29a7115131fbad7e84c5d0b6752",
+      "GroundTrackController.minimumSizeHint": "ee61c755f0de94bba805b7e8a1c7adc9b9299776896e7f96b2f1aefe0f7c391b",
+      "GroundTrackController._setup": "85d91d47f8f8f73c5dc5c0b2700ba54a7609ddec34be671faafda2c206e3c298",
+      "GroundTrackController.eventFilter": "b363d776e13a9f4c21c7c8829ad633fedc4ad664f26ba2b41bb91694377290c3",
+      "GroundTrackController._build_model_notes": "044a9102e9adfc62e0ebad0d04acc0bc3eae1f46088ff5cefc94bb90764024dc",
+      "GroundTrackController._input_snapshot": "7136dad480c37898b2da0beb963670eb6b6d2ec6d9a07c59d3797e4a46f65185",
+      "GroundTrackController._set_busy": "1e7e378b8b101d245582b0ae01a62d31a6b316233d60df1d8319cc1e74b55aae",
+      "GroundTrackController._inputs_changed": "f6620ae91e10a382a749602bb04b20734bcfe543e3eb485577d91d723b561b99",
+      "GroundTrackController._refresh_result_context": "b8dfb89649b7396f55db83a841e1ce041dd06c397191374826fafc3fcd178cc6",
+      "GroundTrackController._build_log_panel": "05486fc8bbf663f4045915d96037a4f952ee44e15350b37ba87926217225108f",
+      "GroundTrackController._log": "543162988b4fd6da4ed92424589671d2f210f8ba76e3e519f5659ac20e490a35",
+      "GroundTrackController._build_export_buttons": "431069f1af3b679f4d0583b1db433b508fea6b667615dddc5baca5f6987c4fa7",
+      "GroundTrackController.on_shown": "772ab4b6696fc5a0dda9f8de208da39ca23e939abea8b36cab19d2550012e89a",
+      "GroundTrackController._sync_duration_from_settings": "0de8dff33e606c9e715631282ec0ad2d50876f819385533efa0a6cf7bafdffe4",
+      "GroundTrackController._build_checkboxes": "97ca981e2bc576c45a6aacb5867f7897cbf98da955f50112277df6223048296f",
+      "GroundTrackController._select_all": "ac8c4524681d3489bcb6b7fd7386005efe7a6480f22d02e49c6e8e1ff59a5ead",
+      "GroundTrackController._deselect_all": "7a1c0f4d9f9c3d0f565d765c571c68856e3552c2ef33f3e4d2ef4d4a654fb069",
+      "GroundTrackController._compute": "6defdc21e6ab389856b8a08f1c03a0ee7de68ad7a32d888a0ee19f0a8abc34fc",
+      "GroundTrackController._on_progress": "2df0911709a27809ea3db1883e4cdf60ed1fb8cf3561c7c6d78be4d0dcda59cf",
+      "GroundTrackController._on_data": "daeac11a37564f655062445dd6b78d9345882665d8bccce211953d99c578d1e7",
+      "GroundTrackController._install_result": "48711ab9e6f1a20b8cd1f65ce227c8d3e2ce81ead012f78ca739734b46ebc31e",
+      "GroundTrackController._on_fail": "95b44169e18e9e5967eaedeb9f2d586d8ba4e65da7dc8825df0ee5f53f6a7ba5",
+      "GroundTrackController._pause_playback": "caad5864924489605b71e7015800894f60689f363716e17792ec7cd4f88b79b4",
+      "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+      "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+      "GroundTrackController._on_tab_changed": "485ed370d1f0799aba55171c05d9a55c99da1ff32e8e7f4f7512460bd6c4c3bd",
+      "GroundTrackController._play_pause": "97684cc7c190a8c9eb243275472489f34031057daddd5251a30c5ecefe8e4ca5",
+      "GroundTrackController._reset_anim": "b150257feac58ad4a3135f83b4323a085fcafacd7148074c0624f79b907cf702",
+      "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+      "GroundTrackController._set_canvas": "40c4cfe7c2b5398805f7f63c8065c4011789f22b121c98c34ed9b5fc191ec0dc",
+      "GroundTrackController._init_placeholder": "b80829dc00102eb03775eee19a7a0147a2593ef489c1e389ff1e6b6f8910774d",
+      "GroundTrackController._set_status": "425a4cf61a3ab2370bce5a63400678b628dd0f4ee89a4b93e5c5dd9fb73a4917",
+      "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+      "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+      "GroundTrackController._add_orbit_designer_tab": "569d1b498100d5cf515a2b8b28df8a13177fd322b1d1c5da5419c8251f1e4a6f",
+      "GroundTrackController._show_keplerian_track": "ce918f23049ab222120c75fce40607fe2104155b10614959efa57003f6d14ec8",
+      "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f"
+    },
+    "entire_orbit_designer_unchanged": true,
+    "all_module_functions_and_spice_worker_unchanged": true,
+    "whole_ast_outside_focus_scroll_method_unchanged": true,
+    "controller_sha256": "9f124d96d3013c3514683a832ec5da1871b35e39f417870d8537a136b392263c"
+  },
+  "local_junit": {
+    "base": {
+      "tests": 3,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 45.961,
+      "named_cases": 3,
+      "sha256": "0a3b4bc6ab40bff85dd48623540bb596123d42eb5f3cab27a8805f1394bc7835"
+    },
+    "targeted": {
+      "tests": 65,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 63.91,
+      "named_cases": 65,
+      "sha256": "16e33b7d8beb7d371aa6541bf1c3943b032bb2433c1df6d5cdcdfbf19e1f4980"
+    },
+    "public": {
+      "tests": 387,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_s": 148.32,
+      "named_cases": 387,
+      "sha256": "dc96e0ef6852ee53f4e7fc8a73d68fd0cd9f21fb335aa34db197ff9053d33ef7"
+    },
+    "full": {
+      "tests": 2012,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "time_s": 561.681,
+      "named_cases": 1866,
+      "sha256": "3841b571c0208fa74ed4ddf9753331aa079a85cdac8416f4fd0117ca35ed73d2",
+      "existing_skip_categories": {
+        "opt_in_slow": 21,
+        "unavailable_external_data": 8
+      }
+    }
+  },
+  "native_review": [
+    {
+      "palette": "modern",
+      "version": "after",
+      "metadata": {
+        "labels": [
+          "a − R_Ay:",
+          "Dışmerkezlik (e):",
+          "Eğim (i):",
+          "Çıkış düğümü (Ω):",
+          "Periapsis argümanı (ω):",
+          "Başlangıç gerçek anomalisi (ν₀):",
+          "Süre:"
+        ],
+        "groups": [
+          "Yörünge elemanları",
+          "İnceleme süresi"
+        ],
+        "generate": "Analitik yüzey izi üret",
+        "duration_suffix": " gün",
+        "inputs": {
+          "alt_km": {
+            "name": "a − R_Ay (km)",
+            "help": "a − R_Ay, yarı büyük eksen ile Ay yarıçapının farkıdır (km).\nDairesel yörüngede yüzey yüksekliğidir; e > 0 için anlık\nveya periapsis yüksekliği değildir.",
+            "label_buddy": true
+          },
+          "e": {
+            "name": "Dışmerkezlik (e)",
+            "help": "Yörüngenin dairesellikten sapmasını belirleyen boyutsuz dışmerkezlik; e=0 daireseldir.",
+            "label_buddy": true
+          },
+          "inc_deg": {
+            "name": "Eğim (i) (°)",
+            "help": "Yörünge düzleminin referans XY düzlemine göre eğimi (derece).",
+            "label_buddy": true
+          },
+          "raan_deg": {
+            "name": "Çıkış düğümü (Ω) (°)",
+            "help": "Çıkış düğümünün referans X ekseninden ölçülen açısı (derece).",
+            "label_buddy": true
+          },
+          "argp_deg": {
+            "name": "Periapsis argümanı (ω) (°)",
+            "help": "Yörünge düzleminde çıkış düğümünden periapsise ölçülen açı (derece).",
+            "label_buddy": true
+          },
+          "nu0_deg": {
+            "name": "Başlangıç gerçek anomalisi (ν₀) (°)",
+            "help": "Yerel t=0 başlangıcında periapsisten ölçülen gerçek anomali (derece).",
+            "label_buddy": true
+          }
+        }
+      },
+      "cases": [
+        {
+          "state": "initial",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 837
+        },
+        {
+          "state": "initial",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "initial",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "rejected",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 837
+        },
+        {
+          "state": "rejected",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "rejected",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 837
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        }
+      ],
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      },
+      "rejection_message": "Periapsis is below (or too close to) the lunar surface.\nReduce eccentricity or increase altitude.",
+      "rejected_orbit_retains_result": true,
+      "spice_source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "spice_samples": 361,
+      "spice_csv_identical": true,
+      "pending_spice_blocks_analytic_generation": true,
+      "analytic_source_and_visibility_preserved": true,
+      "camera_fixed_only_for_paired_captures": true,
+      "visible_preview_timer_checked": true,
+      "source": "Prior SPICE example replay plus deterministic local analytical preview; no new SPICE propagation or telemetry."
+    },
+    {
+      "palette": "orchid",
+      "version": "after",
+      "metadata": {
+        "labels": [
+          "a − R_Ay:",
+          "Dışmerkezlik (e):",
+          "Eğim (i):",
+          "Çıkış düğümü (Ω):",
+          "Periapsis argümanı (ω):",
+          "Başlangıç gerçek anomalisi (ν₀):",
+          "Süre:"
+        ],
+        "groups": [
+          "Yörünge elemanları",
+          "İnceleme süresi"
+        ],
+        "generate": "Analitik yüzey izi üret",
+        "duration_suffix": " gün",
+        "inputs": {
+          "alt_km": {
+            "name": "a − R_Ay (km)",
+            "help": "a − R_Ay, yarı büyük eksen ile Ay yarıçapının farkıdır (km).\nDairesel yörüngede yüzey yüksekliğidir; e > 0 için anlık\nveya periapsis yüksekliği değildir.",
+            "label_buddy": true
+          },
+          "e": {
+            "name": "Dışmerkezlik (e)",
+            "help": "Yörüngenin dairesellikten sapmasını belirleyen boyutsuz dışmerkezlik; e=0 daireseldir.",
+            "label_buddy": true
+          },
+          "inc_deg": {
+            "name": "Eğim (i) (°)",
+            "help": "Yörünge düzleminin referans XY düzlemine göre eğimi (derece).",
+            "label_buddy": true
+          },
+          "raan_deg": {
+            "name": "Çıkış düğümü (Ω) (°)",
+            "help": "Çıkış düğümünün referans X ekseninden ölçülen açısı (derece).",
+            "label_buddy": true
+          },
+          "argp_deg": {
+            "name": "Periapsis argümanı (ω) (°)",
+            "help": "Yörünge düzleminde çıkış düğümünden periapsise ölçülen açı (derece).",
+            "label_buddy": true
+          },
+          "nu0_deg": {
+            "name": "Başlangıç gerçek anomalisi (ν₀) (°)",
+            "help": "Yerel t=0 başlangıcında periapsisten ölçülen gerçek anomali (derece).",
+            "label_buddy": true
+          }
+        }
+      },
+      "cases": [
+        {
+          "state": "initial",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 837
+        },
+        {
+          "state": "initial",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "initial",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "rejected",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 837
+        },
+        {
+          "state": "rejected",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "rejected",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 837
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 420
+        }
+      ],
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      },
+      "rejection_message": "Periapsis is below (or too close to) the lunar surface.\nReduce eccentricity or increase altitude.",
+      "rejected_orbit_retains_result": true,
+      "spice_source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "spice_samples": 361,
+      "spice_csv_identical": true,
+      "pending_spice_blocks_analytic_generation": true,
+      "analytic_source_and_visibility_preserved": true,
+      "camera_fixed_only_for_paired_captures": true,
+      "visible_preview_timer_checked": true,
+      "source": "Prior SPICE example replay plus deterministic local analytical preview; no new SPICE propagation or telemetry."
+    }
+  ],
+  "previously_qualified_csv_references": [
+    {
+      "palette": "modern",
+      "qualified_base": "556c3fb76b597aa33bd35e0418cf655286fae571",
+      "reference_receipt_sha256": "d0c15d219e22257236d48f3118da43e8a27b386d4aae9810ddecfb7b66e2ac83",
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      }
+    },
+    {
+      "palette": "orchid",
+      "qualified_base": "556c3fb76b597aa33bd35e0418cf655286fae571",
+      "reference_receipt_sha256": "63fd8338a70a94c4fe1f40ba2ddfd1d80e892288bbd3f84ed3606fea80521577",
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      }
+    }
+  ],
+  "keyboard_review": [
+    {
+      "probe": "modern-before",
+      "control_focus_observations": 75,
+      "clipped_controls": [],
+      "clipped_labels": [
+        {
+          "size": [
+            910,
+            465
+          ],
+          "direction": "reverse",
+          "index": 10,
+          "control": "spin-inc_deg",
+          "rects": [
+            {
+              "rect": [
+                589,
+                150,
+                95,
+                26
+              ],
+              "viewport": [
+                0,
+                0,
+                700,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                593,
+                12,
+                95,
+                26
+              ],
+              "viewport": [
+                0,
+                0,
+                708,
+                343
+              ],
+              "fits": true
+            }
+          ],
+          "label": "Eğim (i):",
+          "label_rects": [
+            {
+              "rect": [
+                16,
+                130,
+                668,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                700,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                20,
+                -8,
+                668,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                708,
+                343
+              ],
+              "fits": false
+            }
+          ]
+        },
+        {
+          "size": [
+            910,
+            465
+          ],
+          "direction": "reverse",
+          "index": 11,
+          "control": "slider-inc_deg",
+          "rects": [
+            {
+              "rect": [
+                16,
+                155,
+                567,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                700,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                20,
+                17,
+                567,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                708,
+                343
+              ],
+              "fits": true
+            }
+          ],
+          "label": "Eğim (i):",
+          "label_rects": [
+            {
+              "rect": [
+                16,
+                130,
+                668,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                700,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                20,
+                -8,
+                668,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                708,
+                343
+              ],
+              "fits": false
+            }
+          ]
+        },
+        {
+          "size": [
+            760,
+            420
+          ],
+          "direction": "reverse",
+          "index": 8,
+          "control": "spin-raan_deg",
+          "rects": [
+            {
+              "rect": [
+                439,
+                201,
+                95,
+                26
+              ],
+              "viewport": [
+                0,
+                0,
+                550,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                443,
+                12,
+                95,
+                26
+              ],
+              "viewport": [
+                0,
+                0,
+                558,
+                293
+              ],
+              "fits": true
+            }
+          ],
+          "label": "Çıkış düğümü (Ω):",
+          "label_rects": [
+            {
+              "rect": [
+                16,
+                181,
+                518,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                550,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                20,
+                -8,
+                518,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                558,
+                293
+              ],
+              "fits": false
+            }
+          ]
+        },
+        {
+          "size": [
+            760,
+            420
+          ],
+          "direction": "reverse",
+          "index": 9,
+          "control": "slider-raan_deg",
+          "rects": [
+            {
+              "rect": [
+                16,
+                206,
+                417,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                550,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                20,
+                17,
+                417,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                558,
+                293
+              ],
+              "fits": true
+            }
+          ],
+          "label": "Çıkış düğümü (Ω):",
+          "label_rects": [
+            {
+              "rect": [
+                16,
+                181,
+                518,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                550,
+                512
+              ],
+              "fits": true
+            },
+            {
+              "rect": [
+                20,
+                -8,
+                518,
+                15
+              ],
+              "viewport": [
+                0,
+                0,
+                558,
+                293
+              ],
+              "fits": false
+            }
+          ]
+        }
+      ],
+      "controls_and_labels_complete": false
+    },
+    {
+      "probe": "modern-after",
+      "control_focus_observations": 75,
+      "clipped_controls": [],
+      "clipped_labels": [],
+      "controls_and_labels_complete": true
+    },
+    {
+      "probe": "orchid-after",
+      "control_focus_observations": 75,
+      "clipped_controls": [],
+      "clipped_labels": [],
+      "controls_and_labels_complete": true
+    }
+  ],
+  "header_probe": [
+    {
+      "size": [
+        1480,
+        1000
+      ],
+      "state": "initial",
+      "header": [
+        0,
+        0,
+        1288,
+        72
+      ],
+      "title": [
+        28,
+        10,
+        1232,
+        27
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        1480,
+        1000
+      ],
+      "state": "spin-inc_deg-forward",
+      "header": [
+        0,
+        0,
+        1288,
+        72
+      ],
+      "title": [
+        28,
+        10,
+        1232,
+        27
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        1480,
+        1000
+      ],
+      "state": "spin-raan_deg-reverse",
+      "header": [
+        0,
+        0,
+        1288,
+        72
+      ],
+      "title": [
+        28,
+        10,
+        1232,
+        27
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        1480,
+        1000
+      ],
+      "state": "spin-inc_deg-reverse",
+      "header": [
+        0,
+        0,
+        1288,
+        72
+      ],
+      "title": [
+        28,
+        10,
+        1232,
+        27
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        910,
+        465
+      ],
+      "state": "initial",
+      "header": [
+        0,
+        0,
+        718,
+        72
+      ],
+      "title": [
+        28,
+        10,
+        662,
+        27
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        910,
+        465
+      ],
+      "state": "spin-raan_deg-reverse",
+      "header": [
+        0,
+        0,
+        718,
+        72
+      ],
+      "title": [
+        28,
+        10,
+        662,
+        27
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        760,
+        420
+      ],
+      "state": "initial",
+      "header": [
+        0,
+        0,
+        568,
+        77
+      ],
+      "title": [
+        28,
+        10,
+        512,
+        26
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    },
+    {
+      "size": [
+        760,
+        420
+      ],
+      "state": "spin-raan_deg-reverse",
+      "header": [
+        0,
+        0,
+        568,
+        77
+      ],
+      "title": [
+        28,
+        10,
+        512,
+        26
+      ],
+      "hint": [
+        102,
+        26
+      ],
+      "font_height": 26
+    }
+  ],
+  "existing_saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "minimum_mission_window": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy_archive": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "limits": [
+    "Actual Qt widgets in offscreen Fusion, not interactive Windows qualification.",
+    "Header text clipping in traversal captures remains unresolved; repaint did not clear it; title geometry did not shrink.",
+    "Original dialogs unchanged; previously documented offscreen modal-painting limitation not re-probed."
+  ]
+}
