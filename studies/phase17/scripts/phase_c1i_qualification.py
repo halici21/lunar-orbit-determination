@@ -30,6 +30,8 @@ EXACT_STATIONS = "--exact-stations" in sys.argv     # post-hoc diagnostic: see t
 FD_CELLS = (("CANON", 0), ("O2_FULL_SUN_HIGH_BETA", 12), ("O3_HIGH_ALTITUDE_500KM", 0))
 FD_ROWS = 20
 FD_STEPS = {"pos": (1.0, 10.0, 100.0), "vel": (1e-3, 1e-2, 1e-1), "k": (1e-5, 1e-4, 1e-3)}
+if "--wide-k-steps" in sys.argv:        # post-hoc adjudication evidence: the predeclared K steps sit in the FD noise
+    FD_STEPS = {"pos": (1.0, 10.0, 100.0, 100.0), "vel": (1e-3, 1e-2, 1e-1, 1e-1), "k": (1e-4, 1e-3, 3e-3, 1e-2)}
 TC = 60.0
 
 
@@ -310,6 +312,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=10)
     ap.add_argument("--exact-stations", action="store_true")
+    ap.add_argument("--wide-k-steps", action="store_true")
     a = ap.parse_args()
     with ProcessPoolExecutor(a.workers) as ex:
         cells = list(ex.map(run_cell, list(P.CELLS)))
@@ -335,6 +338,8 @@ def main():
     out = dict(predeclaration="studies/phase17/configs/phase_c1i_light_time_implementation_predeclaration.json",
                gates=gates, cells=cells, fd=fds)
     path = OUT.with_name("phase_c1i_qualification_exact_stations.json") if EXACT_STATIONS else OUT
+    if "--wide-k-steps" in sys.argv:
+        path = path.with_name(path.stem + "_wide_k.json")
     path.write_text(json.dumps(P.K._clean(out), indent=1), encoding="utf-8")
     print(json.dumps(P.K._clean(gates), indent=1))
 
