@@ -1,4 +1,4 @@
-# Phase C1-I — Barycentric light time, Shapiro delay and TT interval: implementation (interim)
+# Phase C1-I — Barycentric light time, Shapiro delay and TT interval: implementation
 
 - **Date:** 2026-10-22
 - **Predeclaration:** `studies/phase17/configs/phase_c1i_light_time_implementation_predeclaration.json`.
@@ -144,7 +144,7 @@ Every value is within its threshold: 1e-6 for range, one-way and delta-DOR; 1e-5
 2. **G4:** Orekit barycentric two-way range and Doppler (sandbox harness).
 3. **G9:** delta-DOR Jacobian comparison against the authoritative f_perp.
 
-## 7. Gates after the owner's decision (in progress, 2026-10-22 evening)
+## 7. Gates after the owner's decision (2026-10-22 evening)
 
 **Estimator dispatch is in.** `estimators.py` routes passes with `measurement_model_profile ==
 'two_way_light_time_ssb'` to `relativistic_light_time`. It covers the 7 Jacobian call sites and the 2 residual call
@@ -152,7 +152,7 @@ sites, in BLS-LM and SRIF, on both the six-state and K paths. Every other profil
 
 - The D30 branch (PR #45, still open) is merged in first. Both branches change `estimators.py` and its frozen
   identity, so the merge avoids a conflict.
-- The `path-migration.json` re-freeze is pending until the final commit.
+- The `path-migration.json` identity of `estimators.py` was re-frozen in `a36b46f`. The history of identities is kept, and `tools/check_repository.py` passes.
 
 | gate | result | detail |
 |---|---|---|
@@ -162,4 +162,26 @@ sites, in BLS-LM and SRIF, on both the six-state and K paths. Every other profil
 | G4 Orekit, Earth Shapiro | **PASS** | 3.3 µm. Orekit's modifier assumes an Earth-centred frame, so it is evaluated in GCRF. |
 | G4 Orekit, counted Doppler | **FAIL as computed** | 3.05 µm/s (limit 3 µm/s). Proposed adjudication: Orekit's own double-precision floor in SSB coordinates. Its range jitter over 40 ms is 3.2e-5 m rms in ICRF, against 3.9e-6 m in its Moon-centred frame and 3.8e-6 m for the module. The difference has zero mean (−0.001 µm/s) and does not correlate with range rate (0.01). |
 | G6 estimator closure on DSN-model truth | **FAIL as computed** | BLS-LM `DampingLimit` at 11.6 m; SRIF `MaxIter` (40) at 0.111 m (limit 1 mm). **Control:** the historical Moon-centred model end to end (production generator, MOON estimator) fails the same closure the same way: BLS-LM 12.0 m `DampingLimit`, SRIF 0.120 m `MaxIter` (`results/phase_c1i_estimator_gates_moon_control.json`). The limit is in the estimator/propagator on this 15-orbit SRP-with-shadow arc, not in the light-time model; the trial's finding 2 says SRP-shadow propagation is not converged at any tolerance. The barycentric model does not degrade closure (11.6 vs 12.0 m; 0.111 vs 0.120 m). Proposed adjudication: QUALIFIED relative to the control. The 1 mm closure is deferred to Phase D (integrator and shadow events). |
-| G1 full suite | running | |
+| G1 full suite | **PASS** | 1855 passed, 29 skipped, 0 failed (the 1842 baseline + 13 new module tests); default paths unchanged |
+
+## 8. Final status
+
+```
+G1 PASS | G2 PASS | G3 PASS (adjudicated, owner-accepted) | G5 PASS (adjudicated, owner-accepted)
+G7 PASS | G8 PASS | G9 PASS (no delta-DOR requalification)
+G4      range PASS (0.53 mm), Earth Shapiro PASS (3.3 um), counted Doppler FAIL as computed (3.05 um/s vs 3) -
+        adjudicated QUALIFIED: Orekit's own SSB double-precision floor (s7) - OWNER ACCEPTANCE PENDING
+G6      FAIL as computed (BLS-LM 11.6 m, SRIF 0.111 m vs 1 mm) - adjudicated QUALIFIED relative to the
+        Moon-centred control, which fails identically (12.0 m, 0.120 m) - OWNER ACCEPTANCE PENDING
+OUTCOME C1I_QUALIFIED if both pending adjudications are accepted; otherwise C1I_NOT_QUALIFIED as computed
+```
+
+**Follow-ups this phase opens:**
+- **HARDEN-D31 (proposed):** the production station-state providers' epoch rounding (s5). It needs a re-freeze of the
+  hash-gated `two_way_range.py` and `radiometrics.py`.
+- **Phase D:** estimator/propagator closure to millimetre level on SRP-with-shadow arcs (G6 control; Orekit/GMAT
+  trial finding 2).
+- **Out of scope here (not yet done):**
+  - Scenario JSON and desktop plumbing of `two_way_light_time_ssb`.
+  - Barycentric counted-Doppler and delta-DOR production estimators. The module already supplies their values and
+    partials for study designs.
