@@ -30,7 +30,7 @@ warnings.simplefilter("ignore")
 import phase17_kp2_campaign as P  # noqa: E402
 import phase17_kp2_core as K2  # noqa: E402
 
-OUT = P.ARTIFACTS / "phase_c1_light_time_survey_erratum1.json"   # the original record is kept unchanged
+OUT = P.ARTIFACTS / "phase_c1_light_time_survey_erratum2.json"   # earlier records are kept unchanged
 C = 299792458.0
 TOL_S = 1e-15
 MAX_ITER = 60
@@ -43,30 +43,55 @@ NOISE = {"PROJECT": dict(range=5.0, doppler=1e-4, ddor_rad=5e-9),
 # geometry in a chosen frame
 # ======================================================================
 class Frame:
-    """Endpoint positions in the Moon-centred (offset 0) or barycentric (Moon's SSB position added) frame."""
+    """Endpoint positions in the Moon-centred (offset 0) or barycentric (Moon's SSB motion added) frame.
+
+    Erratum 2: barycentric positions (~1.5e11 m) carry ~2e-5 m of rounding per component, a ~1e-13 s floor
+    under every light time. Positions are therefore taken relative to the Moon's SSB position at an ANCHOR
+    epoch set per solve (the observable's receive / transmit tag); the Moon's motion from the anchor is a
+    second-order Taylor expansion (SPICE velocity, acceleration by central difference). Within a 2.6 s two-way
+    chain the third-order term is ~2e-8 m. Shapiro bodies are read relative to the Moon and moved the same way.
+    """
 
     def __init__(self, name: str, et0: float):
         import spiceypy as spice
         self.name, self.et0, self._spice = name, float(et0), spice
-        self._cache: dict = {}
+        self._anchor = None
 
-    def _ssb(self, code: str, t: float) -> np.ndarray:
-        # Erratum 1: et0 + t is quantised at ulp(et0) ~ 1.2e-7 s (3.5 mm of lunar barycentric motion);
-        # read at the rounded epoch and move by velocity x the exact rounding error.
-        et = self.et0 + t
-        err = t - (et - self.et0)
-        s = np.asarray(self._spice.spkezr(code, et, "J2000", "NONE", "SSB")[0]) * 1e3
-        return s[:3] + s[3:] * err
+    def set_anchor(self, t_anchor: float) -> None:
+        if self.name == "MOON":
+            return
+        et = self.et0 + t_anchor
+
+        def v(e):
+            return np.asarray(self._spice.spkezr("MOON", e, "J2000", "NONE", "SSB")[0][3:]) * 1e3
+        self._anchor = (float(t_anchor), v(et), (v(et + 10.0) - v(et - 10.0)) / 20.0)
 
     def offset(self, t: float) -> np.ndarray:
+        """M(t) - M(t_anchor) (zero in the Moon-centred frame)."""
         if self.name == "MOON":
             return np.zeros(3)
-        if t not in self._cache:
-            self._cache[t] = self._ssb("MOON", t)
-        return self._cache[t]
+        ta, v, a = self._anchor
+        dt = t - ta
+        return v * dt + 0.5 * a * dt * dt
 
     def body(self, code: str, t: float) -> np.ndarray:
-        return self._ssb(code, t)
+        """Body position relative to M(t_anchor): (B - M)(t) from SPICE plus the Moon's motion since the anchor."""
+        rel = np.asarray(self._spice.spkpos(code, self.et0 + t, "J2000", "NONE", "MOON")[0]) * 1e3
+        return rel + self.offset(t)
+
+
+def exact_station(state_fn, et0: float, t_grid, earth_pos, earth_vel):
+    """Erratum 2: the production station provider evaluates Earth rotation at the rounded et0 + t (~4.5e-5 m
+    steps). Move the station by its Earth-relative velocity x the exact rounding error."""
+    from lunar_od.radiometrics import _interp_state
+    earth = np.hstack([np.asarray(earth_pos, float), np.asarray(earth_vel, float)])
+
+    def f(t):
+        s = np.array(state_fn(t), float)[:6]
+        err = t - ((et0 + t) - et0)
+        s[:3] += (s[3:6] - _interp_state(t_grid, earth, t)[3:6]) * err
+        return s
+    return f
 
 
 def gm(code: str) -> float:
@@ -132,6 +157,7 @@ def leg_forward(frame, t_tx, r_tx, st_pos):
 
 def two_way(frame, t3, st_pos, sc_pos, with_shapiro):
     """Receive-tagged two-way chain, zero transponder delay. Returns light times, Shapiro per body, residuals."""
+    frame.set_anchor(t3)
     r3 = st_pos(t3) + frame.offset(t3)
     td, t2, r2, res_d = leg_backward(frame, t3, r3, sc_pos)
     tu, t1, r1, res_u = leg_uplink(frame, t2, r2, st_pos)
@@ -192,8 +218,11 @@ def run_cell(spec) -> dict:
     for i, (t3, _, sid, _) in enumerate(rb.obs[:, :4]):
         st = provs[int(sid) - 1]
 
-        def st_pos(t, st=st):
-            return np.asarray(st.state(t), float)[:3]
+        exact = exact_station(lambda t, st=st: np.asarray(st.state(t), float), et0, t_grid, pg.earth_pos_mci_m,
+                              pg.earth_vel_mci_mps)
+
+        def st_pos(t, f=exact):
+            return f(t)[:3]
         for f, fr in frames.items():
             sol = two_way(fr, float(t3), st_pos, sc_pos, with_shapiro=(f == "SSB"))
             rng[f][i] = 0.5 * C * (sol["down"] + sol["up"])
@@ -219,8 +248,11 @@ def run_cell(spec) -> dict:
     for i in range(nd):
         s, tm = int(rows.station[i]), float(rows.t_mid[i])
 
-        def st_pos(t, p=dprov[s]):
-            return np.asarray(p.state(t), float)[:3]
+        exact = exact_station(lambda t, p=dprov[s]: np.asarray(p.state(t), float), et0, t_grid,
+                              pg.earth_pos_mci_m, pg.earth_vel_mci_mps)
+
+        def st_pos(t, f=exact):
+            return f(t)[:3]
         for f, fr in frames.items():
             a = two_way(fr, tm - tc / 2, st_pos, sc_pos, with_shapiro=(f == "SSB"))
             b = two_way(fr, tm + tc / 2, st_pos, sc_pos, with_shapiro=(f == "SSB"))
@@ -246,6 +278,7 @@ def run_cell(spec) -> dict:
         for i, t_obs in enumerate(dr.t_used):
             t_obs = float(t_obs)
             for f, fr in frames.items():
+                fr.set_anchor(t_obs)
                 ra = a_pos(t_obs) + fr.offset(t_obs)          # station A frozen at t_obs (production contract)
                 tau_a, t_tx, r_tx, ra_res = leg_backward(fr, t_obs, ra, sc_pos)
                 tau_b, t_b, r_b, rb_res = leg_forward(fr, t_tx, r_tx, b_pos)

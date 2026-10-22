@@ -226,3 +226,25 @@ no longer needed.
 
 **Lesson recorded for the implementation:** every barycentric ephemeris read must use the exact-epoch correction.
 The production module does.
+
+## 11. Erratum 2 (2026-10-22)
+
+**Found by:** the C1-I qualification. The survey and the new module disagreed at the 1e-5 m level.
+
+**Two arithmetic floors in the survey code:**
+
+1. **Barycentric vectors.** SSB positions are ~1.5e11 m. Each component carries ~2e-5 m of rounding, so every survey
+   light time had a ~1e-13 s floor, and counted Doppler had ~1e-6 m/s.
+   - **Fix:** take positions relative to the Moon's SSB position at an anchor epoch per solve. The Moon's motion from
+     the anchor is a second-order Taylor expansion.
+2. **Station states.** The production station-state providers evaluate Earth rotation at the rounded `et0 + t`.
+   That gives 4.5e-5 m position steps at DSN stations (0.38 km/s × ulp 1.19e-7 s).
+   - **Fix:** the survey corrects the station by its Earth-relative velocity × the exact rounding error.
+   - The same rounding is in production itself: ~8e-6 m of range noise and ~1.5e-7 m/s of counted-Doppler noise
+     (0.005 σ_DSN). It is recorded as a new production defect in the C1-I report.
+
+**Rerun:**
+- **Evidence:** `results/phase_c1_light_time_survey_erratum2.json`. The original and erratum-1 records are kept.
+- **Every classification and OD number is unchanged** to three significant digits.
+- **S1 and S2 now differ from production** by 1.1e-5 m and 3.5e-7 m/s. That is exactly production's station-rounding
+  noise, which the survey no longer reproduces. S3 and S4 pass.
