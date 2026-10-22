@@ -1,0 +1,33 @@
+{
+ "phase": "Phase 17-HARDEN-D30 - BLS-LM acceptance-cost integration noise rejects small damped steps (two-way range BLS-LM)",
+ "written": "2026-10-21, before any number from the repaired acceptance rule was computed",
+ "defect": "estimate_two_way_range_bls_lm scores incumbent and candidate with a 6-state propagate_state at the caller's rtol/atol (1e-11/1e-12). The scored cost carries ~5 chi2 of integration noise there (D27 report s4: 25 %, 10 %, 1 % GN steps raise it by 5.0, 3.7, 6.4 chi2 while the full step lowers it by 9.0). Damped steps whose true gain is below the noise are rejected, lambda escalates, and the solve stalls (truth_start: DampingLimit, 1.95 sigma, chi2 916.82 vs 902.44)",
+ "repair_design": {
+  "rule": "rescore-on-reject. When the candidate's scored cost is not below the incumbent's, BEFORE raising lambda, rescore incumbent and candidate with the same acceptance path at a tighter integration tolerance (rtol x f, atol x f). Accept the candidate if its tight cost is strictly below the incumbent's tight cost; otherwise reject exactly as before. The incumbent's tight cost is cached per incumbent state",
+  "f": 0.01,
+  "scope": "estimate_two_way_range_bls_lm only (both the six-state path and the K_SRP path); the position / range-rate LM loops and SRIF are not touched",
+  "default": "on (acceptance_rescore_tolerance_factor=0.01); None restores the historical rule exactly",
+  "unchanged_by_construction": "every step the historical rule accepts is accepted identically (the new branch is reachable only after a historical rejection); the objective, the step, the weights, the prior, the Jacobian, the damping schedule on a confirmed rejection, D27's status rule and the posterior are unchanged",
+  "accepted_by_rescore": "lambda is decreased as for an ordinary acceptance; the cost-stability test uses the tight costs; a counter stats.acceptance_rescore_accepts records how many steps were accepted this way"
+ },
+ "qualification_problem": "studies/phase17/scripts/phase17_d27_qualification.py --simplified data (KP2 cross-check problem, SIMPLIFIED dynamics, rng [98,0,0], rtol 1e-11, atol 1e-12, K solve-for); reference minimiser = the stored D27 apriori row (chi2 902.4408596, K 0.00513051097781201, gn_step_over_sigma_max 0.149)",
+ "gates": {
+  "Q1_truth_start_reaches_minimiser": "truth_start with the default (repaired) rule: chi2 <= 902.4409 + 1.0 AND gn_step_over_sigma_max <= 0.25 (was 916.82 and 1.95)",
+  "Q2_apriori_not_degraded": "apriori: either the estimate is bitwise equal to the stored D27/BLS1 row, or chi2 <= 902.4409 + 0.5 AND gn_step_over_sigma_max <= 0.25",
+  "Q3_genuine_failure_kept": "bad_jacobian: status stays DampingLimit with production decrement >= 100",
+  "Q4_floor_reported": "floor: reported (status, decrement, chi2); no threshold",
+  "Q5_switch_off_is_historical": "with acceptance_rescore_tolerance_factor=None, all four cases reproduce the stored D27 rows bitwise (x and K)",
+  "Q6_suite": "full test suite: no new failure relative to the main baseline run on the same machine",
+  "Q7_runtime_reported": "elapsed seconds of all four cases reported against the stored D27 values; no threshold"
+ },
+ "outcome_rule": [
+  "D30_REPAIRED if Q1, Q2, Q3, Q5 and Q6 pass",
+  "D30_NOT_REPAIRED otherwise; the failing gate is reported as computed and the default stays historical (None) unless the owner decides otherwise"
+ ],
+ "amendment_A1": {
+  "written": "2026-10-21, after the first Q6 test result and BEFORE any Q1-Q5 number was read (the original-rule qualification run was already started; its output is kept unread until the amended run finishes, and both are reported)",
+  "trigger": "tests/test_estimator_lm_consistency.py::test_exact_optimum_start_neither_wanders_nor_claims_singularity: starting exactly on the minimiser, the tight rescore accepted a 7.9e-8 m move (it chases the tight integrator's own noise); the original rule fails Q6",
+  "change": "rescore only when the step's predicted decrease of the linearised scored objective (2 J_MAP units, i.e. chi2) is >= STATIONARITY_DECREMENT_TOL**2 = 0.01. A move of 0.1 posterior sigma from the minimiser changes chi2 by 0.01, so below this the step cannot matter at the D27 certification level",
+  "gates": "Q1-Q7 unchanged; evaluated for the amended rule (primary) and reported for the original rule"
+ }
+}
