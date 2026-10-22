@@ -1,0 +1,69 @@
+{
+ "reference": {
+  "file": "phase_c2i_erfa_reference.npz",
+  "sha256": "ac663373a92740eb21aba2554563ea2bbfca4efbb6ef6f4bd1c71030d77ca91c",
+  "expected": "ac663373a92740eb21aba2554563ea2bbfca4efbb6ef6f4bd1c71030d77ca91c",
+  "meta": {
+   "pyerfa": "2.0.1.5",
+   "erfa": "2.0.1",
+   "sofa": "20231011",
+   "seed": 20261022
+  }
+ },
+ "G2_value": {
+  "n": 76716,
+  "max_abs_s": 1.0842021724855044e-18,
+  "by_set_max_abs_s": {
+   "c2_epochs_geocentric": 1.0842021724855044e-18,
+   "c2_epochs_at_station": 1.0842021724855044e-18,
+   "grid_1950_2100_10_sites": 8.673617379884035e-19
+  },
+  "limit_s": 1e-15,
+  "pass_": true
+ },
+ "G2_rate": {
+  "n": 56716,
+  "h_s": 1.0,
+  "worst_ratio_to_limit": 0.9165131252661906,
+  "worst": {
+   "cell": "CANON:0",
+   "station": "Goldstone DSN",
+   "site": true,
+   "t": 85920.0,
+   "analytic": 2.707026555177404e-11,
+   "fd": 2.7070290453679036e-11,
+   "diff": -2.4901904995168742e-17
+  },
+  "limit": "|analytic - fd| <= 1e-06 |rate| + 1e-19",
+  "pass_": true
+ },
+ "G3a_leap_seconds": {
+  "n": 1054,
+  "n_boundary_instants": 54,
+  "mismatches": 0,
+  "first_mismatch": null,
+  "pass_": true
+ },
+ "G3b_utc_chain_random": {
+  "n": 3000,
+  "max_abs_s": 1.4551915228366852e-11,
+  "limit_s": 1e-10,
+  "pass_": true
+ },
+ "G3c_utc_chain_c2_epochs": {
+  "n": 28358,
+  "max_abs_s": 1.4551915228366852e-11,
+  "limit_s": 1e-10,
+  "pass_": true,
+  "informational_roundtrip_to_c2_epoch_max_abs_s": 2.0754487195517868e-06
+ },
+ "informational": {
+  "module_minus_spice_chain_us": {
+   "min": -17.80050661182031,
+   "max": -10.447826753079426
+  }
+ },
+ "reference_ok": true,
+ "G2": true,
+ "G3": true
+}

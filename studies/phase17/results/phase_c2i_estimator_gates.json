@@ -1,0 +1,131 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c2i_station_time_implementation_predeclaration.json",
+ "G6": {
+  "passed": false,
+  "runs": {
+   "BLS_LM": {
+    "c1i": {
+     "model": "C1I",
+     "estimator": "BLS_LM",
+     "status": "DampingLimit",
+     "detail": "LAMBDA_HARD_LIMIT",
+     "x_hat": [
+      -1746514.1137020416,
+      -277073.2153091677,
+      518738.3838996513,
+      -138.53857514974646,
+      -1206.7613535840314,
+      -1085.024526305924
+     ],
+     "dr_m": 11.59044657346761,
+     "dv_mps": 0.03590299027021254,
+     "iterations": 37,
+     "elapsed_s": 204.69462418556213,
+     "n_obs": 960,
+     "station_time": "DELTET_GEOCENTRIC"
+    },
+    "c2": {
+     "model": "C2",
+     "estimator": "BLS_LM",
+     "status": "Converged",
+     "detail": "STEP_NORM",
+     "x_hat": [
+      -1746513.8716739016,
+      -277072.12374240294,
+      518739.3969867098,
+      -138.54017643798414,
+      -1206.7610810254228,
+      -1085.0247167029863
+     ],
+     "dr_m": 12.978652990933464,
+     "dv_mps": 0.03555951521683196,
+     "iterations": 25,
+     "elapsed_s": 195.16883301734924,
+     "n_obs": 960,
+     "station_time": "FULL_TOPOCENTRIC"
+    },
+    "x_hat_position_difference_m": 1.5087879276268974,
+    "dr_difference_m": 1.3882064174658542,
+    "same_status": false,
+    "passed": false
+   },
+   "SRIF": {
+    "c1i": {
+     "model": "C1I",
+     "estimator": "SRIF",
+     "status": "MaxIter",
+     "detail": "",
+     "x_hat": [
+      -1746513.573855727,
+      -277084.0152144195,
+      518734.0403529303,
+      -138.53958168783103,
+      -1206.7376109618212,
+      -1085.0508556781767
+     ],
+     "dr_m": 0.11138390369460803,
+     "dv_mps": 0.00048796492167144226,
+     "iterations": 40,
+     "elapsed_s": 144.83435773849487,
+     "n_obs": 960,
+     "station_time": "DELTET_GEOCENTRIC"
+    },
+    "c2": {
+     "model": "C2",
+     "estimator": "SRIF",
+     "status": "MaxIter",
+     "detail": "",
+     "x_hat": [
+      -1746513.5666433144,
+      -277084.0045804837,
+      518734.06238560705,
+      -138.53962585433808,
+      -1206.7375656340053,
+      -1085.0509019530634
+     ],
+     "dr_m": 0.08634984251335555,
+     "dv_mps": 0.0004100226966903487,
+     "iterations": 40,
+     "elapsed_s": 182.06151032447815,
+     "n_obs": 960,
+     "station_time": "FULL_TOPOCENTRIC"
+    },
+    "x_hat_position_difference_m": 0.025505652888238087,
+    "dr_difference_m": -0.02503406118125248,
+    "same_status": true,
+    "passed": false
+   }
+  }
+ },
+ "G7": {
+  "passed": true,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "z_nonlinear": [
+   -0.1849692513983165,
+   -0.12218836026312645,
+   -0.15663005892692372,
+   0.3619971274198357,
+   0.002124286902288474,
+   -0.00663134951619867,
+   -0.2173087185370955
+  ],
+  "z_linear": [
+   -0.19542507845696444,
+   -0.1392479749656829,
+   -0.17347131167743338,
+   0.381659976094123,
+   0.017652977593623373,
+   -0.0221825081287,
+   -0.22888124767655468
+  ],
+  "largest_component": 3,
+  "relative_difference_largest": 0.05151928393308434,
+  "range_change_m": {
+   "min": -1.6857836246490479,
+   "max": 1.8884045481681824
+  },
+  "elapsed_s": 203.05127596855164
+ },
+ "elapsed_s": 240.395911693573
+}

@@ -9,7 +9,7 @@ description = "Lunar orbit determination research framework"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "LICENSES/ERFA.txt"]
 authors = [{name = "Cemil Eray Halıcı"}]
 dynamic = ["dependencies"]
 
