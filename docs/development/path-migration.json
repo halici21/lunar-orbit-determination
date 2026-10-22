@@ -2498,10 +2498,13 @@
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
-      "original_sha256": "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
+      "original_sha256": "e99a7693fcba05f03aa5b805def7b6047d7b26881f2dde31c7e4ff931771aadb",
       "byte_preserved": true,
-      "refrozen_from_sha256": "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
-      "note": "Re-frozen for Phase 17-HARDEN-D30 (BLS-LM acceptance rescore), authorized by the owner on 2026-10-22; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
+      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22) and Phase C1-I two_way_light_time_ssb dispatch (2026-10-22), both authorized by the owner; refrozen_from_sha256 is the identity before C1-I, refrozen_history_sha256 lists every earlier identity in order.",
+      "refrozen_history_sha256": [
+        "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6"
+      ]
     },
     "lunar_od/filters.py": {
       "path": "src/lunar_od/filters.py",
