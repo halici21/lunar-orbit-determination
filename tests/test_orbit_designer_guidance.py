@@ -32,12 +32,19 @@ def test_designer_tab_and_backtab_expose_complete_controls_without_replacing_res
         QTest.keyClick(app.focusWidget(), key)
         settle(app)
         assert expected.hasFocus(), (expected.accessibleName(), app.focusWidget())
+        numeric = next((designer._spins[k] for k, slider in designer._sliders.items()
+                        if slider is expected), expected)
+        label = next((label for label in designer.findChildren(QLabel)
+                      if label.buddy() is numeric), None)
         ancestor = expected.parentWidget()
         while ancestor is not None:
             if isinstance(ancestor, QScrollArea):
                 viewport = ancestor.viewport()
                 rect = QRect(expected.mapTo(viewport, QPoint()), expected.size())
                 assert viewport.rect().contains(rect), (expected.accessibleName(), rect, viewport.rect())
+                if label is not None:
+                    label_rect = QRect(label.mapTo(viewport, QPoint()), label.size())
+                    assert viewport.rect().contains(label_rect), (label.text(), label_rect, viewport.rect())
             ancestor = ancestor.parentWidget()
         assert not expected.visibleRegion().isEmpty()
     # Keyboard edits change only the preview until the explicit Generate action.
