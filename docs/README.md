@@ -30,6 +30,7 @@
 - [Clear analytical-designer inputs and their source meaning](development/orbit-designer-guidance_2026-10-21.md)
 - [Complete keyboard focus in the analytical orbit designer](development/orbit-designer-keyboard_2026-10-21.md)
 - [Keep parameter names visible with Designer keyboard focus](development/orbit-designer-context_2026-10-22.md)
+- [Visible keyboard focus on orbit-designer sliders](development/orbit-slider-focus_2026-10-22.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
