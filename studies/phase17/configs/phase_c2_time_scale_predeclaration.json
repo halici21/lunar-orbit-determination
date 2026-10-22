@@ -1,0 +1,90 @@
+{
+ "phase": "Phase C2 - time scales (UTC/TAI/TT/TDB) and station clocks: materiality survey (analysis only, no production change)",
+ "written": "2026-10-22, before any C2 number was computed",
+ "motivation": "Production epochs are seconds past et0 read as TDB (SPICE ET); no production path converts UTC (measurement_ingestion.read_measurement_csv takes t_s as given; no str2et/utc2et in src/). C1-I added the TT conversion of the measured interval with SPICE's one-term DELTET model of TDB-TT, evaluated geocentrically. Real DSN tracking is tagged in UTC at the station, the station clock is steered to UTC, and the TDB-TT relation has periodic and station-dependent terms SPICE's model omits. The Orekit/GMAT trial found Orekit's TDB within 1.3 us of SPICE over 30 days and a C1-I G4 range difference strongly correlated with range rate. C2 decides, per term and per observable, whether each time-scale term is material for this project's OD, before any production change",
+ "baseline": {
+  "model": "the production C1-I DSN light-time profile: lunar_od.relativistic_light_time.DSN_LIGHT_TIME_MODEL (frame SSB, Shapiro Sun + Earth, interval TT via the analytic d(TDB-TT)/dTDB of SPICE's DELTET model)",
+  "observables_from": "relativistic_light_time.solve_two_way / two_way_range_m, counted_doppler, solve_delta_dor, with exact_epoch_station_state station providers (the C1 lesson on 4.5e-5 m station steps, HARDEN-D31)",
+  "epochs": "the production epochs (seconds past et0, TDB); every term below is the change of an observable when the station-side time relation is made more faithful than the baseline"
+ },
+ "reference_implementation": {
+  "time_scales": "ERFA (the open-licence SOFA C library) through pyerfa, installed and pinned in Documents/Python/agent-sandbox (not a repository dependency): utctai, taitt, dtdb (Fairhead & Bretagnon 1990 series with the topocentric terms, IAU/IERS Conventions 2010 ch. 10). The sandbox run writes studies/phase17/results/phase_c2_erfa_reference.json (per-epoch values, pyerfa version, input/output sha256); the survey consumes that file read-only",
+  "erfa_dates": "two-part Julian dates, date1 = 2451545.0 + whole days of et0, date2 = remaining fraction + t/86400, so no et0 + t quantisation enters the reference (C1 lesson 1)",
+  "erfa_ut_argument": "dtdb's ut argument is fed UTC (|UT1-UTC| < 0.9 s, effect on the topocentric term < 2e-10 s; UT1 is C3)",
+  "rates": "d/dt of ERFA dtdb by central difference h = 60 s on the two-part date (no et quantisation); SPICE rate analytic as in C1-I (C1 lesson 2)",
+  "survey_code": "studies/phase17/scripts/phase_c2_time_scale_survey.py; production modules imported read-only",
+  "orekit": "the existing sandbox Orekit 13.1.9 install (orekit-gmat-oracle) for term T5 only"
+ },
+ "propagation_of_an_epoch_error": {
+  "rule": "a station-time error that shifts the true TDB of an observation by dt(t) changes the observable by dt * dh/dt (ephemerides, Earth rotation through the ITRF93 PCK, and spacecraft all move with TDB); an error in the rate d(dt)/dt scales the measured interval: two-way range c/2 * round_trip * d(dt)/dt, counted Doppler y * d(dt)/dt",
+  "dh_dt": "central difference of the baseline observable with h = 1 s (>> ulp(et0) ~ 1.2e-7 s)",
+  "linearity_gate": "see S2"
+ },
+ "observables": {
+  "two_way_range": "every KP2 range row (receive-tagged, zero transponder delay, half round trip)",
+  "counted_doppler": "every KP2 counted-Doppler row (Tc = 60 s, receive-tagged count interval)",
+  "delta_dor": "the R1O-D2 Goldstone-Canberra rows of CANON k0; for T4 the inter-station clock offset is reported raw and classified CANCELLED_BY_CALIBRATION (the quasar observation of a delta-DOR sequence removes common station clock and instrumental delays to first order)"
+ },
+ "population": "the 10 KP2 cells (5 orbits x epochs k0, k12; CANON, O1, O2, O3, O5), SIMPLIFIED dynamics, as in C1",
+ "terms": {
+  "T1_TAG_SCALE": {
+   "what": "observation tags in UTC (real DSN data) vs the production TDB-second tags",
+   "measured": "(a) dt = TDB - UTC at every survey epoch, ERFA chain vs SPICE (str2et/unitim) chain; (b) the effect of reading UTC tags as TDB (dt * dh/dt); (c) the residual of the SPICE chain after subtracting T2 (leap seconds + 32.184 s only)",
+   "decision_fixed_in_advance": "CONVENTION_REAL_DATA: the conversion is required for any real-data ingestion whatever its size; synthetic campaigns are self-consistent. The survey reports the size only. The decision on (c) follows the materiality rule"
+  },
+  "T2_TDB_MODEL": {
+   "what": "SPICE's one-term DELTET model of TDB-TT vs ERFA dtdb geocentric (u = v = 0)",
+   "measured": "epoch part dt * dh/dt and rate part (interval scaling) separately and summed"
+  },
+  "T3_TOPOCENTRIC": {
+   "what": "ERFA dtdb at the station (elong, u, v from the station's ITRF93 position used by production) minus ERFA dtdb geocentric: the (v_E . r_station)/c^2 term and its smaller companions",
+   "measured": "epoch part and rate part separately and summed, per station"
+  },
+  "T4_STATION_CLOCK": {
+   "what": "station clock offset and fractional frequency (drift) relative to UTC/TT",
+   "grid": {"offset_s": [1e-8, 1e-7, 1e-6], "fractional_frequency": [1e-13, 1e-12]},
+   "measured": "offset: epoch part (the measured interval of one clock is unchanged); frequency: rate part plus the growing epoch part f * (t - t_ref), t_ref = arc start. Reported per grid level, plus the threshold level at which each observable/OD crosses 0.1 sigma",
+   "levels_note": "the grid brackets plausible station timing errors; the DSN specification level (DSN 810-005) is cited in the report from the document, not assumed here",
+   "production_parity_S5": "informational: the production RangeRatePhysicsConfig station_clock_offset_s / station_clock_drift path (epoch shift of the receive time) reproduces the T4 epoch part on the Moon-centred counted Doppler of one cell"
+  },
+  "T5_OREKIT_SPICE_TDB": {
+   "what": "explain the C1-I G4 range difference that correlated with range rate",
+   "method": "rerun the sandbox harness meas_corr_c1i.py setup with Orekit's own TDB-TT and SPICE's TDB-TT logged per epoch; regress the range difference on rho_dot * (TDB_orekit - TDB_spice)",
+   "verdict": "EXPLAINED if the slope is in [0.8, 1.2] and the RMS range difference drops by >= 50% after subtracting the prediction; otherwise UNEXPLAINED (recorded, not a production decision)"
+  },
+  "T6_SPACECRAFT_TIME": {
+   "what": "spacecraft / transponder time",
+   "decision_fixed_in_advance": "OUT_OF_SCOPE: with a coherent transponder no on-board clock enters two-way range, counted Doppler or delta-DOR (delta-DOR differences two receptions of one transmit event); only one-way observables would need it, and none is modelled"
+  }
+ },
+ "gates": {
+  "S1_leap_seconds": "ERFA and naif0012 give the same TAI-UTC (exact integer seconds) at every survey epoch, and no arc contains a leap second; TT - TAI = 32.184 s exactly in both",
+  "S2_linearity": "the epoch propagation rule holds: with an exaggerated dt = 1e-2 s, direct h(t + dt) - h(t) vs dt * dh/dt differ by <= 1e-3 m (range) and <= 1e-6 m/s (Doppler) on every row",
+  "S3_spice_chain_sanity": "|ERFA dtdb geocentric - SPICE DELTET TDB-TT| <= 1e-4 s at every epoch (a gross-error screen only; the measured value is the T2 result)",
+  "S4_convergence": "every baseline light-time solve converges (production raises LightTimeConvergenceError otherwise)",
+  "S5_production_clock_parity": "informational, see T4",
+  "S6_reference_record": "the ERFA reference file exists, its sha256 matches the value the sandbox run printed, and it covers every survey epoch"
+ },
+ "noise_levels": {
+  "PROJECT": "range 5 m, Doppler 1e-4 m/s, delta-DOR 5 nrad",
+  "DSN_REALISTIC": "range 1 m, Doppler 3e-5 m/s, delta-DOR 5 nrad"
+ },
+ "od_impact": {
+  "method": "linear bias mapping at the truth, as in C1: delta_theta = (H^T W H + P0^-1)^-1 H^T W delta_y, reported as max |delta_theta_i / sigma_i| over the 6 state components and constant K, sigma from the square-root (QR) posterior; the KP2 design matrix as in C1 (Moon-centred partials; the frame difference in the partials is immaterial for a bias mapping)",
+  "designs": ["RANGE_ONLY: KP2 range rows, 6-state + constant K", "RANGE_DOPPLER_FREE_BIAS: KP2 range + counted Doppler with one free bias per Doppler pass, 6-state + constant K"],
+  "prior": "KP2 PRIOR_SD on the state, no K prior",
+  "noise": "both PROJECT and DSN_REALISTIC weights"
+ },
+ "materiality_rule": {
+  "observable_level": "OBSERVABLE_MATERIAL if max |effect| over the population >= 0.1 sigma of that observable at DSN_REALISTIC noise",
+  "od_level": "OD_MATERIAL if, for some design and noise level, max |delta_theta / sigma| >= 0.1 in some cell",
+  "decision": "IMPLEMENT if OD_MATERIAL or OBSERVABLE_MATERIAL; DOCUMENT_ONLY otherwise. Fixed-in-advance classes (T1 CONVENTION_REAL_DATA, T6 OUT_OF_SCOPE, delta-DOR T4 CANCELLED_BY_CALIBRATION) are not overridden by the numbers. For T4, IMPLEMENT means: wire the clock offset/frequency into the SSB profile as a consider or solve-for parameter in C2-I, with the level that triggers materiality stated",
+  "gate_veto": "if S1, S2, S3, S4 or S6 fails, the outcome for the affected term is C2_INCONCLUSIVE; computed-as-FAIL gates are reported, never hidden, and any adjudication goes to the owner"
+ },
+ "outputs": {
+  "report": "studies/phase17/reports/phase_c2_time_scale_materiality.md",
+  "results": "studies/phase17/results/phase_c2_time_scale_survey.json (+ phase_c2_erfa_reference.json)",
+  "next": "a separate C2-I implementation predeclaration for whatever is IMPLEMENT; no production file changes in C2"
+ },
+ "not_in_scope": "ITRF realization, EOP and UT1, station tides and plate motion (C3); DE421 vs DE440 (C4); media delays (C5); station proper time vs TT from station height (station clocks are steered to UTC, so their scale is TT by construction; residual steering error is T4); any production change"
+}
