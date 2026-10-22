@@ -1,0 +1,56 @@
+{
+ "G6": {
+  "passed": false,
+  "runs": {
+   "BLS_LM": {
+    "status": "DampingLimit",
+    "detail": "LAMBDA_HARD_LIMIT",
+    "dr_m": 11.59044657346761,
+    "dv_mps": 0.03590299027021254,
+    "iterations": 37,
+    "elapsed_s": 288.630437374115
+   },
+   "SRIF": {
+    "status": "MaxIter",
+    "detail": "",
+    "dr_m": 0.11138390369460803,
+    "dv_mps": 0.00048796492167144226,
+    "iterations": 40,
+    "elapsed_s": 715.5840530395508
+   }
+  },
+  "n_obs": 960,
+  "profile": "two_way_light_time_ssb"
+ },
+ "G7": {
+  "passed": true,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "z_nonlinear": [
+   27.75788999915676,
+   -1.0477178348420177,
+   3.5295056698042733,
+   -0.9493352803584701,
+   -1.4486934008057881,
+   0.3143854412285532,
+   -0.3837409485115252
+  ],
+  "z_linear": [
+   27.751701082155385,
+   -1.0515491616689616,
+   3.524534296062328,
+   -0.9409522533108908,
+   -1.4474420213710477,
+   0.3131363466495011,
+   -0.3904350031845989
+  ],
+  "largest_component": 0,
+  "relative_difference_largest": 0.00022301036549265025,
+  "max_abs_z_nonlinear": 27.75788999915676,
+  "range_bias_m": {
+   "min": 7.960370600223541,
+   "max": 11.707451283931732
+  }
+ },
+ "elapsed_s": 1249.7386434078217
+}

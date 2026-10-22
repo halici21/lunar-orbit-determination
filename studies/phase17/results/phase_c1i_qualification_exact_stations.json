@@ -1,0 +1,711 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c1i_light_time_implementation_predeclaration.json",
+ "gates": {
+  "G2": {
+   "range": false,
+   "doppler": false,
+   "ddor": true
+  },
+  "G3": {
+   "frame_time_scale_range": true,
+   "shapiro_range_A1": true,
+   "doppler": false,
+   "ddor": true
+  },
+  "G5": {
+   "range": false,
+   "one_way": false,
+   "doppler": false,
+   "ddor": false
+  },
+  "G8": {
+   "row_821_converged_without_two_cycle": true,
+   "row_821_residual_ok": true,
+   "two_cycle_rows_all_cells": []
+  }
+ },
+ "cells": [
+  {
+   "cell": "CANON:0",
+   "n_range": 960,
+   "n_doppler": 911,
+   "elapsed_s": 24.310791730880737,
+   "g2": {
+    "range_max_m": 1.0788440704345703e-05,
+    "doppler_max_mps": 3.5391622077440843e-07,
+    "ddor_max_s": 2.220446049250313e-16
+   },
+   "g3_range_m": {
+    "FRAME": 1.8537772028537347e-07,
+    "TIME_SCALE": 5.038707040494472e-08,
+    "SHAPIRO_SUN": 4.9781431888717975e-05,
+    "SHAPIRO_EARTH": 4.0501565225919967e-07,
+    "SHAPIRO_MOON": 1.9029876607227613e-07,
+    "SHAPIRO_JUPITER": 2.2329462566732933e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 4.9781431888717975e-05,
+     "worst_ratio_error": 0.01498921442664939,
+     "n_checked": 832
+    },
+    "EARTH": {
+     "max_abs_diff": 4.0501565225919967e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.9029876607227613e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 2.2329462566732933e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437869449705413e-09,
+    "SHAPIRO_SUN": 3.823520618083214e-08,
+    "SHAPIRO_EARTH": 5.290305669939068e-09,
+    "TIME_SCALE": 2.4675374112609094e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 6.747150371211319e-05,
+    "SUN": 3.8460365885839565e-05,
+    "EARTH": 4.515480895861401e-07,
+    "TT": 2.9622469810419716e-07
+   },
+   "ddor": {
+    "n": 170,
+    "g2_max_s": 2.220446049250313e-16,
+    "g3_frame_max_s": 6.661338147750939e-16,
+    "frame_max_ns": 3193.4623485607717
+   },
+   "two_cycle_rows": [],
+   "row_821_residual_s": 2.6489921367556235e-13
+  },
+  {
+   "cell": "CANON:12",
+   "n_range": 820,
+   "n_doppler": 782,
+   "elapsed_s": 21.37228012084961,
+   "g2": {
+    "range_max_m": 1.0192394256591797e-05,
+    "doppler_max_mps": 3.5280663723824546e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 1.8705598137103152e-07,
+    "TIME_SCALE": 4.937282675060439e-08,
+    "SHAPIRO_SUN": 4.907120532582354e-05,
+    "SHAPIRO_EARTH": 3.874656923918973e-07,
+    "SHAPIRO_MOON": 1.6641323518382187e-07,
+    "SHAPIRO_JUPITER": 1.893509175860536e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 4.907120532582354e-05,
+     "worst_ratio_error": 0.010663226628749856,
+     "n_checked": 709
+    },
+    "EARTH": {
+     "max_abs_diff": 3.874656923918973e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.6641323518382187e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 1.893509175860536e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437980723656282e-09,
+    "SHAPIRO_SUN": 3.9979087280739424e-08,
+    "SHAPIRO_EARTH": 4.2994022751298605e-09,
+    "TIME_SCALE": 2.6203891885711743e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 8.653970616023798e-05,
+    "SUN": 3.870888372148329e-05,
+    "EARTH": 4.415630741050336e-07,
+    "TT": 1.431196778867161e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:0",
+   "n_range": 955,
+   "n_doppler": 906,
+   "elapsed_s": 23.83964228630066,
+   "g2": {
+    "range_max_m": 1.0788440704345703e-05,
+    "doppler_max_mps": 3.09537995235587e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 1.9039608645243788e-07,
+    "TIME_SCALE": 5.000477168448647e-08,
+    "SHAPIRO_SUN": 5.0708576814884054e-05,
+    "SHAPIRO_EARTH": 4.126924121050646e-07,
+    "SHAPIRO_MOON": 1.8110854110549648e-07,
+    "SHAPIRO_JUPITER": 2.0316909907962602e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 5.0708576814884054e-05,
+     "worst_ratio_error": 0.016946056638729643,
+     "n_checked": 825
+    },
+    "EARTH": {
+     "max_abs_diff": 4.126924121050646e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.8110854110549648e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 2.0316909907962602e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437989338985937e-09,
+    "SHAPIRO_SUN": 4.1495412820803964e-08,
+    "SHAPIRO_EARTH": 6.113641905242817e-09,
+    "TIME_SCALE": 2.4821365696285178e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 6.259988685997087e-05,
+    "SUN": 3.900288925251516e-05,
+    "EARTH": 4.648616140912054e-07,
+    "TT": 3.095378815487493e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:12",
+   "n_range": 850,
+   "n_doppler": 812,
+   "elapsed_s": 22.23392391204834,
+   "g2": {
+    "range_max_m": 1.0013580322265625e-05,
+    "doppler_max_mps": 3.383836428838549e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 2.020726284079899e-07,
+    "TIME_SCALE": 4.7815892151997774e-08,
+    "SHAPIRO_SUN": 4.364458665762072e-05,
+    "SHAPIRO_EARTH": 3.615870462769788e-07,
+    "SHAPIRO_MOON": 1.6648207427124705e-07,
+    "SHAPIRO_JUPITER": 2.373469288375913e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 4.364458665762072e-05,
+     "worst_ratio_error": 0.011504168558676945,
+     "n_checked": 713
+    },
+    "EARTH": {
+     "max_abs_diff": 3.615870462769788e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.6648207427124705e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 2.373469288375913e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437894777590581e-09,
+    "SHAPIRO_SUN": 3.3623790049491384e-08,
+    "SHAPIRO_EARTH": 5.6033517710336076e-09,
+    "TIME_SCALE": 2.600634191461125e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 6.761573285984923e-05,
+    "SUN": 3.48335577200487e-05,
+    "EARTH": 4.337969130574493e-07,
+    "TT": 1.242590315087e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:0",
+   "n_range": 1339,
+   "n_doppler": 1304,
+   "elapsed_s": 29.548312187194824,
+   "g2": {
+    "range_max_m": 1.0728836059570312e-05,
+    "doppler_max_mps": 3.2617975875837146e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 2.332615864908405e-07,
+    "TIME_SCALE": 5.0488942845983154e-08,
+    "SHAPIRO_SUN": 3.0298698179720418e-05,
+    "SHAPIRO_EARTH": 3.360484827075183e-07,
+    "SHAPIRO_MOON": 2.279503758301129e-07,
+    "SHAPIRO_JUPITER": 1.9824115433703278e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 3.0298698179720418e-05,
+     "worst_ratio_error": 0.021108516407367283,
+     "n_checked": 765
+    },
+    "EARTH": {
+     "max_abs_diff": 3.360484827075183e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 2.279503758301129e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 1.9824115433703278e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437825025978292e-09,
+    "SHAPIRO_SUN": 2.3332915986813207e-08,
+    "SHAPIRO_EARTH": 5.269788976277409e-09,
+    "TIME_SCALE": 2.4772815366361665e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 3.468710951892717e-05,
+    "SUN": 2.343612663935346e-05,
+    "EARTH": 4.715183195003192e-07,
+    "TT": 1.897167294373503e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:12",
+   "n_range": 884,
+   "n_doppler": 845,
+   "elapsed_s": 23.112146615982056,
+   "g2": {
+    "range_max_m": 1.0907649993896484e-05,
+    "doppler_max_mps": 3.1175687809081865e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 1.8945258473124227e-07,
+    "TIME_SCALE": 4.908674000950186e-08,
+    "SHAPIRO_SUN": 3.921670809514666e-05,
+    "SHAPIRO_EARTH": 3.4126166965908755e-07,
+    "SHAPIRO_MOON": 1.727144820791839e-07,
+    "SHAPIRO_JUPITER": 1.6501238078747184e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 3.921670809514666e-05,
+     "worst_ratio_error": 0.01070267700706252,
+     "n_checked": 728
+    },
+    "EARTH": {
+     "max_abs_diff": 3.4126166965908755e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.727144820791839e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 1.6501238078747184e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437994860495564e-09,
+    "SHAPIRO_SUN": 3.207930619252485e-08,
+    "SHAPIRO_EARTH": 5.303922195035279e-09,
+    "TIME_SCALE": 2.60763305572932e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 7.598878943326781e-05,
+    "SUN": 3.106917665718356e-05,
+    "EARTH": 3.9829433262639213e-07,
+    "TT": 1.220400918100495e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:0",
+   "n_range": 1110,
+   "n_doppler": 1070,
+   "elapsed_s": 25.63973617553711,
+   "g2": {
+    "range_max_m": 1.0788440704345703e-05,
+    "doppler_max_mps": 3.505877543830138e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 1.8784490007917043e-07,
+    "TIME_SCALE": 4.9622106965130364e-08,
+    "SHAPIRO_SUN": 4.802721893426565e-05,
+    "SHAPIRO_EARTH": 3.962218302205889e-07,
+    "SHAPIRO_MOON": 1.890931753067114e-07,
+    "SHAPIRO_JUPITER": 2.298926546806697e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 4.802721893426565e-05,
+     "worst_ratio_error": 0.011513704620509503,
+     "n_checked": 979
+    },
+    "EARTH": {
+     "max_abs_diff": 3.962218302205889e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.890931753067114e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 2.298926546806697e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437706291327343e-09,
+    "SHAPIRO_SUN": 2.8423542063158664e-08,
+    "SHAPIRO_EARTH": 4.794675001326397e-09,
+    "TIME_SCALE": 2.482349907241088e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 4.560525587748998e-05,
+    "SUN": 3.703804463839333e-05,
+    "EARTH": 4.3823456508107483e-07,
+    "TT": 2.862393557734322e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:12",
+   "n_range": 1007,
+   "n_doppler": 978,
+   "elapsed_s": 24.708657264709473,
+   "g2": {
+    "range_max_m": 1.055002212524414e-05,
+    "doppler_max_mps": 3.3394599086022936e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 2.4438050116870613e-07,
+    "TIME_SCALE": 4.811400074536398e-08,
+    "SHAPIRO_SUN": 4.548358275524578e-05,
+    "SHAPIRO_EARTH": 3.8113819376267566e-07,
+    "SHAPIRO_MOON": 1.758837975441999e-07,
+    "SHAPIRO_JUPITER": 1.7268197745009574e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 4.548358275524578e-05,
+     "worst_ratio_error": 0.01289538005801714,
+     "n_checked": 864
+    },
+    "EARTH": {
+     "max_abs_diff": 3.8113819376267566e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.758837975441999e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 1.7268197745009574e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437820089185673e-09,
+    "SHAPIRO_SUN": 2.7730318710424148e-08,
+    "SHAPIRO_EARTH": 4.469776480604239e-09,
+    "TIME_SCALE": 2.6065594584303814e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 5.828854494893676e-05,
+    "SUN": 3.6342416251500254e-05,
+    "EARTH": 4.293592610338237e-07,
+    "TT": 1.3202497939346358e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:0",
+   "n_range": 957,
+   "n_doppler": 915,
+   "elapsed_s": 23.77361226081848,
+   "g2": {
+    "range_max_m": 1.0728836059570312e-05,
+    "doppler_max_mps": 3.2507031733075564e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 1.886706835207974e-07,
+    "TIME_SCALE": 4.951441164718906e-08,
+    "SHAPIRO_SUN": 5.037263267038128e-05,
+    "SHAPIRO_EARTH": 3.946757970232917e-07,
+    "SHAPIRO_MOON": 2.2791204963947594e-07,
+    "SHAPIRO_JUPITER": 2.4860344397881554e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 5.037263267038128e-05,
+     "worst_ratio_error": 0.012697833740859605,
+     "n_checked": 826
+    },
+    "EARTH": {
+     "max_abs_diff": 3.946757970232917e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 2.2791204963947594e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 2.4860344397881554e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.4379570833072315e-09,
+    "SHAPIRO_SUN": 3.8661774408881207e-08,
+    "SHAPIRO_EARTH": 4.934103360959583e-09,
+    "TIME_SCALE": 2.471854833004375e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 6.819597774665453e-05,
+    "SUN": 3.8684475839545485e-05,
+    "EARTH": 4.815035481442465e-07,
+    "TT": 3.006623501278227e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:12",
+   "n_range": 836,
+   "n_doppler": 797,
+   "elapsed_s": 21.92518138885498,
+   "g2": {
+    "range_max_m": 1.055002212524414e-05,
+    "doppler_max_mps": 2.8734882562275743e-07,
+    "ddor_max_s": null
+   },
+   "g3_range_m": {
+    "FRAME": 1.876262771816073e-07,
+    "TIME_SCALE": 4.903842246856138e-08,
+    "SHAPIRO_SUN": 4.90067514116177e-05,
+    "SHAPIRO_EARTH": 3.713176969302734e-07,
+    "SHAPIRO_MOON": 1.936279060688311e-07,
+    "SHAPIRO_JUPITER": 1.9773756217470427e-07
+   },
+   "a1_shapiro": {
+    "SUN": {
+     "max_abs_diff": 4.90067514116177e-05,
+     "worst_ratio_error": 0.014337594915391607,
+     "n_checked": 720
+    },
+    "EARTH": {
+     "max_abs_diff": 3.713176969302734e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "MOON": {
+     "max_abs_diff": 1.936279060688311e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    },
+    "JUPITER": {
+     "max_abs_diff": 1.9773756217470427e-07,
+     "worst_ratio_error": 0.0,
+     "n_checked": 0
+    }
+   },
+   "g3_doppler_mps": {
+    "FRAME": 4.437879634148356e-09,
+    "SHAPIRO_SUN": 3.893936808744624e-08,
+    "SHAPIRO_EARTH": 4.905331448375719e-09,
+    "TIME_SCALE": 2.6009258774485218e-08
+   },
+   "doppler_terms_mps": {
+    "FRAME": 8.67161094788571e-05,
+    "SUN": 3.90872078241955e-05,
+    "EARTH": 4.060607352585066e-07,
+    "TT": 1.4201032172422856e-07
+   },
+   "ddor": null,
+   "two_cycle_rows": [],
+   "row_821_residual_s": null
+  }
+ ],
+ "fd": [
+  {
+   "cell": "CANON:0",
+   "fd": {
+    "range": {
+     "max_rel": 0.00026101664962902785,
+     "median_rel": 1.71016925640004e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      18,
+      6
+     ],
+     "max_rel_row_norm": 1.2068978528699317e-06
+    },
+    "doppler": {
+     "max_rel": 0.0009163110619850758,
+     "median_rel": 1.26079494618125e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      12,
+      6
+     ],
+     "max_rel_row_norm": 1.1825190084913827e-06
+    },
+    "one_way": {
+     "max_rel": 0.00026105508048212926,
+     "median_rel": 1.7091373945918963e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      18,
+      6
+     ],
+     "max_rel_row_norm": 1.2070259060042036e-06
+    },
+    "ddor": {
+     "max_rel": 0.00012314539877589142,
+     "median_rel": 8.399493723458275e-08,
+     "n_rows": 20,
+     "worst_row_param": [
+      15,
+      6
+     ],
+     "max_rel_row_norm": 1.2119187836249206e-06
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:12",
+   "fd": {
+    "range": {
+     "max_rel": 0.0014490223638966068,
+     "median_rel": 1.3921538864820763e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      10,
+      6
+     ],
+     "max_rel_row_norm": 2.1077739146762486e-06
+    },
+    "doppler": {
+     "max_rel": 0.003998541099212949,
+     "median_rel": 1.5235975617709604e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      12,
+      6
+     ],
+     "max_rel_row_norm": 6.224964694506861e-06
+    },
+    "one_way": {
+     "max_rel": 0.0014492189407328635,
+     "median_rel": 1.3922450258303255e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      10,
+      6
+     ],
+     "max_rel_row_norm": 2.1075461993534848e-06
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:0",
+   "fd": {
+    "range": {
+     "max_rel": 0.001865374654590269,
+     "median_rel": 1.4580634894956268e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      5,
+      6
+     ],
+     "max_rel_row_norm": 4.876674465688522e-06
+    },
+    "doppler": {
+     "max_rel": 0.0018379184082939575,
+     "median_rel": 1.791301204837858e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      4,
+      6
+     ],
+     "max_rel_row_norm": 4.484805741894967e-06
+    },
+    "one_way": {
+     "max_rel": 0.0018641481429726553,
+     "median_rel": 1.4574522472396777e-07,
+     "n_rows": 20,
+     "worst_row_param": [
+      5,
+      6
+     ],
+     "max_rel_row_norm": 4.876641235341607e-06
+    }
+   }
+  }
+ ]
+}

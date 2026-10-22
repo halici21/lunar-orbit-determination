@@ -1,0 +1,45 @@
+{
+ "phase": "Phase C1 - barycentric light time and Shapiro delay: materiality survey (analysis only, no production change)",
+ "written": "2026-10-22, before any C1 number was computed",
+ "motivation": "The Orekit/GMAT trial (agent-sandbox/orekit-gmat-oracle/REPORT.md s4.5) found that lunar_od solves light time Newtonian in the Moon-centred frame: vs the DSN/Moyer barycentric formulation 1.83-1.94 m in two-way range, -52..+63 um/s in counted Doppler, 9.5-9.9 km in one-way range; the Shapiro delay (~7.2 m) and the station-time conversion of the measured interval are absent. That was one station, one 2 h window. C1 decides, per term and per observable, whether the term is material for this project's OD, before any production change",
+ "reference_model": {
+  "implementation": "independent study code studies/phase17/scripts/phase_c1_light_time_survey.py; production modules are imported read-only for station state providers, spacecraft history interpolation and the production observable values the parity gates compare against",
+  "MOON": "Newtonian light time in the Moon-centred inertial frame (the production model), re-implemented in the survey code",
+  "SSB": "Newtonian light time in the solar-system barycentric frame: every endpoint = its Moon-centred position + the Moon's SSB position (SPICE, the kernels the production loader uses) at that endpoint's own epoch",
+  "SHAPIRO": "Moyer (2000) eq. 8-38 per leg, (1+gamma)=2: dt_B = 2 GM_B/c^3 ln[(r1B + r2B + r12)/(r1B + r2B - r12)] for B in {Sun, Earth, Moon, Jupiter barycentre}, GM from the loaded gm kernel, body position at the leg's receive epoch",
+  "TIME_SCALE": "the measured interval is kept by the station in TT (TAI-rate); c/2 x round_trip x d(TDB-TT)/dTDB at the receive epoch, d(TDB-TT)/dt from SPICE unitim by central difference",
+  "epochs": "survey epochs are the production epochs (seconds past et0, read as TDB)"
+ },
+ "observables": {
+  "two_way_range": "every KP2 range row (receive-tagged, zero transponder delay, half round trip)",
+  "counted_doppler": "every KP2 counted-Doppler row (Tc = 60 s, receive-tagged count interval, m/s equivalent y = c/(2Tc)(tau_end - tau_start))",
+  "delta_dor": "the R1O-D2 Goldstone-Canberra rows of CANON k0 (differential one-way, common transmit event)",
+  "one_way_range": "the downlink-only light time to the same KP2 range receive epochs (the RAZEL one-way convention); reported, not used for OD impact"
+ },
+ "population": "the 10 KP2 cells (5 orbits x epochs k0, k12; CANON, O1, O2, O3, O5), SIMPLIFIED dynamics (the trajectory only sets the geometry; the terms are light-time physics)",
+ "terms": ["FRAME = SSB - MOON", "SHAPIRO_SUN", "SHAPIRO_EARTH", "SHAPIRO_MOON", "SHAPIRO_JUPITER", "TIME_SCALE"],
+ "gates": {
+  "S1_parity_range": "the survey's MOON two-way range reproduces the production KP2 range values: max |diff| <= 1e-6 m over all rows of all cells",
+  "S2_parity_doppler": "the survey's MOON counted Doppler reproduces the production KP2 Doppler values: max |diff| <= 1e-7 m/s",
+  "S3_parity_ddor": "the survey's MOON delta-DOR reproduces the production D2 rows: max |diff| <= 1e-12 s",
+  "S4_convergence": "every light-time solve in every frame reaches |equation residual| <= 1e-12 s",
+  "S5_orekit_crosscheck": "informational: FRAME and SHAPIRO_SUN+EARTH two-way range magnitudes compared with the Orekit/GMAT trial ranges (1.83-1.94 m; ~7.2 m)"
+ },
+ "noise_levels": {
+  "PROJECT": "range 5 m, Doppler 1e-4 m/s, delta-DOR 5 nrad (the KP2 / R1O-D2 values)",
+  "DSN_REALISTIC": "range 1 m, Doppler 3e-5 m/s (0.03 mm/s at 60 s), delta-DOR 5 nrad"
+ },
+ "od_impact": {
+  "method": "linear bias mapping at the truth: delta_theta = (H^T W H + P0^-1)^-1 H^T W delta_y, reported as max |delta_theta_i / sigma_i| over the 6 state components and constant K, sigma from the square-root (QR) posterior",
+  "designs": ["RANGE_ONLY: KP2 range rows, 6-state + constant K", "RANGE_DOPPLER_FREE_BIAS: KP2 range + counted Doppler with one free bias per Doppler pass (the KP2 FREE design), 6-state + constant K"],
+  "prior": "KP2 PRIOR_SD on the state, no K prior",
+  "noise": "both PROJECT and DSN_REALISTIC weights"
+ },
+ "materiality_rule": {
+  "observable_level": "a term is OBSERVABLE_MATERIAL for an observable if its max |effect| over the population >= 0.1 sigma of that observable at DSN_REALISTIC noise",
+  "od_level": "a term is OD_MATERIAL if, for some design and noise level, max |delta_theta / sigma| >= 0.1 in some cell",
+  "decision": "IMPLEMENT if OD_MATERIAL or OBSERVABLE_MATERIAL; DOCUMENT_ONLY otherwise. A term that is OBSERVABLE_MATERIAL only for one_way_range is classified CONVENTION (no DSN one-way range observable is modelled)",
+  "gate_veto": "if S1, S2, S3 or S4 fails, the outcome for the affected observable is C1_INCONCLUSIVE"
+ },
+ "not_in_scope": "ITRF realization, EOP, station tides, DE421 vs DE440 (C3, C4); media delays (C5); the angular observables (az/el) and stellar aberration; any production change"
+}
