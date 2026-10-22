@@ -1,0 +1,1967 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c3_station_frame_predeclaration.json",
+ "reference": {
+  "file": "phase_c3_station_reference.npz",
+  "sha256": "adb268e78c2473aa7c7d512292b6572fe62828717963b3d6b794191a7ce7d684",
+  "meta": {
+   "orekit": "13.1.9",
+   "conventions": "IERS_2010",
+   "eop_end": "2027-11-23T00:00:00.000Z",
+   "variants": [
+    "A",
+    "B",
+    "TIDE",
+    "POLE"
+   ],
+   "seed": 20261023,
+   "grid_sha256": "5a325c108ff18251a9b7480dc99f3960f2b2fcaf6a28b24f25f8001d0d12ccd4"
+  }
+ },
+ "cells": [
+  {
+   "cell": "CANON:0",
+   "n_range": 960,
+   "n_doppler": 911,
+   "elapsed_s": 95.56238198280334,
+   "gates": {
+    "S1_max_m": 2.2545771524779924e-05,
+    "S4_max_m": 4.996272586736977e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.1812500382036651,
+     "Madrid DSN": 0.15814596877667603,
+     "Canberra DSN": 0.1742502241689148
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20501654628426236,
+     "T2B_EOP_AND_PN_MODEL": 112.78681995145472,
+     "T2_TOTAL": 112.974759216209,
+     "T3_SOLID_TIDE": 0.1812500382036651,
+     "T4_POLE_TIDE": 0.0010282050069353778
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2722783491124125,
+     "T2B_EOP_AND_PN_MODEL": 103.50984563528517,
+     "T2_TOTAL": 103.38919517040749,
+     "T3_SOLID_TIDE": 0.15814596877667603,
+     "T4_POLE_TIDE": 0.0004507320596740318
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32660745278464426,
+     "T2B_EOP_AND_PN_MODEL": 110.58510192714046,
+     "T2_TOTAL": 110.47852069171806,
+     "T3_SOLID_TIDE": 0.1742502241689148,
+     "T4_POLE_TIDE": 0.0002086094453384741
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.19148379564285278,
+     "max": 0.25899070501327515,
+     "maxabs": 0.25899070501327515
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -109.21838337182999,
+     "max": 110.80671685934067,
+     "maxabs": 110.80671685934067
+    },
+    "T2_TOTAL": {
+     "min": -109.4098671078682,
+     "max": 110.99574291706085,
+     "maxabs": 110.99574291706085
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.1776755452156067,
+     "max": 0.015587389469146729,
+     "maxabs": 0.1776755452156067
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00034058094024658203,
+     "max": 0.0008220076560974121,
+     "maxabs": 0.0008220076560974121
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.576202657815884e-05,
+     "max": 1.959519352112693e-05,
+     "maxabs": 1.959519352112693e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008363262351963385,
+     "max": -0.00100533150703086,
+     "maxabs": 0.008363262351963385
+    },
+    "T2_TOTAL": {
+     "min": -0.008377553241302849,
+     "max": -0.0010210957525487174,
+     "maxabs": 0.008377553241302849
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.4541626114805695e-05,
+     "max": 1.610262935969331e-05,
+     "maxabs": 1.610262935969331e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.65822233511426e-08,
+     "max": 5.658216650772374e-08,
+     "maxabs": 5.65822233511426e-08
+    }
+   },
+   "ddor": {
+    "n": 170,
+    "max_nrad": {
+     "T2A_ITRF_REALIZATION": 22.98712754645838,
+     "T2B_EOP_AND_PN_MODEL": 15301.170323529526,
+     "T2_TOTAL": 15312.944380420207,
+     "T3_SOLID_TIDE": 15.181575747337874,
+     "T4_POLE_TIDE": 0.09205942213799022
+    },
+    "max_ns": {
+     "T2A_ITRF_REALIZATION": 0.757245377513982,
+     "T2B_EOP_AND_PN_MODEL": 540.1373934651402,
+     "T2_TOTAL": 540.5787033431042,
+     "T3_SOLID_TIDE": 0.5001137282079071,
+     "T4_POLE_TIDE": 0.0030266900097331018
+    }
+   },
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.18759835743619876,
+      "k_over_sigma": 0.07984775735116595
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.9398339131585545,
+      "k_over_sigma": 0.40188226817848505
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.09436978872044023,
+      "k_over_sigma": 0.034917325812031746
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3655759495752176,
+      "k_over_sigma": 0.1392634769230277
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 35.1661322556234,
+      "k_over_sigma": 6.519496869055396
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 176.48769076966087,
+      "k_over_sigma": 32.01377210902344
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 31.761872432079887,
+      "k_over_sigma": 2.132751121972995
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 111.1234695015887,
+      "k_over_sigma": 4.839096121607031
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 35.33932894977202,
+      "k_over_sigma": 6.4396491586358815
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 177.35719813301824,
+      "k_over_sigma": 31.61189007621414
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 31.80461120662458,
+      "k_over_sigma": 2.167678056594592
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 111.28709556585684,
+      "k_over_sigma": 4.978391281031228
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.2229830111039395,
+      "k_over_sigma": 0.013150554661222016
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.1146022700858318,
+      "k_over_sigma": 0.06592668843657841
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.054927145195782366,
+      "k_over_sigma": 0.006207573263998601
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.33721359741745177,
+      "k_over_sigma": 0.0145623240899651
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.00026839682887605363,
+      "k_over_sigma": 0.0004399613755693125
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0013437743431512564,
+      "k_over_sigma": 0.0022012239410325683
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.0002790300797871375,
+      "k_over_sigma": 2.5113486960460716e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0013078982213293939,
+      "k_over_sigma": 9.86899677287849e-06
+     }
+    }
+   }
+  },
+  {
+   "cell": "CANON:12",
+   "n_range": 820,
+   "n_doppler": 782,
+   "elapsed_s": 85.13746452331543,
+   "gates": {
+    "S1_max_m": 2.2551089639718535e-05,
+    "S4_max_m": 5.0213388158472654e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.22845706109491937,
+     "Madrid DSN": 0.20000975237585727,
+     "Canberra DSN": 0.23051033754242112
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20522066614282522,
+     "T2B_EOP_AND_PN_MODEL": 118.43071261786525,
+     "T2_TOTAL": 118.61896803688391,
+     "T3_SOLID_TIDE": 0.22845706109491937,
+     "T4_POLE_TIDE": 0.0011988260400106001
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2725924868776382,
+     "T2B_EOP_AND_PN_MODEL": 108.18883484338889,
+     "T2_TOTAL": 108.06944071796659,
+     "T3_SOLID_TIDE": 0.20000975237585727,
+     "T4_POLE_TIDE": 0.00030641480639526683
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32695678309945275,
+     "T2B_EOP_AND_PN_MODEL": 115.81612476055676,
+     "T2_TOTAL": 115.7112411647011,
+     "T3_SOLID_TIDE": 0.23051033754242112,
+     "T4_POLE_TIDE": 0.0007779713869121752
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.18764173984527588,
+     "max": 0.27255433797836304,
+     "maxabs": 0.27255433797836304
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -112.48631763458252,
+     "max": 111.10758149623871,
+     "maxabs": 112.48631763458252
+    },
+    "T2_TOTAL": {
+     "min": -112.44500482082367,
+     "max": 110.93505030870438,
+     "maxabs": 112.44500482082367
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.22672683000564575,
+     "max": 0.01656162738800049,
+     "maxabs": 0.22672683000564575
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00019294023513793945,
+     "max": 0.0006965994834899902,
+     "maxabs": 0.0006965994834899902
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.3684017574178142e-05,
+     "max": 1.8490176444174722e-05,
+     "maxabs": 1.8490176444174722e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008447623088557066,
+     "max": -0.0006628172418743361,
+     "maxabs": 0.008447623088557066
+    },
+    "T2_TOTAL": {
+     "min": -0.008439429763654971,
+     "max": -0.0006658416161116065,
+     "maxabs": 0.008439429763654971
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.758818950747809e-05,
+     "max": 1.911147114697087e-05,
+     "maxabs": 1.911147114697087e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.658216650772374e-08,
+     "max": 5.65822233511426e-08,
+     "maxabs": 5.65822233511426e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.16523608467570583,
+      "k_over_sigma": 0.2620991775671668
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.8257092699088284,
+      "k_over_sigma": 1.307224765351312
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.07674780509600973,
+      "k_over_sigma": 0.007925865065246543
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.285671313435152,
+      "k_over_sigma": 0.09948948921421201
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 54.09707731104106,
+      "k_over_sigma": 9.00136988374652
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 272.7526649148841,
+      "k_over_sigma": 46.6689318941397
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 21.40828212316945,
+      "k_over_sigma": 1.8330052883649801
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 74.04522428627966,
+      "k_over_sigma": 0.8778881334524986
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 54.113876673287756,
+      "k_over_sigma": 9.26346904752419
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 272.8318725168572,
+      "k_over_sigma": 47.97615659243941
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 21.33151181967744,
+      "k_over_sigma": 1.8250858033165893
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 73.75947788559499,
+      "k_over_sigma": 0.7784202268489271
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0761309436808868,
+      "k_over_sigma": 0.07662184825460089
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.380973424989735,
+      "k_over_sigma": 0.3838451695530792
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.054585861277092335,
+      "k_over_sigma": 0.02144336160291213
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.1473760720694651,
+      "k_over_sigma": 0.04385056619093159
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0003553099308356621,
+      "k_over_sigma": 0.0004766858991271452
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0017734051102665104,
+      "k_over_sigma": 0.002384230369524066
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.00020606519298561063,
+      "k_over_sigma": 2.2312863771504686e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0009396909848846174,
+      "k_over_sigma": 0.00011199696900363816
+     }
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:0",
+   "n_range": 955,
+   "n_doppler": 906,
+   "elapsed_s": 93.1990749835968,
+   "gates": {
+    "S1_max_m": 2.2545771524779924e-05,
+    "S4_max_m": 6.668889937596999e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.1812500382036651,
+     "Madrid DSN": 0.15814596877667603,
+     "Canberra DSN": 0.1742502241689148
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20501654628426236,
+     "T2B_EOP_AND_PN_MODEL": 112.78681995145472,
+     "T2_TOTAL": 112.974759216209,
+     "T3_SOLID_TIDE": 0.1812500382036651,
+     "T4_POLE_TIDE": 0.0010282050069353778
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2722783491124125,
+     "T2B_EOP_AND_PN_MODEL": 103.50984563528517,
+     "T2_TOTAL": 103.38919517040749,
+     "T3_SOLID_TIDE": 0.15814596877667603,
+     "T4_POLE_TIDE": 0.0004507320596740318
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32660745278464426,
+     "T2B_EOP_AND_PN_MODEL": 110.58510192714046,
+     "T2_TOTAL": 110.47852069171806,
+     "T3_SOLID_TIDE": 0.1742502241689148,
+     "T4_POLE_TIDE": 0.0002086094453384741
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.1914435625076294,
+     "max": 0.25951141119003296,
+     "maxabs": 0.25951141119003296
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -109.34150522947311,
+     "max": 110.87801826000214,
+     "maxabs": 110.87801826000214
+    },
+    "T2_TOTAL": {
+     "min": -109.53294867277145,
+     "max": 111.06782174110413,
+     "maxabs": 111.06782174110413
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.1774314045906067,
+     "max": 0.014721989631652832,
+     "maxabs": 0.1774314045906067
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.0003402829170227051,
+     "max": 0.0008210539817810059,
+     "maxabs": 0.0008210539817810059
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.5249458556354512e-05,
+     "max": 1.8753117274172837e-05,
+     "maxabs": 1.8753117274172837e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.00825468665129847,
+     "max": -0.0010502311495201866,
+     "maxabs": 0.00825468665129847
+    },
+    "T2_TOTAL": {
+     "min": -0.008268236424783026,
+     "max": -0.0010654783891368425,
+     "maxabs": 0.008268236424783026
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.4560486988557386e-05,
+     "max": 1.6151445379364304e-05,
+     "maxabs": 1.6151445379364304e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.214440079726046e-08,
+     "max": 5.6582393881399184e-08,
+     "maxabs": 5.6582393881399184e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.10023146085628959,
+      "k_over_sigma": 0.060033368703527094
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.4941290764917041,
+      "k_over_sigma": 0.3001519150992682
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.09046923524367557,
+      "k_over_sigma": 0.0011987850294493542
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3650965209788483,
+      "k_over_sigma": 0.006676489105939679
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 11.219576469006496,
+      "k_over_sigma": 0.43929591800679063
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 57.000865430747126,
+      "k_over_sigma": 2.252728415478237
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 12.154619458858924,
+      "k_over_sigma": 4.307012837261756
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 39.32874016134796,
+      "k_over_sigma": 5.723152395144142
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 11.22551345704596,
+      "k_over_sigma": 0.3792625160000943
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 57.03133589848432,
+      "k_over_sigma": 1.9525763339014652
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 12.245073454678796,
+      "k_over_sigma": 4.308215385281227
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 39.69378615922554,
+      "k_over_sigma": 5.7298416635393
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.13717058368263974,
+      "k_over_sigma": 0.01008840555158045
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.6759870778716776,
+      "k_over_sigma": 0.05051462252960322
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.05551297302911945,
+      "k_over_sigma": 0.013638221452827106
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.28498790877352354,
+      "k_over_sigma": 0.05540605028010276
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0003875516817218884,
+      "k_over_sigma": 5.050505022577293e-05
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0019152701636751576,
+      "k_over_sigma": 0.00025254854397942613
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.00016290215792018022,
+      "k_over_sigma": 2.57932742944619e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0007970845261978825,
+      "k_over_sigma": 0.00013673968389622896
+     }
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:12",
+   "n_range": 850,
+   "n_doppler": 812,
+   "elapsed_s": 87.64707446098328,
+   "gates": {
+    "S1_max_m": 2.2551089639718535e-05,
+    "S4_max_m": 5.002884027556297e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.22845706109491937,
+     "Madrid DSN": 0.20000975237585727,
+     "Canberra DSN": 0.23051033754242112
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20522066614282522,
+     "T2B_EOP_AND_PN_MODEL": 118.43071261786525,
+     "T2_TOTAL": 118.61896803688391,
+     "T3_SOLID_TIDE": 0.22845706109491937,
+     "T4_POLE_TIDE": 0.0011988260400106001
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2725924868776382,
+     "T2B_EOP_AND_PN_MODEL": 108.18883484338889,
+     "T2_TOTAL": 108.06944071796659,
+     "T3_SOLID_TIDE": 0.20000975237585727,
+     "T4_POLE_TIDE": 0.00030641480639526683
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32695678309945275,
+     "T2B_EOP_AND_PN_MODEL": 115.81612476055676,
+     "T2_TOTAL": 115.7112411647011,
+     "T3_SOLID_TIDE": 0.23051033754242112,
+     "T4_POLE_TIDE": 0.0007779713869121752
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.18351119756698608,
+     "max": 0.27248990535736084,
+     "maxabs": 0.27248990535736084
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -112.47392672300339,
+     "max": 111.93971055746078,
+     "maxabs": 112.47392672300339
+    },
+    "T2_TOTAL": {
+     "min": -112.43342238664627,
+     "max": 111.76570188999176,
+     "maxabs": 112.43342238664627
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.22518783807754517,
+     "max": 0.01625746488571167,
+     "maxabs": 0.22518783807754517
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00019121170043945312,
+     "max": 0.0006983280181884766,
+     "maxabs": 0.0006983280181884766
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.4007978393237863e-05,
+     "max": 1.880748050098191e-05,
+     "maxabs": 1.880748050098191e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008369341055640689,
+     "max": -0.0004590724943227542,
+     "maxabs": 0.008369341055640689
+    },
+    "T2_TOTAL": {
+     "min": -0.008377532161603085,
+     "max": -0.0004641471413151521,
+     "maxabs": 0.008377532161603085
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.766807031344797e-05,
+     "max": 1.9166943957316107e-05,
+     "maxabs": 1.9166943957316107e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.658216650772374e-08,
+     "max": 5.325387064658571e-08,
+     "maxabs": 5.658216650772374e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0775377102091413,
+      "k_over_sigma": 0.1603849226464235
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.38903177108330433,
+      "k_over_sigma": 0.8016265485133903
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.01780984389424259,
+      "k_over_sigma": 0.010029413440762783
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.08067328693694818,
+      "k_over_sigma": 0.014085886093707095
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 9.982735295444206,
+      "k_over_sigma": 27.40315403247403
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 50.41521112062622,
+      "k_over_sigma": 137.13897975274216
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 7.7719340566980115,
+      "k_over_sigma": 2.4047523021915524
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 26.51485572173721,
+      "k_over_sigma": 3.135050911160019
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 10.014192908572568,
+      "k_over_sigma": 27.242769111740806
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 50.57780037567317,
+      "k_over_sigma": 136.33735321324184
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 7.778538969639944,
+      "k_over_sigma": 2.3946994157865182
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 26.516900588319476,
+      "k_over_sigma": 3.1492148207796418
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.05551832839090299,
+      "k_over_sigma": 0.024591454368114385
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.2688940657504804,
+      "k_over_sigma": 0.12327179676390873
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.054113769167700235,
+      "k_over_sigma": 0.007031892790369246
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.2133452025367398,
+      "k_over_sigma": 0.03479871658091639
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0003659920354608756,
+      "k_over_sigma": 0.00019698797763274066
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.001804504496843597,
+      "k_over_sigma": 0.0009849892382509946
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 9.185510496608837e-05,
+      "k_over_sigma": 2.924159860629109e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0006475381733913416,
+      "k_over_sigma": 0.00014968065482298654
+     }
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:0",
+   "n_range": 1339,
+   "n_doppler": 1304,
+   "elapsed_s": 112.98113203048706,
+   "gates": {
+    "S1_max_m": 2.2545771524779924e-05,
+    "S4_max_m": 5.010347597068891e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.1812500382036651,
+     "Madrid DSN": 0.15814596877667603,
+     "Canberra DSN": 0.1742502241689148
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20501654628426236,
+     "T2B_EOP_AND_PN_MODEL": 112.78681995145472,
+     "T2_TOTAL": 112.974759216209,
+     "T3_SOLID_TIDE": 0.1812500382036651,
+     "T4_POLE_TIDE": 0.0010282050069353778
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2722783491124125,
+     "T2B_EOP_AND_PN_MODEL": 103.50984563528517,
+     "T2_TOTAL": 103.38919517040749,
+     "T3_SOLID_TIDE": 0.15814596877667603,
+     "T4_POLE_TIDE": 0.0004507320596740318
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32660745278464426,
+     "T2B_EOP_AND_PN_MODEL": 110.58510192714046,
+     "T2_TOTAL": 110.47852069171806,
+     "T3_SOLID_TIDE": 0.1742502241689148,
+     "T4_POLE_TIDE": 0.0002086094453384741
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.1913042664527893,
+     "max": 0.2594580054283142,
+     "maxabs": 0.2594580054283142
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -109.25418466329575,
+     "max": 110.7951477766037,
+     "maxabs": 110.7951477766037
+    },
+    "T2_TOTAL": {
+     "min": -109.44548892974854,
+     "max": 110.98472964763641,
+     "maxabs": 110.98472964763641
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.1774284839630127,
+     "max": 0.014629602432250977,
+     "maxabs": 0.1774284839630127
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.0003402829170227051,
+     "max": 0.0008197426795959473,
+     "maxabs": 0.0008197426795959473
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.4889995100020315e-05,
+     "max": 1.930340692979371e-05,
+     "maxabs": 1.930340692979371e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008453512075504932,
+     "max": -0.0009661311347599622,
+     "maxabs": 0.008453512075504932
+    },
+    "T2_TOTAL": {
+     "min": -0.008468041497735612,
+     "max": -0.0009810244582695304,
+     "maxabs": 0.008468041497735612
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.4715810650045569e-05,
+     "max": 1.589072343222142e-05,
+     "maxabs": 1.589072343222142e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.214440079726046e-08,
+     "max": 5.8801333580049686e-08,
+     "maxabs": 5.8801333580049686e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.06845173826123704,
+      "k_over_sigma": 0.012564138233452687
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3448290092769532,
+      "k_over_sigma": 0.06075742027525426
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.030225998156321744,
+      "k_over_sigma": 0.0002220091510878832
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.11899401831877036,
+      "k_over_sigma": 0.012227825159507755
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 31.39307271441655,
+      "k_over_sigma": 14.591624698464711
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 158.79583028267842,
+      "k_over_sigma": 71.80907028867719
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 20.733405916060537,
+      "k_over_sigma": 12.61629802242106
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 72.00840024223083,
+      "k_over_sigma": 42.483715494605065
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 31.423004935595202,
+      "k_over_sigma": 14.604188898622004
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 158.95046574613508,
+      "k_over_sigma": 71.86982801815854
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 20.759719950765625,
+      "k_over_sigma": 12.616549213499924
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 72.10634768663878,
+      "k_over_sigma": 42.496040530572415
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.07580638656353099,
+      "k_over_sigma": 0.04784544523883158
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.38215955900598914,
+      "k_over_sigma": 0.241321353653856
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.03026175670974949,
+      "k_over_sigma": 0.025023743081288734
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.12378762036984128,
+      "k_over_sigma": 0.10285046810315174
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.00017955189092582066,
+      "k_over_sigma": 0.0001272877660454207
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0009022413089505836,
+      "k_over_sigma": 0.0006311501311998341
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.000291933908673513,
+      "k_over_sigma": 2.692632837755522e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.000921950759154647,
+      "k_over_sigma": 0.00015644860529087586
+     }
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:12",
+   "n_range": 884,
+   "n_doppler": 845,
+   "elapsed_s": 90.16397356987,
+   "gates": {
+    "S1_max_m": 2.2551089639718535e-05,
+    "S4_max_m": 4.9961777508061065e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.22845706109491937,
+     "Madrid DSN": 0.20000975237585727,
+     "Canberra DSN": 0.23051033754242112
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20522066614282522,
+     "T2B_EOP_AND_PN_MODEL": 118.43071261786525,
+     "T2_TOTAL": 118.61896803688391,
+     "T3_SOLID_TIDE": 0.22845706109491937,
+     "T4_POLE_TIDE": 0.0011988260400106001
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2725924868776382,
+     "T2B_EOP_AND_PN_MODEL": 108.18883484338889,
+     "T2_TOTAL": 108.06944071796659,
+     "T3_SOLID_TIDE": 0.20000975237585727,
+     "T4_POLE_TIDE": 0.00030641480639526683
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32695678309945275,
+     "T2B_EOP_AND_PN_MODEL": 115.81612476055676,
+     "T2_TOTAL": 115.7112411647011,
+     "T3_SOLID_TIDE": 0.23051033754242112,
+     "T4_POLE_TIDE": 0.0007779713869121752
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.19501352310180664,
+     "max": 0.2725241184234619,
+     "maxabs": 0.2725241184234619
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -111.08170610666275,
+     "max": 111.9973896741867,
+     "maxabs": 111.9973896741867
+    },
+    "T2_TOTAL": {
+     "min": -111.03346818685532,
+     "max": 111.82256543636322,
+     "maxabs": 111.82256543636322
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.22734218835830688,
+     "max": 0.015888571739196777,
+     "maxabs": 0.22734218835830688
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00019121170043945312,
+     "max": 0.0006985664367675781,
+     "maxabs": 0.0006985664367675781
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.387706265632005e-05,
+     "max": 1.9044903865506058e-05,
+     "maxabs": 1.9044903865506058e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008466611410312908,
+     "max": -0.0003622536878538085,
+     "maxabs": 0.008466611410312908
+    },
+    "T2_TOTAL": {
+     "min": -0.00845975830691259,
+     "max": -0.0003580544007490971,
+     "maxabs": 0.00845975830691259
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.766585137374932e-05,
+     "max": 1.9170272366864083e-05,
+     "maxabs": 1.9170272366864083e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.7691750043886714e-08,
+     "max": 5.325387064658571e-08,
+     "maxabs": 5.7691750043886714e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.15907232510031244,
+      "k_over_sigma": 0.17163066839123928
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.8069228488607686,
+      "k_over_sigma": 0.8545853927004484
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.08438913310083282,
+      "k_over_sigma": 0.006716327190085858
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.30176259087596957,
+      "k_over_sigma": 0.034210026466605745
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 8.05884959203775,
+      "k_over_sigma": 2.9292024846304074
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 40.61411178499216,
+      "k_over_sigma": 14.509387747425125
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 19.26416749404085,
+      "k_over_sigma": 1.9204671753812312
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 64.9075674989948,
+      "k_over_sigma": 4.2019703905509775
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 7.899777296106892,
+      "k_over_sigma": 2.757571820662651
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 39.807189084328996,
+      "k_over_sigma": 13.654802376194532
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 19.181457413920945,
+      "k_over_sigma": 1.9271858992485529
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 64.61229929621058,
+      "k_over_sigma": 4.167752444191969
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.08787208713792434,
+      "k_over_sigma": 0.0010714356759098924
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.4394428024916247,
+      "k_over_sigma": 0.0063386728819992515
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.09092632123413764,
+      "k_over_sigma": 0.01230648658236642
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.353097476348738,
+      "k_over_sigma": 0.0316786065790199
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.00042271061572061015,
+      "k_over_sigma": 0.00014080606392125367
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0021163713389662268,
+      "k_over_sigma": 0.0006987656651285502
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.00039528676905967397,
+      "k_over_sigma": 5.054086267411595e-06
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.001561693665974987,
+      "k_over_sigma": 2.4108346238682897e-05
+     }
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:0",
+   "n_range": 1110,
+   "n_doppler": 1070,
+   "elapsed_s": 100.68753719329834,
+   "gates": {
+    "S1_max_m": 2.2545771524779924e-05,
+    "S4_max_m": 5.073023976696513e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.1812500382036651,
+     "Madrid DSN": 0.15814596877667603,
+     "Canberra DSN": 0.1742502241689148
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20501654628426236,
+     "T2B_EOP_AND_PN_MODEL": 112.78681995145472,
+     "T2_TOTAL": 112.974759216209,
+     "T3_SOLID_TIDE": 0.1812500382036651,
+     "T4_POLE_TIDE": 0.0010282050069353778
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2722783491124125,
+     "T2B_EOP_AND_PN_MODEL": 103.50984563528517,
+     "T2_TOTAL": 103.38919517040749,
+     "T3_SOLID_TIDE": 0.15814596877667603,
+     "T4_POLE_TIDE": 0.0004507320596740318
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32660745278464426,
+     "T2B_EOP_AND_PN_MODEL": 110.58510192714046,
+     "T2_TOTAL": 110.47852069171806,
+     "T3_SOLID_TIDE": 0.1742502241689148,
+     "T4_POLE_TIDE": 0.0002086094453384741
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.191245436668396,
+     "max": 0.2589091658592224,
+     "maxabs": 0.2589091658592224
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -109.40827959775925,
+     "max": 110.86243134737015,
+     "maxabs": 110.86243134737015
+    },
+    "T2_TOTAL": {
+     "min": -109.59952509403229,
+     "max": 111.05164623260498,
+     "maxabs": 111.05164623260498
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.17758983373641968,
+     "max": 0.014755845069885254,
+     "maxabs": 0.17758983373641968
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00033849477767944336,
+     "max": 0.0008183121681213379,
+     "maxabs": 0.0008183121681213379
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.5278304317689617e-05,
+     "max": 1.8820793911800138e-05,
+     "maxabs": 1.8820793911800138e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008194256858132576,
+     "max": -0.0010724901442245027,
+     "maxabs": 0.008194256858132576
+    },
+    "T2_TOTAL": {
+     "min": -0.008208171642309026,
+     "max": -0.0010877662298298674,
+     "maxabs": 0.008208171642309026
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.4702497196594777e-05,
+     "max": 1.61303656796008e-05,
+     "maxabs": 1.61303656796008e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.436322680907324e-08,
+     "max": 5.547258297156077e-08,
+     "maxabs": 5.547258297156077e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.050909351628898786,
+      "k_over_sigma": 0.020503388965367443
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.2539080791217341,
+      "k_over_sigma": 0.10253989809285675
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.08127262826697071,
+      "k_over_sigma": 0.01601888807109657
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.30002548385363464,
+      "k_over_sigma": 0.0511196214581815
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 61.03710666225466,
+      "k_over_sigma": 2.1166540215061924
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 306.03009828397387,
+      "k_over_sigma": 10.623435449817778
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 21.606485661489174,
+      "k_over_sigma": 3.5736040302059218
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 83.21226777456127,
+      "k_over_sigma": 8.317647990343334
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 60.98735465564014,
+      "k_over_sigma": 2.096150630955903
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 305.78186252548045,
+      "k_over_sigma": 10.520895543805507
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 21.525186077769018,
+      "k_over_sigma": 3.5575932939333863
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 82.91215275292365,
+      "k_over_sigma": 8.266555562552385
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.07938999265568224,
+      "k_over_sigma": 0.004613227286074537
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3961820976739963,
+      "k_over_sigma": 0.023083441486208736
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.0920723848376145,
+      "k_over_sigma": 0.008338061337116067
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.35302227701333355,
+      "k_over_sigma": 0.03141954861085771
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0002623118870888513,
+      "k_over_sigma": 0.0001398952206673282
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0013118345649661516,
+      "k_over_sigma": 0.0006996770742858225
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.0002210136255974339,
+      "k_over_sigma": 2.390053305647621e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0008781052342111365,
+      "k_over_sigma": 2.345503029187573e-05
+     }
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:12",
+   "n_range": 1007,
+   "n_doppler": 978,
+   "elapsed_s": 97.42241859436035,
+   "gates": {
+    "S1_max_m": 2.2551089639718535e-05,
+    "S4_max_m": 4.988813257232606e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.22845706109491937,
+     "Madrid DSN": 0.20000975237585727,
+     "Canberra DSN": 0.23051033754242112
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20522066614282522,
+     "T2B_EOP_AND_PN_MODEL": 118.43071261786525,
+     "T2_TOTAL": 118.61896803688391,
+     "T3_SOLID_TIDE": 0.22845706109491937,
+     "T4_POLE_TIDE": 0.0011988260400106001
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2725924868776382,
+     "T2B_EOP_AND_PN_MODEL": 108.18883484338889,
+     "T2_TOTAL": 108.06944071796659,
+     "T3_SOLID_TIDE": 0.20000975237585727,
+     "T4_POLE_TIDE": 0.00030641480639526683
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32695678309945275,
+     "T2B_EOP_AND_PN_MODEL": 115.81612476055676,
+     "T2_TOTAL": 115.7112411647011,
+     "T3_SOLID_TIDE": 0.23051033754242112,
+     "T4_POLE_TIDE": 0.0007779713869121752
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.19486969709396362,
+     "max": 0.27254819869995117,
+     "maxabs": 0.27254819869995117
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -109.35060530900955,
+     "max": 111.18019300699234,
+     "maxabs": 111.18019300699234
+    },
+    "T2_TOTAL": {
+     "min": -109.29903918504715,
+     "max": 111.00718247890472,
+     "maxabs": 111.00718247890472
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.2274356484413147,
+     "max": 0.01385265588760376,
+     "maxabs": 0.2274356484413147
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00019109249114990234,
+     "max": 0.0006960630416870117,
+     "maxabs": 0.0006960630416870117
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.3675141872226959e-05,
+     "max": 1.7985374597628834e-05,
+     "maxabs": 1.7985374597628834e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008311165675195298,
+     "max": -0.001012961228752829,
+     "maxabs": 0.008311165675195298
+    },
+    "T2_TOTAL": {
+     "min": -0.008324840817067525,
+     "max": -0.0010092445545524242,
+     "maxabs": 0.008324840817067525
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.7564891095389612e-05,
+     "max": 1.9107033494947245e-05,
+     "maxabs": 1.9107033494947245e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.547275350181735e-08,
+     "max": 4.9925347411772236e-08,
+     "maxabs": 5.547275350181735e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.11545801712097371,
+      "k_over_sigma": 0.15974319667169362
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.5777256116138997,
+      "k_over_sigma": 0.7993191464531554
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.025797594645496653,
+      "k_over_sigma": 0.010955167440513397
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.09133622449863779,
+      "k_over_sigma": 0.04274670982111662
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 61.09044282563148,
+      "k_over_sigma": 10.590951077433695
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 309.45311179450647,
+      "k_over_sigma": 53.778748276879014
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 30.38824494951599,
+      "k_over_sigma": 0.9259599338036464
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 112.22459801863845,
+      "k_over_sigma": 9.045241508349386
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 61.05567775861178,
+      "k_over_sigma": 10.431207914497335
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 309.27592380021457,
+      "k_over_sigma": 52.97942929852859
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 30.39074263845733,
+      "k_over_sigma": 0.91502997587247
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 112.23571074034379,
+      "k_over_sigma": 9.00257871976219
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.15478881962653165,
+      "k_over_sigma": 0.039075024088190295
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.7683068765062707,
+      "k_over_sigma": 0.19558845009517498
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.06896764492083365,
+      "k_over_sigma": 0.014866762939860266
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.31924341701668596,
+      "k_over_sigma": 0.05266884868847722
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0007007726919971641,
+      "k_over_sigma": 0.0002026028143148975
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.003481722826469008,
+      "k_over_sigma": 0.001013391100238681
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.00016135178403493754,
+      "k_over_sigma": 9.744425769891357e-06
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0008109443434186481,
+      "k_over_sigma": 5.9459750320283973e-05
+     }
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:0",
+   "n_range": 957,
+   "n_doppler": 915,
+   "elapsed_s": 93.6445517539978,
+   "gates": {
+    "S1_max_m": 2.2545771524779924e-05,
+    "S4_max_m": 5.008397437025382e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.1812500382036651,
+     "Madrid DSN": 0.15814596877667603,
+     "Canberra DSN": 0.1742502241689148
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20501654628426236,
+     "T2B_EOP_AND_PN_MODEL": 112.78681995145472,
+     "T2_TOTAL": 112.974759216209,
+     "T3_SOLID_TIDE": 0.1812500382036651,
+     "T4_POLE_TIDE": 0.0010282050069353778
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2722783491124125,
+     "T2B_EOP_AND_PN_MODEL": 103.50984563528517,
+     "T2_TOTAL": 103.38919517040749,
+     "T3_SOLID_TIDE": 0.15814596877667603,
+     "T4_POLE_TIDE": 0.0004507320596740318
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32660745278464426,
+     "T2B_EOP_AND_PN_MODEL": 110.58510192714046,
+     "T2_TOTAL": 110.47852069171806,
+     "T3_SOLID_TIDE": 0.1742502241689148,
+     "T4_POLE_TIDE": 0.0002086094453384741
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.1857374906539917,
+     "max": 0.25857722759246826,
+     "maxabs": 0.25857722759246826
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -106.6585094332695,
+     "max": 110.8478998541832,
+     "maxabs": 110.8478998541832
+    },
+    "T2_TOTAL": {
+     "min": -106.52520382404327,
+     "max": 111.03756219148636,
+     "maxabs": 111.03756219148636
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.1769370436668396,
+     "max": 0.014305830001831055,
+     "maxabs": 0.1769370436668396
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00034040212631225586,
+     "max": 0.0008205175399780273,
+     "maxabs": 0.0008205175399780273
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.4481715652436833e-05,
+     "max": 1.9286765109427506e-05,
+     "maxabs": 1.9286765109427506e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008400395809587735,
+     "max": -0.0011705104905104236,
+     "maxabs": 0.008400395809587735
+    },
+    "T2_TOTAL": {
+     "min": -0.00841484424159944,
+     "max": -0.001174441289549577,
+     "maxabs": 0.00841484424159944
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.476573629588529e-05,
+     "max": 1.609264427315793e-05,
+     "maxabs": 1.609264427315793e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.214428711042274e-08,
+     "max": 5.7691750043886714e-08,
+     "maxabs": 5.7691750043886714e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.17803032069611377,
+      "k_over_sigma": 0.05556124636730397
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.8933677466819815,
+      "k_over_sigma": 0.2798523235624483
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.07625151255188868,
+      "k_over_sigma": 0.028007852923008364
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.29430242874562795,
+      "k_over_sigma": 0.11215499566540788
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 37.59853008649616,
+      "k_over_sigma": 12.347051005625147
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 188.63732233664618,
+      "k_over_sigma": 62.15321925414788
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 14.34049699285516,
+      "k_over_sigma": 3.3303347576184668
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 52.517615908991615,
+      "k_over_sigma": 13.158261538445124
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 37.77656036696519,
+      "k_over_sigma": 12.402612194947801
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 189.53068988191345,
+      "k_over_sigma": 62.433071292273276
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 14.405532999134584,
+      "k_over_sigma": 3.358344082371089
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 52.76263416243549,
+      "k_over_sigma": 13.270421143265061
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.07850983626211927,
+      "k_over_sigma": 0.0018110889694660896
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.39145690163634894,
+      "k_over_sigma": 0.009062363825008536
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.04965098617607631,
+      "k_over_sigma": 0.011255048242437997
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.16047881125956498,
+      "k_over_sigma": 0.022188266786475386
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.000257296877171338,
+      "k_over_sigma": 0.000519802951080533
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.0012859842734400427,
+      "k_over_sigma": 0.002599321551037917
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 9.639620851764928e-05,
+      "k_over_sigma": 2.5448839654162755e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.00047578376414322685,
+      "k_over_sigma": 5.678307137070414e-05
+     }
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:12",
+   "n_range": 836,
+   "n_doppler": 797,
+   "elapsed_s": 85.96426963806152,
+   "gates": {
+    "S1_max_m": 2.2551089639718535e-05,
+    "S4_max_m": 4.971673830049115e-06,
+    "tide_peak_m": {
+     "Goldstone DSN": 0.22845706109491937,
+     "Madrid DSN": 0.20000975237585727,
+     "Canberra DSN": 0.23051033754242112
+    }
+   },
+   "station_dr_max_m": {
+    "Goldstone DSN": {
+     "T2A_ITRF_REALIZATION": 0.20522066614282522,
+     "T2B_EOP_AND_PN_MODEL": 118.43071261786525,
+     "T2_TOTAL": 118.61896803688391,
+     "T3_SOLID_TIDE": 0.22845706109491937,
+     "T4_POLE_TIDE": 0.0011988260400106001
+    },
+    "Madrid DSN": {
+     "T2A_ITRF_REALIZATION": 0.2725924868776382,
+     "T2B_EOP_AND_PN_MODEL": 108.18883484338889,
+     "T2_TOTAL": 108.06944071796659,
+     "T3_SOLID_TIDE": 0.20000975237585727,
+     "T4_POLE_TIDE": 0.00030641480639526683
+    },
+    "Canberra DSN": {
+     "T2A_ITRF_REALIZATION": 0.32695678309945275,
+     "T2B_EOP_AND_PN_MODEL": 115.81612476055676,
+     "T2_TOTAL": 115.7112411647011,
+     "T3_SOLID_TIDE": 0.23051033754242112,
+     "T4_POLE_TIDE": 0.0007779713869121752
+    }
+   },
+   "range_m": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -0.1951400637626648,
+     "max": 0.2725277543067932,
+     "maxabs": 0.2725277543067932
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -110.25737279653549,
+     "max": 111.97983181476593,
+     "maxabs": 111.97983181476593
+    },
+    "T2_TOTAL": {
+     "min": -110.20740610361099,
+     "max": 111.80449265241623,
+     "maxabs": 111.80449265241623
+    },
+    "T3_SOLID_TIDE": {
+     "min": -0.2272862195968628,
+     "max": 0.01436084508895874,
+     "maxabs": 0.2272862195968628
+    },
+    "T4_POLE_TIDE": {
+     "min": -0.00019210577011108398,
+     "max": 0.0006984472274780273,
+     "maxabs": 0.0006984472274780273
+    }
+   },
+   "doppler_mps": {
+    "T2A_ITRF_REALIZATION": {
+     "min": -1.3609684174298309e-05,
+     "max": 1.8866281607188284e-05,
+     "maxabs": 1.8866281607188284e-05
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "min": -0.008455664418136166,
+     "max": -0.0003516672686600941,
+     "maxabs": 0.008455664418136166
+    },
+    "T2_TOTAL": {
+     "min": -0.00846920198762291,
+     "max": -0.0003471828515557718,
+     "maxabs": 0.00846920198762291
+    },
+    "T3_SOLID_TIDE": {
+     "min": -1.7551577684571384e-05,
+     "max": 1.9182476307832985e-05,
+     "maxabs": 1.9182476307832985e-05
+    },
+    "T4_POLE_TIDE": {
+     "min": -5.769163635704899e-08,
+     "max": 5.325387064658571e-08,
+     "maxabs": 5.769163635704899e-08
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T2A_ITRF_REALIZATION": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.05525623781460959,
+      "k_over_sigma": 0.282480880082851
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.2758410862260818,
+      "k_over_sigma": 1.41036034542703
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.09423659426620765,
+      "k_over_sigma": 0.012388258614592315
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3768562173524646,
+      "k_over_sigma": 0.1063558284977422
+     }
+    },
+    "T2B_EOP_AND_PN_MODEL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 48.59262012370828,
+      "k_over_sigma": 14.074755359295796
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 244.04314283539478,
+      "k_over_sigma": 71.65074738439469
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 35.87970587169606,
+      "k_over_sigma": 7.990411671768475
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 130.138803688108,
+      "k_over_sigma": 35.92023969403721
+     }
+    },
+    "T2_TOTAL": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 48.59875116581843,
+      "k_over_sigma": 14.357236214213534
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 244.07423409023662,
+      "k_over_sigma": 73.06110760477972
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 35.785456854711676,
+      "k_over_sigma": 7.978008307334103
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 129.76190603675553,
+      "k_over_sigma": 35.81383361396732
+     }
+    },
+    "T3_SOLID_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.09322092347760537,
+      "k_over_sigma": 0.0818328282108416
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.4654120117023237,
+      "k_over_sigma": 0.4098497995806304
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.07373400931277109,
+      "k_over_sigma": 0.036299747097802246
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3385682725719895,
+      "k_over_sigma": 0.10187630383065037
+     }
+    },
+    "T4_POLE_TIDE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.0004175069320542593,
+      "k_over_sigma": 0.0004713522994875015
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.002084438717158538,
+      "k_over_sigma": 0.0023550577819975273
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.0005567473622923666,
+      "k_over_sigma": 1.334582450359705e-05
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.002329351209438655,
+      "k_over_sigma": 0.00016498416361886747
+     }
+    }
+   }
+  }
+ ],
+ "gates": {
+  "S1_spice_station": true,
+  "S1_max_m": 2.2551089639718535e-05,
+  "S2_sanity": false,
+  "S2_values": {
+   "t2b_max_m": 118.43071261786525,
+   "tide_peak_min_m": 0.15814596877667603,
+   "tide_peak_max_m": 0.23051033754242112,
+   "pole_max_m": 0.0011988260400106001
+  },
+  "S3_phase_b_informational": {
+   "CANON:0": {
+    "Goldstone DSN": 112.974759216209,
+    "Madrid DSN": 103.38919517040749,
+    "Canberra DSN": 110.47852069171806
+   },
+   "CANON:12": {
+    "Goldstone DSN": 118.61896803688391,
+    "Madrid DSN": 108.06944071796659,
+    "Canberra DSN": 115.7112411647011
+   }
+  },
+  "S4_interpolation": true,
+  "S4_max_m": 6.668889937596999e-06,
+  "S5_reference_record": true,
+  "S6_convergence": true,
+  "S6_note": "every solve returned (production raises otherwise)"
+ },
+ "classification": {
+  "T2A_ITRF_REALIZATION": {
+   "range_over_sigma_dsn": 0.27255433797836304,
+   "doppler_over_sigma_dsn": 0.6531731173708977,
+   "ddor_over_sigma": 4.597425509291677,
+   "od_max_over_sigma": 1.41036034542703,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T2B_EOP_AND_PN_MODEL": {
+   "range_over_sigma_dsn": 112.48631763458252,
+   "doppler_over_sigma_dsn": 282.22038034376357,
+   "ddor_over_sigma": 3060.2340647059054,
+   "od_max_over_sigma": 309.45311179450647,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T2_TOTAL": {
+   "range_over_sigma_dsn": 112.44500482082367,
+   "doppler_over_sigma_dsn": 282.30673292076364,
+   "ddor_over_sigma": 3062.5888760840417,
+   "od_max_over_sigma": 309.27592380021457,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T3_SOLID_TIDE": {
+   "range_over_sigma_dsn": 0.2274356484413147,
+   "doppler_over_sigma_dsn": 0.6394158769277661,
+   "ddor_over_sigma": 3.036315149467575,
+   "od_max_over_sigma": 1.1146022700858318,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T4_POLE_TIDE": {
+   "range_over_sigma_dsn": 0.0008220076560974121,
+   "doppler_over_sigma_dsn": 0.0019600444526683227,
+   "ddor_over_sigma": 0.018411884427598044,
+   "od_max_over_sigma": 0.003481722826469008,
+   "OBSERVABLE_MATERIAL": false,
+   "OD_MATERIAL": false,
+   "decision": "DOCUMENT_ONLY"
+  },
+  "T1_STATION_COORDINATES": "CONVENTION_REAL_DATA (fixed in advance)",
+  "T5_OCEAN_LOADING": "NOT_MEASURED (needs BLQ coefficients; owner input)",
+  "T6_PLATE_MOTION": "CONVENTION_REAL_DATA (fixed in advance)",
+  "T7_EOP_FINAL_VS_PREDICTED": "NOT_MEASURABLE at 2027; final EOP required for real data"
+ }
+}

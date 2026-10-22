@@ -66,10 +66,15 @@ def _perturbations(g, ref, cell, names):
         key = f"{cell}|{name}"
         t = ref[key + "|t"]
         grid = ref[key + "|grid"]                       # (n, 4, 3): A, B, TIDE, POLE
-        s = _earth_relative(g, k, t)
-        terms = {"T2A_ITRF_REALIZATION": grid[:, 0] - grid[:, 1], "T2B_EOP_AND_PN_MODEL": grid[:, 1] - s,
-                 "T2_TOTAL": grid[:, 0] - s, "T3_SOLID_TIDE": grid[:, 2], "T4_POLE_TIDE": grid[:, 3]}
-        out[name] = {tm: CubicSpline(t, v, axis=0) for tm, v in terms.items()}
+        # S(t) exists only on the production history's support: the S-dependent terms use those grid points
+        tg = g["rb"].t_grid
+        m = (t >= tg[0]) & (t <= tg[-1])
+        s = _earth_relative(g, k, t[m])
+        out[name] = {"T2A_ITRF_REALIZATION": CubicSpline(t, grid[:, 0] - grid[:, 1], axis=0),
+                     "T2B_EOP_AND_PN_MODEL": CubicSpline(t[m], grid[m, 1] - s, axis=0),
+                     "T2_TOTAL": CubicSpline(t[m], grid[m, 0] - s, axis=0),
+                     "T3_SOLID_TIDE": CubicSpline(t, grid[:, 2], axis=0),
+                     "T4_POLE_TIDE": CubicSpline(t, grid[:, 3], axis=0)}
         # S4: interpolation of the reference-only terms against direct values (S is not interpolated)
         tc, chk = ref[key + "|tc"], ref[key + "|check"]
         for tm, direct in (("T2A_ITRF_REALIZATION", chk[:, 0] - chk[:, 1]), ("T3_SOLID_TIDE", chk[:, 2]),
