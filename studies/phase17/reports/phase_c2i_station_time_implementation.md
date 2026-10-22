@@ -32,8 +32,8 @@ GATES (as computed)     G1 PASS (bit identity 0 difference; full suite 1,878 pas
                         G6 FAIL as computed (BLS-LM 1.51 m, different status; SRIF 2.6 cm)
                         G7 PASS (5.2 %) - but see s3.3 | G8 PASS | G9 informational
 OUTCOME (rule)          C2I_NOT_QUALIFIED as computed
-PROPOSED                adjudications for G4 Doppler, G5 and G6 (s4); with them, C2I_QUALIFIED
-OWNER DECISION NEEDED   yes (s4)
+ADJUDICATIONS           G4 Doppler, G5, G6 QUALIFIED - owner accepted 2026-10-22 (s4, s6)
+OUTCOME                 C2I_QUALIFIED (G1-G8 PASS, three of them by owner-accepted adjudication)
 ```
 
 Three of the failing thresholds were set by me without the numerical floors that were already known (C1
@@ -236,3 +236,11 @@ With 1–3 accepted the outcome is **C2I_QUALIFIED**.
   - switching the generator default to `DSN_C2_LIGHT_TIME_MODEL`;
   - wiring `utc_to_tdb_seconds` into the CSV reader;
   - the clock σ value itself, which must come from DSN 810-005 or a clock-offset product.
+
+## 6. Owner decision (2026-10-22)
+
+The owner accepted the three adjudications of s4: G4 Doppler, G5 and G6 are QUALIFIED.
+
+- **G1–G8 PASS**: five as computed, three by owner-accepted adjudication.
+- **Outcome: C2I_QUALIFIED.**
+- G7 passes as computed. Its caveat (s3.3) and the opened items of s5 stand.
