@@ -14,9 +14,10 @@
 C1_OUTCOME (predeclared rule)   = IMPLEMENT: FRAME, SHAPIRO_SUN, SHAPIRO_EARTH, TIME_SCALE
                                   DOCUMENT_ONLY: SHAPIRO_MOON, SHAPIRO_JUPITER
 GATES                           = S1 S2 S3 PASS; S4 FAIL as computed (1 of 22,876 solves; DE421 Moon-position
-                                  discontinuity, s3), adjudicated, owner acceptance pending
-AS-COMPUTED WITH GATE VETO      = two-way range: C1_INCONCLUSIVE (S4). Counted Doppler and delta-DOR are unaffected
-                                  (every solve converged); their terms decide the same four IMPLEMENT items
+                                  discontinuity, s3), adjudicated; owner accepted 2026-10-22, gate PASS
+AS-COMPUTED WITH GATE VETO      = two-way range: C1_INCONCLUSIVE (S4) before the owner's acceptance; with it the
+                                  range outcome is the IMPLEMENT list above. Counted Doppler and delta-DOR were never
+                                  affected (every solve converged)
 POPULATION                      = 10 KP2 cells (5 orbits x 2 epochs), SIMPLIFIED dynamics: 9,718 two-way range rows,
                                   9,310 counted-Doppler rows, 170 delta-DOR rows (CANON k0, Goldstone-Canberra)
 ```
@@ -72,7 +73,7 @@ only do that across a discontinuity.
 **Effect:** at most c × 3.9e-12 s / 2 ≈ 0.6 mm on that one range row. That is 70× below the smallest term this survey
 classifies IMPLEMENT for range (Earth Shapiro, 3.7–4.1 cm). No Doppler or delta-DOR solve is affected.
 
-**Adjudication** (owner acceptance pending): S4's purpose, that no reported term is a convergence artefact, is met.
+**Adjudication** (owner accepted 2026-10-22; gate PASS): S4's purpose, that no reported term is a convergence artefact, is met.
 The predeclared veto makes the range outcome `C1_INCONCLUSIVE` as computed. Counted Doppler and delta-DOR, which have
 no failed solve, decide the same four IMPLEMENT terms on their own: FRAME, Sun Shapiro, Earth Shapiro (OD) and time
 scale (OD).
