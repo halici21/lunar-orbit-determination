@@ -1,0 +1,25 @@
+{
+ "G6_control": {
+  "runs": {
+   "BLS_LM": {
+    "status": "DampingLimit",
+    "detail": "LAMBDA_HARD_LIMIT",
+    "dr_m": 12.019994848905705,
+    "dv_mps": 0.0357108852007164,
+    "iterations": 30,
+    "elapsed_s": 1256.5598208904266
+   },
+   "SRIF": {
+    "status": "MaxIter",
+    "detail": "",
+    "dr_m": 0.11980474749242022,
+    "dv_mps": 0.0005194247605041357,
+    "iterations": 40,
+    "elapsed_s": 154.91573071479797
+   }
+  },
+  "n_obs": 960,
+  "profile": "two_way_light_time"
+ },
+ "elapsed_s": 1426.113681793213
+}
