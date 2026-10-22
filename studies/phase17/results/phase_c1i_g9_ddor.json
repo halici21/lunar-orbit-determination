@@ -1,0 +1,42 @@
+{
+ "n_range": 960,
+ "n_ddor": 170,
+ "authoritative_f_perp": 0.172343,
+ "range_only_moon": {
+  "f_perp": 0.0915024012983624,
+  "theta_k_deg": 5.250045030588307,
+  "sigma_k_frac": 0.2540230025569859
+ },
+ "range_only_ssb": {
+  "f_perp": 0.09150239965073896,
+  "theta_k_deg": 5.25004493578874,
+  "sigma_k_frac": 0.2540229991184391
+ },
+ "moon": {
+  "f_perp": 0.17234299835774247,
+  "theta_k_deg": 9.924073960777534,
+  "sigma_k_frac": 0.07456525880445558
+ },
+ "ssb_ddor": {
+  "f_perp": 0.17234299892481633,
+  "theta_k_deg": 9.92407399376202,
+  "sigma_k_frac": 0.07456525729606621
+ },
+ "ssb_both": {
+  "f_perp": 0.17234299846981174,
+  "theta_k_deg": 9.924073967296168,
+  "sigma_k_frac": 0.07456525677399935
+ },
+ "moon_reproduces_authoritative": true,
+ "delta_f_perp_ssb_ddor": 5.670738600915826e-10,
+ "absolute_class": {
+  "moon": "WEAK_K_SEPARATION",
+  "ssb_ddor": "WEAK_K_SEPARATION"
+ },
+ "jacobian_row_relative_change": {
+  "ddor_max": 1.0092936336624188e-05,
+  "range_max": 6.681185401581603e-05
+ },
+ "requalification_opened": false,
+ "elapsed_s": 9.210461378097534
+}

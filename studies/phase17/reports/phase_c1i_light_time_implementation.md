@@ -143,3 +143,23 @@ Every value is within its threshold: 1e-6 for range, one-way and delta-DOR; 1e-5
    the module. Then G1, G6, G7.
 2. **G4:** Orekit barycentric two-way range and Doppler (sandbox harness).
 3. **G9:** delta-DOR Jacobian comparison against the authoritative f_perp.
+
+## 7. Gates after the owner's decision (in progress, 2026-10-22 evening)
+
+**Estimator dispatch is in.** `estimators.py` routes passes with `measurement_model_profile ==
+'two_way_light_time_ssb'` to `relativistic_light_time`. It covers the 7 Jacobian call sites and the 2 residual call
+sites, in BLS-LM and SRIF, on both the six-state and K paths. Every other profile runs the code it ran before.
+
+- The D30 branch (PR #45, still open) is merged in first. Both branches change `estimators.py` and its frozen
+  identity, so the merge avoids a conflict.
+- The `path-migration.json` re-freeze is pending until the final commit.
+
+| gate | result | detail |
+|---|---|---|
+| G9 delta-DOR Jacobians | **PASS** (no requalification) | Canonical GC, 5 nrad. MOON reproduces 0.172343. SSB delta-DOR rows give f_perp 0.172343 (Δ 5.7e-10); SSB range and delta-DOR together give 0.172343 too. Rows change ≤ 1.0e-5 (delta-DOR) and ≤ 6.7e-5 (range), relative. The class stays WEAK_K_SEPARATION. |
+| G7 nonlinear check of the bias mapping | **PASS** | The MOON estimator on DSN-model truth (CANON k0, range only, six-state + K) ends `Converged`. Its largest σ-normalised component, 27.76, matches the linear prediction of 27.75 to 0.02 %. Every component agrees to ≤ 0.01. This confirms the C1 survey's OD-impact numbers. |
+| G4 Orekit, two-way range | **PASS** | max 0.53 mm, rms 0.26 mm (limit 1 cm); 0.17 mm when Orekit is given the state at t2. |
+| G4 Orekit, Earth Shapiro | **PASS** | 3.3 µm. Orekit's modifier assumes an Earth-centred frame, so it is evaluated in GCRF. |
+| G4 Orekit, counted Doppler | **FAIL as computed** | 3.05 µm/s (limit 3 µm/s). Proposed adjudication: Orekit's own double-precision floor in SSB coordinates. Its range jitter over 40 ms is 3.2e-5 m rms in ICRF, against 3.9e-6 m in its Moon-centred frame and 3.8e-6 m for the module. The difference has zero mean (−0.001 µm/s) and does not correlate with range rate (0.01). |
+| G6 estimator closure on DSN-model truth | **FAIL as computed** | BLS-LM `DampingLimit` at 11.6 m; SRIF `MaxIter` (40) at 0.11 m (limit 1 mm). Diagnosis in progress: a Moon-centred control run of the same closure tests whether the cause is the light-time model or the estimator's 42-state Jacobian vs 6-state acceptance propagation. |
+| G1 full suite | running | |
