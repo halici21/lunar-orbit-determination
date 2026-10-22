@@ -768,6 +768,8 @@ class _OrbitDesigner(QWidget):
             f" border-radius:2px; }}"
             f"QSlider::handle:horizontal {{ width:12px; height:12px; margin:-4px 0;"
             f" background:{C.CYAN}; border-radius:6px; }}"
+            f"QSlider::handle:horizontal:focus {{ width:8px; height:8px;"
+            f" background:{C.BG_DEEP}; border:2px solid {C.CYAN}; }}"
             f"QSlider::sub-page:horizontal {{ background:{C.CYAN}; border-radius:2px; }}"
         )
         _btn_ss = (
