@@ -12,7 +12,14 @@ This module evaluates the same observables under a configurable :class:`LightTim
 * ``frame="SSB"`` solves every light-time leg in the solar-system barycentric frame: an endpoint is its
   Moon-centred state plus the Moon's SSB state (SPICE, the loaded kernels) at that endpoint's own epoch;
 * ``shapiro_bodies`` adds Moyer (2000) eq. 8-38 (gamma = 1) per body, evaluated at the leg's receive epoch;
-* ``interval_time_scale="TT"`` reports the station-measured interval in TT instead of TDB.
+* ``interval_time_scale="TT"`` reports the station-measured interval in TT instead of TDB;
+* ``station_time="FULL_TOPOCENTRIC"`` (Phase C2-I) converts that interval with the full TDB - TT series and its
+  topocentric terms at the station's site (:mod:`lunar_od.station_time`) instead of SPICE's geocentric DELTET
+  model, and reports delta-DOR in station time, each reception at its own site (this carries the
+  -(V_E . b)/c^2 term of the VLBI delay).
+
+Per-station clock offsets follow the production ``RangeRatePhysicsConfig.station_clock_offset_s`` convention:
+a receive tag ``t`` is read as ``t + b``.
 
 Epochs are seconds past ``et0`` (SPICE ET, i.e. TDB). Spacecraft states are the production Moon-centred
 histories, interpolated by the production cubic Hermite; station states come from the production
@@ -30,9 +37,11 @@ from typing import Callable
 
 import numpy as np
 
+from . import station_time as _station_time
 from .radiometrics import _interp_state, _interp_state_transition_position
 
 C_LIGHT_MPS = 299792458.0
+STATION_TIME_MODELS = ("DELTET_GEOCENTRIC", "FULL_TOPOCENTRIC")
 SHAPIRO_BODY_CODES = {"SUN": "10", "EARTH": "399", "MOON": "301", "JUPITER": "5"}
 DEFAULT_UPDATE_TOLERANCE_S = 1e-14
 DEFAULT_MAX_ITER = 60
@@ -53,6 +62,7 @@ class LightTimeModel:
     update_tolerance_s: float = DEFAULT_UPDATE_TOLERANCE_S
     max_iter: int = DEFAULT_MAX_ITER
     two_cycle_tolerance_s: float = DEFAULT_TWO_CYCLE_TOLERANCE_S
+    station_time: str = "DELTET_GEOCENTRIC"
 
     def __post_init__(self):
         if self.frame not in ("MOON", "SSB"):
@@ -64,10 +74,22 @@ class LightTimeModel:
             raise ValueError("Shapiro delay requires frame='SSB' (body positions are barycentric).")
         if self.interval_time_scale not in ("TDB", "TT"):
             raise ValueError(f"interval_time_scale must be 'TDB' or 'TT'; got {self.interval_time_scale!r}.")
+        if self.station_time not in STATION_TIME_MODELS:
+            raise ValueError(f"station_time must be one of {STATION_TIME_MODELS}; got {self.station_time!r}.")
+        if self.station_time == "FULL_TOPOCENTRIC" and self.interval_time_scale != "TT":
+            raise ValueError("station_time='FULL_TOPOCENTRIC' converts station intervals to TT; it requires "
+                             "interval_time_scale='TT'.")
+
+    @property
+    def full_station_time(self) -> bool:
+        return self.station_time == "FULL_TOPOCENTRIC"
 
 
 #: The DSN/Moyer-faithful configuration selected by Phase C1 (Moon and Jupiter Shapiro immaterial).
 DSN_LIGHT_TIME_MODEL = LightTimeModel(frame="SSB", shapiro_bodies=("SUN", "EARTH"), interval_time_scale="TT")
+#: Phase C2-I: the C1 model with the station-time relation of Phase C2 (full TDB - TT series, topocentric).
+DSN_C2_LIGHT_TIME_MODEL = LightTimeModel(frame="SSB", shapiro_bodies=("SUN", "EARTH"), interval_time_scale="TT",
+                                         station_time="FULL_TOPOCENTRIC")
 
 
 @dataclass
@@ -331,12 +353,29 @@ class TwoWaySolution:
 
 
 def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
-                  model: LightTimeModel) -> TwoWaySolution:
-    """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay, the R3/M3 production default)."""
+                  model: LightTimeModel, *, site: "_station_time.Site | None" = None,
+                  clock_offset_s: float = 0.0) -> TwoWaySolution:
+    """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay, the R3/M3 production default).
+
+    ``site`` (the station's :class:`lunar_od.station_time.Site`) is required by ``station_time='FULL_TOPOCENTRIC'``
+    and ignored otherwise. ``clock_offset_s`` reads the receive tag as ``t3 + b`` (production convention); the
+    interval of one station clock is unchanged by it.
+    """
     t3 = float(t3_s)
+    if clock_offset_s:
+        t3 = t3 + float(clock_offset_s)
     down = _leg(model, eph, t_rx=t3, rx_fixed=station_state(t3), tx_fn=sc.state, label="downlink")
     up = _leg(model, eph, t_rx=down.t_tx_s, rx_fixed=sc.state(down.t_tx_s), tx_fn=station_state, label="uplink")
-    rate = eph.tdb_minus_tt_rate(t3) if model.interval_time_scale == "TT" else 0.0
+    if model.interval_time_scale != "TT":
+        rate = 0.0
+    elif model.full_station_time:
+        if site is None:
+            raise ValueError("station_time='FULL_TOPOCENTRIC' needs the station's site.")
+        # D_site(t3) - D_site(t1) = round trip x the rate at the interval midpoint (exact to ~1e-20 s)
+        mid = t3 - 0.5 * (down.light_time_s + up.light_time_s)
+        rate = float(_station_time.tdb_minus_tt_rate(eph.et0_s, mid, site))
+    else:
+        rate = eph.tdb_minus_tt_rate(t3)
     return TwoWaySolution(t3, down, up, rate)
 
 
@@ -377,18 +416,50 @@ def two_way_range_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndar
     return 0.5 * C_LIGHT_MPS * _interval_scale(sol) * _round_trip_partial(sol, sc)
 
 
+def _round_trip_receive_epoch_partial(sol: TwoWaySolution) -> float:
+    """d(round trip)/d t3 [s/s] from the same implicit equations: dG_d/dt3 = 1 - (los_d/c + dS_d/dr_rx) . v_st(t3),
+    dG_u/dt3 = 0; round trip = t3 - t1, so d/dt3 = 1 - dt1/dt3. The interval scale's own epoch dependence (~1e-10
+    relative) is neglected, as in the state partials."""
+    c = C_LIGHT_MPS
+    d, u = sol.downlink, sol.uplink
+    los_d = d.rel / np.linalg.norm(d.rel)
+    los_u = u.rel / np.linalg.norm(u.rel)
+    v_sc, v_st1, v_st3 = d.tx[3:6], u.tx[3:6], d.rx[3:6]
+    dGd_dr2 = (los_d / c) - d.shapiro_grad_tx
+    dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx
+    dGu_dr1 = (los_u / c) - u.shapiro_grad_tx
+    g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc)]])
+    g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3), 0.0])
+    dy = np.linalg.solve(g_y, -g_t3)
+    return 1.0 - float(dy[0])
+
+
+def two_way_range_clock_partial(sol: TwoWaySolution) -> float:
+    """d(two-way range)/d(station clock offset b) [m/s]: the receive tag is read as t3 + b."""
+    return 0.5 * C_LIGHT_MPS * _interval_scale(sol) * _round_trip_receive_epoch_partial(sol)
+
+
 def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Callable, sc: SpacecraftHistory,
-                    eph: BarycentricEphemeris, model: LightTimeModel, *, with_partial: bool = False):
+                    eph: BarycentricEphemeris, model: LightTimeModel, *, with_partial: bool = False,
+                    site: "_station_time.Site | None" = None, clock_offset_s: float = 0.0,
+                    with_clock_partial: bool = False):
     """Receive-tagged counted Doppler, m/s equivalent: c/(2 Tc) (tau_end - tau_start), each tau in the
-    model's interval time scale. Returns (value, partial or None, (start, end) solutions)."""
+    model's interval time scale. Returns (value, partial or None, (start, end) solutions); with
+    ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s]."""
     tc = float(count_interval_s)
-    a = solve_two_way(t_mid_s - 0.5 * tc, station_state, sc, eph, model)
-    b = solve_two_way(t_mid_s + 0.5 * tc, station_state, sc, eph, model)
+    kw = dict(site=site, clock_offset_s=clock_offset_s)
+    a = solve_two_way(t_mid_s - 0.5 * tc, station_state, sc, eph, model, **kw)
+    b = solve_two_way(t_mid_s + 0.5 * tc, station_state, sc, eph, model, **kw)
     k = C_LIGHT_MPS / (2.0 * tc)
     value = k * (b.round_trip_s * _interval_scale(b) - a.round_trip_s * _interval_scale(a))
     partial = None
     if with_partial:
         partial = k * (_interval_scale(b) * _round_trip_partial(b, sc) - _interval_scale(a) * _round_trip_partial(a, sc))
+    if with_clock_partial:
+        clock = k * (_interval_scale(b) * _round_trip_receive_epoch_partial(b)
+                     - _interval_scale(a) * _round_trip_receive_epoch_partial(a))
+        return value, partial, (a, b), clock
     return value, partial, (a, b)
 
 
@@ -434,6 +505,65 @@ def delta_dor_partial(sol: DeltaDorSolution, sc: SpacecraftHistory) -> np.ndarra
     return np.linalg.solve(g_y, -g_x)[1]
 
 
+@dataclass(frozen=True)
+class DeltaDorStationTime:
+    """Delta-DOR as the two station clocks measure it (Phase C2-I)."""
+
+    solution: DeltaDorSolution
+    delay_s: float                     # measured delay: tag at B minus tag at A
+    station_time_correction_s: float   # -[D_B(t_B) - D_A(t_A)], D = TDB - TT at each site (0 under DELTET)
+    clock_term_s: float                # b_A - b_B
+
+
+def delta_dor_station_time(t_obs_s: float, station_a_state: Callable, station_b_state: Callable,
+                           sc: SpacecraftHistory, eph: BarycentricEphemeris, model: LightTimeModel, *,
+                           sites: tuple = (None, None),
+                           clock_offsets_s: tuple[float, float] = (0.0, 0.0)) -> DeltaDorStationTime:
+    """Delta-DOR in station time.
+
+    A's tag ``t_obs`` is read as ``t_obs + b_A`` (the true reception at A, production convention); B's clock reads
+    its true reception ``t_B`` as ``t_B - b_B``, so the measured delay is D(t_obs + b_A) + b_A - b_B. Under
+    ``station_time='FULL_TOPOCENTRIC'`` each reception is converted to its own station's TT: D_TT = D_TDB -
+    [D_B(t_B) - D_A(t_A)] (``sites`` required); otherwise the delay is the TDB delay of :func:`solve_delta_dor`
+    (the C1-I contract).
+    """
+    b_a, b_b = (float(x) for x in clock_offsets_s)
+    t_a = float(t_obs_s) + b_a if b_a else float(t_obs_s)
+    sol = solve_delta_dor(t_a, np.asarray(station_a_state(t_a), dtype=float), station_b_state, sc, eph, model)
+    corr = 0.0
+    if model.full_station_time:
+        site_a, site_b = sites
+        if site_a is None or site_b is None:
+            raise ValueError("station_time='FULL_TOPOCENTRIC' needs both stations' sites.")
+        corr = -(float(_station_time.tdb_minus_tt(eph.et0_s, sol.leg_b.t_rx_s, site_b))
+                 - float(_station_time.tdb_minus_tt(eph.et0_s, t_a, site_a)))
+    clock = b_a - b_b
+    delay = sol.differential_delay_s
+    if corr:
+        delay = delay + corr
+    if clock:
+        delay = delay + clock
+    return DeltaDorStationTime(sol, delay, corr, clock)
+
+
+def delta_dor_clock_partials(sol: DeltaDorSolution) -> tuple[float, float]:
+    """(d delay/d b_A, d delay/d b_B) [s/s]. With A's epoch moving, dG_A/dt_obs = 1 - (los_a/c + dS_A/dr_A) . v_A;
+    d(measured)/d b_A = d(t_B - t_obs)/dt_obs + 1 = dt_B/dt_obs, and d/d b_B = -1."""
+    c = C_LIGHT_MPS
+    a, b = sol.leg_a, sol.leg_b
+    los_a = a.rel / np.linalg.norm(a.rel)
+    los_b = b.rel / np.linalg.norm(b.rel)
+    v_sc, v_a, v_b = a.tx[3:6], a.rx[3:6], b.rx[3:6]
+    dGa_drsc = (los_a / c) - a.shapiro_grad_tx
+    dGb_drsc = (los_b / c) - b.shapiro_grad_tx
+    dGb_drb = -(los_b / c) - b.shapiro_grad_rx
+    g_y = np.array([[-1.0 + float(dGa_drsc @ v_sc), 0.0],
+                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b)]])
+    g_t = np.array([1.0 - float(((los_a / c) + a.shapiro_grad_rx) @ v_a), 0.0])
+    dy = np.linalg.solve(g_y, -g_t)
+    return float(dy[1]), -1.0
+
+
 def one_way_range(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
                   model: LightTimeModel, *, with_partial: bool = False):
     """Downlink-only light distance c * tau_d to a receive epoch (the RAZEL one-way convention)."""
@@ -462,18 +592,33 @@ def _model_metadata(model: LightTimeModel) -> dict:
     return {"frame": model.frame, "shapiro_bodies": list(model.shapiro_bodies),
             "interval_time_scale": model.interval_time_scale, "update_tolerance_s": model.update_tolerance_s,
             "max_iter": model.max_iter, "two_cycle_tolerance_s": model.two_cycle_tolerance_s,
-            "station_states": "exact_epoch", "leg_vectors": "relative"}
+            "station_states": "exact_epoch", "leg_vectors": "relative", "station_time": model.station_time}
 
 
 def pass_light_time_model(pass_geo) -> LightTimeModel:
-    """The model a ``two_way_light_time_ssb`` pass was generated with (from its metadata)."""
+    """The model a ``two_way_light_time_ssb`` pass was generated with (from its metadata). Metadata written
+    before Phase C2-I has no ``station_time`` key and reads as the C1-I relation (DELTET_GEOCENTRIC)."""
     meta = (pass_geo.measurement_metadata or {}).get("light_time_model")
     if meta is None:
         raise ValueError(f"pass geometry with profile {TWO_WAY_SSB_PROFILE!r} carries no light_time_model metadata.")
     return LightTimeModel(frame=meta["frame"], shapiro_bodies=tuple(meta["shapiro_bodies"]),
                           interval_time_scale=meta["interval_time_scale"],
                           update_tolerance_s=meta["update_tolerance_s"], max_iter=meta["max_iter"],
-                          two_cycle_tolerance_s=meta["two_cycle_tolerance_s"])
+                          two_cycle_tolerance_s=meta["two_cycle_tolerance_s"],
+                          station_time=meta.get("station_time", "DELTET_GEOCENTRIC"))
+
+
+def pass_station_kwargs(pass_geo) -> list[dict]:
+    """Per-station ``site`` and ``clock_offset_s`` for :func:`solve_two_way`, in the pass's station order. The
+    sites come from ``pass_geo.stations[i].r_ecef_m``; clock offsets from the metadata key
+    ``station_clock_offsets_s`` (absent: all zero)."""
+    offsets = (pass_geo.measurement_metadata or {}).get("station_clock_offsets_s")
+    stations = list(pass_geo.stations)
+    offsets = [0.0] * len(stations) if offsets is None else [float(b) for b in offsets]
+    if len(offsets) != len(stations):
+        raise ValueError(f"station_clock_offsets_s has {len(offsets)} entries for {len(stations)} stations.")
+    return [dict(site=_station_time.Site.from_itrf_m(st.r_ecef_m), clock_offset_s=b)
+            for st, b in zip(stations, offsets)]
 
 
 def _pass_context(pass_geo):
@@ -491,14 +636,16 @@ def _pass_context(pass_geo):
 def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, stations, vis_mask_raw, get_earth_pos,
                                             get_earth_vel, et0, *, model: LightTimeModel = DSN_LIGHT_TIME_MODEL,
                                             noise: bool = True, rng: np.random.Generator | None = None,
-                                            arc_id: int | None = None, config=None, noise_seed: int | None = None):
+                                            arc_id: int | None = None, config=None, noise_seed: int | None = None,
+                                            station_clock_offsets_s=None):
     """Receive-tagged two-way range under ``model`` (default: the DSN model).
 
     The receive tags, station rows and dropped-row rule are the production generator's
     (``two_way_range.generate_two_way_range_measurements``, run noise-free); every value is then recomputed
     with this module and noise is added with the station's ``sigma_range_m``. The returned pass geometry
     carries ``measurement_model_profile = 'two_way_light_time_ssb'`` and the model in its metadata, which
-    routes the two-way range estimators here.
+    routes the two-way range estimators here. ``station_clock_offsets_s`` (one per station, Phase C2-I) is
+    stored in the metadata and applied to generation and to every later prediction of the pass.
     """
     from dataclasses import replace
 
@@ -510,14 +657,17 @@ def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, station
     metadata = dict(pass_geo.measurement_metadata or {})
     metadata.update(measurement_model_profile=TWO_WAY_SSB_PROFILE, light_time_model=_model_metadata(model),
                     noise_enabled=bool(noise))
+    if station_clock_offsets_s is not None:
+        metadata["station_clock_offsets_s"] = [float(b) for b in station_clock_offsets_s]
     pass_geo = replace(pass_geo, measurement_model_profile=TWO_WAY_SSB_PROFILE, measurement_metadata=metadata)
     _, station_states, eph = _pass_context(pass_geo)
+    kw = pass_station_kwargs(pass_geo)
     sc = SpacecraftHistory(pass_geo.t_s, np.asarray(state_history_mci, dtype=float)[:, :6])
     rng = rng or np.random.default_rng()
     obs = np.array(obs, dtype=float, copy=True)
     for i in range(obs.shape[0]):
         sid = int(obs[i, 2]) - 1
-        value = two_way_range_m(solve_two_way(float(obs[i, 0]), station_states[sid], sc, eph, model))
+        value = two_way_range_m(solve_two_way(float(obs[i, 0]), station_states[sid], sc, eph, model, **kw[sid]))
         obs[i, 1] = value + (stations[sid].sigma_range_m * rng.standard_normal() if noise else 0.0)
     return obs, pass_geo
 
@@ -527,11 +677,13 @@ def two_way_range_nominal_and_initial_jacobian_ssb(obs_data, pass_geo, augmented
     signature and conventions of ``two_way_range.two_way_range_nominal_and_initial_jacobian``."""
     obs = np.asarray(obs_data, dtype=float)
     model, station_states, eph = _pass_context(pass_geo)
+    kw = pass_station_kwargs(pass_geo)
     sc = SpacecraftHistory(pass_geo.t_s, np.asarray(augmented_state_history_mci, dtype=float)[:, :42])
     h_nom = np.zeros(obs.shape[0])
     h_x0 = np.zeros((obs.shape[0], 6))
     for i in range(obs.shape[0]):
-        sol = solve_two_way(float(obs[i, 0]), station_states[int(obs[i, 2]) - 1], sc, eph, model)
+        sid = int(obs[i, 2]) - 1
+        sol = solve_two_way(float(obs[i, 0]), station_states[sid], sc, eph, model, **kw[sid])
         h_nom[i] = two_way_range_m(sol)
         h_x0[i] = two_way_range_partial(sol, sc)
     return h_nom, h_x0
@@ -542,9 +694,10 @@ def compute_two_way_range_residuals_ssb(state_history_mci, obs_data, pass_geo):
     ``two_way_range.compute_two_way_range_residuals`` (including its 1e-7 m closure round-off suppression)."""
     obs = np.asarray(obs_data, dtype=float)
     model, station_states, eph = _pass_context(pass_geo)
+    kw = pass_station_kwargs(pass_geo)
     sc = SpacecraftHistory(pass_geo.t_s, np.asarray(state_history_mci, dtype=float)[:, :6])
     h = np.array([two_way_range_m(solve_two_way(float(obs[i, 0]), station_states[int(obs[i, 2]) - 1], sc, eph,
-                                                model)) for i in range(obs.shape[0])])
+                                                model, **kw[int(obs[i, 2]) - 1])) for i in range(obs.shape[0])])
     residuals = obs[:, 1] - h
     residuals[np.abs(residuals) < 1e-7] = 0.0
     return residuals, h

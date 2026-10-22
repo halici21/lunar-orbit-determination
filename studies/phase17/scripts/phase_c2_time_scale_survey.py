@@ -151,7 +151,7 @@ class Reference:
 # ======================================================================
 # one cell: terms
 # ======================================================================
-def run_cell(spec) -> dict:
+def run_cell(spec, return_rows: bool = False) -> dict:
     orbit, k = spec
     from lunar_od import relativistic_light_time as R
     from lunar_od.radiometrics import _interp_state, two_way_counted_doppler_observable
@@ -339,6 +339,10 @@ def run_cell(spec) -> dict:
     def stats(v):
         return dict(min=float(v.min()), max=float(v.max()), maxabs=float(np.max(np.abs(v))))
     tai_utc = sorted({round(x[0], 9) for x in s1_r})
+    rows_out = None
+    if return_rows:     # C2-I G4: per-row terms (not written by the survey itself)
+        rows_out = dict(range={t: tr[t].tolist() for t in tr}, doppler={t: td[t].tolist() for t in td},
+                        ddor=(None if not g["ddor"] else {t: v.tolist() for t, v in dd.items()}))
     return dict(
         cell=cell, et0=et0, n_range=nr, n_doppler=nd, elapsed_s=time.time() - t_start,
         gates=dict(S1_tai_utc_erfa=tai_utc,
@@ -347,7 +351,7 @@ def run_cell(spec) -> dict:
                    S3_max_s=float(max(s3_r)), S4_two_cycles=two_cycles, S6_reference_misses=ref.misses),
         range_m={t: stats(v) for t, v in tr.items()},
         doppler_mps={t: stats(v) for t, v in td.items()},
-        ddor=ddor, s5=s5, od=od)
+        ddor=ddor, s5=s5, od=od, **({"rows": rows_out} if return_rows else {}))
 
 
 # ======================================================================
