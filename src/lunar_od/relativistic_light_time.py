@@ -449,3 +449,102 @@ def one_way_range(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         dt2 = -(dg_dr @ sc.position_sensitivity(leg.t_tx_s)) / g_t
         partial = -c * dt2
     return value, partial, leg
+
+
+# ======================================================================
+# pass-level API: generation, nominal values + Jacobian, residuals (estimator dispatch)
+# ======================================================================
+#: ``PassGeometry.measurement_model_profile`` that routes the two-way range estimators to this module.
+TWO_WAY_SSB_PROFILE = "two_way_light_time_ssb"
+
+
+def _model_metadata(model: LightTimeModel) -> dict:
+    return {"frame": model.frame, "shapiro_bodies": list(model.shapiro_bodies),
+            "interval_time_scale": model.interval_time_scale, "update_tolerance_s": model.update_tolerance_s,
+            "max_iter": model.max_iter, "two_cycle_tolerance_s": model.two_cycle_tolerance_s,
+            "station_states": "exact_epoch", "leg_vectors": "relative"}
+
+
+def pass_light_time_model(pass_geo) -> LightTimeModel:
+    """The model a ``two_way_light_time_ssb`` pass was generated with (from its metadata)."""
+    meta = (pass_geo.measurement_metadata or {}).get("light_time_model")
+    if meta is None:
+        raise ValueError(f"pass geometry with profile {TWO_WAY_SSB_PROFILE!r} carries no light_time_model metadata.")
+    return LightTimeModel(frame=meta["frame"], shapiro_bodies=tuple(meta["shapiro_bodies"]),
+                          interval_time_scale=meta["interval_time_scale"],
+                          update_tolerance_s=meta["update_tolerance_s"], max_iter=meta["max_iter"],
+                          two_cycle_tolerance_s=meta["two_cycle_tolerance_s"])
+
+
+def _pass_context(pass_geo):
+    from .two_way_range import _station_state_providers_for_pass, two_way_range_config
+    cfg = two_way_range_config(pass_geo.two_way_range)
+    if cfg.transponder_delay_s != 0.0 or cfg.convention != "delay_calibrated_half_round_trip":
+        raise NotImplementedError("the barycentric two-way range supports zero transponder delay and the "
+                                  "delay-calibrated half-round-trip convention only.")
+    stations = [exact_epoch_station_state(lambda t, p=p: np.asarray(p.state(t), dtype=float), pass_geo.et0_s,
+                                          pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps)
+                for p in _station_state_providers_for_pass(pass_geo)]
+    return pass_light_time_model(pass_geo), stations, BarycentricEphemeris(float(pass_geo.et0_s))
+
+
+def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, stations, vis_mask_raw, get_earth_pos,
+                                            get_earth_vel, et0, *, model: LightTimeModel = DSN_LIGHT_TIME_MODEL,
+                                            noise: bool = True, rng: np.random.Generator | None = None,
+                                            arc_id: int | None = None, config=None, noise_seed: int | None = None):
+    """Receive-tagged two-way range under ``model`` (default: the DSN model).
+
+    The receive tags, station rows and dropped-row rule are the production generator's
+    (``two_way_range.generate_two_way_range_measurements``, run noise-free); every value is then recomputed
+    with this module and noise is added with the station's ``sigma_range_m``. The returned pass geometry
+    carries ``measurement_model_profile = 'two_way_light_time_ssb'`` and the model in its metadata, which
+    routes the two-way range estimators here.
+    """
+    from dataclasses import replace
+
+    from .two_way_range import generate_two_way_range_measurements
+
+    obs, pass_geo = generate_two_way_range_measurements(t_pass_s, state_history_mci, stations, vis_mask_raw,
+                                                        get_earth_pos, get_earth_vel, et0, noise=False,
+                                                        arc_id=arc_id, config=config, noise_seed=noise_seed)
+    metadata = dict(pass_geo.measurement_metadata or {})
+    metadata.update(measurement_model_profile=TWO_WAY_SSB_PROFILE, light_time_model=_model_metadata(model),
+                    noise_enabled=bool(noise))
+    pass_geo = replace(pass_geo, measurement_model_profile=TWO_WAY_SSB_PROFILE, measurement_metadata=metadata)
+    _, station_states, eph = _pass_context(pass_geo)
+    sc = SpacecraftHistory(pass_geo.t_s, np.asarray(state_history_mci, dtype=float)[:, :6])
+    rng = rng or np.random.default_rng()
+    obs = np.array(obs, dtype=float, copy=True)
+    for i in range(obs.shape[0]):
+        sid = int(obs[i, 2]) - 1
+        value = two_way_range_m(solve_two_way(float(obs[i, 0]), station_states[sid], sc, eph, model))
+        obs[i, 1] = value + (stations[sid].sigma_range_m * rng.standard_normal() if noise else 0.0)
+    return obs, pass_geo
+
+
+def two_way_range_nominal_and_initial_jacobian_ssb(obs_data, pass_geo, augmented_state_history_mci):
+    """Nominal two-way ranges (N,) and the arc-initial-state Jacobian (N, 6) under the pass's model; the
+    signature and conventions of ``two_way_range.two_way_range_nominal_and_initial_jacobian``."""
+    obs = np.asarray(obs_data, dtype=float)
+    model, station_states, eph = _pass_context(pass_geo)
+    sc = SpacecraftHistory(pass_geo.t_s, np.asarray(augmented_state_history_mci, dtype=float)[:, :42])
+    h_nom = np.zeros(obs.shape[0])
+    h_x0 = np.zeros((obs.shape[0], 6))
+    for i in range(obs.shape[0]):
+        sol = solve_two_way(float(obs[i, 0]), station_states[int(obs[i, 2]) - 1], sc, eph, model)
+        h_nom[i] = two_way_range_m(sol)
+        h_x0[i] = two_way_range_partial(sol, sc)
+    return h_nom, h_x0
+
+
+def compute_two_way_range_residuals_ssb(state_history_mci, obs_data, pass_geo):
+    """Observed-minus-computed two-way range [m] under the pass's model; the conventions of
+    ``two_way_range.compute_two_way_range_residuals`` (including its 1e-7 m closure round-off suppression)."""
+    obs = np.asarray(obs_data, dtype=float)
+    model, station_states, eph = _pass_context(pass_geo)
+    sc = SpacecraftHistory(pass_geo.t_s, np.asarray(state_history_mci, dtype=float)[:, :6])
+    h = np.array([two_way_range_m(solve_two_way(float(obs[i, 0]), station_states[int(obs[i, 2]) - 1], sc, eph,
+                                                model)) for i in range(obs.shape[0])])
+    residuals = obs[:, 1] - h
+    residuals[np.abs(residuals) < 1e-7] = 0.0
+    return residuals, h
