@@ -86,5 +86,13 @@
   "results": "studies/phase17/results/phase_c2_time_scale_survey.json (+ phase_c2_erfa_reference.json)",
   "next": "a separate C2-I implementation predeclaration for whatever is IMPLEMENT; no production file changes in C2"
  },
- "not_in_scope": "ITRF realization, EOP and UT1, station tides and plate motion (C3); DE421 vs DE440 (C4); media delays (C5); station proper time vs TT from station height (station clocks are steered to UTC, so their scale is TT by construction; residual steering error is T4); any production change"
+ "not_in_scope": "ITRF realization, EOP and UT1, station tides and plate motion (C3); DE421 vs DE440 (C4); media delays (C5); station proper time vs TT from station height (station clocks are steered to UTC, so their scale is TT by construction; residual steering error is T4); any production change",
+ "amendment_A1": {
+  "written": "2026-10-22, while writing the survey code, before any C2 number was computed",
+  "delta_dor_propagation": "the s4 epoch rule (dt * dh/dt) assumes every event of an observation is tagged by one station clock. A delta-DOR delay is t_B - t_A with each reception tagged by its own station, so a station-dependent time relation enters directly: measured delay (TT) = TDB delay - [D_B(t_B) - D_A(t_A)], D = TDB - TT at that station. Hence for delta-DOR: T2 = epoch part only (the geocentric SPICE-vs-ERFA error is common to both stations, (D_erfa - D_spice) * d(delay)/dt); T3 = epoch part (station A's topocentric term x d(delay)/dt) + T3_DIFFERENTIAL = -(topo_B(t_B) - topo_A(t_A)); the baseline delta-DOR interval is in TDB with no TT conversion at all, so -D_geo' * delay is reported as TT_INTERVAL_INFO (informational, a C1-type term C1 did not compute for delta-DOR). topo_B at t_B by first-order Taylor from t_obs.",
+  "counted_doppler": "propagated per count-interval endpoint: epoch part c/(2Tc) (dRT/dt|_b dt_b - dRT/dt|_a dt_a), rate part -c/(2Tc) (RT_b dt'_b - RT_a dt'_a), dRT/dt by central difference h = 1 s; the S2 linearity gate is applied to the whole observable (t_mid shifted)",
+  "signs": "every term is (more faithful model) - (baseline). Clock offset b (tag = true + b): -b * dh/dt; fractional frequency f: epoch -f (t - t_ref) dh/dt, rate +c/2 RT f (range) and +y f (Doppler). T1_SIZE = (TDB - UTC) * dh/dt (linear size estimate of reading UTC tags as TDB; report only). T1C_SPICE_CHAIN = [(TDB-UTC)_ERFA - D_ERFA,geo] - [(ET-UTC)_SPICE deltet - D_SPICE], i.e. the leap-second + 32.184 s part of the two chains, propagated by the epoch rule",
+  "s5_offset": "the S5 production parity probe uses a 1e-3 s offset on the first 40 Doppler rows of CANON:0 (the production epoch shift et0 + t + b is quantised at ulp ~1.2e-7 s, so a 1e-6 s probe would only be resolved to ~10%); compared with b * dy/dt of the production observable",
+  "t4_thresholds": "the 0.1-sigma threshold level per family is scaled linearly from the largest grid level"
+ }
 }
