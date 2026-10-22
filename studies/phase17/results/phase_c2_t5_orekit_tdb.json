@@ -1,0 +1,23 @@
+{
+ "n": 121,
+ "et0": 794059200.0,
+ "ulp_et0_s": 1.1920928955078125e-07,
+ "d_range_mm": {
+  "min": -0.39374828338623047,
+  "max": 0.4734992980957031,
+  "rms": 0.2620548539719875
+ },
+ "corr_drange_rr": -0.9844204389555062,
+ "tdb_orekit_minus_spice_us": {
+  "min": 1.1816933634645719,
+  "max": 1.1825433746657545
+ },
+ "slope": -0.18394908025573137,
+ "rms_reduction_with_prediction": -5.33711712324035,
+ "verdict": "UNEXPLAINED",
+ "informational": {
+  "implied_constant_tag_s": -2.1743963946748276e-07,
+  "implied_tag_in_ulp": -1.8240158991540416,
+  "rms_reduction_with_constant_tag": 0.8229845757940523
+ }
+}
