@@ -28,8 +28,8 @@ C2_OUTCOME (predeclared rule)  IMPLEMENT:            T2 (SPICE TDB-TT model -> f
                                OUT_OF_SCOPE:         T6 (spacecraft time)
                                T5:                   UNEXPLAINED as computed
 GATES                          S1 S2 S3 S4 S6 PASS as computed; S5 (informational) parity 4.6e-4 relative
-OWNER DECISIONS PROPOSED       (a) delta-DOR T3 differential term (~100 urad), s5.2
-                               (b) T4 implementation level, s5.3
+OWNER DECISIONS                (a) delta-DOR T3 differential term (~100 urad), s5.2: ACCEPTED 2026-10-22
+                               (b) T4 implementation level, s5.3: ACCEPTED 2026-10-22
 ```
 
 One reference independent of SPICE (ERFA/SOFA) is enough to show three things:
@@ -225,3 +225,15 @@ TDA PR 42-75, 1983):
 - dtdb's UT argument is UTC (UT1 is C3).
 - Station coordinates are the production ITRF93 positions (C3).
 - T5 used the C1-I G4 harness and its 2025-03 window, not the KP2 population.
+
+## 7. Owner decisions (2026-10-22)
+
+The owner accepted both proposals of s5:
+- **s5.2:** the delta-DOR differential topocentric term is implemented in C2-I as part of the station-time
+  relation. The R1O-D/R1O-D2 synthetic delta-DOR science is left as it is.
+- **s5.3:** the station clock offset becomes a consider parameter of the SSB profile. Its a priori sigma is a
+  configuration input, to be taken from DSN 810-005 or a station clock-offset product. It is not a
+  solve-for, and the frequency term is not implemented.
+
+Next: the C2-I implementation predeclaration,
+`studies/phase17/configs/phase_c2i_station_time_implementation_predeclaration.json`.
