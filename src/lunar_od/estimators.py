@@ -77,6 +77,9 @@ class EstimatorStats:
     #: Phase 17-HARDEN-D27: Gauss-Newton decrement at the returned point,
     #: evaluated only when BLS-LM exhausts its damping (NaN otherwise).
     gauss_newton_decrement: float = float("nan")
+    #: Phase 17-HARDEN-D30: steps the caller-tolerance score rejected but the
+    #: tighter rescore accepted (two-way range BLS-LM only).
+    acceptance_rescore_accepts: int = 0
 
 
 def estimate_position_srif(
@@ -1691,6 +1694,28 @@ def _lm_step_square_root(
 STATIONARITY_DECREMENT_TOL = 0.1
 
 
+def _predicted_decrease(
+    h_initial: np.ndarray,
+    residual: np.ndarray,
+    w_diag: np.ndarray,
+    step: np.ndarray,
+    prior_offset: np.ndarray,
+    prior_inv: np.ndarray | None,
+) -> float:
+    """Decrease of the linearised scored objective (2 J_MAP) for ``step``.
+
+    ``prior_offset`` is the current state minus the prior mean (full solve
+    vector); ``prior_inv`` is ``None`` when the objective has no prior term.
+    Phase 17-HARDEN-D30.
+    """
+    after = residual - h_initial @ step
+    gain = float(np.dot(w_diag * residual, residual) - np.dot(w_diag * after, after))
+    if prior_inv is not None:
+        moved = prior_offset + step
+        gain += float(prior_offset @ prior_inv @ prior_offset - moved @ prior_inv @ moved)
+    return gain
+
+
 def _gauss_newton_decrement(
     h_initial: np.ndarray,
     residual: np.ndarray,
@@ -2292,8 +2317,16 @@ def estimate_two_way_range_bls_lm(
     k_srp_initial: float | None = None,
     k_srp_prior_sigma: float | None = None,
     k_srp_scale: float = 1e-2,
+    acceptance_rescore_tolerance_factor: float | None = 1e-2,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Two-way range batch least-squares with LM damping.
+
+    Phase 17-HARDEN-D30 (``acceptance_rescore_tolerance_factor``).  A trial
+    step that the caller-tolerance score rejects is rescored, together with
+    the incumbent, at ``rtol``/``atol`` times this factor before lambda is
+    raised, and accepted if the tighter score prefers it.  Every step the
+    historical rule accepts is accepted identically; ``None`` restores the
+    historical rule exactly.
 
     Lunar spherical harmonics (default-off, opt-in): pass ``harmonic_model``
     plus ``harmonic_epoch_et0`` (the SPICE ET at ``t = 0``) to run the estimator
@@ -2405,6 +2438,13 @@ def estimate_two_way_range_bls_lm(
     negative_k_rejections = 0
     bound_active_steps = 0
     gn_decrement = float("nan")
+    rescore_accepts = 0
+    tight_incumbent = (None, float("nan"))  # (state key, tight cost)
+    if acceptance_rescore_tolerance_factor is not None and not (
+        math.isfinite(acceptance_rescore_tolerance_factor)
+        and 0.0 < acceptance_rescore_tolerance_factor < 1.0
+    ):
+        raise ValueError("acceptance_rescore_tolerance_factor must be None or in (0, 1).")
     # Phase 17-HARDEN-BLS1: the K solve-for path solves the (unchanged) damped
     # LM system by equilibrated QR; the six-state path keeps _lm_step bit-for-bit.
     _step_fn = _lm_step_square_root if solve_for_k_srp else _lm_step
@@ -2416,7 +2456,7 @@ def estimate_two_way_range_bls_lm(
             return srp
         return replace(srp, k_srp_m2_per_kg=k_state if k_state is not None else srp.k_srp_m2_per_kg)
 
-    def _acceptance_residual(x_state, k_state=None):
+    def _acceptance_residual(x_state, k_state=None, tol_factor=1.0):
         """Residual used ONLY for the LM accept/reject comparison.
 
         PHASE 6.2 repair.  Previously the current state was scored from the
@@ -2435,10 +2475,16 @@ def estimate_two_way_range_bls_lm(
         tolerance, so the comparison is like-for-like.  The augmented pass keeps
         its own adaptive tolerance for the Jacobian, which does not need this
         accuracy.  Consequence: identical states produce identical costs.
+
+        Phase 17-HARDEN-D30: ``tol_factor`` < 1 gives the tighter rescore.
         """
+        if tol_factor == 1.0:
+            tol_kw = dict(rtol=rtol, atol=atol)
+        else:
+            tol_kw = dict(rtol=rtol * tol_factor, atol=atol * tol_factor)
         hist = propagate_state(
             t_pass_s, x_state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-            get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+            get_earth_pos, get_sun_pos, **tol_kw, j2_moon=j2_moon,
             srp=_active_srp(k_state), **_harm,
         )
         res, _ = compute_two_way_range_residuals(hist, obs_data, pass_geo)
@@ -2622,8 +2668,36 @@ def estimate_two_way_range_bls_lm(
         residual_candidate = _acceptance_residual(x_candidate, k_candidate)
         candidate_cost = _acceptance_cost(x_candidate, k_candidate, residual_candidate, w_curr_diag)
 
-        if candidate_cost < current_cost:
-            relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+        accepted = candidate_cost < current_cost
+        cost_before, cost_after = current_cost, candidate_cost
+        if not accepted and acceptance_rescore_tolerance_factor is not None and (
+            _predicted_decrease(h_initial, residual, w_curr_diag, step, x_current_full - x_prior_full,
+                                prior_inv if prior_active else None)
+            >= STATIONARITY_DECREMENT_TOL ** 2
+        ):
+            # Phase 17-HARDEN-D30: at the caller's tolerance the scored cost
+            # carries integration noise (~5 chi2 at rtol 1e-11 on the KP2
+            # cross-check) that hides damped steps whose true gain is smaller,
+            # so lambda escalated and the solve stalled away from the
+            # minimiser.  Before raising lambda, rescore both points tighter;
+            # a historical acceptance never reaches this branch.  Steps whose
+            # predicted gain is below 0.01 chi2 (a 0.1 sigma move, D27's
+            # certification level) are not rescored: there the tight score
+            # only chases the tight integrator's own noise.
+            f = acceptance_rescore_tolerance_factor
+            key = (x_nominal.tobytes(), k_current, w_curr_diag.tobytes())
+            if tight_incumbent[0] != key:
+                tight_incumbent = (key, _acceptance_cost(
+                    x_nominal, k_current, _acceptance_residual(x_nominal, k_current, f), w_curr_diag))
+            tight_candidate = _acceptance_cost(
+                x_candidate, k_candidate, _acceptance_residual(x_candidate, k_candidate, f), w_curr_diag)
+            if tight_candidate < tight_incumbent[1]:
+                accepted = True
+                rescore_accepts += 1
+                cost_before, cost_after = tight_incumbent[1], tight_candidate
+
+        if accepted:
+            relative_improvement = abs(cost_before - cost_after) / max(cost_before, np.finfo(float).eps)
             x_nominal = x_candidate
             if solve_for_k_srp:
                 k_current = k_candidate
@@ -2747,6 +2821,7 @@ def estimate_two_way_range_bls_lm(
         k_srp_negative_step_rejections=negative_k_rejections,
         k_srp_bound_active_steps=bound_active_steps,
         gauss_newton_decrement=gn_decrement,
+        acceptance_rescore_accepts=rescore_accepts,
     )
     return x_best, stop_reason, stats
 
