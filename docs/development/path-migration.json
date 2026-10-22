@@ -370,10 +370,14 @@
     },
     "artifacts/phase17_harden_defects.json": {
       "path": "studies/phase17/results/phase17_harden_defects.json",
-      "original_sha256": "9c5f56538bf4ee68aa649cfa8044525abc7fa123d0ea476fab5ff727e8ea6ca1",
+      "original_sha256": "7b6ef080df965d8bc9c34fd5a266e82be820ccd4dc0b48a118944a2baaa48ce8",
       "byte_preserved": true,
-      "refrozen_from_sha256": "1eb16205a6d0f8dde8a4a853483ecfd3dc7ce606b7236067a0bdbb4ea1398335",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "9c5f56538bf4ee68aa649cfa8044525abc7fa123d0ea476fab5ff727e8ea6ca1",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (2026-10-21) and HARDEN-D30 (2026-10-22), both authorized by the owner; refrozen_from_sha256 is the identity before D30, refrozen_history_sha256 lists every earlier identity in order.",
+      "refrozen_history_sha256": [
+        "1eb16205a6d0f8dde8a4a853483ecfd3dc7ce606b7236067a0bdbb4ea1398335",
+        "9c5f56538bf4ee68aa649cfa8044525abc7fa123d0ea476fab5ff727e8ea6ca1"
+      ]
     },
     "artifacts/phase17_harden_derivatives.json": {
       "path": "studies/phase17/results/phase17_harden_derivatives.json",
@@ -2494,8 +2498,10 @@
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
-      "original_sha256": "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
-      "byte_preserved": true
+      "original_sha256": "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
+      "note": "Re-frozen for Phase 17-HARDEN-D30 (BLS-LM acceptance rescore), authorized by the owner on 2026-10-22; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/filters.py": {
       "path": "src/lunar_od/filters.py",
