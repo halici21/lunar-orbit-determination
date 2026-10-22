@@ -1,0 +1,35 @@
+{
+ "phase": "Phase C5 - tropospheric and ionospheric delay and the ramped uplink: materiality survey (analysis only, no production change)",
+ "written": "2026-10-23, before any C5 number was computed",
+ "motivation": "Production two-way range, counted Doppler and delta-DOR contain no media delay and assume a constant uplink frequency. Real DSN data carry a 2-3 m zenith tropospheric delay (tens of metres at 10 deg), an X-band ionospheric delay of decimetres, and ramped uplinks. C5 measures what omitting the media costs this project's OD before any production change",
+ "baseline": "the C2-I/C3-I/C4 measurement stack (DSN_C2_LIGHT_TIME_MODEL, exact stations, DE421), KP2 rows (10 deg elevation mask)",
+ "models": {
+  "tropo_zenith_hydrostatic": "Saastamoinen (1972, as Davis et al. 1985): ZHD = 0.0022768 P / (1 - 0.00266 cos 2phi - 0.00028 H_km) m, P from the standard atmosphere P = 1013.25 (1 - 2.2557e-5 h)^5.2568 hPa at the station height h",
+  "tropo_zenith_wet": "a nominal ZWD = 0.15 m at every station (a survey assumption; real wet delays vary 0.05-0.3 m)",
+  "mapping": "Black & Eisner (1984) m(E) = 1.001 / sqrt(0.002001 + sin^2 E) for both components (a survey-level mapping; the materiality conclusion does not depend on the few-percent differences to Niell/GMF above 10 deg)",
+  "iono": "thin-shell (350 km) VTEC with a diurnal cosine: VTEC = 5 + 25 max(0, cos(2 pi (LT - 14 h) / 24 h)) TECU, LT = UTC + longitude/15; obliquity 1/sqrt(1 - (R cos E / (R + 350 km))^2); delay 40.3 STEC / f^2 with f = 7.2 GHz uplink, 8.4588 GHz downlink (turnaround 880/749)",
+  "elevation": "per leg at the ground event (uplink at t1, downlink at t3) from the solved light-time leg vector and the station's geodetic up vector rotated by pxform(ITRF93 -> J2000)"
+ },
+ "propagation": "media delays add to the light time: two-way range + (d_up + d_down)/2; counted Doppler + [(d_up + d_down)_end - (d_up + d_down)_start] / (2 Tc), with the ionosphere entering the phase (Doppler) with the opposite sign of the group delay (range, delta-DOR); delta-DOR (group) + d_B - d_A of the two downlinks",
+ "terms": {
+  "T1_TROPO_HYDROSTATIC": "the hydrostatic delay",
+  "T2_TROPO_WET": "the nominal wet delay",
+  "T3_IONOSPHERE": "the X-band ionospheric delay",
+  "T4_RAMPED_UPLINK": {"decision_fixed_in_advance": "CONVENTION_REAL_DATA: real counted Doppler needs the station's ramp tables; not measured"}
+ },
+ "gates": {
+  "S1_elevation": "every evaluated leg elevation lies in [9.0, 90] deg",
+  "S2_tropo_sanity": "ZHD at the three DSN sites within [1.8, 2.4] m",
+  "S3_iono_sanity": "the zenith downlink delay at 30 TECU within [0.15, 0.20] m",
+  "S4_convergence": "every light-time solve converges"
+ },
+ "noise_levels": {"PROJECT": "range 5 m, Doppler 1e-4 m/s, delta-DOR 5 nrad", "DSN_REALISTIC": "range 1 m, Doppler 3e-5 m/s, delta-DOR 5 nrad"},
+ "od_impact": "the C2 linear bias mapping (RANGE_ONLY, RANGE_DOPPLER_FREE_BIAS; PROJECT, DSN_REALISTIC)",
+ "materiality_rule": {
+  "decision": "IMPLEMENT if OBSERVABLE_MATERIAL (>= 0.1 sigma at DSN_REALISTIC) or OD_MATERIAL (>= 0.1); DOCUMENT_ONLY otherwise; fixed-in-advance classes not overridden",
+  "gate_veto": "a failed S1-S4 makes the affected term C5_INCONCLUSIVE; computed-as-FAIL gates are reported",
+  "note": "IMPLEMENT for media means a calibration interface (externally supplied zenith delays / TEC, e.g. DSN media calibrations, applied through a mapping function) plus a default model for synthetic work; the survey's own simple models are not the implementation"
+ },
+ "outputs": {"report": "studies/phase17/reports/phase_c5_media_materiality.md", "results": "studies/phase17/results/phase_c5_media_survey.json"},
+ "not_in_scope": "ocean loading, plasma (solar) delay near conjunction, ramp tables, any production change"
+}
