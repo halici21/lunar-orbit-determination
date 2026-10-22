@@ -1,0 +1,1890 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c1_light_time_predeclaration.json",
+ "cells": [
+  {
+   "cell": "CANON:0",
+   "n_range": 960,
+   "n_doppler": 911,
+   "elapsed_s": 19.218959093093872,
+   "parity": {
+    "range_max_m": 0.0,
+    "doppler_max_mps": 3.328295861138031e-09,
+    "ddor_max_s": 2.220446049250313e-16
+   },
+   "convergence_max_residual_s": 3.902878020767275e-12,
+   "convergence_rows_over_1e12": [
+    [
+     "range",
+     "SSB",
+     821,
+     3.902878020767275e-12
+    ]
+   ],
+   "range_m": {
+    "FRAME": {
+     "min": 1.891077697277069,
+     "max": 2.208955705165863,
+     "maxabs": 2.208955705165863
+    },
+    "TIME_SCALE": {
+     "min": -0.23317105094010973,
+     "max": -0.0,
+     "maxabs": 0.23317105094010973
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.605442993795721,
+     "max": 7.79008107845704,
+     "maxabs": 7.79008107845704
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.037024196145146404,
+     "max": 0.04123824435996105,
+     "maxabs": 0.04123824435996105
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005857109708855903,
+     "max": 0.0007049921774078828,
+     "maxabs": 0.0007049921774078828
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.001608926484579196,
+     "max": 0.0016502099965744791,
+     "maxabs": 0.0016502099965744791
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -8.621574534117826e-05,
+     "max": 3.796998680627439e-05,
+     "maxabs": 8.621574534117826e-05
+    },
+    "TIME_SCALE": {
+     "min": -1.0641291003555374e-06,
+     "max": 1.142270039072931e-06,
+     "maxabs": 1.142270039072931e-06
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.845698501738475e-05,
+     "max": 3.575876681906836e-05,
+     "maxabs": 3.845698501738475e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.5086305282495986e-07,
+     "max": 4.522555356559628e-07,
+     "maxabs": 4.522555356559628e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.1550640373635889e-07,
+     "max": 1.1787256974789261e-07,
+     "maxabs": 1.1787256974789261e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -8.154460557840873e-09,
+     "max": 7.532994551381427e-09,
+     "maxabs": 8.154460557840873e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": 3733.922676026821,
+    "max": 13751.660078644753
+   },
+   "ddor": {
+    "n": 170,
+    "parity_max_s": 2.220446049250313e-16,
+    "frame_max_ns": 3193.46222021899,
+    "frame_max_nrad": 96802.45335202222,
+    "shapiro_max_nrad": {
+     "SUN": 8.068080691102038,
+     "EARTH": 0.38686494804030463,
+     "MOON": 0.0004789284116105016,
+     "JUPITER": 0.0017064643687890165
+    }
+   },
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 5.72057614825265,
+     "k_over_sigma": 0.19108021150664933
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.15899458008420117,
+     "k_over_sigma": 0.0061297006605860165
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 22.369280256272575,
+     "k_over_sigma": 0.035055068927122436
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.11215096434326696,
+     "k_over_sigma": 0.0002599379917799636
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0016983047649017668,
+     "k_over_sigma": 1.3800456218129732e-06
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.004736659911532968,
+     "k_over_sigma": 9.839428385206582e-06
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 28.59397698920618,
+     "k_over_sigma": 0.9501306943717917
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.7945192444445095,
+     "k_over_sigma": 0.030766024345094862
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 111.80453454860623,
+     "k_over_sigma": 0.18383657546304377
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.5605445458515197,
+     "k_over_sigma": 0.0012557327344761907
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.008488176596879535,
+     "k_over_sigma": 7.382376612528241e-06
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.023674408904645117,
+     "k_over_sigma": 5.096797402510113e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.6197543993588466,
+     "k_over_sigma": 0.1135788914224668
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.014356052993869125,
+     "k_over_sigma": 0.0006812016576807807
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 1.4690879417301557,
+     "k_over_sigma": 0.19696828447517134
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.012972098776501163,
+     "k_over_sigma": 0.001093114374268088
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.009491564931813636,
+     "k_over_sigma": 1.1317063252249933e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0003117496671944439,
+     "k_over_sigma": 4.150035742632314e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 5.854517040958088,
+     "k_over_sigma": 0.6230654789195975
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.17012299089834199,
+     "k_over_sigma": 0.005099420031715988
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 21.190982943822817,
+     "k_over_sigma": 1.3900715703336521
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.1250505591845989,
+     "k_over_sigma": 0.007342867025796861
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.03024861732491247,
+     "k_over_sigma": 2.7841439146943998e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.004488375864796236,
+     "k_over_sigma": 0.00029288515856993415
+    }
+   }
+  },
+  {
+   "cell": "CANON:12",
+   "n_range": 820,
+   "n_doppler": 782,
+   "elapsed_s": 16.821930646896362,
+   "parity": {
+    "range_max_m": 5.960464477539063e-08,
+    "doppler_max_mps": 3.328295861138031e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.9801380038261414,
+     "max": 2.4639087915420532,
+     "maxabs": 2.4639087915420532
+    },
+    "TIME_SCALE": {
+     "min": -0.22665071069314696,
+     "max": -0.0,
+     "maxabs": 0.22665071069314696
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.318296025819993,
+     "max": 7.534381590896321,
+     "maxabs": 7.534381590896321
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.03657449864274155,
+     "max": 0.040925353892376316,
+     "maxabs": 0.040925353892376316
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005813599084335292,
+     "max": 0.0006995862452104634,
+     "maxabs": 0.0006995862452104634
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0015128561678053323,
+     "max": 0.001554151274600964,
+     "maxabs": 0.001554151274600964
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -4.69399301437079e-05,
+     "max": 0.00010358426280276944,
+     "maxabs": 0.00010358426280276944
+    },
+    "TIME_SCALE": {
+     "min": -1.1259735773567822e-06,
+     "max": 1.1139941309705428e-06,
+     "maxabs": 1.1259735773567822e-06
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.7517136394746084e-05,
+     "max": 3.871020475163524e-05,
+     "maxabs": 3.871020475163524e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.3649829628522605e-07,
+     "max": 4.4235072635140954e-07,
+     "maxabs": 4.4235072635140954e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.2298726299758436e-07,
+     "max": 1.192356598544653e-07,
+     "maxabs": 1.2298726299758436e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -7.789650227137476e-09,
+     "max": 7.960329857496438e-09,
+     "maxabs": 7.960329857496438e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": -18829.181697189808,
+    "max": -10110.851044535637
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.9097830588592042,
+     "k_over_sigma": 0.4914869740459637
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.014332216991254388,
+     "k_over_sigma": 0.0065040638191555976
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 3.446965755523726,
+     "k_over_sigma": 0.4510850180945003
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.019190483629849563,
+     "k_over_sigma": 0.0002141030511384919
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.00026647540088224007,
+     "k_over_sigma": 2.4717227722832762e-05
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0007135942579345532,
+     "k_over_sigma": 8.866381260810017e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 4.552972662789879,
+     "k_over_sigma": 2.437601271951148
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.07167919874233847,
+     "k_over_sigma": 0.03255325311738654
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 17.243070217153406,
+     "k_over_sigma": 2.21515548534889
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.09600337376312545,
+     "k_over_sigma": 0.0008482743006010146
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.001332808672653554,
+     "k_over_sigma": 0.00012130562895558369
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0035696533356786566,
+     "k_over_sigma": 0.0004351005527937457
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.4603221769867306,
+     "k_over_sigma": 0.2584601969285832
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.007867028984102254,
+     "k_over_sigma": 0.006994047358857837
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 0.8649894091119915,
+     "k_over_sigma": 0.5045154121809221
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.003960909552169325,
+     "k_over_sigma": 0.0023501505438465824
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.003285873160937409,
+     "k_over_sigma": 0.000295346626002294
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.00017935348982660152,
+     "k_over_sigma": 0.00010374916439564008
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 1.762153248971402,
+     "k_over_sigma": 1.4174048600363311
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.02355957263201443,
+     "k_over_sigma": 0.027066893249816693
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 5.991064917627837,
+     "k_over_sigma": 3.1759181138662576
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.029107289582931857,
+     "k_over_sigma": 0.01510658951194478
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.010618944343013102,
+     "k_over_sigma": 0.0011176794966138936
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0012385179693961883,
+     "k_over_sigma": 0.0006528536444095171
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:0",
+   "n_range": 955,
+   "n_doppler": 906,
+   "elapsed_s": 18.4282066822052,
+   "parity": {
+    "range_max_m": 0.0,
+    "doppler_max_mps": 2.219167072325945e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.8902429938316345,
+     "max": 2.201588749885559,
+     "maxabs": 2.201588749885559
+    },
+    "TIME_SCALE": {
+     "min": -0.23284797754815922,
+     "max": -0.0,
+     "maxabs": 0.23284797754815922
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.6056521997563085,
+     "max": 7.789590108123796,
+     "maxabs": 7.789590108123796
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.03702546487428985,
+     "max": 0.04124899683792334,
+     "maxabs": 0.04124899683792334
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005842161357870829,
+     "max": 0.0007018290704884298,
+     "maxabs": 0.0007018290704884298
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.001608981884589696,
+     "max": 0.0016501149155967313,
+     "maxabs": 0.0016501149155967313
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -7.413489021246278e-05,
+     "max": 3.473259721431532e-05,
+     "maxabs": 7.413489021246278e-05
+    },
+    "TIME_SCALE": {
+     "min": -1.1212785979177978e-06,
+     "max": 1.1441126289648582e-06,
+     "maxabs": 1.1441126289648582e-06
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.9000487040087696e-05,
+     "max": 3.7947052719228086e-05,
+     "maxabs": 3.9000487040087696e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.3169250464316747e-07,
+     "max": 4.6299858027583955e-07,
+     "maxabs": 4.6299858027583955e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.2192735084041712e-07,
+     "max": 1.2298915071642015e-07,
+     "maxabs": 1.2298915071642015e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -8.279115978183062e-09,
+     "max": 7.999202571722185e-09,
+     "maxabs": 8.279115978183062e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": 3835.374071121216,
+    "max": 13680.74836063385
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 4.176543692722036,
+     "k_over_sigma": 0.0178830667758682
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.11657405667021753,
+     "k_over_sigma": 0.010663359928890592
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 15.961115475123147,
+     "k_over_sigma": 0.542573069188112
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.08055502864044801,
+     "k_over_sigma": 0.0025784305269374924
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0012045520138076644,
+     "k_over_sigma": 1.9574161811528683e-05
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.003378499236424418,
+     "k_over_sigma": 0.00011652387232907017
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 20.650310633905697,
+     "k_over_sigma": 0.08907698416998514
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.5765076007926522,
+     "k_over_sigma": 0.05330788874070092
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 78.9534437283557,
+     "k_over_sigma": 2.710821517360791
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.39851625232264004,
+     "k_over_sigma": 0.012880460895209845
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.005956554204766714,
+     "k_over_sigma": 9.775854051332501e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.016712233436539232,
+     "k_over_sigma": 0.0005821844565685601
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.39028442050156537,
+     "k_over_sigma": 0.08811675951013916
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.006480186405468812,
+     "k_over_sigma": 0.0007813587392590153
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 1.1132395510360187,
+     "k_over_sigma": 0.02308718246887318
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.008445704341665337,
+     "k_over_sigma": 0.0007480152955083928
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.007142522584905388,
+     "k_over_sigma": 0.001019213783853598
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.00023511250904342828,
+     "k_over_sigma": 4.9302995990830075e-06
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 3.4707925160209143,
+     "k_over_sigma": 0.05471073076514251
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.1019124492718301,
+     "k_over_sigma": 0.011808240519035621
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 13.19952008844527,
+     "k_over_sigma": 1.1677018045054355
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.08207268270825958,
+     "k_over_sigma": 0.008797038872915802
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.022892640608840234,
+     "k_over_sigma": 0.003253845959761925
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0027962874531717494,
+     "k_over_sigma": 0.0002468080435087036
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:12",
+   "n_range": 850,
+   "n_doppler": 812,
+   "elapsed_s": 17.447731494903564,
+   "parity": {
+    "range_max_m": 0.0,
+    "doppler_max_mps": 2.219167072325945e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.9817165732383728,
+     "max": 2.4405718445777893,
+     "maxabs": 2.4405718445777893
+    },
+    "TIME_SCALE": {
+     "min": -0.22613317740141903,
+     "max": -0.0,
+     "maxabs": 0.22613317740141903
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.32121681310452,
+     "max": 7.529081338410439,
+     "maxabs": 7.529081338410439
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.03656813173945122,
+     "max": 0.04095478410364208,
+     "maxabs": 0.04095478410364208
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005867612910727811,
+     "max": 0.0006983828483100134,
+     "maxabs": 0.0006983828483100134
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.001513480764935582,
+     "max": 0.0015533203571008356,
+     "maxabs": 0.0015533203571008356
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -4.803939987141348e-05,
+     "max": 9.243091204780285e-05,
+     "maxabs": 9.243091204780285e-05
+    },
+    "TIME_SCALE": {
+     "min": -9.273521755883114e-07,
+     "max": 9.014917816634138e-07,
+     "maxabs": 9.273521755883114e-07
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.0336644834234754e-05,
+     "max": 3.483298860783802e-05,
+     "maxabs": 3.483298860783802e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.2578902696729227e-07,
+     "max": 4.3361046878864165e-07,
+     "maxabs": 4.3361046878864165e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.0772448982647618e-07,
+     "max": 1.0574704920134531e-07,
+     "maxabs": 1.0772448982647618e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -6.316953998840563e-09,
+     "max": 7.1641847555633585e-09,
+     "maxabs": 7.1641847555633585e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": -18867.703210115433,
+    "max": -10040.959530830383
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 2.38205516081487,
+     "k_over_sigma": 0.49566991083958595
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.020518270079624045,
+     "k_over_sigma": 0.002294475781140457
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 7.482750569249241,
+     "k_over_sigma": 0.8604507570915361
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.03846287408102589,
+     "k_over_sigma": 0.0038519137281921834
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0007181590985094401,
+     "k_over_sigma": 7.6601817492275e-05
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0015427537793990353,
+     "k_over_sigma": 0.00017471460002638293
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 11.776016641372989,
+     "k_over_sigma": 2.4761083207960444
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.10120787042549179,
+     "k_over_sigma": 0.011452914913196223
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 36.87138441324417,
+     "k_over_sigma": 4.302071728158701
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.18948913690196179,
+     "k_over_sigma": 0.019260656470258486
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0035412748143715863,
+     "k_over_sigma": 0.00038282481804190367
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.007601481642371818,
+     "k_over_sigma": 0.0008735626008184987
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.8713097477643905,
+     "k_over_sigma": 0.01217035100719647
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.009168962568551218,
+     "k_over_sigma": 0.000520756670285771
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 2.916143055081683,
+     "k_over_sigma": 0.3313071208661092
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.010473392004012611,
+     "k_over_sigma": 0.0015377795125616563
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0024717484161975193,
+     "k_over_sigma": 0.000147834745801262
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0006028914457046015,
+     "k_over_sigma": 6.857203190027393e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 4.884123947330136,
+     "k_over_sigma": 0.24995043467352565
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.04928502229870554,
+     "k_over_sigma": 0.005603888228318909
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 16.2983808434211,
+     "k_over_sigma": 2.211834292613915
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.06881935806202705,
+     "k_over_sigma": 0.01090469024742432
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.007989968605006363,
+     "k_over_sigma": 0.0005981850910716331
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.003367226121168218,
+     "k_over_sigma": 0.00045764565515963077
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:0",
+   "n_range": 1339,
+   "n_doppler": 1304,
+   "elapsed_s": 21.82516050338745,
+   "parity": {
+    "range_max_m": 0.0,
+    "doppler_max_mps": 3.328366915411607e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.9093400835990906,
+     "max": 2.166290283203125,
+     "maxabs": 2.166290283203125
+    },
+    "TIME_SCALE": {
+     "min": -0.23364263309083982,
+     "max": -0.0,
+     "maxabs": 0.23364263309083982
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.623876786064356,
+     "max": 7.805863872959379,
+     "maxabs": 7.805863872959379
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.03708672543365939,
+     "max": 0.0412744252094986,
+     "maxabs": 0.0412744252094986
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0006149189743354355,
+     "max": 0.0007013882901438475,
+     "maxabs": 0.0007013882901438475
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0016127340448258138,
+     "max": 0.001653624636873718,
+     "maxabs": 0.001653624636873718
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -4.6691412194377335e-05,
+     "max": 3.876657535784034e-05,
+     "maxabs": 4.6691412194377335e-05
+    },
+    "TIME_SCALE": {
+     "min": -6.199058989476485e-07,
+     "max": 6.894298413013642e-07,
+     "maxabs": 6.894298413013642e-07
+    },
+    "SHAPIRO_SUN": {
+     "min": -2.3437345761091443e-05,
+     "max": 2.1053416050230566e-05,
+     "maxabs": 2.3437345761091443e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.719082883345789e-07,
+     "max": 4.281433910860794e-07,
+     "maxabs": 4.719082883345789e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -5.659215376469628e-08,
+     "max": 5.804351186210708e-08,
+     "maxabs": 5.804351186210708e-08
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -4.984261651370794e-09,
+     "max": 4.427887049216075e-09,
+     "maxabs": 4.984261651370794e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": 3849.763880968094,
+    "max": 13756.699659585953
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 1.299847718311499,
+     "k_over_sigma": 0.855415752223639
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.047780202344861994,
+     "k_over_sigma": 0.019918424907949588
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 5.11914069801552,
+     "k_over_sigma": 4.033517544683282
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.025181032009583302,
+     "k_over_sigma": 0.01985135965869721
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0004429036733209399,
+     "k_over_sigma": 0.00034136467716366876
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.001083941407108313,
+     "k_over_sigma": 0.0008563378504369202
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 6.526272624638483,
+     "k_over_sigma": 4.305978023594073
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.2339470956636374,
+     "k_over_sigma": 0.1001834717514998
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 25.716612657935976,
+     "k_over_sigma": 20.28210029000165
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.12647451449843214,
+     "k_over_sigma": 0.09981347713243076
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.002153403598115384,
+     "k_over_sigma": 0.0017161390971096062
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.005445348620595562,
+     "k_over_sigma": 0.004305936409424364
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 1.0144249627616404,
+     "k_over_sigma": 0.14936179065301508
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.01647321361717607,
+     "k_over_sigma": 0.004328331566787847
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 2.218307039534122,
+     "k_over_sigma": 0.6536030580148733
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.006748237587685032,
+     "k_over_sigma": 0.002456030505775546
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.004212865704588593,
+     "k_over_sigma": 0.0003386301504304975
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0004692539575485143,
+     "k_over_sigma": 0.0001382362672879947
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 4.015141477506438,
+     "k_over_sigma": 1.1189501264496076
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.07441320662251803,
+     "k_over_sigma": 0.0330915925965747
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 9.806403307730172,
+     "k_over_sigma": 4.485194485577598
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.03463862050486726,
+     "k_over_sigma": 0.019815426188073047
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.01425724363176076,
+     "k_over_sigma": 0.001330793782159613
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.002074729859803929,
+     "k_over_sigma": 0.0009488011623159293
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:12",
+   "n_range": 884,
+   "n_doppler": 845,
+   "elapsed_s": 17.72129797935486,
+   "parity": {
+    "range_max_m": 0.0,
+    "doppler_max_mps": 2.219167072325945e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.9963214993476868,
+     "max": 2.448115587234497,
+     "maxabs": 2.448115587234497
+    },
+    "TIME_SCALE": {
+     "min": -0.22661491213153614,
+     "max": -0.0,
+     "maxabs": 0.22661491213153614
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.33009391505945,
+     "max": 7.524588458059585,
+     "maxabs": 7.524588458059585
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.036553970838072804,
+     "max": 0.04099369936980306,
+     "maxabs": 0.04099369936980306
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005907602727457437,
+     "max": 0.0006985199392061975,
+     "maxabs": 0.0006985199392061975
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0015154545798104781,
+     "max": 0.001552180277874178,
+     "maxabs": 0.001552180277874178
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -5.2275298912718426e-05,
+     "max": 9.700519484567849e-05,
+     "maxabs": 9.700519484567849e-05
+    },
+    "TIME_SCALE": {
+     "min": -8.310034013041842e-07,
+     "max": 8.53478451355479e-07,
+     "maxabs": 8.53478451355479e-07
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.089901975632197e-05,
+     "max": 3.107092189408704e-05,
+     "maxabs": 3.107092189408704e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -3.972688196178281e-07,
+     "max": 3.906321045913236e-07,
+     "maxabs": 3.972688196178281e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.01711767537623e-07,
+     "max": 1.0093450798670913e-07,
+     "maxabs": 1.01711767537623e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -6.419062658000244e-09,
+     "max": 6.3683356904555085e-09,
+     "maxabs": 6.419062658000244e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": -18881.804772019386,
+    "max": -9820.7094784379
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 1.5850880990771359,
+     "k_over_sigma": 0.0656658975368657
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.022458893099446434,
+     "k_over_sigma": 0.007105097797091956
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 5.082251200765556,
+     "k_over_sigma": 1.1395356831370649
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.025359806895644706,
+     "k_over_sigma": 0.0065499755303852596
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0003646172505612559,
+     "k_over_sigma": 0.0001162498748125227
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0010482163666700195,
+     "k_over_sigma": 0.00023864633437580427
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 7.812256871412773,
+     "k_over_sigma": 0.3304078280230112
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.11157548268843748,
+     "k_over_sigma": 0.035675668965540794
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 24.96613351874853,
+     "k_over_sigma": 5.691937187718982
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.12433935010727268,
+     "k_over_sigma": 0.03268740359594518
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0017884265542650994,
+     "k_over_sigma": 0.0005804289150170331
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.005148978696337675,
+     "k_over_sigma": 0.0011920022756279967
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.3285082558093212,
+     "k_over_sigma": 0.1877653073102684
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.0028963462257751552,
+     "k_over_sigma": 0.0013626805840452963
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 0.4768961670987954,
+     "k_over_sigma": 0.30121735933924954
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.0013467819571736568,
+     "k_over_sigma": 0.001289929933090241
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.004543488514735125,
+     "k_over_sigma": 0.0002948853440234333
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 9.807685760669862e-05,
+     "k_over_sigma": 6.201060256115299e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 0.7302623420096532,
+     "k_over_sigma": 0.9156228431383662
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.008762638897632551,
+     "k_over_sigma": 0.006773298215162729
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 2.788976297825236,
+     "k_over_sigma": 1.8680334416861244
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.02591303157623367,
+     "k_over_sigma": 0.008769974714712931
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.014763303166672615,
+     "k_over_sigma": 0.0010591794445501538
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0005760287786219397,
+     "k_over_sigma": 0.00038467076929721945
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:0",
+   "n_range": 1110,
+   "n_doppler": 1070,
+   "elapsed_s": 19.833580493927002,
+   "parity": {
+    "range_max_m": 0.0,
+    "doppler_max_mps": 2.219167072325945e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.8967430591583252,
+     "max": 2.2003763914108276,
+     "maxabs": 2.2003763914108276
+    },
+    "TIME_SCALE": {
+     "min": -0.23366300294694725,
+     "max": -0.0,
+     "maxabs": 0.23366300294694725
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.597459102781478,
+     "max": 7.812655446134271,
+     "maxabs": 7.812655446134271
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.037030086937061966,
+     "max": 0.04128479451784585,
+     "maxabs": 0.04128479451784585
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005616835903294879,
+     "max": 0.0007454716866318546,
+     "maxabs": 0.0007454716866318546
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0016072865321294081,
+     "max": 0.0016550212184540073,
+     "maxabs": 0.0016550212184540073
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -5.8798894201572693e-05,
+     "max": 4.6297555627461406e-05,
+     "maxabs": 5.8798894201572693e-05
+    },
+    "TIME_SCALE": {
+     "min": -1.03858205484102e-06,
+     "max": 1.0967072169618476e-06,
+     "maxabs": 1.0967072169618476e-06
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.703761196606392e-05,
+     "max": 3.5217465876948034e-05,
+     "maxabs": 3.703761196606392e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.3792667578428725e-07,
+     "max": 4.296196486930577e-07,
+     "maxabs": 4.3792667578428725e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.3892793288777153e-07,
+     "max": 1.3884955111480808e-07,
+     "maxabs": 1.3892793288777153e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -7.85418565438246e-09,
+     "max": 7.418196816494018e-09,
+     "maxabs": 7.85418565438246e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": 3961.354483127594,
+    "max": 13720.076296627522
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 2.530287197458658,
+     "k_over_sigma": 0.13808770036482354
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.06642243942794171,
+     "k_over_sigma": 0.005818252026801246
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 9.284173039423766,
+     "k_over_sigma": 0.13426269169162994
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.046865288637530436,
+     "k_over_sigma": 0.0007171019193461972
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0009671013268356662,
+     "k_over_sigma": 4.5307866943058984e-06
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.001963990381785797,
+     "k_over_sigma": 2.7062513238532524e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 12.629505940409379,
+     "k_over_sigma": 0.6907800142220983
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.3314132917529677,
+     "k_over_sigma": 0.029094309618482556
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 46.331672813671055,
+     "k_over_sigma": 0.6723606464760246
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.23387370725659568,
+     "k_over_sigma": 0.0035906483603549396
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.00482528003667284,
+     "k_over_sigma": 2.267959220160915e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.009801057655439724,
+     "k_over_sigma": 0.00013553357299864397
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 1.6066129128219564,
+     "k_over_sigma": 0.1624039216883542
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.04330380100409547,
+     "k_over_sigma": 0.0009186845363612063
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 5.81135105524164,
+     "k_over_sigma": 0.3545005857479979
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.019221886874536034,
+     "k_over_sigma": 0.0011023705210173387
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.008212547388963569,
+     "k_over_sigma": 0.0006088605727375118
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0012292719778356853,
+     "k_over_sigma": 7.486098457643987e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 7.69130597709741,
+     "k_over_sigma": 0.629410136867105
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.2105436472286267,
+     "k_over_sigma": 0.0038685636207793136
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 28.28979123322861,
+     "k_over_sigma": 1.4582695415781517
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.10881076826132867,
+     "k_over_sigma": 0.005026768424174388
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.02701576710272341,
+     "k_over_sigma": 0.0020521353302916387
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0059854106273841984,
+     "k_over_sigma": 0.0003078882365133026
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:12",
+   "n_range": 1007,
+   "n_doppler": 978,
+   "elapsed_s": 19.02688479423523,
+   "parity": {
+    "range_max_m": 5.960464477539063e-08,
+    "doppler_max_mps": 2.2189396986505017e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.984302580356598,
+     "max": 2.4419599175453186,
+     "maxabs": 2.4419599175453186
+    },
+    "TIME_SCALE": {
+     "min": -0.22713664644646683,
+     "max": -0.0,
+     "maxabs": 0.22713664644646683
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.30958039558343,
+     "max": 7.540318939369496,
+     "maxabs": 7.540318939369496
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.0365384308956427,
+     "max": 0.040995174503873216,
+     "maxabs": 0.040995174503873216
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005583759193402625,
+     "max": 0.0007426512409629867,
+     "maxabs": 0.0007426512409629867
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0015112039337787297,
+     "max": 0.0015558787861663698,
+     "maxabs": 0.0015558787861663698
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -5.808662410800025e-05,
+     "max": 8.521723583498897e-05,
+     "maxabs": 8.521723583498897e-05
+    },
+    "TIME_SCALE": {
+     "min": -9.939828688684674e-07,
+     "max": 8.820842999428007e-07,
+     "maxabs": 9.939828688684674e-07
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.3020855210473265e-05,
+     "max": 3.634240981010532e-05,
+     "maxabs": 3.634240981010532e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.315368319717046e-07,
+     "max": 3.9379793369646777e-07,
+     "maxabs": 4.315368319717046e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.3448396663219536e-07,
+     "max": 1.353841209145519e-07,
+     "maxabs": 1.353841209145519e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -6.862681819015695e-09,
+     "max": 7.474447888370198e-09,
+     "maxabs": 7.474447888370198e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": -18981.265629708767,
+    "max": -9969.670493900776
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 4.112999124923273,
+     "k_over_sigma": 0.21779469086441025
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.057944329111708194,
+     "k_over_sigma": 0.003968974740430038
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 13.939104287582756,
+     "k_over_sigma": 0.04402823383970116
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.07152627324014997,
+     "k_over_sigma": 0.0006659506583772852
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0013444469638187178,
+     "k_over_sigma": 3.4598254650517544e-06
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0028779497835607994,
+     "k_over_sigma": 6.6148675366390355e-06
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 20.450034853790868,
+     "k_over_sigma": 1.0883865204080485
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.2880357002833285,
+     "k_over_sigma": 0.019829647131108998
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 69.29647662534462,
+     "k_over_sigma": 0.2195956122564365
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.35557754945478665,
+     "k_over_sigma": 0.0033321940080634363
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0066843193484036854,
+     "k_over_sigma": 1.718378815667424e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.014307323381591531,
+     "k_over_sigma": 3.296785555634454e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 1.1022075020742939,
+     "k_over_sigma": 0.0037426098767904415
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.011474424848449733,
+     "k_over_sigma": 0.0014536346934689727
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 3.786645059894554,
+     "k_over_sigma": 0.060805831701465
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.01341522350338489,
+     "k_over_sigma": 0.00038142908040287416
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0023324296089227074,
+     "k_over_sigma": 0.00026212773440029575
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0007821588069439762,
+     "k_over_sigma": 1.2471012063146568e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 6.258144106667742,
+     "k_over_sigma": 0.11200575233674058
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.06698203856998826,
+     "k_over_sigma": 0.004110756300244557
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 21.28774954062939,
+     "k_over_sigma": 0.42479895956951264
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.08948677691127457,
+     "k_over_sigma": 0.002329605049168467
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.007549503648986602,
+     "k_over_sigma": 0.0008921212859221955
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.004395984024349703,
+     "k_over_sigma": 8.705191295552326e-05
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:0",
+   "n_range": 957,
+   "n_doppler": 915,
+   "elapsed_s": 18.249008178710938,
+   "parity": {
+    "range_max_m": 5.960464477539063e-08,
+    "doppler_max_mps": 2.219167072325945e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.89229154586792,
+     "max": 2.2051920890808105,
+     "maxabs": 2.2051920890808105
+    },
+    "TIME_SCALE": {
+     "min": -0.23345622199826058,
+     "max": -0.0,
+     "maxabs": 0.23345622199826058
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.605929810221784,
+     "max": 7.802881294696843,
+     "maxabs": 7.802881294696843
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.037072461072993154,
+     "max": 0.04121223180288201,
+     "maxabs": 0.04121223180288201
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005861816944258578,
+     "max": 0.0007030726558191341,
+     "maxabs": 0.0007030726558191341
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0016089667651500237,
+     "max": 0.0016529766401642714,
+     "maxabs": 0.0016529766401642714
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -8.559112217199072e-05,
+     "max": 3.872774459523498e-05,
+     "maxabs": 8.559112217199072e-05
+    },
+    "TIME_SCALE": {
+     "min": -1.0656594404551481e-06,
+     "max": 1.1471009824982008e-06,
+     "maxabs": 1.1471009824982008e-06
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.867939256893203e-05,
+     "max": 3.6324180358525545e-05,
+     "maxabs": 3.867939256893203e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -4.793325986827981e-07,
+     "max": 4.0579249105390493e-07,
+     "maxabs": 4.793325986827981e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.1688034803388753e-07,
+     "max": 1.1776684722581276e-07,
+     "maxabs": 1.1776684722581276e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -8.205368278427829e-09,
+     "max": 7.652191053873017e-09,
+     "maxabs": 8.205368278427829e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": 3887.445010781288,
+    "max": 13496.393473684788
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 2.3744653901817925,
+     "k_over_sigma": 0.2234398905499761
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.0601882753193699,
+     "k_over_sigma": 0.003101188535374383
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 8.5276456645744,
+     "k_over_sigma": 0.13745025736325664
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.04309774802847698,
+     "k_over_sigma": 0.0007241261434096108
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0006501661410695262,
+     "k_over_sigma": 1.61731382510557e-05
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0018034899041467086,
+     "k_over_sigma": 2.67411996406851e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 11.852561703165573,
+     "k_over_sigma": 1.1120487041267413
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.29989362237500805,
+     "k_over_sigma": 0.015575513128151561
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 42.54859328638184,
+     "k_over_sigma": 0.6766225009308572
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.21504809450087717,
+     "k_over_sigma": 0.0035621396064021414
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0032436703170738014,
+     "k_over_sigma": 8.016822756592564e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.008998421770742459,
+     "k_over_sigma": 0.00013148802897727064
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.6693352297992173,
+     "k_over_sigma": 0.1409407505423519
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.010292604161321396,
+     "k_over_sigma": 0.0012334994689334666
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 1.3862824605530275,
+     "k_over_sigma": 0.44725483718051545
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.005786159442016585,
+     "k_over_sigma": 0.0021796948292065028
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0035876239663855383,
+     "k_over_sigma": 0.000100515924089452
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.00029345556931662995,
+     "k_over_sigma": 9.448372392525421e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 3.397775277625888,
+     "k_over_sigma": 0.9828452653604024
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.07486721153397902,
+     "k_over_sigma": 0.021054352815510137
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 8.931104586315291,
+     "k_over_sigma": 3.2367070341686945
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.04267921180298428,
+     "k_over_sigma": 0.01608489551906535
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.011761505690908067,
+     "k_over_sigma": 0.00017202267328033166
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0018901681689057312,
+     "k_over_sigma": 0.0006837916552562835
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:12",
+   "n_range": 836,
+   "n_doppler": 797,
+   "elapsed_s": 16.89886784553528,
+   "parity": {
+    "range_max_m": 1.1920928955078125e-07,
+    "doppler_max_mps": 3.328295861138031e-09,
+    "ddor_max_s": null
+   },
+   "convergence_max_residual_s": 0.0,
+   "convergence_rows_over_1e12": [],
+   "range_m": {
+    "FRAME": {
+     "min": 1.9823964834213257,
+     "max": 2.4553070664405823,
+     "maxabs": 2.4553070664405823
+    },
+    "TIME_SCALE": {
+     "min": -0.22667132510110538,
+     "max": -0.0,
+     "maxabs": 0.22667132510110538
+    },
+    "SHAPIRO_SUN": {
+     "min": 7.321934708132931,
+     "max": 7.524516433263312,
+     "maxabs": 7.524516433263312
+    },
+    "SHAPIRO_EARTH": {
+     "min": 0.03654959071400258,
+     "max": 0.041010510114411744,
+     "maxabs": 0.041010510114411744
+    },
+    "SHAPIRO_MOON": {
+     "min": 0.0005807961391982911,
+     "max": 0.0006980978761636068,
+     "maxabs": 0.0006980978761636068
+    },
+    "SHAPIRO_JUPITER": {
+     "min": 0.0015136036956492527,
+     "max": 0.0015526220263443972,
+     "maxabs": 0.0015526220263443972
+    }
+   },
+   "doppler_mps": {
+    "FRAME": {
+     "min": -5.091621665087587e-05,
+     "max": 0.00010554910761584324,
+     "maxabs": 0.00010554910761584324
+    },
+    "TIME_SCALE": {
+     "min": -1.154119780756412e-06,
+     "max": 1.0234136931421178e-06,
+     "maxabs": 1.154119780756412e-06
+    },
+    "SHAPIRO_SUN": {
+     "min": -3.728894439859682e-05,
+     "max": 3.908464218149174e-05,
+     "maxabs": 3.908464218149174e-05
+    },
+    "SHAPIRO_EARTH": {
+     "min": -3.9514901615614265e-07,
+     "max": 4.051957780902872e-07,
+     "maxabs": 4.051957780902872e-07
+    },
+    "SHAPIRO_MOON": {
+     "min": -1.2255847454347074e-07,
+     "max": 1.2154670596122203e-07,
+     "maxabs": 1.2255847454347074e-07
+    },
+    "SHAPIRO_JUPITER": {
+     "min": -7.741937171442154e-09,
+     "max": 8.040458499866091e-09,
+     "maxabs": 8.040458499866091e-09
+    }
+   },
+   "one_way_frame_m": {
+    "min": -18991.179222404957,
+    "max": -9849.071084678173
+   },
+   "ddor": null,
+   "od": {
+    "RANGE_ONLY|PROJECT|FRAME": {
+     "max_state_over_sigma": 1.910587190439889,
+     "k_over_sigma": 0.4991979606218365
+    },
+    "RANGE_ONLY|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.02106053590342271,
+     "k_over_sigma": 0.0034689777397083513
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 5.8530247593792195,
+     "k_over_sigma": 0.46029798593688126
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.030208714573402212,
+     "k_over_sigma": 0.00037365593361604935
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0003431997414564441,
+     "k_over_sigma": 2.1966305246246386e-05
+    },
+    "RANGE_ONLY|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0012062023576422695,
+     "k_over_sigma": 9.049275943193106e-05
+    },
+    "RANGE_ONLY|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 9.561283036741823,
+     "k_over_sigma": 2.4709245609886397
+    },
+    "RANGE_ONLY|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.10502975101672181,
+     "k_over_sigma": 0.01706325116571732
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 29.281426714087324,
+     "k_over_sigma": 2.2464922817607844
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.15114780092167557,
+     "k_over_sigma": 0.001573280007993322
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.0017170313213512264,
+     "k_over_sigma": 0.00010658795241001797
+    },
+    "RANGE_ONLY|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.006034335405499392,
+     "k_over_sigma": 0.0004412167590614198
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|FRAME": {
+     "max_state_over_sigma": 0.8873525066426987,
+     "k_over_sigma": 0.13384991312679315
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|TIME_SCALE": {
+     "max_state_over_sigma": 0.006682426527085619,
+     "k_over_sigma": 0.004312086172979179
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_SUN": {
+     "max_state_over_sigma": 1.5235386779291786,
+     "k_over_sigma": 0.3407106783945622
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.0031552832361174577,
+     "k_over_sigma": 0.0012063136673891397
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.010323094247451725,
+     "k_over_sigma": 0.00026821796638807174
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.00031520102077057827,
+     "k_over_sigma": 6.990630889761756e-05
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|FRAME": {
+     "max_state_over_sigma": 3.808532716078827,
+     "k_over_sigma": 0.8479267676018667
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|TIME_SCALE": {
+     "max_state_over_sigma": 0.027441202236072163,
+     "k_over_sigma": 0.018773679259371467
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_SUN": {
+     "max_state_over_sigma": 4.948857085206238,
+     "k_over_sigma": 2.065131787186928
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_EARTH": {
+     "max_state_over_sigma": 0.05087268348594844,
+     "k_over_sigma": 0.008496588090839342
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_MOON": {
+     "max_state_over_sigma": 0.03369109955402896,
+     "k_over_sigma": 0.0009727715528708045
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC|SHAPIRO_JUPITER": {
+     "max_state_over_sigma": 0.0010243659267838113,
+     "k_over_sigma": 0.00042338079062417675
+    }
+   }
+  }
+ ],
+ "gates": {
+  "S1_parity_range": true,
+  "S2_parity_doppler": true,
+  "S3_parity_ddor": true,
+  "S4_convergence": false,
+  "values": {
+   "range_max_m": 1.1920928955078125e-07,
+   "doppler_max_mps": 3.328366915411607e-09,
+   "residual_max_s": 3.902878020767275e-12
+  }
+ },
+ "classification": {
+  "FRAME": {
+   "range_over_sigma_dsn": 2.4639087915420532,
+   "doppler_over_sigma_dsn": 3.5183035871947745,
+   "ddor_over_sigma": 19360.490670404444,
+   "od_max_over_sigma": 28.59397698920618,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "TIME_SCALE": {
+   "range_over_sigma_dsn": 0.23366300294694725,
+   "doppler_over_sigma_dsn": 0.038470659358547064,
+   "ddor_over_sigma": null,
+   "od_max_over_sigma": 0.7945192444445095,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "SHAPIRO_SUN": {
+   "range_over_sigma_dsn": 7.812655446134271,
+   "doppler_over_sigma_dsn": 1.3028214060497247,
+   "ddor_over_sigma": 1.6136161382204075,
+   "od_max_over_sigma": 111.80453454860623,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "SHAPIRO_EARTH": {
+   "range_over_sigma_dsn": 0.04128479451784585,
+   "doppler_over_sigma_dsn": 0.015977753289426605,
+   "ddor_over_sigma": 0.07737298960806092,
+   "od_max_over_sigma": 0.5605445458515197,
+   "OBSERVABLE_MATERIAL": false,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "SHAPIRO_MOON": {
+   "range_over_sigma_dsn": 0.0007454716866318546,
+   "doppler_over_sigma_dsn": 0.004630931096259051,
+   "ddor_over_sigma": 9.578568232210032e-05,
+   "od_max_over_sigma": 0.03369109955402896,
+   "OBSERVABLE_MATERIAL": false,
+   "OD_MATERIAL": false,
+   "decision": "DOCUMENT_ONLY"
+  },
+  "SHAPIRO_JUPITER": {
+   "range_over_sigma_dsn": 0.0016550212184540073,
+   "doppler_over_sigma_dsn": 0.000275970532606102,
+   "ddor_over_sigma": 0.0003412928737578033,
+   "od_max_over_sigma": 0.023674408904645117,
+   "OBSERVABLE_MATERIAL": false,
+   "OD_MATERIAL": false,
+   "decision": "DOCUMENT_ONLY"
+  }
+ }
+}
