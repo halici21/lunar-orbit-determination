@@ -24,5 +24,11 @@
   "G7_informational": "linear OD impact of the implemented displacement (with scale) on the KP2 population"
  },
  "outcome_rule": ["C3I_QUALIFIED if G1-G6 pass", "C3I_NOT_QUALIFIED otherwise; failing gates reported as computed; adjudications go to the owner", "G7 never blocks"],
- "method_notes": ["thresholds account for the floors known from C1-I/C2-I: counted Doppler evaluation floor 1.1e-9 m/s per value; the Helmert and tide comparisons are pure geometry (double floor ~1e-9 m)"]
+ "method_notes": ["thresholds account for the floors known from C1-I/C2-I: counted Doppler evaluation floor 1.1e-9 m/s per value; the Helmert and tide comparisons are pure geometry (double floor ~1e-9 m)"],
+ "amendment_A1": {
+  "written": "2026-10-23, after the first G2 run (recorded in phase_c3i_g2_run1_eop_labelled_frame.json) and BEFORE any G1, G4, G5 or G7 number",
+  "G2": "the reference is Orekit's explicitly versioned ITRF_2020 frame transformed to the explicitly versioned ITRF_1993 frame (equal to Predefined.ITRF_2020_TO_ITRF_1993.createTransformedITRF to 3e-6 m). The first run used getITRF(conventions), whose realization follows the EOP file's version label (ITRF 2014 before 2026-06-02, ITRF 2020 only while finals data are labelled so), i.e. not the ITRF 2020 -> ITRF 93 transformation the gate names. Threshold unchanged",
+  "G3_G4_effect": "none: G3 compares tides; the C3 survey (the G4 reference) ran at 2027 epochs where the EOP-labelled frame is ITRF 2020 (checked: identical offsets at 2027-01-01)",
+  "other_gates": "unchanged"
+ }
 }

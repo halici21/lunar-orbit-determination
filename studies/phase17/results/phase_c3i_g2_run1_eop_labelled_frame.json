@@ -1,0 +1,11 @@
+{
+ "first_run": true,
+ "note": "G2 reference built with Orekit getITRF(conv), whose ITRF realization follows the EOP file version label (ITRF 2014 before 2026-06-02); superseded by amendment A1",
+ "G2": {
+  "max_abs_m": 0.007381859293962116,
+  "limit_m": 0.0001,
+  "pass_": false,
+  "scale_part_max_m": 0.04761206355246674,
+  "n": 410
+ }
+}
