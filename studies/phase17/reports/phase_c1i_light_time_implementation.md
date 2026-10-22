@@ -161,7 +161,7 @@ sites, in BLS-LM and SRIF, on both the six-state and K paths. Every other profil
 | G4 Orekit, two-way range | **PASS** | max 0.53 mm, rms 0.26 mm (limit 1 cm); 0.17 mm when Orekit is given the state at t2. |
 | G4 Orekit, Earth Shapiro | **PASS** | 3.3 µm. Orekit's modifier assumes an Earth-centred frame, so it is evaluated in GCRF. |
 | G4 Orekit, counted Doppler | **FAIL as computed** | 3.05 µm/s (limit 3 µm/s). Proposed adjudication: Orekit's own double-precision floor in SSB coordinates. Its range jitter over 40 ms is 3.2e-5 m rms in ICRF, against 3.9e-6 m in its Moon-centred frame and 3.8e-6 m for the module. The difference has zero mean (−0.001 µm/s) and does not correlate with range rate (0.01). |
-| G6 estimator closure on DSN-model truth | **FAIL as computed** | BLS-LM `DampingLimit` at 11.6 m; SRIF `MaxIter` (40) at 0.111 m (limit 1 mm). **Control:** the historical Moon-centred model end to end (production generator, MOON estimator) fails the same closure the same way: BLS-LM 12.0 m `DampingLimit`, SRIF 0.120 m `MaxIter` (`results/phase_c1i_estimator_gates_moon_control.json`). The limit is in the estimator/propagator on this 15-orbit SRP-with-shadow arc, not in the light-time model; the trial's finding 2 says SRP-shadow propagation is not converged at any tolerance. The barycentric model does not degrade closure (11.6 vs 12.0 m; 0.111 vs 0.120 m). Proposed adjudication: QUALIFIED relative to the control. The 1 mm closure is deferred to Phase D (integrator and shadow events). |
+| G6 estimator closure on DSN-model truth | **FAIL as computed** | BLS-LM `DampingLimit` at 11.6 m; SRIF `MaxIter` (40) at 0.111 m (limit 1 mm). **Control:** the historical Moon-centred model end to end (production generator, MOON estimator) fails the same closure the same way: BLS-LM 12.0 m `DampingLimit`, SRIF 0.120 m `MaxIter` (`results/phase_c1i_estimator_gates_moon_control.json`). The limit is in the estimator/propagator on this 15-orbit SRP-with-shadow arc, not in the light-time model; the trial's finding 2 says SRP-shadow propagation is not converged at any tolerance. The barycentric model does not degrade closure (11.6 vs 12.0 m; 0.111 vs 0.120 m). Adjudicated QUALIFIED relative to the control; owner accepted 2026-10-22. The 1 mm closure is deferred to Phase D (integrator and shadow events). |
 | G1 full suite | **PASS** | 1855 passed, 29 skipped, 0 failed (the 1842 baseline + 13 new module tests); default paths unchanged |
 
 ## 8. Final status
@@ -170,10 +170,10 @@ sites, in BLS-LM and SRIF, on both the six-state and K paths. Every other profil
 G1 PASS | G2 PASS | G3 PASS (adjudicated, owner-accepted) | G5 PASS (adjudicated, owner-accepted)
 G7 PASS | G8 PASS | G9 PASS (no delta-DOR requalification)
 G4      range PASS (0.53 mm), Earth Shapiro PASS (3.3 um), counted Doppler FAIL as computed (3.05 um/s vs 3) -
-        adjudicated QUALIFIED: Orekit's own SSB double-precision floor (s7) - OWNER ACCEPTANCE PENDING
+        adjudicated QUALIFIED: Orekit's own SSB double-precision floor (s7) - owner accepted 2026-10-22, PASS
 G6      FAIL as computed (BLS-LM 11.6 m, SRIF 0.111 m vs 1 mm) - adjudicated QUALIFIED relative to the
-        Moon-centred control, which fails identically (12.0 m, 0.120 m) - OWNER ACCEPTANCE PENDING
-OUTCOME C1I_QUALIFIED if both pending adjudications are accepted; otherwise C1I_NOT_QUALIFIED as computed
+        Moon-centred control, which fails identically (12.0 m, 0.120 m) - owner accepted 2026-10-22, PASS
+OUTCOME C1I_QUALIFIED (G1-G8 PASS, four of them by owner-accepted adjudication: G3, G4 Doppler, G5, G6)
 ```
 
 **Follow-ups this phase opens:**
