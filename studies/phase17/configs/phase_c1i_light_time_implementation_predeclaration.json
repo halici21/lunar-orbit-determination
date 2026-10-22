@@ -26,5 +26,11 @@
   "C1I_QUALIFIED if G1-G8 pass",
   "C1I_NOT_QUALIFIED otherwise; failing gates reported as computed; the opt-in stays undocumented as production-ready until resolved",
   "G9 never blocks the outcome; it decides only whether a delta-DOR requalification phase is opened"
- ]
+ ],
+ "amendment_A1": {
+  "written": "2026-10-22, while writing the module and BEFORE any G1-G9 number was computed",
+  "issue": "the C1 survey added each Shapiro delay at the converged NEWTONIAN geometry (superposition, no feedback); the module solves the light-time equation with the Shapiro term inside the fixed point (Moyer). The two differ by the feedback of the Shapiro delay on the event epochs, bounded by (u.v/c) x S per leg: ~1e-4 x 7.8 m ~ 0.8 mm for the Sun in two-way range (Moon's ~30 km/s barycentric velocity). The 1e-6 m G3 threshold cannot hold for the Shapiro terms of range by construction",
+  "change": "G3 thresholds for SHAPIRO_* range terms: |module - survey| <= 2e-3 m AND the difference agrees within 20 % with the predicted feedback sum over legs of c/2 x (dG/dr . v) x S_leg evaluated per row, for every row with |predicted| >= 1e-5 m. FRAME and TIME_SCALE range terms, all Doppler terms and all delta-DOR terms keep the original thresholds (1e-6 m, 1e-8 m/s, 1e-12 s)",
+  "other_gates": "unchanged"
+ }
 }
