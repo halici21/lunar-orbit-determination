@@ -31,5 +31,12 @@
   "every comparison accounts for the production and reference numerical floors before setting a threshold (C1 lesson 5); thresholds above are not changed after a number is seen; a needed change is a written amendment before the affected number is computed",
   "exact-epoch station states and relative barycentric vectors as in C1-I (C1 lessons 3, 4)",
   "the pyerfa reference runs only in agent-sandbox/c2-erfa-reference; its outputs are committed with sha256 as in C2"
- ]
+ ],
+ "amendment_A1": {
+  "written": "2026-10-22, after G2/G3 (086ce6f) and BEFORE any G1 or G4-G9 number was computed",
+  "G6": "the predeclared clause 'status Converged (certified)' contradicts a result known before this predeclaration: on the same construction the C1-I model's own closure ended DampingLimit (BLS-LM, 11.6 m) and MaxIter (SRIF, 0.11 m), integrator-limited (C1-I G6, owner-accepted adjudication; Phase D). The gate's intent is no degradation, so the status clause becomes: each estimator's status on DSN_C2 truth equals its status with the C1-I model on its own truth, both computed in the same G6 run from the same start. The 1 mm position clause is unchanged",
+  "G5_steps": "the step sweep is the union of the two C1-I sweeps (pos 1, 10, 100 m; vel 1e-3, 1e-2, 1e-1 m/s; K 1e-5, 1e-4, 1e-3, 3e-3, 1e-2), with exact-epoch station states; chosen before any C2-I G5 number, because the C1-I default K steps sat in finite-difference noise (C1-I G5 adjudication)",
+  "interval_difference": "D_site(t3) - D_site(t1) is evaluated as round_trip x d(TDB-TT)/dt at the interval midpoint (analytic station_time rate), which equals the exact difference to ~1e-20 s, rather than as the difference of two ~1.5e-3 s values, which carries eraDtdb's ~2e-17 s epoch-sum quantisation (G2). Delta-DOR uses the two station values directly (different sites; the predeclared form)",
+  "other_gates": "unchanged"
+ }
 }
