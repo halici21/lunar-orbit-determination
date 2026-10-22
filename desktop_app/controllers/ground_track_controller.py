@@ -1157,13 +1157,20 @@ class GroundTrackController(QWidget):
         if (control not in self._keyboard_controls
                 or not control.hasFocus() or not self.isVisible()):
             return
+        designer = self._orbit_designer
+        numeric = next((designer._spins[key] for key, slider in designer._sliders.items()
+                        if slider is control), control)
+        label = next((label for label in self.findChildren(QLabel)
+                      if label.buddy() is numeric and label.isVisible()), None)
+        context = (control, label) if label is not None else (control,)
         parent = control.parentWidget()
         while parent is not None:
             if isinstance(parent, QScrollArea):
-                # Qt's default focus scrolling can expose only the text cursor.
+                # Keep the parameter's name with the complete focused control.
                 viewport = parent.viewport()
-                top = control.mapTo(viewport, control.rect().topLeft()).y()
-                bottom = top + control.height()
+                top = min(widget.mapTo(viewport, widget.rect().topLeft()).y() for widget in context)
+                bottom = max(widget.mapTo(viewport, widget.rect().bottomLeft()).y() + 1
+                             for widget in context)
                 bar = parent.verticalScrollBar()
                 if top < 0:
                     bar.setValue(bar.value() + top - 12)
