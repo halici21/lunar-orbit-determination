@@ -20,7 +20,7 @@
 ```
 GATES (this interim)   G2 PASS | G8 PASS | G3 FAIL as computed | G5 FAIL as computed
                        G1, G4, G6, G7, G9 not yet run (G1/G6/G7 need the estimator dispatch)
-ADJUDICATION           G3 and G5 adjudicated QUALIFIED (s3, s4) - owner acceptance pending
+ADJUDICATION           G3 and G5 adjudicated QUALIFIED (s3, s4) - owner accepted 2026-10-22, gates PASS
 NEW PRODUCTION DEFECT  station-state providers evaluate Earth rotation at the rounded et0 + t
                        (4.5e-5 m steps; 8e-6 m range / 1.5e-7 m/s Doppler noise) - proposed HARDEN-D31
 SURVEY ERRATA          1 (epoch quantisation, TT rate) and 2 (SSB arithmetic floor, station rounding):
@@ -93,7 +93,7 @@ solvers converge on different sides of a step, so they disagree by up to the ste
 
 Both residuals are below the 1e-8 m/s threshold.
 
-**Proposed decision:** G3 QUALIFIED. The module reproduces the independent survey to its stated thresholds once
+**Decision (owner accepted 2026-10-22):** G3 QUALIFIED. The module reproduces the independent survey to its stated thresholds once
 production's station rounding and the survey's own approximations are removed.
 
 ## 4. G5 adjudication
@@ -122,7 +122,7 @@ The predeclared rule says "max relative error", and the script normalised each p
 
 Every value is within its threshold: 1e-6 for range, one-way and delta-DOR; 1e-5 for Doppler.
 
-**Proposed decision:** G5 QUALIFIED, on row-normalised errors with finite-difference steps outside the noise floor.
+**Decision (owner accepted 2026-10-22):** G5 QUALIFIED, on row-normalised errors with finite-difference steps outside the noise floor.
 
 ## 5. New production defect (proposed HARDEN-D31)
 
@@ -139,7 +139,7 @@ Every value is within its threshold: 1e-6 for range, one-way and delta-DOR; 1e-5
 
 ## 6. What remains (C1-I)
 
-1. **Estimator dispatch** (owner re-freeze of `estimators.py`): a `two_way_light_time_ssb` profile and a generator in
+1. **Estimator dispatch** (owner authorised the `estimators.py` re-freeze on 2026-10-22): a `two_way_light_time_ssb` profile and a generator in
    the module. Then G1, G6, G7.
 2. **G4:** Orekit barycentric two-way range and Doppler (sandbox harness).
 3. **G9:** delta-DOR Jacobian comparison against the authoritative f_perp.
