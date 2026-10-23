@@ -1,0 +1,39 @@
+{
+ "G4": {
+  "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+  "worst_index": 58,
+  "prod_1e11_minus_ref10_max_s": 0.0012943726615048945,
+  "prod_1e13_minus_ref10_max_s": 0.0011353399168001488,
+  "prod_1e11_minus_ref2_max_s": 0.0013630372122861445,
+  "prod_1e11_minus_prod_1e13_max_s": 0.0001590695756021887,
+  "ref10_minus_ref2_max_s": 0.00012969970703125,
+  "contact_function_rad_at_prod_and_ref": [
+   {
+    "outer": 1.4513527446524677e-07,
+    "inner": 0.009390261820396262
+   },
+   {
+    "outer": -1.0047402514423709e-06,
+    "inner": 0.009389111944678064
+   }
+  ]
+ },
+ "G6": [
+  {
+   "rtol": 1e-11,
+   "dxdk_relative_error": {
+    "step_0.001K0": 5.802181893959191e-05,
+    "step_0.01K0": 1.386835507338171e-06
+   },
+   "dxdk_position_norm_m_per_K": 2427.587383567895
+  },
+  {
+   "rtol": 1e-13,
+   "dxdk_relative_error": {
+    "step_0.001K0": 6.612911587229805e-05,
+    "step_0.01K0": 5.72341391364386e-06
+   },
+   "dxdk_position_norm_m_per_K": 2427.587192590268
+  }
+ ]
+}
