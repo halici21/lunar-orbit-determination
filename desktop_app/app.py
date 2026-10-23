@@ -131,6 +131,10 @@ class MainWindow(QMainWindow):
         parent_layout.replaceWidget(original_stack, self.pageScroll)
         self.pageStack = _VisiblePageStack()
         self.pageStack.setObjectName("pageStack")
+        # Detach now: deferred deletion only runs in the event loop, and until then the
+        # unused .ui stack would sit over the page header.
+        original_stack.hide()
+        original_stack.setParent(None)
         original_stack.deleteLater()
         self.pageStack.setMinimumWidth(960)
         self.pageScroll.setWidget(self.pageStack)

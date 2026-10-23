@@ -94,6 +94,19 @@ def test_archive_mismatched_completion_is_not_accepted(tmp_path):
     assert scan_run_archive(tmp_path)[0].status == "invalid"
 
 
+def test_archive_accepts_every_result_listed_by_one_completion_record(tmp_path):
+    write_run(tmp_path)
+    record = json.loads((tmp_path / "completed.json").read_text())
+    record["artifacts"] = [record["result_path"], str(tmp_path / "second_seed_ukf_updates.csv")]
+    record["result_path"] = str(tmp_path / "second_seed_ukf_updates.csv")
+    (tmp_path / "completed.json").write_text(json.dumps(record))
+    entry, = scan_run_archive(tmp_path)
+    assert entry.status == "completed"  # listed as an artifact of the same job
+    record["artifacts"] = [record["result_path"]]
+    (tmp_path / "completed.json").write_text(json.dumps(record))
+    assert scan_run_archive(tmp_path)[0].status == "invalid"  # not listed anywhere
+
+
 def test_archive_accepts_moved_folder_with_explicit_note(tmp_path):
     write_run(tmp_path)
     record = json.loads((tmp_path / "completed.json").read_text())

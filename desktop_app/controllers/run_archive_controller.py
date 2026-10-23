@@ -274,7 +274,12 @@ class RunArchiveController(ArtifactJobs, QWidget):
         entries = self.selected_entries()
         self.open_button.setEnabled(len(entries) == 1 and entries[0].status != "invalid")
 
-        self.clone_button.setEnabled(len(entries) == 1 and entries[0].status != "invalid" and bool(entries[0].metadata.get("job_file")))
+        native = len(entries) == 1 and entries[0].job_schema == "lunar-od-desktop-job-v1"
+        self.clone_button.setEnabled(native and entries[0].status != "invalid" and bool(entries[0].metadata.get("job_file")))
+        self.clone_button.setToolTip(
+            "Kayıtlı formu doğrula ve Senaryo sayfasında yeni bir taslak olarak aç"
+            if native or len(entries) != 1 else
+            "Bu koşu Senaryo formundan başlatılmadı (ör. örnek eğitim); ayarları forma kopyalanamaz.")
         self.compare_button.setEnabled(len(entries) == 2 and all(e.status != "invalid" for e in entries))
         if entries:
             entry = entries[0]
