@@ -985,6 +985,9 @@ class _OrbitDesigner(QWidget):
     def _animate_preview(self) -> None:
         if self._ax is None or self._canvas is None:
             return
+        # A visible tab can still have its preview clipped by the page scroll area.
+        if self._canvas.visibleRegion().isEmpty():
+            return
         self._preview_phase_deg = (self._preview_phase_deg + 2.4) % 360
         try:
             self._ax.view_init(elev=25, azim=self._preview_phase_deg)

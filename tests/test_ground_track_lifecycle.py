@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import QSettings, Qt, QEvent, QCoreApplication
 from PyQt5.QtTest import QSignalSpy, QTest
 from app import MainWindow
 from controllers import ground_track_controller as gt
@@ -86,3 +86,52 @@ def test_window_close_stops_timers_on_retained_page_objects(window):
     QTest.qWait(180)
     assert not page._anim_timer.isActive() and not page._orbit_designer._preview_timer.isActive()
     assert len(spy)==count
+
+
+@pytest.mark.parametrize('size', [(910, 465), (760, 420)])
+def test_scrolling_preview_out_of_view_pauses_only_camera_rotation(window, size):
+    w, page, app = window
+    designer = page._orbit_designer
+    page._tab_widget.setCurrentIndex(1)
+    w.resize(*size)
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    for _ in range(6):
+        app.processEvents()
+    assert designer.isVisible() and designer._preview_timer.isActive()
+    designer._preview_timer.stop()  # Drive frames explicitly, without wall-clock races.
+    canvas = designer._canvas
+    figure = designer._fig
+    elements = designer._get_elements()
+    scroll = w.pageScroll.verticalScrollBar()
+    scroll.setValue(0)
+    app.processEvents()
+    assert canvas.isVisible() and canvas.visibleRegion().isEmpty()
+    phase = designer._preview_phase_deg
+    with patch.object(canvas, 'draw_idle') as draw, patch.object(designer._ax, 'view_init') as view:
+        for _ in range(30):
+            designer._animate_preview()
+        assert designer._preview_phase_deg == phase
+        draw.assert_not_called()
+        view.assert_not_called()
+
+        # Even a partially revealed canvas must animate, then pause again on scroll up.
+        scroll.setValue(scroll.maximum())
+        app.processEvents()
+        assert not canvas.visibleRegion().isEmpty()
+        assert canvas.visibleRegion().boundingRect().height() < canvas.height()
+        draw.reset_mock()
+        designer._animate_preview()
+        resumed_phase = (phase + 2.4) % 360
+        assert designer._preview_phase_deg == resumed_phase
+        view.assert_called_once_with(elev=25, azim=resumed_phase)
+        draw.assert_called_once_with()
+        scroll.setValue(0)
+        app.processEvents()
+        draw.reset_mock()
+        view.reset_mock()
+        designer._animate_preview()
+        assert designer._preview_phase_deg == resumed_phase
+        draw.assert_not_called()
+        view.assert_not_called()
+    assert designer._get_elements() == elements
+    assert designer._fig is figure and designer._canvas is canvas
