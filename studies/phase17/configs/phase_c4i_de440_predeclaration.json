@@ -1,0 +1,21 @@
+{
+ "phase": "Phase C4-I - production planetary ephemeris DE440 (implementation)",
+ "written": "2026-10-23, before any C4-I number was computed",
+ "authorisation": "owner decision 2026-10-23: 'DE440 geçişi D2'den sonra' (switch to DE440 after D2); C4 survey (studies/phase17/reports/phase_c4_de440_materiality.md) T1 Earth position OD 4.82 sigma MATERIAL",
+ "design": {
+  "spice_loader": "PLANETARY_EPHEMERIS_KERNELS = {'DE440': 'de440.bsp', 'DE421': 'de421.bsp'}; DEFAULT_PLANETARY_EPHEMERIS = 'DE440'; the selection is resolved as: explicit ephemeris= argument, else environment variable LUNAR_OD_PLANETARY_EPHEMERIS, else the default; required_kernels(ephemeris=None) returns the kernel list with the selected .bsp in the slot de421.bsp occupies today (load order otherwise unchanged, so the generic MOON_PA binding contract is untouched); REQUIRED_KERNELS stays a module constant equal to required_kernels() at import; required_kernel_paths and load_spice_kernels gain ephemeris=None; an unknown name raises",
+  "records": "a test that fails under the new default only because it reproduces a DE421-era frozen record is pinned to DE421 explicitly (ephemeris='DE421' or the environment variable inside that test module), with a comment naming the record; every pinned test is listed in the report. Any other failure is investigated and reported, never pinned",
+  "not_changed": "the gravitational constants kernel (gm_de431.tpc.txt; the DE440 GM file is not on disk - recorded as a limitation), the Earth orientation and lunar PA kernels, every estimator and propagator default (the D2 PropagationProfile default flip is deferred: the D2 adjudications are open and the profile costs 3-10x runtime; Phase E first)"
+ },
+ "gates": {
+  "G1_de421_reproduction": "with ephemeris='DE421' the loaded kernel list equals the pre-C4-I REQUIRED_KERNELS exactly, and spkezr('EARTH', et, 'J2000', 'NONE', 'MOON') at 25 epochs over 2025-2027 is bit-identical to the value from the pre-C4-I loader",
+  "G2_de440_default": "with defaults the loaded planetary kernel is de440.bsp, and the Moon-centred Earth position differs from the DE421 value by at most 5 m at those 25 epochs (C4 S2 measured <= 3.92 m on the KP2 span)",
+  "G3_environment_override": "LUNAR_OD_PLANETARY_EPHEMERIS=DE421 reproduces G1's values bit for bit; an unknown name raises ValueError",
+  "G4_frame_contract": "tests/test_de440_kernel_contract.py passes under the default (generic MOON_PA still binds to the DE421 realization; MOON_PA_DE440 resolvable)",
+  "G5_suite_default": "full pytest suite under the default: no failures other than tests pinned to DE421 per the records rule, each listed with its record",
+  "G6_suite_de421": "full pytest suite with LUNAR_OD_PLANETARY_EPHEMERIS=DE421 and the pins removed has the same pass set as the pre-C4-I branch (intermittent test_recorded_run_workspace excepted, as recorded in D2)"
+ },
+ "decision_rule": "C4I_QUALIFIED if G1-G6 PASS; otherwise C4I_NOT_QUALIFIED with each failure reported as computed",
+ "outputs": {"report": "studies/phase17/reports/phase_c4i_de440_implementation.md", "results": "studies/phase17/results/phase_c4i_de440.json"},
+ "not_in_scope": "re-running the KP2/R1O/GEO campaigns on DE440 (their frozen records stay DE421 and say so); gm_de440 constants; Phase F real-data fits"
+}
