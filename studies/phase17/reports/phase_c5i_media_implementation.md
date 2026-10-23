@@ -21,7 +21,7 @@
 GATES     G1 PASS (bit identity 0; full suite 1,895 passed, 29 skipped, 0 failed)   G2 PASS (1.8e-15)   G3 PASS (1.1e-15)
           G4 PASS (range 3.0e-8 m, Doppler 1.1e-13 m/s, delta-DOR 8.5e-19 s)   G6 PASS (1.5e-7)
           G5 FAIL as computed: BLS-LM 1.004 mm vs 1 mm (both DampingLimit)
-OUTCOME   C5I_NOT_QUALIFIED as computed; G5 adjudication proposed (s4); with it C5I_QUALIFIED
+OUTCOME   C5I_NOT_QUALIFIED as computed; G5 adjudication ACCEPTED by the owner 2026-10-23 -> C5I_QUALIFIED
 IMPACT    default model (Niell, IERS ZHD, ZWD 0.15 m, climatological TEC): range up to 12.9 m, OD 70 sigma
 ```
 
@@ -92,3 +92,8 @@ clean.
 - GMF/VMF mapping, ramp tables and solar plasma.
 - Scenario/desktop plumbing.
 - Making media a default: an owner decision, since it changes every synthetic result.
+
+## 6. Owner decision (2026-10-23)
+
+The owner accepted the G5 adjudication of s4. **Outcome: C5I_QUALIFIED.** The owner also approved Phase D2
+(re-freeze of dynamics.py, srp.py, estimators.py), the DE440 switch after D2, and LRO data download for Phase F.
