@@ -2488,8 +2488,10 @@
     },
     "lunar_od/dynamics.py": {
       "path": "src/lunar_od/dynamics.py",
-      "original_sha256": "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
-      "byte_preserved": true
+      "original_sha256": "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
+      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/ephemeris.py": {
       "path": "src/lunar_od/ephemeris.py",
@@ -2498,12 +2500,13 @@
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
-      "original_sha256": "e99a7693fcba05f03aa5b805def7b6047d7b26881f2dde31c7e4ff931771aadb",
+      "original_sha256": "f23ad27e99653b7e4fc07be228b2c425502986789f9058c35ecee8653af79093",
       "byte_preserved": true,
-      "refrozen_from_sha256": "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
-      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22) and Phase C1-I two_way_light_time_ssb dispatch (2026-10-22), both authorized by the owner; refrozen_from_sha256 is the identity before C1-I, refrozen_history_sha256 lists every earlier identity in order.",
+      "refrozen_from_sha256": "e99a7693fcba05f03aa5b805def7b6047d7b26881f2dde31c7e4ff931771aadb",
+      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order.",
       "refrozen_history_sha256": [
-        "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6"
+        "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
+        "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd"
       ]
     },
     "lunar_od/filters.py": {
