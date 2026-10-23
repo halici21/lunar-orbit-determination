@@ -15,6 +15,7 @@ from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+from styles.workspace_light import set_role
 
 UI_PATH   = DESKTOP_APP_DIR / "ui" / "pages" / "visibility_page.ui"
 FIXTURE   = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
@@ -388,11 +389,7 @@ class VisibilityController(QWidget):
         self._log_edit.setReadOnly(True)
         self._log_edit.setFixedHeight(82)
         self._log_edit.setPlaceholderText("Hesap günlüğü…")
-        self._log_edit.setStyleSheet(
-            f"QPlainTextEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_MUTED};"
-            f" font-family:Consolas,monospace; font-size:10px;"
-            f" border:1px solid {C.BORDER_MAIN}; border-radius:3px; }}"
-        )
+        set_role(self._log_edit, "log")
         self._log_edit.setVisible(False)
         self.controlLayout.addWidget(self._log_edit)
 
@@ -517,7 +514,7 @@ class VisibilityController(QWidget):
         placeholder = QLabel("İstasyonları seçin; görünürlüğü hesaplayın.\nSPICE dosyalarını Ayarlar → Hesaplama ortamı bölümünden kontrol edebilirsiniz.")
         placeholder.setWordWrap(True)
         placeholder.setAlignment(Qt.AlignCenter)
-        placeholder.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_LG}px;")
+        set_role(placeholder, "placeholder")
         lay.addWidget(placeholder)
         self._placeholder_label = placeholder
 
@@ -528,10 +525,6 @@ class VisibilityController(QWidget):
             canvas = FigureCanvasQTAgg(fig)
             canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
-            toolbar.setStyleSheet(
-                f"QToolBar {{ background:{C.BG_PANEL}; border:none; }}"
-                f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
-            )
         except Exception as exc:
             self._set_status(f"Grafik çizilemedi: {exc}", C.RED)
             return False

@@ -28,7 +28,7 @@ def palette_state(monkeypatch):
             monkeypatch.setattr(theme.C, name, value)
     if not hasattr(theme.C, "ON_ACCENT"):
         monkeypatch.setattr(theme.C, "ON_ACCENT", None, raising=False)
-    for mapping in (theme.ACCENT, theme.NET_COLORS, theme.MPL_DARK):
+    for mapping in (theme.NET_COLORS, theme.MPL_DARK):
         for key, value in mapping.copy().items():
             monkeypatch.setitem(mapping, key, value)
     monkeypatch.setattr(theme, "BAR_COLORS", list(theme.BAR_COLORS))

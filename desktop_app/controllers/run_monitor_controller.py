@@ -46,8 +46,8 @@ class RunMonitorController(QWidget):
         parent_layout.insertWidget(parent_layout.indexOf(placeholder), self._log, stretch=1)
         placeholder.hide()
         self.commandPreviewLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.commandPreviewLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
-        self.elapsedLabel.setStyleSheet(f"color:{C.TEXT_MUTED};")
+        self.commandPreviewLabel.setProperty("role", "caption")
+        self.elapsedLabel.setProperty("role", "caption")
 
         self.cancelBtn.clicked.connect(self._cancel)
         self.clearLogBtn.clicked.connect(self._log.clear_log)

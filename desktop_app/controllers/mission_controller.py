@@ -15,6 +15,7 @@ from services.result_summary import result_status
 from widgets.mission_plots import StationWorldMap, MissionGantt
 from widgets.tracking_plots import StoredOrbit
 from styles.theme import C
+from styles.workspace_light import set_role
 
 
 def caption(text, parent=None):
@@ -45,7 +46,7 @@ class MissionController(QWidget):
         root.addWidget(self.run_label)
         self.run_status = caption("Arşivden bir koşu açın; yörünge, istasyonlar ve ölçüm zamanları burada birlikte oynatılır.")
         self.run_status.setAccessibleName("Yüklü koşunun işlem ve kayıtlı yay başarı durumu")
-        self.run_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        set_role(self.run_status, "caption")
         self.run_status.setToolTip("Yay başarısı kaynak CSV’deki operational_success alanıdır. Bu alanlar yakınsama veya "
                                   "bilimsel doğruluk onayı değildir; referans yörünge de başarı kanıtı değildir.")
         root.addWidget(self.run_status)
@@ -58,7 +59,7 @@ class MissionController(QWidget):
         orbit_layout.setSpacing(4)
         orbit_layout.addWidget(caption("AY MERKEZLİ YÖRÜNGE"))
         self.orbit_caption = caption("Kayıtlı x/y/z durumları · sürükleyerek döndür, tekerlekle yakınlaştır")
-        self.orbit_caption.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+        set_role(self.orbit_caption, "caption")
         orbit_layout.addWidget(self.orbit_caption)
         self.orbit = StoredOrbit()
         self.orbit.setMinimumHeight(260)
@@ -72,7 +73,7 @@ class MissionController(QWidget):
         map_layout.setSpacing(4)
         map_layout.addWidget(caption("DÜNYADAKİ YER İSTASYONLARI"))
         self.map_caption = caption("İçi boş: katalog / seçili ağ · dolu: seçili zamanda ölçüm kaydı")
-        self.map_caption.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+        set_role(self.map_caption, "caption")
         map_layout.addWidget(self.map_caption)
         station_row = QHBoxLayout()
         station_label = QLabel("İstasyon:")
@@ -131,13 +132,13 @@ class MissionController(QWidget):
         root.addLayout(row)
         self.help_button = QPushButton("Bu görünüm ne gösteriyor?  ›")
         self.help_button.setCheckable(True)
-        self.help_button.setStyleSheet(f"border:0; text-align:left; padding:2px 0; color:{C.TEXT_MUTED};")
+        set_role(self.help_button, "disclosure")
         self.help_text = caption("Gantt, koşuda kaydedilen ölçüm örneklerini gösterir; kesintisiz radyo teması veya çözüm başarısı değildir. "
                                  "Oynatma yalnız kayıtlı durumları izler.\n"
                                  "Yükseklik: kayıtlı konumun Ay merkezine uzaklığı eksi 1737,4 km. Eğim: yörünge düzleminin kayıt çerçevesinin XY düzlemine açısı; Ay ekvatoru değildir. "
                                  "Yarı büyük eksen (a): anlık iki cisim elipsinin boyutu. Dışmerkezlik (e): 0 daire, 0–1 elips. Periyot: aynı iki cisim modelindeki tur süresi. "
                                  "Truth, senaryonun referans hareketidir; ○ işaretleri kestiricinin yay sonu/başlangıç durumlarıdır. Bunlar gerçek uzay aracı telemetrisi değildir.")
-        self.help_text.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        set_role(self.help_text, "caption")
         self.help_button.toggled.connect(self.help_text.setVisible)
         root.addWidget(self.help_button, alignment=Qt.AlignLeft)
         root.addWidget(self.help_text)

@@ -21,6 +21,7 @@ from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+from styles.workspace_light import set_role
 
 UI_PATH  = DESKTOP_APP_DIR / "ui" / "pages" / "ground_track_page.ui"
 FIXTURE  = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
@@ -1272,11 +1273,7 @@ class GroundTrackController(QWidget):
         self._log_edit.setReadOnly(True)
         self._log_edit.setFixedHeight(82)
         self._log_edit.setPlaceholderText("Hesap günlüğü…")
-        self._log_edit.setStyleSheet(
-            f"QPlainTextEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_MUTED};"
-            f" font-family:Consolas,monospace; font-size:10px;"
-            f" border:1px solid {C.BORDER_MAIN}; border-radius:3px; }}"
-        )
+        set_role(self._log_edit, "log")
         self._log_edit.setVisible(False)
         self.controlLayout.addWidget(self._log_edit)
 
@@ -1544,10 +1541,7 @@ class GroundTrackController(QWidget):
         try:
             canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
-            toolbar.setStyleSheet(
-                f"QToolBar {{ background:{C.BG_PANEL}; border:none; }}"
-                f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
-            )
+
             # Catch first-paint failures while the previous canvas is still installed.
             canvas.draw()
         except Exception:
@@ -1579,7 +1573,7 @@ class GroundTrackController(QWidget):
         )
         ph.setWordWrap(True)
         ph.setAlignment(Qt.AlignCenter)
-        ph.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_LG}px;")
+        set_role(ph, "placeholder")
         lay.addWidget(ph)
 
     def _set_status(self, text: str, color: str = C.TEXT_MUTED) -> None:
@@ -1643,16 +1637,6 @@ class GroundTrackController(QWidget):
     def _add_orbit_designer_tab(self) -> None:
         """Wrap the existing splitter in a QTabWidget and add the Orbit Designer tab."""
         self._tab_widget = _CurrentTabWidget(self)
-        self._tab_widget.setStyleSheet(
-            f"QTabBar::tab {{ background:{C.BG_SIDEBAR}; color:{C.TEXT_MUTED};"
-            f" padding:6px 18px; font-size:12px; border:none;"
-            f" border-bottom:2px solid transparent; }}"
-            f"QTabBar::tab:selected {{ color:{C.NAV_ACTIVE_FG};"
-            f" border-bottom-color:{C.NAV_ACTIVE}; }}"
-            f"QTabBar::tab:hover {{ background:{C.BG_ACTIVE};"
-            f" color:{C.TEXT_SECONDARY}; }}"
-            f"QTabWidget::pane {{ border:none; }}"
-        )
         self.mainLayout.removeWidget(self.splitter)
         self._tab_widget.addTab(self.splitter, "Yüzey izi")
         self._orbit_designer = _OrbitDesigner(self)

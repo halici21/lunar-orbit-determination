@@ -40,7 +40,7 @@ _TITLES: dict[str, tuple[str, str]] = {
 
     "archive": ("Arşiv", "Kaydedilmiş koşular. İki koşu seçerek karşılaştırabilirsiniz."),
     "comparison": ("Arşiv · Karşılaştırma", "İki koşunun ortak epoklardaki farkları ve ayar farkları."),
-    "stations": ("İstasyonlar", "Yer istasyonu kataloğu. Kaydettiğiniz ağlar Senaryo sayfasında seçilebilir."),
+    "stations": ("İstasyonlar", "Yer istasyonu kataloğu: konumlar ve ölçüm doğrulukları. Özel istasyon ekleyip düzenleyebilirsiniz."),
     "visibility": ("Görünürlük", "Örnek yörünge için istasyon temas planı, Ay yüzey izi ve yörünge tasarımı."),
 
     "settings": ("Ayarlar", "Python ortamı, SPICE dosyaları, sonuç klasörü ve renk paleti."),

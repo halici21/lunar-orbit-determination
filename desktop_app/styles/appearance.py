@@ -31,7 +31,6 @@ def apply_palette(name="modern"):
         YELLOW="#805C10", RED="#A32622", ORANGE="#92531D", PURPLE="#784C98").items():
         setattr(theme.C, key, value)
     c = theme.C
-    theme.ACCENT.update({key: getattr(c, key.upper()) for key in theme.ACCENT})
     theme.NET_COLORS.update(DSN=c.BLUE, ITU=c.RED, KGS=c.GREEN, ESA=c.YELLOW, RUS=c.PURPLE, ISRO=c.CYAN)
     theme.BAR_COLORS[:] = [c.BLUE, c.GREEN, c.YELLOW, c.RED, c.PURPLE, c.ORANGE, c.CYAN]
     theme.MPL_DARK.update({"figure.facecolor": c.BG_DEEP, "axes.facecolor": c.BG_PLOT,

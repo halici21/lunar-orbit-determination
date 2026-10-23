@@ -16,6 +16,7 @@ from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from models.scenario_model import ScenarioModel, PRESETS
 from styles.artifact_workspace import ARTIFACT_STYLE
 from styles.theme import C
+from styles.workspace_light import set_role
 
 UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "scenario_builder_page.ui"
 
@@ -105,7 +106,7 @@ class ScenarioBuilderController(QWidget):
 
         self._arc_count_label = QLabel("")
         self._arc_count_label.setWordWrap(True)
-        self._arc_count_label.setStyleSheet(f"QLabel {{ color:{C.TEXT_MUTED}; font-size:12px; }}")
+        set_role(self._arc_count_label, "caption")
         self.arcGroup.layout().addRow("Tahmin:", self._arc_count_label)
 
         self.copyJsonBtn.clicked.connect(self._copy_json)
@@ -148,7 +149,7 @@ class ScenarioBuilderController(QWidget):
         form_layout = self.estimatorGroup.parentWidget().layout()
         form_layout.setContentsMargins(0, 0, 20, 0)
         form_layout.setSpacing(10)
-        self.presetDescLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        set_role(self.presetDescLabel, "caption")
 
         # What is measured and by which stations is a primary choice, not an advanced one.
         self.observationGroup = QGroupBox("Ölçüm ve istasyonlar")
@@ -165,7 +166,7 @@ class ScenarioBuilderController(QWidget):
 
         self.advanced_form_toggle = QPushButton("Gelişmiş ayarlar: yaylar ve ölçüm modeli  ›")
         self.advanced_form_toggle.setCheckable(True)
-        self.advanced_form_toggle.setObjectName("disclosureButton")
+        set_role(self.advanced_form_toggle, "disclosure")
         self.advanced_form_toggle.setMinimumHeight(34)
         self.advanced_form_toggle.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         self.advanced_form = QWidget()

@@ -97,7 +97,7 @@ class RunArchiveController(ArtifactJobs, QWidget):
         self.path_label = QLabel(str(self.folder))
         self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.path_label.setWordWrap(True)
-        self.path_label.setObjectName("mutedCaption")
+        self.path_label.setProperty("role", "caption")
         header.addWidget(self.path_label, 1)
         choose = QPushButton("Klasör seç…")
         choose.setToolTip("Başka bir sonuç klasöründeki koşuları listele")

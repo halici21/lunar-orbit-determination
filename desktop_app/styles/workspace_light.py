@@ -1,5 +1,18 @@
-"""Shared light controls for the shell and native result workspaces."""
+"""Shared light controls for the shell and native result workspaces.
+
+Pages give a widget a look through a ``role`` property (``set_role``) rather
+than their own stylesheet, so every page draws captions, logs and danger
+buttons the same way and the palette lives in one place.
+"""
 from styles.theme import C
+
+
+def set_role(widget, role):
+    """Apply one of the shared roles below (caption, placeholder, log, disclosure, danger)."""
+    widget.setProperty("role", role)
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+    return widget
 
 
 def workspace_stylesheet():
@@ -44,4 +57,14 @@ QSlider::groove:horizontal {{ background:{C.BORDER_MAIN}; height:3px; }}
 QSlider::handle:horizontal {{ background:{C.NAV_ACTIVE}; width:12px; margin:-5px 0; border-radius:6px; }}
 QToolTip {{ background:{C.BG_PANEL}; color:{C.TEXT_PRIMARY}; border:1px solid {C.BORDER_MID}; padding:6px; }}
 QStatusBar {{ background:{C.BG_PANEL}; color:{C.TEXT_MUTED}; }}
+QToolBar {{ background:{C.BG_PANEL}; border:none; }}
+QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}
+QLabel[role="caption"] {{ color:{C.TEXT_MUTED}; font-size:12px; }}
+QLabel[role="placeholder"] {{ color:{C.TEXT_MUTED}; font-size:13px; }}
+QPlainTextEdit[role="log"] {{ color:{C.TEXT_MUTED}; font-family:Consolas,monospace; font-size:10px; border-radius:3px; padding:4px; }}
+QPushButton[role="disclosure"] {{ background:transparent; border:0; text-align:left; padding:6px 0; color:{C.TEXT_MUTED}; }}
+QPushButton[role="disclosure"]:hover {{ color:{C.TEXT_PRIMARY}; }}
+QPushButton[role="disclosure"]:focus {{ border:0; color:{C.NAV_ACTIVE}; }}
+QPushButton[role="danger"] {{ color:{C.RED}; border-color:{C.RED}; }}
+QPushButton[role="danger"]:disabled {{ color:{C.TEXT_MUTED}; border-color:{C.BORDER_FAINT}; }}
 """

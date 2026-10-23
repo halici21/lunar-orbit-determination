@@ -172,7 +172,7 @@ class TrackingConsoleController(QWidget):
         self.path_label = QLabel("Arşivden bir koşu açın veya bir sonuç klasörü seçin.")
         self.path_label.setWordWrap(True)
         self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.path_label.setObjectName("mutedCaption")
+        self.path_label.setProperty("role", "caption")
         root.addWidget(self.path_label)
         feedback = QHBoxLayout()
         self.recovery_message = QLabel()

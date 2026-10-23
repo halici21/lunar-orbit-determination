@@ -1,4 +1,4 @@
-"""Stations page — world map, precision table, station editing and network presets."""
+"""Stations page — world map, precision table and custom-station editing."""
 from __future__ import annotations
 import copy
 import csv as _csv
@@ -20,6 +20,7 @@ from PyQt5 import uic
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from services.world_map import draw_land
 from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+from styles.workspace_light import set_role
 
 UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "stations_page.ui"
 STATION_CFG = PYTHON_PORT / "fixtures" / "station_config.json"
@@ -33,18 +34,7 @@ _COL_HEADERS = [
     "İstasyon", "Ağ", "Enlem (°)", "Boylam (°)",
     "σ menzil (m)", "σ açı (mrad)", "σ menzil hızı (mm/s)",
 ]
-_BTN_STYLE = (
-    f"QPushButton {{ background:{C.BG_HOVER}; color:{C.TEXT_PRIMARY};"
-    f" border:1px solid {C.BORDER_MAIN}; border-radius:4px;"
-    f" padding:4px 12px; font-size:{FONT.SIZE_SM}px; }}"
-    f"QPushButton:hover {{ background:{C.BG_ACTIVE}; }}"
-    f"QPushButton:disabled {{ color:{C.TEXT_MUTED}; border-color:{C.BORDER_FAINT}; }}"
-)
-_SEARCH_STYLE = (
-    f"QLineEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_PRIMARY};"
-    f" border:1px solid {C.BORDER_MAIN}; border-radius:4px;"
-    f" padding:3px 8px; font-size:{FONT.SIZE_SM}px; }}"
-)
+
 
 
 def _network(name: str) -> str:
@@ -199,14 +189,10 @@ class _StationDialog(QDialog):
             s.setValue(float(val) if val is not None else 0.0)
             if suffix:
                 s.setSuffix(f" {suffix}")
-            s.setStyleSheet(
-                f"QDoubleSpinBox {{ background:{C.BG_DEEP}; color:{C.TEXT_PRIMARY};"
-                f" border:1px solid {C.BORDER_MAIN}; border-radius:3px; padding:2px; }}"
-            )
             return s
 
         self._name_edit = QLineEdit(self._station.get("name", ""))
-        self._name_edit.setStyleSheet(_SEARCH_STYLE)
+
         form.addRow("Ad:", self._name_edit)
 
         self._net_combo = QComboBox()
@@ -317,7 +303,7 @@ class StationsController(QWidget):
         self._search.setClearButtonEnabled(True)
         self._search.setAccessibleName("İstasyon adı veya ağ koduyla tabloyu filtrele")
         self._search.setToolTip("Ad veya ağ kodu (DSN, ESA…) ile tablodaki istasyonları filtreleyin. Ctrl+F: aramaya geç. Harita tüm kataloğu gösterir.")
-        self._search.setStyleSheet(_SEARCH_STYLE)
+
         self._search.setMaximumWidth(220)
         self._search.textChanged.connect(self._apply_filter)
         self._find_shortcut = QShortcut(QKeySequence.Find, self)
@@ -327,32 +313,29 @@ class StationsController(QWidget):
         catalogue_lay.addStretch()
 
         lbl = QLabel("Seçili istasyon:")
-        lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
+        set_role(lbl, "caption")
         selection_lay.addWidget(lbl)
         selection_lay.addStretch()
 
         self._btn_export = QPushButton("CSV aktar…")
-        self._btn_export.setStyleSheet(_BTN_STYLE)
+
         self._btn_export.setToolTip("Tabloda görünen istasyonları CSV dosyasına kaydet")
         self._btn_export.clicked.connect(self._export_csv)
         catalogue_lay.addWidget(self._btn_export)
 
         self._btn_add = QPushButton("İstasyon ekle")
-        self._btn_add.setStyleSheet(_BTN_STYLE)
+
         self._btn_add.clicked.connect(self._add_station)
         catalogue_lay.addWidget(self._btn_add)
 
         self._btn_edit = QPushButton("Düzenle")
-        self._btn_edit.setStyleSheet(_BTN_STYLE)
+
         self._btn_edit.setEnabled(False)
         self._btn_edit.clicked.connect(self._edit_station)
         selection_lay.addWidget(self._btn_edit)
 
         self._btn_delete = QPushButton("Sil")
-        self._btn_delete.setStyleSheet(
-            _BTN_STYLE.replace(f"background:{C.BG_HOVER}", f"background:{C.BG_HOVER}")
-            .replace(f"border:1px solid {C.BORDER_MAIN}", f"border:1px solid {C.RED}")
-        )
+        set_role(self._btn_delete, "danger")
         self._btn_delete.setEnabled(False)
         self._btn_delete.clicked.connect(self._delete_station)
         selection_lay.addWidget(self._btn_delete)
@@ -363,7 +346,7 @@ class StationsController(QWidget):
         self._filter_status.setWordWrap(True)
         self._filter_status.setMaximumWidth(520)
         self._filter_status.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        self._filter_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
+        set_role(self._filter_status, "caption")
         self._filter_status.setAccessibleName("İstasyon tablosunun filtre ve seçim durumu")
         self.mainLayout.insertWidget(3, self._filter_status)
 
