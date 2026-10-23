@@ -147,7 +147,7 @@ def test_failed_visibility_request_preserves_only_a_known_previous_result(page, 
     assert widget.exportCsvBtn.isEnabled() == previous
     assert widget.exportPngBtn.isEnabled() == previous
     assert widget.computeBtn.isEnabled() and widget.paramsGroup.isEnabled()
-    assert "Error:" in widget.statusLabel.text()
+    assert "Hata:" in widget.statusLabel.text()
     assert ("önceki" if previous else "Sonuç üretilmedi") in widget._result_context.text()
 
 
@@ -163,7 +163,7 @@ def test_plot_failure_never_pairs_new_visibility_csv_with_an_old_png(page, previ
     assert widget._last_data is old_data and widget._fig is old_figure
     assert widget.exportCsvBtn.isEnabled() == previous
     assert widget.exportPngBtn.isEnabled() == previous
-    assert "Plot error:" in widget.statusLabel.text()
+    assert "Grafik çizilemedi:" in widget.statusLabel.text()
     assert ("önceki" if previous else "Sonuç üretilmedi") in widget._result_context.text()
 
 

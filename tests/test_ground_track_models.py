@@ -21,21 +21,21 @@ def test_analytical_plot_does_not_present_uncomputed_visibility_as_zero():
     originals={key:value.tobytes() for key,value in data.items() if isinstance(value,np.ndarray)}
     figure=gt._build_static_figure(data)
     ax=figure.axes[0]
-    assert 'not computed' in ax.get_title()
+    assert 'hesaplanmadı' in ax.get_title()
     assert '0%' not in ax.get_title()
     assert 'No coverage' not in [label.get_text() for label in ax.get_legend().get_texts()]
-    assert 'Visibility not computed' in [label.get_text() for label in ax.get_legend().get_texts()]
+    assert 'Görünürlük hesaplanmadı' in [label.get_text() for label in ax.get_legend().get_texts()]
     assert originals=={key:data[key].tobytes() for key in originals}
 
 
-@pytest.mark.parametrize('mask,percent', [([False]*4, '0%'), ([True,False,True,False], '50%')])
+@pytest.mark.parametrize('mask,percent', [([False]*4, '%0'), ([True,False,True,False], '%50')])
 def test_sampled_spice_plot_reports_sample_percentage_including_real_zero(mask,percent):
     app=QApplication.instance() or QApplication([])
     data=samples(mask)
     figure=gt._build_static_figure(data); ax=figure.axes[0]
-    assert f'Visible samples: {percent}' in ax.get_title()
+    assert f'Görünür örnek: {percent}' in ax.get_title()
     labels=[label.get_text() for label in ax.get_legend().get_texts()]
-    assert 'No sample visibility' in labels and 'Visibility not computed' not in labels
+    assert 'Örnekte görünürlük yok' in labels and 'Görünürlük hesaplanmadı' not in labels
     assert np.array_equal(data['vis_mask'],[mask])
 
 
@@ -62,9 +62,9 @@ def test_designer_result_and_playback_identify_missing_epoch_and_visibility(page
     assert 'sabit hızlı' in note and 'hesaplanmadı' in note
     assert widget._tab_widget.currentIndex()==0
     assert widget._data['vis_mask'].shape[0]==0
-    assert '0.1 days' in widget._fig.axes[0].get_title()
+    assert '0.1 gün' in widget._fig.axes[0].get_title()
     widget._anim_step()
-    assert 'not computed' in widget._anim_label.get_text()
+    assert 'hesaplanmadı' in widget._anim_label.get_text()
     assert 'no coverage' not in widget._anim_label.get_text()
     target=tmp_path/'analytical.csv'
     with patch.object(gt.QFileDialog,'getSaveFileName',return_value=(str(target),'CSV')):
@@ -85,5 +85,5 @@ def test_spice_result_note_describes_actual_example_epoch_and_sample_scope(page)
     assert widget._data is data
     assert 'görünür örnekler %0' in widget.statusLabel.text()
     widget._anim_step()
-    assert 'No sample visibility' in widget._anim_label.get_text()
-    assert 'not computed' not in widget._anim_label.get_text()
+    assert 'Örnekte görünürlük yok' in widget._anim_label.get_text()
+    assert 'hesaplanmadı' not in widget._anim_label.get_text()

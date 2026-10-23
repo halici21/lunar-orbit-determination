@@ -58,7 +58,7 @@ class _VisWorker(QThread):
                 sample_moon_centered_ephemeris,
             )
 
-            self.progress.emit("Loading fixture…")
+            self.progress.emit("Örnek başlangıç durumu okunuyor…")
             fixture    = json.loads(FIXTURE.read_text(encoding="utf-8"))
             initial    = fixture["initial_state"]
             constants  = fixture["constants"]
@@ -73,10 +73,10 @@ class _VisWorker(QThread):
             t_eval  = np.arange(0.0, self.duration_days * 86400.0 + _SAMPLE_STEP_S, _SAMPLE_STEP_S)
             t_ephem = np.arange(0.0, self.duration_days * 86400.0 + _EPHEM_STEP_S,  _EPHEM_STEP_S)
 
-            self.progress.emit("Loading SPICE kernels…")
+            self.progress.emit("SPICE dosyaları yükleniyor…")
             load_spice_kernels()
             try:
-                self.progress.emit("Propagating orbit…")
+                self.progress.emit("Yörünge yayılıyor…")
                 et0     = float(spice.str2et(epoch_utc))
                 ephem   = sample_moon_centered_ephemeris(et0, t_ephem)
                 xforms  = sample_j2000_to_itrf93_transforms(et0, t_eval)
@@ -85,11 +85,11 @@ class _VisWorker(QThread):
                     rtol=1e-9, atol=1e-10,
                 )
 
-                self.progress.emit("Computing visibility…")
+                self.progress.emit("Görünürlük hesaplanıyor…")
                 by_name  = {s.name: s for s in range_rate_stations()}
                 stations = [by_name[n] for n in self.station_names if n in by_name]
                 if not stations:
-                    self.failed.emit("No stations selected.")
+                    self.failed.emit("İstasyon seçilmedi.")
                     return
 
                 config = VisibilityConfig(
@@ -200,12 +200,12 @@ def _draw_gantt(data: dict) -> "Figure":
     ax.set_ylim(-0.7, n_st - 0.3)
     ax.set_yticks(range(n_st))
     ax.set_yticklabels(names, fontsize=FONT.SIZE_SM - 1)
-    ax.set_xlabel("Day (since epoch)", fontsize=FONT.SIZE_SM)
+    ax.set_xlabel("Gün (başlangıç epokundan)", fontsize=FONT.SIZE_SM)
 
     # Day ticks
     day_ticks = list(range(int(dur_days) + 1))
     ax.set_xticks(day_ticks)
-    ax.set_xticklabels([f"D{d}" for d in day_ticks], fontsize=FONT.SIZE_XS)
+    ax.set_xticklabels([f"G{d}" for d in day_ticks], fontsize=FONT.SIZE_XS)
 
     # Tick/spine colours
     ax.tick_params(colors=C.TEXT_TICK)
@@ -373,8 +373,8 @@ class VisibilityController(QWidget):
     def _build_export_buttons(self) -> None:
         row = QHBoxLayout()
         row.setSpacing(6)
-        self.exportPngBtn = QPushButton("Export PNG")
-        self.exportCsvBtn = QPushButton("Export CSV")
+        self.exportPngBtn = QPushButton("PNG kaydet")
+        self.exportCsvBtn = QPushButton("CSV kaydet")
         self.exportPngBtn.setEnabled(False)
         self.exportCsvBtn.setEnabled(False)
         self.exportPngBtn.clicked.connect(self._export_png)
@@ -387,7 +387,7 @@ class VisibilityController(QWidget):
         self._log_edit = QPlainTextEdit()
         self._log_edit.setReadOnly(True)
         self._log_edit.setFixedHeight(82)
-        self._log_edit.setPlaceholderText("Computation log…")
+        self._log_edit.setPlaceholderText("Hesap günlüğü…")
         self._log_edit.setStyleSheet(
             f"QPlainTextEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_MUTED};"
             f" font-family:Consolas,monospace; font-size:10px;"
@@ -458,15 +458,15 @@ class VisibilityController(QWidget):
 
         selected = [n for n, cb in self._checkboxes.items() if cb.isChecked()]
         if not selected:
-            self._set_status("Select at least one station.", C.YELLOW)
+            self._set_status("En az bir istasyon seçin.", C.YELLOW)
             return
 
         self._pending_inputs = self._input_snapshot()
         self._set_busy(True)
         self._refresh_result_context()
         self._log_edit.clear()
-        self._log(f"Starting: {len(selected)} station(s), {self.durationSpin.value():.0f} days")
-        self._set_status(f"{len(selected)} station(s), {self.durationSpin.value():.0f} days…", C.BLUE)
+        self._log(f"Başlıyor: {len(selected)} istasyon, {self.durationSpin.value():.0f} gün")
+        self._set_status(f"{len(selected)} istasyon, {self.durationSpin.value():.0f} gün…", C.BLUE)
 
         self._worker = _VisWorker(
             station_names=selected,
@@ -495,7 +495,7 @@ class VisibilityController(QWidget):
         self._pending_inputs = None
         self._set_busy(False)
         n = len(data["station_names"])
-        done_msg = f"Done — {n} station(s), {data['duration_days']:.0f} days"
+        done_msg = f"Tamamlandı — {n} istasyon, {data['duration_days']:.0f} gün"
         self._set_status(done_msg, C.GREEN)
         self._log(done_msg)
         self._refresh_result_context()
@@ -505,10 +505,10 @@ class VisibilityController(QWidget):
         self._set_busy(False)
         self._refresh_result_context("Yeni hesap başarısız; görünen grafik ve dışa aktarım önceki sonuç."
                                      if self._last_data is not None else "Sonuç üretilmedi; ayarları ve SPICE dosyalarını kontrol edin.")
-        short = msg.splitlines()[0][:120] if msg else "Unknown error"
-        self._set_status(f"Error: {short}", C.RED)
-        self._log(f"FAILED: {short}")
-        _show_error_dialog(self, "Visibility computation failed", msg)
+        short = msg.splitlines()[0][:120] if msg else "Bilinmeyen hata"
+        self._set_status(f"Hata: {short}", C.RED)
+        self._log(f"BAŞARISIZ: {short}")
+        _show_error_dialog(self, "Görünürlük hesaplanamadı", msg)
 
     # ------------------------------------------------------------------
     def _init_canvas_placeholder(self) -> None:
@@ -533,7 +533,7 @@ class VisibilityController(QWidget):
                 f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
             )
         except Exception as exc:
-            self._set_status(f"Plot error: {exc}", C.RED)
+            self._set_status(f"Grafik çizilemedi: {exc}", C.RED)
             return False
 
         # Replace existing canvas
@@ -551,26 +551,26 @@ class VisibilityController(QWidget):
 
     def _export_png(self) -> None:
         if self._fig is None:
-            QMessageBox.information(self, "Export unavailable", "Compute the Gantt chart first.")
+            QMessageBox.information(self, "Kaydedilecek sonuç yok", "Önce görünürlüğü hesaplayın.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export visibility PNG",
+            "Temas planını görüntü olarak kaydet",
             str(Path.home() / "visibility_gantt.png"),
-            "PNG images (*.png);;PDF files (*.pdf)",
+            "PNG görüntüleri (*.png);;PDF dosyaları (*.pdf)",
         )
         if path:
             self._fig.savefig(path, dpi=180, bbox_inches="tight", facecolor=self._fig.get_facecolor())
 
     def _export_csv(self) -> None:
         if self._last_data is None:
-            QMessageBox.information(self, "Export unavailable", "Compute visibility first.")
+            QMessageBox.information(self, "Kaydedilecek sonuç yok", "Önce görünürlüğü hesaplayın.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export visibility CSV",
+            "Görünürlük tablosunu CSV olarak kaydet",
             str(Path.home() / "visibility_matrix.csv"),
-            "CSV files (*.csv)",
+            "CSV dosyaları (*.csv)",
         )
         if not path:
             return
@@ -605,7 +605,7 @@ def _show_error_dialog(parent, title: str, msg: str) -> None:
     box = QMessageBox(parent)
     box.setWindowTitle(title)
     box.setIcon(QMessageBox.Critical)
-    short = msg.splitlines()[0][:200] if msg else "An error occurred."
+    short = msg.splitlines()[0][:200] if msg else "Bir hata oluştu."
     box.setText(short)
     if "\n" in msg:
         box.setDetailedText(msg)
