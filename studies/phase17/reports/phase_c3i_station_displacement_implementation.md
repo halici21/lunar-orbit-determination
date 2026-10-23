@@ -27,7 +27,7 @@ GATES        G1 PASS (bit identity 0; full suite 1,889 passed, 29 skipped, 0 fai
              G4 PASS (range 5.7e-5 m, Doppler 8.9e-9 m/s, delta-DOR 1.3e-13 s)
              G5 BLS-LM PASS (0.2 mm); SRIF FAIL as computed (6.5 mm, both MaxIter)
              G6 PASS
-OUTCOME      C3I_NOT_QUALIFIED as computed; G5 SRIF adjudication proposed to the owner (s5); with it C3I_QUALIFIED
+OUTCOME      C3I_NOT_QUALIFIED as computed; G5 SRIF adjudication ACCEPTED by the owner 2026-10-23 -> C3I_QUALIFIED (s6)
 IMPACT (G7)  with the EPSG scale: two-way range up to 0.31 m, Doppler 28 um/s, OD 1.89 sigma (RANGE_ONLY, DSN)
 ```
 
@@ -106,3 +106,11 @@ model-independent set. The SRIF MaxIter behaviour goes to Phase D (integrator).
 - **Real DSS coordinates and plate motion** are CONVENTION_REAL_DATA.
 - **Opt-in wiring:** the displacement is opt-in per pass. Scenario/desktop plumbing and making it a default are
   later decisions.
+
+## 6. Owner decision (2026-10-23)
+
+The owner accepted the G5 SRIF adjudication of s5.
+- **G1–G6 PASS**: G5 by owner-accepted adjudication.
+- **Outcome: C3I_QUALIFIED.**
+- The SRIF MaxIter behaviour is carried into Phase D2. D1 identified its causes: integrator error, shadow events,
+  and the estimator's internal propagation mismatch.

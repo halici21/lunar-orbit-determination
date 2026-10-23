@@ -25,7 +25,7 @@ GATES               S1 S4 S5 S6 PASS; S2 FAIL as computed (T2B > 2 m screen); S3
 FINDING             the production Earth PCK (earth_2025_250826_2125_predict.bpc) diverges from IERS EOP after its
                     2025-08-26 creation: 6 m by 2025-10, 57 m by 2026-10, 112-116 m (UT1 0.29-0.31 s) at the
                     2027 survey epochs
-OWNER DECISION      proposed classification of T2B (s4)
+OWNER DECISION      2026-10-23: T2B classified CONVENTION_REAL_DATA; the Earth PCK drift recorded as a production limitation (s6)
 ```
 
 ## 1. Terms and method
@@ -117,3 +117,11 @@ OD impact by design (max |δθ/σ|):
 - The Orekit station variants use the production ECEF vectors; real DSS coordinates are outside the scope.
 - T2B cannot be split into its EOP and precession-nutation parts at 2027. Up to 2025-09 the total B − S is
   0.16–0.19 m (diagnostic).
+
+## 6. Owner decision (2026-10-23)
+
+The owner accepted the proposal of s4:
+- **T2B** is classified **CONVENTION_REAL_DATA**: real data require final EOP or a high-precision Earth PCK
+  covering the data epochs.
+- The drift of the NAIF long-term predict PCK after its creation date (112–116 m at the 2027 survey epochs) is
+  recorded as a production limitation. C3-I's `is_predicted_earth_orientation` flags it.
