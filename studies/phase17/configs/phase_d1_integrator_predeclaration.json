@@ -1,0 +1,31 @@
+{
+ "phase": "Phase D1 - integrator and propagator accuracy, shadow events, and the estimator closure floor: characterization (analysis only, no production change)",
+ "written": "2026-10-23, before any D1 number was computed",
+ "motivation": "Three facts point at the propagation layer: (1) the Orekit trial found the production integrator 5-16 cm/day off, 0.73 m/day with SRP, and no shadow event handling; (2) the C2-I diagnostic found propagate_state and propagate_state_with_k_sensitivity 1.96 m apart at the same tolerances; (3) every C-phase estimator closure ended at a floor (BLS-LM DampingLimit 7-12 mm, SRIF MaxIter ~0.1 m from the truth). The truth in those closure gates is generated with propagate_state while the estimator predicts with propagate_augmented_state; the hypothesis to test is that the closure floor is the truth/estimator propagator mismatch. dynamics.py and srp.py are frozen (path-migration byte_preserved), so D1 only measures and recommends",
+ "configuration": "KP2 SIMPLIFIED dynamics (Moon point mass + J2 + cannonball SRP at K0, CONICAL_PENUMBRA shadow), CANON, O1_LOW_BETA_ECLIPSE_RICH and O2_FULL_SUN_HIGH_BETA at k0, the production propagator interface with the closure-gate arguments (mu_earth = mu_sun = 0)",
+ "reference": "DOP853 at rtol 1e-13, atol 1e-14 through propagate_state, restarted at every penumbra entry/exit (event times by bisection of srp.illumination_fraction along the reference trajectory to 1e-3 s), so no step straddles an acceleration kink",
+ "variants": {
+  "A": "propagate_state, ADAMS (VODE Adams-12), rtol 1e-11, atol 1e-12 - the closure-gate truth and the estimator's candidate evaluation",
+  "B": "propagate_augmented_state (state + STM), ADAMS, rtol 1e-11, atol 1e-12 - the estimator's nominal/Jacobian propagation, state part",
+  "C": "propagate_state_with_k_sensitivity, ADAMS, rtol 1e-11, atol 1e-12 - the KP2/C-phase trajectory, state part",
+  "D": "propagate_state, DOP853, rtol 1e-11, atol 1e-12",
+  "E": "A and the reference both with NO_SHADOW (isolates the shadow contribution)"
+ },
+ "questions": {
+  "Q1": "max |r_variant - r_reference| over each arc, per variant (and at 1 day)",
+  "Q2": "max |r_A - r_B| and |r_A - r_C| (the truth/estimator and truth/KP2 mismatch)",
+  "Q3": "closure: BLS-LM (and SRIF, reported) from the C2-I G6 start (x0 + N(0, PRIOR_SD), seed [98, 0, 0]), CANON k0, range-only six-state, DSN_C2 light time, noise-free observations generated from a truth propagated with (i) A, (ii) the reference, (iii) B; status and |r_hat - r_true| per truth",
+  "Q4": "the shared Hermite interpolator: |interpolated velocity - d(interpolated position)/dt| in the last interval of a history vs interior intervals (CANON k0 grid)"
+ },
+ "gates": {
+  "R1_reference_convergence": "the event-segmented reference at rtol 1e-13 vs at rtol 1e-12 (atol scaled): max position difference <= 1 mm over each arc; if not, Q1-Q3 conclusions about absolute errors are D1_INCONCLUSIVE",
+  "R2_events": "every detected event brackets a change of illumination_fraction between 1 and < 1 (or 0 and > 0) within 1e-3 s",
+  "R3_reproduction": "variant A reproduces the KP2/C2-I closure-gate truth construction bit for bit (same call, same arguments)"
+ },
+ "decision_rule": {
+  "closure_floor": "HYPOTHESIS_CONFIRMED if, with truth (iii) = B, BLS-LM ends Converged with |r_hat - r_true| <= 1 mm while with truth (i) = A it ends at the known floor; otherwise the floor has another cause (reported)",
+  "integrator": "a variant whose max error exceeds 1 cm over an arc is reported as an integrator defect candidate; fixes (event-segmented integration, tolerance, method) are OWNER DECISIONS because dynamics.py / srp.py are frozen"
+ },
+ "outputs": {"report": "studies/phase17/reports/phase_d1_integrator_characterization.md", "results": "studies/phase17/results/phase_d1_integrator.json"},
+ "not_in_scope": "any production change; high-fidelity dynamics (third body, harmonics); UKF"
+}
