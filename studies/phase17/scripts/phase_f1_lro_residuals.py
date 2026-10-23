@@ -30,6 +30,7 @@ STATIONS = {
     103: ("USN Dongara USPS", (-29, 2, 44.7798), (115, 20, 55.2395), 250.47),
     105: ("USN South Point Hawaii USHS", (19, 0, 50.0562), (204, 20, 12.1155), 385.19),
     126: ("USN Kiruna KU1S", (67, 53, 22.4100), (21, 3, 56.3571), 400.4),
+    129: ("USN Weilheim WU2S", (47, 52, 52.3160), (11, 5, 1.0280), 663.37),   # Phase F1b
 }
 
 
@@ -54,10 +55,10 @@ def load_kernels(data: Path, ephemeris: str) -> None:
     spice.furnsh(str(data / SPK))
 
 
-def read_day(data: Path) -> tuple[list, dict]:
+def read_day(data: Path, day_dir: str = DAY_DIR) -> tuple[list, dict]:
     from lunar_od.utdf import file_pad_id, read_utdf
     rows, r1 = [], dict(files=0, records=0, bad=[])
-    for f in sorted((data / DAY_DIR).glob("*.trk")):
+    for f in sorted((data / day_dir).glob("*.trk")):
         r1["files"] += 1
         try:
             recs = read_utdf(f)

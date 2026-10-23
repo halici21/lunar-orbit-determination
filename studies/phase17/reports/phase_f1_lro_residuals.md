@@ -113,3 +113,37 @@ range rate ρ̇, which sweeps from −1.5 to +1.5 km/s. Fits:
 - The ionosphere is climatological, at 2091.32 / 2271.125 MHz (downlink from public sources, uplink from the
   240/221 turnaround ratio).
 - ZWD is a fixed 0.15 m; no weather files were used (the archive has WEA files).
+
+## 7. F1b — second day (2009-285): the signature is an orbit along-track error, not a time tag
+
+- **Predeclaration:** `studies/phase17/configs/phase_f1b_second_day_predeclaration.json` (`76fd7e4`), before
+  any 2009-285 residual.
+- **Evidence:** `studies/phase17/results/phase_f1b_second_day.json`.
+- **Data:** the same SPK arc, 25 days later. Dongara (PAD 103, 4 passes) and Weilheim WU2S (PAD 129, 1 pass).
+  The PAD 119 files were not downloaded.
+
+| PAD | n | mean residual [m] | Δt (bias + Δt·ρ̇) [ms] | RMS after fit [m] |
+|---|---|---|---|---|
+| 103 | 175 | 492.62 | −4.47 | 0.32 |
+| 103 | 452 | 490.82 | −4.50 | 0.39 |
+| 103 | 135 | 490.29 | −4.53 | 0.39 |
+| 103 | 315 | 491.78 | −4.74 | 0.38 |
+| 129 | 180 | 505.69 | −4.55 | 0.19 |
+
+**Decision (predeclared rule): ORBIT_ALONG_TRACK.**
+- The 2009-285 passes share Δt = −4.6 ± 0.1 ms. That differs from 2009-260's −3.21 ms by 1.3–1.5 ms, more than
+  the 1.0 ms limit.
+- A time-tag convention cannot change between days, but an along-track error of the reference orbit can:
+  −3.2 ms ≈ 5 m on 2009-260, and −4.6 ms ≈ 7 m on 2009-285, at ~1.6 km/s.
+- Caveat: a constant time-tag component smaller than the day-to-day change cannot be excluded by two days.
+
+Also:
+- Dongara's delay is stable over 25 days: 487.8–490.8 m on 2009-260 and 490.3–492.6 m on 2009-285.
+- With the along-track signature removed, the 2009-285 RMS is 0.19–0.39 m.
+- Consequences for F2:
+  - per-station range biases are well-defined, stable parameters;
+  - the remaining along-track signature belongs to the reference orbit, so a real-data fit must not absorb it
+    into a time-tag parameter;
+  - an F2 orbit that agrees with the LOLA SPK to ~5–7 m along-track is therefore at the reference's own error
+    level on these days.
+
