@@ -62,7 +62,7 @@ profile:
 | gate | result | number |
 |---|---|---|
 | G1 default invariance | **PASS** | 17/17 outputs bit-identical to the unmodified code: 3 propagators, SRP off, NO_SHADOW, events-on-but-inert, BLS-LM and SRIF state/status/cost |
-| G2 suite | **PASS** | 1 failed, 1 900 passed (incl. 10 new `test_shadow_events.py` tests), 29 skipped. The one failure, `test_recorded_run_workspace::test_archive_filters_and_sort_keep_actual_source_identity`, also fails on the unmodified branch |
+| G2 suite | **PASS** | final tree: 1 905 passed, 0 failed, 29 skipped (incl. 10 new `test_shadow_events.py` tests). `test_recorded_run_workspace::test_archive_filters_and_sort_keep_actual_source_identity` failed in one run on the unmodified branch and in one on the modified tree, so it is intermittent and unrelated to D2 |
 | G3 accuracy (≤ 1 mm) | **PASS** | max 0.43 mm (K-sensitivity, CANON); state 0.19 / 0.20 / 0.18 mm on CANON / O1 / O2 |
 | G4 contacts (≤ 1e-3 s, same count) | **FAIL** | counts 60 / 60 / 0 equal; max \|Δt\| 0.64 ms CANON, **1.29 ms O1** |
 | G5 consistency (≤ 1 mm) | **PASS** | state−augmented ≤ 0.28 mm, state−K-sensitivity ≤ 0.34 mm (D1: 0.27–2.0 m) |
