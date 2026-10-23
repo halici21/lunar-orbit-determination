@@ -34,4 +34,59 @@ if (_CAMPAIGN_SCRIPTS / "od_gravity_covariance_campaign.py").is_file():
     for _path in (_CAMPAIGN_SCRIPTS, _ROOT / "examples"):
         if str(_path) not in sys.path:
             sys.path.append(str(_path))
-    _import_campaign()
+    # Phase C4-I: the campaign module samples its Earth table at import time and
+    # is a DE421-era record generator, so it is imported on DE421 and the
+    # default ephemeris is restored afterwards.
+    import os as _os
+
+    from lunar_od.spice_loader import PLANETARY_EPHEMERIS_ENV as _EPH_ENV
+    from lunar_od.spice_loader import load_spice_kernels as _load_kernels
+
+    _eph_old = _os.environ.get(_EPH_ENV)
+    _os.environ[_EPH_ENV] = "DE421"
+    try:
+        _import_campaign()
+    finally:
+        if _eph_old is None:
+            _os.environ.pop(_EPH_ENV, None)
+        else:
+            _os.environ[_EPH_ENV] = _eph_old
+        try:
+            _load_kernels()
+        except FileNotFoundError:
+            pass
+
+
+import os  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def de421_ephemeris():
+    """Phase C4-I: run a module that reproduces a DE421-era frozen record on DE421.
+
+    The production default planetary ephemeris is DE440 since C4-I.  Records
+    computed before it (MATLAB fixtures, campaign golden values) stay valid
+    for the ephemeris they were computed with, so the modules that reproduce
+    them select DE421 through the environment variable (which every
+    ``load_spice_kernels`` call, including the study scripts', honours) and
+    restore the default afterwards.
+    """
+    from lunar_od.spice_loader import PLANETARY_EPHEMERIS_ENV, load_spice_kernels
+
+    old = os.environ.get(PLANETARY_EPHEMERIS_ENV)
+    os.environ[PLANETARY_EPHEMERIS_ENV] = "DE421"
+    try:
+        load_spice_kernels()
+    except FileNotFoundError:
+        pass
+    yield
+    if old is None:
+        os.environ.pop(PLANETARY_EPHEMERIS_ENV, None)
+    else:
+        os.environ[PLANETARY_EPHEMERIS_ENV] = old
+    try:
+        load_spice_kernels()
+    except FileNotFoundError:
+        pass

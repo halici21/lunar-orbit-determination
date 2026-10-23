@@ -35,11 +35,14 @@ if str(EXAMPLES) not in sys.path:
 import phase17_r1m_core as M  # noqa: E402
 
 CAMPAIGN_SCRIPTS = M.CAMPAIGN_ROOT / "06_scripts"
-pytestmark = pytest.mark.skipif(
+pytestmark = [pytest.mark.skipif(
     not (CAMPAIGN_SCRIPTS / "od_gravity_covariance_campaign.py").exists()
     or not (M.CAMPAIGN_ROOT / "08_manifests").exists(),
     reason="frozen od_covariance_campaign data/scripts not present in this checkout",
-)
+),
+    # Phase C4-I: reproduces the published FXR range baseline (DE421); pinned to the
+    # ephemeris it was computed with.
+    pytest.mark.usefixtures("de421_ephemeris")]
 
 DSN3 = ("Goldstone DSN", "Madrid DSN", "Canberra DSN")
 PUBLISHED_OFFSET_S = 504000.0

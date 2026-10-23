@@ -24,6 +24,11 @@ if str(EXAMPLES) not in sys.path:
 import phase17_r1od3_core as D3  # noqa: E402
 import phase17_r1od4_campaign as C  # noqa: E402
 
+import pytest as _pytest_c4i  # noqa: E402
+
+# Phase C4-I: reproduces the R1O-D3 anchor values (DE421); pinned to the ephemeris it was computed with.
+pytestmark = _pytest_c4i.mark.usefixtures("de421_ephemeris")
+
 PRE = C.load_predeclaration()
 GRID = D3.load_grid()
 

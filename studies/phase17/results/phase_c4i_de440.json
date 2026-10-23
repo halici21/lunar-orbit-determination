@@ -1,0 +1,25 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c4i_de440_predeclaration.json",
+ "de440_minus_de421_earth_m": {
+  "max": 3.8887376546630192,
+  "min": 3.154288227278537
+ },
+ "loaded_spk": {
+  "explicit_de421": [
+   "de421.bsp"
+  ],
+  "default": [
+   "de440.bsp"
+  ],
+  "env_de421": [
+   "de421.bsp"
+  ]
+ },
+ "G4_output": "11 passed in 0.29s",
+ "gates": {
+  "G1": true,
+  "G2": true,
+  "G3": true,
+  "G4": true
+ }
+}
