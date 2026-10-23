@@ -309,7 +309,7 @@ class VisibilityController(QWidget):
         self._scope_note = QLabel(
             "Sabit örnek başlangıç yörüngesi · SPICE ile ayrı görünürlük hesabı · "
             f"{_SAMPLE_STEP_S / 60:g} dk örnekleme. "
-            "Kayıtlı koşunun ölçüm takvimi: Görev görünümü."
+            "Kayıtlı koşunun ölçüm takvimi: Sonuçlar › Genel görünüm."
         )
         self._result_context = QLabel()
         self._result_context.setAccessibleName("Görünen görünürlük sonucunun kaynağı ve hesap ayarları")
@@ -403,18 +403,7 @@ class VisibilityController(QWidget):
         self._adapt_layout()
 
     def on_shown(self) -> None:
-        self._sync_duration_from_settings()
-
-    def _sync_duration_from_settings(self) -> None:
-        if self._busy:
-            return
-        from PyQt5.QtCore import QSettings
-        s = QSettings("LunarOD", "DesktopApp")
-        try:
-            dur_days = float(s.value("dynamics/duration_days", self.durationSpin.value()))
-            self.durationSpin.setValue(dur_days)
-        except Exception:
-            pass
+        pass  # inputs belong to this page; nothing external overrides them on show
 
     # ------------------------------------------------------------------
     def _build_station_checkboxes(self) -> None:

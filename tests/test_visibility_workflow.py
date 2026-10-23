@@ -170,7 +170,7 @@ def test_plot_failure_never_pairs_new_visibility_csv_with_an_old_png(page, previ
 def test_visibility_empty_selection_scope_and_keyboard_parameter_labels(page):
     widget, app, _ = page
     assert "örnek başlangıç" in widget._scope_note.text()
-    assert "10 dk" in widget._scope_note.text() and "Görev görünümü" in widget._scope_note.text()
+    assert "10 dk" in widget._scope_note.text() and "Genel görünüm" in widget._scope_note.text()
     widget._deselect_all()
     assert not widget.computeBtn.isEnabled() and "istasyon seçin" in widget.statusLabel.text()
     widget._checkboxes["Madrid DSN"].setChecked(True)
@@ -190,7 +190,7 @@ def test_visibility_small_window_keeps_full_width_controls_and_plot_without_pann
         window.resize(1480, 1000)
         window.show(); window.navigate("visibility")
         app.processEvents()
-        view = window._pages["visibility"]
+        view = window._pages["visibility"].contact
         view._deselect_all(); view._checkboxes["Madrid DSN"].setChecked(True)
         view.durationSpin.setValue(1)
         data = payload(); complete(view, data)
@@ -232,7 +232,7 @@ def test_visibility_small_window_keeps_full_width_controls_and_plot_without_pann
             assert view.controlPanel.geometry().right() < view.chartPanel.geometry().left()
             assert window.pageScroll.horizontalScrollBar().maximum() == 0
             assert view._last_data is data and view._fig is figure
-            window.navigate("dynamics"); app.processEvents()
+            window.navigate("settings"); app.processEvents()
             assert window.pageStack.minimumWidth() == 960
         finally:
             window.close(); app.processEvents()

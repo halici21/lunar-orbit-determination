@@ -379,7 +379,7 @@ def test_native_navigation_archive_to_comparison_to_console(app, tmp_path):
     isolated = QSettings(str(tmp_path / "test-settings.ini"), QSettings.IniFormat)
     with patch("app.QSettings", return_value=isolated), patch.object(archive_module, "RESULTS_DIR", tmp_path):
         window = MainWindow()
-        assert set(window._pages) == {"mission"}
+        assert set(window._pages) == {"scenario"}
         window.navigate("archive")
     try:
         archive = window._pages["archive"]
@@ -391,7 +391,7 @@ def test_native_navigation_archive_to_comparison_to_console(app, tmp_path):
         comparison = window._pages["comparison"]
         wait(app, lambda: comparison.comparison is not None)
         assert window.pageStack.currentWidget() is comparison
-        assert "border-left:2px solid transparent" in window._nav_btns["archive"].styleSheet()
+        assert window._nav_btns["archive"].isChecked()  # comparison lives inside Arşiv
         assert {Path(comparison.comparison.left.sources[0]["path"]), Path(comparison.comparison.right.sources[0]["path"])} == {a, b}
         comparison.open_source(0)
         console = window._pages["console"]

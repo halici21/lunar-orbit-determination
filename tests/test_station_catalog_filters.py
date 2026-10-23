@@ -87,7 +87,8 @@ def test_narrow_station_window_keeps_actions_and_selection_without_page_horizont
     from app import MainWindow
 
     settings = QSettings(str(tmp_path / "stations-window.ini"), QSettings.IniFormat)
-    with patch.object(stations, "_SETTINGS", settings), patch.object(stations.StationsController, "_build_map_widget"):
+    with patch.object(stations, "_SETTINGS", settings), patch.object(stations.StationsController, "_build_map_widget"), \
+            patch("app.QSettings", return_value=settings):
         window = MainWindow()
         try:
             window.resize(1480, 1000); window.show(); window.environment.shutdown()

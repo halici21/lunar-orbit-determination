@@ -21,7 +21,7 @@ def test_collapsed_scenario_preserves_actions_and_draft_recovery(tmp_path):
         assert not page.previewPanel.isVisible()
         assert not page.advanced_form.isVisible()
         assert all(w.isVisible() for w in (page.runScenarioBtn, page.exportJsonBtn,
-            page.importJsonBtn, page.openAnalysisBtn))
+            page.importJsonBtn))
         page.advanced_form_toggle.click()
         page.preview_toggle.click()
         assert page.measGroup.isVisible() and page.arcGroup.isVisible()

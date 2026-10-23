@@ -1,4 +1,8 @@
-"""Mission overview: recorded orbit playback, station map, and sampled contacts."""
+"""Results overview tab: recorded orbit playback, station map, and sampled contacts.
+
+Embedded as the first tab of the Sonuçlar page; the page header owns opening,
+exporting and details, so this widget carries no navigation buttons of its own.
+"""
 from __future__ import annotations
 import bisect
 import time
@@ -34,37 +38,17 @@ class MissionController(QWidget):
         self._timer.setInterval(80)
         self._timer.timeout.connect(self._tick)
         root = QVBoxLayout(self)
-        root.setContentsMargins(24, 12, 24, 16)
+        root.setContentsMargins(0, 12, 0, 8)
         root.setSpacing(10)
-        self.intro = caption("Başlamak için Koşu aç ile arşivden bir sonuç seçin veya Yeni senaryo ile bir koşu hazırlayın.")
-        self.intro.setStyleSheet(f"color:{C.TEXT_MUTED};")
-        root.addWidget(self.intro)
-        row = QHBoxLayout()
-        self.run_label = caption("Henüz koşu seçilmedi · haritada istasyon kataloğu gösteriliyor")
+        self.run_label = caption("Henüz koşu açılmadı · haritada istasyon kataloğu gösteriliyor")
         self.run_label.setObjectName("detailHeading")
-        row.addWidget(self.run_label, 1)
-        self.archive_button = QPushButton("Koşu aç")
-        self.archive_button.setProperty("primary", True)
-        self.archive_button.clicked.connect(lambda: self._navigate("archive"))
-        row.addWidget(self.archive_button)
-        self.scenario_button = QPushButton("Yeni senaryo")
-        self.scenario_button.clicked.connect(lambda: self._navigate("scenario"))
-        row.addWidget(self.scenario_button)
-        root.addLayout(row)
-
-        row = QHBoxLayout()
-        self.run_status = caption("Koşunun işlem ve yay başarı kayıtları, bir sonuç açıldığında burada gösterilir.")
+        root.addWidget(self.run_label)
+        self.run_status = caption("Arşivden bir koşu açın; yörünge, istasyonlar ve ölçüm zamanları burada birlikte oynatılır.")
         self.run_status.setAccessibleName("Yüklü koşunun işlem ve kayıtlı yay başarı durumu")
         self.run_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
-        self.run_status.setToolTip("İşlem tamamlandı: eşleşen tamamlanma kaydı var. Yay başarısı: kaynak CSV’deki operational_success alanı. "
-                                  "Bu alanlar yakınsama veya bilimsel doğruluk onayı değildir. Referans yörünge de başarı kanıtı değildir.")
-        row.addWidget(self.run_status, 1)
-        self.details_button = QPushButton("Koşu ayrıntıları")
-        self.details_button.setToolTip("Aynı yüklü sonucun hatalarını, duruş nedenlerini, ayarlarını ve kaynaklarını Sonuçlar ekranında inceleyin.")
-        self.details_button.setEnabled(False)
-        self.details_button.clicked.connect(self._open_details)
-        row.addWidget(self.details_button)
-        root.addLayout(row)
+        self.run_status.setToolTip("Yay başarısı kaynak CSV’deki operational_success alanıdır. Bu alanlar yakınsama veya "
+                                  "bilimsel doğruluk onayı değildir; referans yörünge de başarı kanıtı değildir.")
+        root.addWidget(self.run_status)
 
         self.plots = plots = QSplitter(Qt.Horizontal)
         plots.setChildrenCollapsible(False)
@@ -117,8 +101,8 @@ class MissionController(QWidget):
 
         row = QHBoxLayout()
         row.addWidget(caption("İSTASYON ÖLÇÜM ZAMANLARI · GANTT"), 1)
-        self.visibility_button = QPushButton("Görünürlük hesabı")
-        self.visibility_button.setToolTip("Seçtiğiniz istasyonlar için SPICE ile ayrıca görünürlük hesabı yapar; tarihsel koşuyu değiştirmez.")
+        self.visibility_button = QPushButton("Görünürlük sayfası")
+        self.visibility_button.setToolTip("Seçtiğiniz istasyonlar için örnek yörüngeyle ayrı bir temas planı hesaplayın.")
         self.visibility_button.clicked.connect(lambda: self._navigate("visibility"))
         row.addWidget(self.visibility_button)
         root.addLayout(row)
@@ -145,14 +129,12 @@ class MissionController(QWidget):
         row.addWidget(self.slider, 1)
         row.addWidget(self.time_label)
         root.addLayout(row)
-        self.scope = caption("Gantt, yeni koşularda kaydedilen ölçüm örneklerini gösterir; kesintisiz radyo teması veya çözüm başarısı değildir. "
-                             "Animasyon yalnız kayıtlı durumları oynatır. Yükseklik 1737,4 km referans Ay yarıçapına göredir.")
-        self.scope.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
-        root.addWidget(self.scope)
-        self.help_button = QPushButton("Yörünge değerleri ne anlama geliyor?  ›")
+        self.help_button = QPushButton("Bu görünüm ne gösteriyor?  ›")
         self.help_button.setCheckable(True)
         self.help_button.setStyleSheet(f"border:0; text-align:left; padding:2px 0; color:{C.TEXT_MUTED};")
-        self.help_text = caption("Yükseklik: kayıtlı konumun Ay merkezine uzaklığı eksi 1737,4 km. Eğim: yörünge düzleminin kayıt çerçevesinin XY düzlemine açısı; Ay ekvatoru değildir. "
+        self.help_text = caption("Gantt, koşuda kaydedilen ölçüm örneklerini gösterir; kesintisiz radyo teması veya çözüm başarısı değildir. "
+                                 "Oynatma yalnız kayıtlı durumları izler.\n"
+                                 "Yükseklik: kayıtlı konumun Ay merkezine uzaklığı eksi 1737,4 km. Eğim: yörünge düzleminin kayıt çerçevesinin XY düzlemine açısı; Ay ekvatoru değildir. "
                                  "Yarı büyük eksen (a): anlık iki cisim elipsinin boyutu. Dışmerkezlik (e): 0 daire, 0–1 elips. Periyot: aynı iki cisim modelindeki tur süresi. "
                                  "Truth, senaryonun referans hareketidir; ○ işaretleri kestiricinin yay sonu/başlangıç durumlarıdır. Bunlar gerçek uzay aracı telemetrisi değildir.")
         self.help_text.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
@@ -188,10 +170,6 @@ class MissionController(QWidget):
         if hasattr(self.window(), "navigate"):
             self.window().navigate(page)
 
-    def _open_details(self):
-        if hasattr(self.window(), "open_result_details"):
-            self.window().open_result_details()
-
     def _set_controls(self, enabled):
         for widget in (self.play_button, self.reset_button, self.speed_combo, self.slider):
             widget.setEnabled(enabled)
@@ -199,7 +177,6 @@ class MissionController(QWidget):
     def set_result(self, result, details=None):
         self.play_button.setChecked(False)
         self.result = result
-        self.intro.setText("İstasyonu listeden, haritadan veya Gantt satırından seçin. Oynatırken yörünge ve ölçüm durumu aynı epoku izler.")
         details = details or {}
         payload = details
         for key in ("force", "truth", "canonical_payload", "lunar_point_mass"):
@@ -207,9 +184,8 @@ class MissionController(QWidget):
         self._mu = payload.get("gravitational_parameter_m3_s2") if isinstance(payload, dict) else None
         self.run_label.setText(f"{result.name} · {result.metadata.get('estimator_type', 'kayıt')} · {len(result.states):,} durum örneği")
         self.run_label.setToolTip(result.sources[0]["path"])
-        self.run_status.setText("Yüklü koşu · " + result_status(result, details) +
-                                "\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.")
-        self.details_button.setEnabled(True)
+        self.run_status.setText(result_status(result, details) +
+                                " · Yakınsama: kaynakta ayrı bir doğrulama alanı yok.")
         self.orbit_caption.setText(f"{result.metadata.get('origin', 'Bilinmiyor')} merkezli · {result.metadata.get('frame', 'Bilinmiyor')} · "
                                   f"{'referans (truth)' if result.metadata.get('state_role') == 'truth' else 'kayıtlı durum'} · sürükle / yakınlaştır")
         self.orbit.selected_t = None

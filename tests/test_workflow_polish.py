@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QApplication, QPushButton
-from app import MainWindow, _PRIMARY_NAV, _ADVANCED
+from app import MainWindow, _PRIMARY_NAV
 from services.run_details import load_run_with_details, inspect_run
 from services.tracking_results import ResultLoadError
 from widgets.tracking_plots import TrackingChart
@@ -35,25 +35,21 @@ def window(app, tmp_path):
 
 
 def test_navigation_keeps_lazy_pages_and_selected_group(window, app):
-    assert set(window._pages) == {"mission"}
-    assert [v[0] for v in _PRIMARY_NAV] == ["mission", "scenario", "run_monitor", "console", "archive", "comparison", "stations", "visibility", "ground_track"]
-    assert not window.advanced_panel.isVisible()
-    window.advanced_toggle.click()
-    assert window.advanced_panel.isVisible()
-    assert set(window._pages) == {"mission"}  # expanding menu does not load tools
+    assert set(window._pages) == {"scenario"}
+    assert [v[0] for v in _PRIMARY_NAV] == ["scenario", "run_monitor", "console", "archive", "stations", "visibility"]
     window.navigate("settings")
     assert window._nav_btns["settings"].isChecked()
     assert not window._nav_btns["console"].isChecked()
     window.navigate("scenario")
     assert window._nav_btns["scenario"].isChecked()
     assert sum(b.isChecked() for b in window._nav_btns.values()) == 1
-    window.advanced_toggle.setChecked(False)
-    # Route a lightweight page through an advanced key, avoiding scientific modules.
-    window._pages["dynamics"] = window._pages["scenario"]
-    window.navigate("dynamics")
-    assert window.advanced_panel.isVisible()
-    assert window._nav_btns["dynamics"].isChecked()
+    # A page without its own sidebar entry highlights the page that contains it.
+    window._pages["comparison"] = window._pages["settings"]
+    window.navigate("comparison")
+    assert window._nav_btns["archive"].isChecked()
     assert sum(b.isChecked() for b in window._nav_btns.values()) == 1
+    assert set(window._page_factories).isdisjoint({"dashboard", "results", "analysis", "dynamics",
+        "measurements", "estimators", "summary_comparison"})
 
 
 def test_error_page_retry_replaces_failed_widget(window, app):

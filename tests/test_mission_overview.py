@@ -243,33 +243,33 @@ def test_mission_completion_does_not_infer_success_from_truth(mission, successes
     assert "İşlem tamamlandı" in page.run_status.text() and expected in page.run_status.text()
     assert "Yakınsama: kaynakta ayrı bir doğrulama alanı yok" in page.run_status.text()
     assert "başarı kanıtı değildir" in page.run_status.toolTip()
-    assert page.details_button.isEnabled()
     before = page.run_status.text()
     page.select_time(40.)
     assert page.run_status.text() == before  # Playback never changes completion/acceptance.
 
 
-def test_mission_details_opens_same_result_and_preserves_status_after_failed_replacement(app, tmp_path):
+def test_overview_tab_shares_console_result_and_preserves_status_after_failed_replacement(app, tmp_path):
     with patch("app.QSettings", return_value=QSettings(str(tmp_path / "details.ini"), QSettings.IniFormat)):
         window = MainWindow()
     try:
         window.show(); app.processEvents()
-        page = window._pages["mission"]
-        assert not page.details_button.isEnabled()
         path = geometry_run(tmp_path)
         window.open_in_mission(path)
+        console, page = window._pages["console"], window.overview()
         wait_until(app, lambda: page.result is not None)
+        assert window._active_page == "console" and console.view_tabs.currentWidget() is page
+        assert console.result is page.result
+        assert console.chart_tools.isHidden()  # chart tools do nothing on the overview
         status = page.run_status.text()
         page.play_button.setChecked(True)
-        page.details_button.click()
-        assert window._active_page == "console"
-        assert window._pages["console"].result is page.result
-        assert window._pages["console"].details_toggle.isChecked()
-        assert not window._pages["console"].inspector_tabs.isHidden()
-        assert window._pages["console"].inspector_tabs.currentIndex() == 0
-        assert not page._timer.isActive()
+        window.open_result_details()
+        assert console.details_toggle.isChecked()
+        assert not console.inspector_tabs.isHidden() and console.inspector_tabs.currentIndex() == 0
+        console.view_tabs.setCurrentIndex(1)
+        assert not page._timer.isActive()  # leaving the tab pauses playback
+        assert not console.chart_tools.isHidden()
         window.open_in_mission(tmp_path / "missing.csv")
-        wait_until(app, lambda: not window._pages["console"]._busy)
+        wait_until(app, lambda: not console._busy)
         assert page.run_status.text() == status and "Koşu açılamadı" in page.run_label.text()
     finally:
         window.close()
@@ -403,13 +403,13 @@ def test_mission_startup_routing_help_and_restart_revalidate_source(app, tmp_pat
     with patch("app.QSettings", return_value=settings):
         window = MainWindow()
     try:
-        assert set(window._pages) == {"mission"}
-        assert {"stations", "visibility", "ground_track"} <= {p[0] for p in _PRIMARY_NAV}
+        assert set(window._pages) == {"scenario"}
+        assert {"stations", "visibility"} <= {p[0] for p in _PRIMARY_NAV}
         assert not window.pageSubLabel.isHidden()
         window.open_in_mission(path)
-        page = window._pages["mission"]
+        page = window.overview()
         wait_until(app, lambda: page.result is not None)
-        assert window._active_page == "mission" and page.gantt.geometry is not None
+        assert window._active_page == "console" and page.gantt.geometry is not None
         assert page.result is window._pages["console"].result
         page.help_button.click()
         assert not page.help_text.isHidden() and "Ay ekvatoru değildir" in page.help_text.text()
@@ -421,7 +421,7 @@ def test_mission_startup_routing_help_and_restart_revalidate_source(app, tmp_pat
     with patch("app.QSettings", return_value=settings):
         restored = MainWindow()
     try:
-        page = restored._pages["mission"]
+        page = restored.overview()
         wait_until(app, lambda: page.result is not None)
         assert page.result.sources[0]["path"] == str(path.resolve())
         assert not page._timer.isActive()  # Never autoplay on restore.
@@ -442,13 +442,20 @@ def test_small_mission_window_keeps_playback_and_help_reachable(app, tmp_path):
         window = MainWindow()
     try:
         window.resize(760, 420); window.show(); app.processEvents()
-        page = window._pages["mission"]
+        window.navigate("mission"); app.processEvents()
+        page = window.overview()
         assert page.plots.orientation() == Qt.Vertical
         assert window.pageScroll.horizontalScrollBar().maximum() == 0
-        for button in (page.play_button, page.help_button, page.archive_button, page.station_picker, page.details_button):
-            window.pageScroll.ensureWidgetVisible(button, 0, 0); app.processEvents()
-            bounds = QRect(button.mapTo(window.pageScroll.viewport(), QPoint(0, 0)), button.size())
-            assert window.pageScroll.viewport().rect().contains(bounds)
+        from PyQt5.QtWidgets import QScrollArea
+        for button in (page.play_button, page.help_button, page.visibility_button, page.station_picker):
+            # The overview sits in the results plot scroll area inside the page scroll.
+            scroll = button.parentWidget()
+            while not isinstance(scroll, QScrollArea):
+                scroll = scroll.parentWidget()
+            scroll.ensureWidgetVisible(button, 0, 0); app.processEvents()
+            window.pageScroll.ensureWidgetVisible(scroll, 0, 0); app.processEvents()
+            bounds = QRect(button.mapTo(scroll.viewport(), QPoint(0, 0)), button.size())
+            assert scroll.viewport().rect().contains(bounds)
     finally:
         window.close()
 

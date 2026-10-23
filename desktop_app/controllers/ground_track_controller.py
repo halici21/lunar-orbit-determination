@@ -1185,7 +1185,7 @@ class GroundTrackController(QWidget):
 
     def _build_model_notes(self) -> None:
         self._scope_note = QLabel(
-            "Bu araçlar ayrı örnek/ön inceleme modelleridir; kayıtlı koşunun yörüngesi Görev görünümündedir."
+            "Örnek yörüngeyle ön inceleme; kayıtlı koşunun yörüngesi Sonuçlar › Genel görünüm sekmesindedir."
         )
         self._model_note = QLabel("İstasyonları seçip SPICE hesabını çalıştırın veya Yörünge tasarımı sekmesini açın.")
         self._model_note.setAccessibleName("Görünen yüzey izinin modeli ve kaynağı")
@@ -1306,18 +1306,7 @@ class GroundTrackController(QWidget):
         self.controlLayout.insertLayout(self.controlLayout.indexOf(self.statusLabel), row)
 
     def on_shown(self) -> None:
-        self._sync_duration_from_settings()
-
-    def _sync_duration_from_settings(self) -> None:
-        if self._busy:
-            return
-        from PyQt5.QtCore import QSettings
-        s = QSettings("LunarOD", "DesktopApp")
-        try:
-            dur_days = float(s.value("dynamics/duration_days", self.durationSpin.value()))
-            self.durationSpin.setValue(dur_days)
-        except Exception:
-            pass
+        pass  # inputs belong to this page; nothing external overrides them on show
 
     # ------------------------------------------------------------------
     # Checkbox setup
@@ -1708,7 +1697,7 @@ def _show_error_dialog(parent, title: str, msg: str) -> None:
     box = QMessageBox(parent)
     box.setWindowTitle(title)
     box.setIcon(QMessageBox.Critical)
-    short = msg.splitlines()[0][:200] if msg else "An error occurred."
+    short = msg.splitlines()[0][:200] if msg else "Bir hata oluştu."
     box.setText(short)
     if "\n" in msg:
         box.setDetailedText(msg)

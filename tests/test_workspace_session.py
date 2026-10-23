@@ -96,7 +96,7 @@ def test_invalid_or_unsafe_active_page_never_starts_job(environment,raw):
     app,settings,create=environment
     settings.setValue(KEY,raw)
     window=create()
-    assert window._active_page=="mission"
+    assert window._active_page=="scenario"
     assert "run_monitor" not in window._pages
 
 

@@ -1,24 +1,57 @@
-"""Scenario Builder page controller — configure and export scenario JSON."""
+"""Senaryo page controller — configure a run, save/open its settings, start it."""
 from __future__ import annotations
 import json
-import math
-import sys
 from pathlib import Path
 from dataclasses import replace, asdict
 from decimal import Decimal
 
 from PyQt5.QtWidgets import (
     QWidget, QFileDialog, QMessageBox, QApplication, QLabel, QPushButton, QDoubleSpinBox,
+    QCheckBox, QComboBox, QGroupBox, QFormLayout, QVBoxLayout, QBoxLayout, QSizePolicy,
 )
 from PyQt5.QtCore import Qt
 from PyQt5 import uic
 
-from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT, RESULTS_DIR
+from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from models.scenario_model import ScenarioModel, PRESETS
 from styles.artifact_workspace import ARTIFACT_STYLE
 from styles.theme import C
 
 UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "scenario_builder_page.ui"
+
+# Readable labels for the stored identifiers; the identifier stays in itemData.
+_CHOICES = {
+    "arcModeCombo": (("prescribed", "Sabit aralıklı"), ("visibility", "Görünürlüğe göre")),
+    "measTypeCombo": (("range_rate", "Menzil, açılar + menzil hızı"), ("position", "Menzil ve açılar")),
+    "rrPhysicsCombo": (("geometric_instantaneous", "Geometrik (anlık)"),
+                       ("two_way_counted_doppler", "İki yönlü sayılmış Doppler")),
+    # The desktop executor supports exactly these two networks (scenario_execution.py).
+    "networkCombo": (("multi", "Çoklu · Goldstone, Madrid, Canberra, İTÜ Ayazağa"),
+                     ("single", "Tek · Canberra DSN")),
+    "estimatorCombo": (("bls_lm", "BLS-LM (toplu)"), ("srif", "SRIF (karekök bilgi)"), ("ukf", "SR-UKF (sıralı)")),
+    "startModeCombo": (("cold", "Soğuk · her yay bağımsız"), ("hot", "Sıcak · önceki yayın durumu"),
+                       ("formal", "Formal · kovaryans aktarımı"), ("sqrt_formal", "Karekök formal")),
+}
+_PRESET_LABELS = {
+    "Gaussian Baseline": ("Temel karşılaştırma · 1 gün",
+                          "1 günlük BLS-LM / SR-UKF karşılaştırması: sabit yaylar, soğuk başlangıç, menzil hızı, çoklu ağ."),
+    "28-Day Stability": ("Uzun süre kararlılığı · 28 gün",
+                         "Uzun süreli sayısal kararlılık ve kestirici karşılaştırması: 112 sabit yay, formal aktarım."),
+    "Sequential Tracking": ("Sıralı izleme · 3 gün",
+                            "3 günlük parçalı SPICE görünürlüğüyle SR-UKF sıralı izleme."),
+    "Two-Way Doppler": ("İki yönlü Doppler · 1 gün",
+                        "Basitleştirilmiş iki yönlü sayılmış Doppler denemesi."),
+    "BLS Ablation": ("BLS ölçüm karşılaştırması · 3 gün",
+                     "BLS-LM ile yalnız konum ölçümleri ve menzil hızı eklenmiş ölçümlerin karşılaştırması."),
+    "28-Day Network Visibility": ("Ağ görünürlüğü · 28 gün",
+                                  "28 günlük İTÜ + DSN istasyon görünürlüğü."),
+}
+
+
+def _value(combo):
+    """Stored identifier of the selected item (labels are for display only)."""
+    data = combo.currentData()
+    return data if data is not None else combo.currentText()
 
 
 class ScenarioBuilderController(QWidget):
@@ -45,93 +78,69 @@ class ScenarioBuilderController(QWidget):
         self.previewLayout.insertWidget(0, self.origin_label)
         self.previewLayout.insertWidget(1, self.restore_draft_button)
         self._show_origin()
-        # Populate preset combo
-        self.presetCombo.addItem("— custom —")
+
+        self.presetCombo.addItem("Özel ayarlar", None)
         for name in PRESETS:
-            self.presetCombo.addItem(name)
-        self.presetCombo.currentTextChanged.connect(self._on_preset_selected)
+            self.presetCombo.addItem(_PRESET_LABELS.get(name, (name,))[0], name)
+        self.presetCombo.currentIndexChanged.connect(
+            lambda _index: self._on_preset_selected(self.presetCombo.currentData()))
+        for name, choices in _CHOICES.items():
+            combo = getattr(self, name)
+            combo.clear()
+            for value, label in choices:
+                combo.addItem(label, value)
 
-        # Connect all form fields to _update_json
-        for widget in [
-            self.nameEdit, self.descEdit, self.outputDirEdit,
-        ]:
+        for widget in [self.nameEdit, self.descEdit, self.outputDirEdit]:
             widget.textChanged.connect(self._update_json)
-
         for spinbox in [
             self.durationSpin, self.stepSpin, self.arcDurSpin,
             self.arcStrideSpin, self.elevMaskSpin, self.gapThreshSpin,
         ]:
             spinbox.valueChanged.connect(self._update_json)
-
         self.seedSpin.valueChanged.connect(self._update_json)
-
-        for combo in [
-            self.arcModeCombo, self.measTypeCombo, self.rrPhysicsCombo,
-            self.networkCombo, self.estimatorCombo, self.startModeCombo,
-        ]:
-            combo.currentTextChanged.connect(self._update_json)
-
-        self.arcModeCombo.currentTextChanged.connect(self._on_arc_mode_changed)
+        for name in _CHOICES:
+            getattr(self, name).currentIndexChanged.connect(self._update_json)
+        self.arcModeCombo.currentIndexChanged.connect(self._on_arc_mode_changed)
         self.noiseCheck.stateChanged.connect(self._update_json)
 
-        # Arc count estimate label — added dynamically to arcGroup's form layout
         self._arc_count_label = QLabel("")
+        self._arc_count_label.setWordWrap(True)
         self._arc_count_label.setStyleSheet(f"QLabel {{ color:{C.TEXT_MUTED}; font-size:12px; }}")
-        self.arcGroup.layout().addRow("Estimate:", self._arc_count_label)
+        self.arcGroup.layout().addRow("Tahmin:", self._arc_count_label)
 
-        # Action buttons
         self.copyJsonBtn.clicked.connect(self._copy_json)
         self.exportJsonBtn.clicked.connect(self._export_json)
         self.importJsonBtn.clicked.connect(self._import_json)
         self.runScenarioBtn.setProperty("primary", True)
         self.runScenarioBtn.clicked.connect(self._run_scenario)
-        self.runScenarioBtn.setToolTip("Formu yeni koşu kimliğiyle kaydet ve Run Monitor üzerinden çalıştır")
-        if not hasattr(self, "openAnalysisBtn"):
-            self.openAnalysisBtn = QPushButton("→ Open in Analysis")
-            self.openAnalysisBtn.setToolTip(
-                "Load current scenario duration and parameters into the Analysis page"
-            )
-            self.runScenarioBtn.parentWidget().layout().addWidget(self.openAnalysisBtn)
-        self.openAnalysisBtn.clicked.connect(self._open_in_analysis)
 
-        # --- Aberration corrections (position measurements only) -------------
-        # Added programmatically (like the buttons above) to avoid editing the
-        # .ui; wired into the same JSON/model round-trip as the other fields.
-        from PyQt5.QtWidgets import QCheckBox, QComboBox
-        self.lightTimeCheck = QCheckBox("One-way light time (CN)")
-        self.lightTimeCheck.setToolTip(
-            "Converged Newtonian one-way light-time correction for range/az/el.\n"
-            "Position measurements only."
-        )
-        self.stellarCheck = QCheckBox("Stellar aberration (+S)")
-        self.stellarCheck.setToolTip(
-            "Apply stellar aberration on top of the light-time solution.\n"
-            "Requires light time."
-        )
+        # Light time and aberration apply to position (range/az/el) measurements only.
+        self.lightTimeCheck = QCheckBox("Tek yönlü ışık zamanı (CN)")
+        self.lightTimeCheck.setToolTip("Menzil/azimut/yükseliş için yakınsamış Newton tek yönlü ışık zamanı düzeltmesi.\n"
+                                       "Yalnız 'Menzil ve açılar' ölçümünde.")
+        self.stellarCheck = QCheckBox("Yıldız sapınçlığı (+S)")
+        self.stellarCheck.setToolTip("Işık zamanı çözümünün üstüne yıldız sapınçlığı uygular; ışık zamanı gerekir.")
         self.stellarModelCombo = QComboBox()
-        self.stellarModelCombo.addItems(["local_mci", "spice_ssb"])
-        self.stellarModelCombo.setToolTip(
-            "Observer-velocity frame for +S:\n"
-            "  spice_ssb  - SPICE-like CN+S (SSB velocity, ~1e-4 rad)\n"
-            "  local_mci  - Moon-centred velocity (cheaper, ~20x smaller)"
-        )
+        self.stellarModelCombo.addItem("Ay merkezli hız (yerel MCI)", "local_mci")
+        self.stellarModelCombo.addItem("Güneş sistemi ağırlık merkezi (SPICE SSB)", "spice_ssb")
+        self.stellarModelCombo.setToolTip("+S için gözlemci hızının çerçevesi:\n"
+                                          "  SPICE SSB — SPICE CN+S ile aynı (SSB hızı, ~1e-4 rad)\n"
+                                          "  yerel MCI — Ay merkezli hız (daha ucuz, ~20 kat küçük)")
         meas_layout = self.measGroup.layout()
-        meas_layout.addRow("Light time:", self.lightTimeCheck)
-        meas_layout.addRow("Aberration:", self.stellarCheck)
-        meas_layout.addRow("Aberration frame:", self.stellarModelCombo)
+        meas_layout.addRow("Işık zamanı:", self.lightTimeCheck)
+        meas_layout.addRow("Sapınçlık:", self.stellarCheck)
+        meas_layout.addRow("Sapınçlık çerçevesi:", self.stellarModelCombo)
         for _w in (self.lightTimeCheck, self.stellarCheck):
             _w.stateChanged.connect(self._update_json)
             _w.stateChanged.connect(self._on_aberration_changed)
-        self.stellarModelCombo.currentTextChanged.connect(self._update_json)
-        self.measTypeCombo.currentTextChanged.connect(self._on_aberration_changed)
+        self.stellarModelCombo.currentIndexChanged.connect(self._update_json)
+        self.measTypeCombo.currentIndexChanged.connect(self._on_aberration_changed)
 
-        # Initial render
         self._model_to_widgets(self._current_model)
         self._update_json()
         self._on_arc_mode_changed()
 
     def _simplify_layout(self):
-        from PyQt5.QtWidgets import QVBoxLayout, QBoxLayout, QSizePolicy
         self.layout().setDirection(QBoxLayout.TopToBottom)
         self.layout().setContentsMargins(24, 12, 24, 16)
         self.layout().setSpacing(12)
@@ -139,11 +148,26 @@ class ScenarioBuilderController(QWidget):
         form_layout = self.estimatorGroup.parentWidget().layout()
         form_layout.setContentsMargins(0, 0, 20, 0)
         form_layout.setSpacing(10)
-        for group in (self.presetsGroup, self.identityGroup, self.timeGroup, self.estimatorGroup):
-            group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.presetDescLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
-        self.advanced_form_toggle = QPushButton("Gelişmiş ayarlar · yaylar ve ölçümler")
+
+        # What is measured and by which stations is a primary choice, not an advanced one.
+        self.observationGroup = QGroupBox("Ölçüm ve istasyonlar")
+        observation_form = QFormLayout(self.observationGroup)
+        meas_form = self.measGroup.layout()
+        for label, field in ((self.measTypeLabel, self.measTypeCombo),
+                             (self.networkLabel, self.networkCombo),
+                             (self.noiseLabel, self.noiseCheck)):
+            meas_form.takeRow(field)
+            observation_form.addRow(label, field)
+        form_layout.insertWidget(form_layout.indexOf(self.estimatorGroup), self.observationGroup)
+        for group in (self.presetsGroup, self.identityGroup, self.timeGroup, self.observationGroup, self.estimatorGroup):
+            group.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+
+        self.advanced_form_toggle = QPushButton("Gelişmiş ayarlar: yaylar ve ölçüm modeli  ›")
         self.advanced_form_toggle.setCheckable(True)
+        self.advanced_form_toggle.setObjectName("disclosureButton")
+        self.advanced_form_toggle.setMinimumHeight(34)
+        self.advanced_form_toggle.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
         self.advanced_form = QWidget()
         advanced_layout = QVBoxLayout(self.advanced_form)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
@@ -153,78 +177,44 @@ class ScenarioBuilderController(QWidget):
         form_layout.insertWidget(form_layout.count() - 1, self.advanced_form_toggle)
         form_layout.insertWidget(form_layout.count() - 1, self.advanced_form)
         self.advanced_form.hide()
-        self.advanced_form_toggle.toggled.connect(self.advanced_form.setVisible)
-        self.presetsGroup.setTitle("Başlangıç şablonu")
-        self.identityGroup.setTitle("Senaryo")
-        self.timeGroup.setTitle("Zaman aralığı")
-        self.estimatorGroup.setTitle("Kestirici")
-        self.runScenarioBtn.setText("Koşuyu başlat")
-        self.exportJsonBtn.setText("Ayarları kaydet")
-        self.importJsonBtn.setText("Ayarları aç")
-        self.openAnalysisBtn.setText("Analizde aç")
-        self.jsonLabel.setText("Etkin ayarlar · JSON")
-        self.copyJsonBtn.setText("Kopyala")
+        self.advanced_form_toggle.toggled.connect(self._toggle_advanced)
+
         self.preview_toggle = QPushButton("JSON önizlemesi")
         self.preview_toggle.setCheckable(True)
         self.preview_toggle.setChecked(False)
-        # Keep all action buttons outside the optional technical preview.
+        # One action row under the form: start (primary), then save/open settings and the JSON preview.
         self.previewLayout.removeItem(self.actionButtonsLayout)
         actions = QWidget()
         actions.setLayout(self.actionButtonsLayout)
-        self.previewLayout.removeWidget(self.openAnalysisBtn)
-        self.actionButtonsLayout.insertWidget(2, self.openAnalysisBtn)
+        self.actionButtonsLayout.removeWidget(self.runScenarioBtn)
+        self.actionButtonsLayout.insertWidget(0, self.runScenarioBtn)
+        self.actionButtonsLayout.addWidget(self.preview_toggle)
         self.layout().addWidget(actions)
         # Provenance and draft recovery remain visible with the JSON panel closed.
         self.previewLayout.removeWidget(self.origin_label)
         self.previewLayout.removeWidget(self.restore_draft_button)
         self.layout().insertWidget(0, self.restore_draft_button)
         self.layout().insertWidget(0, self.origin_label)
-        toolbar = QWidget()
-        toolbar_layout = QVBoxLayout(toolbar)
-        toolbar_layout.setContentsMargins(0, 0, 0, 0)
-        toolbar_layout.addWidget(self.preview_toggle, 0, Qt.AlignRight)
-        self.layout().insertWidget(0, toolbar)
         self.layout().setStretchFactor(self.splitter, 1)
         self.previewPanel.hide()
         self.preview_toggle.toggled.connect(self.previewPanel.setVisible)
-        for button in (self.exportJsonBtn, self.importJsonBtn, self.openAnalysisBtn, self.runScenarioBtn):
+        for button in (self.exportJsonBtn, self.importJsonBtn, self.runScenarioBtn, self.preview_toggle):
             button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.exportJsonBtn.setToolTip("Bu formun ayarlarını JSON dosyasına kaydet")
+        self.importJsonBtn.setToolTip("Daha önce kaydedilmiş ayarları forma yükle")
         self.splitter.setSizes([650, 400])
-        for name, label in (
-            ("nameLabel", "Ad"), ("descLabel", "Açıklama"), ("outputDirLabel", "Çıktı klasörü"),
-            ("durationLabel", "Süre (gün)"), ("stepLabel", "Örnekleme (s)"),
-            ("seedLabel", "Rastgelelik tohumu"), ("estimatorLabel", "Yöntem"),
-            ("startModeLabel", "Başlangıç")):
-            getattr(self, name).setText(label)
+
+    def _toggle_advanced(self, expanded):
+        self.advanced_form.setVisible(expanded)
+        self.advanced_form_toggle.setText("Gelişmiş ayarlar: yaylar ve ölçüm modeli  " + ("⌄" if expanded else "›"))
 
     def on_shown(self) -> None:
-        self._reload_network_presets()
-
-    def _reload_network_presets(self) -> None:
-        from PyQt5.QtCore import QSettings
-        s = QSettings("LunarOD", "DesktopApp")
-        custom = s.value("stations/custom_networks", {})
-        if not isinstance(custom, dict):
-            custom = {}
-        current = self.networkCombo.currentText()
-        # Remove old custom entries (keep "multi" and "single")
-        while self.networkCombo.count() > 2:
-            self.networkCombo.removeItem(2)
-        for name in sorted(custom.keys()):
-            self.networkCombo.addItem(name)
-        # Restore selection
-        idx = self.networkCombo.findText(current)
-        if idx < 0 and current:
-            self.networkCombo.addItem(current)
-            idx = self.networkCombo.count() - 1
-        self.networkCombo.setCurrentIndex(idx)
+        pass
 
     # ------------------------------------------------------------------
-    def _on_arc_mode_changed(self, _text: str = "") -> None:
-        is_prescribed = self.arcModeCombo.currentText() == "prescribed"
-        # prescribed-only fields
-        for w in (self.arcDurLabel, self.arcDurSpin,
-                  self.arcStrideLabel, self.arcStrideSpin):
+    def _on_arc_mode_changed(self, _index=None) -> None:
+        is_prescribed = _value(self.arcModeCombo) == "prescribed"
+        for w in (self.arcDurLabel, self.arcDurSpin, self.arcStrideLabel, self.arcStrideSpin):
             w.setVisible(is_prescribed)
         # The station elevation mask applies to planned windows as well.
         for w in (self.elevMaskLabel, self.elevMaskSpin):
@@ -236,37 +226,32 @@ class ScenarioBuilderController(QWidget):
     def _on_aberration_changed(self, _v=None) -> None:
         """Enable aberration controls only for position measurements; stellar
         aberration requires light time, and the frame combo requires stellar."""
-        is_position = self.measTypeCombo.currentText() == "position"
+        is_position = _value(self.measTypeCombo) == "position"
         self.lightTimeCheck.setEnabled(is_position)
         lt_on = is_position and self.lightTimeCheck.isChecked()
         self.stellarCheck.setEnabled(lt_on)
         self.stellarModelCombo.setEnabled(lt_on and self.stellarCheck.isChecked())
 
     def _update_arc_count(self) -> None:
-        mode = self.arcModeCombo.currentText()
-        if mode == "prescribed":
+        if _value(self.arcModeCombo) == "prescribed":
             total_h = self.durationSpin.value() * 24.0
             stride_h = self.arcStrideSpin.value()
             count = int(total_h / stride_h) if stride_h > 0 else 0
             self._arc_count_label.setText(
-                f"~{count} arcs  "
-                f"({self.durationSpin.value():.1f} days ÷ {stride_h:.1f}h stride)\n"
-                "Planlı pencereler: yalnızca gerçekten görünen istasyonlardan ölçüm alınır."
-            )
+                f"~{count} yay ({self.durationSpin.value():.1f} gün ÷ {stride_h:.1f} sa adım). "
+                "Yalnız gerçekten görünen istasyonlardan ölçüm alınır.")
         else:
             gap_min = self.gapThreshSpin.value() / 60.0
             self._arc_count_label.setText(
-                f"by visibility windows  "
-                f"(elv ≥ {self.elevMaskSpin.value():.0f}°, "
-                f"gap ≤ {gap_min:.0f} min)"
-            )
+                f"Görünürlük pencerelerine göre (yükseliş ≥ {self.elevMaskSpin.value():.0f}°, "
+                f"boşluk ≤ {gap_min:.0f} dk)")
 
-    def _on_preset_selected(self, name: str) -> None:
+    def _on_preset_selected(self, name) -> None:
         if name in PRESETS:
             self._archive_origin = None
             self._show_origin()
             self._current_model = ScenarioModel(**vars(PRESETS[name]))
-            self.presetDescLabel.setText(self._current_model.description)
+            self.presetDescLabel.setText(_PRESET_LABELS.get(name, (name, self._current_model.description))[1])
             self._model_to_widgets(self._current_model)
             self._update_json()
         else:
@@ -308,7 +293,7 @@ class ScenarioBuilderController(QWidget):
         self._on_aberration_changed()
 
     def _widgets_to_model(self) -> ScenarioModel:
-        is_position = self.measTypeCombo.currentText() == "position"
+        is_position = _value(self.measTypeCombo) == "position"
         light_time = is_position and self.lightTimeCheck.isChecked()
         stellar = light_time and self.stellarCheck.isChecked()
         return replace(self._current_model,
@@ -318,23 +303,23 @@ class ScenarioBuilderController(QWidget):
             duration_days=self.durationSpin.value(),
             state_step_s=self.stepSpin.value(),
             random_seed=int(self.seedSpin.value()),
-            arc_mode=self.arcModeCombo.currentText(),
+            arc_mode=_value(self.arcModeCombo),
             arc_duration_h=self.arcDurSpin.value(),
             arc_stride_h=self.arcStrideSpin.value(),
             elevation_mask_deg=self.elevMaskSpin.value(),
             gap_threshold_s=self.gapThreshSpin.value(),
-            measurement_type=self.measTypeCombo.currentText(),
-            range_rate_physics=self.rrPhysicsCombo.currentText(),
-            network_name=self.networkCombo.currentText(),
+            measurement_type=_value(self.measTypeCombo),
+            range_rate_physics=_value(self.rrPhysicsCombo),
+            network_name=_value(self.networkCombo),
             noise_enabled=self.noiseCheck.isChecked(),
-            estimator_type=self.estimatorCombo.currentText(),
-            start_mode=self.startModeCombo.currentText(),
+            estimator_type=_value(self.estimatorCombo),
+            start_mode=_value(self.startModeCombo),
             apply_light_time=light_time,
             apply_stellar_aberration=stellar,
-            stellar_aberration_model=self.stellarModelCombo.currentText(),
+            stellar_aberration_model=_value(self.stellarModelCombo),
         )
 
-    def _update_json(self) -> None:
+    def _update_json(self, *_args) -> None:
         if self._updating_from_model:
             return
         model = self._widgets_to_model()
@@ -348,9 +333,9 @@ class ScenarioBuilderController(QWidget):
 
     def _export_json(self) -> None:
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export Scenario JSON",
+            self, "Senaryo ayarlarını kaydet",
             str(Path.home() / f"{self._current_model.name}.json"),
-            "JSON files (*.json)",
+            "JSON dosyaları (*.json)",
         )
         if path:
             with open(path, "w", encoding="utf-8") as f:
@@ -358,9 +343,9 @@ class ScenarioBuilderController(QWidget):
 
     def _import_json(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, "Import Scenario JSON",
+            self, "Senaryo ayarlarını aç",
             str(Path.home()),
-            "JSON files (*.json)",
+            "JSON dosyaları (*.json)",
         )
         if not path:
             return
@@ -378,20 +363,9 @@ class ScenarioBuilderController(QWidget):
             self._archive_origin = None
             self._show_origin()
             self._update_json()
-            # Reset preset combo to custom
             self.presetCombo.setCurrentIndex(0)
         except Exception as exc:
-            QMessageBox.warning(self, "Import failed", str(exc))
-
-    def _open_in_analysis(self) -> None:
-        """Navigate to Analysis page with current scenario duration/params pre-loaded."""
-        model = self._widgets_to_model()
-        main_win = self.window()
-        if hasattr(main_win, "navigate"):
-            main_win.navigate("analysis")
-            analysis = main_win._pages.get("analysis")
-            if analysis and hasattr(analysis, "apply_scenario_params"):
-                analysis.apply_scenario_params(model)
+            QMessageBox.warning(self, "Ayarlar açılamadı", str(exc))
 
     def _run_scenario(self) -> None:
         """Validate the environment before persisting a new job or starting the solver."""
@@ -468,9 +442,12 @@ class ScenarioBuilderController(QWidget):
 
 # -------------------------------------------------------------------------
 def _set_combo(combo, value: str) -> None:
-    idx = combo.findText(value)
+    idx = combo.findData(value)
     if idx < 0:
-        combo.addItem(value)
+        idx = combo.findText(value)
+    if idx < 0:
+        # An archived value outside the offered choices is shown, never replaced.
+        combo.addItem(value, value)
         idx = combo.count() - 1
     combo.setCurrentIndex(idx)
 
