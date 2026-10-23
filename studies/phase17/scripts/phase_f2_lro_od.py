@@ -156,8 +156,7 @@ def solve(nmax: int, sign: float) -> dict:
                             pos_step_m=float(np.linalg.norm(step[:3])) if accepted else None))
         with open(F.REPO.parent / f"f2_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
             log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
-                      f"lam {lam:.1e} t {time.time() - t0:.0f}s
-")
+                      f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
         if not accepted:
             status = "DampingLimit"
             break
