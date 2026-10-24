@@ -1,0 +1,21 @@
+{
+ "phase": "Phase F1c - real LRO two-way S-band Doppler against the LOLA precision orbit (no estimation)",
+ "written": "2026-10-24, before any F1c residual; the only Doppler inspection so far: the first 12 count differences of PAD 103 on 2009-260 (5 s spacing, ~2.62e8 counts/s, i.e. a ~22 kHz Doppler) and the transmit-frequency field (2091.414 MHz, reader fixed in 8187d44)",
+ "data": "F1's 2009-260 files, PAD 103 / 105 / 126, records with the Doppler-validity flag",
+ "observable": "average two-way range rate over each interval between consecutive valid records of one station (spacing 0 < dT <= 60 s, same pass): R' = -c * (dN/dT - 2.4e8) / (2 f_t K M), K = 240/221, M = 1000, f_t from the record at the interval start (453-HDBK-GN 4.3 / lro_desc_trk.txt), tagged at the counter-reading (receive) epochs",
+ "model": "relativistic_light_time.counted_doppler at the interval midpoint with count interval dT, F1's M_FULL (DSN_C2 light time, DE440, high-precision Earth PCK, solid tide, media with the phase delay; uplink = the record's f_t, downlink = f_t * 240/221), LOLA SPK history as in F1",
+ "gates": {
+  "R1_decode": "every interval has dN > 0 and constant f_t within a pass",
+  "R2_sign_scale": "the residual RMS is below 1 % of the observed range-rate RMS on every pass (a wrong sign or scale would leave ~100 %)",
+  "R3_light_time": "every counted_doppler converges"
+ },
+ "hypotheses_reported_not_gated": {
+  "H1": "per-pass residual RMS <= 5 mm/s",
+  "H2": "per-pass mean residual <= 5 mm/s (no frequency offset)",
+  "H3": "the media phase delay reduces low-elevation residual trends (variant NO_MEDIA)"
+ },
+ "outputs": {
+  "results": "studies/phase17/results/phase_f1c_lro_doppler.json",
+  "report": "studies/phase17/reports/phase_f1c_lro_doppler.md"
+ }
+}
