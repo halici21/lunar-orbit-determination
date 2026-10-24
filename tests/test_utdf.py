@@ -18,7 +18,7 @@ from lunar_od.utdf import (
 
 
 def _record(*, year=9, sic=59, vid=1, sec=22377425, usec=250000, rtlt_raw=615107924736, dop=136859486617,
-            ftx=0.0, pad=103, mode=0x2662, flags=0x0F) -> bytes:
+            ftx=209141411, pad=103, mode=0x2662, flags=0x0F) -> bytes:
     r = bytearray(RECORD_BYTES)
     r[0:3] = b"\x0d\x0a\x01"
     r[3:5] = b"DD"
@@ -27,7 +27,7 @@ def _record(*, year=9, sic=59, vid=1, sec=22377425, usec=250000, rtlt_raw=615107
     r[10:18] = struct.pack(">II", sec, usec)
     r[26:32] = struct.pack(">IH", rtlt_raw >> 16, rtlt_raw & 0xFFFF)
     r[32:38] = struct.pack(">IH", dop >> 16, dop & 0xFFFF)
-    r[40:44] = struct.pack(">f", ftx)
+    r[40:44] = struct.pack(">I", ftx)
     r[45] = pad
     r[47] = pad
     r[48:50] = struct.pack(">H", mode)
@@ -45,6 +45,7 @@ def test_decode_fields_and_units():
     # four minutes before the 00:01 close time in the archive file name lsutdf_005901_103_2009_260_0001
     assert rec.utc == datetime(2009, 9, 16, 23, 57, 5, 250000, tzinfo=timezone.utc)
     assert rec.range_valid and rec.doppler_valid
+    assert rec.transmit_frequency_hz == pytest.approx(2091.41411e6, rel=0, abs=1e-3)
 
 
 def test_validity_flags():

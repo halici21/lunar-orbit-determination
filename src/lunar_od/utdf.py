@@ -51,7 +51,7 @@ class UTDFRecord:
     vid: int
     rtlt_raw: int
     doppler_count_raw: int
-    transmit_frequency_10hz: float
+    transmit_frequency_10hz: int
     pad_xmit: int
     pad_rcv: int
     mode: int
@@ -68,6 +68,11 @@ class UTDFRecord:
     def rtlt_s(self) -> float:
         """Round-trip light time [s] as measured (station and transponder delays included)."""
         return self.rtlt_raw * RTLT_UNIT_S
+
+    @property
+    def transmit_frequency_hz(self) -> float:
+        """Station transmit (uplink) frequency [Hz]."""
+        return 10.0 * self.transmit_frequency_10hz
 
     @property
     def range_valid(self) -> bool:
@@ -88,12 +93,14 @@ def decode_record(raw: bytes, *, century: int = 2000) -> UTDFRecord:
     sec, usec = struct.unpack(">II", raw[10:18])
     rt_hi, rt_lo = struct.unpack(">IH", raw[26:32])
     dop_hi, dop_lo = struct.unpack(">IH", raw[32:38])
-    (ftx,) = struct.unpack(">f", raw[40:44])
+    # Binary count of 10 Hz (453-HDBK-GN 4.2); the PDS lro_trk.fmt labels it IEEE_REAL, which decodes the
+    # LRO records to ~1.9e-31 instead of 2091.414 MHz.
+    (ftx,) = struct.unpack(">I", raw[40:44])
     (mode,) = struct.unpack(">H", raw[48:50])
     return UTDFRecord(
         year=century + raw[5], seconds_of_year=sec, microseconds=usec, sic=sic, vid=vid,
         rtlt_raw=rt_hi * 65536 + rt_lo, doppler_count_raw=dop_hi * 65536 + dop_lo,
-        transmit_frequency_10hz=float(ftx), pad_xmit=raw[45], pad_rcv=raw[47], mode=mode,
+        transmit_frequency_10hz=int(ftx), pad_xmit=raw[45], pad_rcv=raw[47], mode=mode,
         flags=raw[50], router=bytes(raw[3:5]),
     )
 
