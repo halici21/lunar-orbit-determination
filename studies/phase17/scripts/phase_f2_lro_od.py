@@ -119,7 +119,7 @@ class Problem:
         return res, h, hist
 
 
-def solve(nmax: int, sign: float) -> dict:
+def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "") -> dict:
     t0 = time.time()
     pb = Problem(nmax)
     x0 = pb.reference_epoch + sign * OFFSET
@@ -127,14 +127,34 @@ def solve(nmax: int, sign: float) -> dict:
     res, _, _ = pb.residual(p, partials=False)
     for j in range(3):
         p[7 + j] = float(np.mean(res[pb.pad_index == j]))
+    # F2b: priors as pseudo-observations {parameter index: (mean, sigma)}, weighted against SIGMA_M
+    prior_items = sorted((priors or {}).items())
+    for j, (mean, _) in prior_items:
+        if j >= 7:
+            p[j] = mean
+
+    def aug(r, hh, pp):
+        if not prior_items:
+            return r, hh
+        w = np.array([SIGMA_M / s for _, (_, s) in prior_items])
+        r_p = np.array([m - pp[j] for j, (m, _) in prior_items]) * w
+        r_out = np.concatenate([r, r_p])
+        if hh is None:
+            return r_out, None
+        h_p = np.zeros((len(prior_items), hh.shape[1]))
+        for row, (j, _) in enumerate(prior_items):
+            h_p[row, j] = w[row]
+        return r_out, np.vstack([hh, h_p])
+
     scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0])
     lam, status, history = 1e-3, "MaxIter", []
     res, h, hist = pb.residual(p)
-    cost = float(res @ res)
+    ra, ha = aug(res, h, p)
+    cost = float(ra @ ra)
     for it in range(1, MAX_ITER + 1):
-        hs = h * scale / SIGMA_M
+        hs = ha * scale / SIGMA_M
         a = hs.T @ hs
-        g = hs.T @ (res / SIGMA_M)
+        g = hs.T @ (ra / SIGMA_M)
         accepted = False
         while lam < 1e10:
             step = scale * np.linalg.solve(a + lam * np.diag(np.diag(a)), g)
@@ -143,18 +163,20 @@ def solve(nmax: int, sign: float) -> dict:
                 lam *= 10.0
                 continue
             rc, _, _ = pb.residual(pc, partials=False)
-            cc = float(rc @ rc)
+            rca, _ = aug(rc, None, pc)
+            cc = float(rca @ rca)
             if cc < cost:
                 rel = (cost - cc) / cost
                 p, cost = pc, cc
                 res, h, hist = pb.residual(p)
+                ra, ha = aug(res, h, p)
                 lam = max(lam / 10.0, 1e-9)
                 accepted = True
                 break
             lam *= 10.0
-        history.append(dict(iteration=it, cost=cost, rms_m=float(np.sqrt(cost / len(res))), lam=lam,
+        history.append(dict(iteration=it, cost=cost, rms_m=float(np.sqrt(np.mean(res ** 2))), lam=lam,
                             pos_step_m=float(np.linalg.norm(step[:3])) if accepted else None))
-        with open(F.REPO.parent / f"f2_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
+        with open(F.REPO.parent / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
             log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
                       f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
         if not accepted:
@@ -164,7 +186,7 @@ def solve(nmax: int, sign: float) -> dict:
             status = "Converged"
             break
     # formal covariance and comparison with the reference over the observed span
-    hs = h / SIGMA_M
+    hs = ha / SIGMA_M
     cov = np.linalg.inv(hs.T @ hs)
     t_cmp = np.arange(float(pb.setup.t3.min()), float(pb.setup.t3.max()), 60.0)
     est = pb.propagate(p[:6], p[6], t_eval=np.concatenate([[pb.t_epoch], t_cmp]), sensitivity=False)[1:]
@@ -184,7 +206,7 @@ def solve(nmax: int, sign: float) -> dict:
         per_pass.append(dict(pad=pb.rows[idx[0]][0], n=int(idx.size), rms_m=float(np.sqrt(np.mean(res[idx] ** 2))),
                              mean_m=float(np.mean(res[idx]))))
     return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history,
-                postfit_rms_m=float(np.sqrt(cost / len(res))), per_pass=per_pass,
+                postfit_rms_m=float(np.sqrt(np.mean(res ** 2))), per_pass=per_pass,
                 x0=p[:6].tolist(), k_srp=float(p[6]), k_srp_sigma=float(np.sqrt(cov[6, 6])),
                 biases_m=dict(zip(map(str, PADS), map(float, p[7:10]))),
                 bias_sigma_m=dict(zip(map(str, PADS), map(float, np.sqrt(np.diag(cov)[7:10])))),
@@ -238,5 +260,36 @@ def main():
     print(json.dumps(dict(gates=gates, G2=out["G2_start_difference"], G4=g4, runs=brief), indent=1))
 
 
+#: Phase F2b priors (studies/phase17/configs/phase_f2b_lro_od_priors_predeclaration.json): parameter index ->
+#: (mean, sigma). Bias means are F1's M_FULL per-station mean residuals on 2009-260.
+F2B_PRIORS = {6: (0.010, 0.005), 7: (489.1605710824553, 3.0), 8: (476.89111818207635, 3.0),
+              9: (474.5091541284396, 3.0)}
+OUT_F2B = HERE.parent / "results" / "phase_f2b_lro_od_priors.json"
+
+
+def main_f2b():
+    with ProcessPoolExecutor(2) as ex:
+        fp = ex.submit(solve, 100, 1.0, F2B_PRIORS, "b")
+        fm = ex.submit(solve, 100, -1.0, F2B_PRIORS, "b")
+        a, b = fp.result(), fm.result()
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    dbias = max(abs(a["biases_m"][k] - b["biases_m"][k]) for k in a["biases_m"])
+    gates = dict(G1=a["status"] == "Converged" and b["status"] == "Converged",
+                 G2=dpos <= 1.0 and dbias <= 0.1, G3=a["postfit_rms_m"] <= 20.0 and b["postfit_rms_m"] <= 20.0)
+    for r in (a, b):
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2b_lro_od_priors_predeclaration.json", gates=gates,
+               G2_start_difference=dict(position_max_m=dpos, bias_max_m=dbias), priors=F2B_PRIORS,
+               runs={"N100_+": a, "N100_-": b})
+    OUT_F2B.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "k_srp", "k_srp_sigma", "biases_m",
+                                       "ric_rms_m", "ric_max_m", "total_rms_m", "total_max_m", "elapsed_s")}
+             for k, r in out["runs"].items()}
+    print(json.dumps(dict(gates=gates, G2=out["G2_start_difference"], runs=brief), indent=1))
+
+
 if __name__ == "__main__":
-    main()
+    if "--f2b" in sys.argv:
+        main_f2b()
+    else:
+        main()
