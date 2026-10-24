@@ -92,3 +92,80 @@ For comparison, F1 measured the station delays against the LOLA orbit itself: 48
 - One 12 h arc, range only, cannonball SRP, no momentum-dump modelling, no empirical accelerations.
 - The a priori is 1 km / 1 m/s off the reference, a realistic but demanding start.
 - FD sensitivities (A1).
+
+## 6. F2b — F2 with station-bias and K_SRP priors (N = 100)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2b_lro_od_priors_predeclaration.json` (`17bc923`).
+- **Evidence:** `studies/phase17/results/phase_f2b_lro_od_priors.json`.
+- **Priors:** biases from F1's per-station means (σ 3 m); K_SRP 0.010 ± 0.005 m²/kg.
+- **Status:** all three gates FAIL as computed.
+  - G1: + Converged, − DampingLimit.
+  - G2: the two starts differ by 2 120 m.
+  - G3: 126.7 m and 14.66 m against the 20 m limit.
+
+| start | status | post-fit RMS | K_SRP | biases 103 / 105 / 126 [m] | vs LOLA R / A / C RMS [m] | total RMS / max [m] |
+|---|---|---|---|---|---|---|
+| + | Converged, 20 it. | 126.68 m | 0.0 | 696.4 / 692.2 / 826.0 | 654.3 / 1334.4 / 700.6 | 1643 / 2056 |
+| − | DampingLimit, 11 it. | 14.66 m | 1.556 | 406.2 / 386.9 / 476.2 | 66.5 / 152.9 / 94.3 | 191.5 / 352.5 |
+
+- The priors change almost nothing: about 2 380 range rows outweigh four pseudo-observations.
+- With degree-100 gravity, the data still prefer a non-physical K and biased delays.
+- **Conclusion: the dynamics, not the regularisation, limit F2.**
+
+## 7. F2c — degree 200 and 300 (with F2b's priors)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2c_lro_od_degree_predeclaration.json` (`07a643b`). It
+  discloses a smoke test: propagating the LOLA epoch state departs from the LOLA orbit by 266 / 42 / 31 / 27 m at
+  N = 100 / 150 / 200 / 300.
+- **Evidence:** `studies/phase17/results/phase_f2c_lro_od_degree.json`.
+- **Status:** all three gates FAIL as computed.
+  - G1: DampingLimit for both N=200 runs.
+  - G2: the two starts differ by 1 964 m.
+  - G3: the + runs end at 130.5 m and 130.9 m against the 5 m limit.
+
+| run | status | post-fit RMS | K_SRP [m²/kg] | biases 103 / 105 / 126 [m] (±0.71) | vs LOLA R / A / C RMS [m] | total RMS / max [m] |
+|---|---|---|---|---|---|---|
+| **N200 −** | DampingLimit (stationary from iteration 7) | **0.889 m** | **0.0132 ± 0.0017** | **482.2 / 470.3 / 473.1** | **3.2** / 90.4 / 91.6 | 128.7 / 178.9 |
+| N200 + | DampingLimit, 16 it. | 130.51 m | 0.0 | 687.4 / 691.9 / 744.2 | 647.4 / 1327.7 / 705.1 | 1637 / 2040 |
+| N300 + | DampingLimit, 28 it. | 130.94 m | 4e-5 | 688.5 / 693.3 / 743.7 | 646.7 / 1326.7 / 708.4 | 1637 / 2040 |
+
+### The N = 200 (−) solution: the first physically consistent real-data orbit
+
+- **Post-fit residuals 0.55–1.26 m RMS per pass**, with per-pass means ≤ 0.61 m. This equals F1's measurement-chain
+  floor (0.50–0.85 m detrended against the precision orbit). The solve stopped at iteration 7 and was stationary
+  thereafter.
+- **K_SRP = 0.0132 ± 0.0017 m²/kg.** This is physical: it agrees with LRO's area-to-mass ratio, ~0.01. The prior
+  carried weight 0.005 and did not force it.
+- **Station biases 482.2 / 470.3 / 473.1 m (±0.7 m).**
+  - Dongara is 7 m below F1's mean of the four passes (489.2 m). South Point (−6.6 m) and Kiruna (−1.4 m) are within
+    a few metres of their priors.
+  - This is consistent with F1's 3 m within-day spread and F1b's along-track signature of the reference.
+- **Against the LOLA GRGM900C orbit:**
+  - radial **3.2 m RMS** (6.2 m max);
+  - along-track 90 m RMS, cross-track 92 m RMS.
+  - Earth-based range over 12 h measures mainly the line-of-sight component. On LRO's polar orbit, cross-track and
+    along-track positions are weakly observed, so they move freely within the data's null space. The 0.9 m fit does
+    not constrain them to better than ~100 m.
+  - Doppler and longer arcs carry that information (recommendations 2 and 5).
+
+### The + starts
+
+- From +(1 km, 1 m/s), N = 200 and N = 300 fall into the same basin as F2/F2b's + starts: K → 0, ~130 m post-fit,
+  ~1.6 km from LOLA.
+- **The basin is a property of the start and the damping path, not of the degree.** A better a priori, or a
+  globalisation strategy (multiple starts, a homotopy in K), is needed for robustness.
+
+## 8. F2 series summary and next steps
+
+| | N=100 (F2/F2b) | N=200 (F2c) |
+|---|---|---|
+| best post-fit RMS | 14.5 m (non-physical K) | **0.89 m** (physical K) |
+| best radial vs LOLA | 67–79 m RMS | **3.2 m RMS** |
+| best total vs LOLA | 191–198 m RMS | 129 m RMS (along/cross-track unobserved) |
+
+Next steps:
+1. **Doppler (F1c):** cumulative bias counts in UTDF, for the along/cross-track information.
+2. **Arc robustness:** a closer a priori or a multi-start strategy, so the + basin is avoided.
+3. **Longer arc:** two days or more, more passes per station.
+4. **Phase E (owner approval):** the numba harmonic acceleration in the sensitivity propagator, so the analytic STM
+   replaces the A1 FD sensitivities.
