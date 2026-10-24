@@ -35,7 +35,7 @@ def palette_state(monkeypatch):
     monkeypatch.setattr(appearance, "CURRENT_THEME", appearance.CURRENT_THEME)
 
 
-@pytest.mark.parametrize("palette", ["modern", "orchid"])
+@pytest.mark.parametrize("palette", ["gece", "modern", "orchid"])
 @pytest.mark.parametrize("width", [548, 698])
 @pytest.mark.parametrize("sampled", [False, True], ids=["analytical", "sampled"])
 def test_ground_track_text_fits_canvas_and_keeps_data(palette, width, sampled, palette_state):

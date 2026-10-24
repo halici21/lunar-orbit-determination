@@ -5,7 +5,7 @@ import importlib
 from pathlib import Path
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QLabel, QPushButton, QFrame,
+    QMainWindow, QWidget, QLabel, QPushButton, QFrame, QHBoxLayout,
     QSizePolicy, QProgressBar, QVBoxLayout, QButtonGroup, QShortcut, QScrollArea, QStackedWidget,
 )
 from PyQt5.QtCore import Qt, QSettings, QSize, QTimer
@@ -49,52 +49,69 @@ _TITLES: dict[str, tuple[str, str]] = {
 
 # ---------------------------------------------------------------------------
 class _NavButton(QPushButton):
-    """Sidebar navigation button — single line, compact height, tooltip for hint."""
+    """Sidebar item drawn like the sunumatik category list.
 
-    # Template for the button rule — placeholders filled per-check in _refresh_style.
-    # Braces for CSS selectors are doubled so str.format() treats them as literals.
-    _TPL = (
-        "QPushButton {{"
-        " background:transparent; border:none;"
-        " border-left:2px solid {border};"
-        " border-radius:0; padding:8px 14px 8px 16px;"
-        " text-align:left; color:{fg}; font-size:" + str(FONT.SIZE_SM) + "px;"
-        " font-weight:{fw}; }}"
-    )
-    # Hover rule is fully resolved — no .format() placeholders needed.
-    _HOVER = (
-        f"QPushButton:hover {{ background:{C.BG_HOVER}; border-left-color:{C.BORDER_MID}; color:{C.TEXT_PRIMARY}; }}"
-    )
+    The workflow step number sits in a muted mono column (it is also the Alt+N
+    shortcut); the active item gets the accent bar and full-strength text.
+    """
 
-    def __init__(self, label: str, hint: str, parent=None) -> None:
-        super().__init__(parent)
+    def __init__(self, label: str, hint: str, number: int | None = None, parent=None) -> None:
+        super().__init__(label, parent)
         self._label = label
+        self._number = number
         self.setCheckable(True)
         self.setFlat(True)
         self.setAutoExclusive(True)
-        self.setMinimumHeight(38)
+        self.setMinimumHeight(36)
+        self.setCursor(Qt.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.setToolTip(hint)
-        self.toggled.connect(self._refresh_style)
-        self._refresh_style()
+        self.setToolTip(hint + (f" · Alt+{number}" if number else ""))
+        self.setAccessibleName(label)
+        self.setStyleSheet("QPushButton { border:0; background:transparent; }")
 
     def _refresh_style(self) -> None:
-        checked = self.isChecked()
-        sheet = self._TPL.format(
-            border=C.NAV_ACTIVE if checked else "transparent",
-            fg=C.TEXT_PRIMARY if checked else C.TEXT_MUTED,
-            fw="600" if checked else "normal",
-        ) + self._HOVER
-        self.setStyleSheet(sheet)
-        self.setText(self._label)
+        self.update()
 
-    def nextCheckState(self) -> None:
-        super().nextCheckState()
-        self._refresh_style()
+    def paintEvent(self, event) -> None:
+        from PyQt5.QtGui import QPainter, QColor, QFont
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = self.rect()
+        checked, hover = self.isChecked(), self.underMouse()
+        if checked or hover:
+            p.fillRect(r.adjusted(8, 2, -8, -2), QColor(C.BG_ACTIVE if checked else C.BG_HOVER))
+        if checked:
+            p.fillRect(r.x(), r.y() + 8, 2, r.height() - 16, QColor(C.NAV_ACTIVE))
+        if self.hasFocus() and not checked:
+            p.setPen(QColor(C.NAV_ACTIVE))
+            p.drawRect(r.adjusted(8, 2, -9, -3))
+        x = 22
+        if self._number is not None:
+            mono = QFont("Cascadia Mono")
+            mono.setStyleHint(QFont.Monospace)
+            mono.setPixelSize(11)
+            p.setFont(mono)
+            p.setPen(QColor(C.NAV_ACTIVE if checked else C.TEXT_MUTED))
+            p.drawText(r.adjusted(x, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, f"{self._number:02d}")
+            x += 26
+        font = QFont("Segoe UI Variable Text")
+        font.setPixelSize(13)
+        font.setWeight(QFont.DemiBold if checked else QFont.Normal)
+        p.setFont(font)
+        p.setPen(QColor(C.TEXT_PRIMARY if checked or hover else C.TEXT_SECONDARY))
+        p.drawText(r.adjusted(x, 0, -12, 0), Qt.AlignVCenter | Qt.AlignLeft, self._label)
+
+    def enterEvent(self, event) -> None:
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self.update()
+        super().leaveEvent(event)
 
     def setChecked(self, checked: bool) -> None:
         super().setChecked(checked)
-        self._refresh_style()
+        self.update()
 
 
 # ---------------------------------------------------------------------------
@@ -174,46 +191,75 @@ class MainWindow(QMainWindow):
         from styles.workspace_light import workspace_stylesheet
         self.setStyleSheet(workspace_stylesheet())
         self.setWindowTitle("Lunar OD · Çalışma alanı")
-        self.sidebarFrame.setFixedWidth(192)
+        self.sidebarFrame.setFixedWidth(208)
         self.sidebarFrame.setStyleSheet(
             f"QFrame#sidebarFrame {{background:{C.BG_SIDEBAR}; border-right:1px solid {C.BORDER_MAIN};}}")
         for widget in (self.brandFrame, self.navWidget, self.footerFrame):
             widget.setStyleSheet(f"background:{C.BG_SIDEBAR};")
         self.navScrollArea.setStyleSheet(f"QScrollArea {{background:{C.BG_SIDEBAR}; border:0;}}")
-        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:20px; font-weight:500;")
+        # Brand: a small accent monogram beside the name, as on sunumatik.
+        self.brandFrame.setMinimumHeight(76)
+        self.brandFrame.setMaximumHeight(76)
+        brand = self.brandFrame.layout()
+        brand.setContentsMargins(20, 18, 16, 12)
+        brand.removeWidget(self.brandTitleLabel)
+        brand_row = QHBoxLayout()
+        brand_row.setSpacing(10)
+        monogram = QLabel("OD")
+        monogram.setObjectName("brandMonogram")
+        monogram.setFixedSize(28, 28)
+        monogram.setAlignment(Qt.AlignCenter)
+        monogram.setStyleSheet(f"background:{C.NAV_ACTIVE}; color:{C.ON_ACCENT}; border-radius:7px;"
+                               " font-size:11px; font-weight:800; letter-spacing:0.5px;")
+        brand_row.addWidget(monogram)
+        text_col = QVBoxLayout()
+        text_col.setSpacing(0)
+        text_col.addWidget(self.brandTitleLabel)
+        brand.removeWidget(self.brandSubLabel)
+        text_col.addWidget(self.brandSubLabel)
+        brand_row.addLayout(text_col, 1)
+        brand.insertLayout(0, brand_row)
+        self.brandTitleLabel.setText("Lunar OD")
+        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:15px; font-weight:700;")
         self.brandSubLabel.setText("Yörünge belirleme")
         self.brandSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+        self.footerNativeLabel.setText("Yerel çalışma alanı")
         self.footerNativeLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
-        self.footerVerLabel.setText("Araştırma çalışma alanı")
-        self.footerVerLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+        self.footerVerLabel.hide()
         self.pageHeaderFrame.setStyleSheet(
             f"QFrame#pageHeaderFrame {{background:{C.BG_DEEP}; border-bottom:1px solid {C.BORDER_MAIN};}}")
-        self.pageTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:19px; font-weight:500;")
+        header = self.pageHeaderFrame.layout()
+        header.setContentsMargins(32, 18, 32, 14)
+        header.setSpacing(4)
+        self.pageTitleLabel.setStyleSheet(
+            f"color:{C.TEXT_PRIMARY}; font-family:'Segoe UI Variable Display','Segoe UI'; font-size:24px;"
+            " font-weight:700; letter-spacing:-0.4px;")
         self.pageHeaderFrame.setMaximumHeight(16777215)
-        self.pageHeaderFrame.setMinimumHeight(72)
+        self.pageHeaderFrame.setMinimumHeight(84)
         self.pageHeaderFrame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.pageSubLabel.setTextFormat(Qt.PlainText)
         self.pageSubLabel.setWordWrap(True)
-        self.pageSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        self.pageSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:13px;")
         self.pageSubLabel.show()
 
     def _build_nav(self) -> None:
         layout = self.navLayout
         self._nav_group = QButtonGroup(self)
         self._nav_group.setExclusive(True)
-        def add_button(item, target):
+        def add_button(item, target, number=None):
             page_id, label, hint = item
-            btn = _NavButton(label, hint)
+            btn = _NavButton(label, hint, number)
             btn.setAutoExclusive(False)
             self._nav_group.addButton(btn)
             btn.clicked.connect(lambda _checked, pid=page_id: self.navigate(pid))
             target.addWidget(btn)
             self._nav_btns[page_id] = btn
-        label = QLabel("ÇALIŞMA ALANI")
-        label.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:14px 16px 6px; font-size:11px;")
+        label = QLabel("İŞ AKIŞI")
+        label.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:16px 22px 8px; font-size:11px;"
+                            " font-weight:700; letter-spacing:1px;")
         layout.addWidget(label)
         for number, item in enumerate(_PRIMARY_NAV, 1):
-            add_button(item, layout)
+            add_button(item, layout, number)
             shortcut = QShortcut(QKeySequence(f"Alt+{number}"), self)
             shortcut.activated.connect(lambda pid=item[0]: self.navigate(pid))
         layout.addStretch()
@@ -221,14 +267,18 @@ class MainWindow(QMainWindow):
 
     def _build_status_bar(self) -> None:
         sb = self.statusBar
-        sb.setFixedHeight(26)
+        sb.setFixedHeight(28)
+        sb.setSizeGripEnabled(False)
         self._status_lbl = QLabel("Hazır")
         self._status_lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:0 8px;")
         sb.addWidget(self._status_lbl)
         self.environment_button = QPushButton("Ortam · kontrol bekleniyor")
         self.environment_button.setFlat(True)
         self.environment_button.setFixedHeight(22)
-        self.environment_button.setStyleSheet("QPushButton {padding:0 8px; min-height:18px; font-size:11px; border:none;}")
+        self.environment_button.setStyleSheet(
+            f"QPushButton {{padding:0 10px; min-height:18px; font-size:11px; font-weight:600; border:none;"
+            f" color:{C.TEXT_MUTED}; background:transparent;}}"
+            f"QPushButton:hover {{color:{C.TEXT_PRIMARY};}}")
         self.environment_button.setToolTip("Ortam ve SPICE kernel raporunu aç")
         self.environment_button.clicked.connect(lambda: self.navigate("settings"))
         sb.addPermanentWidget(self.environment_button)
@@ -289,6 +339,8 @@ class MainWindow(QMainWindow):
                 widget.set_overview(MissionController(widget))
             except Exception as exc:
                 widget.set_overview(self._error_page("console", exc))
+        from styles.workspace_light import polish_page
+        polish_page(widget)
         widget._workspace_size_policy = widget.sizePolicy()
         self._pages[page_id] = widget
         self.pageStack.addWidget(widget)

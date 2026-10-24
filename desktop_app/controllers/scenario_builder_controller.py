@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from PyQt5.QtWidgets import (
     QWidget, QFileDialog, QMessageBox, QApplication, QLabel, QPushButton, QDoubleSpinBox,
-    QCheckBox, QComboBox, QGroupBox, QFormLayout, QVBoxLayout, QBoxLayout, QSizePolicy,
+    QCheckBox, QComboBox, QGroupBox, QFormLayout, QVBoxLayout, QHBoxLayout, QBoxLayout, QSizePolicy,
 )
 from PyQt5.QtCore import Qt
 from PyQt5 import uic
@@ -146,6 +146,8 @@ class ScenarioBuilderController(QWidget):
         self.layout().setContentsMargins(24, 12, 24, 16)
         self.layout().setSpacing(12)
         self.formScroll.setMaximumWidth(16777215)
+        # A readable measure: fields stop growing past ~880 px on wide windows.
+        self.formContents.setMaximumWidth(880)
         form_layout = self.estimatorGroup.parentWidget().layout()
         form_layout.setContentsMargins(0, 0, 20, 0)
         form_layout.setSpacing(10)
@@ -185,11 +187,17 @@ class ScenarioBuilderController(QWidget):
         self.preview_toggle.setChecked(False)
         # One action row under the form: start (primary), then save/open settings and the JSON preview.
         self.previewLayout.removeItem(self.actionButtonsLayout)
+        for button in (self.runScenarioBtn, self.exportJsonBtn, self.importJsonBtn):
+            self.actionButtonsLayout.removeWidget(button)
         actions = QWidget()
-        actions.setLayout(self.actionButtonsLayout)
-        self.actionButtonsLayout.removeWidget(self.runScenarioBtn)
-        self.actionButtonsLayout.insertWidget(0, self.runScenarioBtn)
-        self.actionButtonsLayout.addWidget(self.preview_toggle)
+        actions.setObjectName("actionBar")
+        row = QHBoxLayout(actions)
+        row.setContentsMargins(0, 12, 0, 0)
+        row.setSpacing(8)
+        for button in (self.runScenarioBtn, self.exportJsonBtn, self.importJsonBtn):
+            row.addWidget(button)
+        row.addStretch(1)
+        row.addWidget(self.preview_toggle)
         self.layout().addWidget(actions)
         # Provenance and draft recovery remain visible with the JSON panel closed.
         self.previewLayout.removeWidget(self.origin_label)
