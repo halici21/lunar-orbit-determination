@@ -24,6 +24,9 @@ class C:
     BG_CARD    = "#FFFFFF"
     BG_HOVER   = "#EDEBE5"   # hover
     BG_ACTIVE  = "#F3E4E1"   # selection / pressed
+    BG_FIELD   = "#FFFFFF"   # inputs, logs and other editable fields
+    LAND       = "#F4F3EE"   # land masses on station maps
+    DARK       = False       # True for the night palette (plots pick light-on-dark marks)
 
     # Borders and grid lines
     BORDER_FAINT  = "#ECEAE4"
@@ -106,4 +109,4 @@ BAR_COLORS = [C.BLUE, C.GREEN, C.YELLOW, C.RED, C.PURPLE, C.ORANGE, C.CYAN]
 
 # Apply the default palette through the same path a saved choice uses.
 from styles.appearance import apply_palette
-apply_palette("modern")
+apply_palette()

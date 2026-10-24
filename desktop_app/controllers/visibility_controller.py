@@ -267,6 +267,7 @@ class VisibilityController(QWidget):
         self.deselectAllBtn.setText("Seçimi kaldır")
         self.paramsGroup.setTitle("Hesap ayarları")
         self.computeBtn.setText("Görünürlüğü hesapla")
+        self.computeBtn.setProperty("primary", True)
         self.paramsFormLayout.setRowWrapPolicy(QFormLayout.WrapLongRows)
         for label, control, text in (
             (self.durationLabel, self.durationSpin, "&Süre (gün)"),
@@ -293,6 +294,7 @@ class VisibilityController(QWidget):
         if self.splitter.orientation() != orientation:
             self.controlPanel.setMaximumWidth(16777215 if narrow else 320)
             self.stationScrollArea.setMaximumHeight(160 if narrow else 16777215)
+            self.stationScrollArea.setMinimumHeight(120 if narrow else 210)
             self.splitter.setOrientation(orientation)
             self.splitter.setSizes([self.controlPanel.minimumSizeHint().height(), 520]
                                    if narrow else [320, max(400, self.width() - 320)])
@@ -405,8 +407,9 @@ class VisibilityController(QWidget):
     # ------------------------------------------------------------------
     def _build_station_checkboxes(self) -> None:
         try:
-            from lunar_od import range_rate_stations
-            stations = range_rate_stations()
+            from types import SimpleNamespace
+            from services.mission_data import range_rate_station_names
+            stations = [SimpleNamespace(name=name) for name in range_rate_station_names()]
         except Exception:
             return
 

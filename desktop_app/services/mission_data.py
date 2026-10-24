@@ -18,6 +18,17 @@ def station_catalog():
     return tuple(seen.values())
 
 
+def range_rate_station_names():
+    """Names of the backend's range-rate stations, read from the same fixture.
+
+    Pages that only list stations use this instead of importing lunar_od, whose
+    package import (scipy, numba) costs over a second; the computing workers
+    still resolve every name through lunar_od.range_rate_stations().
+    """
+    data = json.loads((ROOT / "fixtures/station_config.json").read_text(encoding="utf-8"))
+    return tuple(station["name"] for station in data["range_rate"]["stations"])
+
+
 def recorded_geometry(arcs, config):
     """Serialize actual station identity and observed epochs, not inferred visibility."""
     stations, windows = None, []

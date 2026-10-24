@@ -87,8 +87,8 @@ class StationWorldMap(QWidget):
         self._base.fill(QColor(C.BG_DEEP))
         p = QPainter(self._base)
         p.setRenderHint(QPainter.Antialiasing)
-        p.setPen(QPen(QColor(C.BORDER_MAIN), .7))
-        p.setBrush(QColor(C.BG_PANEL))
+        p.setPen(QPen(QColor(C.BORDER_MID), .7))
+        p.setBrush(QColor(C.LAND))
         for ring in self.rings:
             path = QPainterPath()
             for index, (lon, lat, *_) in enumerate(ring):

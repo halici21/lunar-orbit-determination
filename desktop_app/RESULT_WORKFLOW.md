@@ -21,7 +21,11 @@ Dinamik / Ölçümler / Kestiriciler pages (their saved values reached no run).
 Analiz is no longer in the sidebar; `controllers/analysis_controller.py` is kept
 byte-identical because the R2 measurement-fidelity gate hash-freezes it.
 Widget looks come from `styles/workspace_light.py`; pages pick a shared look with
-`set_role(widget, "caption" | "placeholder" | "log" | "disclosure" | "danger")`.
+`set_role(widget, "caption" | "eyebrow" | "placeholder" | "summary" | "log" | "disclosure" | "danger")`.
+The default palette is **Gece** (sunumatik.vercel.app catalogue: near-black ground,
+hairline borders, one gold accent for the primary action, active item and focus);
+Modern and Orchid stay selectable in Ayarlar. Use palette tokens (`C.*`), never
+hex literals, so all three palettes keep working; `C.LAND` colours map land.
 
 Launch `python desktop_app/main.py` with the desktop dependencies installed.
 Choose Scenario Builder, configure a scenario, and press Run Scenario.

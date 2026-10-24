@@ -429,6 +429,12 @@ def test_mission_startup_routing_help_and_restart_revalidate_source(app, tmp_pat
         restored.close()
 
 
+def test_listed_range_rate_names_match_the_backend_stations():
+    from lunar_od import range_rate_stations
+    from services.mission_data import range_rate_station_names
+    assert range_rate_station_names() == tuple(s.name for s in range_rate_stations())
+
+
 def test_catalogue_contains_actual_backend_coordinates():
     from lunar_od.config import range_rate_stations
     catalogue = {s["name"]: s for s in station_catalog()}

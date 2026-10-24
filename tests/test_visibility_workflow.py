@@ -232,7 +232,7 @@ def test_visibility_small_window_keeps_full_width_controls_and_plot_without_pann
             assert view.controlPanel.geometry().right() < view.chartPanel.geometry().left()
             assert window.pageScroll.horizontalScrollBar().maximum() == 0
             assert view._last_data is data and view._fig is figure
-            window.navigate("settings"); app.processEvents()
+            window.navigate("archive"); app.processEvents()
             assert window.pageStack.minimumWidth() == 960
         finally:
             window.close(); app.processEvents()

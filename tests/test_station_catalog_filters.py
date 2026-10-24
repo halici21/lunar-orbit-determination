@@ -113,8 +113,10 @@ def test_narrow_station_window_keeps_actions_and_selection_without_page_horizont
                 assert page._all_stations == before
                 assert page._btn_edit.isEnabled()
                 assert not page._btn_delete.isEnabled()
-            # Other scientific forms retain their existing scrolling policy.
+            # The single-column Senaryo form reflows too; the wide archive table scrolls.
             window.navigate("scenario"); qt_app.processEvents()
+            assert window.pageScroll.horizontalScrollBar().maximum() == 0
+            window.navigate("archive"); qt_app.processEvents()
             assert window.pageScroll.horizontalScrollBar().maximum() > 0
             window.navigate("stations"); qt_app.processEvents()
             assert window.pageScroll.horizontalScrollBar().maximum() == 0
