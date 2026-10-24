@@ -767,17 +767,12 @@ class _OrbitDesigner(QWidget):
             f"QSlider::groove:horizontal {{ height:4px; background:{C.BORDER_MAIN};"
             f" border-radius:2px; }}"
             f"QSlider::handle:horizontal {{ width:12px; height:12px; margin:-4px 0;"
-            f" background:{C.CYAN}; border-radius:6px; }}"
+            f" background:{C.NAV_ACTIVE}; border-radius:6px; }}"
             f"QSlider::handle:horizontal:focus {{ width:8px; height:8px;"
-            f" background:{C.BG_DEEP}; border:2px solid {C.CYAN}; }}"
-            f"QSlider::sub-page:horizontal {{ background:{C.CYAN}; border-radius:2px; }}"
+            f" background:{C.BG_DEEP}; border:2px solid {C.NAV_ACTIVE}; }}"
+            f"QSlider::sub-page:horizontal {{ background:{C.NAV_ACTIVE}; border-radius:2px; }}"
         )
-        _btn_ss = (
-            f"QPushButton {{ background:{C.BG_HOVER}; color:{C.TEXT_PRIMARY};"
-            f" border:1px solid {C.BORDER_MAIN}; border-radius:4px;"
-            f" padding:5px 12px; font-size:12px; }}"
-            f"QPushButton:hover {{ background:{C.BG_ACTIVE}; }}"
-        )
+
 
         outer = QHBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
@@ -873,12 +868,12 @@ class _OrbitDesigner(QWidget):
         self._dur_spin.setStyleSheet(_spin_ss)
         self._dur_spin.setAccessibleName("Analitik inceleme süresi (gün)")
         self._dur_spin.setToolTip("Yerel t=0 başlangıcından hesap süresi; UTC epoku belirlemez.")
-        dur_form.addRow("Süre:", self._dur_spin)
+        dur_form.addRow("Süre", self._dur_spin)
         ctrl_lay.addWidget(dur_box)
 
         gen_btn = QPushButton("Analitik yüzey izi üret")
         gen_btn.setObjectName("generateAnalyticalTrackButton")
-        gen_btn.setStyleSheet(_btn_ss)
+        gen_btn.setProperty("primary", True)
         gen_btn.setMinimumHeight(38)
         gen_btn.setToolTip(
             "Analitik iki cisim yörüngesinin yaklaşık yüzey izini üretir.\n"
@@ -1088,6 +1083,7 @@ class GroundTrackController(QWidget):
         orientation = Qt.Vertical if narrow else Qt.Horizontal
         self.controlPanel.setMaximumWidth(16777215 if narrow else 320)
         self.stationScrollArea.setMaximumHeight(160 if narrow else 16777215)
+        self.stationScrollArea.setMinimumHeight(120 if narrow else 210)
         if self.splitter.orientation() != orientation:
             self.splitter.setOrientation(orientation)
             self.splitter.setSizes([self.controlPanel.minimumSizeHint().height(), 520]
@@ -1118,6 +1114,7 @@ class GroundTrackController(QWidget):
         self.deselectAllBtn.clicked.connect(self._deselect_all)
         self.computeBtn.clicked.connect(self._compute)
         self.computeBtn.setText("SPICE örneğini hesapla")
+        self.computeBtn.setProperty("primary", True)
         self.playBtn.clicked.connect(self._play_pause)
         self.playBtn.setToolTip("Sekme veya sayfa değişince oynatma durur; Oynat ile aynı konumdan devam edin.")
         self.resetBtn.clicked.connect(self._reset_anim)

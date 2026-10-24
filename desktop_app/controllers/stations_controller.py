@@ -193,7 +193,7 @@ class _StationDialog(QDialog):
 
         self._name_edit = QLineEdit(self._station.get("name", ""))
 
-        form.addRow("Ad:", self._name_edit)
+        form.addRow("Ad", self._name_edit)
 
         self._net_combo = QComboBox()
         for net in list(_NET_COLORS.keys()) + ["OTHER"]:
@@ -202,27 +202,27 @@ class _StationDialog(QDialog):
         idx = self._net_combo.findText(cur_net)
         if idx >= 0:
             self._net_combo.setCurrentIndex(idx)
-        form.addRow("Ağ:", self._net_combo)
+        form.addRow("Ağ", self._net_combo)
 
         self._lat = _spin(-90, 90, self._station.get("lat_deg", 0.0), 4, "°")
-        form.addRow("Enlem:", self._lat)
+        form.addRow("Enlem", self._lat)
 
         self._lon = _spin(-180, 180, self._station.get("lon_deg", 0.0), 4, "°")
-        form.addRow("Boylam:", self._lon)
+        form.addRow("Boylam", self._lon)
 
         sr = self._station.get("sigma_range_m") or 5.0
         self._sr = _spin(0.01, 9999, sr, 2, "m")
-        form.addRow("σ menzil:", self._sr)
+        form.addRow("σ menzil", self._sr)
 
         sa_rad = self._station.get("sigma_angle_rad")
         sa_mrad = (sa_rad * 1e3) if sa_rad is not None else 0.0
         self._sa = _spin(0.0, 100, sa_mrad, 4, "mrad")
-        form.addRow("σ açı:", self._sa)
+        form.addRow("σ açı", self._sa)
 
         rr_mps = self._station.get("sigma_rr_mps") or 0.001
         rr_mm = rr_mps * 1e3
         self._rr = _spin(0.0, 9999, rr_mm, 4, "mm/s")
-        form.addRow("σ menzil hızı:", self._rr)
+        form.addRow("σ menzil hızı", self._rr)
 
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         btns.button(QDialogButtonBox.Ok).setText("Kaydet")

@@ -120,7 +120,7 @@ QTabBar {{ background:transparent; }}
 QTabBar::tab {{ background:transparent; color:{C.TEXT_MUTED}; padding:10px 4px; margin-right:20px; border:0; border-bottom:2px solid transparent; }}
 QTabBar::tab:selected {{ color:{C.TEXT_PRIMARY}; border-bottom-color:{C.NAV_ACTIVE}; }}
 QTabBar::tab:hover:!selected {{ color:{C.TEXT_SECONDARY}; }}
-QTabBar#pageTabs {{ border-bottom:1px solid {C.BORDER_MAIN}; padding-left:24px; }}
+QWidget#pageTabStrip {{ border-bottom:1px solid {C.BORDER_MAIN}; }}
 
 QSplitter::handle {{ background:{C.BORDER_MAIN}; width:1px; height:1px; }}
 QScrollArea {{ border:0; background:transparent; }}

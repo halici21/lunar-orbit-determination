@@ -79,7 +79,7 @@ class SettingsController(QWidget):
         row = QHBoxLayout()
         row.addWidget(self._results_edit)
         row.addWidget(open_results)
-        folder_form.addRow("Konum:", row)
+        folder_form.addRow("Konum", row)
         lay.addWidget(folder_box)
 
         from styles.appearance import THEMES, THEME_KEY, DEFAULT_THEME
@@ -91,7 +91,7 @@ class SettingsController(QWidget):
         stored = str(self._settings.value(THEME_KEY, DEFAULT_THEME))
         self._theme_combo.setCurrentIndex(max(0, self._theme_combo.findData(stored)))
         self._theme_combo.currentIndexChanged.connect(self._save_theme)
-        appearance_form.addRow("Renk paleti:", self._theme_combo)
+        appearance_form.addRow("Renk paleti", self._theme_combo)
         self._saved = _muted("Uygulamayı yeniden açınca uygulanır.")
         appearance_form.addRow(self._saved)
         lay.addWidget(appearance_box)

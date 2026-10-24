@@ -107,7 +107,7 @@ class ScenarioBuilderController(QWidget):
         self._arc_count_label = QLabel("")
         self._arc_count_label.setWordWrap(True)
         set_role(self._arc_count_label, "caption")
-        self.arcGroup.layout().addRow("Tahmin:", self._arc_count_label)
+        self.arcGroup.layout().addRow("Tahmin", self._arc_count_label)
 
         self.copyJsonBtn.clicked.connect(self._copy_json)
         self.exportJsonBtn.clicked.connect(self._export_json)
@@ -128,9 +128,9 @@ class ScenarioBuilderController(QWidget):
                                           "  SPICE SSB — SPICE CN+S ile aynı (SSB hızı, ~1e-4 rad)\n"
                                           "  yerel MCI — Ay merkezli hız (daha ucuz, ~20 kat küçük)")
         meas_layout = self.measGroup.layout()
-        meas_layout.addRow("Işık zamanı:", self.lightTimeCheck)
-        meas_layout.addRow("Sapınçlık:", self.stellarCheck)
-        meas_layout.addRow("Sapınçlık çerçevesi:", self.stellarModelCombo)
+        meas_layout.addRow("Işık zamanı", self.lightTimeCheck)
+        meas_layout.addRow("Sapınçlık", self.stellarCheck)
+        meas_layout.addRow("Sapınçlık çerçevesi", self.stellarModelCombo)
         for _w in (self.lightTimeCheck, self.stellarCheck):
             _w.stateChanged.connect(self._update_json)
             _w.stateChanged.connect(self._on_aberration_changed)
@@ -209,9 +209,21 @@ class ScenarioBuilderController(QWidget):
         self.preview_toggle.toggled.connect(self.previewPanel.setVisible)
         for button in (self.exportJsonBtn, self.importJsonBtn, self.runScenarioBtn, self.preview_toggle):
             button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self._align_form_labels()
         self.exportJsonBtn.setToolTip("Bu formun ayarlarını JSON dosyasına kaydet")
         self.importJsonBtn.setToolTip("Daha önce kaydedilmiş ayarları forma yükle")
         self.splitter.setSizes([650, 400])
+
+    def _align_form_labels(self):
+        """One label column for every group, so all fields start on the same edge."""
+        forms = [layout for layout in self.formContents.findChildren(QFormLayout)]
+        labels = [form.itemAt(row, QFormLayout.LabelRole).widget()
+                  for form in forms for row in range(form.rowCount())
+                  if form.itemAt(row, QFormLayout.LabelRole) is not None
+                  and form.itemAt(row, QFormLayout.LabelRole).widget() is not None]
+        width = max((label.sizeHint().width() for label in labels), default=0) + 12
+        for label in labels:
+            label.setMinimumWidth(width)
 
     def _toggle_advanced(self, expanded):
         self.advanced_form.setVisible(expanded)

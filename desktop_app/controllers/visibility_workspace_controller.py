@@ -43,11 +43,13 @@ class VisibilityWorkspaceController(QWidget):
         self.tabs.setExpanding(False)
         for title in TABS:
             self.tabs.addTab(title)
-        tab_row = QHBoxLayout()
+        tab_strip = QWidget()
+        tab_strip.setObjectName("pageTabStrip")  # full-width hairline under the tabs
+        tab_row = QHBoxLayout(tab_strip)
         tab_row.setContentsMargins(24, 6, 24, 0)  # align with the page content edge
         tab_row.addWidget(self.tabs)
         tab_row.addStretch(1)
-        layout.addLayout(tab_row)
+        layout.addWidget(tab_strip)
         self.stack = _CurrentStack()
         self.stack.addWidget(self.contact)
         self.stack.addWidget(self.track)
