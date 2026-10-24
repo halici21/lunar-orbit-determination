@@ -17,47 +17,33 @@ from styles.theme import C, FONT
 DESKTOP_DIR = Path(__file__).resolve().parent
 UI_PATH = DESKTOP_DIR / "ui" / "main_window.ui"
 
-# (page_id, sidebar_label, hint_text)
+# (page_id, sidebar_label, hint_text) — the workflow order, one page per task.
 _PRIMARY_NAV = [
-    ("mission", "Görev görünümü", "Yörünge, Dünya istasyonları ve ölçüm zamanlarını birlikte izle"),
-    ("scenario", "Senaryo", "Ayarları hazırla veya arşivden bir koşuyu temel al"),
-    ("run_monitor", "Çalıştır", "Çalışan işi ve kayıtlarını izle"),
-    ("console", "Sonuçlar", "Grafikler, kayıtlar ve koşu ayrıntıları"),
-    ("archive", "Arşiv", "Kaydedilmiş koşuları bul ve yeniden kullan"),
-    ("comparison", "Karşılaştırma", "İki koşunun kayıtlarını ve ayarlarını karşılaştır"),
-    ("stations", "İstasyonlar", "Dünya haritası, koordinatlar ve ağ kataloğu"),
-    ("visibility", "Temas planı", "SPICE ile istasyon görünürlüğü ve Gantt hesabı"),
-    ("ground_track", "Yüzey izi", "Ay yüzeyindeki iz ve yörünge tasarım önizlemesi"),
+    ("scenario", "Senaryo", "Koşu ayarlarını hazırla ve başlat"),
+    ("run_monitor", "Çalıştır", "Çalışan koşuyu ve günlüğünü izle"),
+    ("console", "Sonuçlar", "Açık koşunun yörüngesi, grafikleri ve kayıtları"),
+    ("archive", "Arşiv", "Kaydedilmiş koşuları bul, aç ve karşılaştır"),
+    ("stations", "İstasyonlar", "Yer istasyonu kataloğu ve ağlar"),
+    ("visibility", "Görünürlük", "Temas planı, Ay yüzey izi ve yörünge tasarımı"),
 ]
-_ADVANCED = [
-    ("dashboard", "Genel bakış", "Araştırma özeti"),
-    ("results", "Dosya tarayıcı", "Diğer CSV ve görsel dosyalar"),
-    ("dynamics", "Dinamik", "Kuvvet modeli ve yayılım"),
-    ("measurements", "Ölçümler", "Gürültü, bias ve Doppler"),
-    ("estimators", "Kestiriciler", "BLS / SRIF / UKF ayarları"),
-    ("analysis", "Analiz", "Kestirici incelemesi"),
-]
+_SETTINGS_NAV = ("settings", "Ayarlar", "Python ortamı, SPICE dosyaları ve görünüm")
 
-_NAV = _PRIMARY_NAV + _ADVANCED + [("settings", "Ayarlar", "Uygulama ayarları")]
+_NAV = _PRIMARY_NAV + [_SETTINGS_NAV]
+
+# Pages without a sidebar entry live inside a sidebar page; they highlight it.
+_NAV_PARENT = {"comparison": "archive"}
 
 _TITLES: dict[str, tuple[str, str]] = {
-    "mission": ("Görev görünümü", "Kayıtlı yörüngeyi oynatın; istasyonları ve ölçüm aralıklarını aynı zamanda inceleyin."),
-    "console": ("Sonuçlar", "Kayıtlı grafikler, koşu ayarları ve kaynak ilişkileri"),
-    "archive": ("Koşu arşivi", "Gerçek koşular, ayarlar ve tamamlanma kayıtları"),
-    "dashboard":   ("Mission Dashboard",   "Lunar OD research overview"),
-    "results":     ("Results Browser",     "Browse CSV tables and PNG plots"),
-    "run_monitor": ("Çalıştır", "İşlem durumu, canlı günlük ve çıktı dosyaları"),
-    "comparison":  ("Koşu karşılaştırması", "Kaydedilmiş değerler, tam epok eşleşmeleri ve ayar farkları"),
-    "summary_comparison": ("Diğer CSV özetleri", "Eski özet CSV araçları"),
-    "scenario": ("Senaryo", "Ölçüm türü, istasyon ağı, süre ve kestiriciyi seçin; etkin ayarları kaydedip yeni bir sayısal koşu başlatın."),
-    "dynamics":    ("Dinamik model", "Kuvvet modeli, SPICE dosyaları ve yayılım ayarları. Çalıştırılacak etkin yapılandırmayı Senaryo sayfasında doğrulayın."),
-    "measurements":("Ölçüm modeli", "Menzil, menzil hızı ve konum ölçümleri; gürültü ve bias ayarlarını inceleyin."),
-    "estimators":  ("Kestiriciler", "BLS ölçüm grubunu birlikte çözer; UKF sırayla günceller; SRIF bilgi matrisiyle çalışır. Ayarların etkin karşılığını Senaryo sayfasında kontrol edin."),
-    "stations":    ("İstasyonlar", "Dünya üzerindeki konumları ve ağ kataloğunu inceleyin. Özel istasyonlar katalogda saklanır; yeni koşunun ağı Senaryo sayfasında seçilir."),
-    "visibility":  ("Temas planı", "Seçilen istasyonlar için bağımsız görünürlük hesabı yapın. Gantt geometrik görünürlük örneklerini gösterir; kayıtlı koşunun ölçüm takvimi değildir."),
-    "analysis":     ("Estimator Analysis",  "BLS-LM vs UKF comparison — observable type, start mode, α/β/κ sensitivity"),
-    "ground_track": ("Ay yüzey izi", "Uzay aracının Ay üzerindeki izdüşümünü inceleyin. Yörünge tasarım önizlemesi Kepler modelidir; kayıtlı sonuçlardan ayrıdır."),
-    "settings":     ("Ayarlar", "Python ortamını ve SPICE dosyalarını kontrol edin. Hazırlık denetimi hesaplamayı başlatmadan eksikleri gösterir."),
+    "scenario": ("Senaryo", "Ölçüm türünü, istasyon ağını, süreyi ve kestiriciyi seçip koşuyu başlatın."),
+    "run_monitor": ("Çalıştır", "Çalışan koşunun durumu ve günlüğü."),
+    "console": ("Sonuçlar", "Açık koşunun yörüngesi, hata grafikleri ve kayıtları."),
+
+    "archive": ("Arşiv", "Kaydedilmiş koşular. İki koşu seçerek karşılaştırabilirsiniz."),
+    "comparison": ("Arşiv · Karşılaştırma", "İki koşunun ortak epoklardaki farkları ve ayar farkları."),
+    "stations": ("İstasyonlar", "Yer istasyonu kataloğu: konumlar ve ölçüm doğrulukları. Özel istasyon ekleyip düzenleyebilirsiniz."),
+    "visibility": ("Görünürlük", "Örnek yörünge için istasyon temas planı, Ay yüzey izi ve yörünge tasarımı."),
+
+    "settings": ("Ayarlar", "Python ortamı, SPICE dosyaları, sonuç klasörü ve renk paleti."),
 }
 
 
@@ -145,6 +131,10 @@ class MainWindow(QMainWindow):
         parent_layout.replaceWidget(original_stack, self.pageScroll)
         self.pageStack = _VisiblePageStack()
         self.pageStack.setObjectName("pageStack")
+        # Detach now: deferred deletion only runs in the event loop, and until then the
+        # unused .ui stack would sit over the page header.
+        original_stack.hide()
+        original_stack.setParent(None)
         original_stack.deleteLater()
         self.pageStack.setMinimumWidth(960)
         self.pageScroll.setWidget(self.pageStack)
@@ -155,7 +145,7 @@ class MainWindow(QMainWindow):
         from services.workspace_session import read_session
         self._workspace_session = read_session(self._settings)
         self._restored_pages = set()
-        self._active_page = "mission"
+        self._active_page = "scenario"
         self._latest_result = None
         self._nav_btns: dict[str, _NavButton] = {}
         self._pages: dict[str, QWidget] = {}
@@ -170,11 +160,8 @@ class MainWindow(QMainWindow):
         tutorial_action = tutorial_menu.addAction("Verisiz sentetik eğitimi başlat")
         tutorial_action.triggered.connect(self.start_tutorial)
         self._restore_geometry()
-        active = self._workspace_session.get("active", "mission")
-        self.navigate(active if active in ("mission", "console", "comparison", "archive") else "mission")
-        if self._active_page == "mission" and isinstance(self._workspace_session.get("console"), dict):
-            from services.workspace_session import restore_page
-            restore_page(self, "console", self._ensure_page("console"))
+        active = self._workspace_session.get("active", "scenario")
+        self.navigate(active if active in ("console", "comparison", "archive") else "scenario")
         self._startup_timer = QTimer(self)
         self._startup_timer.setSingleShot(True)
         self._startup_timer.timeout.connect(self.environment.refresh)
@@ -229,25 +216,8 @@ class MainWindow(QMainWindow):
             add_button(item, layout)
             shortcut = QShortcut(QKeySequence(f"Alt+{number}"), self)
             shortcut.activated.connect(lambda pid=item[0]: self.navigate(pid))
-        self.advanced_toggle = QPushButton("Gelişmiş araçlar  ›")
-        self.advanced_toggle.setCheckable(True)
-        self.advanced_toggle.setStyleSheet(f"text-align:left; padding:12px 16px; color:{C.TEXT_MUTED}; border:0; background:transparent;")
-        layout.addWidget(self.advanced_toggle)
-        self.advanced_panel = QWidget()
-        advanced_layout = QVBoxLayout(self.advanced_panel)
-        advanced_layout.setContentsMargins(10, 0, 0, 0)
-        advanced_layout.setSpacing(0)
-        for item in _ADVANCED:
-            add_button(item, advanced_layout)
-        layout.addWidget(self.advanced_panel)
-        self.advanced_panel.hide()
-        self.advanced_toggle.toggled.connect(self._toggle_advanced)
         layout.addStretch()
-        add_button(("settings", "Ayarlar", "Dosya yolları ve uygulama ayarları"), layout)
-
-    def _toggle_advanced(self, expanded):
-        self.advanced_panel.setVisible(expanded)
-        self.advanced_toggle.setText("Gelişmiş araçlar  ⌄" if expanded else "Gelişmiş araçlar  ›")
+        add_button(_SETTINGS_NAV, layout)
 
     def _build_status_bar(self) -> None:
         sb = self.statusBar
@@ -289,22 +259,14 @@ class MainWindow(QMainWindow):
         """Register pages; expensive modules are imported on first navigation."""
         sys.path.insert(0, str(DESKTOP_DIR))
         self._page_factories = {
-            "mission": ("controllers.mission_controller", "MissionController"),
             "console": ("controllers.tracking_console_controller", "TrackingConsoleController"),
             "archive": ("controllers.run_archive_controller", "RunArchiveController"),
-            "dashboard": ("controllers.dashboard_controller", "DashboardController"),
-            "results": ("controllers.results_browser_controller", "ResultsBrowserController"),
             "run_monitor": ("controllers.run_monitor_controller", "RunMonitorController"),
             "comparison": ("controllers.recorded_comparison_controller", "RecordedComparisonController"),
-            "summary_comparison": ("controllers.comparison_controller", "ComparisonController"),
             "scenario": ("controllers.scenario_builder_controller", "ScenarioBuilderController"),
             "stations": ("controllers.stations_controller", "StationsController"),
-            "visibility": ("controllers.visibility_controller", "VisibilityController"),
-            "analysis": ("controllers.analysis_controller", "AnalysisController"),
-            "ground_track": ("controllers.ground_track_controller", "GroundTrackController"),
-            **{page: ("controllers.system_pages_controller", cls) for page, cls in (
-                ("dynamics", "DynamicsController"), ("measurements", "MeasurementsController"),
-                ("estimators", "EstimatorsController"), ("settings", "SettingsController"))},
+            "visibility": ("controllers.visibility_workspace_controller", "VisibilityWorkspaceController"),
+            "settings": ("controllers.system_pages_controller", "SettingsController"),
         }
 
     def _ensure_page(self, page_id: str) -> QWidget | None:
@@ -321,9 +283,12 @@ class MainWindow(QMainWindow):
             widget = self._error_page(page_id, exc)
         if page_id == "console" and hasattr(widget, "resultLoaded"):
             widget.resultLoaded.connect(self._on_result_loaded)
-            widget.loadFailed.connect(self._on_mission_load_failed)
-        if page_id == "mission" and self._latest_result and hasattr(widget, "set_result"):
-            widget.set_result(*self._latest_result)
+            widget.loadFailed.connect(self._on_overview_load_failed)
+            try:
+                from controllers.mission_controller import MissionController
+                widget.set_overview(MissionController(widget))
+            except Exception as exc:
+                widget.set_overview(self._error_page("console", exc))
         widget._workspace_size_policy = widget.sizePolicy()
         self._pages[page_id] = widget
         self.pageStack.addWidget(widget)
@@ -356,11 +321,21 @@ class MainWindow(QMainWindow):
     # Navigation
     # ------------------------------------------------------------------
     def navigate(self, page_id: str) -> None:
+        if page_id == "mission":  # The overview is the first tab of Sonuçlar.
+            self.navigate("console")
+            console = self._pages.get("console")
+            if hasattr(console, "show_overview"):
+                console.show_overview()
+            return
+        if page_id == "ground_track":  # Ay yüzey izi is the second tab of Görünürlük.
+            self.navigate("visibility")
+            workspace = self._pages.get("visibility")
+            if hasattr(workspace, "show_tab"):
+                workspace.show_tab(1)
+            return
         page = self._ensure_page(page_id)
         if page is None:
             return
-        if page_id in {item[0] for item in _ADVANCED}:
-            self.advanced_toggle.setChecked(True)
         self._active_page = page_id
         for other in self._pages.values():
             other.setSizePolicy(other._workspace_size_policy if other is page else
@@ -368,7 +343,7 @@ class MainWindow(QMainWindow):
         self.pageStack.setCurrentWidget(page)
         # Mission plots, catalogue and visibility panels can stack; other forms retain
         # their existing scrollable minimum width.
-        self.pageStack.setMinimumWidth(540 if page_id in {"mission", "stations", "visibility", "ground_track"} else 960)
+        self.pageStack.setMinimumWidth(540 if page_id in {"console", "stations", "visibility"} else 960)
         self.pageStack.updateGeometry()
         self.pageScroll.verticalScrollBar().setValue(0)
         self.pageScroll.horizontalScrollBar().setValue(0)
@@ -378,8 +353,9 @@ class MainWindow(QMainWindow):
         self.pageTitleLabel.setText(title)
         self.pageSubLabel.setText(sub)
 
+        highlighted = _NAV_PARENT.get(page_id, page_id)
         for pid, btn in self._nav_btns.items():
-            btn.setChecked(pid == page_id)
+            btn.setChecked(pid == highlighted)
 
         if hasattr(page, "on_shown"):
             page.on_shown()
@@ -388,23 +364,6 @@ class MainWindow(QMainWindow):
 
     def _fade_in(self, page: QWidget) -> None:
         pass  # page switch via QStackedWidget is instant; no animation needed
-
-    def navigate_and_run(
-        self,
-        script_path: str,
-        extra_args: list[str] | None = None,
-        auto_start: bool = False,
-    ) -> None:
-        self.navigate("run_monitor")
-        page = self._pages.get("run_monitor")
-        if page and hasattr(page, "preset_script"):
-            page.preset_script(script_path, extra_args=extra_args, auto_start=auto_start)
-
-    def open_in_results_browser(self, path: "Path") -> None:
-        self.navigate("results")
-        page = self._pages.get("results")
-        if page and hasattr(page, "show_file"):
-            page.show_file(path)
 
     def open_in_result_console(self, path: "Path") -> None:
         self.navigate("console")
@@ -420,30 +379,33 @@ class MainWindow(QMainWindow):
             console.details_toggle.setChecked(True)
             console.inspector_tabs.setCurrentIndex(0)
 
+    def overview(self):
+        """The Sonuçlar overview tab (orbit, station map, Gantt), once created."""
+        return getattr(self._pages.get("console"), "overview", None)
+
     def _on_result_loaded(self, result):
         console = self._pages.get("console")
-        self._latest_result = (result, getattr(console, "loaded_details", {}))
-        mission = self._pages.get("mission")
-        if mission and hasattr(mission, "set_result"):
-            mission.set_result(*self._latest_result)
+        overview = self.overview()
+        if hasattr(overview, "set_result"):
+            overview.set_result(result, getattr(console, "loaded_details", {}))
 
-    def _on_mission_load_failed(self, message):
-        mission = self._pages.get("mission")
-        if mission and hasattr(mission, "run_label"):
-            previous = f"{mission.result.name} korunuyor. " if mission.result else ""
-            mission.run_label.setText(previous + "Koşu açılamadı: " + message + " · Arşivden tekrar seçin.")
+    def _on_overview_load_failed(self, message):
+        overview = self.overview()
+        if hasattr(overview, "run_label"):
+            previous = f"{overview.result.name} korunuyor. " if overview.result else ""
+            overview.run_label.setText(previous + "Koşu açılamadı: " + message + " · Arşivden tekrar seçin.")
 
     def open_in_mission(self, path):
         if path.is_dir():
             self.open_in_result_console(path)  # Multiple-run folders need the visible picker.
             return
-        console = self._ensure_page("console")
         self.navigate("mission")
-        mission = self._pages.get("mission")
-        if hasattr(mission, "run_label"):
-            mission.run_label.setText("Koşu yükleniyor… Önceki görüntü yeni kaynak doğrulanana kadar korunur.")
+        console = self._pages.get("console")
+        overview = self.overview()
+        if hasattr(overview, "run_label"):
+            overview.run_label.setText("Koşu yükleniyor… Önceki görüntü yeni kaynak doğrulanana kadar korunur.")
         if hasattr(console, "open_result"):
-            console.open_folder(path) if path.is_dir() else console.open_result(path)
+            console.open_result(path)
 
     def start_tutorial(self) -> None:
         """Start a data-free educational run through the normal process monitor."""

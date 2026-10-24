@@ -188,7 +188,7 @@ class MissionGantt(QWidget):
 
     def empty_message(self):
         if self.result is None:
-            return "Ölçüm çizelgesini görmek için bir koşu açın.\nKoşu aç ile arşivden seçim yapabilir veya Yeni senaryo ile başlayabilirsiniz."
+            return "Ölçüm çizelgesini görmek için bir koşu açın.\nArşivden bir koşu açın veya Senaryo sayfasından yeni bir koşu başlatın."
         if not self.geometry:
             return "Bu koşuda istasyon ölçüm zamanları kaydedilmemiş.\nGörünürlük hesabını açabilir veya yeni bir senaryo çalıştırabilirsiniz.\nEski yay başlangıç/sonları temas süresi olarak gösterilmez."
         return ""

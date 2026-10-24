@@ -21,6 +21,7 @@ from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+from styles.workspace_light import set_role
 
 UI_PATH  = DESKTOP_APP_DIR / "ui" / "pages" / "ground_track_page.ui"
 FIXTURE  = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
@@ -106,7 +107,7 @@ class _TrackWorker(QThread):
         )
         from lunar_od.thesis_matrix import THESIS_MAX_GAP_S
 
-        self.progress.emit("Loading fixture…")
+        self.progress.emit("Örnek başlangıç durumu okunuyor…")
         fixture   = json.loads(FIXTURE.read_text(encoding="utf-8"))
         initial   = fixture["initial_state"]
         constants = fixture["constants"]
@@ -121,12 +122,12 @@ class _TrackWorker(QThread):
         t_eval  = np.arange(0.0, self.duration_days * 86400.0 + _SAMPLE_STEP_S, _SAMPLE_STEP_S)
         t_ephem = np.arange(0.0, self.duration_days * 86400.0 + _EPHEM_STEP_S,  _EPHEM_STEP_S)
 
-        self.progress.emit("Loading SPICE kernels…")
+        self.progress.emit("SPICE dosyaları yükleniyor…")
         load_spice_kernels()
         try:
             et0 = float(spice.str2et(epoch_utc))
 
-            self.progress.emit("Propagating orbit…")
+            self.progress.emit("Yörünge yayılıyor…")
             ephemeris = sample_moon_centered_ephemeris(et0, t_ephem)
             xforms    = sample_j2000_to_itrf93_transforms(et0, t_eval)
             states    = propagate_truth_with_ephemeris(
@@ -134,16 +135,16 @@ class _TrackWorker(QThread):
                 rtol=1e-9, atol=1e-10,
             )
 
-            self.progress.emit("Computing selenographic coordinates…")
+            self.progress.emit("Selenografik koordinatlar hesaplanıyor…")
             lons, lats = self._selenographic(
                 np.asarray(states)[:, :3], t_eval, et0, spice
             )
 
-            self.progress.emit("Computing station visibility…")
+            self.progress.emit("İstasyon görünürlüğü hesaplanıyor…")
             by_name  = {s.name: s for s in range_rate_stations()}
             stations = [by_name[n] for n in self.station_names if n in by_name]
             if not stations:
-                self.failed.emit("No valid stations selected.")
+                self.failed.emit("Geçerli istasyon seçilmedi.")
                 return
 
             vis_cfg = VisibilityConfig(
@@ -220,7 +221,7 @@ def _draw_moon_bg(ax) -> None:
 
     # Sub-Earth label
     ax.text(
-        2, 2, "● Sub-Earth",
+        2, 2, "● Dünya altı nokta",
         color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS,
         fontfamily=FONT.MONO, zorder=3, va="bottom",
     )
@@ -373,13 +374,13 @@ def _build_static_figure(data: dict) -> "Figure":
             )
 
     # Start / end markers
-    ax.plot(lons[0],  lats[0],  "o", color=C.GREEN,  ms=6, zorder=7, label="Start")
-    ax.plot(lons[-1], lats[-1], "s", color=C.YELLOW, ms=5, zorder=7, label="End")
+    ax.plot(lons[0],  lats[0],  "o", color=C.GREEN,  ms=6, zorder=7, label="Başlangıç")
+    ax.plot(lons[-1], lats[-1], "s", color=C.YELLOW, ms=5, zorder=7, label="Bitiş")
 
     # Coverage stats
     covered = int(np.any(vis_mask, axis=0).sum()) if vis_mask.size else 0
     pct = 100.0 * covered / max(n, 1)
-    visibility_text = f"Visible samples: {pct:.0f}%" if vis_mask.size else "Visibility not computed"
+    visibility_text = f"Görünür örnek: %{pct:.0f}" if vis_mask.size else "Görünürlük hesaplanmadı"
 
     # Axes
     ax.set_xlim(-180, 180)
@@ -387,11 +388,10 @@ def _build_static_figure(data: dict) -> "Figure":
     ax.set_xticks(range(-180, 181, 30))
     ax.set_yticks(range(-90, 91, 30))
     ax.tick_params(colors=C.TEXT_TICK, labelsize=FONT.SIZE_XS)
-    ax.set_xlabel("Selenographic Longitude (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
-    ax.set_ylabel("Selenographic Latitude (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
+    ax.set_xlabel("Selenografik boylam (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
+    ax.set_ylabel("Selenografik enlem (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_title(
-        f"Selenographic Ground Track\n{data['duration_days']:g} "
-        f"{'day' if data['duration_days'] == 1 else 'days'} · {visibility_text}",
+        f"Ay yüzey izi\n{data['duration_days']:g} gün · {visibility_text}",
         color=C.TEXT_SECONDARY, fontsize=FONT.SIZE_SM,
     )
     for sp in ax.spines.values():
@@ -408,10 +408,10 @@ def _build_static_figure(data: dict) -> "Figure":
         for net, col in seen_nets.items()
     ]
     handles += [
-        Patch(facecolor=_NO_VIS_COLOR, label="No sample visibility" if vis_mask.size
-              else "Visibility not computed"),
-        Line2D([0], [0], marker="o", color=C.GREEN,  linestyle="None", ms=6, label="Start"),
-        Line2D([0], [0], marker="s", color=C.YELLOW, linestyle="None", ms=5, label="End"),
+        Patch(facecolor=_NO_VIS_COLOR, label="Örnekte görünürlük yok" if vis_mask.size
+              else "Görünürlük hesaplanmadı"),
+        Line2D([0], [0], marker="o", color=C.GREEN,  linestyle="None", ms=6, label="Başlangıç"),
+        Line2D([0], [0], marker="s", color=C.YELLOW, linestyle="None", ms=5, label="Bitiş"),
     ]
     leg = ax.legend(
         handles=handles, loc="lower left",
@@ -425,8 +425,8 @@ def _build_static_figure(data: dict) -> "Figure":
     from textwrap import fill
     fig.text(
         0.07, 0.012,
-        fill("Moon rotates ~27× slower than Earth — passes drift only ~1°/orbit, "
-             "so selenographic tracks stay near-vertical.", width=60),
+        fill("Ay, Dünya'dan ~27 kat yavaş döner; geçişler turda yalnız ~1° kayar, "
+             "bu yüzden selenografik izler neredeyse dikey kalır.", width=60),
         ha="left", va="bottom", color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS - 1,
     )
 
@@ -568,7 +568,7 @@ def _draw_orbit_preview(
     metrics = _orbit_metrics(alt_km, e)
     _configure_orbit_axis(ax, _orbit_axis_limit(metrics))
     ax.set_title(
-        f"a = {metrics['a_km']:.0f} km    e = {e:.3f}    i = {inc_deg:.0f} deg",
+        f"a = {metrics['a_km']:.0f} km    e = {e:.3f}    i = {inc_deg:.0f}°",
         fontsize=9, color=C.TEXT_SECONDARY, pad=5,
     )
     return fig
@@ -1016,16 +1016,16 @@ class _OrbitDesigner(QWidget):
         r_peri = a * (1 - elems["e"])
         if r_peri < R_MOON_M * 1.005:
             QMessageBox.warning(
-                self, "Invalid orbit",
-                "Periapsis is below (or too close to) the lunar surface.\n"
-                "Reduce eccentricity or increase altitude.",
+                self, "Geçersiz yörünge",
+                "Periapsis Ay yüzeyinin altında veya ona çok yakın.\n"
+                "Dışmerkezliği azaltın veya yüksekliği artırın.",
             )
             return
 
         try:
             t, lons, lats = _keplerian_ground_track(duration_days=dur, **elems)
         except Exception as exc:
-            QMessageBox.critical(self, "Propagation failed", str(exc))
+            QMessageBox.critical(self, "Yörünge yayılamadı", str(exc))
             return
 
         n    = len(t)
@@ -1185,7 +1185,7 @@ class GroundTrackController(QWidget):
 
     def _build_model_notes(self) -> None:
         self._scope_note = QLabel(
-            "Bu araçlar ayrı örnek/ön inceleme modelleridir; kayıtlı koşunun yörüngesi Görev görünümündedir."
+            "Örnek yörüngeyle ön inceleme; kayıtlı koşunun yörüngesi Sonuçlar › Genel görünüm sekmesindedir."
         )
         self._model_note = QLabel("İstasyonları seçip SPICE hesabını çalıştırın veya Yörünge tasarımı sekmesini açın.")
         self._model_note.setAccessibleName("Görünen yüzey izinin modeli ve kaynağı")
@@ -1273,11 +1273,7 @@ class GroundTrackController(QWidget):
         self._log_edit.setReadOnly(True)
         self._log_edit.setFixedHeight(82)
         self._log_edit.setPlaceholderText("Hesap günlüğü…")
-        self._log_edit.setStyleSheet(
-            f"QPlainTextEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_MUTED};"
-            f" font-family:Consolas,monospace; font-size:10px;"
-            f" border:1px solid {C.BORDER_MAIN}; border-radius:3px; }}"
-        )
+        set_role(self._log_edit, "log")
         self._log_edit.setVisible(False)
         self.controlLayout.addWidget(self._log_edit)
 
@@ -1306,18 +1302,7 @@ class GroundTrackController(QWidget):
         self.controlLayout.insertLayout(self.controlLayout.indexOf(self.statusLabel), row)
 
     def on_shown(self) -> None:
-        self._sync_duration_from_settings()
-
-    def _sync_duration_from_settings(self) -> None:
-        if self._busy:
-            return
-        from PyQt5.QtCore import QSettings
-        s = QSettings("LunarOD", "DesktopApp")
-        try:
-            dur_days = float(s.value("dynamics/duration_days", self.durationSpin.value()))
-            self.durationSpin.setValue(dur_days)
-        except Exception:
-            pass
+        pass  # inputs belong to this page; nothing external overrides them on show
 
     # ------------------------------------------------------------------
     # Checkbox setup
@@ -1459,7 +1444,7 @@ class GroundTrackController(QWidget):
         self._set_status(f"Hata: {short}\n{context}", C.RED)
         self._log(f"Hata: {short} — {context}")
         self._refresh_result_context(context)
-        _show_error_dialog(self, "Ground-track result failed", msg)
+        _show_error_dialog(self, "Yüzey izi hesaplanamadı", msg)
 
     # ------------------------------------------------------------------
     # Animation
@@ -1534,12 +1519,12 @@ class GroundTrackController(QWidget):
         vis_names = _visible_station_names(
             self._data["vis_mask"], idx, self._data["station_names"]
         )
-        lines = [f"D {t_day:.2f}"]
+        lines = [f"G {t_day:.2f}"]
         if vis_names:
-            lines.append("Tracking:")
+            lines.append("İzleyen:")
             lines.extend(f"  {n}" for n in vis_names[:4])
         else:
-            lines.append("No sample visibility" if self._data["vis_mask"].size else "Visibility not computed")
+            lines.append("Örnekte görünürlük yok" if self._data["vis_mask"].size else "Görünürlük hesaplanmadı")
         self._anim_label.set_text("\n".join(lines))
 
         if self._canvas:
@@ -1556,10 +1541,7 @@ class GroundTrackController(QWidget):
         try:
             canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
-            toolbar.setStyleSheet(
-                f"QToolBar {{ background:{C.BG_PANEL}; border:none; }}"
-                f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
-            )
+
             # Catch first-paint failures while the previous canvas is still installed.
             canvas.draw()
         except Exception:
@@ -1591,7 +1573,7 @@ class GroundTrackController(QWidget):
         )
         ph.setWordWrap(True)
         ph.setAlignment(Qt.AlignCenter)
-        ph.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_LG}px;")
+        set_role(ph, "placeholder")
         lay.addWidget(ph)
 
     def _set_status(self, text: str, color: str = C.TEXT_MUTED) -> None:
@@ -1603,26 +1585,26 @@ class GroundTrackController(QWidget):
 
     def _export_png(self) -> None:
         if self._fig is None:
-            QMessageBox.information(self, "Export unavailable", "Compute ground track first.")
+            QMessageBox.information(self, "Kaydedilecek sonuç yok", "Önce yüzey izini hesaplayın.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export ground track PNG",
+            "Yüzey izini görüntü olarak kaydet",
             str(Path.home() / "ground_track.png"),
-            "PNG images (*.png);;PDF files (*.pdf)",
+            "PNG görüntüleri (*.png);;PDF dosyaları (*.pdf)",
         )
         if path:
             self._fig.savefig(path, dpi=180, bbox_inches="tight", facecolor=self._fig.get_facecolor())
 
     def _export_csv(self) -> None:
         if self._data is None:
-            QMessageBox.information(self, "Export unavailable", "Compute ground track first.")
+            QMessageBox.information(self, "Kaydedilecek sonuç yok", "Önce yüzey izini hesaplayın.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export ground track CSV",
+            "Yüzey izini CSV olarak kaydet",
             str(Path.home() / "ground_track_visibility.csv"),
-            "CSV files (*.csv)",
+            "CSV dosyaları (*.csv)",
         )
         if not path:
             return
@@ -1655,16 +1637,6 @@ class GroundTrackController(QWidget):
     def _add_orbit_designer_tab(self) -> None:
         """Wrap the existing splitter in a QTabWidget and add the Orbit Designer tab."""
         self._tab_widget = _CurrentTabWidget(self)
-        self._tab_widget.setStyleSheet(
-            f"QTabBar::tab {{ background:{C.BG_SIDEBAR}; color:{C.TEXT_MUTED};"
-            f" padding:6px 18px; font-size:12px; border:none;"
-            f" border-bottom:2px solid transparent; }}"
-            f"QTabBar::tab:selected {{ color:{C.NAV_ACTIVE_FG};"
-            f" border-bottom-color:{C.NAV_ACTIVE}; }}"
-            f"QTabBar::tab:hover {{ background:{C.BG_ACTIVE};"
-            f" color:{C.TEXT_SECONDARY}; }}"
-            f"QTabWidget::pane {{ border:none; }}"
-        )
         self.mainLayout.removeWidget(self.splitter)
         self._tab_widget.addTab(self.splitter, "Yüzey izi")
         self._orbit_designer = _OrbitDesigner(self)
@@ -1708,7 +1680,7 @@ def _show_error_dialog(parent, title: str, msg: str) -> None:
     box = QMessageBox(parent)
     box.setWindowTitle(title)
     box.setIcon(QMessageBox.Critical)
-    short = msg.splitlines()[0][:200] if msg else "An error occurred."
+    short = msg.splitlines()[0][:200] if msg else "Bir hata oluştu."
     box.setText(short)
     if "\n" in msg:
         box.setDetailedText(msg)

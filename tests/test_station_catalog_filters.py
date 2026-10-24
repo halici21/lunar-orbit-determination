@@ -46,7 +46,7 @@ def test_filtered_station_csv_has_exact_visible_names_and_original_units(page, t
     assert page.stationsTable.rowCount() == 3
     page.stationsTable.selectRow(0)
     assert "3/15 istasyon · 1 seçili" in page._filter_status.text()
-    assert page._btn_save_net.isEnabled() and page._btn_edit.isEnabled()
+    assert page._btn_edit.isEnabled()
     assert not page._btn_delete.isEnabled()
     target = tmp_path / "dsn.csv"
     with patch.object(stations.QFileDialog, "getSaveFileName", return_value=(str(target), "CSV")), \
@@ -87,7 +87,8 @@ def test_narrow_station_window_keeps_actions_and_selection_without_page_horizont
     from app import MainWindow
 
     settings = QSettings(str(tmp_path / "stations-window.ini"), QSettings.IniFormat)
-    with patch.object(stations, "_SETTINGS", settings), patch.object(stations.StationsController, "_build_map_widget"):
+    with patch.object(stations, "_SETTINGS", settings), patch.object(stations.StationsController, "_build_map_widget"), \
+            patch("app.QSettings", return_value=settings):
         window = MainWindow()
         try:
             window.resize(1480, 1000); window.show(); window.environment.shutdown()
@@ -102,7 +103,7 @@ def test_narrow_station_window_keeps_actions_and_selection_without_page_horizont
                 window.resize(width, height); qt_app.processEvents()
                 assert window.pageScroll.horizontalScrollBar().maximum() == 0
                 for control in (page._search, page._btn_export, page._btn_add,
-                                page._btn_save_net, page._btn_edit, page._btn_delete):
+                                page._btn_edit, page._btn_delete):
                     rect = QRect(control.mapTo(page._toolbar, QPoint(0, 0)), control.size())
                     assert page._toolbar.rect().contains(rect), (control.text(), rect)
                 assert page._search.text() == "DSN"
@@ -110,7 +111,7 @@ def test_narrow_station_window_keeps_actions_and_selection_without_page_horizont
                 assert [[table.item(r, c).text() for c in range(7)] for r in range(3)] == visible
                 assert all(not table.isColumnHidden(c) for c in range(7))
                 assert page._all_stations == before
-                assert page._btn_save_net.isEnabled() and page._btn_edit.isEnabled()
+                assert page._btn_edit.isEnabled()
                 assert not page._btn_delete.isEnabled()
             # Other scientific forms retain their existing scrolling policy.
             window.navigate("scenario"); qt_app.processEvents()
@@ -204,10 +205,9 @@ def test_sorted_row_actions_use_visible_station_and_preserve_other_catalogue_ent
     for row in (0, 1):
         table.selectionModel().select(table.model().index(row, 0),
                                       QItemSelectionModel.Select | QItemSelectionModel.Rows)
-    with patch.object(stations.QInputDialog, "getText", return_value=("sorted-proof", True)), \
-         patch.object(QMessageBox, "information"):
-        page._save_network_preset()
-    assert stations._load_custom_networks()["sorted-proof"] == ["ZZZ Custom", "Ussuriisk RUS"]
+    # A sorted, multi-row selection still maps to the right catalogue records.
+    assert [page._station_at_row(r)["name"] for r in page._selected_rows()] == ["ZZZ Custom", "Ussuriisk RUS"]
+    assert not hasattr(page, "_btn_save_net")  # network presets fed no run; removed
     table.selectRow(0)
     with patch.object(QMessageBox, "question", return_value=QMessageBox.Yes), \
          patch.object(QMessageBox, "information"):

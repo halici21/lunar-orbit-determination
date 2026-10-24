@@ -105,7 +105,7 @@ def test_designer_identifies_axis_offset_and_preserves_explicit_generation_and_g
     with patch.object(gt.QMessageBox, "warning") as warning, patch.object(gt, "_keplerian_ground_track") as propagate:
         QTest.mouseClick(designer._generate_btn, Qt.LeftButton)
     warning.assert_called_once()
-    assert "Periapsis is below" in warning.call_args.args[2]
+    assert "Periapsis Ay yüzeyinin altında" in warning.call_args.args[2]
     propagate.assert_not_called()
     assert (page._data, page._fig, page._canvas) == generated
     assert export_rows(page, tmp_path / "after-rejection.csv") == after

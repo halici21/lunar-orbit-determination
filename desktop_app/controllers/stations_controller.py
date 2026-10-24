@@ -1,4 +1,4 @@
-"""Stations page — world map, precision table, station editing and network presets."""
+"""Stations page — world map, precision table and custom-station editing."""
 from __future__ import annotations
 import copy
 import csv as _csv
@@ -10,7 +10,7 @@ from typing import Any
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QHeaderView, QPushButton, QLineEdit, QLabel, QDialog, QFormLayout,
-    QDoubleSpinBox, QDialogButtonBox, QMessageBox, QComboBox, QInputDialog,
+    QDoubleSpinBox, QDialogButtonBox, QMessageBox, QComboBox,
     QFileDialog, QShortcut, QSizePolicy, QBoxLayout,
 )
 from PyQt5.QtCore import Qt, QSettings, QSignalBlocker
@@ -20,6 +20,7 @@ from PyQt5 import uic
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from services.world_map import draw_land
 from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+from styles.workspace_light import set_role
 
 UI_PATH = DESKTOP_APP_DIR / "ui" / "pages" / "stations_page.ui"
 STATION_CFG = PYTHON_PORT / "fixtures" / "station_config.json"
@@ -30,21 +31,10 @@ _DEFAULT_COLOR = C.TEXT_MUTED
 _MPL_STYLE = MPL_DARK
 
 _COL_HEADERS = [
-    "Station", "Network", "Lat (°)", "Lon (°)",
-    "σ_range (m)", "σ_angle (mrad)", "σ_rr (mm/s)",
+    "İstasyon", "Ağ", "Enlem (°)", "Boylam (°)",
+    "σ menzil (m)", "σ açı (mrad)", "σ menzil hızı (mm/s)",
 ]
-_BTN_STYLE = (
-    f"QPushButton {{ background:{C.BG_HOVER}; color:{C.TEXT_PRIMARY};"
-    f" border:1px solid {C.BORDER_MAIN}; border-radius:4px;"
-    f" padding:4px 12px; font-size:{FONT.SIZE_SM}px; }}"
-    f"QPushButton:hover {{ background:{C.BG_ACTIVE}; }}"
-    f"QPushButton:disabled {{ color:{C.TEXT_MUTED}; border-color:{C.BORDER_FAINT}; }}"
-)
-_SEARCH_STYLE = (
-    f"QLineEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_PRIMARY};"
-    f" border:1px solid {C.BORDER_MAIN}; border-radius:4px;"
-    f" padding:3px 8px; font-size:{FONT.SIZE_SM}px; }}"
-)
+
 
 
 def _network(name: str) -> str:
@@ -91,14 +81,6 @@ def _load_custom_stations() -> list[dict]:
 def _save_custom_stations(stations: list[dict]) -> None:
     _SETTINGS.setValue("stations/custom_list", stations)
 
-
-def _load_custom_networks() -> dict[str, list[str]]:
-    raw = _SETTINGS.value("stations/custom_networks", {})
-    return dict(raw) if isinstance(raw, dict) else {}
-
-
-def _save_custom_networks(nets: dict[str, list[str]]) -> None:
-    _SETTINGS.setValue("stations/custom_networks", nets)
 
 
 def _build_map(stations: list[dict]):
@@ -150,8 +132,8 @@ def _build_map(stations: list[dict]):
     ax.set_xticks(range(-180, 181, 30))
     ax.set_yticks(range(-90, 91, 30))
     ax.tick_params(labelsize=8)
-    ax.set_xlabel("Longitude (°)", fontsize=FONT.SIZE_SM - 1)
-    ax.set_ylabel("Latitude (°)",  fontsize=FONT.SIZE_SM - 1)
+    ax.set_xlabel("Boylam (°)", fontsize=FONT.SIZE_SM - 1)
+    ax.set_ylabel("Enlem (°)",  fontsize=FONT.SIZE_SM - 1)
 
     for spine in ax.spines.values():
         spine.set_edgecolor(C.BORDER_MAIN)
@@ -184,7 +166,7 @@ class _StationDialog(QDialog):
 
     def __init__(self, station: dict | None = None, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Edit Station" if station else "Add Station")
+        self.setWindowTitle("İstasyonu düzenle" if station else "İstasyon ekle")
         self.setMinimumWidth(340)
         self._station = copy.deepcopy(station) if station else {
             "name": "", "network": "OTHER",
@@ -207,15 +189,11 @@ class _StationDialog(QDialog):
             s.setValue(float(val) if val is not None else 0.0)
             if suffix:
                 s.setSuffix(f" {suffix}")
-            s.setStyleSheet(
-                f"QDoubleSpinBox {{ background:{C.BG_DEEP}; color:{C.TEXT_PRIMARY};"
-                f" border:1px solid {C.BORDER_MAIN}; border-radius:3px; padding:2px; }}"
-            )
             return s
 
         self._name_edit = QLineEdit(self._station.get("name", ""))
-        self._name_edit.setStyleSheet(_SEARCH_STYLE)
-        form.addRow("Name:", self._name_edit)
+
+        form.addRow("Ad:", self._name_edit)
 
         self._net_combo = QComboBox()
         for net in list(_NET_COLORS.keys()) + ["OTHER"]:
@@ -224,29 +202,31 @@ class _StationDialog(QDialog):
         idx = self._net_combo.findText(cur_net)
         if idx >= 0:
             self._net_combo.setCurrentIndex(idx)
-        form.addRow("Network:", self._net_combo)
+        form.addRow("Ağ:", self._net_combo)
 
         self._lat = _spin(-90, 90, self._station.get("lat_deg", 0.0), 4, "°")
-        form.addRow("Latitude:", self._lat)
+        form.addRow("Enlem:", self._lat)
 
         self._lon = _spin(-180, 180, self._station.get("lon_deg", 0.0), 4, "°")
-        form.addRow("Longitude:", self._lon)
+        form.addRow("Boylam:", self._lon)
 
         sr = self._station.get("sigma_range_m") or 5.0
         self._sr = _spin(0.01, 9999, sr, 2, "m")
-        form.addRow("σ range:", self._sr)
+        form.addRow("σ menzil:", self._sr)
 
         sa_rad = self._station.get("sigma_angle_rad")
         sa_mrad = (sa_rad * 1e3) if sa_rad is not None else 0.0
         self._sa = _spin(0.0, 100, sa_mrad, 4, "mrad")
-        form.addRow("σ angle:", self._sa)
+        form.addRow("σ açı:", self._sa)
 
         rr_mps = self._station.get("sigma_rr_mps") or 0.001
         rr_mm = rr_mps * 1e3
         self._rr = _spin(0.0, 9999, rr_mm, 4, "mm/s")
-        form.addRow("σ range-rate:", self._rr)
+        form.addRow("σ menzil hızı:", self._rr)
 
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btns.button(QDialogButtonBox.Ok).setText("Kaydet")
+        btns.button(QDialogButtonBox.Cancel).setText("Vazgeç")
         btns.accepted.connect(self._accept)
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
@@ -254,7 +234,7 @@ class _StationDialog(QDialog):
     def _accept(self) -> None:
         name = self._name_edit.text().strip()
         if not name:
-            QMessageBox.warning(self, "Validation", "Station name cannot be empty.")
+            QMessageBox.warning(self, "Eksik bilgi", "İstasyon adı boş olamaz.")
             return
         self._station["name"] = name
         self._station["network"] = self._net_combo.currentText()
@@ -323,7 +303,7 @@ class StationsController(QWidget):
         self._search.setClearButtonEnabled(True)
         self._search.setAccessibleName("İstasyon adı veya ağ koduyla tabloyu filtrele")
         self._search.setToolTip("Ad veya ağ kodu (DSN, ESA…) ile tablodaki istasyonları filtreleyin. Ctrl+F: aramaya geç. Harita tüm kataloğu gösterir.")
-        self._search.setStyleSheet(_SEARCH_STYLE)
+
         self._search.setMaximumWidth(220)
         self._search.textChanged.connect(self._apply_filter)
         self._find_shortcut = QShortcut(QKeySequence.Find, self)
@@ -332,39 +312,30 @@ class StationsController(QWidget):
         catalogue_lay.addWidget(self._search)
         catalogue_lay.addStretch()
 
-        lbl = QLabel("Selection:")
-        lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
+        lbl = QLabel("Seçili istasyon:")
+        set_role(lbl, "caption")
         selection_lay.addWidget(lbl)
-
-        self._btn_save_net = QPushButton("Save as Network Preset")
-        self._btn_save_net.setStyleSheet(_BTN_STYLE)
-        self._btn_save_net.setEnabled(False)
-        self._btn_save_net.clicked.connect(self._save_network_preset)
-        selection_lay.addWidget(self._btn_save_net)
         selection_lay.addStretch()
 
-        self._btn_export = QPushButton("Export CSV")
-        self._btn_export.setStyleSheet(_BTN_STYLE)
-        self._btn_export.setToolTip("Export displayed stations to CSV")
+        self._btn_export = QPushButton("CSV aktar…")
+
+        self._btn_export.setToolTip("Tabloda görünen istasyonları CSV dosyasına kaydet")
         self._btn_export.clicked.connect(self._export_csv)
         catalogue_lay.addWidget(self._btn_export)
 
-        self._btn_add = QPushButton("Add Station")
-        self._btn_add.setStyleSheet(_BTN_STYLE)
+        self._btn_add = QPushButton("İstasyon ekle")
+
         self._btn_add.clicked.connect(self._add_station)
         catalogue_lay.addWidget(self._btn_add)
 
-        self._btn_edit = QPushButton("Edit")
-        self._btn_edit.setStyleSheet(_BTN_STYLE)
+        self._btn_edit = QPushButton("Düzenle")
+
         self._btn_edit.setEnabled(False)
         self._btn_edit.clicked.connect(self._edit_station)
         selection_lay.addWidget(self._btn_edit)
 
-        self._btn_delete = QPushButton("Delete")
-        self._btn_delete.setStyleSheet(
-            _BTN_STYLE.replace(f"background:{C.BG_HOVER}", f"background:{C.BG_HOVER}")
-            .replace(f"border:1px solid {C.BORDER_MAIN}", f"border:1px solid {C.RED}")
-        )
+        self._btn_delete = QPushButton("Sil")
+        set_role(self._btn_delete, "danger")
         self._btn_delete.setEnabled(False)
         self._btn_delete.clicked.connect(self._delete_station)
         selection_lay.addWidget(self._btn_delete)
@@ -375,7 +346,7 @@ class StationsController(QWidget):
         self._filter_status.setWordWrap(True)
         self._filter_status.setMaximumWidth(520)
         self._filter_status.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
-        self._filter_status.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_SM}px;")
+        set_role(self._filter_status, "caption")
         self._filter_status.setAccessibleName("İstasyon tablosunun filtre ve seçim durumu")
         self.mainLayout.insertWidget(3, self._filter_status)
 
@@ -428,7 +399,7 @@ class StationsController(QWidget):
             canvas.mpl_connect("pick_event", self._on_map_pick)
             self._canvas = canvas
         except Exception as exc:
-            canvas = QLabel(f"Map failed to load: {exc}")
+            canvas = QLabel(f"Harita yüklenemedi: {exc}")
             canvas.setAlignment(Qt.AlignCenter)
             canvas.setStyleSheet(f"color:{C.RED};")
 
@@ -526,7 +497,7 @@ class StationsController(QWidget):
             name_item.setData(Qt.UserRole, row)
             if is_custom:
                 name_item.setForeground(QColor(C.YELLOW))
-                name_item.setToolTip("Custom station (saved in settings)")
+                name_item.setToolTip("Özel istasyon (ayarlarda saklanır)")
             tbl.setItem(row, 0, name_item)
             tbl.setItem(row, 1, cell(net, net_color))
             tbl.setItem(row, 2, _StationNumericItem(s["lat_deg"], 2, "°"))
@@ -576,7 +547,7 @@ class StationsController(QWidget):
         else:
             message = f"{count}/{len(self._all_stations)} istasyon · {len(rows)} seçili. CSV dışa aktarımı tablodaki satırları içerir; harita tüm kataloğu gösterir."
         self._filter_status.setText(message)
-        self._btn_save_net.setEnabled(len(rows) >= 1)
+
         single_selected = len(rows) == 1
         self._btn_edit.setEnabled(single_selected)
         if single_selected:
@@ -635,13 +606,13 @@ class StationsController(QWidget):
             return
         station = self._station_at_row(rows[0])
         if not station.get("_custom"):
-            QMessageBox.information(self, "Cannot delete",
-                "Only custom stations can be deleted.\n"
-                "Built-in stations come from the fixture file.")
+            QMessageBox.information(self, "Silinemez",
+                "Yalnız eklediğiniz özel istasyonlar silinebilir.\n"
+                "Yerleşik istasyonlar katalog dosyasından gelir.")
             return
         reply = QMessageBox.question(
-            self, "Delete station?",
-            f"Delete custom station '{station['name']}'?",
+            self, "İstasyon silinsin mi?",
+            f"'{station['name']}' özel istasyonu silinsin mi?",
             QMessageBox.Yes | QMessageBox.No,
         )
         if reply != QMessageBox.Yes:
@@ -657,9 +628,9 @@ class StationsController(QWidget):
         if not stations:
             return
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export Stations CSV",
+            self, "İstasyonları CSV olarak kaydet",
             str(Path.home() / "stations.csv"),
-            "CSV files (*.csv)",
+            "CSV dosyaları (*.csv)",
         )
         if not path:
             return
@@ -672,29 +643,8 @@ class StationsController(QWidget):
                 for s in stations:
                     writer.writerow({k: s.get(k, "") for k in fieldnames})
             QMessageBox.information(
-                self, "Export complete",
-                f"Exported {len(stations)} station(s) to:\n{path}",
+                self, "Kaydedildi",
+                f"{len(stations)} istasyon kaydedildi:\n{path}",
             )
         except Exception as exc:
-            QMessageBox.warning(self, "Export failed", str(exc))
-
-    def _save_network_preset(self) -> None:
-        rows = self._selected_rows()
-        if not rows:
-            return
-        selected_names = [self._station_at_row(r)["name"] for r in rows]
-        name, ok = QInputDialog.getText(
-            self, "Save Network Preset",
-            f"Preset name for {len(selected_names)} station(s):",
-        )
-        if not ok or not name.strip():
-            return
-        name = name.strip()
-        nets = _load_custom_networks()
-        nets[name] = selected_names
-        _save_custom_networks(nets)
-        QMessageBox.information(
-            self, "Saved",
-            f"Network preset '{name}' saved with {len(selected_names)} station(s).\n\n"
-            f"Stations: {', '.join(selected_names)}",
-        )
+            QMessageBox.warning(self, "Kaydedilemedi", str(exc))

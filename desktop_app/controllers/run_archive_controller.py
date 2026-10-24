@@ -94,11 +94,13 @@ class RunArchiveController(ArtifactJobs, QWidget):
         layout.setContentsMargins(24, 20, 24, 18)
         layout.setSpacing(14)
         header = QHBoxLayout()
-        title = QLabel("Koşu arşivi")
-        title.setObjectName("workspaceTitle")
-        header.addWidget(title)
-        header.addStretch()
-        choose = QPushButton("Arşiv klasörü seç")
+        self.path_label = QLabel(str(self.folder))
+        self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.path_label.setWordWrap(True)
+        self.path_label.setProperty("role", "caption")
+        header.addWidget(self.path_label, 1)
+        choose = QPushButton("Klasör seç…")
+        choose.setToolTip("Başka bir sonuç klasöründeki koşuları listele")
         choose.clicked.connect(self._choose_folder)
         header.addWidget(choose)
         self.refresh_button = QPushButton("Yenile")
@@ -110,11 +112,6 @@ class RunArchiveController(ArtifactJobs, QWidget):
         self.cancel_button.setEnabled(False)
         header.addWidget(self.cancel_button)
         layout.addLayout(header)
-        self.path_label = QLabel(str(self.folder))
-        self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.path_label.setWordWrap(True)
-        layout.addWidget(self.path_label)
-        layout.addWidget(QLabel("Kaydedilmiş kaynaklar · iki koşu seçerek karşılaştır · işlem durumu sayısal başarıyı belirtmez"))
         filters = QHBoxLayout()
         self.search = QLineEdit()
         self.search.setPlaceholderText("Koşu, kimlik, ağ, seed veya dosya yolu ara…")
@@ -123,6 +120,7 @@ class RunArchiveController(ArtifactJobs, QWidget):
         self.estimator_combo = QComboBox()
         self.estimator_combo.addItem("Tüm çözücüler", "")
         self.status_combo = QComboBox()
+        self.status_combo.setToolTip("İşlem durumu yalnız sürecin bitip bitmediğini söyler; sayısal çözüm başarısını belirtmez.")
         self.status_combo.addItem("Tüm işlem durumları", "")
         for key, label in STATUS.items():
             self.status_combo.addItem(label, key)
@@ -155,7 +153,7 @@ class RunArchiveController(ArtifactJobs, QWidget):
         for column, width in enumerate((150, 190, 105, 70, 40, 175, 110, 90, 60, 50)):
             self.table.setColumnWidth(column, width)
         self.table.selectionModel().selectionChanged.connect(self._selection_changed)
-        self.table.doubleClicked.connect(lambda _: self.open_selected())
+        self.table.doubleClicked.connect(lambda _: self.open_mission())
         splitter.addWidget(self.table)
         detail_panel = QWidget()
         detail_layout = QVBoxLayout(detail_panel)
@@ -177,22 +175,19 @@ class RunArchiveController(ArtifactJobs, QWidget):
         splitter.setSizes([1000, 320])
         layout.addWidget(splitter, 1)
         actions = QHBoxLayout()
-        self.open_button = QPushButton("Koşu ayrıntılarını aç")
-        self.open_button.clicked.connect(self.open_selected)
-        self.compare_button = QPushButton("İki koşuyu karşılaştır")
-        self.compare_button.clicked.connect(self.compare_selected)
+        # Overview, charts and records are tabs of one Sonuçlar page: one open action.
+        self.open_button = QPushButton("Sonuçlarda aç")
+        self.open_button.setProperty("primary", True)
+        self.open_button.clicked.connect(self.open_mission)
         actions.addWidget(self.open_button)
-        self.mission_button = QPushButton("Harita ve yörüngeyi aç")
-        self.mission_button.clicked.connect(self.open_mission)
-        actions.addWidget(self.mission_button)
-        self.clone_button = QPushButton("Koşuyu temel al")
-        self.clone_button.setToolTip("Kayıtlı formu doğrula ve Scenario Builder'da yeni bir taslak aç")
+        self.clone_button = QPushButton("Senaryoya kopyala")
+        self.clone_button.setToolTip("Kayıtlı formu doğrula ve Senaryo sayfasında yeni bir taslak olarak aç")
         self.clone_button.clicked.connect(self.clone_selected)
         actions.addWidget(self.clone_button)
+        self.compare_button = QPushButton("Karşılaştır")
+        self.compare_button.setToolTip("İki koşu seçin (Ctrl veya Shift ile)")
+        self.compare_button.clicked.connect(self.compare_selected)
         actions.addWidget(self.compare_button)
-        legacy = QPushButton("Diğer CSV özetleri")
-        legacy.clicked.connect(lambda: self.window().navigate("summary_comparison") if hasattr(self.window(), "navigate") else None)
-        actions.addWidget(legacy)
         actions.addStretch()
         layout.addLayout(actions)
         self.status_label = QLabel("UKF güncelleme ve native yay çözümü paketleri listelenir.")
@@ -278,8 +273,13 @@ class RunArchiveController(ArtifactJobs, QWidget):
     def _selection_changed(self, *args):
         entries = self.selected_entries()
         self.open_button.setEnabled(len(entries) == 1 and entries[0].status != "invalid")
-        self.mission_button.setEnabled(self.open_button.isEnabled())
-        self.clone_button.setEnabled(len(entries) == 1 and entries[0].status != "invalid" and bool(entries[0].metadata.get("job_file")))
+
+        native = len(entries) == 1 and entries[0].job_schema == "lunar-od-desktop-job-v1"
+        self.clone_button.setEnabled(native and entries[0].status != "invalid" and bool(entries[0].metadata.get("job_file")))
+        self.clone_button.setToolTip(
+            "Kayıtlı formu doğrula ve Senaryo sayfasında yeni bir taslak olarak aç"
+            if native or len(entries) != 1 else
+            "Bu koşu Senaryo formundan başlatılmadı (ör. örnek eğitim); ayarları forma kopyalanamaz.")
         self.compare_button.setEnabled(len(entries) == 2 and all(e.status != "invalid" for e in entries))
         if entries:
             entry = entries[0]
@@ -305,7 +305,8 @@ class RunArchiveController(ArtifactJobs, QWidget):
         if not self.model.entries:
             self.status_label.setText("Henüz kayıtlı koşu yok. Senaryo sayfasından bir koşu başlatın ya da başka bir klasör seçin.")
         else:
-            self.status_label.setText(f"{self.proxy.rowCount()} / {len(self.model.entries)} koşu · {len(entries)} seçili · karşılaştırma için Ctrl ile iki satır seçin")
+            hint = " · karşılaştırmak için Ctrl ile ikinci bir koşu seçin" if len(entries) == 1 else ""
+            self.status_label.setText(f"{self.proxy.rowCount()} / {len(self.model.entries)} koşu · {len(entries)} seçili{hint}")
 
     def open_mission(self):
         entries = self.selected_entries()

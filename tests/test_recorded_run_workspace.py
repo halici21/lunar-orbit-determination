@@ -94,6 +94,27 @@ def test_archive_mismatched_completion_is_not_accepted(tmp_path):
     assert scan_run_archive(tmp_path)[0].status == "invalid"
 
 
+def test_saved_view_naming_the_folded_sources_tab_still_opens():
+    from services.comparison_session import validate_view, view_tab, TABS
+    view = validate_view({"schema": "lunar-od-comparison-view-v1", "tab": "sources"})
+    assert view_tab(view) == "differences" and "sources" not in TABS
+    with pytest.raises(ResultLoadError):
+        validate_view({"schema": "lunar-od-comparison-view-v1", "tab": "nonsense"})
+
+
+def test_archive_accepts_every_result_listed_by_one_completion_record(tmp_path):
+    write_run(tmp_path)
+    record = json.loads((tmp_path / "completed.json").read_text())
+    record["artifacts"] = [record["result_path"], str(tmp_path / "second_seed_ukf_updates.csv")]
+    record["result_path"] = str(tmp_path / "second_seed_ukf_updates.csv")
+    (tmp_path / "completed.json").write_text(json.dumps(record))
+    entry, = scan_run_archive(tmp_path)
+    assert entry.status == "completed"  # listed as an artifact of the same job
+    record["artifacts"] = [record["result_path"]]
+    (tmp_path / "completed.json").write_text(json.dumps(record))
+    assert scan_run_archive(tmp_path)[0].status == "invalid"  # not listed anywhere
+
+
 def test_archive_accepts_moved_folder_with_explicit_note(tmp_path):
     write_run(tmp_path)
     record = json.loads((tmp_path / "completed.json").read_text())
@@ -255,12 +276,13 @@ def test_same_source_and_cancel_are_rejected(tmp_path):
 
 
 def test_archive_filters_and_sort_keep_actual_source_identity(app, tmp_path):
-    a, b = write_run(tmp_path / "A", seed=0), write_run(tmp_path / "B", seed=99)
+    # A seed no temp path can contain (pytest-991… made "99" match both rows).
+    a, b = write_run(tmp_path / "A", seed=0), write_run(tmp_path / "B", seed=987654321)
     widget = RunArchiveController()
     try:
         widget.set_folder(tmp_path)
         wait(app, lambda: widget.model.rowCount() == 2)
-        widget.search.setText("99")
+        widget.search.setText("987654321")
         widget.apply_filter()
         assert widget.proxy.rowCount() == 1
         widget.table.selectRow(0)
@@ -379,7 +401,7 @@ def test_native_navigation_archive_to_comparison_to_console(app, tmp_path):
     isolated = QSettings(str(tmp_path / "test-settings.ini"), QSettings.IniFormat)
     with patch("app.QSettings", return_value=isolated), patch.object(archive_module, "RESULTS_DIR", tmp_path):
         window = MainWindow()
-        assert set(window._pages) == {"mission"}
+        assert set(window._pages) == {"scenario"}
         window.navigate("archive")
     try:
         archive = window._pages["archive"]
@@ -391,7 +413,7 @@ def test_native_navigation_archive_to_comparison_to_console(app, tmp_path):
         comparison = window._pages["comparison"]
         wait(app, lambda: comparison.comparison is not None)
         assert window.pageStack.currentWidget() is comparison
-        assert "border-left:2px solid transparent" in window._nav_btns["archive"].styleSheet()
+        assert window._nav_btns["archive"].isChecked()  # comparison lives inside Arşiv
         assert {Path(comparison.comparison.left.sources[0]["path"]), Path(comparison.comparison.right.sources[0]["path"])} == {a, b}
         comparison.open_source(0)
         console = window._pages["console"]

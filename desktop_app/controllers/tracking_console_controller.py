@@ -10,7 +10,7 @@ from pathlib import Path
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QSplitter, QLabel,
     QPushButton, QComboBox, QDoubleSpinBox, QCheckBox, QSlider, QTableView,
-    QFileDialog, QPlainTextEdit, QTabWidget, QHeaderView, QScrollArea)
+    QFileDialog, QPlainTextEdit, QTabWidget, QHeaderView, QScrollArea, QBoxLayout)
 
 from services.tracking_results import (discover_tracking_runs, load_tracking_results,
     result_selection, LoadCancelled)
@@ -114,36 +114,66 @@ class TrackingConsoleController(QWidget):
         self._selection_lock = False
         self._row_positions = {}
         self.view_ms = 0
+        self.overview = None
         self._build_ui()
+
+    def resizeEvent(self, event):
+        # Three side-by-side charts would force the whole tab stack (and the
+        # overview tab with it) wider than a laptop window; stack them instead.
+        direction = QBoxLayout.TopToBottom if self.width() < 980 else QBoxLayout.LeftToRight
+        if self._chart_layout.direction() != direction:
+            self._chart_layout.setDirection(direction)
+        super().resizeEvent(event)
+
+    def set_overview(self, widget):
+        """Insert the orbit/station/Gantt overview as the first results tab."""
+        self.overview = widget
+        self.view_tabs.insertTab(0, widget, "Genel görünüm")
+        self.view_tabs.setCurrentIndex(0)
+        self._sync_chart_tools()
+
+    def show_overview(self):
+        if self.overview is not None:
+            self.view_tabs.setCurrentWidget(self.overview)
+
+    def _sync_chart_tools(self, *_):
+        on_overview = self.overview is not None and self.view_tabs.currentWidget() is self.overview
+        self.chart_tools.setVisible(not on_overview)
+        if on_overview:
+            self.filters_toggle.setChecked(False)
 
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 16, 24, 16)
         root.setSpacing(12)
         header = QHBoxLayout()
-        title = QLabel("Kayıtlı koşu")
-        title.setObjectName("consoleTitle")
-        header.addWidget(title)
-        header.addStretch()
+        self.run_combo = QComboBox()
+        self.run_combo.setMinimumWidth(220)
+        self.run_combo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+        self.run_combo.currentIndexChanged.connect(self._choose_run)
+        header.addWidget(QLabel("Koşu"))
+        header.addWidget(self.run_combo, 1)
+        self.cancel_button = QPushButton("Yüklemeyi iptal et")
+        self.cancel_button.clicked.connect(self.cancel_load)
+        header.addWidget(self.cancel_button)
         if hasattr(self.window(), "navigate"):
-            archive_button = QPushButton("Koşu arşivi")
-            archive_button.clicked.connect(lambda: self.window().navigate("archive"))
-            header.addWidget(archive_button)
-            mission_button = QPushButton("Görev görünümü")
-            mission_button.clicked.connect(lambda: self.window().navigate("mission"))
-            header.addWidget(mission_button)
-        self.open_button = QPushButton("Sonuç klasörü aç")
-        self.open_button.setProperty("primary", True)
+            self.archive_button = QPushButton("Arşivden aç")
+            self.archive_button.setProperty("primary", True)
+            self.archive_button.clicked.connect(lambda: self.window().navigate("archive"))
+            header.addWidget(self.archive_button)
+        self.open_button = QPushButton("Klasörden aç…")
         self.open_button.clicked.connect(self._choose_folder)
         header.addWidget(self.open_button)
-        self.export_button = QPushButton("Görünümü CSV aktar")
-        self.export_button.clicked.connect(self._export)
-        header.addWidget(self.export_button)
         self.details_toggle = QPushButton("Ayrıntılar")
         self.details_toggle.setCheckable(True)
         self.details_toggle.setToolTip("Koşu bilgisi, seçili kayıt ve teknik kaynaklar")
         header.addWidget(self.details_toggle)
         root.addLayout(header)
+        self.path_label = QLabel("Arşivden bir koşu açın veya bir sonuç klasörü seçin.")
+        self.path_label.setWordWrap(True)
+        self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.path_label.setProperty("role", "caption")
+        root.addWidget(self.path_label)
         feedback = QHBoxLayout()
         self.recovery_message = QLabel()
         self.recovery_message.setTextFormat(Qt.PlainText)
@@ -155,16 +185,10 @@ class TrackingConsoleController(QWidget):
         root.addLayout(feedback)
         self.recovery_message.hide()
         self.retry_button.hide()
-        bar = QHBoxLayout()
-        self.run_combo = QComboBox()
-        self.run_combo.setMinimumWidth(220)
-        self.run_combo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
-        self.run_combo.currentIndexChanged.connect(self._choose_run)
-        bar.addWidget(QLabel("Koşu"))
-        bar.addWidget(self.run_combo, 1)
-        self.cancel_button = QPushButton("Yüklemeyi iptal et")
-        self.cancel_button.clicked.connect(self.cancel_load)
-        bar.addWidget(self.cancel_button)
+        # Chart/record tools: hidden on the overview tab, where they do nothing.
+        self.chart_tools = QWidget()
+        bar = QHBoxLayout(self.chart_tools)
+        bar.setContentsMargins(0, 0, 0, 0)
         self.scale_button = QPushButton("Ölçek: otomatik")
         self.scale_button.clicked.connect(self._toggle_scale)
         bar.addWidget(self.scale_button)
@@ -174,14 +198,14 @@ class TrackingConsoleController(QWidget):
         self.filters_toggle = QPushButton("Filtreler")
         self.filters_toggle.setCheckable(True)
         bar.addWidget(self.filters_toggle)
-        root.addLayout(bar)
-        self.path_label = QLabel("Bir sonuç klasörü seçerek başlayın.")
-        self.path_label.setWordWrap(True)
-        self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        bar.addStretch()
+        self.export_button = QPushButton("Görünümü CSV aktar")
+        self.export_button.clicked.connect(self._export)
+        bar.addWidget(self.export_button)
+        root.addWidget(self.chart_tools)
         self.filter_panel = QWidget()
         filter_container = QVBoxLayout(self.filter_panel)
         filter_container.setContentsMargins(0, 4, 0, 8)
-        filter_container.addWidget(self.path_label)
         filters = QHBoxLayout()
         self.station_combo, self.arc_combo = QComboBox(), QComboBox()
         for label, combo in (("İstasyon", self.station_combo), ("Yay", self.arc_combo)):
@@ -227,6 +251,7 @@ class TrackingConsoleController(QWidget):
         charts = QWidget()
         chart_layout = QHBoxLayout(charts)
         chart_layout.setContentsMargins(0, 0, 0, 0)
+        self._chart_layout = chart_layout
         self.charts = [TrackingChart("position_error_m", "Konum farkı", "m", "arc_end_position_error_m"),
             TrackingChart("velocity_error_mps", "Hız farkı", "m/s", "arc_end_velocity_error_mps"),
             TrackingChart("normalized_nis", "Normalize NIS", "boyutsuz")]
@@ -259,6 +284,7 @@ class TrackingConsoleController(QWidget):
         self.table.selectionModel().currentRowChanged.connect(self._table_selection)
         self.view_tabs.addTab(graph_page, "Grafikler")
         self.view_tabs.addTab(self.table, "Kayıtlar")
+        self.view_tabs.currentChanged.connect(self._sync_chart_tools)
         left_layout.addWidget(self.view_tabs)
         plot_scroll = QScrollArea()
         plot_scroll.setWidgetResizable(True)
@@ -495,7 +521,7 @@ class TrackingConsoleController(QWidget):
         states = f"{len(self.result.states)} durum" if self.result.states else "Durum vektörleri yok"
         kind = "yay çözümü" if self.result.metadata.get("record_kind") == "arc_solution" else "güncelleme"
         bls = f" · {len(self.result.arcs)} BLS yay sonu" if kind == "güncelleme" else ""
-        self.status_label.setText(f"{len(self.visible_indices)} / {len(self.result.updates)} {kind}{bls} · {states} · okuma {self.result.load_ms:.1f} ms / görünüm {self.view_ms:.1f} ms")
+        self.status_label.setText(f"{len(self.visible_indices)} / {len(self.result.updates)} {kind}{bls} · {states}")
 
     def select_index(self, index):
         if index is not None and index not in self._row_positions:

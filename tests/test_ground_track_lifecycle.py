@@ -17,8 +17,8 @@ def window(tmp_path,monkeypatch):
     monkeypatch.setattr('PyQt5.QtCore.QSettings',lambda *a,**kw:settings)
     w=MainWindow();w.environment.shutdown();w.resize(1480,1000)
     w.show();w.navigate('ground_track');app.processEvents()
-    yield w,w._pages['ground_track'],app
-    page=w._pages['ground_track']
+    yield w,w._pages['visibility'].track,app
+    page=w._pages['visibility'].track
     page._anim_timer.stop();page._orbit_designer._preview_timer.stop()
     w.close();app.processEvents()
 

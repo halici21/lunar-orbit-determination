@@ -28,7 +28,7 @@ def palette_state(monkeypatch):
             monkeypatch.setattr(theme.C, name, value)
     if not hasattr(theme.C, "ON_ACCENT"):
         monkeypatch.setattr(theme.C, "ON_ACCENT", None, raising=False)
-    for mapping in (theme.ACCENT, theme.NET_COLORS, theme.MPL_DARK):
+    for mapping in (theme.NET_COLORS, theme.MPL_DARK):
         for key, value in mapping.copy().items():
             monkeypatch.setitem(mapping, key, value)
     monkeypatch.setattr(theme, "BAR_COLORS", list(theme.BAR_COLORS))
@@ -52,7 +52,7 @@ def test_ground_track_text_fits_canvas_and_keeps_data(palette, width, sampled, p
         app.processEvents()
         canvas.draw()
         ax = figure.axes[0]
-        reference = next(t for t in ax.texts if "Sub-Earth" in t.get_text())
+        reference = next(t for t in ax.texts if "Dünya altı" in t.get_text())
         # A deliberate readability target, checked on both base and highlighted fill.
         background = np.asarray(ax.get_facecolor()[:3])
         near = ax.patches[0]
@@ -60,11 +60,11 @@ def test_ground_track_text_fits_canvas_and_keeps_data(palette, width, sampled, p
                        + background * (1 - near.get_alpha()))
         assert min(contrast(reference.get_color(), fill)
                    for fill in (background, highlighted)) >= 4.5
-        footer = next(t for t in figure.texts if "Moon rotates" in t.get_text())
+        footer = next(t for t in figure.texts if "kat yavaş döner" in t.get_text())
         assert contrast(footer.get_color(), figure.get_facecolor()) >= 4.5
         assert " ".join(footer.get_text().split()) == (
-            "Moon rotates ~27× slower than Earth — passes drift only ~1°/orbit, "
-            "so selenographic tracks stay near-vertical.")
+            "Ay, Dünya'dan ~27 kat yavaş döner; geçişler turda yalnız ~1° kayar, "
+            "bu yüzden selenografik izler neredeyse dikey kalır.")
         renderer = canvas.get_renderer()
         bounds = Bbox.from_bounds(0, 0, canvas.width(), canvas.height())
         for text in (ax.title, ax.xaxis.label, ax.yaxis.label, footer):
@@ -74,8 +74,8 @@ def test_ground_track_text_fits_canvas_and_keeps_data(palette, width, sampled, p
         assert not footer_box.overlaps(ax.get_legend().get_window_extent(renderer))
         assert not footer_box.overlaps(ax.xaxis.label.get_window_extent(renderer))
         title = ax.get_title()
-        assert "1 day ·" in title and "1 days" not in title
-        assert ("Visible samples: 50%" if sampled else "Visibility not computed") in title
+        assert "1 gün ·" in title
+        assert ("Görünür örnek: %50" if sampled else "Görünürlük hesaplanmadı") in title
         assert "(°)" in ax.get_xlabel() and "(°)" in ax.get_ylabel()
         assert original == {k: data[k].tobytes() for k in original}
         assert ax.get_xlim() == (-180, 180) and ax.get_ylim() == (-90, 90)
