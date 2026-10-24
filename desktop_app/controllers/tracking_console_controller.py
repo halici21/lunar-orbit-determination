@@ -236,6 +236,7 @@ class TrackingConsoleController(QWidget):
         self.result_overview.setWordWrap(True)
         self.result_overview.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.result_overview.setAccessibleName("Koşu sonucu ve tanılama özeti")
+        self.result_overview.setProperty("role", "summary")
         self.result_overview.hide()
         root.addWidget(self.result_overview)
         self.splitter = QSplitter(Qt.Horizontal)

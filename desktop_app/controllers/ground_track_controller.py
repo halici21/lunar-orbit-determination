@@ -1310,8 +1310,9 @@ class GroundTrackController(QWidget):
 
     def _build_checkboxes(self) -> None:
         try:
-            from lunar_od import range_rate_stations
-            stations = range_rate_stations()
+            from types import SimpleNamespace
+            from services.mission_data import range_rate_station_names
+            stations = [SimpleNamespace(name=name) for name in range_rate_station_names()]
         except Exception:
             return
 

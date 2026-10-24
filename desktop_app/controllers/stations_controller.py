@@ -387,6 +387,9 @@ class StationsController(QWidget):
                          else QBoxLayout.LeftToRight)
             if self._toolbar_layout.direction() != direction:
                 self._toolbar_layout.setDirection(direction)
+                # The stacked rows need a taller toolbar in this same layout pass.
+                self._toolbar_layout.invalidate()
+                self._toolbar.updateGeometry()
             self.mapCanvasHolder.setFixedHeight(max(240, min(440, available // 2 + 40)))
         super().resizeEvent(event)
 

@@ -142,6 +142,9 @@ class MainWindow(QMainWindow):
         self.pageScroll = QScrollArea()
         self.pageScroll.setWidgetResizable(True)
         self.pageScroll.setFrameShape(QFrame.NoFrame)
+        # Keep the scrollbar gutter: a page that appears/disappears the bar would
+        # change every page's width by its thickness and force plot redraws.
+        self.pageScroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.pageScroll.setAccessibleName("Çalışma alanı; taşan içerik kaydırılabilir")
         original_stack = self.pageStack
         parent_layout = original_stack.parentWidget().layout()

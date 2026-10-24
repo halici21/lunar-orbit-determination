@@ -34,6 +34,14 @@ def _load_stylesheet(app: QApplication) -> None:
     app.setStyleSheet(workspace_stylesheet())
 
 
+def _warm_plotting() -> None:
+    try:
+        import matplotlib.backends.backend_qt5agg  # noqa: F401
+        import matplotlib.figure  # noqa: F401
+    except Exception:
+        pass  # pages report plotting problems themselves when opened
+
+
 def main() -> None:
     # High-DPI support
     QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -55,6 +63,10 @@ def main() -> None:
 
     window = MainWindow()
     window.show()
+    # Import the plotting stack while the user reads the first page, so the
+    # first map/plot page does not pay ~0.4 s for it on click.
+    from PyQt5.QtCore import QTimer
+    QTimer.singleShot(1500, _warm_plotting)
 
     sys.exit(app.exec_())
 

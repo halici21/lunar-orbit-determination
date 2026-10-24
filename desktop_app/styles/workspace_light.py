@@ -105,7 +105,7 @@ QGroupBox {{ border:0; border-top:1px solid {C.BORDER_MAIN}; margin-top:22px; pa
 QGroupBox::title {{ subcontrol-origin:margin; left:0; padding:0 10px 0 0; background:{C.BG_DEEP}; color:{C.TEXT_MUTED}; }}
 
 QTableView, QTreeWidget, QTreeView, QListView {{ background:{C.BG_DEEP}; alternate-background-color:{C.BG_PANEL}; color:{C.TEXT_PRIMARY}; border:1px solid {C.BORDER_MAIN}; border-radius:10px; gridline-color:{C.BORDER_FAINT}; selection-background-color:{C.BG_ACTIVE}; selection-color:{C.TEXT_PRIMARY}; outline:0; }}
-QTableView::item, QTreeWidget::item {{ padding:4px 6px; }}
+
 QTableView::item:selected, QTreeWidget::item:selected {{ background:{C.BG_ACTIVE}; color:{C.TEXT_PRIMARY}; }}
 QTableView::item:hover, QTreeWidget::item:hover {{ background:{C.BG_HOVER}; }}
 QHeaderView {{ background:transparent; border:0; }}
@@ -154,6 +154,7 @@ QDialog, QMessageBox {{ background:{C.BG_PANEL}; }}
 QLabel[role="caption"] {{ color:{C.TEXT_MUTED}; font-size:12px; }}
 QLabel[role="eyebrow"] {{ color:{C.NAV_ACTIVE}; font-size:11px; font-weight:700; letter-spacing:1px; }}
 QLabel[role="placeholder"] {{ color:{C.TEXT_MUTED}; font-size:13px; }}
+QLabel[role="summary"] {{ background:{C.BG_PANEL}; border:1px solid {C.BORDER_MAIN}; border-radius:10px; padding:12px 16px; color:{C.TEXT_SECONDARY}; }}
 QPlainTextEdit[role="log"] {{ color:{C.TEXT_SECONDARY}; font-family:{MONO_FONT}; font-size:11px; border-radius:8px; padding:6px; }}
 QPushButton[role="disclosure"] {{ background:transparent; border:0; text-align:left; padding:6px 0; color:{C.TEXT_MUTED}; }}
 QPushButton[role="disclosure"]:hover {{ color:{C.TEXT_PRIMARY}; background:transparent; }}

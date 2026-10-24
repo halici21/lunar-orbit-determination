@@ -8,7 +8,7 @@ duration, elevation and gap thresholds) follow the user between tabs.
 from __future__ import annotations
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTabBar, QStackedWidget
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTabBar, QStackedWidget
 
 from controllers.visibility_controller import VisibilityController
 from controllers.ground_track_controller import GroundTrackController
@@ -43,7 +43,11 @@ class VisibilityWorkspaceController(QWidget):
         self.tabs.setExpanding(False)
         for title in TABS:
             self.tabs.addTab(title)
-        layout.addWidget(self.tabs)
+        tab_row = QHBoxLayout()
+        tab_row.setContentsMargins(24, 6, 24, 0)  # align with the page content edge
+        tab_row.addWidget(self.tabs)
+        tab_row.addStretch(1)
+        layout.addLayout(tab_row)
         self.stack = _CurrentStack()
         self.stack.addWidget(self.contact)
         self.stack.addWidget(self.track)
