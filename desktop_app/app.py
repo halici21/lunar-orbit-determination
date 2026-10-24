@@ -398,7 +398,9 @@ class MainWindow(QMainWindow):
         self.pageStack.setCurrentWidget(page)
         # Mission plots, catalogue and visibility panels can stack; other forms retain
         # their existing scrollable minimum width.
-        self.pageStack.setMinimumWidth(540 if page_id in {"console", "stations", "visibility"} else 960)
+        # Single-column pages reflow down to laptop widths; the wide archive and
+        # comparison tables keep a horizontal scroll instead of crushing columns.
+        self.pageStack.setMinimumWidth(960 if page_id in {"archive", "comparison"} else 540)
         self.pageStack.updateGeometry()
         self.pageScroll.verticalScrollBar().setValue(0)
         self.pageScroll.horizontalScrollBar().setValue(0)

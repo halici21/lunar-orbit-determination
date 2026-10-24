@@ -118,6 +118,6 @@ def test_ground_track_tabs_fit_small_window_keep_results_and_restore_wide(window
         assert page._data is not old[0] and page._data['vis_mask'].shape[0] == 0
         assert '45' in page._result_context.toolTip()
         assert not designer._preview_timer.isActive()
-    view.navigate('settings')
+    view.navigate('archive')
     settle(app)
     assert view.pageStack.minimumWidth() == 960
