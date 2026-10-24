@@ -32,10 +32,15 @@ OFFSET = np.array([1000.0, 1000.0, 1000.0, 1.0, 1.0, 1.0])
 FD_STEPS = np.array([10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2, 1e-3])
 
 
+#: Phase F2d: Doppler weight (F1c post-offset scatter 1-3 mm/s).
+SIGMA_DOP = 2e-3
+
+
 class Problem:
-    def __init__(self, nmax: int):
+    def __init__(self, nmax: int, doppler: bool = False):
         import spiceypy as spice
         from lunar_od import relativistic_light_time as R
+        from lunar_od import station_time as ST
         from lunar_od.ephemeris import sample_moon_centered_ephemeris
         from lunar_od.gravity_model_loader import load_lunar_gravity_model
         from lunar_od.project_paths import gravity_data_root
@@ -45,8 +50,26 @@ class Problem:
         s = self.setup
         self.obs = np.array([F.C * r.rtlt_s / 2.0 for _, r in self.rows])
         self.pad_index = np.array([PADS.index(p) for p, _ in self.rows])
-        self.t_epoch = float(s.t3.min()) - EPOCH_LEAD_S
-        self.t_end = float(s.t3.max()) + 10.0
+        self.use_doppler = doppler
+        t_all = [float(s.t3.min()), float(s.t3.max())]
+        if doppler:
+            import phase_f1c_lro_doppler as D
+            from lunar_od.media import MediaModel
+            drows = D.read_doppler(self.data)
+            td = np.array([ST.utc_to_tdb_seconds([r.utc.strftime("%Y-%m-%dT%H:%M:%S.%f")], s.et0, s.sites[p])[0]
+                           for p, r in drows])
+            self.dop = []
+            for i, j in D.intervals(drows, td):
+                pad, ra = drows[i]
+                rb = drows[j][1]
+                a = (rb.doppler_count_raw - ra.doppler_count_raw) / (rb.utc - ra.utc).total_seconds()
+                ft = ra.transmit_frequency_hz
+                obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
+                self.dop.append(dict(pad=pad, tm=0.5 * (td[i] + td[j]), tc=td[j] - td[i], obs=obs,
+                                     media=MediaModel(uplink_hz=ft, downlink_hz=ft * D.TURNAROUND)))
+            t_all += [min(d["tm"] - d["tc"] for d in self.dop), max(d["tm"] + d["tc"] for d in self.dop)]
+        self.t_epoch = min(t_all) - EPOCH_LEAD_S
+        self.t_end = max(t_all) + 10.0
         self.grid = np.arange(self.t_epoch, self.t_end + GRID_S, GRID_S)
         eph_t = np.arange(self.t_epoch - 600.0, self.t_end + 600.0, 60.0)
         self.eph = sample_moon_centered_ephemeris(s.et0, eph_t)
@@ -107,26 +130,60 @@ class Problem:
                 jac.append(R.two_way_range_partial(sol, sc))
         return np.array(comp), (np.array(jac) if partials else None)
 
+    def computed_doppler(self, hist, partials=True):
+        """F2d: counted Doppler of every interval [m/s] and its partials (7 columns)."""
+        R, s = self.R, self.setup
+        sc = R.SpacecraftHistory(self.grid, hist)
+        comp, jac = [], []
+        for d in self.dop:
+            pad = d["pad"]
+            val, part, _ = R.counted_doppler(d["tm"], d["tc"], s.tide[pad], sc, s.eph, R.DSN_C2_LIGHT_TIME_MODEL,
+                                             with_partial=partials, site=s.sites[pad], media=d["media"],
+                                             media_site=s.media_sites[pad])
+            comp.append(val)
+            if partials:
+                jac.append(part)
+        return np.array(comp), (np.array(jac) if partials else None)
+
+    @property
+    def n_par(self) -> int:
+        return 11 if self.use_doppler else 10
+
     def residual(self, p, partials=True):
+        """Range rows [m] followed (F2d) by Doppler rows scaled to range units by SIGMA_M / SIGMA_DOP."""
         hist = self.fd_history(p[:6], p[6]) if partials else self.propagate(p[:6], p[6], sensitivity=False)
         comp, jac = self.computed(hist, partials)
         res = self.obs - comp - p[7:10][self.pad_index]
-        if not partials:
-            return res, None, hist
-        h = np.zeros((len(self.rows), 10))
-        h[:, :7] = jac
-        h[np.arange(len(self.rows)), 7 + self.pad_index] = 1.0
+        nr = len(self.rows)
+        h = None
+        if partials:
+            h = np.zeros((nr, self.n_par))
+            h[:, :7] = jac
+            h[np.arange(nr), 7 + self.pad_index] = 1.0
+        if self.use_doppler:
+            w = SIGMA_M / SIGMA_DOP
+            cd, jd = self.computed_doppler(hist, partials)
+            obs_d = np.array([d["obs"] for d in self.dop])
+            res = np.concatenate([res, (obs_d - cd - p[10]) * w])
+            if partials:
+                hd = np.zeros((len(self.dop), self.n_par))
+                hd[:, :7] = jd * w
+                hd[:, 10] = w
+                h = np.vstack([h, hd])
         return res, h, hist
 
 
-def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "") -> dict:
+def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False) -> dict:
     t0 = time.time()
-    pb = Problem(nmax)
+    pb = Problem(nmax, doppler=doppler)
+    nr = len(pb.rows)
     x0 = pb.reference_epoch + sign * OFFSET
-    p = np.concatenate([x0, [K0], np.zeros(3)])
+    p = np.concatenate([x0, [K0], np.zeros(pb.n_par - 7)])
     res, _, _ = pb.residual(p, partials=False)
     for j in range(3):
-        p[7 + j] = float(np.mean(res[pb.pad_index == j]))
+        p[7 + j] = float(np.mean(res[:nr][pb.pad_index == j]))
+    if doppler:
+        p[10] = float(np.mean(res[nr:])) * SIGMA_DOP / SIGMA_M
     # F2b: priors as pseudo-observations {parameter index: (mean, sigma)}, weighted against SIGMA_M
     prior_items = sorted((priors or {}).items())
     for j, (mean, _) in prior_items:
@@ -146,8 +203,9 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "") -> 
             h_p[row, j] = w[row]
         return r_out, np.vstack([hh, h_p])
 
-    scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0])
+    scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0] + ([1e-3] if doppler else []))
     lam, status, history = 1e-3, "MaxIter", []
+    rel = 1.0
     res, h, hist = pb.residual(p)
     ra, ha = aug(res, h, p)
     cost = float(ra @ ra)
@@ -174,13 +232,16 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "") -> 
                 accepted = True
                 break
             lam *= 10.0
-        history.append(dict(iteration=it, cost=cost, rms_m=float(np.sqrt(np.mean(res ** 2))), lam=lam,
+        history.append(dict(iteration=it, cost=cost, rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), lam=lam,
                             pos_step_m=float(np.linalg.norm(step[:3])) if accepted else None))
+        if doppler:
+            history[-1]["doppler_rms_mmps"] = float(np.sqrt(np.mean(res[nr:] ** 2)) * SIGMA_DOP / SIGMA_M * 1e3)
         with open(F.REPO.parent / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
             log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
                       f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
         if not accepted:
-            status = "DampingLimit"
+            # F2d: the damping limit after a near-zero relative improvement is a stationary point
+            status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
             break
         if rel < 1e-8 and np.linalg.norm(step[:3]) < 1e-3:
             status = "Converged"
@@ -205,8 +266,13 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "") -> 
     for idx in F.passes(pb.rows, pb.setup.t3):
         per_pass.append(dict(pad=pb.rows[idx[0]][0], n=int(idx.size), rms_m=float(np.sqrt(np.mean(res[idx] ** 2))),
                              mean_m=float(np.mean(res[idx]))))
-    return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history,
-                postfit_rms_m=float(np.sqrt(np.mean(res ** 2))), per_pass=per_pass,
+    extra = {}
+    if doppler:
+        rd = res[nr:] * SIGMA_DOP / SIGMA_M
+        extra = dict(doppler_bias_mmps=float(p[10] * 1e3), doppler_bias_sigma_mmps=float(np.sqrt(cov[10, 10]) * 1e3),
+                     doppler_postfit_rms_mmps=float(np.sqrt(np.mean(rd ** 2)) * 1e3), n_doppler=int(rd.size))
+    return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history, **extra,
+                postfit_rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), per_pass=per_pass,
                 x0=p[:6].tolist(), k_srp=float(p[6]), k_srp_sigma=float(np.sqrt(cov[6, 6])),
                 biases_m=dict(zip(map(str, PADS), map(float, p[7:10]))),
                 bias_sigma_m=dict(zip(map(str, PADS), map(float, np.sqrt(np.diag(cov)[7:10])))),
@@ -314,10 +380,37 @@ def main_f2c():
     print(json.dumps(dict(gates=gates, G2=out["G2_start_difference"], runs=brief), indent=1))
 
 
+OUT_F2D = HERE.parent / "results" / "phase_f2d_lro_od_range_doppler.json"
+
+
+def main_f2d():
+    """Phase F2d (studies/phase17/configs/phase_f2d_lro_od_range_doppler_predeclaration.json)."""
+    with ProcessPoolExecutor(2) as ex:
+        futs = {"N200_+": ex.submit(solve, 200, 1.0, F2B_PRIORS, "d", True),
+                "N200_-": ex.submit(solve, 200, -1.0, F2B_PRIORS, "d", True)}
+        runs = {k: f.result() for k, f in futs.items()}
+    a, b = runs["N200_+"], runs["N200_-"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2d_lro_od_range_doppler_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, priors=F2B_PRIORS, sigma_doppler_mps=SIGMA_DOP, runs=runs)
+    OUT_F2D.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "doppler_postfit_rms_mmps",
+                                       "doppler_bias_mmps", "k_srp", "biases_m", "ric_rms_m", "ric_max_m",
+                                       "total_rms_m", "total_max_m", "elapsed_s")}
+             for k, r in runs.items()}
+    print(json.dumps(dict(gates=gates, G2=dpos, runs=brief), indent=1))
+
+
 if __name__ == "__main__":
     if "--f2b" in sys.argv:
         main_f2b()
     elif "--f2c" in sys.argv:
         main_f2c()
+    elif "--f2d" in sys.argv:
+        main_f2d()
     else:
         main()
