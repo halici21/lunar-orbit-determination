@@ -288,8 +288,36 @@ def main_f2b():
     print(json.dumps(dict(gates=gates, G2=out["G2_start_difference"], runs=brief), indent=1))
 
 
+OUT_F2C = HERE.parent / "results" / "phase_f2c_lro_od_degree.json"
+
+
+def main_f2c():
+    """Phase F2c (studies/phase17/configs/phase_f2c_lro_od_degree_predeclaration.json): F2b at N = 200, 300."""
+    with ProcessPoolExecutor(3) as ex:
+        futs = {"N200_+": ex.submit(solve, 200, 1.0, F2B_PRIORS, "c"),
+                "N200_-": ex.submit(solve, 200, -1.0, F2B_PRIORS, "c"),
+                "N300_+": ex.submit(solve, 300, 1.0, F2B_PRIORS, "c")}
+        runs = {k: f.result() for k, f in futs.items()}
+    a, b = runs["N200_+"], runs["N200_-"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    dbias = max(abs(a["biases_m"][k] - b["biases_m"][k]) for k in a["biases_m"])
+    gates = dict(G1=a["status"] == "Converged" and b["status"] == "Converged",
+                 G2=dpos <= 1.0 and dbias <= 0.1, G3=all(r["postfit_rms_m"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2c_lro_od_degree_predeclaration.json", gates=gates,
+               G2_start_difference=dict(position_max_m=dpos, bias_max_m=dbias), priors=F2B_PRIORS, runs=runs)
+    OUT_F2C.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "k_srp", "k_srp_sigma", "biases_m",
+                                       "ric_rms_m", "ric_max_m", "total_rms_m", "total_max_m", "elapsed_s")}
+             for k, r in runs.items()}
+    print(json.dumps(dict(gates=gates, G2=out["G2_start_difference"], runs=brief), indent=1))
+
+
 if __name__ == "__main__":
     if "--f2b" in sys.argv:
         main_f2b()
+    elif "--f2c" in sys.argv:
+        main_f2c()
     else:
         main()
