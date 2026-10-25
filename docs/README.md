@@ -32,6 +32,7 @@
 - [Keep parameter names visible with Designer keyboard focus](development/orbit-designer-context_2026-10-22.md)
 - [Visible keyboard focus on orbit-designer sliders](development/orbit-slider-focus_2026-10-22.md)
 - [Skip orbit-preview redraws outside the viewport](development/orbit-preview-visibility_2026-10-23.md)
+- [Pause the orbit camera for inspection](development/orbit-camera-control_2026-10-25.md)
 - [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
