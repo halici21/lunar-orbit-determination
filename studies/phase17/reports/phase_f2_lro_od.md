@@ -317,3 +317,52 @@ The prediction error grows almost linearly, by about 1 m per hour in range RMS.
    the full span from a distant start.
 3. **Phase E (owner approval):** a numba harmonic STM. The parallel pool already gives 6×; the analytic STM removes
    the 15 FD propagations entirely.
+
+## 12. F2f — two-day arc at degree 300; arc continuation for the second start
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json` (`80ebb38`).
+- **Evidence:** `studies/phase17/results/phase_f2f_lro_degree300_continuation.json`, merged from
+  `phase_f2f_part_s1.json` and `phase_f2f_part_s2.json`.
+- **First attempt:** it ran the two starts as threads of one process and failed while loading SPICE kernels
+  (CSPICE is not thread-safe). No computation ran. The starts then ran as separate processes, 7 workers each
+  (`e814c36`).
+- **Maneuver check:** the archive's FDF-25 files list MOI1–4 and SK02; none falls in the arc. Momentum
+  desaturations are not in the archive.
+
+### Gates as computed
+
+| gate | result | number |
+|---|---|---|
+| G1 convergence | **FAIL** | S1 DampingLimit (stationary at 1.506 m; the last accepted relative improvement was not below 1e-6); S2 DampingLimit |
+| G2 start independence (≤ 1 m) | **FAIL** | 262 m |
+| G3 post-fit (range ≤ 2 m, Doppler ≤ 5 mm/s) | **FAIL** | S1 passes (1.506 m / 3.82 mm/s); S2 14.76 m / 35.8 mm/s |
+
+### S1: degree 300 against F2e's degree 200 (same start, same data)
+
+| | F2e (N=200) | **F2f (N=300)** |
+|---|---|---|
+| range / Doppler post-fit | 2.263 m / 3.70 mm/s | **1.506 m** / 3.82 mm/s |
+| Kiruna pass means | +3.6 / −3.4 m | **+0.5 / −0.5 m** |
+| station delays vs F1 (489.2 / 476.9 / 474.5) | 0.5 / 0.8 / 2.3 m | **0.8 / 1.3 / 0.04 m** |
+| K_SRP | 0.036 | 0.040 |
+| vs LOLA R / A / C RMS | 3.2 / 63.8 / 79.6 m | 3.5 / **21.8 / 25.4** m |
+| prediction range RMS (2009-262) | 20.1 m | **12.1 m** |
+| prediction vs LOLA R / A / C | 11.9 / 38.4 / 64.3 m | 12.7 / 39.1 / **9.4** m |
+
+Prediction range RMS per pass: 9.3 m at 14.3 h after the fit end, rising to 14.6 m at 23.7 h; the means stay within
+4 m.
+
+### Reading
+
+- **Gravity degree was the dominant missing physics.**
+  - Going from 200 to 300 cut the along-track error to a third (64 → 22 m) and the cross-track error to under a
+    third (80 → 25 m).
+  - It removed the Kiruna pass biases and brought the post-fit range within the 2 m target.
+  - The prediction improved from 20 to 12 m.
+  - The line-of-sight rotation found in F2d was largely gravity-induced, not only an observability limit.
+- **K_SRP stays high** (0.040 against ~0.014 expected from the 1 280 kg mass) and the prediction still grows. A
+  residual non-gravitational signal remains: box-wing SRP and attitude, thermal radiation, desaturations. This is
+  F2g's target, with empirical once-per-revolution accelerations.
+- **S2**, even with arc continuation, converges to a wrong basin on the one-day stage (15.4 m) and keeps it on two
+  days (14.8 m). The basin problem is independent of the arc length and the degree. It needs a different
+  globalisation (multi-start, or a trust region on a scaled parameter space).
