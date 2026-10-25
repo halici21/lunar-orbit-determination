@@ -11,8 +11,10 @@ so absolute paths and older layouts inside them are historical, not current inst
 | [`phase17_orphans/`](phase17_orphans/README.md) | Two untracked Phase 17-R1O-D scripts written against a superseded `delta_dor` API. |
 | `phase_notes/` | Loose July–September phase reports, run logs and patches from the earlier workspace. |
 
-Former branch heads are kept as Git tags rather than branches: `branch-history/2026-10-10/*`
-and `snapshot/phase17r0-desktop-wip-2026-10-10`.
+Former branch heads: work that never reached `main` is kept as the tag
+`snapshot/phase17r0-desktop-wip-2026-10-10`. The `branch-history/2026-10-10/*` tags were retired on
+2026-10-25 because every tagged commit is in `main`; their names and commits are recorded in
+`docs/development/branch_consolidation_2026-10-10/retired_tags_2026-10-25.json`.
 
 ## Worktree snapshots — 2026-09-24
 
