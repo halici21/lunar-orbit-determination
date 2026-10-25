@@ -25,5 +25,10 @@
  "outputs": {
   "results": "studies/phase17/results/phase_f2e_lro_two_day_arc.json",
   "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 11"
+ },
+ "amendment_A1": {
+  "written": "2026-10-25, after a smoke test and before any F2e fit or gate number",
+  "smoke_test_observations_disclosed": "the two-day problem holds 4 252 ranges and 4 641 Doppler intervals; the starting epoch equals F2d's (86 102.499981 s); at the F2d solution the prefit range RMS is 16.2 m; 483 Doppler intervals are physically impossible: all 482 of PAD 105 on 2009-261 (a constant 15.84 km/s, the whole pass) and 1 counter rollover of PAD 103 on 2009-261; 2009-262 has none",
+  "change": "Doppler intervals whose observed |range rate| exceeds 3 km/s are discarded before the fit and in the prediction (LRO's maximum line-of-sight rate seen from Earth is ~2.3 km/s: orbital 1.7 km/s plus station rotation 0.46 km/s plus Earth-Moon range rate ~0.1 km/s). The rule uses the observation only, never a residual"
  }
 }

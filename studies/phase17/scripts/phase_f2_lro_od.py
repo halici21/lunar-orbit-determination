@@ -34,10 +34,12 @@ FD_STEPS = np.array([10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2, 1e-3])
 
 #: Phase F2d: Doppler weight (F1c post-offset scatter 1-3 mm/s).
 SIGMA_DOP = 2e-3
+#: Phase F2e A1: observed |range rate| above this is physically impossible for LRO seen from Earth.
+MAX_DOPPLER_MPS = 3000.0
 
 
 class Problem:
-    def __init__(self, nmax: int, doppler: bool = False):
+    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,)):
         import spiceypy as spice
         from lunar_od import relativistic_light_time as R
         from lunar_od import station_time as ST
@@ -45,7 +47,10 @@ class Problem:
         from lunar_od.gravity_model_loader import load_lunar_gravity_model
         from lunar_od.project_paths import gravity_data_root
         self.data = Path(F.REPO.parent / "lro_data")
-        self.rows, _ = F.read_day(self.data)
+        self.days = tuple(days)
+        self.rows = []
+        for day in self.days:                    # F2e: several day directories in one arc
+            self.rows += F.read_day(self.data, day)[0]
         self.setup = F.Setup(self.data, self.rows, "DE440")
         s = self.setup
         self.obs = np.array([F.C * r.rtlt_s / 2.0 for _, r in self.rows])
@@ -55,7 +60,10 @@ class Problem:
         if doppler:
             import phase_f1c_lro_doppler as D
             from lunar_od.media import MediaModel
-            drows = D.read_doppler(self.data)
+            drows = []
+            for day in self.days:
+                drows += D.read_doppler(self.data, day)
+            drows.sort(key=lambda x: (x[0], x[1].utc))
             td = np.array([ST.utc_to_tdb_seconds([r.utc.strftime("%Y-%m-%dT%H:%M:%S.%f")], s.et0, s.sites[p])[0]
                            for p, r in drows])
             self.dop = []
@@ -65,6 +73,8 @@ class Problem:
                 a = (rb.doppler_count_raw - ra.doppler_count_raw) / (rb.utc - ra.utc).total_seconds()
                 ft = ra.transmit_frequency_hz
                 obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
+                if abs(obs) > MAX_DOPPLER_MPS:     # F2e A1: physically impossible interval
+                    continue
                 self.dop.append(dict(pad=pad, tm=0.5 * (td[i] + td[j]), tc=td[j] - td[i], obs=obs,
                                      media=MediaModel(uplink_hz=ft, downlink_hz=ft * D.TURNAROUND)))
             t_all += [min(d["tm"] - d["tc"] for d in self.dop), max(d["tm"] + d["tc"] for d in self.dop)]
@@ -173,11 +183,12 @@ class Problem:
         return res, h, hist
 
 
-def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False) -> dict:
+def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
+          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = ()) -> dict:
     t0 = time.time()
-    pb = Problem(nmax, doppler=doppler)
+    pb = Problem(nmax, doppler=doppler, days=days)
     nr = len(pb.rows)
-    x0 = pb.reference_epoch + sign * OFFSET
+    x0 = pb.reference_epoch + sign * OFFSET if x_start is None else np.asarray(x_start, float)
     p = np.concatenate([x0, [K0], np.zeros(pb.n_par - 7)])
     res, _, _ = pb.residual(p, partials=False)
     for j in range(3):
@@ -279,7 +290,83 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
                 x0_minus_reference=(p[:6] - pb.reference_epoch).tolist(),
                 ric_rms_m=np.sqrt(np.mean(ric ** 2, axis=0)).tolist(), ric_max_m=np.max(np.abs(ric), axis=0).tolist(),
                 total_rms_m=float(np.sqrt(np.mean(tot ** 2))), total_max_m=float(tot.max()),
-                est_positions=est[:, :3].tolist(), elapsed_s=time.time() - t0)
+                est_positions=est[:, :3].tolist(),
+                prediction=predict(pb, p, predict_days) if predict_days else None,
+                elapsed_s=time.time() - t0)
+
+
+def _ric(est, ref):
+    out = []
+    for e, r in zip(est, ref):
+        rh = r[:3] / np.linalg.norm(r[:3])
+        ch = np.cross(r[:3], r[3:])
+        ch /= np.linalg.norm(ch)
+        ah = np.cross(ch, rh)
+        d = e[:3] - r[:3]
+        out.append([d @ rh, d @ ah, d @ ch])
+    return np.array(out)
+
+
+def predict(pb: Problem, p, predict_days: tuple) -> dict:
+    """F2e: propagate the fitted solution over days it did not see and score it there."""
+    import spiceypy as spice
+    from lunar_od import station_time as ST
+    import phase_f1c_lro_doppler as D
+    R, s = pb.R, pb.setup
+    rows = []
+    for day in predict_days:
+        rows += F.read_day(pb.data, day)[0]
+    t3 = np.array([ST.utc_to_tdb_seconds([r.utc.strftime("%Y-%m-%dT%H:%M:%S.%f")], s.et0, s.sites[q])[0]
+                   for q, r in rows])
+    drows = []
+    for day in predict_days:
+        drows += D.read_doppler(pb.data, day)
+    drows.sort(key=lambda x: (x[0], x[1].utc))
+    td = np.array([ST.utc_to_tdb_seconds([r.utc.strftime("%Y-%m-%dT%H:%M:%S.%f")], s.et0, s.sites[q])[0]
+                   for q, r in drows])
+    grid = np.arange(pb.t_epoch, max(t3.max(), td.max()) + 10.0 + GRID_S, GRID_S)
+    from lunar_od.ephemeris import sample_moon_centered_ephemeris
+    # the fit sampled Earth/Sun over the fit span only; cover the prediction span as well
+    pb.eph = sample_moon_centered_ephemeris(s.et0, np.arange(pb.t_epoch - 600.0, grid[-1] + 600.0, 60.0))
+    hist = pb.propagate(p[:6], p[6], t_eval=grid, sensitivity=False)
+    sc = R.SpacecraftHistory(grid, hist)
+    res_r = []
+    for (q, r), t in zip(rows, t3):
+        sol = R.solve_two_way(float(t), s.tide[q], sc, s.eph, R.DSN_C2_LIGHT_TIME_MODEL, site=s.sites[q],
+                              media=pb.media, media_site=s.media_sites[q])
+        res_r.append(F.C * r.rtlt_s / 2.0 - R.two_way_range_m(sol) - p[7 + PADS.index(q)])
+    res_r = np.array(res_r)
+    res_d, td_mid = [], []
+    for i, j in D.intervals(drows, td):
+        q, ra = drows[i]
+        rb = drows[j][1]
+        a = (rb.doppler_count_raw - ra.doppler_count_raw) / (rb.utc - ra.utc).total_seconds()
+        ft = ra.transmit_frequency_hz
+        obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
+        if abs(obs) > MAX_DOPPLER_MPS:             # F2e A1
+            continue
+        from lunar_od.media import MediaModel
+        val, _, _ = R.counted_doppler(0.5 * (td[i] + td[j]), td[j] - td[i], s.tide[q], sc, s.eph,
+                                      R.DSN_C2_LIGHT_TIME_MODEL, site=s.sites[q],
+                                      media=MediaModel(uplink_hz=ft, downlink_hz=ft * D.TURNAROUND),
+                                      media_site=s.media_sites[q])
+        res_d.append(obs - val - (p[10] if pb.use_doppler else 0.0))
+        td_mid.append(0.5 * (td[i] + td[j]))
+    res_d = np.array(res_d)
+    passes = []
+    for idx in F.passes(rows, t3):
+        passes.append(dict(pad=rows[idx[0]][0], n=int(idx.size), hours_after_fit_end=float(
+            (t3[idx].min() - s.t3.max()) / 3600.0), range_mean_m=float(res_r[idx].mean()),
+            range_rms_m=float(np.sqrt(np.mean(res_r[idx] ** 2)))))
+    t_cmp = np.arange(float(t3.min()), float(t3.max()), 60.0)
+    est = pb.propagate(p[:6], p[6], t_eval=np.concatenate([[pb.t_epoch], t_cmp]), sensitivity=False)[1:]
+    ref = np.array([spice.spkezr(F.LRO, s.et0 + t, "J2000", "NONE", "MOON")[0] for t in t_cmp]) * 1e3
+    ric = _ric(est, ref)
+    return dict(n_range=int(res_r.size), n_doppler=int(res_d.size),
+                range_rms_m=float(np.sqrt(np.mean(res_r ** 2))), range_mean_m=float(res_r.mean()),
+                doppler_rms_mmps=float(np.sqrt(np.mean(res_d ** 2)) * 1e3), doppler_mean_mmps=float(res_d.mean() * 1e3),
+                passes=passes, ric_rms_m=np.sqrt(np.mean(ric ** 2, axis=0)).tolist(),
+                ric_max_m=np.max(np.abs(ric), axis=0).tolist())
 
 
 def g4_partials() -> dict:
@@ -405,8 +492,41 @@ def main_f2d():
     print(json.dumps(dict(gates=gates, G2=dpos, runs=brief), indent=1))
 
 
+OUT_F2E = HERE.parent / "results" / "phase_f2e_lro_two_day_arc.json"
+F2E_FIT_DAYS = ("trk/lro_no_01/2009260", "trk/lro_no_01/2009261")
+F2E_PREDICT_DAYS = ("trk/lro_no_01/2009262",)
+
+
+def main_f2e():
+    """Phase F2e (studies/phase17/configs/phase_f2e_lro_two_day_arc_predeclaration.json)."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    with ProcessPoolExecutor(2) as ex:
+        futs = {"S1": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS),
+                "S2": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, ())}
+        runs = {k: f.result() for k, f in futs.items()}
+    a, b = runs["S1"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2e_lro_two_day_arc_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, priors=F2B_PRIORS, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, runs=runs)
+    OUT_F2E.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "doppler_postfit_rms_mmps",
+                                       "doppler_bias_mmps", "k_srp", "biases_m", "ric_rms_m", "total_rms_m")}
+             for k, r in runs.items()}
+    print(json.dumps(dict(gates=gates, G2=dpos, runs=brief, prediction=a["prediction"]), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2b" in sys.argv:
+    if "--f2e" in sys.argv:
+        main_f2e()
+    elif "--f2b" in sys.argv:
         main_f2b()
     elif "--f2c" in sys.argv:
         main_f2c()
