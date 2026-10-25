@@ -1,0 +1,29 @@
+{
+ "phase": "Phase F2e - two-day real range + Doppler LRO arc (2009-260/261) with a one-day prediction test (2009-262)",
+ "written": "2026-10-25, before any F2e number",
+ "authorisation": "owner 2026-10-25: 'report the files for a multi-day arc in the same SPK window, then download them and run the longer-arc fit'",
+ "data": {
+  "fit": "trk/lro_no_01/2009260 and 2009261, PAD 103 / 105 / 126: ranges (R-valid) and Doppler intervals (F1c rules)",
+  "prediction": "trk/lro_no_01/2009262, same stations and rules, NOT used in the fit",
+  "downloaded": "2009261 (72 files) and 2009262 (76 files), PADs 103 / 105 / 126 only, from PDS Geosciences lrors_0001"
+ },
+ "model": "F2d's unchanged: GL1800F N=200 MOON_PA_DE440, Earth/Sun point masses DE440, cannonball SRP with shadow events, PropagationProfile, rtol 1e-10; range + Doppler measurement models; A1 FD sensitivities; priors (range biases N(F1 means, 3 m), K_SRP N(0.010, 0.005)); one global Doppler bias; weights 1 m / 2 mm/s; F2d's termination incl. STATIONARY",
+ "starts": {
+  "S1": "F2d's minus-start solution x0 (our own real-data estimate at the same epoch, first 2009-260 range - 120 s): [533767.135265, 739152.577513, -1516108.730545, 1575.083145, 34.557629, 564.76497]",
+  "S2": "S1 + (100 m, 100 m, 100 m, 0.1 m/s, 0.1 m/s, 0.1 m/s)"
+ },
+ "gates": {
+  "G1_convergence": "both starts end Converged or STATIONARY",
+  "G2_start_independence": "the two solutions agree to <= 1 m in position over the fit arc",
+  "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s for both starts"
+ },
+ "reported_not_gated": {
+  "comparison": "RIC difference to the LOLA SPK over the fit arc and over the prediction day",
+  "prediction": "2009-262 residuals of the S1 solution propagated forward (range with the fitted station biases, Doppler with the fitted Doppler bias): RMS and mean per pass",
+  "expectation": "along-track and cross-track improve on F2d's ~85 m with the longer arc; the prediction residual grows with time from the fit end"
+ },
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2e_lro_two_day_arc.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 11"
+ }
+}
