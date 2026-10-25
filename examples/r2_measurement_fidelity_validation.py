@@ -435,7 +435,11 @@ PHASE_D2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/dynamics.py":
         "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
 }
-NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256 = {'lunar_od/dynamics.py': '0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf'}
+NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256 = {'lunar_od/dynamics.py': '0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf', 'lunar_od/ephemeris.py': 'bbf60e29558c35ce9cbba00524d48a963cecccaf7ed4ff39dc1d96c68e6dca12', 'lunar_od/radiometrics.py': 'aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1', 'lunar_od/relativistic_light_time.py': 'c1cb2192c92a98fdab3020a6cb5aaa27d64a2de65241c723acde22c8ce383f2b'}
+
+
+
+
 
 
 def current_source_path(relative_path: str) -> str:

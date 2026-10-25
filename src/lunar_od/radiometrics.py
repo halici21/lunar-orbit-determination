@@ -1373,12 +1373,17 @@ def _interp_state(
     if states.ndim != 2 or states.shape[0] != t_grid.size or states.shape[1] < 6:
         raise ValueError("state_history must have shape (N, 6+) matching t_grid_s.")
     t = float(t_s)
-    # Written as "not interior" so a NaN epoch also takes the guarded edge path
-    # (HARDEN-D19); identical to "t <= t0 or t >= tN" for every finite t.
+    # Keep the existing boundary guard (including nonfinite epochs) and extra
+    # columns' semantics, but continue the SAME Hermite polynomial for r and v.
+    edge_result = None
     if not (t_grid[0] < t < t_grid[-1]):
-        return _interp_vector(t_grid, states, t, max_extrapolation_s=max_extrapolation_s)
+        edge_result = _interp_vector(t_grid, states, t, max_extrapolation_s=max_extrapolation_s)
+        if t == t_grid[0]:
+            return states[0].copy()
+        if t == t_grid[-1]:
+            return states[-1].copy()
 
-    i1 = int(np.searchsorted(t_grid, t, side="right"))
+    i1 = int(np.clip(np.searchsorted(t_grid, t, side="right"), 1, t_grid.size - 1))
     i0 = i1 - 1
     h = float(t_grid[i1] - t_grid[i0])
     if h <= 0.0:
@@ -1401,7 +1406,7 @@ def _interp_state(
         + (-6.0 * s**2 + 6.0 * s) * r1 / h
         + (3.0 * s**2 - 2.0 * s) * v1
     )
-    result = states[i0].copy()
+    result = states[i0].copy() if edge_result is None else edge_result
     result[:3] = position
     result[3:6] = velocity
     return result
@@ -1411,7 +1416,8 @@ def interp_state_history(t_grid_s: ArrayLike, state_history: ArrayLike, t_s: flo
     """Cubic-Hermite (position+velocity) interpolation of a 6-state history.
 
     Shared helper for light-time models. Outside the grid the edge interval is
-    extrapolated linearly up to ``GENERIC_HISTORY_MAX_EXTRAPOLATION_S``; farther
+    continued with its endpoint Hermite polynomial up to
+    ``GENERIC_HISTORY_MAX_EXTRAPOLATION_S``; farther
     requests raise :class:`~lunar_od.history_domain.HistoryDomainError`
     (HARDEN-D19)."""
     return _interp_state(t_grid_s, state_history, t_s)
@@ -1428,9 +1434,14 @@ def _interp_state_transition_position(
         raise ValueError("phi_history must have shape (N, 6, 6) matching t_grid_s.")
     t = float(t_s)
     if not (t_grid[0] < t < t_grid[-1]):
-        return _interp_matrix(t_grid, phi, t)[:3, :]
+        # Reuse the existing bounded-history check; discard its linear value.
+        _interp_matrix(t_grid, phi, t)
+        if t == t_grid[0]:
+            return phi[0, :3, :].copy()
+        if t == t_grid[-1]:
+            return phi[-1, :3, :].copy()
 
-    i1 = int(np.searchsorted(t_grid, t, side="right"))
+    i1 = int(np.clip(np.searchsorted(t_grid, t, side="right"), 1, t_grid.size - 1))
     i0 = i1 - 1
     h = float(t_grid[i1] - t_grid[i0])
     if h <= 0.0:

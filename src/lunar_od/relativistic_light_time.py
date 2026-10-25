@@ -128,6 +128,9 @@ class BarycentricEphemeris:
     def body_position(self, name: str, t_s: float) -> np.ndarray:
         return self._ssb_state(SHAPIRO_BODY_CODES[name], t_s)[:3]
 
+    def body_velocity(self, name: str, t_s: float) -> np.ndarray:
+        return self._ssb_state(SHAPIRO_BODY_CODES[name], t_s)[3:6]
+
     def gm(self, name: str) -> float:
         if name not in self._gm:
             import spiceypy as spice
@@ -185,6 +188,24 @@ def shapiro_delay_s(model: LightTimeModel, eph: BarycentricEphemeris, r_tx: np.n
     return total, g_tx, g_rx
 
 
+def _shapiro_receive_epoch_partial(model, eph, r_tx, r_rx, t_rx_s, d12):
+    """Explicit dS/dt_rx with link endpoints fixed and delay bodies moving.
+
+    Each body's position is sampled at the RECEIVE epoch in the value model.
+    Its gradient is -(dS/dr_tx + dS/dr_rx); geometric LOS terms cancel.
+    """
+    total = 0.0
+    r12 = float(np.linalg.norm(d12))
+    for name in model.shapiro_bodies:
+        b = eph.body_position(name, t_rx_s)
+        a1, a2 = r_tx - b, r_rx - b
+        r1, r2 = float(np.linalg.norm(a1)), float(np.linalg.norm(a2))
+        k = 2.0 * eph.gm(name) / C_LIGHT_MPS**3
+        coefficient = k * (1.0/(r1+r2+r12) - 1.0/(r1+r2-r12))
+        total -= coefficient * float((a1/r1+a2/r2) @ eph.body_velocity(name, t_rx_s))
+    return total
+
+
 # ======================================================================
 # light-time legs
 # ======================================================================
@@ -202,6 +223,7 @@ class Leg:
     shapiro_grad_tx: np.ndarray
     shapiro_grad_rx: np.ndarray
     two_cycle: bool
+    shapiro_epoch_partial: float = 0.0  # explicit dS/dt_rx, endpoints fixed
 
     @property
     def light_time_s(self) -> float:
@@ -275,7 +297,8 @@ def _leg(model, eph, *, t_rx=None, rx_fn=None, rx_fixed=None, t_tx=None, tx_fn=N
     d = _relative(model, eph, t_tx_s, t_rx_s, tau, tx_m, rx_m)
     tx, rx = _to_frame(model, eph, t_tx_s, tx_m), _to_frame(model, eph, t_rx_s, rx_m)
     sh, g_tx, g_rx = shapiro_delay_s(model, eph, tx[:3], rx[:3], t_rx_s, d)
-    return Leg(t_tx_s, t_rx_s, tx, rx, d, float(np.linalg.norm(d)) / c, sh, g_tx, g_rx, cyc)
+    epoch_partial = _shapiro_receive_epoch_partial(model, eph, tx[:3], rx[:3], t_rx_s, d)
+    return Leg(t_tx_s, t_rx_s, tx, rx, d, float(np.linalg.norm(d)) / c, sh, g_tx, g_rx, cyc, epoch_partial)
 
 
 def exact_epoch_station_state(station_state: Callable, et0_s: float, t_grid_s, earth_pos_mci_m, earth_vel_mci_mps
@@ -339,6 +362,8 @@ class TwoWaySolution:
     tdb_minus_tt_rate: float
     media_group_s: float = 0.0     # Phase C5-I: up + down media group delay (range)
     media_phase_s: float = 0.0     # up + down media phase delay (counted Doppler)
+    interval_rate_curvature: float = 0.0  # d²(TDB-TT)/dt² at the rate epoch
+    rate_at_midpoint: bool = False
 
     @property
     def t1_s(self) -> float:
@@ -370,6 +395,7 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         t3 = t3 + float(clock_offset_s)
     down = _leg(model, eph, t_rx=t3, rx_fixed=station_state(t3), tx_fn=sc.state, label="downlink")
     up = _leg(model, eph, t_rx=down.t_tx_s, rx_fixed=sc.state(down.t_tx_s), tx_fn=station_state, label="uplink")
+    curvature = 0.0
     if model.interval_time_scale != "TT":
         rate = 0.0
     elif model.full_station_time:
@@ -378,20 +404,40 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         # D_site(t3) - D_site(t1) = round trip x the rate at the interval midpoint (exact to ~1e-20 s)
         mid = t3 - 0.5 * (down.light_time_s + up.light_time_s)
         rate = float(_station_time.tdb_minus_tt_rate(eph.et0_s, mid, site))
+        # Difference the analytic rate in relative seconds, never large ET/TT
+        # epochs. Independent C2 checks compare this 1 s stencil with 10 s.
+        curvature = float((_station_time.tdb_minus_tt_rate(eph.et0_s, mid+1., site)
+                           - _station_time.tdb_minus_tt_rate(eph.et0_s, mid-1., site))/2.)
     else:
         rate = eph.tdb_minus_tt_rate(t3)
+        curvature = float((eph.tdb_minus_tt_rate(t3+1.) - eph.tdb_minus_tt_rate(t3-1.))/2.)
+    interval = dict(interval_rate_curvature=curvature, rate_at_midpoint=model.full_station_time)
     if media is None:
-        return TwoWaySolution(t3, down, up, rate)
+        return TwoWaySolution(t3, down, up, rate, **interval)
     if media_site is None:
         raise ValueError("media delays need the station's media_site (lunar_od.media.MediaSite).")
     et0 = eph.et0_s
     gd, pd, _ = media.leg_delays(media_site, et0 + down.t_rx_s, -down.rel, uplink=False)
     gu, pu, _ = media.leg_delays(media_site, et0 + up.t_tx_s, up.rel, uplink=True)
-    return TwoWaySolution(t3, down, up, rate, (gd + gu) / C_LIGHT_MPS, (pd + pu) / C_LIGHT_MPS)
+    return TwoWaySolution(t3, down, up, rate, (gd + gu) / C_LIGHT_MPS, (pd + pu) / C_LIGHT_MPS, **interval)
 
 
 def _interval_scale(sol: TwoWaySolution) -> float:
     return 1.0 - sol.tdb_minus_tt_rate
+
+
+def _interval_tau_derivative(sol: TwoWaySolution) -> float:
+    """d[tau*(1-D'(epoch))]/d tau at fixed receive epoch.
+
+    Midpoint timing uses epoch=t3-tau/2; geocentric timing uses epoch=t3.
+    """
+    return _interval_scale(sol) + (0.5*sol.round_trip_s*sol.interval_rate_curvature
+                                  if sol.rate_at_midpoint else 0.0)
+
+
+def _measured_interval_receive_partial(sol: TwoWaySolution) -> float:
+    return (_interval_tau_derivative(sol)*_round_trip_receive_epoch_partial(sol)
+            - sol.round_trip_s*sol.interval_rate_curvature)
 
 
 def two_way_range_m(sol: TwoWaySolution) -> float:
@@ -420,20 +466,21 @@ def _round_trip_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarra
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx         # spacecraft is the uplink receiver
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx          # station transmitter position at t1
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc)]])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
     g_x = np.vstack([dGd_dr2 @ m, dGu_dr2 @ m])
     dy = np.linalg.solve(g_y, -g_x)
     return -dy[0]
 
 
 def two_way_range_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarray:
-    return 0.5 * C_LIGHT_MPS * _interval_scale(sol) * _round_trip_partial(sol, sc)
+    return 0.5 * C_LIGHT_MPS * _interval_tau_derivative(sol) * _round_trip_partial(sol, sc)
 
 
 def _round_trip_receive_epoch_partial(sol: TwoWaySolution) -> float:
     """d(round trip)/d t3 [s/s] from the same implicit equations: dG_d/dt3 = 1 - (los_d/c + dS_d/dr_rx) . v_st(t3),
-    dG_u/dt3 = 0; round trip = t3 - t1, so d/dt3 = 1 - dt1/dt3. The interval scale's own epoch dependence (~1e-10
-    relative) is neglected, as in the state partials."""
+    dG_u/dt3 = 0; round trip = t3 - t1, so d/dt3 = 1 - dt1/dt3. Explicit Shapiro-body
+    motion enters the leg equations; the measured TT interval factor is
+    differentiated separately by _measured_interval_receive_partial."""
     c = C_LIGHT_MPS
     d, u = sol.downlink, sol.uplink
     los_d = d.rel / np.linalg.norm(d.rel)
@@ -443,15 +490,15 @@ def _round_trip_receive_epoch_partial(sol: TwoWaySolution) -> float:
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc)]])
-    g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3), 0.0])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
+    g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3) - d.shapiro_epoch_partial, 0.0])
     dy = np.linalg.solve(g_y, -g_t3)
     return 1.0 - float(dy[0])
 
 
 def two_way_range_clock_partial(sol: TwoWaySolution) -> float:
     """d(two-way range)/d(station clock offset b) [m/s]: the receive tag is read as t3 + b."""
-    return 0.5 * C_LIGHT_MPS * _interval_scale(sol) * _round_trip_receive_epoch_partial(sol)
+    return 0.5 * C_LIGHT_MPS * _measured_interval_receive_partial(sol)
 
 
 def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Callable, sc: SpacecraftHistory,
@@ -473,10 +520,10 @@ def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Call
         value = value + k * (b.media_phase_s - a.media_phase_s)
     partial = None
     if with_partial:
-        partial = k * (_interval_scale(b) * _round_trip_partial(b, sc) - _interval_scale(a) * _round_trip_partial(a, sc))
+        partial = k * (_interval_tau_derivative(b) * _round_trip_partial(b, sc)
+                       - _interval_tau_derivative(a) * _round_trip_partial(a, sc))
     if with_clock_partial:
-        clock = k * (_interval_scale(b) * _round_trip_receive_epoch_partial(b)
-                     - _interval_scale(a) * _round_trip_receive_epoch_partial(a))
+        clock = k * (_measured_interval_receive_partial(b) - _measured_interval_receive_partial(a))
         return value, partial, (a, b), clock
     return value, partial, (a, b)
 
@@ -518,7 +565,7 @@ def delta_dor_partial(sol: DeltaDorSolution, sc: SpacecraftHistory) -> np.ndarra
     dGb_drsc = (los_b / c) - b.shapiro_grad_tx
     dGb_drb = -(los_b / c) - b.shapiro_grad_rx
     g_y = np.array([[-1.0 + float(dGa_drsc @ v_sc), 0.0],
-                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b)]])
+                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b) - b.shapiro_epoch_partial]])
     g_x = np.vstack([dGa_drsc @ m, dGb_drsc @ m])
     return np.linalg.solve(g_y, -g_x)[1]
 
@@ -585,8 +632,8 @@ def delta_dor_clock_partials(sol: DeltaDorSolution) -> tuple[float, float]:
     dGb_drsc = (los_b / c) - b.shapiro_grad_tx
     dGb_drb = -(los_b / c) - b.shapiro_grad_rx
     g_y = np.array([[-1.0 + float(dGa_drsc @ v_sc), 0.0],
-                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b)]])
-    g_t = np.array([1.0 - float(((los_a / c) + a.shapiro_grad_rx) @ v_a), 0.0])
+                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b) - b.shapiro_epoch_partial]])
+    g_t = np.array([1.0 - float(((los_a / c) + a.shapiro_grad_rx) @ v_a) - a.shapiro_epoch_partial, 0.0])
     dy = np.linalg.solve(g_y, -g_t)
     return float(dy[1]), -1.0
 

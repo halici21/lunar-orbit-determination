@@ -25,6 +25,7 @@ K0 = 0.01
 SIGMA_M = 1.0
 RTOL, ATOL = 1e-10, 1e-11
 GRID_S = 20.0
+QUALIFIED_GRID_S = 10.0  # 20 s exceeded the LRO counted-Doppler numerical budget.
 EPOCH_LEAD_S = 120.0
 MAX_ITER = 30
 OFFSET = np.array([1000.0, 1000.0, 1000.0, 1.0, 1.0, 1.0])
@@ -46,10 +47,10 @@ MEASURE_CHUNK = 300
 _WORKER: dict = {}
 
 
-def _worker_init(nmax, doppler, days, n_emp=0):
+def _worker_init(nmax, doppler, days, n_emp=0, grid_s=GRID_S):
     import warnings
     warnings.simplefilter("ignore")
-    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
+    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=grid_s)
 
 
 def _worker_propagate(q):
@@ -110,7 +111,8 @@ def _worker_measure(task):
 
 
 class Problem:
-    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,), n_emp: int = 0):
+    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,), n_emp: int = 0,
+                 grid_s: float | None = None):
         import spiceypy as spice
         from lunar_od import relativistic_light_time as R
         from lunar_od import station_time as ST
@@ -121,6 +123,7 @@ class Problem:
         self.data = project_root() / "lro_data"
         self.nmax = nmax
         self.n_emp = int(n_emp)
+        self.grid_s = _grid_for_backend() if grid_s is None else float(grid_s)
         self.pool = None
         self.days = tuple(days)
         self.rows = []
@@ -155,7 +158,7 @@ class Problem:
             t_all += [min(d["tm"] - d["tc"] for d in self.dop), max(d["tm"] + d["tc"] for d in self.dop)]
         self.t_epoch = min(t_all) - EPOCH_LEAD_S
         self.t_end = max(t_all) + 10.0
-        self.grid = np.arange(self.t_epoch, self.t_end + GRID_S, GRID_S)
+        self.grid = np.arange(self.t_epoch, self.t_end + self.grid_s, self.grid_s)
         eph_t = np.arange(self.t_epoch - 600.0, self.t_end + 600.0, 60.0)
         self.eph = sample_moon_centered_ephemeris(s.et0, eph_t)
         self.mu_e = float(spice.bodvrd("399", "GM", 1)[1][0]) * 1e9
@@ -259,7 +262,7 @@ class Problem:
     def attach_pool(self, workers: int) -> None:
         """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
         self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
-                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp))
+                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp, self.grid_s))
 
     def close_pool(self) -> None:
         if self.pool is not None:
@@ -347,6 +350,10 @@ class Problem:
 SOLVER_BACKEND = "trf"
 
 
+def _grid_for_backend(backend=None):
+    return GRID_S if (SOLVER_BACKEND if backend is None else backend) == "legacy" else QUALIFIED_GRID_S
+
+
 def numerical_identity():
     """Prevent a merge from borrowing scientific gates from another code state."""
     import hashlib
@@ -421,7 +428,7 @@ def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
           days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
           n_emp: int = 0, solver: str | None = None) -> dict:
-    pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
+    pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=_grid_for_backend(solver))
     try:
         if workers > 1:
             pb.attach_pool(workers)
@@ -545,6 +552,9 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
                      doppler_postfit_rms_mmps=float(np.sqrt(np.mean(rd ** 2)) * 1e3), n_doppler=int(rd.size))
     return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history, **extra,
                 solver=backend, numerical_identity=numerical_identity(),
+                numerical_profile=dict(grid_s=pb.grid_s, rtol=RTOL, atol=ATOL,
+                                       method="DOP853", shadow_events=True,
+                                       earth_interpolation=pb.eph.earth_interpolation),
                 numerical_diagnostics=numerical, final_linearization=linearization,
                 prior_semantics=("conditional_calibration_same_tracking_day" if any(7 <= j <= 9 for j, _ in prior_items)
                                  else "explicit_supplied_prior" if prior_items else "data_only"),
@@ -601,7 +611,7 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
     drows.sort(key=lambda x: (x[0], x[1].utc))
     td = np.array([ST.utc_to_tdb_seconds([r.utc.strftime("%Y-%m-%dT%H:%M:%S.%f")], s.et0, s.sites[q])[0]
                    for q, r in drows])
-    grid = np.arange(pb.t_epoch, max(t3.max(), td.max()) + 10.0 + GRID_S, GRID_S)
+    grid = np.arange(pb.t_epoch, max(t3.max(), td.max()) + 10.0 + pb.grid_s, pb.grid_s)
     from lunar_od.ephemeris import sample_moon_centered_ephemeris
     # the fit sampled Earth/Sun over the fit span only; cover the prediction span as well
     pb.eph = sample_moon_centered_ephemeris(s.et0, np.arange(pb.t_epoch - 600.0, grid[-1] + 600.0, 60.0))

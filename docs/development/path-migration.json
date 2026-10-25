@@ -2499,8 +2499,13 @@
     },
     "lunar_od/ephemeris.py": {
       "path": "src/lunar_od/ephemeris.py",
-      "original_sha256": "a85f60e5822c795fad1afa42aa42c7d240fe49b670cf1cb75114f14995286745",
-      "byte_preserved": true
+      "original_sha256": "bbf60e29558c35ce9cbba00524d48a963cecccaf7ed4ff39dc1d96c68e6dca12",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "a85f60e5822c795fad1afa42aa42c7d240fe49b670cf1cb75114f14995286745"
+      ],
+      "refrozen_from_sha256": "a85f60e5822c795fad1afa42aa42c7d240fe49b670cf1cb75114f14995286745",
+      "note": " Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained."
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
@@ -2609,10 +2614,14 @@
     },
     "lunar_od/radiometrics.py": {
       "path": "src/lunar_od/radiometrics.py",
-      "original_sha256": "185cfe9ce04a57929a2a9974f3250b5b0d990fba664d2b18a98c492020d1173d",
+      "original_sha256": "aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1",
       "byte_preserved": true,
-      "refrozen_from_sha256": "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "185cfe9ce04a57929a2a9974f3250b5b0d990fba664d2b18a98c492020d1173d",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained.",
+      "refrozen_history_sha256": [
+        "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
+        "185cfe9ce04a57929a2a9974f3250b5b0d990fba664d2b18a98c492020d1173d"
+      ]
     },
     "lunar_od/reference_config/__init__.py": {
       "path": "src/lunar_od/reference_config/__init__.py",

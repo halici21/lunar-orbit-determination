@@ -55,3 +55,17 @@ def test_legacy_stationary_label_cannot_pass_the_new_convergence_gate():
     assert not F2._certified_stationary({'solver': 'trf', 'status': 'STATIONARY'})
     assert F2._certified_stationary({'solver': 'trf', 'status': 'STATIONARY',
                                    'numerical_diagnostics': {'stationary': True}})
+
+
+def test_numerical_grid_is_explicit_and_forwarded_to_process_workers(monkeypatch):
+    assert F2._grid_for_backend('legacy') == 20.
+    assert F2._grid_for_backend('trf') == 10.
+    captured = {}
+    def executor(workers, **kwargs):
+        captured.update(kwargs)
+        return object()
+    monkeypatch.setattr(F2, 'ProcessPoolExecutor', executor)
+    pb = object.__new__(F2.Problem)
+    pb.nmax, pb.use_doppler, pb.days, pb.n_emp, pb.grid_s = 2, True, ('day',), 4, 10.
+    pb.attach_pool(2)
+    assert captured['initargs'] == (2, True, ('day',), 4, 10.)
