@@ -527,50 +527,49 @@ def _draw_orbit_preview(
     *,
     fig: "Figure | None" = None,
 ) -> "Figure":
-    """3-D Moon-centered orbit preview for the orbit designer."""
+    """3-D Moon-centered orbit preview for the orbit designer.
+
+    The axes, Moon wireframe and markers are built once per figure; later calls
+    with the same figure only move the orbit artists. Rebuilding the 3-D axes
+    (ticks, grid, panes) on every slider step cost ~90 ms per frame.
+    """
     from matplotlib.figure import Figure
 
-    if fig is None:
-        fig = Figure(figsize=(5.2, 5.2), tight_layout={"pad": 0.35})
-    else:
-        fig.clf()
-    fig.patch.set_facecolor(C.BG_DEEP)
-    ax = fig.add_subplot(111, projection="3d")
-    _draw_moon_sphere(ax)
-
-    x, y, z = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-    )
-    ax.plot(x, y, z, color=C.CYAN, linewidth=1.9, alpha=0.92, zorder=5)
-
-    x0, y0, z0 = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-        nu_deg=[nu0_deg],
-    )
-    ax.plot(x0, y0, z0, "o", color="white", ms=6,
-            markeredgecolor=C.CYAN, markeredgewidth=1.2, zorder=9)
-
-    xp, yp, zp = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-        nu_deg=[0.0],
-    )
-    xa, ya, za = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-        nu_deg=[180.0],
-    )
-    ax.plot(xp, yp, zp, "v", color=C.GREEN, ms=5, zorder=8)
-    ax.plot(xa, ya, za, "^", color=C.YELLOW, ms=5, zorder=8)
+    def orbit(nu=None):
+        return _keplerian_orbit_xyz(alt_km=alt_km, e=e, inc_deg=inc_deg, raan_deg=raan_deg,
+                                    argp_deg=argp_deg, **({} if nu is None else {"nu_deg": nu}))
 
     metrics = _orbit_metrics(alt_km, e)
-    _configure_orbit_axis(ax, _orbit_axis_limit(metrics))
-    ax.set_title(
-        f"a = {metrics['a_km']:.0f} km    e = {e:.3f}    i = {inc_deg:.0f}°",
-        fontsize=9, color=C.TEXT_SECONDARY, pad=5,
-    )
+    limit = _orbit_axis_limit(metrics)
+    title = f"a = {metrics['a_km']:.0f} km    e = {e:.3f}    i = {inc_deg:.0f}°"
+    artists = getattr(fig, "_orbit_preview", None) if fig is not None else None
+    if artists is None:
+        if fig is None:
+            fig = Figure(figsize=(5.2, 5.2))
+        else:
+            fig.clf()
+        # Fixed margins: the preview's axes never change size, so no layout pass.
+        fig.subplots_adjust(left=0.0, right=1.0, bottom=0.02, top=0.95)
+        fig.patch.set_facecolor(C.BG_DEEP)
+        ax = fig.add_subplot(111, projection="3d")
+        _draw_moon_sphere(ax)
+        line, = ax.plot(*orbit(), color=C.NAV_ACTIVE, linewidth=1.9, alpha=0.92, zorder=5)
+        start, = ax.plot(*orbit([nu0_deg]), "o", color=C.BG_DEEP, ms=6,
+                         markeredgecolor=C.NAV_ACTIVE, markeredgewidth=1.6, zorder=9)
+        peri, = ax.plot(*orbit([0.0]), "v", color=C.GREEN, ms=5, zorder=8)
+        apo, = ax.plot(*orbit([180.0]), "^", color=C.YELLOW, ms=5, zorder=8)
+        _configure_orbit_axis(ax, limit)
+        ax.set_title(title, fontsize=9, color=C.TEXT_SECONDARY, pad=5)
+        fig._orbit_preview = dict(ax=ax, line=line, start=start, peri=peri, apo=apo, limit=limit)
+        return fig
+    for key, nu in (("line", None), ("start", [nu0_deg]), ("peri", [0.0]), ("apo", [180.0])):
+        x, y, z = orbit(nu)
+        artists[key].set_data_3d(np.atleast_1d(x), np.atleast_1d(y), np.atleast_1d(z))
+    ax = artists["ax"]
+    if limit != artists["limit"]:
+        ax.set_xlim(-limit, limit); ax.set_ylim(-limit, limit); ax.set_zlim(-limit, limit)
+        artists["limit"] = limit
+    ax.set_title(title, fontsize=9, color=C.TEXT_SECONDARY, pad=5)
     return fig
 
 
@@ -638,22 +637,29 @@ def _orbit_axis_limit(metrics: dict[str, float]) -> float:
     return max(moon_km * 1.35, metrics["apo_radius_km"] * 1.08)
 
 
+_FRAME_MS = 33  # ground-track playback frame clock
+
+
 def _draw_moon_sphere(ax) -> None:
+    """Moon as a light latitude/longitude wireframe.
+
+    A shaded 36x18 surface (648 translucent polygons, depth-sorted on every
+    redraw) made each designer slider step cost ~90 ms; a dozen lines cost a
+    fraction of that and read as the same reference sphere.
+    """
     moon_km = R_MOON_M / 1_000.0
-    u = np.linspace(0.0, 2.0 * np.pi, 36)
-    v = np.linspace(0.0, np.pi, 18)
-    x = moon_km * np.outer(np.cos(u), np.sin(v))
-    y = moon_km * np.outer(np.sin(u), np.sin(v))
-    z = moon_km * np.outer(np.ones_like(u), np.cos(v))
-    ax.plot_surface(
-        x, y, z,
-        color=C.BG_PANEL, edgecolor=C.BORDER_MID, linewidth=0.12,
-        alpha=0.78, shade=False, zorder=1,
-    )
-    equ = np.linspace(0.0, 2.0 * np.pi, 180)
+    s = np.linspace(0.0, 2.0 * np.pi, 120)
+    for lat in np.radians((-60, -30, 30, 60)):
+        ax.plot(moon_km * np.cos(lat) * np.cos(s), moon_km * np.cos(lat) * np.sin(s),
+                np.full_like(s, moon_km * np.sin(lat)), color=C.BORDER_MID, linewidth=0.5, zorder=1)
+    half = np.linspace(-np.pi / 2, np.pi / 2, 60)
+    for lon in np.radians(range(0, 180, 30)):
+        ring = np.concatenate([half, half[::-1] + np.pi])
+        ax.plot(moon_km * np.cos(ring) * np.cos(lon), moon_km * np.cos(ring) * np.sin(lon),
+                moon_km * np.sin(ring), color=C.BORDER_MID, linewidth=0.5, zorder=1)
     ax.plot(
-        moon_km * np.cos(equ), moon_km * np.sin(equ), np.zeros_like(equ),
-        color=C.BORDER_EQUATOR, linewidth=0.8, alpha=0.7, zorder=2,
+        moon_km * np.cos(s), moon_km * np.sin(s), np.zeros_like(s),
+        color=C.BORDER_EQUATOR, linewidth=0.9, alpha=0.9, zorder=2,
     )
 
 
@@ -1059,7 +1065,8 @@ class GroundTrackController(QWidget):
 
         # Animation state
         self._anim_timer  = QTimer(self)
-        self._anim_timer.timeout.connect(self._anim_step)
+        self._anim_timer.timeout.connect(self._anim_tick)
+        self._anim_carry = 0.0
         self._anim_idx    = 0
         self._anim_dot    = None
         self._anim_tail   = None
@@ -1405,15 +1412,17 @@ class GroundTrackController(QWidget):
             bounds = _pass_boundaries(data["lats"], data["lons"])
             fig = _build_static_figure(data)
             ax = fig.axes[0]
-            dot, = ax.plot([], [], "o", color="white", ms=8, zorder=10,
-                           markeredgecolor=C.CYAN, markeredgewidth=1.5)
-            tail, = ax.plot([], [], "-", color=C.CYAN, linewidth=2.2,
-                            alpha=_TAIL_ALPHA, zorder=9)
+            # Playback artists are "animated": the static track is drawn once and
+            # cached, and each frame only blits these three (see _blit_frame).
+            dot, = ax.plot([], [], "o", color=C.BG_DEEP, ms=8, zorder=10,
+                           markeredgecolor=C.NAV_ACTIVE, markeredgewidth=2, animated=True)
+            tail, = ax.plot([], [], "-", color=C.NAV_ACTIVE, linewidth=2.2,
+                            alpha=_TAIL_ALPHA, zorder=9, animated=True)
             label = ax.text(
                 0.99, 0.97, "", transform=ax.transAxes, ha="right", va="top",
                 color=C.TEXT_PRIMARY, fontsize=FONT.SIZE_SM, fontfamily=FONT.MONO,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor=C.BG_PANEL,
-                          alpha=0.8, edgecolor=C.BORDER_MID), zorder=11,
+                          alpha=0.8, edgecolor=C.BORDER_MID), zorder=11, animated=True,
             )
             self._set_canvas(fig)
         except Exception as exc:
@@ -1471,8 +1480,10 @@ class GroundTrackController(QWidget):
         if self._anim_timer.isActive():
             self._pause_playback()
         else:
-            interval_ms = max(40, 200 // self.speedSpin.value())
-            self._anim_timer.start(interval_ms)
+            # A steady ~30 fps frame clock; speed sets how many samples pass per
+            # second (the same 5·speed² samples/s the old 200/speed ms ticks gave).
+            self._anim_carry = 0.0
+            self._anim_timer.start(_FRAME_MS)
             self.playBtn.setText("Duraklat")
 
     def _reset_anim(self) -> None:
@@ -1483,10 +1494,18 @@ class GroundTrackController(QWidget):
             self._anim_dot.set_data([], [])
             self._anim_tail.set_data([], [])
             self._anim_label.set_text("")
-            if self._canvas:
-                self._canvas.draw_idle()
+            self._blit_frame()
 
-    def _anim_step(self) -> None:
+    def _anim_tick(self) -> None:
+        """Frame clock: advance by the samples due since the last frame."""
+        speed = max(1, self.speedSpin.value())
+        self._anim_carry += 5.0 * speed * speed * _FRAME_MS / 1000.0
+        whole = int(self._anim_carry)
+        if whole:
+            self._anim_carry -= whole
+            self._anim_step(whole)
+
+    def _anim_step(self, skip: int | None = None) -> None:
         if self._data is None or self._anim_dot is None:
             return
 
@@ -1495,7 +1514,7 @@ class GroundTrackController(QWidget):
         t_s  = self._data["t_s"]
         n    = len(lons)
 
-        skip = max(1, self.speedSpin.value())
+        skip = max(1, self.speedSpin.value()) if skip is None else skip
         self._anim_idx = (self._anim_idx + skip) % n
 
         idx = self._anim_idx
@@ -1524,9 +1543,32 @@ class GroundTrackController(QWidget):
         else:
             lines.append("Örnekte görünürlük yok" if self._data["vis_mask"].size else "Görünürlük hesaplanmadı")
         self._anim_label.set_text("\n".join(lines))
+        self._blit_frame()
 
-        if self._canvas:
-            self._canvas.draw_idle()
+    def _cache_background(self, event=None) -> None:
+        """After every full draw, keep the static track for frame blitting."""
+        canvas = event.canvas if event is not None else self._canvas
+        if canvas is None:
+            return
+        self._anim_bg = canvas.copy_from_bbox(canvas.figure.bbox)
+        self._draw_animated(canvas.figure)
+
+    def _draw_animated(self, figure=None) -> None:
+        figure = figure or (self._canvas.figure if self._canvas is not None else None)
+        for artist in (self._anim_tail, self._anim_dot, self._anim_label):
+            if artist is not None and artist.axes is not None and artist.figure is figure:
+                artist.axes.draw_artist(artist)
+
+    def _blit_frame(self) -> None:
+        """Repaint only the moving marker, tail and label over the cached track."""
+        if self._canvas is None:
+            return
+        if getattr(self, "_anim_bg", None) is None:
+            self._canvas.draw_idle()  # the draw_event will cache the background
+            return
+        self._canvas.restore_region(self._anim_bg)
+        self._draw_animated()
+        self._canvas.blit(self._canvas.figure.bbox)
 
     # ------------------------------------------------------------------
     # Canvas helpers
@@ -1536,8 +1578,10 @@ class GroundTrackController(QWidget):
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
         canvas = FigureCanvasQTAgg(fig)
         toolbar = None
+        self._anim_bg = None
         try:
             canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            canvas.mpl_connect("draw_event", self._cache_background)
             toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
 
             # Catch first-paint failures while the previous canvas is still installed.

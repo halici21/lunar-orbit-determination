@@ -35,3 +35,56 @@ if (_CAMPAIGN_SCRIPTS / "od_gravity_covariance_campaign.py").is_file():
         if str(_path) not in sys.path:
             sys.path.append(str(_path))
     _import_campaign()
+
+
+# --- Test-run record for the desktop Arşiv › Test koşuları tab ---------------
+# One small JSON per pytest session in results/test_runs/ (gitignored). It never
+# affects the run: any failure here is swallowed. LUNAR_OD_RECORD_TESTS=0 skips it.
+import time as _time
+
+_SESSION_STARTED = [None]
+
+
+def pytest_sessionstart(session):
+    _SESSION_STARTED[0] = (_time.time(), _time.perf_counter())
+
+
+def pytest_sessionfinish(session, exitstatus):
+    import os
+    if os.environ.get("LUNAR_OD_RECORD_TESTS", "1") == "0" or hasattr(session.config, "workerinput"):
+        return
+    try:
+        import json
+        import subprocess
+        from datetime import datetime, timezone
+
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        stats = getattr(reporter, "stats", {}) if reporter else {}
+        count = lambda key: sum(1 for r in stats.get(key, ()) if getattr(r, "when", "call") in ("call", "setup", "teardown"))
+
+        def git(*args):
+            out = subprocess.run(["git", *args], cwd=_ROOT, capture_output=True, text=True, timeout=5)
+            return out.stdout.strip() if out.returncode == 0 else ""
+
+        started_wall, started = _SESSION_STARTED[0] or (_time.time(), _time.perf_counter())
+        record = {
+            "schema": "lunar-od-test-run-v1", "source": "local",
+            "started_at": datetime.fromtimestamp(started_wall, timezone.utc).isoformat(),
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "duration_s": round(_time.perf_counter() - started, 1),
+            "exit_status": int(exitstatus),
+            "passed": count("passed"), "failed": count("failed"), "skipped": count("skipped"),
+            "errors": count("error"), "xfailed": count("xfailed"), "xpassed": count("xpassed"),
+            "collected": getattr(session, "testscollected", None),
+            "args": [str(a) for a in session.config.invocation_params.args][:40],
+            "commit": git("rev-parse", "HEAD"), "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
+            "dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
+            "python": sys.version.split()[0],
+            "failures": [r.nodeid for key in ("failed", "error") for r in stats.get(key, ())][:100],
+        }
+        folder = _ROOT / "results" / "test_runs"
+        folder.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        (folder / f"local_{stamp}_{os.getpid()}.json").write_text(json.dumps(record, indent=1), encoding="utf-8")
+    except Exception:
+        pass

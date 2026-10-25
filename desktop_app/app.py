@@ -223,7 +223,7 @@ class MainWindow(QMainWindow):
         brand_row.addLayout(text_col, 1)
         brand.insertLayout(0, brand_row)
         self.brandTitleLabel.setText("Lunar OD")
-        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:15px; font-weight:700;")
+        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:15px; font-weight:600;")
         self.brandSubLabel.setText("Yörünge belirleme")
         self.brandSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
         self.footerNativeLabel.setText("Yerel çalışma alanı")
@@ -232,11 +232,11 @@ class MainWindow(QMainWindow):
         self.pageHeaderFrame.setStyleSheet(
             f"QFrame#pageHeaderFrame {{background:{C.BG_DEEP}; border-bottom:1px solid {C.BORDER_MAIN};}}")
         header = self.pageHeaderFrame.layout()
-        header.setContentsMargins(32, 18, 32, 14)
+        header.setContentsMargins(32, 20, 32, 16)
         header.setSpacing(4)
         self.pageTitleLabel.setStyleSheet(
-            f"color:{C.TEXT_PRIMARY}; font-family:'Segoe UI Variable Display','Segoe UI'; font-size:24px;"
-            " font-weight:700; letter-spacing:-0.4px;")
+            f"color:{C.TEXT_PRIMARY}; font-family:'Segoe UI Variable Display','Segoe UI'; font-size:21px;"
+            " font-weight:600; letter-spacing:-0.2px;")
         self.pageHeaderFrame.setMaximumHeight(16777215)
         self.pageHeaderFrame.setMinimumHeight(84)
         self.pageHeaderFrame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
             self._nav_btns[page_id] = btn
         label = QLabel("İŞ AKIŞI")
         label.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:16px 22px 8px; font-size:11px;"
-                            " font-weight:700; letter-spacing:1px;")
+                            " font-weight:600; letter-spacing:1px;")
         layout.addWidget(label)
         for number, item in enumerate(_PRIMARY_NAV, 1):
             add_button(item, layout, number)
@@ -279,7 +279,7 @@ class MainWindow(QMainWindow):
         self.environment_button.setFlat(True)
         self.environment_button.setFixedHeight(22)
         self.environment_button.setStyleSheet(
-            f"QPushButton {{padding:0 10px; min-height:18px; font-size:11px; font-weight:600; border:none;"
+            f"QPushButton {{padding:0 10px; min-height:18px; font-size:11px; font-weight:normal; border:none;"
             f" color:{C.TEXT_MUTED}; background:transparent;}}"
             f"QPushButton:hover {{color:{C.TEXT_PRIMARY};}}")
         self.environment_button.setToolTip("Ortam ve SPICE kernel raporunu aç")

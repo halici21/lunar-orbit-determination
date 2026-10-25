@@ -169,7 +169,7 @@ class TrackingConsoleController(QWidget):
         self.details_toggle.setToolTip("Koşu bilgisi, seçili kayıt ve teknik kaynaklar")
         header.addWidget(self.details_toggle)
         root.addLayout(header)
-        self.path_label = QLabel("Arşivden bir koşu açın veya bir sonuç klasörü seçin.")
+        self.path_label = QLabel("")  # the overview tab already says how to open a run
         self.path_label.setWordWrap(True)
         self.path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.path_label.setProperty("role", "caption")
@@ -318,7 +318,8 @@ class TrackingConsoleController(QWidget):
         self.details_toggle.toggled.connect(right.setVisible)
         right.hide()
         root.addWidget(self.splitter, 1)
-        self.status_label = QLabel("Hazır · sonuç dosyaları salt okunur")
+        self.status_label = QLabel("")
+        self.status_label.setToolTip("Sonuç dosyaları salt okunur açılır.")
         self.status_label.setWordWrap(True)
         root.addWidget(self.status_label)
         self._filter_timer = QTimer(self)
