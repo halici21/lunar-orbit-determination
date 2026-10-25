@@ -34,6 +34,11 @@
   `<workspace>`, `<kernel-dir>` and `<python>` placeholders; the D25 qualification
   script resolves the campaign data through `campaign_root()`. Archived records
   under `archive/` and byte-preserved scripts keep their original text.
+- Add an index of the `archive/` folders and of the tags that keep former branch
+  heads; add `.mailmap` so both commit identities of the author show as one.
+- GitHub keeps only `main`: finished branches are merged and deleted, and pull
+  requests use merge commits only, so the commit identities cited by study
+  reports stay reachable from `main`.
 
 - Synchronize the QProcess liveness test with child ready/release signals, retaining
   five observed timer callbacks and the final partial-line flush assertion.
