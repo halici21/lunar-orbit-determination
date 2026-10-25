@@ -1,0 +1,17 @@
+{
+ "phase": "Phase F2b - F2 with station-bias and K_SRP priors",
+ "written": "2026-10-24, before any F2b number was computed",
+ "motivation": "F2 (studies/phase17/reports/phase_f2_lro_od.md): single-pass stations let their free biases absorb whole passes and K_SRP acted as an empirical force (1.78 m^2/kg); the problem had several minima",
+ "change_from_F2": "identical to F2 (dynamics, measurement model, starts, termination, A1 sensitivities) except: (1) station-bias priors with mean = F1's M_FULL per-station mean residual over its passes on 2009-260 (PAD 103: 489.161 m, 105: 476.891 m, 126: 474.509 m) and sigma 3 m; (2) K_SRP prior 0.010 +- 0.005 m^2/kg; (3) N = 100 only (both starts)",
+ "independence_caveat": "the bias prior means were measured against the LOLA orbit (F1), so the F2b comparison with LOLA is not independent at the level of the three constant station delays; the orbit itself is not seeded (same +-1 km / 1 m/s starts)",
+ "gates": {
+  "G1_convergence": "both starts terminate Converged",
+  "G2_start_independence": "the two solutions agree to <= 1 m in position over the arc and <= 0.1 m in each bias (relaxed from F2's 1 cm / 1 mm: with priors the problem is regularised but not noise-free)",
+  "G3_postfit": "post-fit range RMS <= 20 m"
+ },
+ "reported_not_gated": "position difference to the LOLA SPK (R/A/C RMS and max, total), K_SRP estimate, bias estimates vs priors",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2b_lro_od_priors.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 6"
+ }
+}

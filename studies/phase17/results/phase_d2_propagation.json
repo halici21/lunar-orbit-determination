@@ -1,0 +1,158 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_d2_propagation_predeclaration.json",
+ "G1": {
+  "equal": {
+   "state": true,
+   "augmented": true,
+   "ksens": true,
+   "state_dop853": true,
+   "state_no_srp": true,
+   "augmented_no_srp": true,
+   "state_no_shadow": true,
+   "augmented_no_shadow": true,
+   "bls_x": true,
+   "bls_status": true,
+   "bls_cost": true,
+   "srif_x": true,
+   "srif_status": true,
+   "srif_cost": true,
+   "state_no_shadow_events_on": true,
+   "augmented_no_shadow_events_on": true,
+   "state_no_srp_events_on": true
+  },
+  "PASS": true
+ },
+ "orbits": [
+  {
+   "orbit": "CANON",
+   "n_contacts": 60,
+   "n_reference_events": 60,
+   "G3_max_error_m": {
+    "state": 0.00018603338889066774,
+    "augmented": 0.0001040610324153535,
+    "ksens": 0.0004255964778099653
+   },
+   "G4_contact_dt_max_s": 0.0006400595884770155,
+   "G5_mismatch_m": {
+    "state_minus_augmented": 0.00014305654945094117,
+    "state_minus_ksens": 0.0003372839212329137
+   },
+   "timing_s": {
+    "state_profile": 2.8080172538757324,
+    "augmented_profile": 4.852043867111206,
+    "ksens_profile": 9.32256007194519,
+    "state_default": 0.28959131240844727,
+    "augmented_default": 0.766822338104248,
+    "ksens_default": 3.591012477874756
+   },
+   "elapsed_s": 26.39621329307556
+  },
+  {
+   "orbit": "O1_LOW_BETA_ECLIPSE_RICH",
+   "n_contacts": 60,
+   "n_reference_events": 60,
+   "G3_max_error_m": {
+    "state": 0.00019697907467013963,
+    "augmented": 0.00019166924736113312,
+    "ksens": 4.870945920396099e-05
+   },
+   "G4_contact_dt_max_s": 0.0012943726615048945,
+   "G5_mismatch_m": {
+    "state_minus_augmented": 0.000278000336184364,
+    "state_minus_ksens": 0.00021416434883116787
+   },
+   "timing_s": {
+    "state_profile": 2.876098155975342,
+    "augmented_profile": 5.295229911804199,
+    "ksens_profile": 11.136107921600342,
+    "state_default": 0.2868790626525879,
+    "augmented_default": 0.8769006729125977,
+    "ksens_default": 3.887244462966919
+   },
+   "elapsed_s": 29.111820697784424
+  },
+  {
+   "orbit": "O2_FULL_SUN_HIGH_BETA",
+   "n_contacts": 0,
+   "n_reference_events": 0,
+   "G3_max_error_m": {
+    "state": 0.0001808597629093656,
+    "augmented": 0.00018151159162846337,
+    "ksens": 5.1432043101034885e-05
+   },
+   "G4_contact_dt_max_s": 0.0,
+   "G5_mismatch_m": {
+    "state_minus_augmented": 0.000166515224449922,
+    "state_minus_ksens": 0.00016189782360795962
+   },
+   "timing_s": {
+    "state_profile": 2.568047046661377,
+    "augmented_profile": 4.194560766220093,
+    "ksens_profile": 6.960567474365234,
+    "state_default": 0.2902345657348633,
+    "augmented_default": 0.7594814300537109,
+    "ksens_default": 2.177004098892212
+   },
+   "elapsed_s": 21.41082453727722
+  }
+ ],
+ "G6": {
+  "stm_column_relative_error": [
+   9.701897480270217e-08,
+   7.801416750537773e-08,
+   9.353465905199638e-08,
+   8.987205263620105e-08,
+   9.660138259556358e-08,
+   9.416048105239923e-08
+  ],
+  "dxdk_relative_error": 5.802181893959191e-05,
+  "max": 5.802181893959191e-05,
+  "PASS": false
+ },
+ "closure": [
+  {
+   "estimator": "BLS_LM",
+   "status": "Converged",
+   "detail": "STATIONARY_AT_DAMPING_LIMIT",
+   "dr_m": 4.091722671973512e-05,
+   "dv_mps": 3.418439915230021e-08,
+   "iterations": 41,
+   "final_cost": 1.0954972651688878e-07,
+   "elapsed_s": 841.6094167232513,
+   "PASS": true
+  },
+  {
+   "estimator": "SRIF",
+   "status": "MaxIter",
+   "detail": "",
+   "dr_m": 4.4024610206773515e-05,
+   "dv_mps": 3.507251642066422e-08,
+   "iterations": 40,
+   "final_cost": 1.1510505828482565e-07,
+   "elapsed_s": 811.190376996994,
+   "PASS": false
+  }
+ ],
+ "G8": {
+  "sha256": {
+   "src/lunar_od/dynamics.py": "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
+   "src/lunar_od/srp.py": "9f9986d2a66a264b8eb6acba18e5a1e865718995f7f600ce98f08b3e95a6335a",
+   "src/lunar_od/estimators.py": "f23ad27e99653b7e4fc07be228b2c425502986789f9058c35ecee8653af79093"
+  },
+  "recorded_in_path_migration": {
+   "src/lunar_od/dynamics.py": true,
+   "src/lunar_od/srp.py": true,
+   "src/lunar_od/estimators.py": true
+  }
+ },
+ "gates": {
+  "G1": true,
+  "G3": true,
+  "G4": false,
+  "G5": true,
+  "G6": false,
+  "G7": false,
+  "G8": true
+ },
+ "elapsed_s": 918.306679725647
+}

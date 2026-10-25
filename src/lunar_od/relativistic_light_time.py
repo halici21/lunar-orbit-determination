@@ -337,6 +337,8 @@ class TwoWaySolution:
     downlink: Leg                  # spacecraft (t2) -> station (t3)
     uplink: Leg                    # station (t1) -> spacecraft (t2)
     tdb_minus_tt_rate: float
+    media_group_s: float = 0.0     # Phase C5-I: up + down media group delay (range)
+    media_phase_s: float = 0.0     # up + down media phase delay (counted Doppler)
 
     @property
     def t1_s(self) -> float:
@@ -354,12 +356,14 @@ class TwoWaySolution:
 
 def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
                   model: LightTimeModel, *, site: "_station_time.Site | None" = None,
-                  clock_offset_s: float = 0.0) -> TwoWaySolution:
+                  clock_offset_s: float = 0.0, media=None, media_site=None) -> TwoWaySolution:
     """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay, the R3/M3 production default).
 
     ``site`` (the station's :class:`lunar_od.station_time.Site`) is required by ``station_time='FULL_TOPOCENTRIC'``
     and ignored otherwise. ``clock_offset_s`` reads the receive tag as ``t3 + b`` (production convention); the
-    interval of one station clock is unchanged by it.
+    interval of one station clock is unchanged by it. ``media`` (:class:`lunar_od.media.MediaModel`, with the
+    station's ``media_site``) adds the media delay of each leg at its ground event (Phase C5-I); its feedback on
+    the event epochs (~1e-8 relative) is neglected.
     """
     t3 = float(t3_s)
     if clock_offset_s:
@@ -376,7 +380,14 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         rate = float(_station_time.tdb_minus_tt_rate(eph.et0_s, mid, site))
     else:
         rate = eph.tdb_minus_tt_rate(t3)
-    return TwoWaySolution(t3, down, up, rate)
+    if media is None:
+        return TwoWaySolution(t3, down, up, rate)
+    if media_site is None:
+        raise ValueError("media delays need the station's media_site (lunar_od.media.MediaSite).")
+    et0 = eph.et0_s
+    gd, pd, _ = media.leg_delays(media_site, et0 + down.t_rx_s, -down.rel, uplink=False)
+    gu, pu, _ = media.leg_delays(media_site, et0 + up.t_tx_s, up.rel, uplink=True)
+    return TwoWaySolution(t3, down, up, rate, (gd + gu) / C_LIGHT_MPS, (pd + pu) / C_LIGHT_MPS)
 
 
 def _interval_scale(sol: TwoWaySolution) -> float:
@@ -384,8 +395,11 @@ def _interval_scale(sol: TwoWaySolution) -> float:
 
 
 def two_way_range_m(sol: TwoWaySolution) -> float:
-    """Half round trip [m], in the model's interval time scale."""
-    return 0.5 * C_LIGHT_MPS * sol.round_trip_s * _interval_scale(sol)
+    """Half round trip [m], in the model's interval time scale (plus the media group delay, Phase C5-I)."""
+    value = 0.5 * C_LIGHT_MPS * sol.round_trip_s * _interval_scale(sol)
+    if sol.media_group_s:
+        value = value + 0.5 * C_LIGHT_MPS * sol.media_group_s
+    return value
 
 
 def _round_trip_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarray:
@@ -443,16 +457,20 @@ def two_way_range_clock_partial(sol: TwoWaySolution) -> float:
 def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Callable, sc: SpacecraftHistory,
                     eph: BarycentricEphemeris, model: LightTimeModel, *, with_partial: bool = False,
                     site: "_station_time.Site | None" = None, clock_offset_s: float = 0.0,
-                    with_clock_partial: bool = False):
+                    with_clock_partial: bool = False, media=None, media_site=None):
     """Receive-tagged counted Doppler, m/s equivalent: c/(2 Tc) (tau_end - tau_start), each tau in the
-    model's interval time scale. Returns (value, partial or None, (start, end) solutions); with
-    ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s]."""
+    model's interval time scale (plus the media phase delay, Phase C5-I). Returns (value, partial or None,
+    (start, end) solutions); with ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s]."""
     tc = float(count_interval_s)
     kw = dict(site=site, clock_offset_s=clock_offset_s)
+    if media is not None:
+        kw.update(media=media, media_site=media_site)
     a = solve_two_way(t_mid_s - 0.5 * tc, station_state, sc, eph, model, **kw)
     b = solve_two_way(t_mid_s + 0.5 * tc, station_state, sc, eph, model, **kw)
     k = C_LIGHT_MPS / (2.0 * tc)
     value = k * (b.round_trip_s * _interval_scale(b) - a.round_trip_s * _interval_scale(a))
+    if b.media_phase_s or a.media_phase_s:
+        value = value + k * (b.media_phase_s - a.media_phase_s)
     partial = None
     if with_partial:
         partial = k * (_interval_scale(b) * _round_trip_partial(b, sc) - _interval_scale(a) * _round_trip_partial(a, sc))
@@ -518,7 +536,8 @@ class DeltaDorStationTime:
 def delta_dor_station_time(t_obs_s: float, station_a_state: Callable, station_b_state: Callable,
                            sc: SpacecraftHistory, eph: BarycentricEphemeris, model: LightTimeModel, *,
                            sites: tuple = (None, None),
-                           clock_offsets_s: tuple[float, float] = (0.0, 0.0)) -> DeltaDorStationTime:
+                           clock_offsets_s: tuple[float, float] = (0.0, 0.0),
+                           media=None, media_sites: tuple = (None, None)) -> DeltaDorStationTime:
     """Delta-DOR in station time.
 
     A's tag ``t_obs`` is read as ``t_obs + b_A`` (the true reception at A, production convention); B's clock reads
@@ -543,6 +562,14 @@ def delta_dor_station_time(t_obs_s: float, station_a_state: Callable, station_b_
         delay = delay + corr
     if clock:
         delay = delay + clock
+    if media is not None:
+        # Phase C5-I: the two downlinks' media group delays (delta-DOR is a group measurement)
+        ma, mb = media_sites
+        if ma is None or mb is None:
+            raise ValueError("media delays need both stations' media_sites.")
+        ga, _, _ = media.leg_delays(ma, eph.et0_s + sol.leg_a.t_rx_s, -sol.leg_a.rel, uplink=False)
+        gb, _, _ = media.leg_delays(mb, eph.et0_s + sol.leg_b.t_rx_s, -sol.leg_b.rel, uplink=False)
+        delay = delay + (gb - ga) / C_LIGHT_MPS
     return DeltaDorStationTime(sol, delay, corr, clock)
 
 
@@ -611,14 +638,22 @@ def pass_light_time_model(pass_geo) -> LightTimeModel:
 def pass_station_kwargs(pass_geo) -> list[dict]:
     """Per-station ``site`` and ``clock_offset_s`` for :func:`solve_two_way`, in the pass's station order. The
     sites come from ``pass_geo.stations[i].r_ecef_m``; clock offsets from the metadata key
-    ``station_clock_offsets_s`` (absent: all zero)."""
-    offsets = (pass_geo.measurement_metadata or {}).get("station_clock_offsets_s")
+    ``station_clock_offsets_s`` (absent: all zero); ``media`` / ``media_site`` from the metadata key ``media``
+    (Phase C5-I; absent: none)."""
+    meta = pass_geo.measurement_metadata or {}
+    offsets = meta.get("station_clock_offsets_s")
     stations = list(pass_geo.stations)
     offsets = [0.0] * len(stations) if offsets is None else [float(b) for b in offsets]
     if len(offsets) != len(stations):
         raise ValueError(f"station_clock_offsets_s has {len(offsets)} entries for {len(stations)} stations.")
-    return [dict(site=_station_time.Site.from_itrf_m(st.r_ecef_m), clock_offset_s=b)
-            for st, b in zip(stations, offsets)]
+    out = [dict(site=_station_time.Site.from_itrf_m(st.r_ecef_m), clock_offset_s=b)
+           for st, b in zip(stations, offsets)]
+    if meta.get("media") is not None:
+        from .media import MediaModel, MediaSite
+        model = MediaModel.from_metadata(meta["media"])
+        for kw, st in zip(out, stations):
+            kw.update(media=model, media_site=MediaSite.from_station(st))
+    return out
 
 
 def _pass_context(pass_geo):
@@ -630,15 +665,68 @@ def _pass_context(pass_geo):
     stations = [exact_epoch_station_state(lambda t, p=p: np.asarray(p.state(t), dtype=float), pass_geo.et0_s,
                                           pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps)
                 for p in _station_state_providers_for_pass(pass_geo)]
+    disp = (pass_geo.measurement_metadata or {}).get("station_displacement")
+    if disp is not None:
+        stations = [displaced_station_state(st, pass_geo.et0_s, s.r_ecef_m, **disp)
+                    for st, s in zip(stations, pass_geo.stations)]
     return pass_light_time_model(pass_geo), stations, BarycentricEphemeris(float(pass_geo.et0_s))
+
+
+#: Central-difference step [s] of the solid-tide displacement rate (the tide changes on hour scales).
+TIDE_RATE_STEP_S = 10.0
+
+
+def displaced_station_state(station_state: Callable, et0_s: float, r_ecef_m, *, solid_tide: bool = True,
+                            coordinate_frame: str = "ITRF93", include_scale: bool = True) -> Callable:
+    """Wrap a production station provider (Phase C3-I) with an Earth-fixed station offset rotated to J2000:
+
+    * ``coordinate_frame='ITRF2020'``: the provider's ECEF vector is read as ITRF 2020 and moved to ITRF 93 (the
+      frame of SPICE's Earth orientation) with :func:`lunar_od.station_frames.itrf2020_to_itrf93` at each epoch;
+      ``include_scale=False`` drops the EPSG scale (Orekit's transcription);
+    * ``solid_tide``: the IERS 2010 solid Earth tide (:func:`lunar_od.solid_tide.solid_tide_at_et`).
+
+    The offset d(t) enters as [R d, R' d + R d'] with R, R' from ``sxform('ITRF93', 'J2000')`` and d' a central
+    difference (h = TIDE_RATE_STEP_S) of the tide.
+    """
+    import spiceypy as spice
+
+    from .solid_tide import solid_tide_at_et
+    from .station_frames import itrf2020_to_itrf93
+
+    if coordinate_frame not in ("ITRF93", "ITRF2020"):
+        raise ValueError(f"coordinate_frame must be 'ITRF93' or 'ITRF2020'; got {coordinate_frame!r}.")
+    r = np.asarray(r_ecef_m, dtype=float).reshape(3)
+    et0 = float(et0_s)
+
+    def offset(t: float) -> np.ndarray:
+        d = np.zeros(3)
+        if coordinate_frame == "ITRF2020":
+            d = d + (itrf2020_to_itrf93(r, et0 + t, include_scale=include_scale) - r)
+        if solid_tide:
+            d = d + solid_tide_at_et(r, et0 + t)
+        return d
+
+    def state(t_s: float) -> np.ndarray:
+        t = float(t_s)
+        s = np.array(station_state(t), dtype=float)[:6]
+        x = np.asarray(spice.sxform("ITRF93", "J2000", et0 + t), dtype=float)
+        d = offset(t)
+        h = TIDE_RATE_STEP_S
+        d_dot = (offset(t + h) - offset(t - h)) / (2.0 * h)
+        s[:3] += x[:3, :3] @ d
+        s[3:] += x[3:, :3] @ d + x[3:, 3:] @ d_dot
+        return s
+    return state
 
 
 def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, stations, vis_mask_raw, get_earth_pos,
                                             get_earth_vel, et0, *, model: LightTimeModel = DSN_LIGHT_TIME_MODEL,
                                             noise: bool = True, rng: np.random.Generator | None = None,
                                             arc_id: int | None = None, config=None, noise_seed: int | None = None,
-                                            station_clock_offsets_s=None):
-    """Receive-tagged two-way range under ``model`` (default: the DSN model).
+                                            station_clock_offsets_s=None, station_displacement: dict | None = None,
+                                            media=None):
+    """Receive-tagged two-way range under ``model`` (default: the DSN model). ``station_displacement`` (Phase
+    C3-I; keyword arguments of :func:`displaced_station_state`) is stored in the metadata like the clock offsets.
 
     The receive tags, station rows and dropped-row rule are the production generator's
     (``two_way_range.generate_two_way_range_measurements``, run noise-free); every value is then recomputed
@@ -659,6 +747,10 @@ def generate_two_way_range_measurements_ssb(t_pass_s, state_history_mci, station
                     noise_enabled=bool(noise))
     if station_clock_offsets_s is not None:
         metadata["station_clock_offsets_s"] = [float(b) for b in station_clock_offsets_s]
+    if station_displacement is not None:
+        metadata["station_displacement"] = dict(station_displacement)
+    if media is not None:
+        metadata["media"] = media.to_metadata()
     pass_geo = replace(pass_geo, measurement_model_profile=TWO_WAY_SSB_PROFILE, measurement_metadata=metadata)
     _, station_states, eph = _pass_context(pass_geo)
     kw = pass_station_kwargs(pass_geo)

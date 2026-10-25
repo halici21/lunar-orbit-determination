@@ -1,0 +1,183 @@
+{
+ "post_hoc": true,
+ "station": "Goldstone (production catalogue)",
+ "rows": [
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2025-03-01",
+   "covered": true,
+   "diff_m": 0.18664113561112222,
+   "equivalent_ut1_s": 0.0004918321058867709,
+   "orekit_ut1_minus_utc_s": 0.045652035683349926
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2025-06-01",
+   "covered": true,
+   "diff_m": 0.1948106057472272,
+   "equivalent_ut1_s": 0.000513360091600442,
+   "orekit_ut1_minus_utc_s": 0.029010194006691088
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2025-08-01",
+   "covered": true,
+   "diff_m": 0.17575904922010954,
+   "equivalent_ut1_s": 0.0004631559008872199,
+   "orekit_ut1_minus_utc_s": 0.062147388348214476
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2025-09-01",
+   "covered": true,
+   "diff_m": 0.1558428973275307,
+   "equivalent_ut1_s": 0.0004106733498439325,
+   "orekit_ut1_minus_utc_s": 0.08461641572054246
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2025-10-01",
+   "covered": true,
+   "diff_m": 6.06436214153228,
+   "equivalent_ut1_s": 0.015980657174870343,
+   "orekit_ut1_minus_utc_s": 0.09302132352834917
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2025-12-01",
+   "covered": true,
+   "diff_m": 17.40515376114486,
+   "equivalent_ut1_s": 0.045865630851405936,
+   "orekit_ut1_minus_utc_s": 0.07984843167021362
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2026-03-01",
+   "covered": true,
+   "diff_m": 22.90623760414079,
+   "equivalent_ut1_s": 0.06036195098094949,
+   "orekit_ut1_minus_utc_s": 0.06724680780961033
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2026-06-01",
+   "covered": true,
+   "diff_m": 42.461155433260366,
+   "equivalent_ut1_s": 0.11189258695167013,
+   "orekit_ut1_minus_utc_s": 0.01773372587139937
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2026-10-01",
+   "covered": true,
+   "diff_m": 56.81385644041568,
+   "equivalent_ut1_s": 0.14971446977722508,
+   "orekit_ut1_minus_utc_s": -0.022502634886172827
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2027-01-01",
+   "covered": true,
+   "diff_m": 93.05341201870424,
+   "equivalent_ut1_s": 0.24521205061924922,
+   "orekit_ut1_minus_utc_s": -0.12243774849557561
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2027-03-08",
+   "covered": true,
+   "diff_m": 111.87771139070098,
+   "equivalent_ut1_s": 0.2948173788961977,
+   "orekit_ut1_minus_utc_s": -0.1671846822529258
+  },
+  {
+   "pck": "earth_2025_250826_2125_predict.bpc",
+   "utc": "2027-03-20",
+   "covered": true,
+   "diff_m": 116.32880972603282,
+   "equivalent_ut1_s": 0.30654680317668787,
+   "orekit_ut1_minus_utc_s": -0.1782493944205127
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2025-03-01",
+   "covered": true,
+   "diff_m": 0.18662527518245298,
+   "equivalent_ut1_s": 0.0004917903108772885,
+   "orekit_ut1_minus_utc_s": 0.045652035683349926
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2025-06-01",
+   "covered": true,
+   "diff_m": 0.19485262656251337,
+   "equivalent_ut1_s": 0.0005134708238139254,
+   "orekit_ut1_minus_utc_s": 0.029010194006691088
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2025-08-01",
+   "covered": true,
+   "diff_m": 0.1771365539710172,
+   "equivalent_ut1_s": 0.00046678586734820183,
+   "orekit_ut1_minus_utc_s": 0.062147388348214476
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2025-09-01",
+   "covered": true,
+   "diff_m": 0.18013400251127715,
+   "equivalent_ut1_s": 0.0004746846696300039,
+   "orekit_ut1_minus_utc_s": 0.08461641572054246
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2025-10-01",
+   "covered": true,
+   "diff_m": 0.1592357690487988,
+   "equivalent_ut1_s": 0.00041961416151554514,
+   "orekit_ut1_minus_utc_s": 0.09302132352834917
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2025-12-01",
+   "covered": true,
+   "diff_m": 0.17927544231049747,
+   "equivalent_ut1_s": 0.00047242221301668877,
+   "orekit_ut1_minus_utc_s": 0.07984843167021362
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2026-03-01",
+   "covered": true,
+   "diff_m": 1.917767673440657,
+   "equivalent_ut1_s": 0.0050536539565165595,
+   "orekit_ut1_minus_utc_s": 0.06724680780961033
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2026-06-01",
+   "covered": false
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2026-10-01",
+   "covered": false
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2027-01-01",
+   "covered": false
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2027-03-08",
+   "covered": false
+  },
+  {
+   "pck": "earth_latest_high_prec.bpc",
+   "utc": "2027-03-20",
+   "covered": false
+  }
+ ]
+}

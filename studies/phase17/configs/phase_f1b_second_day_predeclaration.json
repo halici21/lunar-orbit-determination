@@ -1,0 +1,13 @@
+{
+ "phase": "Phase F1b - second LRO tracking day: time-tag offset or reference-orbit along-track error?",
+ "written": "2026-10-24, before any 2009-285 residual was computed",
+ "data": "trk/lro_no_01/2009285, PAD 103 (Dongara, 35 files) and PAD 129 (Weilheim WU2S, 5 files; WGS-84 47 52 52.3160 N, 11 05 01.0280 E, 663.37 m from lrors_arch_sis Appendix A); same reference SPK lro_no_01_grgm900c_l600.bsp, 25 days after F1's 2009-260",
+ "method": "F1's M_FULL residuals and F1's per-pass fit bias + dt * rho_dot (phase_f1_slope_diagnostic.py), unchanged except the day directory and the added PAD 129",
+ "decision_rule": {
+  "TIME_TAG_OFFSET": "every 2009-285 pass with >= 100 ranges has dt within 1.0 ms of F1's mean -3.21 ms",
+  "ORBIT_ALONG_TRACK": "the 2009-285 passes share a dt that differs from -3.21 ms by more than 1.0 ms (a time-tag convention cannot change between days; an orbit error can)",
+  "INCONCLUSIVE": "otherwise (scatter between passes exceeds 1 ms)"
+ },
+ "also_reported": "per-pass mean residual (station delay) for Dongara on both days",
+ "outputs": {"results": "studies/phase17/results/phase_f1b_second_day.json", "report": "appended to studies/phase17/reports/phase_f1_lro_residuals.md as section 7"}
+}

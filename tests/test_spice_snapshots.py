@@ -6,6 +6,11 @@ import numpy as np
 
 from lunar_od import load_spice_kernels, sample_j2000_to_itrf93_transforms
 
+import pytest as _pytest_c4i  # noqa: E402
+
+# Phase C4-I: reproduces the MATLAB SPICE snapshot fixture (DE421); pinned to the ephemeris it was computed with.
+pytestmark = _pytest_c4i.mark.usefixtures("de421_ephemeris")
+
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 

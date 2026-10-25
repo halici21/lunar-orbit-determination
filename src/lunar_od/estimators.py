@@ -2168,13 +2168,18 @@ def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | No
         )
 
 
-def _posterior_dynamics_kwargs(srp, harmonic_kwargs: dict | None) -> dict:
+def _posterior_dynamics_kwargs(
+    srp, harmonic_kwargs: dict | None, propagation_kwargs: dict | None = None,
+) -> dict:
     """Phase 17-HARDEN-D25.  The solve's dynamics contract for a posterior pass.
 
     Mirrors the estimators' own augmented-pass kwargs: ``srp`` only when given,
     and a harmonic field always with ``harmonic_stm_opt_in=True`` (the matched
     analytic Pines gradient), exactly as the solve iterations pass it.  Empty
     when neither is active, so the default call is unchanged.
+
+    Phase D2: ``propagation_kwargs`` is the solve's ``PropagationProfile``
+    (method, shadow events); omitted, nothing is added.
     """
     out = {}
     if srp is not None:
@@ -2182,6 +2187,8 @@ def _posterior_dynamics_kwargs(srp, harmonic_kwargs: dict | None) -> dict:
     if harmonic_kwargs:
         out.update(harmonic_kwargs)
         out["harmonic_stm_opt_in"] = True
+    if propagation_kwargs:
+        out.update(propagation_kwargs)
     return out
 
 
@@ -2203,6 +2210,7 @@ def _two_way_range_posterior_information(
     *,
     srp=None,
     harmonic_kwargs: dict | None = None,
+    propagation_kwargs: dict | None = None,
 ) -> np.ndarray:
     """(6,6) posterior information at the converged state.
 
@@ -2225,7 +2233,7 @@ def _two_way_range_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
-        **_posterior_dynamics_kwargs(srp, harmonic_kwargs),
+        **_posterior_dynamics_kwargs(srp, harmonic_kwargs, propagation_kwargs),
     )
     _, h_initial = _two_way_nominal_and_jacobian(obs_data, pass_geo, x_aug_hist)
     return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
@@ -2278,6 +2286,7 @@ def _two_way_range_posterior_design_with_k(
     j2_moon: float,
     *,
     harmonic_kwargs: dict | None = None,
+    propagation_kwargs: dict | None = None,
 ) -> np.ndarray:
     """Phase 17-R1COV.  The (M,7) augmented design matrix at the solution.
 
@@ -2297,7 +2306,7 @@ def _two_way_range_posterior_design_with_k(
         t_pass_s, x_dyn, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_srp),
         rtol=rtol, atol=atol, j2_moon=j2_moon,
-        **_posterior_dynamics_kwargs(None, harmonic_kwargs),
+        **_posterior_dynamics_kwargs(None, harmonic_kwargs, propagation_kwargs),
     )
     _, h_x0 = _two_way_nominal_and_jacobian(obs_data, pass_geo, x_aug_hist)
     h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
@@ -2337,8 +2346,18 @@ def estimate_two_way_range_bls_lm(
     k_srp_prior_sigma: float | None = None,
     k_srp_scale: float = 1e-2,
     acceptance_rescore_tolerance_factor: float | None = 1e-2,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Two-way range batch least-squares with LM damping.
+
+    Phase D2 (``propagation_profile``, opt-in).  A
+    ``dynamics.PropagationProfile`` makes every propagation in the solve
+    (nominal/Jacobian, K sensitivity, candidate, rescore, posterior) use its
+    method and shadow-event setting, and runs every iteration at the caller's
+    rtol/atol: the early-iteration loosening is off, so no Converged or J-Stab
+    can be declared on a loosened linearisation (D1 F4: "Converged" 13 m from
+    the truth at iteration 25 of 80, on an rtol 1e-8 Jacobian).  ``None``
+    keeps the historical behaviour bit for bit.
 
     Phase 17-HARDEN-D30 (``acceptance_rescore_tolerance_factor``).  A trial
     step that the caller-tolerance score rejects is rescored, together with
@@ -2386,6 +2405,7 @@ def estimate_two_way_range_bls_lm(
         else {"harmonic_model": harmonic_model,
               "harmonic_epoch_et0": harmonic_epoch_et0}
     )
+    _prop = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -2504,7 +2524,7 @@ def estimate_two_way_range_bls_lm(
         hist = propagate_state(
             t_pass_s, x_state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, **tol_kw, j2_moon=j2_moon,
-            srp=_active_srp(k_state), **_harm,
+            srp=_active_srp(k_state), **_harm, **_prop,
         )
         res, _ = _two_way_residuals(hist, obs_data, pass_geo)
         return np.asarray(res, dtype=float)
@@ -2543,6 +2563,8 @@ def estimate_two_way_range_bls_lm(
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        if propagation_profile is not None:
+            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard
         if solve_for_k_srp:
             # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
             # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
@@ -2559,7 +2581,7 @@ def estimate_two_way_range_bls_lm(
                 t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
                 rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-                **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
+                **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}), **_prop,
             )
             h_nom, h_x0 = _two_way_nominal_and_jacobian(obs_data, pass_geo, x_aug_hist)
             h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
@@ -2578,7 +2600,7 @@ def estimate_two_way_range_bls_lm(
                 atol=_atol_a,
                 j2_moon=j2_moon,
                 srp=srp,
-                **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
+                **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}), **_prop,
             )
             h_nom, h_initial = _two_way_nominal_and_jacobian(
                 obs_data, pass_geo, x_aug_hist
@@ -2751,7 +2773,7 @@ def estimate_two_way_range_bls_lm(
                         mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                         get_earth_pos, get_sun_pos, rtol=rtol, atol=atol,
                         j2_moon=j2_moon, srp=srp,
-                        **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}),
+                        **({} if not _harm else {**_harm, "harmonic_stm_opt_in": True}), **_prop,
                     )
                     h_nom, h_initial = _two_way_nominal_and_jacobian(
                         obs_data, pass_geo, x_aug_hist
@@ -2791,6 +2813,7 @@ def estimate_two_way_range_bls_lm(
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
                 harmonic_kwargs=_harm,     # Phase 17-HARDEN-D25: the solve's field
+                propagation_kwargs=_prop,
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
@@ -2817,6 +2840,7 @@ def estimate_two_way_range_bls_lm(
                 j2_moon,
                 srp=srp,                   # Phase 17-HARDEN-D25: the solve's own
                 harmonic_kwargs=_harm,     # dynamics contract (fixed SRP, field)
+                propagation_kwargs=_prop,
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -2874,8 +2898,15 @@ def estimate_two_way_range_srif(
     k_srp_initial: float | None = None,
     k_srp_prior_sigma: float | None = None,
     k_srp_scale: float = 1e-2,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Two-way range square-root information filter estimator.
+
+    Phase D2 (``propagation_profile``, opt-in): as for
+    ``estimate_two_way_range_bls_lm``, and in addition the incumbent is scored
+    with the same 6-state propagation as the candidate (the BLS Phase 6.2
+    rule), so a step is never judged across two propagators.  ``None`` keeps
+    the historical behaviour bit for bit.
 
     Phase 17-R (opt-in K_SRP solve-for): same three independent switches as
     ``estimate_two_way_range_bls_lm`` (s13), and the same contract -- K is
@@ -2890,6 +2921,7 @@ def estimate_two_way_range_srif(
     REQUIRED (not optional) when solving for K -- exactly the s31 SRIF prior
     semantics: "sequential filtering requires an initial uncertainty."
     """
+    _prop = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -2981,11 +3013,13 @@ def estimate_two_way_range_srif(
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        if propagation_profile is not None:
+            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard
         if solve_for_k_srp:
             x_aug_hist = propagate_state_with_k_sensitivity(
                 t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, srp=replace(srp, k_srp_m2_per_kg=k_current),
-                rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+                rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon, **_prop,
             )
             h_nom, h_x0 = _two_way_nominal_and_jacobian(obs_data, pass_geo, x_aug_hist)
             h_k = _two_way_range_k_srp_column(obs_data, x_aug_hist, h_x0)
@@ -3004,6 +3038,7 @@ def estimate_two_way_range_srif(
                 atol=_atol_a,
                 j2_moon=j2_moon,
                 srp=srp,
+                **_prop,
             )
             h_nom, h_initial = _two_way_nominal_and_jacobian(
                 obs_data, pass_geo, x_aug_hist
@@ -3021,6 +3056,15 @@ def estimate_two_way_range_srif(
         max_rejected_components = max(max_rejected_components, rejected)
         min_active_weight_fraction = min(min_active_weight_fraction, active_fraction)
         current_cost = float(np.dot(w_curr_diag * residual, residual))
+        if propagation_profile is not None:
+            # Phase D2: score the incumbent on the candidate's propagator.
+            x_hist_current = propagate_state(
+                t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+                srp=_active_srp(k_current), **_prop,
+            )
+            residual_current, _ = _two_way_residuals(x_hist_current, obs_data, pass_geo)
+            current_cost = float(np.dot(w_curr_diag * residual_current, residual_current))
 
         if iteration == 1:
             best_cost = current_cost
@@ -3084,7 +3128,7 @@ def estimate_two_way_range_srif(
         x_hist_candidate = propagate_state(
             t_pass_s, x_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-            srp=hist_srp,
+            srp=hist_srp, **_prop,
         )
         residual_candidate, _ = _two_way_residuals(
             x_hist_candidate, obs_data, pass_geo
@@ -3124,6 +3168,7 @@ def estimate_two_way_range_srif(
                 t_pass_s, obs_data, x_best, k_best, srp, pass_geo,
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, rtol, atol, j2_moon,
+                propagation_kwargs=_prop,
             )
             posterior_information = _symmetrize(
                 posterior_design.T @ (w_curr_diag[:, None] * posterior_design)
@@ -3153,6 +3198,7 @@ def estimate_two_way_range_srif(
                 atol,
                 j2_moon,
                 srp=srp,                   # Phase 17-HARDEN-D25: the solve's fixed SRP
+                propagation_kwargs=_prop,
             )
             posterior_covariance = _safe_covariance_from_information(posterior_information)
             k_sqrt_information = None

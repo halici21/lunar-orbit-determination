@@ -1,0 +1,1097 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c5_media_predeclaration.json",
+ "cells": [
+  {
+   "cell": "CANON:0",
+   "elapsed_s": 45.52859020233154,
+   "gates": {
+    "el_min_deg": 10.033598053913218,
+    "el_max_deg": 60.36968346533416,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.364755202303604,
+     "max": 11.749132270876267,
+     "maxabs": 11.749132270876267
+    },
+    "T2_TROPO_WET": {
+     "min": 0.1725138368316954,
+     "max": 0.834653278311142,
+     "maxabs": 0.834653278311142
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.07858310216345032,
+     "max": 0.35774568887068803,
+     "maxabs": 0.35774568887068803
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.00349673534825777,
+     "max": 0.0033729912331347182,
+     "maxabs": 0.00349673534825777
+    },
+    "T2_TROPO_WET": {
+     "min": -0.00024634253256703245,
+     "max": 0.0002460667635537502,
+     "maxabs": 0.00024634253256703245
+    },
+    "T3_IONOSPHERE": {
+     "min": -2.3720421809711457e-05,
+     "max": 1.2547190656453377e-05,
+     "maxabs": 2.3720421809711457e-05
+    }
+   },
+   "ddor": {
+    "n": 170,
+    "max_nrad": {
+     "T1_TROPO_HYDROSTATIC": 931.9243933051156,
+     "T2_TROPO_WET": 65.00735504645783,
+     "T3_IONOSPHERE": 15.348087271544264
+    }
+   },
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 11.733175467623326,
+      "k_over_sigma": 0.6263525453347748
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 58.63035749673371,
+      "k_over_sigma": 3.14259321145557
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 21.406689737590384,
+      "k_over_sigma": 0.6838023722124188
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 62.19534491263244,
+      "k_over_sigma": 2.3907109050506463
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.8384022446657076,
+      "k_over_sigma": 0.047618702791570995
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 4.189449818644121,
+      "k_over_sigma": 0.23888693072547892
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 1.5316493095495,
+      "k_over_sigma": 0.05307456133302969
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 4.449397455410922,
+      "k_over_sigma": 0.18682394392248255
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.6915630516144488,
+      "k_over_sigma": 0.002958412252461435
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 3.45631271028825,
+      "k_over_sigma": 0.014771983868725051
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.14520235776816898,
+      "k_over_sigma": 0.03546678763344126
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.5638416129292738,
+      "k_over_sigma": 0.08576409106691202
+     }
+    }
+   }
+  },
+  {
+   "cell": "CANON:12",
+   "elapsed_s": 41.27626276016235,
+   "gates": {
+    "el_min_deg": 10.059822184507993,
+    "el_max_deg": 71.10479439846138,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.250236584554939,
+     "max": 11.68659034748207,
+     "maxabs": 11.68659034748207
+    },
+    "T2_TROPO_WET": {
+     "min": 0.1585275761262419,
+     "max": 0.8320724884713898,
+     "maxabs": 0.8320724884713898
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.035214662366960636,
+     "max": 0.09334902564080308,
+     "maxabs": 0.09334902564080308
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.003079996034733205,
+     "max": 0.003505320761956909,
+     "maxabs": 0.003505320761956909
+    },
+    "T2_TROPO_WET": {
+     "min": -0.00022469215116246628,
+     "max": 0.00024694736889095773,
+     "maxabs": 0.00024694736889095773
+    },
+    "T3_IONOSPHERE": {
+     "min": -7.016283961242681e-06,
+     "max": 6.779716263256852e-06,
+     "maxabs": 7.016283961242681e-06
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 3.9012030998840483,
+      "k_over_sigma": 2.6020560879228896
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 19.525265215594967,
+      "k_over_sigma": 13.06305615307351
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 8.785646034907762,
+      "k_over_sigma": 3.494706121551541
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 27.585078182433296,
+      "k_over_sigma": 11.960545820369035
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.2815322165176088,
+      "k_over_sigma": 0.18737487655341542
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.4090900703673188,
+      "k_over_sigma": 0.9408182914445005
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.6363856094143142,
+      "k_over_sigma": 0.24716332046562292
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.9989221229558696,
+      "k_over_sigma": 0.8461450376005347
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.04194885806176828,
+      "k_over_sigma": 0.020597440500174664
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.20994485461175483,
+      "k_over_sigma": 0.10359468540265598
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.03179331277476128,
+      "k_over_sigma": 0.0019760563937007342
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.13277087782350683,
+      "k_over_sigma": 0.013335936285088414
+     }
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:0",
+   "elapsed_s": 45.21136212348938,
+   "gates": {
+    "el_min_deg": 10.014460839716483,
+    "el_max_deg": 60.24900518661363,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.3675982698160465,
+     "max": 11.679383479508168,
+     "maxabs": 11.679383479508168
+    },
+    "T2_TROPO_WET": {
+     "min": 0.17272124455172722,
+     "max": 0.8361056522403121,
+     "maxabs": 0.8361056522403121
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.07920298673515787,
+     "max": 0.35864796227239826,
+     "maxabs": 0.35864796227239826
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.0035032798949988712,
+     "max": 0.003330926758719954,
+     "maxabs": 0.0035032798949988712
+    },
+    "T2_TROPO_WET": {
+     "min": -0.0002555715938769724,
+     "max": 0.00023466143468570122,
+     "maxabs": 0.0002555715938769724
+    },
+    "T3_IONOSPHERE": {
+     "min": -2.3985062036314028e-05,
+     "max": 1.2540384800557858e-05,
+     "maxabs": 2.3985062036314028e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 9.316521445775379,
+      "k_over_sigma": 0.30009621949467624
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 46.201502497579426,
+      "k_over_sigma": 1.496099121367189
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 11.781940898457373,
+      "k_over_sigma": 1.9794709987097112
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 33.21807700982439,
+      "k_over_sigma": 7.544567535358268
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.6717049429952396,
+      "k_over_sigma": 0.019063760100604326
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 3.331711704754125,
+      "k_over_sigma": 0.09497518520743328
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.8560511744725229,
+      "k_over_sigma": 0.1337023165629578
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.4187780018722838,
+      "k_over_sigma": 0.5122288714886434
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.4626039466168218,
+      "k_over_sigma": 0.010329082607517201
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.286026695889082,
+      "k_over_sigma": 0.05165036949693715
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.026369174467258935,
+      "k_over_sigma": 0.008289251628713013
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.3431060297971527,
+      "k_over_sigma": 0.053323329623446464
+     }
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:12",
+   "elapsed_s": 42.250072956085205,
+   "gates": {
+    "el_min_deg": 10.024857426511275,
+    "el_max_deg": 70.77290637366552,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.254728056675748,
+     "max": 11.84795483976411,
+     "maxabs": 11.84795483976411
+    },
+    "T2_TROPO_WET": {
+     "min": 0.1588439971610067,
+     "max": 0.8346800401756266,
+     "maxabs": 0.8346800401756266
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.035277222679283175,
+     "max": 0.11615300009354099,
+     "maxabs": 0.11615300009354099
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.0028961679512113036,
+     "max": 0.0033557185444496557,
+     "maxabs": 0.0033557185444496557
+    },
+    "T2_TROPO_WET": {
+     "min": -0.00021128150807565583,
+     "max": 0.00023640799845883558,
+     "maxabs": 0.00023640799845883558
+    },
+    "T3_IONOSPHERE": {
+     "min": -6.454790646297689e-06,
+     "max": 4.0889631584423854e-05,
+     "maxabs": 4.0889631584423854e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 3.7754247209159666,
+      "k_over_sigma": 0.2944970231655597
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 18.458226850495983,
+      "k_over_sigma": 1.482437915146224
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 8.57885007745108,
+      "k_over_sigma": 2.6043982273780206
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 29.167652123458048,
+      "k_over_sigma": 9.326334958994018
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.2782738138809042,
+      "k_over_sigma": 0.021837849311873877
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.3623362792527194,
+      "k_over_sigma": 0.10980258010429092
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.5859773879279859,
+      "k_over_sigma": 0.18585882165572154
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.011551949180276,
+      "k_over_sigma": 0.665023598460431
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.057714865330915195,
+      "k_over_sigma": 0.003545579875184541
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.28436030393947215,
+      "k_over_sigma": 0.01772792767418719
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.056531470517188695,
+      "k_over_sigma": 0.002254873591830483
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.20856522285715995,
+      "k_over_sigma": 0.0012969121364828536
+     }
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:0",
+   "elapsed_s": 54.57010078430176,
+   "gates": {
+    "el_min_deg": 10.053521661098074,
+    "el_max_deg": 60.04822832748903,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.372341445429489,
+     "max": 11.647560264148648,
+     "maxabs": 11.647560264148648
+    },
+    "T2_TROPO_WET": {
+     "min": 0.17306726913094977,
+     "max": 0.8331172263959463,
+     "maxabs": 0.8331172263959463
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.07911025890597101,
+     "max": 0.35829679172060724,
+     "maxabs": 0.35829679172060724
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.0034111728349161354,
+     "max": 0.0034205476271719883,
+     "maxabs": 0.0034205476271719883
+    },
+    "T2_TROPO_WET": {
+     "min": -0.0002488521912433816,
+     "max": 0.00024097516149271432,
+     "maxabs": 0.0002488521912433816
+    },
+    "T3_IONOSPHERE": {
+     "min": -2.43359746251004e-05,
+     "max": 1.3877752491985492e-05,
+     "maxabs": 2.43359746251004e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 3.6908966956545677,
+      "k_over_sigma": 1.902795376576575
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 18.147133437381573,
+      "k_over_sigma": 9.53501972758556
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 13.451412590501816,
+      "k_over_sigma": 2.030956738318498
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 46.33867089501999,
+      "k_over_sigma": 5.369780656008833
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.26442414099152683,
+      "k_over_sigma": 0.13501813011320646
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.3001715892858414,
+      "k_over_sigma": 0.6765828365165014
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.9862653942224127,
+      "k_over_sigma": 0.1251978248407018
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 3.39512630909245,
+      "k_over_sigma": 0.317121636102856
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.15849625545482177,
+      "k_over_sigma": 0.1254623759802097
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.7737085757486911,
+      "k_over_sigma": 0.6297105377774089
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.10441992802369987,
+      "k_over_sigma": 0.09374243205801215
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.326167034954259,
+      "k_over_sigma": 0.38088885896221814
+     }
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:12",
+   "elapsed_s": 43.29447150230408,
+   "gates": {
+    "el_min_deg": 10.03463922802971,
+    "el_max_deg": 70.78072205141903,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.254617538631111,
+     "max": 11.61917633958586,
+     "maxabs": 11.61917633958586
+    },
+    "T2_TROPO_WET": {
+     "min": 0.15883621124291486,
+     "max": 0.8342267153831973,
+     "maxabs": 0.8342267153831973
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.03527568901922031,
+     "max": 0.12359534917533113,
+     "maxabs": 0.12359534917533113
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.0030859739633896767,
+     "max": 0.0026395122967508124,
+     "maxabs": 0.0030859739633896767
+    },
+    "T2_TROPO_WET": {
+     "min": -0.00021740468347314172,
+     "max": 0.00019255794140270825,
+     "maxabs": 0.00021740468347314172
+    },
+    "T3_IONOSPHERE": {
+     "min": -6.183728261070544e-06,
+     "max": 4.146592808483701e-05,
+     "maxabs": 4.146592808483701e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 2.8643136264934212,
+      "k_over_sigma": 1.125120899725489
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 14.52583003953627,
+      "k_over_sigma": 5.564271129903094
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 11.609229227137295,
+      "k_over_sigma": 0.4265660071159622
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 38.90926773345488,
+      "k_over_sigma": 0.7209384258988797
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.21015867378800385,
+      "k_over_sigma": 0.07730812942434379
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.0658820180336475,
+      "k_over_sigma": 0.3820323344773437
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.8378782142153138,
+      "k_over_sigma": 0.030956086486555335
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.807437011802629,
+      "k_over_sigma": 0.052503726349486475
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.02640820732619925,
+      "k_over_sigma": 0.013901076024404166
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.12682000816504407,
+      "k_over_sigma": 0.06906618481291167
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.07962877078424781,
+      "k_over_sigma": 0.043313203424451954
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.29443200565462085,
+      "k_over_sigma": 0.15028896515618306
+     }
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:0",
+   "elapsed_s": 48.78964376449585,
+   "gates": {
+    "el_min_deg": 10.008766071876419,
+    "el_max_deg": 60.0021084283633,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.373440139616637,
+     "max": 11.874847612320913,
+     "maxabs": 11.874847612320913
+    },
+    "T2_TROPO_WET": {
+     "min": 0.17314742116932774,
+     "max": 0.836574616985019,
+     "maxabs": 0.836574616985019
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.08417309959021291,
+     "max": 0.35618099959079264,
+     "maxabs": 0.35618099959079264
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.003342889615254426,
+     "max": 0.0032948274029934647,
+     "maxabs": 0.003342889615254426
+    },
+    "T2_TROPO_WET": {
+     "min": -0.0002355042094690174,
+     "max": 0.00024036454870039284,
+     "maxabs": 0.00024036454870039284
+    },
+    "T3_IONOSPHERE": {
+     "min": -2.422246337117374e-05,
+     "max": 1.219071255293506e-05,
+     "maxabs": 2.422246337117374e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 6.285652313977983,
+      "k_over_sigma": 0.1627297649902894
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 31.347133843166176,
+      "k_over_sigma": 0.813659424047643
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 16.564220205393596,
+      "k_over_sigma": 4.9824715021748505
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 60.329333054248885,
+      "k_over_sigma": 16.498542735457274
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.45093404133494935,
+      "k_over_sigma": 0.00979051507335887
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.2487069301096843,
+      "k_over_sigma": 0.048951535090054066
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 1.1821460771013526,
+      "k_over_sigma": 0.35649179105562523
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 4.306598998919704,
+      "k_over_sigma": 1.1817317126323745
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.24815560362836064,
+      "k_over_sigma": 0.019372442936971945
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.240089215061016,
+      "k_over_sigma": 0.09694223106746742
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.19729234530158496,
+      "k_over_sigma": 0.0027022249169288562
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.7454314433455415,
+      "k_over_sigma": 0.023285686230790338
+     }
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:12",
+   "elapsed_s": 46.35798501968384,
+   "gates": {
+    "el_min_deg": 10.018171766861032,
+    "el_max_deg": 71.35670812752741,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.2468722063833484,
+     "max": 11.636923110613823,
+     "maxabs": 11.636923110613823
+    },
+    "T2_TROPO_WET": {
+     "min": 0.15829055806317466,
+     "max": 0.8355008874992427,
+     "maxabs": 0.8355008874992427
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.03516782760466247,
+     "max": 0.09343155733129169,
+     "maxabs": 0.09343155733129169
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.002804158041322324,
+     "max": 0.002671439761624317,
+     "maxabs": 0.002804158041322324
+    },
+    "T2_TROPO_WET": {
+     "min": -0.00020456919275184117,
+     "max": 0.00019488711672718817,
+     "maxabs": 0.00020456919275184117
+    },
+    "T3_IONOSPHERE": {
+     "min": -6.105272701246537e-06,
+     "max": 6.864946728241117e-06,
+     "maxabs": 6.864946728241117e-06
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 7.149175570537505,
+      "k_over_sigma": 0.9640416413952645
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 35.49243251434455,
+      "k_over_sigma": 4.814280463333422
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 9.36453180103414,
+      "k_over_sigma": 2.1096928524091707
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 29.584948409042454,
+      "k_over_sigma": 7.017121485234286
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.5151547240384885,
+      "k_over_sigma": 0.06697736256824509
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.5580156771513702,
+      "k_over_sigma": 0.33454024208817584
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.6427908933881866,
+      "k_over_sigma": 0.14846232314812985
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.0268022903071037,
+      "k_over_sigma": 0.4944433769844224
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.10077190465603536,
+      "k_over_sigma": 0.008473055447224442
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.5008482166091545,
+      "k_over_sigma": 0.042358581628293736
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.036356007765408496,
+      "k_over_sigma": 0.0027440161782148497
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.13944925457123702,
+      "k_over_sigma": 0.008551639372454773
+     }
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:0",
+   "elapsed_s": 44.820082664489746,
+   "gates": {
+    "el_min_deg": 10.11414696909839,
+    "el_max_deg": 60.15023737497561,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.3699178886890957,
+     "max": 11.713064882438239,
+     "maxabs": 11.713064882438239
+    },
+    "T2_TROPO_WET": {
+     "min": 0.17289046559895743,
+     "max": 0.8284484465792952,
+     "maxabs": 0.8284484465792952
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.07936126837507407,
+     "max": 0.35688551509666694,
+     "maxabs": 0.35688551509666694
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.0033854730018217853,
+     "max": 0.0034267168857453475,
+     "maxabs": 0.0034267168857453475
+    },
+    "T2_TROPO_WET": {
+     "min": -0.0002469773346794842,
+     "max": 0.0002414097813966139,
+     "maxabs": 0.0002469773346794842
+    },
+    "T3_IONOSPHERE": {
+     "min": -2.3872783980025587e-05,
+     "max": 8.934123409064705e-06,
+     "maxabs": 2.3872783980025587e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 4.862071911243397,
+      "k_over_sigma": 0.3888756699454842
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 24.265755074655775,
+      "k_over_sigma": 1.9523634489378647
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 9.258940873991932,
+      "k_over_sigma": 3.338351182703189
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 28.657188187909313,
+      "k_over_sigma": 9.976917111000581
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.34979624728312403,
+      "k_over_sigma": 0.023999114366863927
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.7458422823852309,
+      "k_over_sigma": 0.12060238527196715
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.672977726436993,
+      "k_over_sigma": 0.24133742929537835
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 2.084787746055076,
+      "k_over_sigma": 0.7213643422077285
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.22705048450393875,
+      "k_over_sigma": 0.023010263596384608
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.132185033005847,
+      "k_over_sigma": 0.11499814429407036
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.174327764263999,
+      "k_over_sigma": 0.006493083485999864
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.5583903888588534,
+      "k_over_sigma": 0.07051853484844625
+     }
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:12",
+   "elapsed_s": 41.51750898361206,
+   "gates": {
+    "el_min_deg": 10.068114531531997,
+    "el_max_deg": 70.84063314307684,
+    "zhd_m": [
+     2.0561439410312286,
+     2.08921198374389,
+     2.129190995858334
+    ]
+   },
+   "range_m": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": 2.2537957907095447,
+     "max": 11.725188304977369,
+     "maxabs": 11.725188304977369
+    },
+    "T2_TROPO_WET": {
+     "min": 0.1587783196829399,
+     "max": 0.8314391607342371,
+     "maxabs": 0.8314391607342371
+    },
+    "T3_IONOSPHERE": {
+     "min": 0.03526425670416874,
+     "max": 0.12694864083409813,
+     "maxabs": 0.12694864083409813
+    }
+   },
+   "doppler_mps": {
+    "T1_TROPO_HYDROSTATIC": {
+     "min": -0.003311584778919041,
+     "max": 0.002882977586035314,
+     "maxabs": 0.003311584778919041
+    },
+    "T2_TROPO_WET": {
+     "min": -0.0002332988058864153,
+     "max": 0.00021031924335433808,
+     "maxabs": 0.0002332988058864153
+    },
+    "T3_IONOSPHERE": {
+     "min": -6.196508307781956e-06,
+     "max": 4.2138775508269075e-05,
+     "maxabs": 4.2138775508269075e-05
+    }
+   },
+   "ddor": null,
+   "od": {
+    "T1_TROPO_HYDROSTATIC": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 3.4530361597802885,
+      "k_over_sigma": 2.0145739947150245
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 17.30637544060681,
+      "k_over_sigma": 10.130177930819304
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 21.384461628354103,
+      "k_over_sigma": 0.8881337178911358
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 66.33568117877978,
+      "k_over_sigma": 2.6116204315387535
+     }
+    },
+    "T2_TROPO_WET": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.25112399995239426,
+      "k_over_sigma": 0.1462508355893365
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 1.25878073926927,
+      "k_over_sigma": 0.7356517049725646
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 1.5459593102254876,
+      "k_over_sigma": 0.06390306578428272
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 4.797683461801107,
+      "k_over_sigma": 0.18689159516377496
+     }
+    },
+    "T3_IONOSPHERE": {
+     "RANGE_ONLY|PROJECT": {
+      "max_state_over_sigma": 0.04219800936770177,
+      "k_over_sigma": 0.016637285487148955
+     },
+     "RANGE_ONLY|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.21135324674096778,
+      "k_over_sigma": 0.08375783912861737
+     },
+     "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+      "max_state_over_sigma": 0.08648630055940608,
+      "k_over_sigma": 0.006341909721310672
+     },
+     "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+      "max_state_over_sigma": 0.35250808720160015,
+      "k_over_sigma": 0.025790784163318002
+     }
+    }
+   }
+  }
+ ],
+ "gates": {
+  "S1_elevation": true,
+  "S1_values": {
+   "min_deg": 10.008766071876419,
+   "max_deg": 71.35670812752741
+  },
+  "S2_tropo_sanity": true,
+  "S2_zhd_m": {
+   "min": 2.0561439410312286,
+   "max": 2.129190995858334
+  },
+  "S3_iono_sanity": true,
+  "S3_zenith_30tecu_m": 0.1689505457929197,
+  "S4_convergence": true
+ },
+ "classification": {
+  "T1_TROPO_HYDROSTATIC": {
+   "range_over_sigma_dsn": 11.874847612320913,
+   "doppler_over_sigma_dsn": 116.84402539856363,
+   "ddor_over_sigma": 186.38487866102312,
+   "od_max_over_sigma": 66.33568117877978,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T2_TROPO_WET": {
+   "range_over_sigma_dsn": 0.836574616985019,
+   "doppler_over_sigma_dsn": 8.519053129232413,
+   "ddor_over_sigma": 13.001471009291567,
+   "od_max_over_sigma": 4.797683461801107,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T3_IONOSPHERE": {
+   "range_over_sigma_dsn": 0.35864796227239826,
+   "doppler_over_sigma_dsn": 1.4046258502756357,
+   "ddor_over_sigma": 3.069617454308853,
+   "od_max_over_sigma": 3.45631271028825,
+   "OBSERVABLE_MATERIAL": true,
+   "OD_MATERIAL": true,
+   "decision": "IMPLEMENT"
+  },
+  "T4_RAMPED_UPLINK": "CONVENTION_REAL_DATA (fixed in advance)"
+ }
+}

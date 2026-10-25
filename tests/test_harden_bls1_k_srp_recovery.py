@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import pytest as _pytest_c4i
 
 pytest.importorskip("spiceypy")
 
@@ -35,6 +36,11 @@ from lunar_od.two_way_range import generate_two_way_range_measurements  # noqa: 
 from tests import test_k_srp_bls_solve_for as base  # noqa: E402
 
 # the KP2 cross-check a-priori offset (rng([98, 0, 0]) draw, rounded)
+# Phase C4-I (owner-accepted 2026-10-25): the bound-active case is a DE421-frozen
+# fixture (on DE440 no negative-K trial occurs), so the module runs on DE421.
+pytestmark = _pytest_c4i.mark.usefixtures("de421_ephemeris")
+
+
 DX_APRIORI = np.array([-108.8, -124.5, 56.1, 0.069, 0.043, 0.107])
 TOL = dict(rtol=1e-12, atol=1e-13)
 

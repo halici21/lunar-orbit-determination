@@ -44,6 +44,11 @@ from lunar_od.two_way_counted_doppler_reference import (
     reference_config_with_delay,
 )
 
+import pytest as _pytest_c4i  # noqa: E402
+
+# Phase C4-I: reproduces the R2/R3 campaign golden values (DE421); pinned to the ephemeris it was computed with.
+pytestmark = _pytest_c4i.mark.usefixtures("de421_ephemeris")
+
 
 ROOT = Path(__file__).resolve().parents[1]
 

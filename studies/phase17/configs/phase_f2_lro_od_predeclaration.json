@@ -1,0 +1,41 @@
+{
+ "phase": "Phase F2 - first orbit determination of LRO from real tracking: 12 h arc, range only, compared with the LOLA precision orbit",
+ "written": "2026-10-24, before any F2 number was computed",
+ "data": "F1's 2009-260 arc: 2 473 USN S-band two-way ranges (PAD 103, 105, 126), 6 passes over 12 h (2009-09-16 23:57 to 2009-09-17 12:00 UTC)",
+ "measurement_model": "F1's M_FULL unchanged (DSN_C2 light time, DE440, high-precision Earth PCK, solid tide, Niell troposphere, S-band climatological ionosphere)",
+ "dynamics": {
+  "gravity": "GL1800F (gravity_data_root()/gl1800f/jggrx_1800f_sha.tab) truncated at degree/order N, its own GM and radius, MOON_PA_DE440 in direct-epoch mode (harmonic_epoch_et0), the matched analytic Pines gradient in the STM (harmonic_stm_opt_in); N in {60, 100} (100 is the qualified upper limit of the harmonic STM path)",
+  "third_body": "Earth and Sun point masses, DE440, through sample_moon_centered_ephemeris on a 60 s grid; GM from gm_de431",
+  "srp": "cannonball, CONICAL_PENUMBRA lunar shadow, K_SRP estimated from K0 = 0.01 m^2/kg (no prior)",
+  "propagation": "dynamics.PropagationProfile() (DOP853, shadow events), rtol 1e-10, atol 1e-11 (relaxed from 1e-11 / 1e-12 for runtime; D1 measured DOP853 at 1e-11 at 0.2 mm/day, so this is still far below the metre-level question)"
+ },
+ "estimation": {
+  "solve_for": "initial state at the arc epoch (first range - 120 s) in Moon-centred J2000, K_SRP, one constant range bias per station (3)",
+  "algorithm": "Gauss-Newton with Levenberg-Marquardt damping (in the F2 script; the production two-way estimators are built around the synthetic PassGeometry pipeline), unit weights at sigma 1 m, partials from propagate_state_with_k_sensitivity through relativistic_light_time.two_way_range_partial, bias partial 1",
+  "a_priori": "the LOLA SPK state at the epoch plus a deterministic offset of 1 km in each position axis and 1 m/s in each velocity axis (so the result is not seeded with the reference); a second start with the opposite sign checks independence",
+  "termination": "relative cost change < 1e-8 with a position step < 1 mm, or 30 iterations"
+ },
+ "gates": {
+  "G1_convergence": "both starts converge per the termination rule for N = 100",
+  "G2_start_independence": "the two starts agree to <= 1 cm in position over the arc and <= 1 mm in each bias (N = 100)",
+  "G3_postfit": "post-fit range RMS <= 2 m over all passes (N = 100)",
+  "G4_partials": "the analytic range partials agree with central finite differences of the full model (state steps 1 m / 1 mm/s, K step 1e-3) to <= 1e-4 relative on 10 sampled ranges (N = 60)"
+ },
+ "reported_not_gated": {
+  "comparison": "position difference to the LOLA SPK over the arc: RMS and max of the radial / along-track / cross-track components and of the total, for N = 60 and 100",
+  "biases": "estimated station biases vs F1's per-pass means (Dongara 487.8-490.8 m, South Point 476.9 m, Kiruna 474.5 m)",
+  "K_SRP": "the estimate and its formal sigma",
+  "expectation": "the difference to the LOLA orbit is dominated by gravity truncation at N <= 100 for LRO's ~50 km altitude (LOLA used GRGM900C to degree 600) and is expected to shrink from N = 60 to 100; F1b puts the reference's own along-track error at ~5-7 m"
+ },
+ "outputs": {
+  "report": "studies/phase17/reports/phase_f2_lro_od.md",
+  "results": "studies/phase17/results/phase_f2_lro_od.json"
+ },
+ "not_in_scope": "Doppler, multi-day arcs, momentum-dump modelling, box-wing SRP, degree > 100, empirical accelerations",
+ "amendment_A1": {
+  "written": "2026-10-24, after two smoke tests and before any gate or comparison number",
+  "smoke_test_observations_disclosed": "propagate_state_with_k_sensitivity with GL1800F N=100 took 721 s for the 12 h arc (its RHS evaluates the harmonic acceleration in pure Python; frozen dynamics.py is not changed here); the 6-state propagator (numba harmonic kernel) took 5.7-6.6 s. Propagating the LOLA epoch state with N=100 differs from the LOLA SPK by up to 266 m over the arc; prefit means with that state were 497 / 481 / 553 m (PAD 103 / 105 / 126)",
+  "change": "the STM and dx/dK used by relativistic_light_time.two_way_range_partial are built from central differences of the 6-state propagator (state steps 10 m / 1 cm/s, K step 1e-3 m^2/kg) and assembled into the 48-column history layout [x, Phi column-major, dx/dK]; the residual itself is always computed from the full 6-state propagation, so the converged solution does not depend on the partials' small FD error",
+  "G4_redefined": "the FD-STM-based range partials agree with direct central differences of the full measurement function (state steps 10 m / 1 cm/s, K step 1e-3 m^2/kg) to <= 1e-4 relative per column on 10 sampled ranges (N = 60)"
+ }
+}

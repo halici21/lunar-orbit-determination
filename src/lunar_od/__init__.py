@@ -10,8 +10,11 @@ from .geometry import (
 )
 from .config import Station, position_only_stations, range_rate_stations
 from .spice_loader import (
+    DEFAULT_PLANETARY_EPHEMERIS,
     REQUIRED_KERNELS,
     default_kernel_candidates,
+    planetary_ephemeris,
+    required_kernels,
     load_spice_kernels,
     required_kernel_paths,
     resolve_kernel_dir,
@@ -316,6 +319,9 @@ __all__ = [
     "ecef2sez_dcm",
     "geodetic_to_ecef_wgs84",
     "REQUIRED_KERNELS",
+    "DEFAULT_PLANETARY_EPHEMERIS",
+    "planetary_ephemeris",
+    "required_kernels",
     "Station",
     "ACCELERATION_BACKEND",
     "NUMBA_AVAILABLE",

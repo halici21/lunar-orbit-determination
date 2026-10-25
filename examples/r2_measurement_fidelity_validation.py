@@ -410,6 +410,33 @@ PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# --------------------------------------------------------------------------
+# Phase D2 re-freeze (authorized by the owner on 2026-10-23: re-freeze of
+# dynamics.py, srp.py and estimators.py for the D2 propagation-consistency fix)
+# --------------------------------------------------------------------------
+# lunar_od/dynamics.py, branch phase-d2-propagation:
+#   + PropagationProfile, shadow_contact_times and the private helpers
+#     _integrate, _integrate_segmented, _shadow_contact_times, _build_state_rhs
+#   propagate_state, propagate_augmented_state (incl. the harmonic branch),
+#   propagate_state_with_k_sensitivity: + shadow_events=False keyword
+#   propagate_state's RHS construction moved verbatim into _build_state_rhs
+# With shadow_events=False (the default) every path integrates exactly as
+# before; Phase D2 gate G1 checks the outputs bit for bit against the
+# unmodified code.  Reason: Phase D1 F2 -- no integrator restart at penumbra
+# contacts, up to 1.9 m over a ~1.2 day arc.
+#
+#   old (Phase 17-F1)  c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921
+#   new (Phase D2)     2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+#
+# All earlier tables are left untouched as truthful historical records.  An
+# unauthorized future edit to dynamics.py still fails the gate.
+PHASE_D2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
+}
+
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -422,6 +449,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in PHASE_D2_REFROZEN_CURRENT_TREE_SHA256:
+        return PHASE_D2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256:
