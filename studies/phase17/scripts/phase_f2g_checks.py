@@ -54,8 +54,8 @@ def main():
     out = dict(G0=dict(PASS=g0, max_abs_diff_m=g0_max, rows=int(prod.shape[0])),
                G4e=dict(PASS=worst <= 1e-3, range_column_rel_err=col_r, doppler_column_rel_err=col_d, max=worst,
                         range_partial_norms=[float(np.linalg.norm(fd_r[:, j])) for j in range(4)]),
-               elapsed_s=time.time() - t0)
-    OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
+               numerical_identity=F2.numerical_identity(), elapsed_s=time.time() - t0)
+    F2._write_result(OUT, json.dumps(out, indent=1), encoding="utf-8")
     print(json.dumps(out, indent=1))
 
 
