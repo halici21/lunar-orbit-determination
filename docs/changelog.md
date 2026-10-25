@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.5 — 2026-10-25
+
 ### Scientific model changes (roadmap phases C1–F2, PR #46, #48, #55)
 
 - **Production planetary ephemeris is now DE440** (Phase C4-I, `C4I_QUALIFIED`,
@@ -26,7 +28,33 @@
   first 12 h range-only orbit determination (F2, `F2_NOT_QUALIFIED` as computed).
 - Materiality surveys and characterizations that did not change production code:
   C1, C2, C3, C4, C5, D1. Reports and predeclarations are in
-  `studies/phase17/reports/phase_*.md` and `studies/phase17/configs/`.
+  `studies/phase17/reports/phase_*.md` and `studies/phase17/configs/`; the
+  [research studies guide](../studies/README.md) lists them with their outcomes.
+
+### Estimator and ephemeris repairs (PR #41, #45)
+
+- HARDEN-D18/D19: interpolated histories raise `EphemerisCoverageError` more than
+  10 s outside their grid instead of extrapolating.
+- HARDEN-D30: BLS-LM rescores a rejected two-way range step at a tighter
+  integration tolerance, so integration noise no longer rejects real gains.
+
+### Phase 17 records (PR #39)
+
+- FE-P external gravity prior (`FE_PRIOR_TOO_WEAK_TO_SUPPRESS`, owner-accepted)
+  and MM-G GL1800F-internal omission study joined the study layout.
+
+### Desktop application (PR #50–#53)
+
+- Six Turkish task pages: Senaryo → Çalıştır → Sonuçlar → Arşiv → İstasyonlar →
+  Görünürlük (+ Ayarlar). Çalıştır only monitors runs; the analysis, dashboard,
+  file-browser and unread settings pages were removed.
+- Modern light palette by default, with the softened graphite "Gece" and Orchid
+  palettes; lighter type and spacing.
+- Arşiv has three tabs: runs from several result folders, reports and figures
+  with preview, and recorded pytest sessions and imported CI runs
+  (`tools/import_ci_test_runs.py`).
+- Smoother ground-track and orbit-preview animation (blitting, in-place 3D
+  updates) and a pause control for the orbit camera.
 
 ### Workspace and repository
 
@@ -39,6 +67,11 @@
 - GitHub keeps only `main`: finished branches are merged and deleted, and pull
   requests use merge commits only, so the commit identities cited by study
   reports stay reachable from `main`.
+- Retire the 25 `branch-history/2026-10-10/*` tags: every tagged commit is in
+  `main`, and each tag's name, commit and message is recorded in
+  `docs/development/branch_consolidation_2026-10-10/retired_tags_2026-10-25.json`.
+- Add index pages for research studies (`studies/README.md`) and development
+  documentation (`docs/development/README.md`); group the documentation index.
 
 - Synchronize the QProcess liveness test with child ready/release signals, retaining
   five observed timer callbacks and the final partial-line flush assertion.

@@ -2,48 +2,32 @@
 
 [Searchable documentation website](https://halici21.github.io/lunar-orbit-determination/)
 
+## Start here
+
 - [First orbit determination fit (no external data)](tutorials/quickstart.md)
+- [Install and use on Windows (Türkçe)](windows-quickstart.md)
+- [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
 - [Results gallery and reproduction](research/results-gallery.md)
 - [Estimator/model support matrix](validation/support-matrix.md)
 - [Python API map](site/api.md)
-- [Roadmap](roadmap.md)
-- [Release and DOI procedure](development/releases.md)
-- [Root layout cleanup and command migration](development/root-layout-cleanup.md)
 
-- [Install and use on Windows (Türkçe)](windows-quickstart.md)
-- [Station catalogue responsive layout](development/station-layout_2026-10-15.md)
-- [Station map key: unobstructed geography and custom markers](development/station-legend_2026-10-15.md)
-- [Station row identity after sorting and filtering](development/station-sorting_2026-10-16.md)
-- [Station numeric ordering and missing values](development/station-numeric-sort_2026-10-16.md)
-- [Catalogue map labels and exact name selection](development/station-map-labels_2026-10-16.md)
-- [Visibility result context and export identity](development/visibility-context_2026-10-16.md)
-- [Responsive visibility workspace and scroll reach](development/visibility-responsive_2026-10-17.md)
-- [Ground-track model, visibility and duration labels](development/ground-track-models_2026-10-18.md)
-- [Ground-track hidden timers and preserved playback position](development/ground-track-timers_2026-10-18.md)
-- [Ground-track matching results and exports after render errors](development/ground-track-result-pair_2026-10-18.md)
-- [Ground-track request settings, pending models and result provenance](development/ground-track-request-context_2026-10-18.md)
-- [Responsive ground-track and orbit-designer forms](development/ground-track-responsive_2026-10-19.md)
-- [Ground-track plot contrast and complete captions](development/ground-track-legibility_2026-10-19.md)
-- [Compact narrow ground-track controls and preserved state](development/ground-track-density_2026-10-20.md)
-- [Ground-track first-use guidance and truthful time labels](development/ground-track-guidance_2026-10-20.md)
-- [Keyboard access and visible focus in SPICE surface-track settings](development/ground-track-keyboard_2026-10-21.md)
-- [Clear analytical-designer inputs and their source meaning](development/orbit-designer-guidance_2026-10-21.md)
-- [Complete keyboard focus in the analytical orbit designer](development/orbit-designer-keyboard_2026-10-21.md)
-- [Keep parameter names visible with Designer keyboard focus](development/orbit-designer-context_2026-10-22.md)
-- [Visible keyboard focus on orbit-designer sliders](development/orbit-slider-focus_2026-10-22.md)
-- [Skip orbit-preview redraws outside the viewport](development/orbit-preview-visibility_2026-10-23.md)
-- [Pause the orbit camera for inspection](development/orbit-camera-control_2026-10-25.md)
-- [Native desktop workflow](../desktop_app/RESULT_WORKFLOW.md)
+## Science
+
 - [Theory](theory/): frames, dynamics, light time, aberration and two-way observables
 - [Validation and public CI](validation/verification.md)
 - [Baseline research guide](research/research-guide.md)
-- [Phase 17 study and reproduction](../studies/phase17/README.md)
+- [Research studies](../studies/README.md): the Phase 17 campaign and roadmap phases C1–F2
 - [Authoritative scientific status](../studies/phase17/reports/phase17_authoritative_status.md)
+
+## Project
+
+- [Roadmap](roadmap.md) · [Changelog](changelog.md) · [Citation](../CITATION.cff)
+- [Contributing](../.github/CONTRIBUTING.md)
+- [Release and DOI procedure](development/releases.md)
+- [Development documentation](development/README.md): procedures, desktop change records and
+  historical repository records
 - [Repository architecture and artifact policy](development/repository-layout.md)
-- [Migration audit and verification](development/repository-professionalization.md)
-- [Development evidence and branch consolidation](development/branch_consolidation_2026-10-10/README.md)
 - [Earlier interfaces](legacy-tools.md)
-- [Contributing](../.github/CONTRIBUTING.md) · [Changelog](changelog.md) · [Citation](../CITATION.cff)
 
 Qualification applies to the assumptions and configuration in each report.
 Historical archives and machine-readable records preserve original paths;
