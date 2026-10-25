@@ -144,21 +144,32 @@ def test_camera_toggle_keeps_manual_view_inputs_and_results_and_survives_navigat
     QTest.keyClick(toggle, Qt.Key_Space)
     assert not toggle.isChecked() and not designer._preview_timer.isActive()
     phase = designer._preview_phase_deg
-    designer._ax.view_init(elev=13, azim=73)
+    designer._ax.view_init(elev=13, azim=73, roll=17)
     with patch.object(designer._canvas, "draw_idle") as draw:
         for _ in range(30):
             designer._animate_preview()
         draw.assert_not_called()
     assert designer._preview_phase_deg == phase
-    assert (designer._ax.elev, designer._ax.azim) == (13, 73)
+    assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == (13, 73, 17)
 
     # Pausing camera motion must still allow an explicit parameter edit.
-    control = designer._spins["inc_deg"]
-    control.setFocus()
-    value = control.value()
-    QTest.keyClick(control, Qt.Key_Up)
-    assert control.value() == value + control.singleStep()
-    assert designer._display_elems["inc_deg"] == control.value()
+    for key, control in designer._spins.items():
+        control.setFocus()
+        value = control.value()
+        QTest.keyClick(control, Qt.Key_Up)
+        assert control.value() == value + control.singleStep()
+        assert designer._display_elems[key] == control.value()
+        assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == (13, 73, 17)
+    slider = designer._sliders["e"]
+    value = designer._spins["e"].value()
+    QTest.keyClick(slider, Qt.Key_Right)
+    assert designer._spins["e"].value() > value
+    assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == (13, 73, 17)
+    # Retain orientation, but refit the axes to a much larger edited orbit.
+    previous_limit = designer._ax.get_xlim3d()[1]
+    designer._spins["alt_km"].setValue(5000)
+    assert designer._ax.get_xlim3d()[1] > previous_limit
+    assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == (13, 73, 17)
     assert not designer._preview_timer.isActive()
     view.navigate("stations")
     settle(app)
@@ -171,12 +182,18 @@ def test_camera_toggle_keeps_manual_view_inputs_and_results_and_survives_navigat
     toggle.setFocus()
     QTest.keyClick(toggle, Qt.Key_Space)
     assert toggle.isChecked() and designer._preview_timer.isActive()
+    # Drive one frame explicitly so elapsed Qt timer ticks cannot mask a jump.
+    designer._preview_timer.stop()
     bar = view.pageScroll.verticalScrollBar()
     bar.setValue(bar.maximum())
     settle(app)
     assert not designer._canvas.visibleRegion().isEmpty()
-    phase = designer._preview_phase_deg
+    assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == (13, 73, 17)
     designer._animate_preview()
-    assert designer._preview_phase_deg != phase
+    assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == pytest.approx((13, 75.4, 17))
+    # A later manual drag and azimuth wrap must also continue from that view.
+    designer._ax.view_init(elev=-11, azim=359, roll=-8)
+    designer._animate_preview()
+    assert (designer._ax.elev, designer._ax.azim, designer._ax.roll) == pytest.approx((-11, 1.4, -8))
     assert (page._data, page._fig, page._canvas, page._anim_idx) == original
     assert export_rows(page, tmp_path / "camera-after.csv") == before
