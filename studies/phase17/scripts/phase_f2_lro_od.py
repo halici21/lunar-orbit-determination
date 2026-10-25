@@ -615,8 +615,49 @@ def main_f2e():
     print(json.dumps(dict(gates=gates, G2=dpos, runs=brief, prediction=a["prediction"]), indent=1))
 
 
+OUT_F2F = HERE.parent / "results" / "phase_f2f_lro_degree300_continuation.json"
+
+
+def main_f2f():
+    """Phase F2f (studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json)."""
+    from concurrent.futures import ThreadPoolExecutor
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    workers = _workers_arg() or 7
+
+    def run_s1():
+        return solve(300, 1.0, F2B_PRIORS, "f1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers)
+
+    def run_s2():
+        one = solve(300, 1.0, F2B_PRIORS, "f2a", True, (F.DAY_DIR,), s2, (), workers)
+        two = solve(300, 1.0, F2B_PRIORS, "f2b", True, F2E_FIT_DAYS, np.array(one["x0"]), (), workers)
+        one.pop("est_positions")
+        two["continuation_stage1"] = one
+        return two
+
+    # each solve owns a process pool; the threads only orchestrate
+    with ThreadPoolExecutor(2) as ex:
+        f1, f2 = ex.submit(run_s1), ex.submit(run_s2)
+        runs = {"S1": f1.result(), "S2": f2.result()}
+    a, b = runs["S1"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, priors=F2B_PRIORS, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs=runs)
+    OUT_F2F.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2e" in sys.argv:
+    if "--f2f" in sys.argv:
+        main_f2f()
+    elif "--f2e" in sys.argv:
         main_f2e()
     elif "--f2b" in sys.argv:
         main_f2b()
