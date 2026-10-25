@@ -30,6 +30,7 @@ class ArchiveEntry:
     notes: tuple[str, ...]
     derived_from: dict = field(default_factory=dict)
     job_schema: str = ""  # "lunar-od-desktop-job-v1" when Senaryo produced the run
+    source: str = ""      # which archive source folder listed it
 
 
 def read_json(path):
