@@ -618,29 +618,32 @@ def main_f2e():
 OUT_F2F = HERE.parent / "results" / "phase_f2f_lro_degree300_continuation.json"
 
 
-def main_f2f():
-    """Phase F2f (studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json)."""
-    from concurrent.futures import ThreadPoolExecutor
+def _f2f_part_path(name: str) -> Path:
+    return HERE.parent / "results" / f"phase_f2f_part_{name}.json"
+
+
+def main_f2f_part(name: str):
+    """One F2f start in its own OS process (CSPICE is not thread-safe, so the starts cannot share a process)."""
     pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
         encoding="utf-8"))
     s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
     s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
     workers = _workers_arg() or 7
-
-    def run_s1():
-        return solve(300, 1.0, F2B_PRIORS, "f1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers)
-
-    def run_s2():
+    if name == "s1":
+        run = solve(300, 1.0, F2B_PRIORS, "f1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers)
+    else:
         one = solve(300, 1.0, F2B_PRIORS, "f2a", True, (F.DAY_DIR,), s2, (), workers)
-        two = solve(300, 1.0, F2B_PRIORS, "f2b", True, F2E_FIT_DAYS, np.array(one["x0"]), (), workers)
+        run = solve(300, 1.0, F2B_PRIORS, "f2b", True, F2E_FIT_DAYS, np.array(one["x0"]), (), workers)
         one.pop("est_positions")
-        two["continuation_stage1"] = one
-        return two
+        run["continuation_stage1"] = one
+    _f2f_part_path(name).write_text(json.dumps(run), encoding="utf-8")
 
-    # each solve owns a process pool; the threads only orchestrate
-    with ThreadPoolExecutor(2) as ex:
-        f1, f2 = ex.submit(run_s1), ex.submit(run_s2)
-        runs = {"S1": f1.result(), "S2": f2.result()}
+
+def main_f2f():
+    """Phase F2f (studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json): merge the
+    two parts written by ``--f2f-part s1`` and ``--f2f-part s2``."""
+    runs = {"S1": json.loads(_f2f_part_path("s1").read_text(encoding="utf-8")),
+            "S2": json.loads(_f2f_part_path("s2").read_text(encoding="utf-8"))}
     a, b = runs["S1"], runs["S2"]
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
     gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
@@ -655,7 +658,9 @@ def main_f2f():
 
 
 if __name__ == "__main__":
-    if "--f2f" in sys.argv:
+    if "--f2f-part" in sys.argv:
+        main_f2f_part(sys.argv[sys.argv.index("--f2f-part") + 1])
+    elif "--f2f-merge" in sys.argv:
         main_f2f()
     elif "--f2e" in sys.argv:
         main_f2e()
