@@ -139,6 +139,13 @@ navigation accuracy or estimator convergence. This project has no claim of
 flight qualification or real-mission validation. External tool comparisons
 qualify only their documented assumptions.
 
+The production planetary ephemeris is **DE440** since roadmap phase C4-I; results
+recorded earlier used DE421, which remains selectable with
+`LUNAR_OD_PLANETARY_EPHEMERIS=DE421` and reproduces them bit for bit. The measurement
+and dynamics upgrades of phases C1–D2 and the first real LRO tracking studies (F1–F2)
+are summarised in the [changelog](docs/changelog.md); each phase has a predeclared
+report under `studies/phase17/reports/phase_*.md`.
+
 For current scientific conclusions, superseded results and known defects, start
 with the [authoritative Phase 17 status](studies/phase17/reports/phase17_authoritative_status.md)
 and [defect ledger](studies/phase17/reports/phase17_harden_defect_ledger.md).

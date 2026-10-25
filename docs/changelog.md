@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+### Scientific model changes (roadmap phases C1–F2, PR #46, #48, #55)
+
+- **Production planetary ephemeris is now DE440** (Phase C4-I, `C4I_QUALIFIED`,
+  owner-accepted 2026-10-25). Select DE421 with `ephemeris="DE421"` or
+  `LUNAR_OD_PLANETARY_EPHEMERIS=DE421`; DE421 reproduces every earlier record bit
+  for bit. Record-reproducing test modules are pinned with the `de421_ephemeris`
+  fixture. **Numbers computed before this change were computed on DE421.**
+- Barycentric light time, Sun and Earth Shapiro delay and the TT interval for
+  two-way observables (C1-I, `C1I_QUALIFIED`).
+- Station time and a station-clock consider parameter (C2-I, `C2I_QUALIFIED`).
+- Station coordinate realization and solid Earth tide (C3-I, `C3I_QUALIFIED`).
+- Media calibration interface: troposphere (Niell mapping, IERS zenith
+  hydrostatic delay) and ionosphere delays; ramped uplink stays a real-data
+  convention (C5-I, `C5I_QUALIFIED`).
+- Opt-in `PropagationProfile` with shadow events and estimator
+  `propagation_profile` (D2, `D2_QUALIFIED`, owner-accepted 2026-10-25). With the
+  profile BLS-LM closes 0.041 mm and SRIF 0.044 mm from the truth; SRIF still
+  reports `MaxIter` because it has no stationarity exit after a rejected step.
+  The default profile is unchanged.
+- UTDF tracking reader (`lunar_od.utdf`) and first real LRO studies: two-way range
+  and Doppler residuals against the LOLA precision orbit (F1, F1b, F1c) and a
+  first 12 h range-only orbit determination (F2, `F2_NOT_QUALIFIED` as computed).
+- Materiality surveys and characterizations that did not change production code:
+  C1, C2, C3, C4, C5, D1. Reports and predeclarations are in
+  `studies/phase17/reports/phase_*.md` and `studies/phase17/configs/`.
+
+### Workspace and repository
+
+- Replace the owner's absolute Windows paths in current documents with
+  `<workspace>`, `<kernel-dir>` and `<python>` placeholders; the D25 qualification
+  script resolves the campaign data through `campaign_root()`. Archived records
+  under `archive/` and byte-preserved scripts keep their original text.
+
 - Synchronize the QProcess liveness test with child ready/release signals, retaining
   five observed timer callbacks and the final partial-line flush assertion.
 
