@@ -892,6 +892,20 @@ class _OrbitDesigner(QWidget):
         gen_btn.clicked.connect(self._generate_track)
         ctrl_lay.addWidget(gen_btn)
 
+        self._rotation_toggle = QCheckBox("3B kamerayı döndür")
+        self._rotation_toggle.setObjectName("previewRotationToggle")
+        self._rotation_toggle.setChecked(True)
+        self._rotation_toggle.setAccessibleName("3B önizleme kamera dönüşü")
+        camera_help = (
+            "Kamerayı durdurup yörüngeyi fareyle inceleyebilirsiniz.\n"
+            "Bu seçenek yalnızca bakış açısını değiştirir; kayıtlı koşunun\n"
+            "zamanını veya analitik hesaplamayı değiştirmez."
+        )
+        self._rotation_toggle.setToolTip(camera_help)
+        self._rotation_toggle.setAccessibleDescription(camera_help)
+        self._rotation_toggle.toggled.connect(self._set_preview_rotation)
+        ctrl_lay.addWidget(self._rotation_toggle)
+
         note = QLabel(
             "a − R_Ay: yarı büyük eksen ile Ay yarıçapının farkı.\n"
             "Analitik iki cisim ön incelemesi. Ay dönüşü sabit hızlı Z dönüşüdür;\n"
@@ -984,7 +998,7 @@ class _OrbitDesigner(QWidget):
         self._redraw_preview(self._display_elems)
 
     def _animate_preview(self) -> None:
-        if self._ax is None or self._canvas is None:
+        if self._ax is None or self._canvas is None or not self._rotation_toggle.isChecked():
             return
         # A visible tab can still have its preview clipped by the page scroll area.
         if self._canvas.visibleRegion().isEmpty():
@@ -996,12 +1010,17 @@ class _OrbitDesigner(QWidget):
         except Exception:
             pass
 
+    def _set_preview_rotation(self, enabled: bool) -> None:
+        if enabled and self.isVisible():
+            self._preview_timer.start()
+        else:
+            self._preview_timer.stop()
+
     # Pause the expensive 3-D redraw loop whenever the designer is not
     # visible, so it does not bog down the rest of the UI on other pages.
     def showEvent(self, event) -> None:
         super().showEvent(event)
-        if not self._preview_timer.isActive():
-            self._preview_timer.start()
+        self._set_preview_rotation(self._rotation_toggle.isChecked())
 
     def hideEvent(self, event) -> None:
         super().hideEvent(event)
@@ -1684,7 +1703,7 @@ class GroundTrackController(QWidget):
         self._orbit_designer = _OrbitDesigner(self)
         designer = self._orbit_designer
         controls = (*designer._spins.values(), *designer._sliders.values(),
-                    designer._dur_spin, designer._generate_btn)
+                    designer._dur_spin, designer._generate_btn, designer._rotation_toggle)
         self._keyboard_controls += controls
         for control in controls:
             control.installEventFilter(self)

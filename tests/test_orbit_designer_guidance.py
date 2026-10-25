@@ -109,3 +109,74 @@ def test_designer_identifies_axis_offset_and_preserves_explicit_generation_and_g
     propagate.assert_not_called()
     assert (page._data, page._fig, page._canvas) == generated
     assert export_rows(page, tmp_path / "after-rejection.csv") == after
+
+
+@pytest.mark.parametrize("size", [(1480, 1000), (760, 420)])
+def test_camera_toggle_keeps_manual_view_inputs_and_results_and_survives_navigation(window, tmp_path, size):
+    from PyQt5.QtCore import QCoreApplication, QEvent
+
+    view, page, app = window
+    designer = page._orbit_designer
+    view.resize(*size)
+    view.activateWindow()
+    page._tab_widget.setCurrentIndex(1)
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    settle(app)
+    toggle = designer.findChild(gt.QCheckBox, "previewRotationToggle")
+    assert toggle is not None
+    assert toggle.isChecked() and designer._preview_timer.isActive()
+    assert "bakış açısını" in toggle.toolTip() and toggle.accessibleDescription()
+    original = (page._data, page._fig, page._canvas, page._anim_idx)
+    before = export_rows(page, tmp_path / "camera-before.csv")
+
+    # Tab from Generate must expose the entire new control at the minimum size.
+    reveal(view, designer._generate_btn, app)
+    designer._generate_btn.setFocus()
+    QTest.keyClick(designer._generate_btn, Qt.Key_Tab)
+    settle(app)
+    assert toggle.hasFocus()
+    ancestor = toggle.parentWidget()
+    while ancestor is not None:
+        if isinstance(ancestor, QScrollArea):
+            viewport = ancestor.viewport()
+            assert viewport.rect().contains(QRect(toggle.mapTo(viewport, QPoint()), toggle.size()))
+        ancestor = ancestor.parentWidget()
+    QTest.keyClick(toggle, Qt.Key_Space)
+    assert not toggle.isChecked() and not designer._preview_timer.isActive()
+    phase = designer._preview_phase_deg
+    designer._ax.view_init(elev=13, azim=73)
+    with patch.object(designer._canvas, "draw_idle") as draw:
+        for _ in range(30):
+            designer._animate_preview()
+        draw.assert_not_called()
+    assert designer._preview_phase_deg == phase
+    assert (designer._ax.elev, designer._ax.azim) == (13, 73)
+
+    # Pausing camera motion must still allow an explicit parameter edit.
+    control = designer._spins["inc_deg"]
+    control.setFocus()
+    value = control.value()
+    QTest.keyClick(control, Qt.Key_Up)
+    assert control.value() == value + control.singleStep()
+    assert designer._display_elems["inc_deg"] == control.value()
+    assert not designer._preview_timer.isActive()
+    view.navigate("stations")
+    settle(app)
+    view.navigate("ground_track")
+    view._pages["visibility"].show_tab(2)
+    settle(app)
+    assert not toggle.isChecked() and not designer._preview_timer.isActive()
+    assert designer._preview_phase_deg == phase
+
+    toggle.setFocus()
+    QTest.keyClick(toggle, Qt.Key_Space)
+    assert toggle.isChecked() and designer._preview_timer.isActive()
+    bar = view.pageScroll.verticalScrollBar()
+    bar.setValue(bar.maximum())
+    settle(app)
+    assert not designer._canvas.visibleRegion().isEmpty()
+    phase = designer._preview_phase_deg
+    designer._animate_preview()
+    assert designer._preview_phase_deg != phase
+    assert (page._data, page._fig, page._canvas, page._anim_idx) == original
+    assert export_rows(page, tmp_path / "camera-after.csv") == before
