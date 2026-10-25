@@ -36,6 +36,32 @@ FD_STEPS = np.array([10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2, 1e-3])
 SIGMA_DOP = 2e-3
 #: Phase F2e A1: observed |range rate| above this is physically impossible for LRO seen from Earth.
 MAX_DOPPLER_MPS = 3000.0
+#: Parallel evaluation: measurements per worker task.
+MEASURE_CHUNK = 300
+
+# ----------------------------------------------------------------------
+# Parallel evaluation (behaviour-preserving): each worker process holds its own Problem, built once by the
+# initializer with the same arguments as the main one, and runs exactly the serial code on its share.
+# ----------------------------------------------------------------------
+_WORKER: dict = {}
+
+
+def _worker_init(nmax, doppler, days):
+    import warnings
+    warnings.simplefilter("ignore")
+    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days)
+
+
+def _worker_propagate(q):
+    return _WORKER["pb"].propagate(q[:6], q[6], sensitivity=False)
+
+
+def _worker_measure(task):
+    kind, hist, lo, hi, partials = task
+    pb = _WORKER["pb"]
+    if kind == "range":
+        return pb.computed(hist, partials, idx=range(lo, hi))
+    return pb.computed_doppler(hist, partials, idx=range(lo, hi))
 
 
 class Problem:
@@ -47,6 +73,8 @@ class Problem:
         from lunar_od.gravity_model_loader import load_lunar_gravity_model
         from lunar_od.project_paths import gravity_data_root
         self.data = Path(F.REPO.parent / "lro_data")
+        self.nmax = nmax
+        self.pool = None
         self.days = tuple(days)
         self.rows = []
         for day in self.days:                    # F2e: several day directories in one arc
@@ -107,26 +135,65 @@ class Problem:
         return np.asarray(propagate_state(*args, **kw))
 
     def fd_history(self, x0, k) -> np.ndarray:
-        """A1: [x, Phi (column-major), dx/dK] from central differences of the 6-state propagator."""
-        base = self.propagate(x0, k, sensitivity=False)
+        """A1: [x, Phi (column-major), dx/dK] from central differences of the 6-state propagator.
+
+        The 15 propagations (base, then plus/minus per parameter; plus only for K at its bound) are
+        independent; with a worker pool attached they run in parallel, otherwise in this order serially.
+        """
+        q0 = np.concatenate([np.asarray(x0, float), [float(k)]])
+        qs, plan = [q0], []
+        for j in range(7):
+            hj = FD_STEPS[j]
+            plus = q0.copy()
+            plus[j] += hj
+            qs.append(plus)
+            # K must stay non-negative (SRPOptions refuses K < 0): forward difference near the bound
+            forward = j == 6 and float(k) < hj
+            if not forward:
+                minus = q0.copy()
+                minus[j] -= hj
+                qs.append(minus)
+            plan.append((j, hj, forward))
+        if self.pool is not None:
+            hists = list(self.pool.map(_worker_propagate, qs))
+        else:
+            hists = [self.propagate(q[:6], q[6], sensitivity=False) for q in qs]
+        base = hists[0]
         n = base.shape[0]
         cols = np.zeros((n, 6, 7))
-        for j in range(7):
-            q = np.concatenate([np.asarray(x0, float), [float(k)]])
-            hj = FD_STEPS[j]
-            q[j] += hj
-            plus = self.propagate(q[:6], q[6], sensitivity=False)
-            if j == 6 and float(k) < hj:
-                # K must stay non-negative (SRPOptions refuses K < 0): forward difference near the bound
+        pos = 1
+        for j, hj, forward in plan:
+            plus = hists[pos]
+            pos += 1
+            if forward:
                 cols[:, :, j] = (plus - base) / hj
                 continue
-            q[j] -= 2.0 * hj
-            minus = self.propagate(q[:6], q[6], sensitivity=False)
+            minus = hists[pos]
+            pos += 1
             cols[:, :, j] = (plus - minus) / (2.0 * hj)
         phi = cols[:, :, :6]
         return np.hstack([base, phi.transpose(0, 2, 1).reshape(n, 36), cols[:, :, 6]])
 
+    def attach_pool(self, workers: int) -> None:
+        """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
+        self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
+                                        initargs=(self.nmax, self.use_doppler, self.days))
+
+    def close_pool(self) -> None:
+        if self.pool is not None:
+            self.pool.shutdown()
+            self.pool = None
+
+    def _parallel_measure(self, kind: str, hist, partials: bool, n: int):
+        tasks = [(kind, hist, lo, min(lo + MEASURE_CHUNK, n), partials) for lo in range(0, n, MEASURE_CHUNK)]
+        parts = list(self.pool.map(_worker_measure, tasks))
+        comp = np.concatenate([c for c, _ in parts])
+        jac = np.concatenate([j for _, j in parts]) if partials else None
+        return comp, jac
+
     def computed(self, hist, partials=True, idx=None):
+        if idx is None and self.pool is not None:
+            return self._parallel_measure("range", hist, partials, len(self.rows))
         R, s = self.R, self.setup
         sc = R.SpacecraftHistory(self.grid, hist)
         idx = range(len(self.rows)) if idx is None else idx
@@ -140,12 +207,14 @@ class Problem:
                 jac.append(R.two_way_range_partial(sol, sc))
         return np.array(comp), (np.array(jac) if partials else None)
 
-    def computed_doppler(self, hist, partials=True):
+    def computed_doppler(self, hist, partials=True, idx=None):
         """F2d: counted Doppler of every interval [m/s] and its partials (7 columns)."""
+        if idx is None and self.pool is not None:
+            return self._parallel_measure("doppler", hist, partials, len(self.dop))
         R, s = self.R, self.setup
         sc = R.SpacecraftHistory(self.grid, hist)
         comp, jac = [], []
-        for d in self.dop:
+        for d in (self.dop if idx is None else [self.dop[i] for i in idx]):
             pad = d["pad"]
             val, part, _ = R.counted_doppler(d["tm"], d["tc"], s.tide[pad], sc, s.eph, R.DSN_C2_LIGHT_TIME_MODEL,
                                              with_partial=partials, site=s.sites[pad], media=d["media"],
@@ -184,9 +253,11 @@ class Problem:
 
 
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
-          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = ()) -> dict:
+          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0) -> dict:
     t0 = time.time()
     pb = Problem(nmax, doppler=doppler, days=days)
+    if workers > 1:
+        pb.attach_pool(workers)
     nr = len(pb.rows)
     x0 = pb.reference_epoch + sign * OFFSET if x_start is None else np.asarray(x_start, float)
     p = np.concatenate([x0, [K0], np.zeros(pb.n_par - 7)])
@@ -291,8 +362,15 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
                 ric_rms_m=np.sqrt(np.mean(ric ** 2, axis=0)).tolist(), ric_max_m=np.max(np.abs(ric), axis=0).tolist(),
                 total_rms_m=float(np.sqrt(np.mean(tot ** 2))), total_max_m=float(tot.max()),
                 est_positions=est[:, :3].tolist(),
-                prediction=predict(pb, p, predict_days) if predict_days else None,
+                prediction=_predict_and_close(pb, p, predict_days),
                 elapsed_s=time.time() - t0)
+
+
+def _predict_and_close(pb: Problem, p, predict_days: tuple):
+    try:
+        return predict(pb, p, predict_days) if predict_days else None
+    finally:
+        pb.close_pool()
 
 
 def _ric(est, ref):
@@ -493,6 +571,13 @@ def main_f2d():
 
 
 OUT_F2E = HERE.parent / "results" / "phase_f2e_lro_two_day_arc.json"
+
+
+def _workers_arg() -> int:
+    """``--workers N`` on the command line: parallel evaluation with N worker processes (0: serial)."""
+    if "--workers" in sys.argv:
+        return int(sys.argv[sys.argv.index("--workers") + 1])
+    return 0
 F2E_FIT_DAYS = ("trk/lro_no_01/2009260", "trk/lro_no_01/2009261")
 F2E_PREDICT_DAYS = ("trk/lro_no_01/2009262",)
 
@@ -503,10 +588,17 @@ def main_f2e():
         encoding="utf-8"))
     s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
     s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
-    with ProcessPoolExecutor(2) as ex:
-        futs = {"S1": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS),
-                "S2": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, ())}
-        runs = {k: f.result() for k, f in futs.items()}
+    workers = _workers_arg()
+    if workers > 1:
+        # one start after the other, each with the whole worker pool (identical numbers, see
+        # phase_f2_parallel_equivalence.py)
+        runs = {"S1": solve(200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers),
+                "S2": solve(200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, (), workers)}
+    else:
+        with ProcessPoolExecutor(2) as ex:
+            futs = {"S1": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS),
+                    "S2": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, ())}
+            runs = {k: f.result() for k, f in futs.items()}
     a, b = runs["S1"], runs["S2"]
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
     gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
