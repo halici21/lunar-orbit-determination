@@ -46,14 +46,59 @@ MEASURE_CHUNK = 300
 _WORKER: dict = {}
 
 
-def _worker_init(nmax, doppler, days):
+def _worker_init(nmax, doppler, days, n_emp=0):
     import warnings
     warnings.simplefilter("ignore")
-    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days)
+    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
 
 
 def _worker_propagate(q):
-    return _WORKER["pb"].propagate(q[:6], q[6], sensitivity=False)
+    return _WORKER["pb"].propagate(q[:6], q[6], sensitivity=False, emp=q[7:] if len(q) > 7 else None)
+
+
+# ----------------------------------------------------------------------
+# Phase F2g: empirical once-per-revolution accelerations (study-level model; frozen dynamics.py unchanged)
+# ----------------------------------------------------------------------
+#: a_emp = (C_T cos u + S_T sin u) T + (C_N cos u + S_N sin u) N, u = argument of latitude in J2000,
+#: T = N x R (along-track), N = h / |h| (cross-track).
+EMP_NAMES = ("C_T", "S_T", "C_N", "S_N")
+EMP_FD_STEP = 1e-9      # m/s^2
+EMP_SCALE = 1e-9        # m/s^2, LM column scale
+EMP_PRIOR_SIGMA = 1e-8  # m/s^2
+
+
+def empirical_acceleration(y, emp) -> np.ndarray:
+    r, v = np.asarray(y[:3], float), np.asarray(y[3:6], float)
+    h = np.cross(r, v)
+    n_hat = h / np.linalg.norm(h)
+    r_hat = r / np.linalg.norm(r)
+    t_hat = np.cross(n_hat, r_hat)
+    node = np.cross(np.array([0.0, 0.0, 1.0]), h)
+    node /= np.linalg.norm(node)
+    cos_u = float(node @ r_hat)
+    sin_u = float(np.cross(node, r_hat) @ n_hat)
+    return (emp[0] * cos_u + emp[1] * sin_u) * t_hat + (emp[2] * cos_u + emp[3] * sin_u) * n_hat
+
+
+def _spacecraft_history(grid, hist, n_emp: int):
+    """SpacecraftHistory whose position sensitivity also carries the empirical-parameter columns (F2g): the
+    light-time partials (_round_trip_partial) are linear in that matrix, so extra columns pass straight through."""
+    from lunar_od import relativistic_light_time as R
+    if n_emp == 0 or hist.shape[1] <= 48:
+        return R.SpacecraftHistory(grid, hist)
+
+    class _WithEmpirical(R.SpacecraftHistory):
+        def __init__(self):
+            super().__init__(grid, hist[:, :48])
+            self.extra = hist[:, 48:48 + 6 * n_emp]
+
+        def position_sensitivity(self, t_s):
+            base = super().position_sensitivity(t_s)
+            cols = [R._interp_state(self.t_grid, self.extra[:, 6 * i:6 * i + 6], t_s)[:3].reshape(3, 1)
+                    for i in range(n_emp)]
+            return np.hstack([base] + cols)
+
+    return _WithEmpirical()
 
 
 def _worker_measure(task):
@@ -65,7 +110,7 @@ def _worker_measure(task):
 
 
 class Problem:
-    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,)):
+    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,), n_emp: int = 0):
         import spiceypy as spice
         from lunar_od import relativistic_light_time as R
         from lunar_od import station_time as ST
@@ -74,6 +119,7 @@ class Problem:
         from lunar_od.project_paths import gravity_data_root
         self.data = Path(F.REPO.parent / "lro_data")
         self.nmax = nmax
+        self.n_emp = int(n_emp)
         self.pool = None
         self.days = tuple(days)
         self.rows = []
@@ -122,7 +168,7 @@ class Problem:
         self.media = MediaModel(uplink_hz=F.UPLINK_HZ, downlink_hz=F.DOWNLINK_HZ)
         self.R = R
 
-    def propagate(self, x0, k, t_eval=None, sensitivity=True):
+    def propagate(self, x0, k, t_eval=None, sensitivity=True, emp=None):
         from lunar_od.dynamics import PropagationProfile, propagate_state, propagate_state_with_k_sensitivity
         from lunar_od.srp import SRPOptions
         kw = dict(srp=SRPOptions(k_srp_m2_per_kg=float(k)), rtol=RTOL, atol=ATOL, harmonic_model=self.model,
@@ -130,20 +176,52 @@ class Problem:
         t = self.grid if t_eval is None else t_eval
         args = (t, np.asarray(x0, float), self.mu_m, self.mu_e, self.mu_s, self.eph.earth_position,
                 self.eph.sun_position)
+        if emp is not None:
+            return self._propagate_empirical(np.asarray(t, float), np.asarray(x0, float), float(k), emp)
         if sensitivity:
             return np.asarray(propagate_state_with_k_sensitivity(*args, harmonic_stm_opt_in=True, **kw))
         return np.asarray(propagate_state(*args, **kw))
 
-    def fd_history(self, x0, k) -> np.ndarray:
-        """A1: [x, Phi (column-major), dx/dK] from central differences of the 6-state propagator.
+    def _propagate_empirical(self, t, x0, k, emp):
+        """F2g: production propagate_state's own RHS (dynamics._build_state_rhs) plus the empirical acceleration,
+        integrated with production's shadow-event segmentation (DOP853). With emp = 0 this reproduces
+        propagate_state(method='DOP853', shadow_events=True) bit for bit (gate G0)."""
+        from lunar_od import dynamics as dyn
+        from lunar_od.srp import SRPOptions
+        srp = SRPOptions(k_srp_m2_per_kg=k)
+        rhs, get_sun = dyn._build_state_rhs(t, self.mu_m, self.mu_e, self.mu_s, self.eph.earth_position,
+                                            self.eph.sun_position, 0.0, 0.0, "indirect", self.model, None,
+                                            self.setup.et0, srp)
+        e = np.asarray(emp, float)
 
-        The 15 propagations (base, then plus/minus per parameter; plus only for K at its bound) are
+        def rhs_e(tt, y):
+            out = np.array(rhs(tt, y), dtype=float, copy=True)
+            out[3:6] += empirical_acceleration(y, e)
+            return out
+
+        cuts = dyn._shadow_contact_times(rhs_e, t, x0, get_sun, srp, RTOL, ATOL)
+        return np.asarray(dyn._integrate_segmented(t, x0, rhs_e, RTOL, ATOL, "DOP853", cuts,
+                                                   "F2g empirical propagation"))
+
+    def emp_of(self, p):
+        return p[11:11 + self.n_emp] if self.n_emp else None
+
+    def propagate_p(self, p, t_eval=None):
+        """6-state history for a full parameter vector (state, K and, F2g, the empirical accelerations)."""
+        return self.propagate(p[:6], p[6], t_eval=t_eval, sensitivity=False, emp=self.emp_of(p))
+
+    def fd_history(self, x0, k, emp=None) -> np.ndarray:
+        """A1: [x, Phi (column-major), dx/dK (, dx/d emp_i)] from central differences of the 6-state propagator.
+
+        The propagations (base, then plus/minus per parameter; plus only for K at its bound) are
         independent; with a worker pool attached they run in parallel, otherwise in this order serially.
         """
-        q0 = np.concatenate([np.asarray(x0, float), [float(k)]])
+        q0 = np.concatenate([np.asarray(x0, float), [float(k)]] + ([np.asarray(emp, float)] if emp is not None
+                                                                  else []))
+        steps = list(FD_STEPS) + [EMP_FD_STEP] * (0 if emp is None else len(emp))
         qs, plan = [q0], []
-        for j in range(7):
-            hj = FD_STEPS[j]
+        for j in range(len(steps)):
+            hj = steps[j]
             plus = q0.copy()
             plus[j] += hj
             qs.append(plus)
@@ -157,10 +235,11 @@ class Problem:
         if self.pool is not None:
             hists = list(self.pool.map(_worker_propagate, qs))
         else:
-            hists = [self.propagate(q[:6], q[6], sensitivity=False) for q in qs]
+            hists = [self.propagate(q[:6], q[6], sensitivity=False, emp=q[7:] if len(q) > 7 else None)
+                     for q in qs]
         base = hists[0]
         n = base.shape[0]
-        cols = np.zeros((n, 6, 7))
+        cols = np.zeros((n, 6, len(steps)))
         pos = 1
         for j, hj, forward in plan:
             plus = hists[pos]
@@ -172,12 +251,13 @@ class Problem:
             pos += 1
             cols[:, :, j] = (plus - minus) / (2.0 * hj)
         phi = cols[:, :, :6]
-        return np.hstack([base, phi.transpose(0, 2, 1).reshape(n, 36), cols[:, :, 6]])
+        extra = [cols[:, :, j] for j in range(7, len(steps))]
+        return np.hstack([base, phi.transpose(0, 2, 1).reshape(n, 36), cols[:, :, 6]] + extra)
 
     def attach_pool(self, workers: int) -> None:
         """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
         self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
-                                        initargs=(self.nmax, self.use_doppler, self.days))
+                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp))
 
     def close_pool(self) -> None:
         if self.pool is not None:
@@ -195,7 +275,7 @@ class Problem:
         if idx is None and self.pool is not None:
             return self._parallel_measure("range", hist, partials, len(self.rows))
         R, s = self.R, self.setup
-        sc = R.SpacecraftHistory(self.grid, hist)
+        sc = _spacecraft_history(self.grid, hist, self.n_emp)
         idx = range(len(self.rows)) if idx is None else idx
         comp, jac = [], []
         for i in idx:
@@ -212,7 +292,7 @@ class Problem:
         if idx is None and self.pool is not None:
             return self._parallel_measure("doppler", hist, partials, len(self.dop))
         R, s = self.R, self.setup
-        sc = R.SpacecraftHistory(self.grid, hist)
+        sc = _spacecraft_history(self.grid, hist, self.n_emp)
         comp, jac = [], []
         for d in (self.dop if idx is None else [self.dop[i] for i in idx]):
             pad = d["pad"]
@@ -226,18 +306,27 @@ class Problem:
 
     @property
     def n_par(self) -> int:
-        return 11 if self.use_doppler else 10
+        """[x0 (6), K, range biases (3)] (+ Doppler bias, F2d) (+ empirical accelerations, F2g at 11..)."""
+        if self.n_emp and not self.use_doppler:
+            raise ValueError("the empirical-acceleration layout (indices 11..) assumes the Doppler bias at 10")
+        return (11 if self.use_doppler else 10) + self.n_emp
+
+    def _dyn_columns(self, hh, jac, w=1.0):
+        """Place the dynamical partials: x0 and K at 0..6, the empirical accelerations (F2g) at 11.."""
+        hh[:, :7] = jac[:, :7] * w
+        if self.n_emp:
+            hh[:, 11:11 + self.n_emp] = jac[:, 7:7 + self.n_emp] * w
 
     def residual(self, p, partials=True):
         """Range rows [m] followed (F2d) by Doppler rows scaled to range units by SIGMA_M / SIGMA_DOP."""
-        hist = self.fd_history(p[:6], p[6]) if partials else self.propagate(p[:6], p[6], sensitivity=False)
+        hist = self.fd_history(p[:6], p[6], self.emp_of(p)) if partials else self.propagate_p(p)
         comp, jac = self.computed(hist, partials)
         res = self.obs - comp - p[7:10][self.pad_index]
         nr = len(self.rows)
         h = None
         if partials:
             h = np.zeros((nr, self.n_par))
-            h[:, :7] = jac
+            self._dyn_columns(h, jac)
             h[np.arange(nr), 7 + self.pad_index] = 1.0
         if self.use_doppler:
             w = SIGMA_M / SIGMA_DOP
@@ -246,16 +335,17 @@ class Problem:
             res = np.concatenate([res, (obs_d - cd - p[10]) * w])
             if partials:
                 hd = np.zeros((len(self.dop), self.n_par))
-                hd[:, :7] = jd * w
+                self._dyn_columns(hd, jd, w)
                 hd[:, 10] = w
                 h = np.vstack([h, hd])
         return res, h, hist
 
 
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
-          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0) -> dict:
+          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
+          n_emp: int = 0) -> dict:
     t0 = time.time()
-    pb = Problem(nmax, doppler=doppler, days=days)
+    pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
     if workers > 1:
         pb.attach_pool(workers)
     nr = len(pb.rows)
@@ -285,7 +375,8 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
             h_p[row, j] = w[row]
         return r_out, np.vstack([hh, h_p])
 
-    scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0] + ([1e-3] if doppler else []))
+    scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0] + ([1e-3] if doppler else [])
+                     + [EMP_SCALE] * pb.n_emp)
     lam, status, history = 1e-3, "MaxIter", []
     rel = 1.0
     res, h, hist = pb.residual(p)
@@ -332,7 +423,7 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
     hs = ha / SIGMA_M
     cov = np.linalg.inv(hs.T @ hs)
     t_cmp = np.arange(float(pb.setup.t3.min()), float(pb.setup.t3.max()), 60.0)
-    est = pb.propagate(p[:6], p[6], t_eval=np.concatenate([[pb.t_epoch], t_cmp]), sensitivity=False)[1:]
+    est = pb.propagate_p(p, t_eval=np.concatenate([[pb.t_epoch], t_cmp]))[1:]
     import spiceypy as spice
     ref = np.array([spice.spkezr(F.LRO, pb.setup.et0 + t, "J2000", "NONE", "MOON")[0] for t in t_cmp]) * 1e3
     ric = []
@@ -357,6 +448,9 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
                 postfit_rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), per_pass=per_pass,
                 x0=p[:6].tolist(), k_srp=float(p[6]), k_srp_sigma=float(np.sqrt(cov[6, 6])),
                 biases_m=dict(zip(map(str, PADS), map(float, p[7:10]))),
+                empirical_mps2=(dict(zip(EMP_NAMES, map(float, p[11:11 + pb.n_emp]))) if pb.n_emp else None),
+                empirical_sigma_mps2=(dict(zip(EMP_NAMES, map(float, np.sqrt(np.diag(cov)[11:11 + pb.n_emp]))))
+                                      if pb.n_emp else None),
                 bias_sigma_m=dict(zip(map(str, PADS), map(float, np.sqrt(np.diag(cov)[7:10])))),
                 x0_minus_reference=(p[:6] - pb.reference_epoch).tolist(),
                 ric_rms_m=np.sqrt(np.mean(ric ** 2, axis=0)).tolist(), ric_max_m=np.max(np.abs(ric), axis=0).tolist(),
@@ -406,7 +500,7 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
     from lunar_od.ephemeris import sample_moon_centered_ephemeris
     # the fit sampled Earth/Sun over the fit span only; cover the prediction span as well
     pb.eph = sample_moon_centered_ephemeris(s.et0, np.arange(pb.t_epoch - 600.0, grid[-1] + 600.0, 60.0))
-    hist = pb.propagate(p[:6], p[6], t_eval=grid, sensitivity=False)
+    hist = pb.propagate_p(p, t_eval=grid)
     sc = R.SpacecraftHistory(grid, hist)
     res_r = []
     for (q, r), t in zip(rows, t3):
@@ -437,7 +531,7 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
             (t3[idx].min() - s.t3.max()) / 3600.0), range_mean_m=float(res_r[idx].mean()),
             range_rms_m=float(np.sqrt(np.mean(res_r[idx] ** 2)))))
     t_cmp = np.arange(float(t3.min()), float(t3.max()), 60.0)
-    est = pb.propagate(p[:6], p[6], t_eval=np.concatenate([[pb.t_epoch], t_cmp]), sensitivity=False)[1:]
+    est = pb.propagate_p(p, t_eval=np.concatenate([[pb.t_epoch], t_cmp]))[1:]
     ref = np.array([spice.spkezr(F.LRO, s.et0 + t, "J2000", "NONE", "MOON")[0] for t in t_cmp]) * 1e3
     ric = _ric(est, ref)
     return dict(n_range=int(res_r.size), n_doppler=int(res_d.size),
