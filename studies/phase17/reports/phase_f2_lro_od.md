@@ -169,3 +169,67 @@ Next steps:
 3. **Longer arc:** two days or more, more passes per station.
 4. **Phase E (owner approval):** the numba harmonic acceleration in the sensitivity propagator, so the analytic STM
    replaces the A1 FD sensitivities.
+
+## 9. F2d — combined range + Doppler, N = 200
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2d_lro_od_range_doppler_predeclaration.json` (`bfe9c9a`).
+- **Evidence:** `studies/phase17/results/phase_f2d_lro_od_range_doppler.json`.
+- **Data:** 2 473 ranges (σ 1 m) and 2 416 Doppler intervals (σ 2 mm/s).
+- **Estimated:** initial state, K_SRP, 3 range biases and 1 global Doppler bias.
+- **Disclosed smoke test:** from the LOLA epoch state at N = 200, the prefit was 14.1 m (range) and 11.9 mm/s (Doppler).
+- **Runtime:** the run spent about a day suspended while the PC slept (iteration 22 is time-stamped 91 654 s). That
+  does not affect the results.
+
+### Gates as computed
+
+| gate | result | number |
+|---|---|---|
+| G1 convergence | **FAIL** | − start: DampingLimit (the last accepted relative improvement was not below 1e-6, so not STATIONARY); + start: STATIONARY, in the wrong basin |
+| G2 start independence | **FAIL** | the solutions differ by up to 1 983 m |
+| G3 post-fit (range ≤ 2 m, Doppler ≤ 5 mm/s) | **FAIL** | + start: 148.1 m / 333 mm/s; − start passes both (0.916 m / 2.31 mm/s) |
+
+### Solutions
+
+| start | range RMS | Doppler RMS | Doppler bias [mm/s] | K_SRP | biases 103 / 105 / 126 [m] | vs LOLA R / A / C RMS (max) [m] | total RMS / max |
+|---|---|---|---|---|---|---|---|
+| **−** | **0.916 m** | **2.31 mm/s** | −8.05 ± 0.05 | 0.0084 ± 0.0012 | **487.2 / 475.3 / 477.7** | **1.95 (3.7)** / 84.0 (103.8) / 85.6 (127.5) | 119.9 / 164.2 |
+| + | 148.1 m | 333 mm/s | +235.5 | 0.0 | 746.0 / 735.8 / 811.6 | 654.9 / 1331.2 / 704.1 | 1642 / 1973 |
+
+### Reading
+
+- **Range + Doppler, the − start:**
+  - Every pass is at its noise floor: range 0.6–1.24 m, Doppler 2.3 mm/s.
+  - K_SRP is physical.
+  - The station delays now agree with F1's direct measurement against the LOLA orbit (489.2 / 476.9 / 474.5 m)
+    to **2.0 / 1.6 / 3.2 m**. In F2c the gap was 7 m.
+  - Radial against LOLA improves from 3.2 to **1.95 m RMS**.
+- **Along-track and cross-track stay at ~85 m** (90 m in F2c).
+  - The two are nearly equal and the radial is metre-level. That is the signature of a rotation of the orbit about
+    the Earth–Moon line of sight. Earth-based range and Doppler both measure only line-of-sight quantities, so over
+    a 12 h arc that rotation is almost unobservable. Only the lunar gravity field's slow action breaks it.
+  - This is the classic weakness of Earth-tracked lunar orbiters. The LOLA precision orbits close it with altimetric
+    crossovers.
+  - A real-data fit can therefore resolve it only with longer arcs, a different observable (altimetry, ΔDOR,
+    optical), or a stronger dynamical constraint.
+- **Doppler bias.** The fitted −8.05 mm/s differs from F1c's −11.1 mm/s, which was measured against the LOLA orbit.
+  About 3 mm/s of the line-of-sight velocity difference between the two orbits is absorbed there, consistent with
+  the ~85 m rotation.
+- **The + start** stays in the same wrong basin as in F2–F2c, even with Doppler. Basin selection from ±1 km starts
+  is a property of the damped Gauss–Newton path.
+
+## 10. Real-data status after F2d (summary)
+
+| | value |
+|---|---|
+| post-fit range / Doppler | 0.92 m / 2.3 mm/s (at the measurement floor) |
+| radial vs NASA/LOLA orbit | **1.95 m RMS** |
+| along / cross-track vs LOLA | ~85 m (unobservable rotation about the line of sight over 12 h) |
+| station delays vs F1 direct measurement | ≤ 3.2 m |
+| K_SRP | physical (0.008–0.013 m²/kg) |
+
+Next steps, in order:
+1. **Longer arc:** several days within the same SPK arc (2009-09-15 to 10-23), more TRK days. A download is needed
+   and will be reported first.
+2. **A multi-start or homotopy strategy** for basin robustness.
+3. **ΔDOR or optical** (the project has both models) as the observable for the line-of-sight rotation.
+4. **Phase E (owner approval):** an analytic harmonic STM with numba, replacing the A1 FD sensitivities.
