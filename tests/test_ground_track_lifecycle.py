@@ -107,6 +107,7 @@ def test_scrolling_preview_out_of_view_pauses_only_camera_rotation(window, size)
     app.processEvents()
     assert canvas.isVisible() and canvas.visibleRegion().isEmpty()
     phase = designer._preview_phase_deg
+    designer._ax.view_init(elev=13, azim=73, roll=17)
     with patch.object(canvas, 'draw_idle') as draw, patch.object(designer._ax, 'view_init') as view:
         for _ in range(30):
             designer._animate_preview()
@@ -121,9 +122,9 @@ def test_scrolling_preview_out_of_view_pauses_only_camera_rotation(window, size)
         assert canvas.visibleRegion().boundingRect().height() < canvas.height()
         draw.reset_mock()
         designer._animate_preview()
-        resumed_phase = (phase + 2.4) % 360
+        resumed_phase = 75.4  # Continue from the inspected azimuth, 73 degrees.
         assert designer._preview_phase_deg == resumed_phase
-        view.assert_called_once_with(elev=25, azim=resumed_phase)
+        view.assert_called_once_with(elev=13, azim=resumed_phase, roll=17)
         draw.assert_called_once_with()
         scroll.setValue(0)
         app.processEvents()

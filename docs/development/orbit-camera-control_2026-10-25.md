@@ -10,7 +10,9 @@ movement from recorded-run time and analytical generation.
 - Rotation starts enabled, preserving the existing startup behavior and 66 ms
   timer interval. Turning it off stops the timer and camera redraw requests.
 - The selected angle stays still during paused animation ticks. Orbital fields
-  remain editable; explicit edits retain the existing preview rebuild/view reset.
+  remain editable. Correction from the [follow-up review](orbit-camera-resume_2026-10-26.md):
+  the existing artist-reuse renderer already preserves that angle during input
+  edits and refits axis limits when needed; it does not rebuild/reset the view.
 - The choice survives navigation between pages/tabs within this window. It is
   session-local. Showing a paused designer does not silently restart rotation.
 - Generate, station inputs, stored results, CSV exports and recorded-run playback

@@ -898,6 +898,7 @@ class _OrbitDesigner(QWidget):
         self._rotation_toggle.setAccessibleName("3B önizleme kamera dönüşü")
         camera_help = (
             "Kamerayı durdurup yörüngeyi fareyle inceleyebilirsiniz.\n"
+            "Yeniden açınca seçtiğiniz açıdan devam eder.\n"
             "Bu seçenek yalnızca bakış açısını değiştirir; kayıtlı koşunun\n"
             "zamanını veya analitik hesaplamayı değiştirmez."
         )
@@ -1003,9 +1004,11 @@ class _OrbitDesigner(QWidget):
         # A visible tab can still have its preview clipped by the page scroll area.
         if self._canvas.visibleRegion().isEmpty():
             return
-        self._preview_phase_deg = (self._preview_phase_deg + 2.4) % 360
+        # Continue from the inspected view, including a manual drag while rotating.
+        self._preview_phase_deg = (self._ax.azim + 2.4) % 360
         try:
-            self._ax.view_init(elev=25, azim=self._preview_phase_deg)
+            self._ax.view_init(elev=self._ax.elev, azim=self._preview_phase_deg,
+                               roll=self._ax.roll)
             self._canvas.draw_idle()
         except Exception:
             pass

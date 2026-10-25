@@ -28,6 +28,7 @@ with the commands, screenshots and checks that verified it.
 
 | Date | Area | Record |
 |---|---|---|
+| 2026-10-26 | Orbit preview | [Resume rotation from the inspected view](orbit-camera-resume_2026-10-26.md) |
 | 2026-10-25 | Orbit preview | [Pause the orbit camera for inspection](orbit-camera-control_2026-10-25.md) |
 | 2026-10-23 | Orbit preview | [Skip camera frames outside the viewport](orbit-preview-visibility_2026-10-23.md) |
 | 2026-10-22 | Orbit designer | [Visible keyboard focus on sliders](orbit-slider-focus_2026-10-22.md) |
