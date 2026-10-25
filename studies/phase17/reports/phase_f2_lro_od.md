@@ -233,3 +233,87 @@ Next steps, in order:
 2. **A multi-start or homotopy strategy** for basin robustness.
 3. **ΔDOR or optical** (the project has both models) as the observable for the line-of-sight rotation.
 4. **Phase E (owner approval):** an analytic harmonic STM with numba, replacing the A1 FD sensitivities.
+
+## 11. F2e — two-day range + Doppler arc (2009-260/261) with a one-day prediction test (2009-262)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2e_lro_two_day_arc_predeclaration.json` (`0b42ab7`).
+- **Amendment A1** (`5ac6910`, before any fit): Doppler intervals with an observed |range rate| above 3 km/s are
+  physically impossible and are discarded. This removes all 482 PAD 105 intervals of 2009-261 (a constant
+  15.84 km/s) and one PAD 103 counter rollover.
+- **Evidence:** `studies/phase17/results/phase_f2e_lro_two_day_arc.json`.
+- **Data:** 4 252 ranges and 4 158 Doppler intervals over 36.6 h.
+- **Runs:**
+  - A serial run was stopped at iteration 3 (owner instruction) and restarted in parallel mode, `--workers 14`,
+    `04864b2`. The serial run's logs are kept in `lro_data/f2e_serial_aborted/`.
+  - The pooled residual and Jacobian are bit-identical to the serial ones
+    (`studies/phase17/results/phase_f2_parallel_equivalence.json`).
+  - The iterates differ from the aborted serial run in the fourth digit (S1 iteration 1: 2.715 vs 2.713 m). The LM
+    solve now runs in the main process instead of a process-pool worker, so the BLAS reduction order of the normal
+    equations differs. The ill-conditioned step amplifies that rounding; the residual model is identical.
+
+### Gates as computed
+
+| gate | result | number |
+|---|---|---|
+| G1 convergence | **FAIL** | S1: DampingLimit (stationary at 2.263 m; the last accepted relative improvement was not below 1e-6); S2: MaxIter |
+| G2 start independence (≤ 1 m) | **FAIL** | 214.3 m |
+| G3 post-fit (range ≤ 2 m, Doppler ≤ 5 mm/s) | **FAIL** | S1 2.263 m / 3.70 mm/s; S2 17.65 m / 39.2 mm/s |
+
+### Solutions
+
+| start | range RMS | Doppler RMS | Doppler bias [mm/s] | K_SRP | biases 103 / 105 / 126 [m] | vs LOLA R / A / C RMS (max) [m] |
+|---|---|---|---|---|---|---|
+| **S1** (F2d solution) | **2.263 m** | 3.70 mm/s | −8.14 | 0.0357 ± 0.0002 | **489.7 / 477.7 / 476.8** | **3.16 (7.5)** / 63.8 (110.9) / 79.6 (127.0) |
+| S2 (S1 + 100 m, 0.1 m/s) | 17.650 m | 39.2 mm/s | +15.27 | 0.0 | 522.3 / 517.5 / 511.3 | 61.3 / 144.2 / 163.8 |
+
+S1 per pass:
+- range RMS 0.71–2.59 m at Dongara and 1.89 m at South Point;
+- the two Kiruna passes: 4.12 and 3.59 m, with means of +3.6 and −3.4 m.
+
+### Prediction test (S1 propagated over 2009-262, not fitted)
+
+| | value |
+|---|---|
+| range RMS / mean | 20.1 m / −9.9 m |
+| Doppler RMS / mean | 21.0 mm/s / +20.4 mm/s |
+| vs LOLA R / A / C RMS (max) | 11.9 (19.2) / 38.4 (79.0) / 64.3 (92.7) m |
+
+| pass | hours after fit end | range mean [m] | range RMS [m] |
+|---|---|---|---|
+| 105 | 14.3 | −4.36 | 12.61 |
+| 103 | 16.1 | −7.94 | 16.26 |
+| 103 | 18.0 | −9.19 | 19.24 |
+| 103 | 19.9 | −11.81 | 22.45 |
+| 126 | 21.8 | −11.17 | 21.55 |
+| 126 | 23.7 | −14.24 | 25.31 |
+
+The prediction error grows almost linearly, by about 1 m per hour in range RMS.
+
+### Reading
+
+1. **Station delays.** The two-day fit puts them within **0.5 / 0.8 / 2.3 m** of F1's direct measurement against
+   the LOLA orbit. Range calibration is effectively recovered from the data.
+2. **Along-track and cross-track** improve with the longer arc: 84 → 64 m and 86 → 80 m against F2d. The radial
+   stays at the 3 m level. The line-of-sight rotation weakness is reduced, but not removed, by a second day.
+3. **The dynamics model shows its limits over two days.**
+   - The post-fit range rises from 0.92 m (12 h) to 2.26 m (36.6 h), with systematic pass means at Kiruna
+     (±3.5 m).
+   - K_SRP rises to 0.036, 3.6× nominal, acting again as an empirical force.
+   - The prediction diverges at ~1 m/h.
+   - Candidate missing forces: gravity above degree 200 (F2c smoke test: 31 m at N=200 vs 27 m at N=300 from the
+     LOLA state over 12 h); LRO's box-wing SRP and attitude (a cannonball with one K); thermal and planetary albedo
+     radiation; momentum-wheel desaturations (not modelled; LRO performed them regularly); Earth albedo.
+4. **S2** again lands in a different basin. Even a 100 m / 0.1 m/s offset from a good solution diverges over a
+   two-day arc. Basin robustness needs a better-damped globalisation (a trust region with a geodesic step, or a
+   homotopy in arc length), or a priori covariance.
+
+### Next steps
+
+1. **Dynamics fidelity:**
+   - N = 300 in the residual (6-state numba path; 21.6 s per propagation);
+   - empirical once-per-revolution accelerations (standard in lunar OD: GEODYN, MONTE);
+   - momentum-dump epochs from the LRO SFF files in the same archive (`data/sff`).
+2. **Arc strategy:** grow the arc from the converged one-day solution (12 h → 24 h → 36 h), instead of jumping to
+   the full span from a distant start.
+3. **Phase E (owner approval):** a numba harmonic STM. The parallel pool already gives 6×; the analytic STM removes
+   the 15 FD propagations entirely.
