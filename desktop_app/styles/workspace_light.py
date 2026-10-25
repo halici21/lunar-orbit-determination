@@ -69,13 +69,13 @@ QLabel#workspaceTitle, QLabel#consoleTitle {{ font-family:{DISPLAY_FONT}; font-s
 QLabel#detailHeading {{ font-size:14px; font-weight:600; }}
 QLabel#selectionValue {{ font-size:26px; font-family:{MONO_FONT}; }}
 
-QPushButton {{ background:transparent; color:{C.TEXT_PRIMARY}; border:1px solid {C.BORDER_MID}; border-radius:8px; padding:6px 14px; min-height:20px; font-weight:600; }}
+QPushButton {{ background:transparent; color:{C.TEXT_PRIMARY}; border:1px solid {C.BORDER_MID}; border-radius:8px; padding:6px 14px; min-height:20px; font-weight:normal; }}
 QPushButton:hover {{ background:{C.BG_HOVER}; border-color:{C.TEXT_MUTED}; }}
 QPushButton:pressed {{ background:{C.BG_ACTIVE}; }}
 QPushButton:checked {{ background:{C.BG_ACTIVE}; color:{C.NAV_ACTIVE_FG}; border-color:{C.NAV_ACTIVE}; }}
 QPushButton:focus {{ border-color:{C.NAV_ACTIVE}; }}
 QPushButton:disabled {{ color:{C.TEXT_MUTED}; background:transparent; border-color:{C.BORDER_MAIN}; }}
-QPushButton[primary="true"] {{ color:{C.ON_ACCENT}; background:{C.NAV_ACTIVE}; border-color:{C.NAV_ACTIVE}; }}
+QPushButton[primary="true"] {{ color:{C.ON_ACCENT}; background:{C.NAV_ACTIVE}; border-color:{C.NAV_ACTIVE}; font-weight:600; }}
 QPushButton[primary="true"]:hover {{ background:{C.NAV_ACTIVE_FG}; border-color:{C.NAV_ACTIVE_FG}; }}
 QPushButton[primary="true"]:disabled {{ color:{C.TEXT_MUTED}; background:{C.BG_PANEL}; border-color:{C.BORDER_MAIN}; }}
 
@@ -101,7 +101,7 @@ QCheckBox::indicator:hover {{ border-color:{C.TEXT_MUTED}; }}
 QCheckBox::indicator:checked {{ background:{C.NAV_ACTIVE}; border-color:{C.NAV_ACTIVE}; image:url("{check}"); }}
 QCheckBox::indicator:disabled {{ border-color:{C.BORDER_MAIN}; background:transparent; }}
 
-QGroupBox {{ border:0; border-top:1px solid {C.BORDER_MAIN}; margin-top:22px; padding-top:14px; font-size:11px; font-weight:700; color:{C.TEXT_MUTED}; }}
+QGroupBox {{ border:0; margin-top:26px; padding-top:10px; font-size:11px; font-weight:600; color:{C.TEXT_MUTED}; }}
 QGroupBox::title {{ subcontrol-origin:margin; left:0; padding:0 10px 0 0; background:{C.BG_DEEP}; color:{C.TEXT_MUTED}; }}
 
 QTableView, QTreeWidget, QTreeView, QListView {{ background:{C.BG_DEEP}; alternate-background-color:{C.BG_PANEL}; color:{C.TEXT_PRIMARY}; border:1px solid {C.BORDER_MAIN}; border-radius:10px; gridline-color:{C.BORDER_FAINT}; selection-background-color:{C.BG_ACTIVE}; selection-color:{C.TEXT_PRIMARY}; outline:0; }}
@@ -109,7 +109,7 @@ QTableView, QTreeWidget, QTreeView, QListView {{ background:{C.BG_DEEP}; alterna
 QTableView::item:selected, QTreeWidget::item:selected {{ background:{C.BG_ACTIVE}; color:{C.TEXT_PRIMARY}; }}
 QTableView::item:hover, QTreeWidget::item:hover {{ background:{C.BG_HOVER}; }}
 QHeaderView {{ background:transparent; border:0; }}
-QHeaderView::section {{ background:{C.BG_PANEL}; color:{C.TEXT_MUTED}; border:0; border-bottom:1px solid {C.BORDER_MAIN}; padding:9px 8px; font-size:12px; font-weight:600; }}
+QHeaderView::section {{ background:{C.BG_PANEL}; color:{C.TEXT_MUTED}; border:0; border-bottom:1px solid {C.BORDER_MAIN}; padding:9px 8px; font-size:12px; font-weight:normal; }}
 QTableCornerButton::section {{ background:{C.BG_PANEL}; border:0; }}
 QTreeWidget::item {{ padding:6px 2px; }}
 
@@ -152,7 +152,7 @@ QToolButton:hover {{ background:{C.BG_HOVER}; }}
 QDialog, QMessageBox {{ background:{C.BG_PANEL}; }}
 
 QLabel[role="caption"] {{ color:{C.TEXT_MUTED}; font-size:12px; }}
-QLabel[role="eyebrow"] {{ color:{C.NAV_ACTIVE}; font-size:11px; font-weight:700; letter-spacing:1px; }}
+QLabel[role="eyebrow"] {{ color:{C.NAV_ACTIVE}; font-size:11px; font-weight:600; letter-spacing:1px; }}
 QLabel[role="placeholder"] {{ color:{C.TEXT_MUTED}; font-size:13px; }}
 QLabel[role="summary"] {{ background:{C.BG_PANEL}; border:1px solid {C.BORDER_MAIN}; border-radius:10px; padding:12px 16px; color:{C.TEXT_SECONDARY}; }}
 QPlainTextEdit[role="log"] {{ color:{C.TEXT_SECONDARY}; font-family:{MONO_FONT}; font-size:11px; border-radius:8px; padding:6px; }}

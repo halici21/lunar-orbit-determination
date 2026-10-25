@@ -4,16 +4,18 @@ Gece follows the sunumatik.vercel.app catalogue: near-black ground, two surface
 steps, hairline borders and a single gold accent. Modern and Orchid are the
 light deck palettes.
 """
-THEMES = {"gece": "Gece · siyah / altın", "modern": "Modern · beyaz / kırmızı", "orchid": "Orchid · gül / bordo"}
+THEMES = {"modern": "Modern · beyaz / kırmızı", "gece": "Gece · grafit / altın", "orchid": "Orchid · gül / bordo"}
 THEME_KEY = "app_settings/appearance"
-DEFAULT_THEME = "gece"
+# Light by default: the owner found the near-black ground heavy for long sessions.
+DEFAULT_THEME = "modern"
 CURRENT_THEME = DEFAULT_THEME
-GECE = dict(bg="#07090D", paper="#0E1118", field="#0E1118", ink="#E9ECF2", secondary="#C3C9D5",
-    muted="#8E97A8", accent="#C9A35C", accent_2="#DCBB7C", on_accent="#10131A", line="#1C2230",
-    faint="#141925", strong_line="#2A3242", hover="#141925", selection="#242220", land="#1B2231")
-MODERN = dict(bg="#FFFFFF", paper="#F4F3EE", ink="#151515", muted="#55524C",
-    accent="#B83A2E", on_accent="#FFFFFF", line="#DAD8D0", faint="#ECEAE4",
-    strong_line="#B9B6AD", hover="#EDEBE5", selection="#F3E4E1")
+# Gece is a softened graphite (not near-black) so long sessions stay easy on the eye.
+GECE = dict(bg="#12151B", paper="#181C24", field="#181C24", ink="#E6E9EF", secondary="#C0C6D1",
+    muted="#8F97A6", accent="#C9A35C", accent_2="#DCBB7C", on_accent="#14171D", line="#262C38",
+    faint="#1D222B", strong_line="#323A48", hover="#1D222B", selection="#2B2820", land="#252C3A")
+MODERN = dict(bg="#FFFFFF", paper="#F6F5F1", ink="#1C1B19", secondary="#3F3D39", muted="#6A665F",
+    accent="#B83A2E", on_accent="#FFFFFF", line="#E4E2DB", faint="#EFEDE7",
+    strong_line="#CFCCC3", hover="#F1EFEA", selection="#F6E7E4", land="#ECEAE3")
 ORCHID = dict(bg="#F8F3F2", paper="#EFE9E9", ink="#5A2132", muted="#76545F",
     accent="#A84D6A", on_accent="#FFF8F5", line="#D8C7CC", faint="#E8DCDF",
     strong_line="#B99AA4", hover="#E8DCDF", selection="#E8DCDF")
