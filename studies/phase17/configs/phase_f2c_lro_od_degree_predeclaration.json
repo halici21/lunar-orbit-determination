@@ -1,0 +1,18 @@
+{
+ "phase": "Phase F2c - F2b at higher gravity degree (N = 200, 300)",
+ "written": "2026-10-24, before any F2c fit; F2b still running",
+ "disclosed_smoke_test": "propagating the LOLA epoch state over the 12 h arc with GL1800F: N=100 departs from the LOLA SPK by up to 266 m, N=150 by 42.1 m, N=200 by 31.2 m, N=300 by 27.1 m; 6-state propagation 6.7 / 10.5 / 21.6 s for N = 150 / 200 / 300",
+ "change_from_F2b": "identical to F2b (priors, starts, termination, A1 FD sensitivities, measurement model) except N in {200, 300}",
+ "envelope_note": "the harmonic acceleration beyond degree 100 is used in the 6-state numba path only; the qualified analytic harmonic STM (<= 100) is not used, the sensitivities are A1 central differences",
+ "runs": "N=200 + start, N=200 - start, N=300 + start",
+ "gates": {
+  "G1_convergence": "both N=200 starts terminate Converged",
+  "G2_start_independence": "the two N=200 solutions agree to <= 1 m in position and <= 0.1 m in each bias",
+  "G3_postfit": "post-fit range RMS <= 5 m for each run"
+ },
+ "reported_not_gated": "position difference to the LOLA SPK (R/A/C, total), K_SRP and biases vs priors, the trend N = 100 (F2b) -> 200 -> 300",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2c_lro_od_degree.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md"
+ }
+}

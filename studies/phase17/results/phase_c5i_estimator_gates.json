@@ -1,0 +1,97 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c5i_media_predeclaration.json",
+ "G5": {
+  "passed": false,
+  "runs": {
+   "BLS_LM": {
+    "without": {
+     "displacement": false,
+     "estimator": "BLS_LM",
+     "status": "DampingLimit",
+     "detail": "LAMBDA_HARD_LIMIT",
+     "x_hat": [
+      -1746513.5346502701,
+      -277083.99172938644,
+      518734.1433833168,
+      -138.5398249455162,
+      -1206.737315958734,
+      -1085.0511663595912
+     ],
+     "dr_m": 0.007609023703094414,
+     "iterations": 21,
+     "elapsed_s": 1164.2777881622314,
+     "n_obs": 960,
+     "metadata_has_displacement": false
+    },
+    "with_": {
+     "displacement": true,
+     "estimator": "BLS_LM",
+     "status": "DampingLimit",
+     "detail": "LAMBDA_HARD_LIMIT",
+     "x_hat": [
+      -1746513.5347923292,
+      -277083.9925976436,
+      518734.14386723045,
+      -138.53982614076722,
+      -1206.7373161195196,
+      -1085.0511665388697
+     ],
+     "dr_m": 0.008613117066459243,
+     "iterations": 20,
+     "elapsed_s": 1167.3422610759735,
+     "n_obs": 960,
+     "metadata_has_displacement": true
+    },
+    "x_hat_position_difference_m": 0.0010041033997357945,
+    "same_status": true,
+    "passed": false,
+    "gated": true
+   },
+   "SRIF": {
+    "without": {
+     "displacement": false,
+     "estimator": "SRIF",
+     "status": "MaxIter",
+     "detail": "",
+     "x_hat": [
+      -1746513.5762177543,
+      -277083.9886799758,
+      518734.0477607559,
+      -138.53957704722313,
+      -1206.7376785088072,
+      -1085.050780088815
+     ],
+     "dr_m": 0.10145014166492473,
+     "iterations": 40,
+     "elapsed_s": 1157.8630323410034,
+     "n_obs": 960,
+     "metadata_has_displacement": false
+    },
+    "with_": {
+     "displacement": true,
+     "estimator": "SRIF",
+     "status": "MaxIter",
+     "detail": "",
+     "x_hat": [
+      -1746513.5786799504,
+      -277083.98413758137,
+      518734.0437956153,
+      -138.53955545512258,
+      -1206.737703285002,
+      -1085.0507559269563
+     ],
+     "dr_m": 0.1060271733178631,
+     "iterations": 40,
+     "elapsed_s": 1177.1022305488586,
+     "n_obs": 960,
+     "metadata_has_displacement": true
+    },
+    "x_hat_position_difference_m": 0.0065129176769024135,
+    "same_status": true,
+    "passed": false,
+    "gated": false
+   }
+  }
+ },
+ "elapsed_s": 1221.6377174854279
+}

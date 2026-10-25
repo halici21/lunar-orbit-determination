@@ -1,0 +1,56 @@
+{
+ "phase": "Phase C3 - terrestrial reference frame, EOP and station displacements: materiality survey (analysis only, no production change)",
+ "written": "2026-10-22, before any C3 number was computed (an API smoke test of the Orekit tide/ITRF calls at one point and four epochs was run to confirm the reference is implementable; those values are not used)",
+ "motivation": "Production stations are WGS84 geodetic catalogue values turned into fixed ECEF vectors, rotated to J2000 with SPICE's ITRF93 binary PCK. The loaded Earth PCK is earth_2025_250826_2125_predict.bpc, so at the 2027 survey epochs Earth orientation is a NAIF long-term prediction. There is no solid-Earth tide, pole tide, ocean loading or plate motion. The Orekit/GMAT trial (agent-sandbox/orekit-gmat-oracle/REPORT.md) found the station 23-26 cm from Orekit's ITRF 2020 + IERS EOP station at a 2025 epoch (11 cm in range). C3 decides, per term and per observable, which of these terms are material for this project's OD before any production change",
+ "baseline": {
+  "model": "the C2-I light-time profile DSN_C2_LIGHT_TIME_MODEL (SSB, Shapiro Sun + Earth, TT, full topocentric station time) with exact-epoch production station providers",
+  "station": "the production provider's Earth-relative J2000 station position S(t) = provider state - Earth state; its ECEF vector is Station.r_ecef_m"
+ },
+ "reference_implementation": {
+  "orekit": "Orekit 13.1.9 in agent-sandbox/orekit-gmat-oracle (orekit-data: IERS finals2000A EOP to 2027-11-23, predictions from MJD 61315; ITRF versions file), run in the sandbox venv; the sandbox script writes studies/phase17/results/phase_c3_station_reference.npz (inputs, outputs, sha256). Positions are taken in GCRF and compared with SPICE J2000 Earth-relative positions, as the Orekit trial did",
+  "variants": {
+   "A": "the production ECEF vector read as ITRF 2020, IERS 2010 conventions, full IERS EOP (the modern realization of real DSN coordinates)",
+   "B": "the same vector read as ITRF 93 through Orekit's Helmert chain, same EOP and conventions",
+   "C": "A plus Orekit TidalDisplacement (IERS 2010, conventional tide-free coordinates: removePermanentDeformation = false)",
+   "POLE": "the IERS 2010 pole-tide displacement (eqs. 7.24-7.26 with the 2018 linear secular pole, x = 55.0 + 1.677 (t - 2000) mas, y = 320.5 + 3.460 (t - 2000) mas), polar motion from Orekit's EOP history, computed in the sandbox script"
+  },
+  "grid": "per cell and station a 60 s grid over the cell's time span (+-600 s); the survey interpolates with a cubic spline; the gate S4 checks the interpolation against direct values",
+  "survey_code": "studies/phase17/scripts/phase_c3_station_frame_survey.py; production modules read-only"
+ },
+ "terms": {
+  "T1_STATION_COORDINATES": {"what": "catalogue geodetic values vs real DSS antenna coordinates", "decision_fixed_in_advance": "CONVENTION_REAL_DATA: real data needs the DSS antenna ITRF coordinates with epoch and velocity; not measured (no real coordinates enter synthetic work)"},
+  "T2A_ITRF_REALIZATION": {"what": "A - B: interpreting the coordinates as ITRF 2020 rather than ITRF 93", "measured": true},
+  "T2B_EOP_AND_PN_MODEL": {"what": "B - S: Orekit ITRF 93 chain with IERS EOP (predicted at 2027) and IERS 2010 precession-nutation vs SPICE's ITRF 93 predict PCK", "measured": true},
+  "T2_TOTAL": {"what": "A - S", "measured": true},
+  "T3_SOLID_TIDE": {"what": "C - A, Orekit TidalDisplacement", "measured": true},
+  "T4_POLE_TIDE": {"what": "POLE", "measured": true},
+  "T5_OCEAN_LOADING": {"what": "ocean tide loading", "decision_fixed_in_advance": "NOT_MEASURED: needs per-station BLQ coefficients from a loading service; carried to the owner as an open input"},
+  "T6_PLATE_MOTION": {"what": "station velocity between the coordinate epoch and the observation epoch", "decision_fixed_in_advance": "CONVENTION_REAL_DATA: needs catalogue velocities and epochs; synthetic stations have neither"},
+  "T7_EOP_FINAL_VS_PREDICTED": {"what": "final vs predicted EOP", "decision_fixed_in_advance": "NOT_MEASURABLE at the 2027 epochs (no final EOP exists); T2B carries the difference between two prediction series. For real data, final EOP is required (CONVENTION_REAL_DATA)"}
+ },
+ "propagation": "each term is a station position perturbation dr(t) (J2000/GCRF axes, Earth-relative); the survey re-solves every observable exactly with perturbed station providers st'(t) = st(t) + [dr(t), d(dr)/dt] (velocity from the spline derivative), delta-DOR with both stations perturbed",
+ "observables": "two-way range and counted Doppler (Tc 60 s) on every KP2 row of the 10 cells; delta-DOR on the CANON k0 Goldstone-Canberra rows",
+ "gates": {
+  "S1_spice_station": "the production provider's Earth-relative position equals pxform(ITRF93 -> J2000, et) r_ecef within 1e-3 m at 200 epochs per cell (the baseline S is what the survey says it is)",
+  "S2_sanity": "T2B max |dr| <= 2 m; T3 peak |dr| per station within [0.05, 0.6] m over each arc; T4 max |dr| <= 0.05 m (gross-error screens)",
+  "S3_phase_b_informational": "T2_TOTAL station magnitudes reported next to the trial's 23-26 cm (different epoch, informational)",
+  "S4_interpolation": "spline-interpolated dr vs direct reference values at 200 random epochs per cell and station: <= 1e-4 m",
+  "S5_reference_record": "the reference file's sha256 matches the sandbox print and covers every cell and station",
+  "S6_convergence": "every light-time solve converges"
+ },
+ "noise_levels": {"PROJECT": "range 5 m, Doppler 1e-4 m/s, delta-DOR 5 nrad", "DSN_REALISTIC": "range 1 m, Doppler 3e-5 m/s, delta-DOR 5 nrad"},
+ "od_impact": {
+  "method": "the C2 linear bias mapping (KP2 design, square-root posterior, max |dtheta/sigma| over 6 states and K)",
+  "designs": ["RANGE_ONLY", "RANGE_DOPPLER_FREE_BIAS"],
+  "noise": "PROJECT and DSN_REALISTIC"
+ },
+ "materiality_rule": {
+  "observable_level": "OBSERVABLE_MATERIAL if max |effect| >= 0.1 sigma of the observable at DSN_REALISTIC noise",
+  "od_level": "OD_MATERIAL if max |dtheta/sigma| >= 0.1 for some design, noise level and cell",
+  "decision": "IMPLEMENT if OBSERVABLE_MATERIAL or OD_MATERIAL, DOCUMENT_ONLY otherwise; fixed-in-advance classes are not overridden",
+  "gate_veto": "a failed S1, S2, S4, S5 or S6 makes the affected term C3_INCONCLUSIVE; computed-as-FAIL gates are reported; adjudications go to the owner",
+  "floors": "thresholds above were set with the C2-I lesson in mind: the observable evaluation floors (range ~1e-6 m, counted Doppler ~1.1e-9 m/s per value) are far below every 0.1-sigma threshold used here"
+ },
+ "outputs": {"report": "studies/phase17/reports/phase_c3_station_frame_materiality.md", "results": "studies/phase17/results/phase_c3_station_frame_survey.json"},
+ "not_in_scope": "troposphere/ionosphere and ramped uplink (C5); DE440 (C4); real DSS coordinates; any production change"
+}

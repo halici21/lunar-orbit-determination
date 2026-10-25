@@ -11,6 +11,11 @@ from lunar_od import (
     sample_moon_centered_ephemeris,
 )
 
+import pytest as _pytest_c4i  # noqa: E402
+
+# Phase C4-I: reproduces the MATLAB ephemeris_data.mat / SPICE sampling fixture (DE421); pinned to the ephemeris it was computed with.
+pytestmark = _pytest_c4i.mark.usefixtures("de421_ephemeris")
+
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 

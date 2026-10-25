@@ -1,0 +1,31 @@
+{
+ "phase": "Phase C4 - DE440 vs the production DE421 planetary ephemeris: materiality survey (analysis only, no production change)",
+ "written": "2026-10-23, before any C4 number was computed (a scoping look at |DE440 - DE421| of the Moon-centred Earth (3.5-4.0 m) and Sun (200-217 m) and of the Moon's SSB position (~115.5 km, the DE440 barycentre redefinition) over 2027-03 was taken to scope the gates; it is not a survey result)",
+ "motivation": "Production loads de421.bsp (spice_loader.REQUIRED_KERNELS) while the high-order lunar gravity frame is MOON_PA_DE440 and current DSN/IERS practice uses DE440. The Orekit/GMAT trial listed the DE421/DE440 inconsistency as finding 5. C4 measures what the ephemeris choice does to this project's observables and OD",
+ "baseline": "the C2-I/C3-I measurement stack: DSN_C2_LIGHT_TIME_MODEL, exact-epoch production station providers, no station displacement; KP2 SIMPLIFIED dynamics (Moon point mass + J2 + SRP; no third-body gravity, frozen for the canonical baseline), all with de421.bsp",
+ "terms": {
+  "T1_EARTH_POSITION": "the station's Moon-centred position moves by dE(t) = E_DE440(t) - E_DE421(t) (Moon-centred Earth), applied as a station perturbation (spline on a 60 s grid) with the light-time solve otherwise on DE421",
+  "T2_SSB_EPHEMERIS": "the barycentric light-time quantities (the Moon's SSB state, Shapiro body positions) read from DE440 (de440.bsp furnished after de421.bsp), stations unchanged",
+  "T3_SRP_SUN": "the trajectory propagated with the Sun direction for SRP from DE440 instead of DE421 (same x0, same K), observables recomputed on it",
+  "TOTAL": "T1 + T2 + T3 applied together"
+ },
+ "observables": "two-way range and counted Doppler (Tc 60 s) on all KP2 rows of the 10 cells, delta-DOR on CANON k0 Goldstone-Canberra; exact re-solve per variant",
+ "kernel_handling": "variants are computed in each worker by furnishing de440.bsp and unloading it again; gate S1 checks that unloading restores the DE421 state bit for bit",
+ "gates": {
+  "S1_kernel_restore": "after unload(de440.bsp), the Moon-centred Earth position and the Moon's SSB position at 20 epochs per cell equal the values before furnsh, bit for bit",
+  "S2_sanity": "max |dE| per cell within [0.5, 50] m (gross-error screen)",
+  "S3_interpolation": "spline dE vs direct SPICE differences at 200 random epochs per cell <= 1e-6 m",
+  "S4_convergence": "every light-time solve converges",
+  "S5_propagation": "the DE421 trajectory recomputed in the worker equals the cell's KP2 trajectory bit for bit (the T3 difference is the Sun ephemeris alone)"
+ },
+ "noise_levels": {"PROJECT": "range 5 m, Doppler 1e-4 m/s, delta-DOR 5 nrad", "DSN_REALISTIC": "range 1 m, Doppler 3e-5 m/s, delta-DOR 5 nrad"},
+ "od_impact": "the C2 linear bias mapping (RANGE_ONLY, RANGE_DOPPLER_FREE_BIAS; PROJECT, DSN_REALISTIC)",
+ "materiality_rule": {
+  "observable_level": "OBSERVABLE_MATERIAL if max |effect| >= 0.1 sigma at DSN_REALISTIC",
+  "od_level": "OD_MATERIAL if max |dtheta/sigma| >= 0.1",
+  "decision": "MATERIAL or DOCUMENT_ONLY per term. Fixed in advance: switching the production ephemeris re-baselines every synthetic result and every frozen numerical record, so an implementation (C4-I) is an OWNER DECISION whatever the survey finds; this phase only measures and recommends",
+  "gate_veto": "a failed S1, S3, S4 or S5 makes the affected term C4_INCONCLUSIVE; computed-as-FAIL gates are reported"
+ },
+ "outputs": {"report": "studies/phase17/reports/phase_c4_de440_materiality.md", "results": "studies/phase17/results/phase_c4_de440_survey.json"},
+ "not_in_scope": "third-body gravity (absent from the frozen KP2 dynamics; its DE440 effect is recorded as a follow-up), lunar libration/PA (DE421 vs DE440 PA is covered by the high-order gravity closure), any production change"
+}

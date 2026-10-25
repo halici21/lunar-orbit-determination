@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -666,7 +667,129 @@ def _with_srp_acceleration(
     return rhs_with_srp
 
 
-def propagate_state(
+# ---------------------------------------------------------------------------
+# Shadow-event segmented integration (Phase D2, opt-in, default-off)
+# ---------------------------------------------------------------------------
+#: Largest step of the contact-finding pre-pass.  A contact interval shorter
+#: than this (a grazing penumbra) can fall between two steps and be missed.
+_CONTACT_MAX_STEP_S = 60.0
+
+
+@dataclass(frozen=True)
+class PropagationProfile:
+    """How a solve propagates: integrator method and shadow-event handling.
+
+    Phase D1 measured the production default (VODE Adams, no shadow events) at
+    0.1-1.9 m from an event-segmented DOP853 reference on ~1.2 day arcs, and
+    found the estimators' nominal and candidate propagations that far apart.
+    ``PropagationProfile()`` is the D2 consistent profile; passing it to an
+    estimator makes every propagation inside the solve use it.
+    """
+
+    method: str = "DOP853"
+    shadow_events: bool = True
+
+    def propagator_kwargs(self) -> dict:
+        return {"method": self.method, "shadow_events": self.shadow_events}
+
+
+def _shadow_events_active(srp: "SRPOptions | None") -> bool:
+    """True when the SRP force has penumbra contacts to segment at."""
+    return srp is not None and srp.is_active and srp.shadow_model == "CONICAL_PENUMBRA"
+
+
+def _integrate(t_eval_s, y0, rhs, rtol, atol, method, label):
+    """One integrator run over ``t_eval_s`` (the historical integration tail)."""
+    from scipy.integrate import solve_ivp
+
+    if method.upper() == "ADAMS":
+        return _propagate_vode(t_eval_s, y0, rhs, rtol, atol)
+    solution = solve_ivp(
+        rhs, (float(t_eval_s[0]), float(t_eval_s[-1])), y0,
+        method=method, t_eval=t_eval_s, rtol=rtol, atol=atol,
+    )
+    if not solution.success:
+        raise RuntimeError(f"{label} failed: {solution.message}")
+    return solution.y.T
+
+
+def _integrate_segmented(t_eval_s, y0, rhs, rtol, atol, method, cuts, label):
+    """Integrate across ``cuts``, restarting the integrator at each one.
+
+    The full state (6, 42 or 48 elements) is carried across a cut unchanged.
+    That is exact here: the SRP acceleration is continuous at a penumbra
+    contact, only its derivative jumps, so there is no saltation term.  What a
+    restart buys is that no step straddles the kink, which is where D1 found
+    the error (up to 1.9 m per arc).
+    """
+    t_eval_s = np.asarray(t_eval_s, dtype=float)
+    y0 = np.asarray(y0, dtype=float)
+    n = t_eval_s.size
+    out = np.empty((n, y0.size))
+    out[0] = y0
+    if n == 1:
+        return out
+    t_end = float(t_eval_s[-1])
+    sgn = 1.0 if t_end >= t_eval_s[0] else -1.0
+    y = y0
+    a = float(t_eval_s[0])
+    i = 1
+    for b in [*cuts, t_end]:
+        j = i
+        while j < n and sgn * (t_eval_s[j] - b) <= 0.0:
+            j += 1
+        inner = t_eval_s[i:j]
+        tail = [] if (j > i and inner[-1] == b) else [b]
+        seg_t = np.concatenate([[a], inner, tail])
+        seg = _integrate(seg_t, y, rhs, rtol, atol, method, label)
+        out[i:j] = seg[1:1 + (j - i)]
+        y = seg[-1]
+        a = b
+        i = j
+    return out
+
+
+def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
+    """Penumbra contact epochs along a state-only DOP853 pre-pass.
+
+    Outer contact is ``gamma = a_sun + a_occ`` and inner contact
+    ``gamma = |a_sun - a_occ|`` (umbra or annular), with ``gamma`` the
+    Sun-occultor separation seen from the spacecraft.  Both functions are
+    smooth, so ``solve_ivp``'s event root finder locates them on the dense
+    output to near machine precision.  On the sunward half-space ``gamma`` is
+    above 90 degrees and neither function changes sign.
+    """
+    from scipy.integrate import solve_ivp
+
+    from .srp import apparent_radii_and_separation
+
+    t0, t1 = float(t_eval_s[0]), float(t_eval_s[-1])
+    if t0 == t1:
+        return []
+    r_occ = float(srp.occulting_body_radius_m)
+    origin = np.zeros(3)
+
+    def outer(t, y):
+        a_s, a_o, g, _, _ = apparent_radii_and_separation(y[:3], get_sun_pos(float(t)), origin, r_occ)
+        return g - (a_s + a_o)
+
+    def inner(t, y):
+        a_s, a_o, g, _, _ = apparent_radii_and_separation(y[:3], get_sun_pos(float(t)), origin, r_occ)
+        return g - abs(a_s - a_o)
+
+    solution = solve_ivp(
+        rhs6, (t0, t1), np.asarray(x0, dtype=float)[:6], method="DOP853",
+        rtol=rtol, atol=atol, events=(outer, inner), max_step=_CONTACT_MAX_STEP_S,
+    )
+    if not solution.success:
+        raise RuntimeError(f"Shadow contact pre-pass failed: {solution.message}")
+    sgn = 1.0 if t1 > t0 else -1.0
+    times = [float(c) for c in np.concatenate(solution.t_events)
+             if sgn * (c - t0) > 1e-9 and sgn * (t1 - c) > 1e-9]
+    return sorted(times, key=lambda c: sgn * c)
+
+
+def shadow_contact_times(
     t_eval_s: ArrayLike,
     state0_mci: ArrayLike,
     mu_moon_m3_s2: float,
@@ -675,52 +798,39 @@ def propagate_state(
     get_earth_pos: Callable[[float], ArrayLike],
     get_sun_pos: Callable[[float], ArrayLike],
     *,
+    srp: "SRPOptions",
     rtol: float = 1e-11,
     atol: float = 1e-12,
-    method: str = "ADAMS",
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
     harmonic_model: SphericalHarmonicGravityModel | None = None,
     harmonic_rotation=None,
     harmonic_epoch_et0: float | None = None,
-    srp: "SRPOptions | None" = None,
-) -> np.ndarray:
-    """Propagate the 6-state dynamics at requested epochs.
+) -> list[float]:
+    """Penumbra contact epochs of the 6-state trajectory over ``t_eval_s``.
 
-    Returns an array with shape `(len(t_eval_s), 6)`.
-
-    ``method`` may be ``"ADAMS"`` (VODE Adams-12, default, faster for smooth
-    orbits), ``"DOP853"``, or any other ``solve_ivp``-compatible method name.
-    Pass ``j2_moon=MOON_J2`` to include the lunar oblateness perturbation, and
-    ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'`` by default)
-    to include Earth's J2 in the Moon-centered frame.
-
-    Lunar spherical harmonics (Phase 13B, acceleration-only, default-off): pass
-    ``harmonic_model`` plus ``harmonic_rotation`` — either a constant (3, 3)
-    inertial->body matrix (zonal-only models) or an epoch-dependent
-    ``(t_grid_s, rotation_grid)`` pair from
-    ``lunar_frames.sample_moon_pa_rotations`` (mandatory for m > 0 terms).  The
-    grid must cover the propagation window with a margin (suggested
-    ``max(2 * cadence, 120 s)``).  A model containing C20 must be used with
-    ``j2_moon=0`` (enforced here with ``ValueError`` — J2 is never counted
-    twice and nothing is silently altered); Earth J2 remains composable.
-
-    Solar radiation pressure (Phase 16, opt-in, default-off): pass ``srp`` as an
-    ``lunar_od.srp.SRPOptions`` carrying an explicit ``k_srp_m2_per_kg``.  With
-    ``srp=None`` every force path below is the one that ran before SRP existed —
-    the same closure object, not an equivalent one — so no existing caller can
-    acquire SRP by accident.  There is no default coefficient: enabling SRP
-    without one raises, because the frozen reference spacecraft reports K_SRP as
-    UNKNOWN and the Phase 15 screening envelope is not a bound.
+    Sorted in the propagation direction, strictly inside the span.  Empty when
+    the SRP force has no shadow to segment at.
     """
-    from scipy.integrate import solve_ivp
-
+    if not _shadow_events_active(srp):
+        return []
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
-    if t_eval_s.size == 0:
-        raise ValueError("t_eval_s must contain at least one epoch.")
-
     state0_mci = _state6(state0_mci)
+    rhs, get_sun_pos = _build_state_rhs(
+        t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+        get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
+        harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
+    )
+    return _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
+
+
+def _build_state_rhs(
+    t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+    get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
+    harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
+):
+    """The 6-state RHS ``propagate_state`` integrates, and its Sun lookup."""
     # One Sun lookup per epoch, shared by the force model and the SRP term.
     # Identity function when SRP is off.
     get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
@@ -802,6 +912,82 @@ def propagate_state(
     # than being threaded through each. That keeps every SRP-off path literally
     # untouched, and makes the perturbation additive by construction.
     rhs = _with_srp_acceleration(rhs, get_sun_pos, srp, state_size=6)
+    return rhs, get_sun_pos
+
+
+def propagate_state(
+    t_eval_s: ArrayLike,
+    state0_mci: ArrayLike,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    *,
+    rtol: float = 1e-11,
+    atol: float = 1e-12,
+    method: str = "ADAMS",
+    j2_moon: float = 0.0,
+    j2_earth: float = 0.0,
+    earth_j2_mode: str = "indirect",
+    harmonic_model: SphericalHarmonicGravityModel | None = None,
+    harmonic_rotation=None,
+    harmonic_epoch_et0: float | None = None,
+    srp: "SRPOptions | None" = None,
+    shadow_events: bool = False,
+) -> np.ndarray:
+    """Propagate the 6-state dynamics at requested epochs.
+
+    Returns an array with shape `(len(t_eval_s), 6)`.
+
+    ``method`` may be ``"ADAMS"`` (VODE Adams-12, default, faster for smooth
+    orbits), ``"DOP853"``, or any other ``solve_ivp``-compatible method name.
+    Pass ``j2_moon=MOON_J2`` to include the lunar oblateness perturbation, and
+    ``j2_earth=J2_EARTH_UNNORMALIZED`` (``earth_j2_mode='indirect'`` by default)
+    to include Earth's J2 in the Moon-centered frame.
+
+    Lunar spherical harmonics (Phase 13B, acceleration-only, default-off): pass
+    ``harmonic_model`` plus ``harmonic_rotation`` — either a constant (3, 3)
+    inertial->body matrix (zonal-only models) or an epoch-dependent
+    ``(t_grid_s, rotation_grid)`` pair from
+    ``lunar_frames.sample_moon_pa_rotations`` (mandatory for m > 0 terms).  The
+    grid must cover the propagation window with a margin (suggested
+    ``max(2 * cadence, 120 s)``).  A model containing C20 must be used with
+    ``j2_moon=0`` (enforced here with ``ValueError`` — J2 is never counted
+    twice and nothing is silently altered); Earth J2 remains composable.
+
+    Solar radiation pressure (Phase 16, opt-in, default-off): pass ``srp`` as an
+    ``lunar_od.srp.SRPOptions`` carrying an explicit ``k_srp_m2_per_kg``.  With
+    ``srp=None`` every force path below is the one that ran before SRP existed —
+    the same closure object, not an equivalent one — so no existing caller can
+    acquire SRP by accident.  There is no default coefficient: enabling SRP
+    without one raises, because the frozen reference spacecraft reports K_SRP as
+    UNKNOWN and the Phase 15 screening envelope is not a bound.
+
+    Shadow events (Phase D2, opt-in, default-off): ``shadow_events=True`` with
+    an active ``CONICAL_PENUMBRA`` SRP restarts the integrator at every
+    penumbra contact (``shadow_contact_times``), so no step straddles the
+    acceleration kink there.  ``False``, SRP off or ``NO_SHADOW``: the
+    historical single run.
+    """
+    from scipy.integrate import solve_ivp
+
+    t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
+    if t_eval_s.size == 0:
+        raise ValueError("t_eval_s must contain at least one epoch.")
+
+    state0_mci = _state6(state0_mci)
+    rhs, get_sun_pos = _build_state_rhs(
+        t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+        get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
+        harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
+    )
+
+    if shadow_events and _shadow_events_active(srp):
+        cuts = _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
+        return _integrate_segmented(
+            t_eval_s, state0_mci, rhs, rtol, atol, method, cuts, "State propagation"
+        )
 
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state0_mci, rhs, rtol, atol)
@@ -825,7 +1011,7 @@ def _propagate_augmented_with_harmonics(
     t_eval_s, state_aug0_mci, mu_moon, mu_earth, mu_sun,
     get_earth_pos, get_sun_pos, harmonic_model, h_ctx, *,
     rtol, atol, method, j2_moon, j2_earth, earth_j2_mode,
-    harmonic_epoch_et0=None, srp=None,
+    harmonic_epoch_et0=None, srp=None, cuts=None,
 ):
     """42-state RHS with a MATCHED harmonic acceleration and gradient.
 
@@ -893,6 +1079,11 @@ def _propagate_augmented_with_harmonics(
         phi_dot = a_matrix @ phi
         return np.concatenate([x_dot, phi_dot.reshape(-1, order="F")])
 
+    if cuts is not None:
+        return _integrate_segmented(
+            t_eval_s, state_aug0_mci, rhs, rtol, atol, method, cuts,
+            "Augmented harmonic propagation",
+        )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
     solution = solve_ivp(
@@ -951,6 +1142,7 @@ def propagate_augmented_state(
     harmonic_epoch_et0: float | None = None,
     harmonic_stm_opt_in: bool = False,
     srp: "SRPOptions | None" = None,
+    shadow_events: bool = False,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -986,10 +1178,23 @@ def propagate_augmented_state(
     the trajectory feels.  Before F1 the gradient was omitted (Phase 13 policy);
     Phase 17-HARDEN D05 traced a 1e-6..1e-5 STM error to that omission.  A
     K_SRP solve-for uses ``propagate_state_with_k_sensitivity``.
+
+    ``shadow_events`` (Phase D2) is as for ``propagate_state``: the contact
+    epochs come from the 6-state trajectory and the 42-state integration is
+    restarted at each.
     """
     from scipy.integrate import solve_ivp
 
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
+    _cuts = None
+    if shadow_events and _shadow_events_active(srp):
+        _cuts = shadow_contact_times(
+            t_eval_s, np.asarray(state_aug0_mci, dtype=float).reshape(-1)[:6],
+            mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, get_earth_pos, get_sun_pos,
+            srp=srp, rtol=rtol, atol=atol, j2_moon=j2_moon, j2_earth=j2_earth,
+            earth_j2_mode=earth_j2_mode, harmonic_model=harmonic_model,
+            harmonic_rotation=harmonic_rotation, harmonic_epoch_et0=harmonic_epoch_et0,
+        )
     if harmonic_model is not None:
         if not harmonic_stm_opt_in:
             raise ValueError(
@@ -1010,7 +1215,7 @@ def propagate_augmented_state(
             rtol=rtol, atol=atol, method=method,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_epoch_et0=harmonic_epoch_et0,
-            srp=srp,
+            srp=srp, cuts=_cuts,
         )
 
     if t_eval_s.size == 0:
@@ -1045,6 +1250,11 @@ def propagate_augmented_state(
 
     rhs = _with_srp_acceleration(rhs, get_sun_pos, srp, state_size=42)
 
+    if _cuts is not None:
+        return _integrate_segmented(
+            t_eval_s, state_aug0_mci, rhs, rtol, atol, method, _cuts,
+            "Augmented propagation",
+        )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
 
@@ -1190,6 +1400,7 @@ def propagate_state_with_k_sensitivity(
     harmonic_epoch_et0: float | None = None,
     harmonic_stm_opt_in: bool = False,
     s_k0: ArrayLike | None = None,
+    shadow_events: bool = False,
 ) -> np.ndarray:
     """Propagate state, STM and the SRP-coefficient sensitivity together.
 
@@ -1215,6 +1426,8 @@ def propagate_state_with_k_sensitivity(
     This function is only meaningful with SRP active; there is no coefficient to
     differentiate otherwise, and it refuses rather than returning zeros that
     would look like a qualified result.
+
+    ``shadow_events`` (Phase D2) is as for ``propagate_state``.
     """
     from scipy.integrate import solve_ivp
 
@@ -1308,6 +1521,17 @@ def propagate_state_with_k_sensitivity(
         s_dot = a_matrix @ s_k + df_dk
         return np.concatenate([x_dot, phi_dot.reshape(-1, order="F"), s_dot])
 
+    if shadow_events and _shadow_events_active(srp):
+        cuts = shadow_contact_times(
+            t_eval_s, state0_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, srp=srp, rtol=rtol, atol=atol,
+            j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+            harmonic_model=harmonic_model, harmonic_rotation=harmonic_rotation,
+            harmonic_epoch_et0=harmonic_epoch_et0,
+        )
+        return _integrate_segmented(
+            t_eval_s, aug0, rhs, rtol, atol, method, cuts, "K-sensitivity propagation"
+        )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, aug0, rhs, rtol, atol)
 

@@ -1,0 +1,30 @@
+{
+ "phase": "Phase F1 - real LRO two-way range against NASA's precision orbit: measurement-chain residual characterization (no estimation)",
+ "written": "2026-10-23, before any F1 residual was computed (the only real-data inspection so far: record decoding of 2009-260 to confirm the 75-byte layout, RTLT ~2.40 s, flag bits)",
+ "authorisation": "owner 2026-10-23: start Phase F with LRO; downloads reported by name, source and size before download",
+ "data": {
+  "tracking": "PDS Geosciences LRO-L-RSS-1-TRACKING-V1.0 (lrors_0001), data/trk/lro_no_01/2009260: 146 low-speed UTDF files (lsutdf_005901_<padid>_2009_260_<hhmm>.trk), USN S-band, receive-time-tagged UTC; stored outside the repository in <workspace>/lro_data",
+  "stations": "PAD 103 USN Dongara (USPS), 105 USN South Point Hawaii (USHS), 126 USN Kiruna (KU1S): WGS-84 geodetic coordinates from lrors_arch_sis Appendix A, used as ITRF93 (WGS-84(G1150) ~ ITRF at the cm level; antenna reference point accuracy unknown). PAD 119 is absent from the SIS station table and is excluded",
+  "reference_orbit": "lro_no_01_grgm900c_l600.bsp (LOLA team GEODYN reconstruction, GRGM900C, 2009-09-15T21:00 to 2009-10-23T02:52), LRO (-85) relative to the Moon in J2000, sampled every 10 s",
+  "earth_orientation": "earth_latest_high_prec.bpc (on disk) furnished after the production kernels: the production predict PCK starts 2025-08-26 and does not cover 2009"
+ },
+ "observable": "two-way range c * RTLT / 2 from UTDF bytes 27-32 (RTLT in 1/256 ns), records with the R-validity flag set and RTLT > 0; the raw value includes station and transponder delays, which are not calibrated in the archive",
+ "model": {
+  "M_FULL": "lunar_od.relativistic_light_time.solve_two_way with DSN_C2_LIGHT_TIME_MODEL (SSB, Sun+Earth Shapiro, TT interval, topocentric station time), DE440, receive tag UTC -> TDB via station_time.utc_to_tdb_seconds, station = sxform(ITRF93->J2000) * ECEF + Earth wrt Moon, solid Earth tide (displaced_station_state), media MediaModel(troposphere Niell, standard-atmosphere ZHD, ZWD 0.15 m, ionosphere DEFAULT_CLIMATOLOGY, uplink 2091.32 MHz, downlink 2271.125 MHz)",
+  "variants": {"NO_MEDIA": "M_FULL without media", "NO_TIDE": "M_FULL without the solid tide", "MOON_NEWTONIAN": "LightTimeModel() (the pre-C1 Moon-centred Newtonian default), no media, no tide", "DE421": "M_FULL on DE421"}
+ },
+ "metrics": "per pass (one station, gaps < 10 min): count, elevation range, mean residual (observed - computed; absorbs the uncalibrated delays), de-biased RMS, linear-trend-removed RMS; per variant",
+ "gates": {
+  "R1_decode": "every file is a whole number of 75-byte records with fixed bytes 0x0D 0x0A 0x01, SIC 59, VID 1, and the station PAD in the record equals the PAD in the file name",
+  "R2_coverage": "every used receive epoch lies inside the reference SPK coverage",
+  "R3_interpolation": "the reference orbit sampled at 10 s vs 5 s gives computed ranges differing by <= 1 mm",
+  "R4_light_time": "every solve_two_way converges (no exception, no two-cycle)"
+ },
+ "hypotheses_reported_not_gated": {
+  "H1": "M_FULL de-biased RMS <= 3 m on every pass (the SPK and USN range noise are expected at the metre level)",
+  "H2": "media reduce the de-biased RMS of passes reaching low elevation (troposphere 2-12 m, S-band ionosphere several m)",
+  "H3": "the per-pass mean residual is consistent per station across passes (a station/transponder delay), not random"
+ },
+ "outputs": {"report": "studies/phase17/reports/phase_f1_lro_residuals.md", "results": "studies/phase17/results/phase_f1_lro_residuals.json", "reader": "src/lunar_od/utdf.py (new module) with tests/test_utdf.py"},
+ "not_in_scope": "estimation (F2), Doppler (bias-count differencing is F1b), station 119, other days"
+}

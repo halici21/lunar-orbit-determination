@@ -1,0 +1,27 @@
+{
+ "phase": "Phase C5-I - media calibration interface (troposphere, ionosphere) for the SSB light-time profile: implementation and qualification",
+ "written": "2026-10-23, before any C5-I code or number",
+ "basis": "studies/phase17/reports/phase_c5_media_materiality.md (IMPLEMENT: hydrostatic and wet troposphere, X-band ionosphere; ramped uplink CONVENTION_REAL_DATA)",
+ "sources": {
+  "zhd": "IERS Conventions 2010 eq. 9.11 (Davis et al. 1985 form of Saastamoinen): ZHD = 0.0022768 P / (1 - 0.00266 cos 2phi - 0.28e-6 H), P [hPa], H [m]; default P from the standard atmosphere P = 1013.25 (1 - 2.2557e-5 H)^5.2568",
+  "niell": "Niell (1996) mapping functions: coefficients and algorithm as carried in Orekit 13.1.9 NiellMappingFunctionModel / TroposphericModelUtils (read from the jar bytecode: latitude nodes 15-75 deg with linear interpolation and clamping, DOY offset 28 (+183 south), period 365.25 d, height correction (2.53e-5, 5.49e-3, 1.14e-3) x H/1000); these are the published Niell (1996) Table 3 values",
+  "black_eisner": "m(E) = 1.001 / sqrt(0.002001 + sin^2 E) (kept to reproduce the C5 survey)",
+  "iono": "single-layer (thin-shell) model: STEC = VTEC / sqrt(1 - (R cos E / (R + h))^2), delay 40.3e16 STEC / f^2 [m] for STEC in TECU; group delay for range and delta-DOR, phase advance (opposite sign) for counted Doppler"
+ },
+ "architecture": {
+  "new_module": "src/lunar_od/media.py: standard_pressure_hpa, zhd_iers, niell_mapping (hydrostatic, wet), black_eisner_mapping, single_layer_mapping, iono_delay_m, and MediaModel (per-station or common zenith hydrostatic/wet delays and VTEC: constants, callables of TDB seconds, or the default climatology; mapping choice; layer height and Earth radius; uplink/downlink frequencies) with leg_delays(station_geodetic, et, los_j2000) -> (group_m, phase_m) and to/from pass metadata",
+  "light_time_integration": "relativistic_light_time: solve_two_way, counted_doppler and delta_dor_station_time accept media (MediaModel) and the station's geodetic coordinates; the media delay is ADDED to the light time per leg at its ground event (uplink t1, downlink t3), as in the C5 survey; TwoWaySolution gains media_group_s / media_phase_s (default 0, appended fields); two_way_range_m adds c/2 media_group_s, counted Doppler uses the phase delays. The delay's feedback on the event epochs (~1e-8 relative) and its state partial (elevation dependence) are neglected and bounded by G6. Pass metadata key media; absent = bit-identical",
+  "untouched": "estimators.py, measurement_ingestion.py, two_way_range.py, radiometrics.py, delta_dor.py, spice_loader.py",
+  "out_of_scope": "reading DSN media calibration files (Phase F), ramp tables, solar plasma, GMF/VMF mapping, scenario/desktop plumbing"
+ },
+ "gates": {
+  "G1_default_invariance": "no media metadata -> range, Doppler, delta-DOR bit-identical to the branch base on all 10 cells; full suite no new failure",
+  "G2_niell": "niell_mapping vs Orekit NiellMappingFunctionModel.mappingFactors on a grid of elevation 5-90 deg x latitude -80..80 deg x height 0-3000 m x 12 dates (the DOY Orekit uses is recorded and fed to ours): max |diff| <= 1e-9 (absolute, mapping factor)",
+  "G3_single_layer": "single_layer_mapping vs Orekit SingleLayerModelMappingFunction at the same layer height (Earth radius set to Orekit's): max relative diff <= 1e-12 over elevation 5-90 deg",
+  "G4_survey_parity": "MediaModel configured as the C5 survey (Black-Eisner, ZWD 0.15 m, the survey VTEC, 350 km, R 6371 km, standard-atmosphere ZHD) reproduces the survey's per-row media terms (T1 + T2 + T3) through the module: range <= 1e-6 m, counted Doppler <= 3e-9 m/s (two values' evaluation floor), delta-DOR <= 1e-15 s",
+  "G5_estimator": "BLS-LM from the truth start, CANON k0 range-only six-state: media on truth and estimator vs off on both: same status and |x_hat_on - x_hat_off| <= 1 mm (SRIF reported, not gated: its MaxIter terminal points are known to be path-dependent, C2-I/C3-I)",
+  "G6_partial_neglect": "on 20 rows x 3 cells, |d(media group delay)/d(r_sc)| from a 1 km central difference of the spacecraft position inside the media evaluation alone is <= 1e-6 (dimensionless) - the neglected partial is below the C1-I partial tolerance",
+  "G7_informational": "OD impact of the default (Niell) media model on the KP2 population"
+ },
+ "outcome_rule": ["C5I_QUALIFIED if G1-G6 pass", "C5I_NOT_QUALIFIED otherwise; computed-as-FAIL reported; adjudications to the owner", "G7 never blocks"]
+}

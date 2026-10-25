@@ -27,6 +27,20 @@ MOON_PA_DE440_KERNELS = (
     "moon_pa_de440_200625.bpc",
 )
 
+#: Planetary ephemeris (Phase C4-I).  DE440 is the production default: the C4
+#: survey measured DE440 - DE421 at 3.5-3.9 m in the Moon-centred Earth, an OD
+#: effect of 4.8 sigma, and DE440 is what real DSN data, NASA's LRO/GRAIL
+#: orbits and Orekit use.  DE421 stays selectable so every record computed with
+#: it remains reproducible.  Selection order: the explicit ``ephemeris=``
+#: argument, else the ``LUNAR_OD_PLANETARY_EPHEMERIS`` environment variable,
+#: else ``DEFAULT_PLANETARY_EPHEMERIS``.
+PLANETARY_EPHEMERIS_KERNELS = {
+    "DE440": "de440.bsp",
+    "DE421": "de421.bsp",
+}
+DEFAULT_PLANETARY_EPHEMERIS = "DE440"
+PLANETARY_EPHEMERIS_ENV = "LUNAR_OD_PLANETARY_EPHEMERIS"
+
 #: ORDER IS LOAD-BEARING, not cosmetic. Both ``moon_de440_220930.txt`` and
 #: ``moon_080317.tf.txt`` define the generic ``MOON_PA`` alias, and SPICE lets
 #: the LAST text kernel loaded win that name. Listing the DE440 pair FIRST
@@ -36,14 +50,15 @@ MOON_PA_DE440_KERNELS = (
 #: end instead silently rebinds generic ``MOON_PA`` to DE440 -- a ~7.6e-7
 #: rotation change (~1.65 m at the lunar surface) that was measured breaking
 #: the MATLAB SPICE snapshot fixture. ``test_de440_kernel_contract`` pins this.
-REQUIRED_KERNELS = (
+_KERNEL_TEMPLATE = (
     "naif0012.tls.txt",
     # DE440 lunar PA (atomic pair -- see MOON_PA_DE440_KERNELS above). Loaded
     # BEFORE moon_080317.tf.txt so it adds MOON_PA_DE440 without capturing the
     # generic alias. High-order gravity selects its realization by EXPLICIT
     # versioned frame name and never relies on generic ``MOON_PA``.
     *MOON_PA_DE440_KERNELS,
-    "de421.bsp",
+    # The planetary ephemeris slot (de421.bsp before Phase C4-I).
+    "@PLANETARY_EPHEMERIS@",
     "earth_assoc_itrf93.tf.txt",
     "moon_080317.tf.txt",
     "earth_2025_250826_2125_predict.bpc",
@@ -51,6 +66,28 @@ REQUIRED_KERNELS = (
     "gm_de431.tpc.txt",
     "pck00010.tpc.txt",
 )
+
+
+def planetary_ephemeris(ephemeris: str | None = None) -> str:
+    """The selected planetary ephemeris name (``"DE440"`` or ``"DE421"``)."""
+    name = ephemeris if ephemeris is not None else os.environ.get(PLANETARY_EPHEMERIS_ENV)
+    name = DEFAULT_PLANETARY_EPHEMERIS if name in (None, "") else str(name).strip().upper()
+    if name not in PLANETARY_EPHEMERIS_KERNELS:
+        raise ValueError(
+            f"unknown planetary ephemeris {name!r}; choose one of "
+            f"{tuple(PLANETARY_EPHEMERIS_KERNELS)}"
+        )
+    return name
+
+
+def required_kernels(ephemeris: str | None = None) -> tuple[str, ...]:
+    """The required kernel list with the selected planetary ephemeris."""
+    bsp = PLANETARY_EPHEMERIS_KERNELS[planetary_ephemeris(ephemeris)]
+    return tuple(bsp if k == "@PLANETARY_EPHEMERIS@" else k for k in _KERNEL_TEMPLATE)
+
+
+#: The required kernel list as resolved at import (default or environment).
+REQUIRED_KERNELS = required_kernels()
 
 #: Explicit versioned lunar PA frames. The generic ``MOON_PA`` alias is
 #: deliberately absent: with both DE421 and DE440 orientation kernels furnished
@@ -125,10 +162,13 @@ def resolve_kernel_dir(candidates: Iterable[os.PathLike[str] | str] | None = Non
     raise FileNotFoundError(f"SPICE kernel directory not found. Searched:\n{searched}")
 
 
-def required_kernel_paths(kernel_dir: os.PathLike[str] | str | None = None) -> list[Path]:
+def required_kernel_paths(
+    kernel_dir: os.PathLike[str] | str | None = None,
+    ephemeris: str | None = None,
+) -> list[Path]:
     """Return full paths for the required kernel list and validate existence."""
     resolved_dir = resolve_kernel_dir([kernel_dir]) if kernel_dir is not None else resolve_kernel_dir()
-    kernel_paths = [resolved_dir / kernel_name for kernel_name in REQUIRED_KERNELS]
+    kernel_paths = [resolved_dir / kernel_name for kernel_name in required_kernels(ephemeris)]
 
     missing = [path.name for path in kernel_paths if not path.is_file()]
     if missing:
@@ -138,8 +178,15 @@ def required_kernel_paths(kernel_dir: os.PathLike[str] | str | None = None) -> l
     return kernel_paths
 
 
-def load_spice_kernels(kernel_dir: os.PathLike[str] | str | None = None, clear: bool = True) -> list[Path]:
-    """Load the required kernels with spiceypy and return the loaded paths."""
+def load_spice_kernels(
+    kernel_dir: os.PathLike[str] | str | None = None,
+    clear: bool = True,
+    ephemeris: str | None = None,
+) -> list[Path]:
+    """Load the required kernels with spiceypy and return the loaded paths.
+
+    ``ephemeris`` selects the planetary ephemeris (see ``planetary_ephemeris``).
+    """
     try:
         import spiceypy as spice
     except ImportError as exc:
@@ -148,7 +195,7 @@ def load_spice_kernels(kernel_dir: os.PathLike[str] | str | None = None, clear: 
             "running dynamics, frame-transform, or measurement code."
         ) from exc
 
-    kernel_paths = required_kernel_paths(kernel_dir)
+    kernel_paths = required_kernel_paths(kernel_dir, ephemeris)
 
     if clear:
         spice.kclear()

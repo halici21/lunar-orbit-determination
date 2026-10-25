@@ -1,0 +1,34 @@
+{
+ "phase": "Phase C3-I - station coordinate realization (ITRF 2020 -> ITRF 93) and IERS 2010 solid Earth tide: production implementation and qualification",
+ "written": "2026-10-23, before any C3-I code or number",
+ "basis": "studies/phase17/reports/phase_c3_station_frame_materiality.md (IMPLEMENT: T2A ITRF realization, T3 solid tide; T2B classification proposed to the owner and NOT decided by this phase)",
+ "sources": {
+  "helmert": "ITRF 2020 -> ITRF 93 14-parameter transformation as defined by EPSG and distributed in PROJ data/ITRF2020 (generated from the EPSG database; Altamimi et al. 2023, doi 10.1029/2023GL106373): T = (-65.8, 1.9, -71.3) mm, R = (-3.36, -4.33, 0.75) mas, D = 4.47 ppb, rates (-2.8, -0.2, -2.3) mm/yr, (-0.11, -0.19, 0.07) mas/yr, 0.12 ppb/yr, epoch 2015.0, position-vector convention. Cross-check: Orekit 13.1.9 HelmertTransformation.Predefined.ITRF_2020_TO_ITRF_1993 (read from the jar bytecode) carries the same translations, rotations and rates and no scale",
+  "solid_tide": "IERS Conventions 2010 section 7.1.1 (Mathews et al. 1997): degree-2 and degree-3 in-phase terms with the latitude dependence of h2/l2, the out-of-phase (mantle anelasticity) diurnal and semidiurnal terms, the latitude-dependence (L1) terms, and the step-2 frequency-dependent diurnal (Table 7.3a) and long-period (Table 7.3b) corrections; transcribed from pyTMD 3.0.9 (MIT, predict/solid_earth.py and astro.doodson_arguments). Conventional tide-free output. Independent oracle: Orekit TidalDisplacement (IERS 2010, removePermanentDeformation = false)",
+  "ephemeris_for_tide": "Sun and Moon geocentric positions in ITRF93 from SPICE (geometric), GM ratios from the loaded gm kernel, Earth radius 6378136.3 m (pyTMD IERS ellipsoid)"
+ },
+ "architecture": {
+  "new_module_station_frames": "src/lunar_od/station_frames.py: itrf2020_to_itrf93(r_m, epoch_year, *, include_scale=True); predicted_earth_orientation_start_et() from the loaded Earth PCK file names (NAIF naming earth_YYYY_YYMMDD_YYYY_predict.bpc, creation date YYMMDD; None if no predict PCK is loaded) and is_predicted_earth_orientation(et)",
+  "new_module_solid_tide": "src/lunar_od/solid_tide.py: solid_tide_displacement_ecef(r_station_ecef_m, r_sun_ecef_m, r_moon_ecef_m, mjd_tt, ut_fraction) and solid_tide_at_et(r_station_ecef_m, et) (SPICE Sun/Moon in ITRF93, UT from station_time)",
+  "light_time_integration": "relativistic_light_time: displaced_station_state(station_state, et0, r_ecef_m, *, solid_tide, coordinate_frame, coordinate_epoch_year) wraps a production station provider with the J2000 rotation (sxform ITRF93 -> J2000) of the ECEF offset [Helmert(r) - r + tide(r, t)] and its rate (sxform rotation rate plus the tide's central difference, h = 10 s). Pass metadata key station_displacement {solid_tide, coordinate_frame ('ITRF93' | 'ITRF2020'), coordinate_epoch_year}; absent = no wrapping (bit-identical). The generator and the pass-level API apply it to every station; delta-DOR callers wrap their station histories with the same function",
+  "untouched": "estimators.py, measurement_ingestion.py, two_way_range.py, radiometrics.py, delta_dor.py, spice_loader.py",
+  "out_of_scope": "ocean loading (needs BLQ), pole tide (immaterial, C3), plate motion and real DSS coordinates (CONVENTION_REAL_DATA), EOP ingestion (T2B awaits the owner), scenario/desktop plumbing"
+ },
+ "gates": {
+  "G1_default_invariance": "no station_displacement metadata -> two-way range, counted Doppler and delta-DOR bit-identical to the branch base on all 10 cells; full suite no new failure",
+  "G2_helmert": "(a) itrf2020_to_itrf93 with include_scale=False vs Orekit's ITRF 2020 -> ITRF 93 transform at 3 DSN + 7 random sites x 2000.0 ... 2040.0 (yearly): <= 0.1 mm; (b) the scale part D(t) r is reported (it is in the EPSG definition, not in Orekit)",
+  "G3_solid_tide": "solid_tide_displacement vs Orekit TidalDisplacement in ITRF at every C3 grid point of the 3 DSN stations x 10 cells: max |diff| <= 1 mm",
+  "G4_survey_parity": "with station_displacement {solid_tide: true, coordinate_frame: ITRF2020, coordinate_epoch_year: epoch of the observation} and include_scale=False, the per-row observable change reproduces the C3 survey's T2A + T3 (exact re-solve): two-way range <= 2 mm, counted Doppler <= 2e-7 m/s, delta-DOR <= 1e-11 s",
+  "G5_estimator_closure": "BLS-LM and SRIF from the TRUTH start (the C2-I lesson), CANON k0 range-only six-state: truth and estimator both with the displacement vs both without: same status and |x_hat_with - x_hat_without| <= 1 mm in position",
+  "G6_eop_flag": "is_predicted_earth_orientation is True at every C3 survey epoch and False at 2025-03-01 with the production kernels",
+  "G7_informational": "linear OD impact of the implemented displacement (with scale) on the KP2 population"
+ },
+ "outcome_rule": ["C3I_QUALIFIED if G1-G6 pass", "C3I_NOT_QUALIFIED otherwise; failing gates reported as computed; adjudications go to the owner", "G7 never blocks"],
+ "method_notes": ["thresholds account for the floors known from C1-I/C2-I: counted Doppler evaluation floor 1.1e-9 m/s per value; the Helmert and tide comparisons are pure geometry (double floor ~1e-9 m)"],
+ "amendment_A1": {
+  "written": "2026-10-23, after the first G2 run (recorded in phase_c3i_g2_run1_eop_labelled_frame.json) and BEFORE any G1, G4, G5 or G7 number",
+  "G2": "the reference is Orekit's explicitly versioned ITRF_2020 frame transformed to the explicitly versioned ITRF_1993 frame (equal to Predefined.ITRF_2020_TO_ITRF_1993.createTransformedITRF to 3e-6 m). The first run used getITRF(conventions), whose realization follows the EOP file's version label (ITRF 2014 before 2026-06-02, ITRF 2020 only while finals data are labelled so), i.e. not the ITRF 2020 -> ITRF 93 transformation the gate names. Threshold unchanged",
+  "G3_G4_effect": "none: G3 compares tides; the C3 survey (the G4 reference) ran at 2027 epochs where the EOP-labelled frame is ITRF 2020 (checked: identical offsets at 2027-01-01)",
+  "other_gates": "unchanged"
+ }
+}

@@ -1,0 +1,423 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c5i_media_predeclaration.json",
+ "base_commit": "f5bceaf",
+ "gates": {
+  "G2_niell": {
+   "max_abs": 1.7763568394002505e-15,
+   "n": 8400,
+   "limit": 1e-09,
+   "pass_": true
+  },
+  "G3_single_layer": {
+   "max_rel": 1.1102230246251565e-15,
+   "limit": 1e-12,
+   "pass_": true
+  },
+  "G1_bit_identity": {
+   "passed": true,
+   "max_abs": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   }
+  },
+  "G4_survey_parity": {
+   "range_m": 2.9799824829979116e-08,
+   "doppler_mps": 1.1366370355776062e-13,
+   "ddor_s": 8.540044254568973e-19,
+   "pass_": true
+  },
+  "G6_partial_neglect": {
+   "max_gradient": 1.5041122100265756e-07,
+   "limit": 1e-06,
+   "pass_": true,
+   "cells": [
+    {
+     "cell": "CANON:0",
+     "max_gradient": 1.2700921433634443e-07
+    },
+    {
+     "cell": "O2_FULL_SUN_HIGH_BETA:12",
+     "max_gradient": 1.477208191026093e-07
+    },
+    {
+     "cell": "O3_HIGH_ALTITUDE_500KM:0",
+     "max_gradient": 1.5041122100265756e-07
+    }
+   ]
+  },
+  "G7_informational": {
+   "od": {
+    "RANGE_ONLY|PROJECT": 13.251970751997042,
+    "RANGE_ONLY|DSN_REALISTIC": 66.22037940996387,
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": 22.711788898008546,
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": 70.22307721522708
+   },
+   "change_range_m": 12.90731394290924,
+   "change_doppler_mps": 0.003721840248203989
+  }
+ },
+ "cells": [
+  {
+   "cell": "CANON:0",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9799824829979116e-08,
+    "doppler": 1.1315300706507027e-13,
+    "ddor": 8.540044254568973e-19
+   },
+   "elapsed_s": 70.32913875579834,
+   "change": {
+    "range_max_abs_m": 12.877819955348969,
+    "doppler_max_abs_mps": 0.0036971188159213852
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 13.251970751997042,
+     "k_over_sigma": 0.6662165325256023
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 66.22037940996387,
+     "k_over_sigma": 3.3426329154964503
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 22.711788898008546,
+     "k_over_sigma": 0.7137358215592075
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 65.41245989916895,
+     "k_over_sigma": 2.5352554809971117
+    }
+   }
+  },
+  {
+   "cell": "CANON:12",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.968589951635181e-08,
+    "doppler": 1.1340257346451749e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 59.47454357147217,
+   "change": {
+    "range_max_abs_m": 12.549026906490326,
+    "doppler_max_abs_mps": 0.003707032565245072
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 4.21627646288608,
+     "k_over_sigma": 2.8011029415736948
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 21.10222500974155,
+     "k_over_sigma": 14.062772214180866
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 9.329755040043546,
+     "k_over_sigma": 3.693482326750827
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 29.254502911847755,
+     "k_over_sigma": 12.653166323489229
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:0",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9770706788667667e-08,
+    "doppler": 1.1364058294643237e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 66.83263921737671,
+   "change": {
+    "range_max_abs_m": 12.73920851945877,
+    "doppler_max_abs_mps": 0.003721840248203989
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 10.439647085072439,
+     "k_over_sigma": 0.32846309085518544
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 51.76370035274556,
+     "k_over_sigma": 1.6375977152063286
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 12.539630865545535,
+     "k_over_sigma": 2.0738931158040574
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 34.997155224739686,
+     "k_over_sigma": 7.9485368661904765
+    }
+   }
+  },
+  {
+   "cell": "O1_LOW_BETA_ECLIPSE_RICH:12",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9754214203592255e-08,
+    "doppler": 1.1344004620210402e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 61.61406064033508,
+   "change": {
+    "range_max_abs_m": 12.72023355960846,
+    "doppler_max_abs_mps": 0.0035485607075997905
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 4.111920383985671,
+     "k_over_sigma": 0.31865885249968906
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 20.10864461739944,
+     "k_over_sigma": 1.603776477257208
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 8.98803348567054,
+     "k_over_sigma": 2.753110693453862
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 30.966304466532897,
+     "k_over_sigma": 9.87591468378013
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:0",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.978835134115343e-08,
+    "doppler": 1.135922952921753e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 88.81593322753906,
+   "change": {
+    "range_max_abs_m": 12.719223320484161,
+    "doppler_max_abs_mps": 0.0036245342028280447
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 4.10332259191039,
+     "k_over_sigma": 2.1631827065561517
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 20.16873407145344,
+     "k_over_sigma": 10.840969727984065
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 14.4102230607248,
+     "k_over_sigma": 2.015008377778031
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 49.71236586109126,
+     "k_over_sigma": 5.150524693517938
+    }
+   }
+  },
+  {
+   "cell": "O2_FULL_SUN_HIGH_BETA:12",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9778209231778874e-08,
+    "doppler": 1.1351891682795465e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 64.42870426177979,
+   "change": {
+    "range_max_abs_m": 12.50333857536316,
+    "doppler_max_abs_mps": 0.003228295423241434
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 3.0879640587559125,
+     "k_over_sigma": 1.2151785291889565
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 15.65963840840219,
+     "k_over_sigma": 6.009822178421657
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 12.356126985429496,
+     "k_over_sigma": 0.4027497774336329
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 41.41873720369184,
+     "k_over_sigma": 0.587180366333825
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:0",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9734468665054692e-08,
+    "doppler": 1.1366370355776062e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 76.51698303222656,
+   "change": {
+    "range_max_abs_m": 12.90731394290924,
+    "doppler_max_abs_mps": 0.0035341136797342187
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 6.958147076852498,
+     "k_over_sigma": 0.15210703037054843
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 34.70277212065568,
+     "k_over_sigma": 0.7604633310008063
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 17.793561621463603,
+     "k_over_sigma": 5.296892021293173
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 65.05071301036428,
+     "k_over_sigma": 17.55649418435086
+    }
+   }
+  },
+  {
+   "cell": "O3_HIGH_ALTITUDE_500KM:12",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9786166422240967e-08,
+    "doppler": 1.1315476550546877e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 72.32792639732361,
+   "change": {
+    "range_max_abs_m": 12.522241353988647,
+    "doppler_max_abs_mps": 0.002978412619768278
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 7.76123295415565,
+     "k_over_sigma": 1.0370553124869792
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 38.53241219586436,
+     "k_over_sigma": 5.1790442557632135
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 9.890382829584945,
+     "k_over_sigma": 2.2378929942672308
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 31.20694680103563,
+     "k_over_sigma": 7.445094884903342
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:0",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9773077780959056e-08,
+    "doppler": 1.1360449256661576e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 66.86129570007324,
+   "change": {
+    "range_max_abs_m": 12.839374542236328,
+    "doppler_max_abs_mps": 0.003631643171502219
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 5.4325465612338135,
+     "k_over_sigma": 0.3880944308229286
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 27.1119929883641,
+     "k_over_sigma": 1.9491134638321743
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 9.960320094093703,
+     "k_over_sigma": 3.5326483562593345
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 30.736337884124485,
+     "k_over_sigma": 10.496160799952543
+    }
+   }
+  },
+  {
+   "cell": "O5_FAVOURABLE_GEO_MAX_FPERP:12",
+   "g1": {
+    "range": 0.0,
+    "doppler": 0.0,
+    "ddor": 0.0
+   },
+   "g4": {
+    "range": 2.9794704481389545e-08,
+    "doppler": 1.1357191229133257e-13,
+    "ddor": 0.0
+   },
+   "elapsed_s": 60.351664781570435,
+   "change": {
+    "range_max_abs_m": 12.623783648014069,
+    "doppler_max_abs_mps": 0.003466375268089905
+   },
+   "g7": {
+    "RANGE_ONLY|PROJECT": {
+     "max_state_over_sigma": 3.741816447432948,
+     "k_over_sigma": 2.172479341665472
+    },
+    "RANGE_ONLY|DSN_REALISTIC": {
+     "max_state_over_sigma": 18.75370723199741,
+     "k_over_sigma": 10.924562104727716
+    },
+    "RANGE_DOPPLER_FREE_BIAS|PROJECT": {
+     "max_state_over_sigma": 22.674915600756474,
+     "k_over_sigma": 0.9405720489619367
+    },
+    "RANGE_DOPPLER_FREE_BIAS|DSN_REALISTIC": {
+     "max_state_over_sigma": 70.22307721522708,
+     "k_over_sigma": 2.7564454704725505
+    }
+   }
+  }
+ ],
+ "elapsed_s": 153.10329222679138
+}

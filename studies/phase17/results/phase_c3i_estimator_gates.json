@@ -1,0 +1,95 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c3i_station_displacement_predeclaration.json",
+ "G5": {
+  "passed": false,
+  "runs": {
+   "BLS_LM": {
+    "without": {
+     "displacement": false,
+     "estimator": "BLS_LM",
+     "status": "DampingLimit",
+     "detail": "LAMBDA_HARD_LIMIT",
+     "x_hat": [
+      -1746513.5346502701,
+      -277083.99172938644,
+      518734.1433833168,
+      -138.5398249455162,
+      -1206.737315958734,
+      -1085.0511663595912
+     ],
+     "dr_m": 0.007609023703094414,
+     "iterations": 21,
+     "elapsed_s": 197.44806241989136,
+     "n_obs": 960,
+     "metadata_has_displacement": false
+    },
+    "with_": {
+     "displacement": true,
+     "estimator": "BLS_LM",
+     "status": "DampingLimit",
+     "detail": "LAMBDA_HARD_LIMIT",
+     "x_hat": [
+      -1746513.5346228166,
+      -277083.9915585416,
+      518734.14329064277,
+      -138.5398246916143,
+      -1206.7373159276758,
+      -1085.0511663250077
+     ],
+     "dr_m": 0.007412737258678013,
+     "iterations": 21,
+     "elapsed_s": 822.1879119873047,
+     "n_obs": 960,
+     "metadata_has_displacement": true
+    },
+    "x_hat_position_difference_m": 0.00019629094323041115,
+    "same_status": true,
+    "passed": true
+   },
+   "SRIF": {
+    "without": {
+     "displacement": false,
+     "estimator": "SRIF",
+     "status": "MaxIter",
+     "detail": "",
+     "x_hat": [
+      -1746513.5762177543,
+      -277083.9886799758,
+      518734.0477607559,
+      -138.53957704722313,
+      -1206.7376785088072,
+      -1085.050780088815
+     ],
+     "dr_m": 0.10145014166492473,
+     "iterations": 40,
+     "elapsed_s": 195.41816425323486,
+     "n_obs": 960,
+     "metadata_has_displacement": false
+    },
+    "with_": {
+     "displacement": true,
+     "estimator": "SRIF",
+     "status": "MaxIter",
+     "detail": "",
+     "x_hat": [
+      -1746513.5786799495,
+      -277083.9841376137,
+      518734.0437955912,
+      -138.5395554551225,
+      -1206.7377032849424,
+      -1085.0507559270263
+     ],
+     "dr_m": 0.10602719442676588,
+     "iterations": 40,
+     "elapsed_s": 786.2582228183746,
+     "n_obs": 960,
+     "metadata_has_displacement": true
+    },
+    "x_hat_position_difference_m": 0.006512909464965179,
+    "same_status": true,
+    "passed": false
+   }
+  }
+ },
+ "elapsed_s": 871.9496591091156
+}
