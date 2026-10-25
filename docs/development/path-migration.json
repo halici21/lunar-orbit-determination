@@ -2451,8 +2451,10 @@
     },
     "lunar_od/__init__.py": {
       "path": "src/lunar_od/__init__.py",
-      "original_sha256": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
-      "byte_preserved": true
+      "original_sha256": "2e7023732ce7ef6675ebb003db239ecfc3cbb0b9af343fe8c25456e572f87af5",
+      "byte_preserved": true,
+      "refrozen_from_sha256": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
+      "note": "Re-frozen for Phase C4-I (DE440 production ephemeris; exports DEFAULT_PLANETARY_EPHEMERIS, planetary_ephemeris, required_kernels), authorized by the owner on 2026-10-25; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/accelerated.py": {
       "path": "src/lunar_od/accelerated.py",
