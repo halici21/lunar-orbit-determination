@@ -2488,10 +2488,14 @@
     },
     "lunar_od/dynamics.py": {
       "path": "src/lunar_od/dynamics.py",
-      "original_sha256": "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
+      "original_sha256": "0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf",
       "byte_preserved": true,
-      "refrozen_from_sha256": "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
-      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
+      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained.",
+      "refrozen_history_sha256": [
+        "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
+        "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d"
+      ]
     },
     "lunar_od/ephemeris.py": {
       "path": "src/lunar_od/ephemeris.py",

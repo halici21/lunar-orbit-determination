@@ -201,7 +201,8 @@ class Problem:
 
         cuts = dyn._shadow_contact_times(rhs_e, t, x0, get_sun, srp, RTOL, ATOL)
         return np.asarray(dyn._integrate_segmented(t, x0, rhs_e, RTOL, ATOL, "DOP853", cuts,
-                                                   "F2g empirical propagation"))
+                                                   "F2g empirical propagation",
+                                                   contact_check=dyn._shadow_contact_check(get_sun, srp)))
 
     def emp_of(self, p):
         return p[11:11 + self.n_emp] if self.n_emp else None

@@ -435,6 +435,7 @@ PHASE_D2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/dynamics.py":
         "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
 }
+NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256 = {'lunar_od/dynamics.py': '0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf'}
 
 
 def current_source_path(relative_path: str) -> str:
@@ -449,6 +450,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:
+        return NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_D2_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_D2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE17_HARDEN_D18_REFROZEN_CURRENT_TREE_SHA256:
