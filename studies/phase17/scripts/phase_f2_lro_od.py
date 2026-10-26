@@ -356,11 +356,15 @@ def _grid_for_backend(backend=None):
 
 
 def numerical_identity():
-    """Prevent a merge from borrowing scientific gates from another code state."""
+    """Prevent a merge from borrowing gates from another numerical code state.
+
+    This is a code guard, not a complete force/data/run manifest. In particular
+    it must include media derivatives and the study readers used by this solve.
+    """
     import hashlib
-    paths = [F.REPO / "src/lunar_od" / (name + ".py") for name in
-             ("dynamics", "ephemeris", "radiometrics", "relativistic_light_time", "bounded_least_squares")]
-    paths += [Path(__file__), HERE / "phase_f2g_checks.py"]
+    paths = sorted((F.REPO / "src/lunar_od").glob("*.py"))
+    paths += [Path(__file__), HERE / "phase_f2g_checks.py",
+              HERE / "phase_f1_lro_residuals.py", HERE / "phase_f1c_lro_doppler.py"]
     return {str(p.relative_to(F.REPO)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
 

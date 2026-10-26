@@ -1447,7 +1447,7 @@ def _propagate_hot_start(
     atol: float,
     j2_moon: float = 0.0,
 ) -> np.ndarray:
-    if np.isclose(t_prev_s, t_next_s):
+    if t_prev_s == t_next_s:
         return x_prev.copy()
     return propagate_state(
         [t_prev_s, t_next_s],
@@ -1480,7 +1480,7 @@ def _propagate_formal_handoff(
     j2_moon: float = 0.0,
 ) -> tuple[np.ndarray, np.ndarray]:
     p_prev = _symmetrize(np.asarray(p_prev, dtype=float))
-    if np.isclose(t_prev_s, t_next_s):
+    if t_prev_s == t_next_s:
         p_next = p_prev.copy()
         if process_noise_covariance is not None:
             p_next = _add_process_noise(p_next, process_noise_covariance)
@@ -1528,7 +1528,7 @@ def _propagate_sqrt_information_handoff(
     if r_prev.ndim != 2 or r_prev.shape[0] != r_prev.shape[1] or r_prev.shape[0] < 6:
         raise ValueError("sqrt information handoff factor must be square with at least 6 states.")
 
-    if np.isclose(t_prev_s, t_next_s):
+    if t_prev_s == t_next_s:
         x_next = x_prev.copy()
         transition = np.eye(r_prev.shape[0], dtype=float)
     else:

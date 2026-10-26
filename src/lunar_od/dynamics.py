@@ -806,9 +806,12 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
                 times.append(brentq(f, lo, hi, xtol=1e-9))
                 continue
             sign = 1.0 if fl >= 0.0 and fh >= 0.0 else -1.0
-            extremum = minimize_scalar(lambda t: sign * f(t), bounds=(lo, hi),
+            # Bounded Brent uses sqrt(eps)*abs(x) in its stopping rule.
+            # Search in local seconds so an epoch translation cannot hide a
+            # short contact pair, even if the caller's origin is a large ET.
+            extremum = minimize_scalar(lambda u: sign * f(lo + u), bounds=(0.0, hi-lo),
                                        method="bounded", options={"xatol": 1e-8})
-            mid = float(extremum.x)
+            mid = lo + float(extremum.x)
             fm = f(mid)
             if abs(fm) <= angle_roundoff:
                 times.append(mid)  # one tangent, not two rounding-induced roots
@@ -1367,7 +1370,7 @@ def make_fast_sigma_propagator(
     _cbfe = _J2000_TO_EARTH_BF
 
     def _propagate(t0: float, t1: float, state6: np.ndarray) -> np.ndarray:
-        if np.isclose(t0, t1):
+        if t0 == t1:
             return state6.copy()
         return _rk4_6state_fast(
             np.asarray(state6, dtype=np.float64),

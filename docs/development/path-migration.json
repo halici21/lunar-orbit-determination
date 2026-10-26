@@ -2451,8 +2451,13 @@
     },
     "lunar_od/__init__.py": {
       "path": "src/lunar_od/__init__.py",
-      "original_sha256": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
-      "byte_preserved": true
+      "original_sha256": "2e7023732ce7ef6675ebb003db239ecfc3cbb0b9af343fe8c25456e572f87af5",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4"
+      ],
+      "refrozen_from_sha256": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
+      "note": " Re-frozen 2026-10-26: Existing C4-I exports: pre-existing identity drift, no source edit in this closure. All previous source identities retained; this is not scientific requalification."
     },
     "lunar_od/accelerated.py": {
       "path": "src/lunar_od/accelerated.py",
@@ -2488,13 +2493,14 @@
     },
     "lunar_od/dynamics.py": {
       "path": "src/lunar_od/dynamics.py",
-      "original_sha256": "0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf",
+      "original_sha256": "1b060a04d1434798f3b1335d62fe7cd67d33eeb42b5f4b29a7dee18f44b91d7a",
       "byte_preserved": true,
-      "refrozen_from_sha256": "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
-      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained.",
+      "refrozen_from_sha256": "0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf",
+      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification.",
       "refrozen_history_sha256": [
         "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
-        "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d"
+        "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
+        "0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf"
       ]
     },
     "lunar_od/ephemeris.py": {
@@ -2520,10 +2526,14 @@
     },
     "lunar_od/filters.py": {
       "path": "src/lunar_od/filters.py",
-      "original_sha256": "d92d9975a7ef5ab49ee6723904261a8210643d19a5c55a2069ece6de38d8aa42",
+      "original_sha256": "83b25c55ac8459926790dad09e9d189cd3b6d4a293aab1bcbd2dc66b200856ec",
       "byte_preserved": true,
-      "refrozen_from_sha256": "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "d92d9975a7ef5ab49ee6723904261a8210643d19a5c55a2069ece6de38d8aa42",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification.",
+      "refrozen_history_sha256": [
+        "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
+        "d92d9975a7ef5ab49ee6723904261a8210643d19a5c55a2069ece6de38d8aa42"
+      ]
     },
     "lunar_od/force_contract.py": {
       "path": "src/lunar_od/force_contract.py",
@@ -2715,8 +2725,13 @@
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
-      "original_sha256": "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
-      "byte_preserved": true
+      "original_sha256": "f241594661c4976dd2514b001784cb21fa50684a19be1377cfa968fad739fd48",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e"
+      ],
+      "refrozen_from_sha256": "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
+      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification."
     },
     "lunar_od/spice_loader.py": {
       "path": "src/lunar_od/spice_loader.py",
