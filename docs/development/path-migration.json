@@ -2516,15 +2516,16 @@
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
-      "original_sha256": "b7d61fa4ccb0633cd22a7a23c1c297e8b2b43dd389e74010ee6015a0a5d2274c",
+      "original_sha256": "c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf",
       "byte_preserved": true,
-      "refrozen_from_sha256": "f23ad27e99653b7e4fc07be228b2c425502986789f9058c35ecee8653af79093",
-      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate.",
+      "refrozen_from_sha256": "b7d61fa4ccb0633cd22a7a23c1c297e8b2b43dd389e74010ee6015a0a5d2274c",
+      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-26: explicit MAP candidate/objective consistency; historical data and gates unchanged.",
       "refrozen_history_sha256": [
         "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
         "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
         "e99a7693fcba05f03aa5b805def7b6047d7b26881f2dde31c7e4ff931771aadb",
-        "f23ad27e99653b7e4fc07be228b2c425502986789f9058c35ecee8653af79093"
+        "f23ad27e99653b7e4fc07be228b2c425502986789f9058c35ecee8653af79093",
+        "b7d61fa4ccb0633cd22a7a23c1c297e8b2b43dd389e74010ee6015a0a5d2274c"
       ]
     },
     "lunar_od/filters.py": {

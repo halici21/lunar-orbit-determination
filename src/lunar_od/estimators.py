@@ -57,6 +57,7 @@ def _adaptive_tol(iteration: int, max_iter: int, rtol: float, atol: float) -> tu
 @dataclass(frozen=True)
 class EstimatorStats:
     iterations: int
+    # Batch: accepted data + explicit-prior objective; UKF: accumulated NIS.
     final_cost: float
     position_step_norm_m: float
     velocity_step_norm_mps: float
@@ -170,7 +171,8 @@ def estimate_position_srif(
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
         h_nom_aug = _apply_position_bias(h_nom, obs_data, b_nominal, bias_cfg)
         residual = _position_residual_from_h(obs_data, h_nom_aug)
-        current_cost = float(np.dot(w_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -223,7 +225,8 @@ def estimate_position_srif(
         _, h_candidate, _ = compute_position_residuals_analytic(x_hist_candidate, obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -412,7 +415,8 @@ def estimate_range_rate_srif(
         w_sqrt = np.sqrt(w_curr_diag)
         max_rejected_components = max(max_rejected_components, last_rejected_components)
         min_active_weight_fraction = min(min_active_weight_fraction, last_active_weight_fraction)
-        current_cost = float(np.dot(w_curr_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_curr_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -461,7 +465,8 @@ def estimate_range_rate_srif(
         _, h_candidate = compute_range_rate_residuals(x_hist_candidate, obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -575,7 +580,7 @@ def estimate_position_bls_lm(
 
     has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
     x_prior = x_nominal.copy()
-    prior_inv, _, scale, prior_inv_scaled, _ = _prior_information_and_scale(
+    prior_inv, prior_sqrt_info, scale, prior_inv_scaled, _ = _prior_information_and_scale(
         nx,
         bias_cfg,
         _position_bias_prior_and_scale,
@@ -625,7 +630,8 @@ def estimate_position_bls_lm(
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
-        current_cost = float(np.dot(w_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -661,7 +667,8 @@ def estimate_position_bls_lm(
         _, h_candidate, _ = compute_position_residuals_analytic(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -770,7 +777,7 @@ def estimate_range_rate_bls_lm(
 
     has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
     x_prior = x_nominal.copy()
-    prior_inv, _, scale, prior_inv_scaled, _ = _prior_information_and_scale(
+    prior_inv, prior_sqrt_info, scale, prior_inv_scaled, _ = _prior_information_and_scale(
         nx,
         bias_cfg,
         _range_rate_bias_prior_and_scale,
@@ -841,7 +848,8 @@ def estimate_range_rate_bls_lm(
         )
         max_rejected_components = max(max_rejected_components, last_rejected_components)
         min_active_weight_fraction = min(min_active_weight_fraction, last_active_weight_fraction)
-        current_cost = float(np.dot(w_curr_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_curr_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -882,7 +890,8 @@ def estimate_range_rate_bls_lm(
         _, h_candidate = compute_range_rate_residuals(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -953,6 +962,19 @@ def estimate_range_rate_bls_lm(
         gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
+
+
+def _weighted_map_cost(residual, weights, state, prior_mean, prior_sqrt_information=None):
+    """The accepted objective: data chi-square plus explicit prior chi-square.
+
+    A numerical step regularizer is not a physical prior. Callers pass None
+    for it so the data-only objective stays byte-for-byte identical.
+    """
+    cost = float(np.dot(weights * residual, residual))
+    if prior_sqrt_information is not None:
+        prior_residual = prior_sqrt_information @ (state - prior_mean)
+        cost += float(prior_residual @ prior_residual)
+    return cost
 
 
 def _posterior_prior_terms(prior_inv, prior_sqrt_info, has_explicit_prior: bool):
