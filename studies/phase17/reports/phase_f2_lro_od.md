@@ -366,3 +366,83 @@ Prediction range RMS per pass: 9.3 m at 14.3 h after the fit end, rising to 14.6
 - **S2**, even with arc continuation, converges to a wrong basin on the one-day stage (15.4 m) and keeps it on two
   days (14.8 m). The basin problem is independent of the arc length and the degree. It needs a different
   globalisation (multi-start, or a trust region on a scaled parameter space).
+
+## 13. F2g — empirical once-per-revolution accelerations (N = 300)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2g_lro_empirical_predeclaration.json` (`7ecc20d`).
+- **Code:**
+  - The empirical acceleration is a = (C_T cos u + S_T sin u)·T + (C_N cos u + S_N sin u)·N, with prior
+    N(0, 1e-8 m/s²) on each coefficient.
+  - It is added at study level on top of production's own RHS (`dynamics._build_state_rhs`) and its shadow-event
+    integrator. Frozen `dynamics.py` is unchanged.
+  - The FD sensitivities gain 4 columns (23 propagations per iteration, parallel). The light-time partials carry
+    the extra columns through `position_sensitivity`.
+- **Evidence:**
+  - `studies/phase17/results/phase_f2g_lro_empirical.json` (merged from `phase_f2g_part_s1.json` and
+    `phase_f2g_part_s2.json`);
+  - `studies/phase17/results/phase_f2g_checks.json`.
+- **SFF:**
+  - The archive's FDF-25 files hold thruster maneuvers only (LOI, MCC, MOI, SK). None falls inside the arc, and
+    there are no desaturation records.
+  - The six maneuver files in the window were downloaded (reported first, ~35 KB).
+  - MOI1 gives an average mass of 1 279.9 kg, so a cannonball with ~14 m² and Cr ~1.3 means K ≈ 0.014 m²/kg.
+- **Note:** a first run of the check script was killed by its own 3 500 s timeout while F2f held all cores. It was
+  rerun without a timeout, and the result above is from that rerun.
+
+### Gates as computed
+
+| gate | result | number |
+|---|---|---|
+| G0 equivalence (empirical = 0 vs production) | **PASS** | bit-identical on 6 590 epochs (max diff 0.0) |
+| G4e partials (≤ 1e-3) | **FAIL** | range columns ≤ 3.6e-6; Doppler columns 3.7e-5, 3.1e-4, **1.1e-3, 1.5e-3** |
+| G1 convergence | **FAIL** | S1 DampingLimit (stationary at 1.229 m, sub-µm steps); S2 DampingLimit |
+| G2 start independence | **FAIL** | 447 m |
+| G3 post-fit | **FAIL** | S1 passes (1.229 m / 2.52 mm/s); S2 114.0 m / 121 mm/s |
+
+**G4e.** A 1e-9 m/s² empirical step changes a 5 s counted Doppler by only ~1e-4 m/s. At rtol 1e-10 the FD oracle
+itself carries about 1e-3 relative noise. The range columns of the same parameters agree to 1e-6, and the Doppler
+partial is the difference of two range partials. Proposed adjudication: oracle floor; accept.
+
+### S1 against F2f (same start, same data, N = 300)
+
+| | F2f | **F2g** |
+|---|---|---|
+| range / Doppler post-fit | 1.506 m / 3.82 mm/s | **1.229 m / 2.52 mm/s** |
+| per-pass range RMS | 0.85–2.08 m | 0.53–2.06 m |
+| station delays vs F1 | 0.8 / 1.3 / 0.04 m | 1.7 / 1.8 / 0.5 m |
+| K_SRP | 0.040 | 0.0795 ± 0.0004 |
+| empirical [m/s²] | — | C_T −1.18e-8 ± 4e-10, **S_T +2.71e-7 ± 2e-9**, C_N 0.94e-8 ± 7.8e-9, S_N 4.40e-8 ± 4.1e-9 |
+| vs LOLA R / A / C, fit arc | 3.5 / **21.8 / 25.4** m | **1.6** / 60.2 / 78.2 m |
+| prediction range RMS (2009-262) | 12.1 m | **4.2 m** |
+| prediction Doppler RMS | 16.4 mm/s | **3.0 mm/s** |
+| prediction vs LOLA R / A / C | 12.7 / 39.1 / 9.4 m | **2.8 / 8.0** / 62.1 m |
+
+Prediction range RMS per pass: 2.2 m at 14.3 h after the fit end, rising to 7.0 m at 23.7 h.
+
+### Reading
+
+1. **The data demand an along-track once-per-rev signal.**
+   - S_T = 2.7e-7 m/s² is 27σ of its prior, and the Doppler residual drops from 3.8 to 2.5 mm/s.
+   - The **one-day prediction against independent data improves threefold** (12.1 → 4.2 m range, 16.4 → 3.0 mm/s
+     Doppler). In prediction, radial and along-track agree with the LOLA orbit to 2.8 / 8.0 m.
+   - By the measure that matters operationally (prediction of unseen tracking), F2g is the best model so far.
+2. **Over the fit arc, along-track and cross-track against LOLA degrade** (22/25 → 60/78 m), and K_SRP doubles.
+   - The along- and cross-track empirical terms give the orbit freedom to rotate about the Earth line of sight,
+     the direction Earth-based range and Doppler do not observe (F2d). The data cost of that rotation is near
+     zero, so the fit moves along it.
+   - K_SRP and S_T are correlated; both describe along-track energy change.
+   - Better data fit is therefore not better geometry here. The cross-track error in prediction (62 m) shows the
+     rotation persists.
+3. **Consequence.** Empirical accelerations need a constraint that this tracking geometry cannot provide by itself:
+   - a tighter prior on N (cross-track), or estimating along-track terms only;
+   - or a second observable direction (ΔDOR, optical, or LOLA altimetry crossovers, as the reference orbit used).
+4. **S2** again ends in a wrong basin. The one-day stage reaches 7.2 m and the two-day stage 114 m. Its empirical
+   terms run large (C_N, S_N ~ ±2.9e-7) and its RIC errors reach 265 m. Basin robustness remains the open
+   estimator problem.
+
+### Next steps
+
+1. An along-track-only empirical model (C_T, S_T), with N held at zero or under a tight prior: tests whether the
+   prediction gain survives without the line-of-sight rotation.
+2. Multi-start / globalisation for the S2 basin.
+3. Phase E (owner approval): production empirical accelerations and the numba harmonic STM.
