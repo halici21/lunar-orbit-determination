@@ -446,3 +446,72 @@ Prediction range RMS per pass: 2.2 m at 14.3 h after the fit end, rising to 7.0 
    prediction gain survives without the line-of-sight rotation.
 2. Multi-start / globalisation for the S2 basin.
 3. Phase E (owner approval): production empirical accelerations and the numba harmonic STM.
+
+## 14. F2h — along-track-only empirical once-per-revolution accelerations (N = 300)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json` (`07280b2`).
+- **Evidence:** `studies/phase17/results/phase_f2h_lro_alongtrack_empirical.json`.
+- **Change from F2g:** C_N and S_N are pinned by a 1e-11 m/s² prior. C_T and S_T stay free under the 1e-8 m/s²
+  prior. Run for S1 only.
+- **Run history:**
+  - A first launch never reached its own entry point (shell working-directory slip) and briefly started the default
+    F2 runs. It was stopped at once; no output was written.
+  - A launch with 14 workers failed with MemoryError while the pool was starting. The commit charge was 30.6 / 48 GB
+    from other applications. Its log is kept in `lro_data/f2h_memoryerror_14workers.txt`.
+  - The run reported here used 10 workers.
+
+### Gates and hypotheses as computed
+
+| item | result | number |
+|---|---|---|
+| G1 convergence | **FAIL** | DampingLimit, stationary at 0.984 m (last step 4e-12 m) |
+| G3 post-fit (range ≤ 2 m, Doppler ≤ 5 mm/s) | **PASS** | 0.984 m / 2.43 mm/s |
+| H1 along / cross vs LOLA ≤ F2f (21.8 / 25.4 m) | partly | along-track 20.4 m (met), cross-track 27.9 m (not met) |
+| H2 one-day prediction ≤ 6 m | **met** | 1.63 m |
+| H3 K_SRP toward ~0.014 | not met | 0.0742 ± 0.0002 |
+
+### Results
+
+| | F2f (N=300) | F2g (+4 empirical) | **F2h (+along-track empirical)** |
+|---|---|---|---|
+| range / Doppler post-fit | 1.506 m / 3.82 mm/s | 1.229 m / 2.52 mm/s | **0.984 m / 2.43 mm/s** |
+| per-pass range RMS | 0.85–2.08 m | 0.53–2.06 m | 0.50–1.67 m |
+| station delays (vs F1 489.2 / 476.9 / 474.5) | 488.4 / 475.6 / 474.6 | 487.5 / 475.1 / 475.0 | 486.3 / 473.8 / 472.7 |
+| empirical [m/s²] | — | C_T −1.2e-8, S_T 2.71e-7, C_N 0.9e-8, S_N 4.4e-8 | C_T −1.94e-8 ± 4e-10, **S_T 2.44e-7 ± 1.2e-9**, C_N, S_N ≈ 0 |
+| vs LOLA R / A / C RMS (fit arc) | 3.5 / 21.8 / 25.4 m | 1.6 / 60.2 / 78.2 m | **1.7 / 20.4 / 27.9 m** |
+| total vs LOLA RMS / max | — | 98.6 / 161.8 m | **34.6 / 70.1 m** |
+| **prediction range RMS / mean** (2009-262) | 12.1 / −1.6 m | 4.2 / −2.3 m | **1.63 / +0.29 m** |
+| prediction Doppler RMS / mean | 16.4 mm/s | 3.0 mm/s | **1.81 / +0.35 mm/s** |
+| prediction vs LOLA R / A / C | 12.7 / 39.1 / 9.4 m | 2.8 / 8.0 / 62.1 m | **2.3 / 6.6 / 10.5 m** |
+
+Prediction range RMS per pass, 14.3–23.7 h after the fit end: 3.15 (South Point), 0.89, 0.56, 1.23, 1.03 and
+1.61 m.
+
+### Reading
+
+1. **The along-track once-per-rev signal is real, and the cross-track terms were the problem.**
+   - With only C_T and S_T, the fit improves to the noise floor (0.98 m / 2.4 mm/s).
+   - The orbit goes back to F2f's geometry against LOLA (along-track 20 m, cross-track 28 m), so F2g's
+     line-of-sight rotation is gone.
+   - The estimated S_T = 2.44e-7 m/s² is stable between F2g and F2h (2.71e-7).
+2. **One-day prediction against unseen tracking: 1.6 m range, 1.8 mm/s Doppler.**
+   - That is the measurement noise level.
+   - Against the LOLA precision orbit the prediction agrees to 2.3 / 6.6 / 10.5 m (R / A / C).
+   - This is the first result of this project at the level of operational lunar OD with S-band ground tracking.
+3. **K_SRP stays at 0.074.** The along-track empirical term and K both describe along-track energy change. The
+   remaining along-track signal is some combination of:
+   - SRP with LRO's true geometry and attitude;
+   - thermal and albedo radiation;
+   - desaturation effects.
+   K at 0.074 should be read as an effective parameter, not a physical area-to-mass ratio.
+4. **What is still open:**
+   - G1: the damped Gauss–Newton ends at the damping limit, not with a declared convergence;
+   - the basin robustness of other starts (F2e–F2g S2);
+   - the cross-track error over the fit arc (28 m), which is the remaining line-of-sight weakness of Earth tracking.
+
+### Next steps
+
+1. Basin robustness (multi-start screening, or trust-region on scaled parameters), so that G1/G2 can pass.
+2. Longer arcs (3–5 days) with F2h's model and a 1–2 day prediction test.
+3. A box-wing SRP model instead of cannonball plus empirical terms (needs LRO geometry and attitude).
+4. Phase E (owner approval): production empirical accelerations and the numba harmonic STM.
