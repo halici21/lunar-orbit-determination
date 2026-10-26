@@ -1397,8 +1397,15 @@ def propagate_truth_with_ephemeris(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     """Propagate truth dynamics using Moon-centered ephemeris interpolants."""
+    from .propagation_contract import propagator_options
+    options = propagator_options(srp, propagation_profile)
+    if 'method' in options and method != 'DOP853' and method != options['method']:
+        raise ValueError('method conflicts with the explicit propagation profile.')
+    options.setdefault('method', method)
     return propagate_state(
         t_eval_s,
         state0_mci,
@@ -1409,7 +1416,7 @@ def propagate_truth_with_ephemeris(
         ephemeris.sun_position,
         rtol=rtol,
         atol=atol,
-        method=method,
+        **options,
         j2_moon=j2_moon,
         j2_earth=j2_earth,
         earth_j2_mode=earth_j2_mode,

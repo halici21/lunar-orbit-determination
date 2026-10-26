@@ -8,8 +8,12 @@ import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+from .dynamics import PropagationProfile
+from .srp import SRPOptions
+from .propagation_contract import resolve_profile
 
 from .constants import (
+    AU_M, R_SUN_M, SOLAR_PRESSURE_1AU_N_M2,
     J2_EARTH_UNNORMALIZED,
     MU_EARTH_M3S2,
     MU_MOON_M3S2,
@@ -25,6 +29,7 @@ from .force_contract import (
     ForceModelMismatchPolicy,
     ForceModelParityDecision,
     LunarHarmonicsForceContract,
+    SolarRadiationPressureForceContract, ESTIMATOR_CONSUMER_ROLES,
     bind_spec_to_runtime,
     evaluate_force_model_parity,
     sha256_hex_of_bytes,
@@ -108,6 +113,8 @@ class ScenarioConfig:
     rtol: float = THESIS_RTOL
     atol: float = THESIS_ATOL
     j2_moon: float = 0.0
+    srp: SRPOptions | None = None
+    propagation_profile: PropagationProfile | None = None
     enable_earth_j2: bool = False
     earth_j2_mode: str = "indirect"
     noise: bool = False
@@ -202,6 +209,8 @@ def scenario_config_schema() -> dict[str, Any]:
             "max_iter": {"type": "integer", "default": THESIS_MAX_ITER},
             "rtol": {"type": "number", "default": THESIS_RTOL},
             "atol": {"type": "number", "default": THESIS_ATOL},
+            "srp": {"type": ["object", "null"], "default": None},
+            "propagation_profile": {"type": ["object", "null"], "default": None},
             "noise": {"type": "boolean", "default": False},
             "enable_earth_j2": {"type": "boolean", "default": False},
             "earth_j2_mode": {"enum": list(ALLOWED_EARTH_J2_MODES), "default": "indirect"},
@@ -326,6 +335,8 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         rtol=_positive_float(payload.get("rtol", THESIS_RTOL), "rtol"),
         atol=_positive_float(payload.get("atol", THESIS_ATOL), "atol"),
         j2_moon=_nonnegative_float(payload.get("j2_moon", 0.0), "j2_moon"),
+        srp=_scenario_srp(payload.get('srp')),
+        propagation_profile=_scenario_profile(payload.get('propagation_profile')),
         enable_earth_j2=_boolean(payload.get("enable_earth_j2", False), "enable_earth_j2"),
         earth_j2_mode=_enum_value(
             payload.get("earth_j2_mode", "indirect"),
@@ -567,10 +578,13 @@ def scenario_config_summary(config: ScenarioConfig) -> str:
         if config.measurement_type == "range_rate" and config.companion_geometry != "instantaneous"
         else ""
     )
+    numerical=resolve_profile(config.srp,config.propagation_profile)
+    numerical_note='' if numerical is None else f', integrator={numerical.method}, shadow_events={numerical.shadow_events}'
+    srp_note='' if config.srp is None or not config.srp.enabled else f', K_SRP={config.srp.k_srp_m2_per_kg:g} m^2/kg'
     return (
         f"{config.name}: {config.network} {config.measurement_type} "
         f"{config.estimator_type}/{config.start_mode}, {noise}, bias={bias}{physics}{profile}{companion}, "
-        f"duration={config.duration_h:g} h"
+        f"duration={config.duration_h:g} h{numerical_note}{srp_note}"
     )
 
 
@@ -618,6 +632,18 @@ def scenario_range_rate_physics_config(config: ScenarioConfig) -> RangeRatePhysi
         station_state_method=config.station_state_method,
         counted_doppler_model=config.counted_doppler_model,
     )
+
+
+def scenario_measurement_identity(config):
+    """Generation settings that must distinguish cached observation packages."""
+    payload=config.to_dict()
+    names=('measurement_type','noise','range_rate_physics','count_interval_s',
+        'uplink_frequency_hz','turnaround_ratio','two_way_local_state_model',
+        'station_state_method','counted_doppler_model','station_clock_offset_s',
+        'station_clock_drift','clock_reference_time_s','transponder_delay_s',
+        'two_way_range_convention','apply_light_time','apply_stellar_aberration',
+        'stellar_aberration_model','measurement_model_profile','companion_geometry','jacobian_model')
+    return {name:payload[name] for name in names}
 
 
 def scenario_two_way_range_config(config: ScenarioConfig) -> "TwoWayRangeConfig":
@@ -750,6 +776,30 @@ def _lunar_harmonics_force_contract(config: ScenarioConfig) -> LunarHarmonicsFor
     )
 
 
+def _srp_force_contract(srp):
+    if srp is None or not srp.enabled:
+        return None
+    return SolarRadiationPressureForceContract(
+        k_srp_m2_per_kg=srp.k_srp_m2_per_kg,shadow_model=srp.shadow_model,
+        occulting_body_radius_m=srp.occulting_body_radius_m,
+        solar_pressure_1au_n_m2=float(SOLAR_PRESSURE_1AU_N_M2),
+        astronomical_unit_m=float(AU_M),solar_radius_m=float(R_SUN_M))
+
+
+def force_runtime_kwargs(spec):
+    """Bind the fingerprinted spec to actual runtime force objects."""
+    runtime=spec.propagation_kwargs(gravity_only=True)
+    srp=spec.solar_radiation_pressure
+    if srp is not None:
+        for name,actual in [('solar_pressure_1au_n_m2',SOLAR_PRESSURE_1AU_N_M2),
+                            ('astronomical_unit_m',AU_M),('solar_radius_m',R_SUN_M)]:
+            if getattr(srp,name)!=float(actual):
+                raise ForceContractError(f'Unsupported SRP runtime constant: {name}.')
+        runtime['srp']=SRPOptions(**srp.runtime_payload())
+    bind_spec_to_runtime(spec,runtime,context='force runtime construction')
+    return runtime
+
+
 def force_execution_spec_from_scenario_config(
     config: ScenarioConfig,
     *,
@@ -779,6 +829,7 @@ def force_execution_spec_from_scenario_config(
         earth_j2_coefficient=float(J2_EARTH_UNNORMALIZED),
         earth_j2_reference_radius_m=float(R_EARTH_J2_REF_M),
         force_ephemeris_policy=str(force_ephemeris_policy),
+        solar_radiation_pressure=_srp_force_contract(config.srp),
     )
 
 
@@ -879,6 +930,7 @@ def scenario_force_model_configuration_preflight(
     On an accidental mismatch or an unsupported selection this raises before any
     fixture read, SPICE load, or propagation.
     """
+    resolve_profile(config.srp,config.propagation_profile)
     validate_official_earth_j2_support(config.enable_earth_j2, context=context)
     reject_unsupported_official_execution(config, context=context)
     # Reason/policy validity independent of the GM values (fails fast without a
@@ -920,6 +972,10 @@ def scenario_force_model_preflight(
         estimator.contract(),
         force_model_mismatch_policy_from_scenario_config(config),
         context=context,
+        # The shared SRP/profile path disables the unverified RK4 accelerator.
+        # Other unsupported roles (Earth J2/harmonics) remain hard failures.
+        estimator_roles=tuple(r for r in ESTIMATOR_CONSUMER_ROLES if r is not ConsumerRole.UKF_FAST_SIGMA)
+            if estimator.solar_radiation_pressure is not None else None,
     )
 
 
@@ -948,6 +1004,7 @@ def validate_official_earth_j2_support(enable_earth_j2: bool, *, context: str) -
 
 
 def _validate_cross_field_rules(config: ScenarioConfig) -> None:
+    resolve_profile(config.srp, config.propagation_profile)
     # R0A fail-closed loader gate (also enforced by the JSON scenario runner).
     validate_official_earth_j2_support(
         config.enable_earth_j2, context="scenario_config cross-field validation"
@@ -1133,6 +1190,36 @@ def _enum_value(value: Any, allowed: tuple[str, ...], field_name: str):
     if value not in allowed:
         raise ValueError(f"{field_name} must be one of {allowed}; got {value!r}.")
     return value
+
+
+def _scenario_srp(value):
+    if value is None or isinstance(value, SRPOptions):
+        return value
+    if not isinstance(value, dict):
+        raise ValueError('srp must be an object or null.')
+    data = dict(value)
+    if 'enabled' in data:
+        data['enabled'] = _boolean(data['enabled'], 'srp.enabled')
+    if data.get('k_srp_m2_per_kg') is not None:
+        data['k_srp_m2_per_kg'] = _nonnegative_float(data['k_srp_m2_per_kg'], 'srp.k_srp_m2_per_kg')
+    if 'occulting_body_radius_m' in data:
+        data['occulting_body_radius_m'] = _positive_float(data['occulting_body_radius_m'], 'srp.occulting_body_radius_m')
+    try:
+        return SRPOptions(**data)
+    except TypeError as exc:
+        raise ValueError(f'Invalid SRP configuration: {exc}') from exc
+
+
+def _scenario_profile(value):
+    if value is None or isinstance(value, PropagationProfile):
+        return value
+    if not isinstance(value, dict):
+        raise ValueError('propagation_profile must be an object or null.')
+    try:
+        profile = PropagationProfile(**value)
+    except TypeError as exc:
+        raise ValueError(f'Invalid propagation_profile: {exc}') from exc
+    return resolve_profile(None, profile)
 
 
 def _bias_mode(value: Any) -> str | None:

@@ -12,6 +12,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from .dynamics import PropagationProfile, dynamics_jacobian_a_matrix, f3body_moon, propagate_augmented_state, propagate_state
+from .propagation_contract import resolve_profile, numerical_metadata
 
 _IDENTITY_6_COL: np.ndarray = np.eye(6).reshape(-1, order="F")
 from .geometry import ecef2razel_sez, wrap_to_pi
@@ -176,6 +177,7 @@ class LunarUKFResult:
     final_state: np.ndarray
     final_covariance: np.ndarray
     performance: UKFPerformanceDiagnostics
+    numerical_profile: dict | None = None
 
 
 def assess_ukf_operational_stability(
@@ -828,11 +830,9 @@ def run_lunar_ukf(
       for K sensitivity (Phase 17A-R).
     """
     start_time = perf_counter()
-    if fast_sigma_propagator is not None and srp is not None and srp.enabled:
-        raise ValueError("An external fast sigma provider cannot verify the requested SRP force; "
-                         "use the shared sigma/STM propagation path.")
-    if propagation_profile is None and srp is not None and srp.enabled:
-        propagation_profile = PropagationProfile()
+    propagation_profile = resolve_profile(srp, propagation_profile)
+    if fast_sigma_propagator is not None and propagation_profile is not None:
+        raise ValueError('An external fast sigma provider cannot verify the requested propagation profile or SRP.')
     propagation_kwargs = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
     if measurement_type == "two_way_range":
@@ -1147,6 +1147,10 @@ def run_lunar_ukf(
     )
     predicted_history = np.asarray(predicted_measurements, dtype=float).reshape(len(predicted_measurements), measurement_dim)
     return LunarUKFResult(
+        numerical_profile=numerical_metadata(srp,propagation_profile,rtol,atol,
+            fast_sigma=fast_sigma_propagator is not None,adaptive_tolerances=False,
+            local_state_model=range_rate_physics_config(pass_geo.range_rate_physics).local_state_model
+                if measurement_type == 'range_rate' else 'not_applicable'),
         t_update_s=np.asarray(t_updates, dtype=float),
         obs_indices=np.asarray(obs_indices, dtype=int),
         state_estimates=state_estimates,
