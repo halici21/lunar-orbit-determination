@@ -1,0 +1,21 @@
+{
+ "phase": "Phase F2j - three-day real LRO arc (2009-260..262) with a one-day prediction test (2009-263), F2h model",
+ "written": "2026-10-26, before any F2j number",
+ "data": {
+  "fit": "trk/lro_no_01/2009260, 2009261, 2009262 (PAD 103 / 105 / 126; ranges + Doppler, F2e A1 bound)",
+  "prediction": "trk/lro_no_01/2009263 (PAD 103 / 126; PAD 105 has no data that day), not fitted",
+  "downloaded": "2009263: 76 files (PAD 103: 65, PAD 126: 11), reported before download"
+ },
+ "model": "F2h's: GL1800F N = 300, along-track empirical C_T, S_T (prior 1e-8 m/s^2), C_N, S_N pinned (1e-11), cannonball SRP (K prior 0.010 +- 0.005), range-bias priors (F1, 3 m), global Doppler bias, weights 1 m / 2 mm/s, A1 FD sensitivities, 8 parallel workers (memory: ~30 GB committed by other applications)",
+ "start": "F2h's S1 solution state at the same epoch (our own two-day real-data estimate): [533724.060907, 739089.031071, -1516155.242848, 1575.096237, 34.59799, 564.725389]; K and the empirical terms start from K0 = 0.01 and 0",
+ "termination": "F2's rule; at the damping limit a run is STATIONARY when the Gauss-Newton decrement is below 1e-3 of the cost (chi^2). Relative, unlike F2i's absolute 0.01: F2i showed decrements of 1e-3 and 5e-5 of chi^2 that no damped step could realise (cost noise at rtol 1e-10). Declared here before any F2j number; F2i's own G1 result is not changed by it",
+ "gates": {
+  "G1_convergence": "ends Converged or STATIONARY (relative rule)",
+  "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s"
+ },
+ "reported_not_gated": "RIC vs LOLA over the fit arc and the prediction day; prediction range / Doppler per pass vs hours after the fit end; K_SRP and empirical terms vs F2h",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2j_lro_three_day_arc.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 16"
+ }
+}

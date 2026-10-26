@@ -347,7 +347,8 @@ GN_DECREMENT_TOL = 1e-2
 
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
           days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
-          n_emp: int = 0, step_limit: tuple | None = None, gn_stationarity: bool = False) -> dict:
+          n_emp: int = 0, step_limit: tuple | None = None, gn_stationarity: bool = False,
+          gn_relative_tol: float | None = None) -> dict:
     t0 = time.time()
     gn_decrement = float("nan")
     pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
@@ -427,7 +428,8 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
                 # F2i: stationary when the undamped Gauss-Newton step predicts a cost decrease below
                 # GN_DECREMENT_TOL (cost = chi^2 in SIGMA_M units)
                 gn_decrement = float(g @ np.linalg.solve(a, g))
-                status = "STATIONARY" if gn_decrement < GN_DECREMENT_TOL else "DampingLimit"
+                tol = GN_DECREMENT_TOL if gn_relative_tol is None else gn_relative_tol * cost   # F2j: relative
+                status = "STATIONARY" if gn_decrement < tol else "DampingLimit"
             else:
                 # F2d: the damping limit after a near-zero relative improvement is a stationary point
                 status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
@@ -872,8 +874,31 @@ def main_f2i_merge():
     print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
 
 
+OUT_F2J = HERE.parent / "results" / "phase_f2j_lro_three_day_arc.json"
+F2J_FIT_DAYS = ("trk/lro_no_01/2009260", "trk/lro_no_01/2009261", "trk/lro_no_01/2009262")
+F2J_PREDICT_DAYS = ("trk/lro_no_01/2009263",)
+
+
+def main_f2j():
+    """Phase F2j (studies/phase17/configs/phase_f2j_lro_three_day_arc_predeclaration.json)."""
+    x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
+        encoding="utf-8"))["runs"]["S1"]["x0"], float)
+    run = solve(300, 1.0, F2H_PRIORS, "j1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
+                len(EMP_NAMES), gn_stationarity=True, gn_relative_tol=1e-3)
+    run.pop("est_positions")
+    gates = dict(G1=run["status"] in ("Converged", "STATIONARY"),
+                 G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2j_lro_three_day_arc_predeclaration.json",
+               gates=gates, priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2J_FIT_DAYS,
+               predict_days=F2J_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    OUT_F2J.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2i-part" in sys.argv:
+    if "--f2j" in sys.argv:
+        main_f2j()
+    elif "--f2i-part" in sys.argv:
         main_f2i_part(sys.argv[sys.argv.index("--f2i-part") + 1])
     elif "--f2i-merge" in sys.argv:
         main_f2i_merge()
