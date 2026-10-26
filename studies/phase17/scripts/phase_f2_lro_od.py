@@ -347,6 +347,7 @@ class Problem:
 
 
 # The new numerical path is explicit in every result; legacy is reproduction-only.
+GN_DECREMENT_TOL = 1e-2  # Historical F2i legacy gate only.
 SOLVER_BACKEND = "trf"
 
 
@@ -427,17 +428,24 @@ def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
 
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
           days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
-          n_emp: int = 0, solver: str | None = None) -> dict:
+          n_emp: int = 0, solver: str | None = None, step_limit: tuple | None = None,
+          gn_stationarity: bool = False) -> dict:
+    backend = SOLVER_BACKEND if solver is None else solver
+    if backend != "legacy" and (step_limit is not None or gn_stationarity):
+        raise ValueError("step_limit/gn_stationarity reproduce the legacy F2i algorithm only; "
+                         "TRF always uses bound-aware final-point diagnostics.")
     pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=_grid_for_backend(solver))
     try:
         if workers > 1:
             pb.attach_pool(workers)
-        return _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, solver)
+        return _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days,
+                              solver, step_limit, gn_stationarity)
     finally:
         pb.close_pool()
 
 
-def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, solver):
+def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, solver,
+                   step_limit=None, gn_stationarity=False):
     t0 = time.time()
     nr = len(pb.rows)
     x0 = pb.reference_epoch + sign * OFFSET if x_start is None else np.asarray(x_start, float)
@@ -484,6 +492,10 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
             accepted = False
             while lam < 1e10:
                 step = scale * np.linalg.solve(a + lam * np.diag(np.diag(a)), g)
+                if step_limit is not None:
+                    factor = min(1., step_limit[0]/max(np.linalg.norm(step[:3]), 1e-300),
+                                 step_limit[1]/max(np.linalg.norm(step[3:6]), 1e-300))
+                    step *= factor
                 pc = p + step
                 if pc[6] < 0.0:
                     lam *= 10.0
@@ -509,7 +521,11 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
                           f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
             if not accepted:
                 # F2d: the damping limit after a near-zero relative improvement is a stationary point
-                status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
+                if gn_stationarity:
+                    legacy_decrement = float(g @ np.linalg.solve(a, g))
+                    status = "STATIONARY" if legacy_decrement < GN_DECREMENT_TOL else "DampingLimit"
+                else:
+                    status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
                 break
             if rel < 1e-8 and np.linalg.norm(step[:3]) < 1e-3:
                 status = "Converged"
@@ -552,6 +568,7 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
                      doppler_postfit_rms_mmps=float(np.sqrt(np.mean(rd ** 2)) * 1e3), n_doppler=int(rd.size))
     return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history, **extra,
                 solver=backend, numerical_identity=numerical_identity(),
+                numerical_variant="bounded_trf" if backend == "trf" else "historical_legacy",
                 numerical_profile=dict(grid_s=pb.grid_s, rtol=RTOL, atol=ATOL,
                                        method="DOP853", shadow_events=True,
                                        earth_interpolation=pb.eph.earth_interpolation),
@@ -915,12 +932,81 @@ def main_f2g_merge():
     print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
 
 
+#: Phase F2h: along-track-only empirical accelerations (cross-track terms pinned by a 1e-11 m/s^2 prior).
+F2H_PRIORS = {**F2G_PRIORS, 13: (0.0, 1e-11), 14: (0.0, 1e-11)}
+OUT_F2H = HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json"
+
+
+def main_f2h():
+    """Phase F2h (studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json): S1 only."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    run = solve(300, 1.0, F2H_PRIORS, "h1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, _workers_arg() or 14,
+                len(EMP_NAMES))
+    run.pop("est_positions")
+    gates = dict(G1=_certified_stationary(run),
+                 G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json",
+               gates=gates, priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    _write_result(OUT_F2H, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
+F2I_STEP_LIMIT = (200.0, 0.2)
+OUT_F2I = HERE.parent / "results" / "phase_f2i_lro_basin_robustness.json"
+
+
+def _f2i_part_path(name: str) -> Path:
+    return _output_dir() / f"phase_f2i_part_{name}.json"
+
+
+def main_f2i_part(name: str):
+    """One F2i start in its own OS process (F2h model + step limit + Gauss-Newton stationarity)."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    start = s1 if name == "s1r" else s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    run = solve(300, 1.0, F2H_PRIORS, "i" + name, True, F2E_FIT_DAYS, start,
+                F2E_PREDICT_DAYS if name == "s1r" else (), _workers_arg() or 5, len(EMP_NAMES),
+                step_limit=F2I_STEP_LIMIT if SOLVER_BACKEND == "legacy" else None,
+                gn_stationarity=SOLVER_BACKEND == "legacy")
+    _f2i_part_path(name).write_text(json.dumps(run), encoding="utf-8")
+
+
+def main_f2i_merge():
+    runs = {"S1R": json.loads(_f2i_part_path("s1r").read_text(encoding="utf-8")),
+            "S2": json.loads(_f2i_part_path("s2").read_text(encoding="utf-8"))}
+    _require_current_runs(runs)
+    a, b = runs["S1R"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2i_lro_basin_robustness_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, step_limit=F2I_STEP_LIMIT if SOLVER_BACKEND == "legacy" else None,
+               numerical_variant=SOLVER_BACKEND, gn_decrement_tol=GN_DECREMENT_TOL,
+               priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs=runs)
+    _write_result(OUT_F2I, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
+
+
+
 if __name__ == "__main__":
     if "--solver" in sys.argv:
         SOLVER_BACKEND = sys.argv[sys.argv.index("--solver") + 1]
         if SOLVER_BACKEND not in ("trf", "legacy"):
             raise SystemExit("--solver must be trf or legacy")
-    if "--f2g-part" in sys.argv:
+    if "--f2i-part" in sys.argv:
+        main_f2i_part(sys.argv[sys.argv.index("--f2i-part") + 1])
+    elif "--f2i-merge" in sys.argv:
+        main_f2i_merge()
+    elif "--f2h" in sys.argv:
+        main_f2h()
+    elif "--f2g-part" in sys.argv:
         main_f2g_part(sys.argv[sys.argv.index("--f2g-part") + 1])
     elif "--f2g-merge" in sys.argv:
         main_f2g_merge()

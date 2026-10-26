@@ -1,0 +1,21 @@
+{
+ "phase": "Phase F2i - basin robustness: step limiting and a Gauss-Newton stationarity test (F2h model)",
+ "written": "2026-10-26, before any F2i number",
+ "motivation": "every second start (S1 + 100 m, 0.1 m/s) of F2e-F2h ended in a wrong basin (G2 FAIL), and converged good runs ended at the damping limit (G1 FAIL); the S2 first steps were ~95-100 m",
+ "change_from_F2h": {
+  "step_limit": "each LM trial step is scaled (direction kept) so that |dr| <= 200 m and |dv| <= 0.2 m/s",
+  "stationarity": "a run that reaches the damping limit is STATIONARY when the undamped Gauss-Newton step at the final point predicts a cost decrease g^T A^-1 g < 0.01 (cost = chi^2 in 1 m / 2 mm/s units, priors included); otherwise DampingLimit",
+  "runs": "S2 = F2h's S1 start + (100 m, 100 m, 100 m, 0.1 m/s, 0.1 m/s, 0.1 m/s), two-day arc directly (no one-day stage), with both changes; S1R = F2h's S1 start with both changes (re-run, so G1 is judged under the new rule and G2 compares like with like)",
+  "unchanged": "F2h's model (N = 300, along-track empirical C_T, S_T; C_N, S_N pinned), data, priors, Doppler bias, A1 FD sensitivities; workers 5 + 5 (two processes, memory-safe)"
+ },
+ "gates": {
+  "G1_convergence": "S1R and S2 end Converged or STATIONARY (new rule)",
+  "G2_start_independence": "S1R and S2 agree to <= 1 m in position over the arc",
+  "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s for both"
+ },
+ "reported_not_gated": "iterations with the step cap active; RIC vs LOLA and the 2009-262 prediction for S1R",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2i_lro_basin_robustness.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 15"
+ }
+}
