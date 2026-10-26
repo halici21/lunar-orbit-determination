@@ -581,3 +581,104 @@ S1R reproduces F2h exactly (same start, same model). Its one-day prediction is 1
   - G1 classification (cost noise);
   - the cross-track error (~28 m) against LOLA;
   - K_SRP as an effective rather than physical parameter.
+
+## 16. F2j — three-day arc (2009-260..262) with a one-day prediction test (2009-263; F2h model)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2j_lro_three_day_arc_predeclaration.json` (`9cc3873`).
+- **Evidence:** `studies/phase17/results/phase_f2j_lro_three_day_arc.json`.
+- **Diagnostic (not a gate):** `studies/phase17/results/phase_f2j_day263_lola_residuals.json`. This is the F1 slope
+  diagnostic (`phase_f1_slope_diagnostic.py`) run on 2009-263: real range minus range computed from the LOLA orbit.
+- **Model:** F2h's.
+  - N = 300.
+  - Along-track empirical C_T and S_T; C_N and S_N pinned at 1e-11 m/s².
+  - `F2H_PRIORS`.
+  - Start from F2h's S1 state. K and the empirical terms start at 0.01 and 0.
+- **Termination:** the relative rule. At the damping limit a run is STATIONARY when the Gauss–Newton decrement is
+  below 1e-3·χ².
+- **Run:**
+  - 8 workers, 18 iterations.
+  - Elapsed 36 835 s. This includes about 3 h when the laptop was in Modern Standby (lid closed, 21:20–00:25).
+    The run is deterministic, so the pause does not change any number.
+
+### Gates as computed
+
+| gate | result | number |
+|---|---|---|
+| G1 convergence | **FAIL** | DampingLimit at iteration 18; Gauss–Newton decrement 977.4 = 0.057·χ² (χ² = 17 154) > 1e-3·χ² |
+| G3 post-fit (range ≤ 2 m, Doppler ≤ 5 mm/s) | **PASS** | 1.086 m / 2.17 mm/s |
+
+### Results
+
+| | F2h (two-day arc 260–261) | **F2j (three-day arc 260–262)** |
+|---|---|---|
+| range / Doppler post-fit | 0.984 m / 2.43 mm/s | **1.086 m / 2.17 mm/s** |
+| per-pass range RMS | 0.50–1.67 m | 0.42–1.60 m (16 passes) |
+| station delays 103 / 105 / 126 (F1: 489.2 / 476.9 / 474.5) | 486.3 / 473.8 / 472.7 m | 486.1 / 475.2 / 472.0 m (σ 0.07 m) |
+| global Doppler bias | −8.03 mm/s | −7.99 ± 0.03 mm/s |
+| K_SRP | 0.0742 | 0.0756 ± 0.00005 |
+| C_T, S_T [m/s²] | −1.94e-8, 2.44e-7 | −1.92e-8 ± 1.4e-10, **2.56e-7 ± 5.5e-10** |
+| vs LOLA R / A / C RMS (fit arc) | 1.7 / 20.4 / 27.9 m | **1.6 / 16.2 / 23.2 m** |
+| vs LOLA total RMS / max (fit arc) | 34.6 / 70.1 m | 28.3 / 70.4 m |
+| prediction day | 2009-262 | 2009-263 |
+| prediction range RMS / mean | 1.63 / +0.29 m | **7.12 / +0.06 m** |
+| prediction Doppler RMS / mean | 1.81 / +0.35 mm/s | **24.4 / −6.25 mm/s** |
+| prediction vs LOLA R / A / C RMS | 2.3 / 6.6 / 10.5 m | 2.3 / 5.8 / 10.4 m (max 3.5 / 13.2 / 15.5 m) |
+
+Prediction range per pass on 2009-263:
+
+| PAD | n | hours after fit end | mean | RMS |
+|---|---|---|---|---|
+| 103 | 451 | 14.3 | +0.28 m | 4.79 m |
+| 103 | 435 | 16.2 | −0.64 m | 5.51 m |
+| 103 | 451 | 18.1 | −0.02 m | 6.51 m |
+| 103 | 1 | 20.3 | +0.36 m | — |
+| 103 | 1 | 20.8 | −11.79 m | — |
+| 103 | 225 | 21.8 | +4.42 m | 6.67 m |
+| 126 | 444 | 23.7 | −1.56 m | 10.52 m |
+
+Diagnostic: the 2009-263 tracking against the LOLA orbit, after a per-pass bias and slope, leaves 0.33–0.92 m
+RMS. The slopes are −13 to −17 m/h, the same along-track signature F1/F1b found in LOLA on other days. The
+prediction-day data are therefore as clean as the fit-arc data.
+
+### Reading
+
+1. **The fit-arc solution improves with the third day.**
+   - Post-fit is at the noise floor (1.09 m / 2.2 mm/s).
+   - Along-track and cross-track against LOLA improve from 20 / 28 m to 16 / 23 m.
+   - The station delays, the Doppler bias and C_T agree with F2h within ~1.4 m, 0.04 mm/s and 1 %.
+   - S_T rises by 5 % (2.44e-7 → 2.56e-7 m/s²), many times its formal σ. A single constant once-per-rev amplitude
+     is not quite the same over two and three days.
+2. **The one-day prediction is worse than F2h's in the tracking data, but not against LOLA.**
+   - Range is 7.1 m RMS and Doppler 24 mm/s, against F2h's 1.6 m / 1.8 mm/s.
+   - The pass means stay near zero (−1.6 … +4.4 m). The error is a within-pass shape that grows with time from
+     4.8 m to 10.5 m RMS.
+   - The data are not the cause: against LOLA the same passes are clean to 0.3–0.9 m.
+   - Against LOLA the predicted orbit is as good as F2h's (2.3 / 5.8 / 10.4 m). LOLA carries its own along-track
+     error (F1b, and the −13 to −17 m/h slopes above), so a metre-level comparison with it does not settle which
+     orbit is closer to the truth on 2009-263.
+   - The Doppler prediction mean of −6.25 mm/s on top of the fitted global bias suggests that the bias, or the
+     orbit's velocity, differs on 2009-263. This is not resolved here.
+   - F2h predicted a different day (2009-262), so the two prediction rows are not a like-for-like comparison.
+3. **G1 fails, and not because of the threshold.**
+   - Iteration 17 still took a 27 m step at λ = 1e-5.
+   - At iteration 18 no damped trial up to λ = 1e10 lowered the cost, although the undamped Gauss–Newton step
+     predicts a 5.7 % decrease.
+   - F2i's decrements were 1e-3 and 5e-5 of χ², inside the cost noise. 5.7 % is not cost noise.
+   - A predicted decrease that no small step realises points to a Jacobian that is wrong in some direction near
+     this point, or to a cost that is not smooth there: for example an observation or a shadow crossing that
+     switches with the state. The FD sensitivities (A1) are the first suspect. This is not diagnosed here.
+4. **What this means for the F2 series.**
+   - F2h/F2i (two-day arc) stays the best predictor: 1.6 m / 1.8 mm/s one day ahead.
+   - Three days of tracking give a better fit-arc orbit against LOLA, but the constant once-per-rev along-track
+     model does not carry the prediction as well. The remaining force is not constant over three days, or not
+     once-per-rev.
+
+### Next steps
+
+1. Diagnose G1 at the F2j end point: compare the FD Jacobian with a tighter-step or analytic one along the
+   Gauss–Newton direction, and scan the cost along that direction.
+2. Piecewise-constant (per-day) along-track empirical terms over the three-day arc, then the same 2009-263
+   prediction test.
+3. Check the Doppler bias on 2009-263 separately: a per-day bias fit against the LOLA orbit, as in F1c.
+4. Phase E (owner approval): the analytic numba harmonic STM, which removes the FD Jacobian; it is expected to be several
+   times faster per iteration (not measured).
