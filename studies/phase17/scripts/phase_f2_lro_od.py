@@ -341,10 +341,15 @@ class Problem:
         return res, h, hist
 
 
+#: Phase F2i: Gauss-Newton decrement below which a damping-limit end counts as STATIONARY (chi^2 units).
+GN_DECREMENT_TOL = 1e-2
+
+
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
           days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
-          n_emp: int = 0) -> dict:
+          n_emp: int = 0, step_limit: tuple | None = None, gn_stationarity: bool = False) -> dict:
     t0 = time.time()
+    gn_decrement = float("nan")
     pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
     if workers > 1:
         pb.attach_pool(workers)
@@ -389,6 +394,11 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
         accepted = False
         while lam < 1e10:
             step = scale * np.linalg.solve(a + lam * np.diag(np.diag(a)), g)
+            if step_limit is not None:
+                # F2i: cap the state step (direction kept) so a far start cannot jump across basins
+                f = min(1.0, step_limit[0] / max(np.linalg.norm(step[:3]), 1e-300),
+                        step_limit[1] / max(np.linalg.norm(step[3:6]), 1e-300))
+                step = step * f
             pc = p + step
             if pc[6] < 0.0:
                 lam *= 10.0
@@ -413,8 +423,14 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
             log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
                       f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
         if not accepted:
-            # F2d: the damping limit after a near-zero relative improvement is a stationary point
-            status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
+            if gn_stationarity:
+                # F2i: stationary when the undamped Gauss-Newton step predicts a cost decrease below
+                # GN_DECREMENT_TOL (cost = chi^2 in SIGMA_M units)
+                gn_decrement = float(g @ np.linalg.solve(a, g))
+                status = "STATIONARY" if gn_decrement < GN_DECREMENT_TOL else "DampingLimit"
+            else:
+                # F2d: the damping limit after a near-zero relative improvement is a stationary point
+                status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
             break
         if rel < 1e-8 and np.linalg.norm(step[:3]) < 1e-3:
             status = "Converged"
@@ -445,6 +461,7 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
         extra = dict(doppler_bias_mmps=float(p[10] * 1e3), doppler_bias_sigma_mmps=float(np.sqrt(cov[10, 10]) * 1e3),
                      doppler_postfit_rms_mmps=float(np.sqrt(np.mean(rd ** 2)) * 1e3), n_doppler=int(rd.size))
     return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history, **extra,
+                gauss_newton_decrement=gn_decrement, step_limit=step_limit,
                 postfit_rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), per_pass=per_pass,
                 x0=p[:6].tolist(), k_srp=float(p[6]), k_srp_sigma=float(np.sqrt(cov[6, 6])),
                 biases_m=dict(zip(map(str, PADS), map(float, p[7:10]))),
@@ -818,8 +835,49 @@ def main_f2h():
     print(json.dumps(dict(gates=gates), indent=1))
 
 
+F2I_STEP_LIMIT = (200.0, 0.2)
+OUT_F2I = HERE.parent / "results" / "phase_f2i_lro_basin_robustness.json"
+
+
+def _f2i_part_path(name: str) -> Path:
+    return HERE.parent / "results" / f"phase_f2i_part_{name}.json"
+
+
+def main_f2i_part(name: str):
+    """One F2i start in its own OS process (F2h model + step limit + Gauss-Newton stationarity)."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    start = s1 if name == "s1r" else s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    run = solve(300, 1.0, F2H_PRIORS, "i" + name, True, F2E_FIT_DAYS, start,
+                F2E_PREDICT_DAYS if name == "s1r" else (), _workers_arg() or 5, len(EMP_NAMES),
+                step_limit=F2I_STEP_LIMIT, gn_stationarity=True)
+    _f2i_part_path(name).write_text(json.dumps(run), encoding="utf-8")
+
+
+def main_f2i_merge():
+    runs = {"S1R": json.loads(_f2i_part_path("s1r").read_text(encoding="utf-8")),
+            "S2": json.loads(_f2i_part_path("s2").read_text(encoding="utf-8"))}
+    a, b = runs["S1R"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2i_lro_basin_robustness_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, step_limit=F2I_STEP_LIMIT, gn_decrement_tol=GN_DECREMENT_TOL,
+               priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs=runs)
+    OUT_F2I.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2h" in sys.argv:
+    if "--f2i-part" in sys.argv:
+        main_f2i_part(sys.argv[sys.argv.index("--f2i-part") + 1])
+    elif "--f2i-merge" in sys.argv:
+        main_f2i_merge()
+    elif "--f2h" in sys.argv:
         main_f2h()
     elif "--f2g-part" in sys.argv:
         main_f2g_part(sys.argv[sys.argv.index("--f2g-part") + 1])
