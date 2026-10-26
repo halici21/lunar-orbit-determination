@@ -515,3 +515,69 @@ Prediction range RMS per pass, 14.3–23.7 h after the fit end: 3.15 (South Poin
 2. Longer arcs (3–5 days) with F2h's model and a 1–2 day prediction test.
 3. A box-wing SRP model instead of cannonball plus empirical terms (needs LRO geometry and attitude).
 4. Phase E (owner approval): production empirical accelerations and the numba harmonic STM.
+
+## 15. F2i — basin robustness (step limit, Gauss–Newton stationarity test; F2h model)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2i_lro_basin_robustness_predeclaration.json` (`45e14be`).
+- **Evidence:** `studies/phase17/results/phase_f2i_lro_basin_robustness.json`, merged from `phase_f2i_part_s1r.json`
+  and `phase_f2i_part_s2.json`.
+- **Changes from F2h:**
+  - each LM step is capped at 200 m / 0.2 m/s;
+  - a run that reaches the damping limit is STATIONARY when the undamped Gauss–Newton decrement g^T A^-1 g < 0.01
+    (χ² units);
+  - S2 starts on the two-day arc directly, with no one-day stage;
+  - two processes with 5 workers each.
+
+### Gates as computed
+
+| gate | result | number |
+|---|---|---|
+| G1 convergence | **FAIL** | both DampingLimit: Gauss–Newton decrement 10.09 (S1R) and 0.46 (S2) > 0.01 |
+| **G2 start independence (≤ 1 m)** | **PASS** | **0.991 m** (first pass of this gate in the F2 series) |
+| G3 post-fit (range ≤ 2 m, Doppler ≤ 5 mm/s) | **PASS** | S1R 0.984 m / 2.43 mm/s; S2 0.982 m / 2.43 mm/s |
+
+### The two solutions
+
+| | S1R (F2h start) | S2 (+100 m, +0.1 m/s) |
+|---|---|---|
+| iterations | 11 | 28 |
+| range / Doppler post-fit | 0.984 m / 2.426 mm/s | 0.982 m / 2.432 mm/s |
+| station biases 103 / 105 / 126 | 486.340 / 473.805 / 472.673 m | 486.329 / 473.803 / 472.644 m |
+| K_SRP | 0.07424 | 0.07447 |
+| C_T, S_T [m/s²] | −1.939e-8, 2.444e-7 | −1.936e-8, 2.441e-7 |
+| vs LOLA R / A / C RMS | 1.67 / 20.44 / 27.90 m | 1.64 / 20.05 / 27.36 m |
+
+S1R reproduces F2h exactly (same start, same model). Its one-day prediction is 1.63 m / 1.81 mm/s, as in F2h.
+
+### Reading
+
+1. **The step cap was never active.** The largest position steps were 41.6 m (S1R) and 98.2 m (S2), all below
+   200 m. The basin fix in F2i therefore does not come from step limiting.
+2. **What changed for S2 is the model.**
+   - F2e–F2g S2 used the full or no empirical set and a one-day continuation stage, and ended at 7–150 m.
+   - F2i S2 uses F2h's along-track-only empirical model directly on the two-day arc.
+   - It descended through a slow plateau near 3.15 m (iterations 8–15) and then reached the same minimum as S1R
+     within 0.99 m.
+   - Removing the cross-track empirical freedom shrinks the null space: the cost surface has one dominant minimum
+     at this offset, and a damped Gauss–Newton path finds it.
+3. **G1:** the stationarity test as declared does not pass.
+   - At both end points the undamped Gauss–Newton step predicts a decrease (10.1 and 0.46 χ²) that no damped trial
+     step realises.
+   - The total χ² is ~1.0e4, so these are 1e-3 and 5e-5 of the cost. That is inside the noise of a cost evaluated
+     at rtol 1e-10 with FD sensitivities, the same situation production's HARDEN-D30 met and handled by rescoring
+     at a tighter tolerance.
+   - The 0.01 threshold was too strict for this cost noise. A relative threshold (decrement < 1e-3 of χ²), or a
+     tight-tolerance rescore, would classify both runs as stationary. Proposed as an owner adjudication, not
+     applied.
+
+### Status of the F2 series
+
+- **Best real-data LRO solution so far:** F2h/F2i.
+  - two-day range + Doppler, 0.98 m / 2.4 mm/s post-fit;
+  - the solution is independent of a 100 m / 0.1 m/s start offset (G2);
+  - one-day prediction 1.6 m / 1.8 mm/s;
+  - 1.7 / 20 / 28 m vs the LOLA orbit.
+- **Open:**
+  - G1 classification (cost noise);
+  - the cross-track error (~28 m) against LOLA;
+  - K_SRP as an effective rather than physical parameter.
