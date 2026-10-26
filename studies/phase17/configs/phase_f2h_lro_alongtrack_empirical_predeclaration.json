@@ -1,0 +1,19 @@
+{
+ "phase": "Phase F2h - along-track-only empirical once-per-rev accelerations (N = 300)",
+ "written": "2026-10-26, before any F2h number",
+ "motivation": "F2g: the four-term empirical model improved the one-day prediction (12.1 -> 4.2 m) but let the orbit rotate about the Earth line of sight (along/cross vs LOLA over the fit arc 22/25 -> 60/78 m); the cross-track terms are the free direction",
+ "change_from_F2g": "S1 only (F2g's S2 basin problem is documented and not repeated here); priors on C_N and S_N tightened to N(0, 1e-11 m/s^2), i.e. effectively fixed at zero; C_T and S_T keep N(0, 1e-8 m/s^2); everything else (N=300, data, priors, Doppler bias, A1 FD sensitivities, 14 parallel workers) unchanged",
+ "gates": {
+  "G1_convergence": "S1 ends Converged or STATIONARY",
+  "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s"
+ },
+ "hypotheses_reported_not_gated": {
+  "H1": "along- and cross-track vs LOLA over the fit arc return to <= F2f's 22 / 25 m",
+  "H2": "the one-day prediction range RMS stays <= 6 m (F2g 4.2 m, F2f 12.1 m)",
+  "H3": "K_SRP returns toward the 0.014 m^2/kg expected from the 1 280 kg mass"
+ },
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2h_lro_alongtrack_empirical.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 14"
+ }
+}

@@ -796,8 +796,32 @@ def main_f2g_merge():
     print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
 
 
+#: Phase F2h: along-track-only empirical accelerations (cross-track terms pinned by a 1e-11 m/s^2 prior).
+F2H_PRIORS = {**F2G_PRIORS, 13: (0.0, 1e-11), 14: (0.0, 1e-11)}
+OUT_F2H = HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json"
+
+
+def main_f2h():
+    """Phase F2h (studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json): S1 only."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    run = solve(300, 1.0, F2H_PRIORS, "h1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, _workers_arg() or 14,
+                len(EMP_NAMES))
+    run.pop("est_positions")
+    gates = dict(G1=run["status"] in ("Converged", "STATIONARY"),
+                 G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json",
+               gates=gates, priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    OUT_F2H.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2g-part" in sys.argv:
+    if "--f2h" in sys.argv:
+        main_f2h()
+    elif "--f2g-part" in sys.argv:
         main_f2g_part(sys.argv[sys.argv.index("--f2g-part") + 1])
     elif "--f2g-merge" in sys.argv:
         main_f2g_merge()
