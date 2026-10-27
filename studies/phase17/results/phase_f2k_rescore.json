@@ -1,0 +1,387 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_f2k_tight_tolerance_predeclaration.json (R)",
+ "tolerances": {
+  "loose": [
+   1e-10,
+   1e-11
+  ],
+  "tight": [
+   1e-12,
+   1e-13
+  ]
+ },
+ "points": {
+  "F2h": {
+   "loose": {
+    "chi2": 11002.278096630496,
+    "postfit_rms_m": 0.983965498181177,
+    "doppler_postfit_rms_mmps": 2.425815199822729,
+    "ric_rms_m": [
+     1.665162547815099,
+     20.4439972604773,
+     27.897423068637597
+    ],
+    "prediction": {
+     "n_range": 2737,
+     "n_doppler": 2693,
+     "range_rms_m": 1.6324649871785537,
+     "range_mean_m": 0.29334866003491494,
+     "doppler_rms_mmps": 1.8112446248396938,
+     "doppler_mean_mmps": 0.35410141669020734,
+     "passes": [
+      {
+       "pad": 103,
+       "n": 448,
+       "hours_after_fit_end": 16.148611109384284,
+       "range_mean_m": 0.7155276067063839,
+       "range_rms_m": 0.8898627332649128
+      },
+      {
+       "pad": 103,
+       "n": 452,
+       "hours_after_fit_end": 18.027777775672277,
+       "range_mean_m": 0.13368331420065613,
+       "range_rms_m": 0.5603529621571675
+      },
+      {
+       "pad": 103,
+       "n": 450,
+       "hours_after_fit_end": 19.91111110869045,
+       "range_mean_m": -1.0795036783761531,
+       "range_rms_m": 1.2269268738341916
+      },
+      {
+       "pad": 105,
+       "n": 443,
+       "hours_after_fit_end": 14.291666664874857,
+       "range_mean_m": 3.101163186963055,
+       "range_rms_m": 3.1488053108803764
+      },
+      {
+       "pad": 126,
+       "n": 469,
+       "hours_after_fit_end": 21.819444442612294,
+       "range_mean_m": 0.27017670349507944,
+       "range_rms_m": 1.0267284276533046
+      },
+      {
+       "pad": 126,
+       "n": 475,
+       "hours_after_fit_end": 23.693055553465076,
+       "range_mean_m": -1.248078850109792,
+       "range_rms_m": 1.611224634953675
+      }
+     ],
+     "ric_rms_m": [
+      2.3294599106427976,
+      6.587318145580279,
+      10.524391919383307
+     ],
+     "ric_max_m": [
+      3.5241152572265424,
+      12.468197295165416,
+      16.097439784091026
+     ]
+    },
+    "stored": {
+     "postfit_rms_m": 0.983965498181177,
+     "doppler_postfit_rms_mmps": 2.425815199822729,
+     "ric_rms_m": [
+      1.665162547815099,
+      20.4439972604773,
+      27.897423068637597
+     ],
+     "prediction_range_rms_m": 1.6324649871785537,
+     "prediction_doppler_rms_mmps": 1.8112446248396938
+    },
+    "elapsed_s": 15912.61508846283
+   },
+   "tight": {
+    "chi2": 11018.871249264897,
+    "postfit_rms_m": 0.9841330753749464,
+    "doppler_postfit_rms_mmps": 2.4288254269907426,
+    "ric_rms_m": [
+     1.6654621744450042,
+     20.44583997863423,
+     27.8974490556255
+    ],
+    "prediction": {
+     "n_range": 2737,
+     "n_doppler": 2693,
+     "range_rms_m": 1.6332378202449367,
+     "range_mean_m": 0.2930582670984411,
+     "doppler_rms_mmps": 1.8122955567828463,
+     "doppler_mean_mmps": 0.35696177633275517,
+     "passes": [
+      {
+       "pad": 103,
+       "n": 448,
+       "hours_after_fit_end": 16.148611109384284,
+       "range_mean_m": 0.7163170868571943,
+       "range_rms_m": 0.8896758593153022
+      },
+      {
+       "pad": 103,
+       "n": 452,
+       "hours_after_fit_end": 18.027777775672277,
+       "range_mean_m": 0.13250816735401147,
+       "range_rms_m": 0.5599501471036574
+      },
+      {
+       "pad": 103,
+       "n": 450,
+       "hours_after_fit_end": 19.91111110869045,
+       "range_mean_m": -1.0811643496102838,
+       "range_rms_m": 1.228092140263325
+      },
+      {
+       "pad": 105,
+       "n": 443,
+       "hours_after_fit_end": 14.291666664874857,
+       "range_mean_m": 3.1024164640936984,
+       "range_rms_m": 3.150154108788573
+      },
+      {
+       "pad": 126,
+       "n": 469,
+       "hours_after_fit_end": 21.819444442612294,
+       "range_mean_m": 0.26883943732341464,
+       "range_rms_m": 1.0275182794952913
+      },
+      {
+       "pad": 126,
+       "n": 475,
+       "hours_after_fit_end": 23.693055553465076,
+       "range_mean_m": -1.2476536881708735,
+       "range_rms_m": 1.6121707862848957
+      }
+     ],
+     "ric_rms_m": [
+      2.3300394780653066,
+      6.591881558273203,
+      10.524018491600142
+     ],
+     "ric_max_m": [
+      3.524892562837064,
+      12.466110869350896,
+      16.096927770135874
+     ]
+    },
+    "stored": {
+     "postfit_rms_m": 0.983965498181177,
+     "doppler_postfit_rms_mmps": 2.425815199822729,
+     "ric_rms_m": [
+      1.665162547815099,
+      20.4439972604773,
+      27.897423068637597
+     ],
+     "prediction_range_rms_m": 1.6324649871785537,
+     "prediction_doppler_rms_mmps": 1.8112446248396938
+    },
+    "elapsed_s": 16937.87897014618
+   },
+   "loose_reproduces_stored": true,
+   "loose_vs_stored_max_relative": 0.0,
+   "tight_minus_loose": {
+    "chi2": 16.59315263440112,
+    "postfit_rms_m": 0.00016757719376947477,
+    "doppler_postfit_rms_mmps": 0.0030102271680134685,
+    "prediction_range_rms_m": 0.000772833066382983,
+    "prediction_doppler_rms_mmps": 0.0010509319431524222
+   }
+  },
+  "F2j": {
+   "loose": {
+    "chi2": 17153.652660468953,
+    "postfit_rms_m": 1.0856040733798535,
+    "doppler_postfit_rms_mmps": 2.1723539922350197,
+    "ric_rms_m": [
+     1.5691338735034055,
+     16.150627575691654,
+     23.178668679951702
+    ],
+    "prediction": {
+     "n_range": 2008,
+     "n_doppler": 1958,
+     "range_rms_m": 7.124705957972257,
+     "range_mean_m": 0.06491936840256621,
+     "doppler_rms_mmps": 24.390110622245537,
+     "doppler_mean_mmps": -6.251999546966687,
+     "passes": [
+      {
+       "pad": 103,
+       "n": 451,
+       "hours_after_fit_end": 14.29166666536896,
+       "range_mean_m": 0.2833524751714375,
+       "range_rms_m": 4.788294384148253
+      },
+      {
+       "pad": 103,
+       "n": 435,
+       "hours_after_fit_end": 16.21666666497567,
+       "range_mean_m": -0.6438152387304478,
+       "range_rms_m": 5.514507210858342
+      },
+      {
+       "pad": 103,
+       "n": 451,
+       "hours_after_fit_end": 18.056944442405367,
+       "range_mean_m": -0.01526020533775336,
+       "range_rms_m": 6.512831709988933
+      },
+      {
+       "pad": 103,
+       "n": 1,
+       "hours_after_fit_end": 20.336111108745374,
+       "range_mean_m": 0.359922646646055,
+       "range_rms_m": 0.359922646646055
+      },
+      {
+       "pad": 103,
+       "n": 1,
+       "hours_after_fit_end": 20.75416666425766,
+       "range_mean_m": -11.786836803789583,
+       "range_rms_m": 11.786836803789583
+      },
+      {
+       "pad": 103,
+       "n": 225,
+       "hours_after_fit_end": 21.83333333083865,
+       "range_mean_m": 4.421572980580415,
+       "range_rms_m": 6.666230979899569
+      },
+      {
+       "pad": 126,
+       "n": 444,
+       "hours_after_fit_end": 23.73333333136394,
+       "range_mean_m": -1.562880404433207,
+       "range_rms_m": 10.515162059859536
+      }
+     ],
+     "ric_rms_m": [
+      2.256718469923461,
+      5.830366502253706,
+      10.386960045355918
+     ],
+     "ric_max_m": [
+      3.4524202154831998,
+      13.227594223441903,
+      15.489676740612543
+     ]
+    },
+    "stored": {
+     "postfit_rms_m": 1.0856040733798535,
+     "doppler_postfit_rms_mmps": 2.1723539922350197,
+     "ric_rms_m": [
+      1.5691338735034055,
+      16.150627575691654,
+      23.178668679951702
+     ],
+     "prediction_range_rms_m": 7.124705957972257,
+     "prediction_doppler_rms_mmps": 24.390110622245537
+    },
+    "elapsed_s": 16774.93696284294
+   },
+   "tight": {
+    "chi2": 19177.042746653096,
+    "postfit_rms_m": 1.2094419275505501,
+    "doppler_postfit_rms_mmps": 2.177323372012376,
+    "ric_rms_m": [
+     1.565504280584828,
+     16.15257654521232,
+     23.178688910951063
+    ],
+    "prediction": {
+     "n_range": 2008,
+     "n_doppler": 1958,
+     "range_rms_m": 8.18772558604897,
+     "range_mean_m": 0.25870443098921,
+     "doppler_rms_mmps": 24.757919535280283,
+     "doppler_mean_mmps": -7.389204904197872,
+     "passes": [
+      {
+       "pad": 103,
+       "n": 451,
+       "hours_after_fit_end": 14.29166666536896,
+       "range_mean_m": 0.4126601423655164,
+       "range_rms_m": 5.903154081108253
+      },
+      {
+       "pad": 103,
+       "n": 435,
+       "hours_after_fit_end": 16.21666666497567,
+       "range_mean_m": -0.6087169164978834,
+       "range_rms_m": 6.614167965880199
+      },
+      {
+       "pad": 103,
+       "n": 451,
+       "hours_after_fit_end": 18.056944442405367,
+       "range_mean_m": 0.15125451644597135,
+       "range_rms_m": 7.656459403033167
+      },
+      {
+       "pad": 103,
+       "n": 1,
+       "hours_after_fit_end": 20.336111108745374,
+       "range_mean_m": 0.6839381448073709,
+       "range_rms_m": 0.6839381448073709
+      },
+      {
+       "pad": 103,
+       "n": 1,
+       "hours_after_fit_end": 20.75416666425766,
+       "range_mean_m": -13.404073835249392,
+       "range_rms_m": 13.404073835249392
+      },
+      {
+       "pad": 103,
+       "n": 225,
+       "hours_after_fit_end": 21.83333333083865,
+       "range_mean_m": 5.195289756156689,
+       "range_rms_m": 7.676092645702922
+      },
+      {
+       "pad": 126,
+       "n": 444,
+       "hours_after_fit_end": 23.73333333136394,
+       "range_mean_m": -1.410529762310543,
+       "range_rms_m": 11.623984695726593
+      }
+     ],
+     "ric_rms_m": [
+      2.252718714383592,
+      6.908784543437393,
+      10.386715162120328
+     ],
+     "ric_max_m": [
+      3.4470810093419906,
+      14.994282530343636,
+      15.489550170085383
+     ]
+    },
+    "stored": {
+     "postfit_rms_m": 1.0856040733798535,
+     "doppler_postfit_rms_mmps": 2.1723539922350197,
+     "ric_rms_m": [
+      1.5691338735034055,
+      16.150627575691654,
+      23.178668679951702
+     ],
+     "prediction_range_rms_m": 7.124705957972257,
+     "prediction_doppler_rms_mmps": 24.390110622245537
+    },
+    "elapsed_s": 18052.72372865677
+   },
+   "loose_reproduces_stored": true,
+   "loose_vs_stored_max_relative": 0.0,
+   "tight_minus_loose": {
+    "chi2": 2023.390086184143,
+    "postfit_rms_m": 0.12383785417069659,
+    "doppler_postfit_rms_mmps": 0.004969379777356231,
+    "prediction_range_rms_m": 1.063019628076713,
+    "prediction_doppler_rms_mmps": 0.3678089130347466
+   }
+  }
+ }
+}

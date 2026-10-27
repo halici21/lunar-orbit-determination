@@ -46,9 +46,17 @@ MEASURE_CHUNK = 300
 _WORKER: dict = {}
 
 
-def _worker_init(nmax, doppler, days, n_emp=0):
+def set_tolerance(rtol: float, atol: float) -> None:
+    """F2k: integrator tolerance of every propagation in this process (default 1e-10 / 1e-11)."""
+    global RTOL, ATOL
+    RTOL, ATOL = float(rtol), float(atol)
+
+
+def _worker_init(nmax, doppler, days, n_emp=0, tol=None):
     import warnings
     warnings.simplefilter("ignore")
+    if tol is not None:
+        set_tolerance(*tol)
     _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
 
 
@@ -257,7 +265,8 @@ class Problem:
     def attach_pool(self, workers: int) -> None:
         """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
         self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
-                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp))
+                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp,
+                                                  (RTOL, ATOL)))
 
     def close_pool(self) -> None:
         if self.pool is not None:
@@ -895,8 +904,32 @@ def main_f2j():
     print(json.dumps(dict(gates=gates), indent=1))
 
 
+OUT_F2K = HERE.parent / "results" / "phase_f2k_lro_three_day_arc_tight_tol.json"
+F2K_TOL = (1e-12, 1e-13)
+
+
+def main_f2k():
+    """Phase F2k (studies/phase17/configs/phase_f2k_tight_tolerance_predeclaration.json): F2j at rtol/atol
+    1e-12/1e-13, nothing else changed."""
+    set_tolerance(*F2K_TOL)
+    x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
+        encoding="utf-8"))["runs"]["S1"]["x0"], float)
+    run = solve(300, 1.0, F2H_PRIORS, "k1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
+                len(EMP_NAMES), gn_stationarity=True, gn_relative_tol=1e-3)
+    run.pop("est_positions")
+    gates = dict(G1=run["status"] in ("Converged", "STATIONARY"),
+                 G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2k_tight_tolerance_predeclaration.json",
+               gates=gates, rtol_atol=F2K_TOL, priors={str(k): v for k, v in F2H_PRIORS.items()},
+               fit_days=F2J_FIT_DAYS, predict_days=F2J_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    OUT_F2K.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2j" in sys.argv:
+    if "--f2k" in sys.argv:
+        main_f2k()
+    elif "--f2j" in sys.argv:
         main_f2j()
     elif "--f2i-part" in sys.argv:
         main_f2i_part(sys.argv[sys.argv.index("--f2i-part") + 1])
