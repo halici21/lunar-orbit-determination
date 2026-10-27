@@ -26,6 +26,12 @@ SIGMA_M = 1.0
 RTOL, ATOL = 1e-10, 1e-11
 GRID_S = 20.0
 QUALIFIED_GRID_S = 10.0  # 20 s exceeded the LRO counted-Doppler numerical budget.
+#: G4e root cause (2026-10-27): at rtol 1e-10 the central-difference dx/d(empirical) columns were 14-76 % off a
+#: converged reference and dx/dK 4.3 % off; a +/-1e-9 m/s^2 perturbation moves LRO only 0.1-0.7 m, the size of
+#: the adaptive integrator's run-to-run error. The qualified path integrates at 1e-12 and steps the empirical
+#: accelerations by 1e-8 m/s^2 (gate G4e-R, phase_f2_g4er_checks.py). RTOL/ATOL/EMP_FD_STEP stay legacy.
+QUALIFIED_RTOL, QUALIFIED_ATOL = 1e-12, 1e-13
+QUALIFIED_EMP_FD_STEP = 1e-8
 EPOCH_LEAD_S = 120.0
 MAX_ITER = 30
 OFFSET = np.array([1000.0, 1000.0, 1000.0, 1.0, 1.0, 1.0])
@@ -47,10 +53,10 @@ MEASURE_CHUNK = 300
 _WORKER: dict = {}
 
 
-def _worker_init(nmax, doppler, days, n_emp=0, grid_s=GRID_S):
+def _worker_init(nmax, doppler, days, n_emp=0, grid_s=GRID_S, numerics=None):
     import warnings
     warnings.simplefilter("ignore")
-    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=grid_s)
+    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=grid_s, numerics=numerics)
 
 
 def _worker_propagate(q):
@@ -112,7 +118,7 @@ def _worker_measure(task):
 
 class Problem:
     def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,), n_emp: int = 0,
-                 grid_s: float | None = None):
+                 grid_s: float | None = None, numerics: dict | None = None):
         import spiceypy as spice
         from lunar_od import relativistic_light_time as R
         from lunar_od import station_time as ST
@@ -124,6 +130,9 @@ class Problem:
         self.nmax = nmax
         self.n_emp = int(n_emp)
         self.grid_s = _grid_for_backend() if grid_s is None else float(grid_s)
+        self.numerics = dict(_numerics_for_backend() if numerics is None else numerics)
+        self.rtol, self.atol = float(self.numerics["rtol"]), float(self.numerics["atol"])
+        self.emp_fd_step = float(self.numerics["emp_fd_step"])
         self.pool = None
         self.days = tuple(days)
         self.rows = []
@@ -175,7 +184,7 @@ class Problem:
     def propagate(self, x0, k, t_eval=None, sensitivity=True, emp=None):
         from lunar_od.dynamics import PropagationProfile, propagate_state, propagate_state_with_k_sensitivity
         from lunar_od.srp import SRPOptions
-        kw = dict(srp=SRPOptions(k_srp_m2_per_kg=float(k)), rtol=RTOL, atol=ATOL, harmonic_model=self.model,
+        kw = dict(srp=SRPOptions(k_srp_m2_per_kg=float(k)), rtol=self.rtol, atol=self.atol, harmonic_model=self.model,
                   harmonic_epoch_et0=self.setup.et0, **PropagationProfile().propagator_kwargs())
         t = self.grid if t_eval is None else t_eval
         args = (t, np.asarray(x0, float), self.mu_m, self.mu_e, self.mu_s, self.eph.earth_position,
@@ -203,8 +212,8 @@ class Problem:
             out[3:6] += empirical_acceleration(y, e)
             return out
 
-        cuts = dyn._shadow_contact_times(rhs_e, t, x0, get_sun, srp, RTOL, ATOL)
-        return np.asarray(dyn._integrate_segmented(t, x0, rhs_e, RTOL, ATOL, "DOP853", cuts,
+        cuts = dyn._shadow_contact_times(rhs_e, t, x0, get_sun, srp, self.rtol, self.atol)
+        return np.asarray(dyn._integrate_segmented(t, x0, rhs_e, self.rtol, self.atol, "DOP853", cuts,
                                                    "F2g empirical propagation",
                                                    contact_check=dyn._shadow_contact_check(get_sun, srp)))
 
@@ -215,15 +224,16 @@ class Problem:
         """6-state history for a full parameter vector (state, K and, F2g, the empirical accelerations)."""
         return self.propagate(p[:6], p[6], t_eval=t_eval, sensitivity=False, emp=self.emp_of(p))
 
-    def fd_history(self, x0, k, emp=None) -> np.ndarray:
+    def fd_history(self, x0, k, emp=None, keep: list | None = None) -> np.ndarray:
         """A1: [x, Phi (column-major), dx/dK (, dx/d emp_i)] from central differences of the 6-state propagator.
 
         The propagations (base, then plus/minus per parameter; plus only for K at its bound) are
         independent; with a worker pool attached they run in parallel, otherwise in this order serially.
+        ``keep``, when given, receives (parameter vector, history) of every propagation (gate G4e-R oracle).
         """
         q0 = np.concatenate([np.asarray(x0, float), [float(k)]] + ([np.asarray(emp, float)] if emp is not None
                                                                   else []))
-        steps = list(FD_STEPS) + [EMP_FD_STEP] * (0 if emp is None else len(emp))
+        steps = list(FD_STEPS) + [self.emp_fd_step] * (0 if emp is None else len(emp))
         qs, plan = [q0], []
         for j in range(len(steps)):
             hj = steps[j]
@@ -242,6 +252,8 @@ class Problem:
         else:
             hists = [self.propagate(q[:6], q[6], sensitivity=False, emp=q[7:] if len(q) > 7 else None)
                      for q in qs]
+        if keep is not None:
+            keep.extend(zip(qs, hists))
         base = hists[0]
         n = base.shape[0]
         cols = np.zeros((n, 6, len(steps)))
@@ -262,7 +274,8 @@ class Problem:
     def attach_pool(self, workers: int) -> None:
         """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
         self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
-                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp, self.grid_s))
+                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp, self.grid_s,
+                                                  self.numerics))
 
     def close_pool(self) -> None:
         if self.pool is not None:
@@ -355,6 +368,13 @@ def _grid_for_backend(backend=None):
     return GRID_S if (SOLVER_BACKEND if backend is None else backend) == "legacy" else QUALIFIED_GRID_S
 
 
+def _numerics_for_backend(backend=None) -> dict:
+    """Integration tolerances and empirical FD step: legacy reproduces the historical records, TRF is qualified."""
+    if (SOLVER_BACKEND if backend is None else backend) == "legacy":
+        return dict(rtol=RTOL, atol=ATOL, emp_fd_step=EMP_FD_STEP)
+    return dict(rtol=QUALIFIED_RTOL, atol=QUALIFIED_ATOL, emp_fd_step=QUALIFIED_EMP_FD_STEP)
+
+
 def numerical_identity():
     """Prevent a merge from borrowing gates from another numerical code state.
 
@@ -363,7 +383,7 @@ def numerical_identity():
     """
     import hashlib
     paths = sorted((F.REPO / "src/lunar_od").glob("*.py"))
-    paths += [Path(__file__), HERE / "phase_f2g_checks.py",
+    paths += [Path(__file__), HERE / "phase_f2g_checks.py", HERE / "phase_f2_g4er_checks.py",
               HERE / "phase_f1_lro_residuals.py", HERE / "phase_f1c_lro_doppler.py"]
     return {str(p.relative_to(F.REPO)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
 
@@ -438,7 +458,8 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
     if backend != "legacy" and (step_limit is not None or gn_stationarity):
         raise ValueError("step_limit/gn_stationarity reproduce the legacy F2i algorithm only; "
                          "TRF always uses bound-aware final-point diagnostics.")
-    pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=_grid_for_backend(solver))
+    pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=_grid_for_backend(solver),
+                 numerics=_numerics_for_backend(solver))
     try:
         if workers > 1:
             pb.attach_pool(workers)
@@ -573,7 +594,8 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
     return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history, **extra,
                 solver=backend, numerical_identity=numerical_identity(),
                 numerical_variant="bounded_trf" if backend == "trf" else "historical_legacy",
-                numerical_profile=dict(grid_s=pb.grid_s, rtol=RTOL, atol=ATOL,
+                numerical_profile=dict(grid_s=pb.grid_s, rtol=pb.rtol, atol=pb.atol, emp_fd_step=pb.emp_fd_step,
+                                       fd_steps=FD_STEPS.tolist(), exact_epoch_stations=F.EXACT_EPOCH_STATIONS,
                                        method="DOP853", shadow_events=True,
                                        earth_interpolation=pb.eph.earth_interpolation),
                 numerical_diagnostics=numerical, final_linearization=linearization,

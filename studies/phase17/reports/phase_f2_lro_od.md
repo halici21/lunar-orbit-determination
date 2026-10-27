@@ -403,6 +403,10 @@ Prediction range RMS per pass: 9.3 m at 14.3 h after the fit end, rising to 14.6
 itself carries about 1e-3 relative noise. The range columns of the same parameters agree to 1e-6, and the Doppler
 partial is the difference of two range partials. Proposed adjudication: oracle floor; accept.
 
+> **2026-10-27 addendum:** this adjudication is withdrawn. The FAIL had a real cause: station epoch quantisation
+> (a 1.66e-6 m/s jump in one Doppler row). G4e also never tested dx/dp, and the F2g FD columns were 4–76 % off at
+> rtol 1e-10. See [G4e-R](phase_f2_g4er_root_cause_and_requalification.md). The record above is kept as computed.
+
 ### S1 against F2f (same start, same data, N = 300)
 
 | | F2f | **F2g** |

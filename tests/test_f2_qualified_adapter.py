@@ -67,5 +67,12 @@ def test_numerical_grid_is_explicit_and_forwarded_to_process_workers(monkeypatch
     monkeypatch.setattr(F2, 'ProcessPoolExecutor', executor)
     pb = object.__new__(F2.Problem)
     pb.nmax, pb.use_doppler, pb.days, pb.n_emp, pb.grid_s = 2, True, ('day',), 4, 10.
+    pb.numerics = F2._numerics_for_backend('trf')
     pb.attach_pool(2)
-    assert captured['initargs'] == (2, True, ('day',), 4, 10.)
+    assert captured['initargs'] == (2, True, ('day',), 4, 10., pb.numerics)
+
+
+def test_sensitivity_numerics_are_explicit_per_backend():
+    # legacy reproduces the historical records; TRF carries the G4e-R qualified tolerances and empirical step
+    assert F2._numerics_for_backend('legacy') == dict(rtol=1e-10, atol=1e-11, emp_fd_step=1e-9)
+    assert F2._numerics_for_backend('trf') == dict(rtol=1e-12, atol=1e-13, emp_fd_step=1e-8)

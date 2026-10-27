@@ -23,7 +23,8 @@ def main():
     t0 = time.time()
     d = json.loads((HERE.parent / "results" / "phase_f2d_lro_od_range_doppler.json").read_text(encoding="utf-8"))
     r = d["runs"]["N200_-"]
-    pb = F2.Problem(300, doppler=True, days=F2.F2E_FIT_DAYS, n_emp=4)
+    # Historical gate: legacy tolerances and step, so fd_history matches this oracle (superseded by G4e-R).
+    pb = F2.Problem(300, doppler=True, days=F2.F2E_FIT_DAYS, n_emp=4, numerics=F2._numerics_for_backend("legacy"))
     x0, k = np.array(r["x0"]), float(r["k_srp"])
     prod = pb.propagate(x0, k, sensitivity=False)                       # production propagate_state
     study = pb.propagate(x0, k, sensitivity=False, emp=np.zeros(4))     # study path, empirical = 0

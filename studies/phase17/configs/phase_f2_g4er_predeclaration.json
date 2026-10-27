@@ -1,0 +1,22 @@
+{
+ "phase": "Phase F2 G4e-R - requalification of the F2g/h/i partials after the G4e root-cause analysis",
+ "written": "2026-10-27, before any G4e-R number; base commit b77cca6 (codex/numerical-core-reliability)",
+ "authorisation": "owner 2026-10-27: 'bu açık, uyumsuzluk ve hataları düzelt ve test et' after the read-only G4e root-cause analysis",
+ "root_cause": {
+  "historical_G4e_FAIL": "reproduced bit for bit (Doppler columns 1.5143758e-3, 3.69e-5, 3.11e-4, 1.08e-3). 99.9 % of column 0 comes from one counted-Doppler row: a 1.66e-6 m/s jump when the end-b uplink transmit epoch t1 crosses an ulp(et) boundary; the F1/F2 station provider read SPICE at the quantised et0 + t (ulp 6e-8 s) without the exact-epoch correction (~17 um station step). The Doppler partial chain itself is correct (measurement-only differences fall as 1/h to <= 4.5e-6 at h = 1e-5).",
+  "structural_gap": "the historical G4e 'analytic' columns and its oracle share the same +/- propagations, so the gate never tested dx/dp. Against a converged reference (rtol 1e-12, h 1e-7) the F2g fd_history columns at rtol 1e-10, h 1e-9 were 14-76 % off (empirical) and 4.3 % off (K_SRP)."
+ },
+ "changes": {
+  "station": "phase_f1_lro_residuals.Setup._station: Fast2Sum rounding error x station velocity (EXACT_EPOCH_STATIONS = True; False reproduces the historical records)",
+  "numerics": "phase_f2_lro_od: TRF (qualified) path rtol 1e-12, atol 1e-13, empirical FD step 1e-8 m/s^2; legacy path unchanged (rtol 1e-10, 1e-9)",
+  "historical": "phase_f2g_checks.py G4e runs on the legacy numerics; its record, threshold and FAIL stay as they are"
+ },
+ "setup": "identical to G4e: Problem(300, doppler=True, days=F2E_FIT_DAYS, n_emp=4), start/K from phase_f2d N200_-, empirical point [2e-9, -1e-9, 1.5e-9, -2e-9], 10 range + 10 Doppler rows (linspace), qualified numerics",
+ "gates": {
+  "G0R": "study propagation with empirical = 0 equals production propagate_state bit for bit at the qualified numerics",
+  "G4eR_dyn": "every one of the 11 dynamical columns of fd_history (6 state, K, 4 empirical): ||dr/dp - ref|| / ||ref|| over the whole grid <= 1e-2, ref = central differences at the same rtol with independent steps (state x10: 100 m / 0.1 m/s; K 5e-3; empirical 1e-7)",
+  "G4eR_meas": "range and Doppler partials of all 11 dynamical columns vs central differences of the full measurement function over the propagated +/- histories (the historical G4e oracle, now at the qualified steps): column relative error <= 1e-3 (the historical G4e threshold, unchanged)",
+  "G4eR_jump": "the historical jump row (Doppler row 5, column C_T): detrended Doppler over s in [-3e-9, 3e-9] m/s^2 (61 points) has no neighbour step above 1e-7 m/s (historical: 1.66e-6)"
+ },
+ "not_claimed": "G4e-R qualifies partials only. It does not rerun the F2g/h/i fits, does not close G1/G2/G3, and says nothing about orbit accuracy."
+}

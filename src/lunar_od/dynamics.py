@@ -828,21 +828,50 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
     return unique if sgn > 0.0 else unique[::-1]
 
 
+#: A pre-pass cut must lie within this time of a contact on the final trajectory.
+_CONTACT_TIME_TOL_S = 1e-3
+#: Contact-function angle accepted regardless of its rate (and the only test at a tangent, where the rate vanishes).
+_CONTACT_ANGLE_TOL_RAD = 1e-9
+_CONTACT_RATE_STEP_S = 1e-2
+
+
 def _shadow_contact_check(get_sun_pos, srp):
     """Fail closed if a pre-pass cut is not a contact on the final trajectory.
 
-    The 1e-9 rad numerical guard is not an orbit-accuracy certificate; the
-    observable/parameter error budget is checked separately.
+    The pre-pass is integrated 100x tighter than the final trajectory, so on a long high-degree arc the two
+    differ by millimetres and a genuine cut keeps an angular residual near 1e-9 rad whatever the final rtol
+    (F2 LRO arc, N = 300, two days: 3.4e-9, 2.2e-9, 1.1e-9 rad at rtol 1e-10, 1e-11, 1e-12). Segmentation needs
+    the contact's *time*: the residual over its rate along the trajectory (~1e-6 s there). A cut within
+    ``_CONTACT_TIME_TOL_S`` of the final contact only restarts the integrator next to the SRP kink, which the
+    final integration's own error control absorbs; a cut with no contact nearby still fails. At a tangent
+    (grazing pair) the rate vanishes and the ``_CONTACT_ANGLE_TOL_RAD`` angle test applies alone.
+
+    This numerical guard is not an orbit-accuracy certificate; the observable/parameter error budget is checked
+    separately.
     """
     from .srp import apparent_radii_and_separation
 
+    radius = srp.occulting_body_radius_m
+
+    def contact_functions(t, r):
+        a, b, g, _, _ = apparent_radii_and_separation(r, get_sun_pos(t), np.zeros(3), radius)
+        return np.array([g - a - b, g - abs(a - b)])
+
     def check(t, state):
-        a, b, g, _, _ = apparent_radii_and_separation(
-            state[:3], get_sun_pos(t), np.zeros(3), srp.occulting_body_radius_m)
-        residual = min(abs(g - a - b), abs(g - abs(a - b)))
-        if residual > 1e-9:
+        state = np.asarray(state, dtype=float)
+        f = contact_functions(t, state[:3])
+        i = int(np.argmin(np.abs(f)))
+        residual = float(abs(f[i]))
+        if residual <= _CONTACT_ANGLE_TOL_RAD:
+            return
+        h = _CONTACT_RATE_STEP_S
+        rate = abs(float(contact_functions(t + h, state[:3] + h * state[3:6])[i]
+                         - contact_functions(t - h, state[:3] - h * state[3:6])[i])) / (2.0 * h)
+        offset = residual / rate if rate > 0.0 else np.inf
+        if offset > _CONTACT_TIME_TOL_S:
             raise RuntimeError(f"Shadow contact inconsistent with final trajectory at {t:.12g} s: "
-                               f"angular residual {residual:.3e} rad > 1e-9; tighten propagation tolerances.")
+                               f"angular residual {residual:.3e} rad, {offset:.3e} s from the contact "
+                               f"(> {_CONTACT_TIME_TOL_S:.0e} s); tighten propagation tolerances.")
     return check
 
 
