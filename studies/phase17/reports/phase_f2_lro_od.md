@@ -789,3 +789,45 @@ All cases use F2g's empirical propagator at the F2j end point and compare positi
 2. Rescore F2h's two-day solution at the tight tolerance. This shows how much the best predictor so far moves.
 3. Then the §16 next steps: per-day empirical terms and the 2009-263 Doppler bias.
 
+
+## 17. F2k — tight integrator tolerance (rtol / atol 1e-12 / 1e-13)
+
+Predeclaration: `studies/phase17/configs/phase_f2k_tight_tolerance_predeclaration.json` (`87f7ef3`), written
+after §16.1 and before any F2k number. The only change is the integrator tolerance of every propagation, in the
+main process and in every worker (`set_tolerance`, passed through the worker initializer). With the default
+tolerance the code path is bitwise F2j's. Two parts: R rescores the stored F2h and F2j end points without
+refitting; K re-runs F2j's fit.
+
+### 17.1 R — F2h and F2j end points rescored
+
+Script `studies/phase17/scripts/phase_f2k_tight_tolerance.py`, result `studies/phase17/results/phase_f2k_rescore.json`
+(`7118cf2`). At 1e-10 / 1e-11 the rescoring reproduces the stored post-fit and prediction RMS of both points
+exactly (relative difference 0.0), so the comparison below is a pure tolerance change at a fixed parameter vector.
+
+| point | tolerance | χ² | range post-fit (m) | Doppler post-fit (mm/s) | RIC fit (m) | prediction range RMS / mean (m) | prediction Doppler RMS / mean (mm/s) | RIC prediction (m) |
+|---|---|---|---|---|---|---|---|---|
+| F2h (fit 260–261, predict 262) | 1e-10 | 11002.28 | 0.9840 | 2.426 | 1.67 / 20.44 / 27.90 | 1.632 / 0.29 | 1.811 / 0.35 | 2.33 / 6.59 / 10.52 |
+| | 1e-12 | 11018.87 | 0.9841 | 2.429 | 1.67 / 20.45 / 27.90 | 1.633 / 0.29 | 1.812 / 0.36 | 2.33 / 6.59 / 10.52 |
+| F2j (fit 260–262, predict 263) | 1e-10 | 17153.65 | 1.0856 | 2.172 | 1.57 / 16.15 / 23.18 | 7.125 / 0.07 | 24.39 / −6.25 | 2.26 / 5.83 / 10.39 |
+| | 1e-12 | 19177.04 | 1.2094 | 2.177 | 1.57 / 16.15 / 23.18 | 8.188 / 0.26 | 24.76 / −7.39 | 2.25 / 6.91 / 10.39 |
+
+F2j prediction per pass on 2009-263, range RMS (m), 1e-10 → 1e-12: PAD 103 at 14.3 h 4.79 → 5.90, 16.2 h
+5.51 → 6.61, 18.1 h 6.51 → 7.66, 20.3 h 0.36 → 0.68, 20.8 h 11.79 → 13.40 (mean −11.79 → −13.40), 21.8 h
+6.67 → 7.68; PAD 126 at 23.7 h 10.52 → 11.62. F2h's per-pass numbers on 262 are unchanged to the printed
+digits.
+
+#### Reading
+
+1. **F2h is tolerance-proof.** On the two-day arc the tight tolerance moves χ² by +16.6 (0.15 %) and the
+   prediction by under 1 mm. The best predictor so far stands as reported.
+2. **F2j's end point is tuned to the loose tolerance's noise.** At its own parameter vector the tight tolerance
+   adds 2023 χ² (+12 %) and 0.12 m of range post-fit. This is what §16.1 predicts: the LM search at 1e-10 settled
+   where the jitter happened to be favourable, and that point is not a minimum of the accurate model.
+3. **F2j's 7.1 m prediction is not an integration artefact.** Under the tight tolerance at the same parameters it
+   gets worse (8.19 m), not better; the change, 1.06 m, is about 15 % of its value. By the predeclared reading the
+   prediction failure belongs to the model or the data, not to the integrator. Whether a fit made at the tight
+   tolerance predicts better is the question part K answers.
+4. Fit-span RIC against LOLA does not move at either point (≤ 0.01 m), so the integration error that changes the
+   residuals is far below the decametre along-track / cross-track offsets to LOLA.
+5. Wall time of each case was 4.4–5.0 h. The computer spent most of that span in Modern Standby, so it is not a
+   measure of the tolerance cost.
