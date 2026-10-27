@@ -1,0 +1,26 @@
+{
+ "phase": "Phase F2k - F2j re-run at integrator rtol/atol 1e-12/1e-13, and F2h / F2j end points rescored at that tolerance",
+ "written": "2026-10-27, after F2j-G1 (321a417: G1's end is integrator jitter at rtol 1e-10; a 1 um start change moves the 3-day orbit 0.35 m at 1e-10 and 0.4 mm at 1e-12; the 1e-10 and 1e-12 orbits differ by 0.68 m RMS / 1.39 m max) and before any F2k number",
+ "change": "only the integrator tolerance of the propagation (Problem.propagate / _propagate_empirical and the shadow-contact pre-pass): rtol, atol = 1e-12, 1e-13 instead of 1e-10, 1e-11, set in the main process and in every worker. Everything else is F2j's: data, model, priors, weights, FD steps, LM scaling, MAX_ITER, start, relative Gauss-Newton rule (1e-3 of chi^2), 8 workers. With the tolerance left at its default the code path is bitwise F2j's",
+ "R_rescore": {
+  "points": "F2h S1 end point (studies/phase17/results/phase_f2h_lro_alongtrack_empirical.json; fit 2009-260..261, prediction 262) and F2j S1 end point (phase_f2j_lro_three_day_arc.json; fit 260..262, prediction 263), parameters unchanged, no refit",
+  "tolerances": "1e-10/1e-11 (must reproduce the stored post-fit range RMS, Doppler RMS and prediction RMS to a relative 1e-6; otherwise the rescoring is reported as not reproducing) and 1e-12/1e-13",
+  "reported": "chi^2 with the F2H priors, post-fit range / Doppler RMS, RIC vs LOLA over the fit span, prediction range / Doppler RMS and mean and RIC vs LOLA on the prediction day, each at both tolerances and their difference",
+  "reading": "the change from 1e-10 to 1e-12 at a fixed parameter vector is the integration-error share of the F2 numbers at that point; a change of the prediction RMS well below its value means F2j's 7.1 m prediction is not an integration artefact"
+ },
+ "K_rerun": {
+  "start": "F2j's: F2h's S1 state [533724.060907, 739089.031071, -1516155.242848, 1575.096237, 34.59799, 564.725389], K0 = 0.01, empirical terms 0",
+  "gates": {
+   "G1_convergence": "ends Converged or STATIONARY (F2j's relative rule, decrement < 1e-3 chi^2)",
+   "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s"
+  },
+  "reported_not_gated": "Gauss-Newton decrement at the end; RIC vs LOLA over the fit arc and on 2009-263; prediction per pass; K_SRP, empirical terms and biases vs F2j; end-state difference to F2j; elapsed time and its ratio to F2j's 10.2 h (other jobs share the CPU during this run, so the ratio is an upper bound on the tolerance cost)"
+ },
+ "order": "R first (minutes), then K",
+ "not_changed": "no production code; F2h's and F2j's results and gate outcomes are not changed by F2k",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2k_rescore.json and studies/phase17/results/phase_f2k_lro_three_day_arc_tight_tol.json",
+  "scripts": "studies/phase17/scripts/phase_f2k_tight_tolerance.py (rescore) and phase_f2_lro_od.py --f2k (re-run)",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17"
+ }
+}
