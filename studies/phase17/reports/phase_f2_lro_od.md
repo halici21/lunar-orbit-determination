@@ -682,3 +682,110 @@ prediction-day data are therefore as clean as the fit-arc data.
 3. Check the Doppler bias on 2009-263 separately: a per-day bias fit against the LOLA orbit, as in F1c.
 4. Phase E (owner approval): the analytic numba harmonic STM, which removes the FD Jacobian; it is expected to be several
    times faster per iteration (not measured).
+
+### 16.1 F2j-G1 — why the fit stopped: integrator jitter at rtol 1e-10
+
+- **Predeclaration:** `studies/phase17/configs/phase_f2j_g1_diagnostic_predeclaration.json`.
+  - D0–D3 predeclared in `5de0195`.
+  - Amendment A1 (D4) in `b3e3a77`, written after the D0–D2 numbers.
+  - Amendment A2 (D5) in `9e53a0b`, written after D4.
+- **Evidence:**
+  - `studies/phase17/results/phase_f2j_g1_diagnostic.json` (D0–D3; script `phase_f2j_g1_diagnostic.py`);
+  - `studies/phase17/results/phase_f2j_g1_rowdiff.json` (D4; script `phase_f2j_g1_rowdiff.py`);
+  - `studies/phase17/results/phase_f2j_g1_propagation_jitter.json` (D5; script
+    `phase_f2j_g1_propagation_jitter.py`).
+- No production code changed. F2j's result and its G1 FAIL stand.
+
+#### D0–D3: cost scan and an independent FD Jacobian
+
+- **D0** reproduces F2j's end point exactly: χ² = 17153.6527, Gauss–Newton decrement 977.41. The Gauss–Newton
+  step is 22.5 m in position.
+- **D1/D2:** actual cost against the quadratic model.
+
+| step | position step | actual χ² | model χ² |
+|---|---|---|---|
+| GN α = −0.01 | 0.22 m | 17 305.9 | 17 173.3 |
+| GN α = +0.01 | 0.22 m | **17 097.5** | 17 134.2 |
+| GN α = 0.1 | 2.2 m | 18 382.8 | 16 967.9 |
+| GN α = 0.3 | 6.7 m | 20 125.4 | 16 655.2 |
+| GN α = 1 | 22.5 m | 18 551.2 | 16 176.2 |
+| LM λ = 1e-5 | 0.18 m | 17 993.9 | 16 977.9 |
+| LM λ = 1e-2 | 1.0 mm | 17 789.8 | 17 066.9 |
+| LM λ = 1 | 0.12 mm | 18 388.7 | 17 118.6 |
+| LM λ = 1e2 | 9 µm | 18 066.8 | 17 148.5 |
+| LM λ = 1e4 | 0.1 µm | 18 281.4 | 17 153.6 |
+
+  - Steps of 0.1 µm to 1 mm raise the cost by 600–1200 χ².
+  - The central slope at α = ±0.01 is −10 420 per unit α. The model gives −1 955.
+- **D3:** residual-level central differences of the 11 dynamical columns.
+  - At the A1 step h, they agree with the solver's columns to 1e-7…4e-4. This is not an independent check: the
+    solver's columns come from the same ±h propagations.
+  - At h/4, the state columns agree to 1e-5…8e-4. The K and empirical columns differ by 7–31 %.
+  - The gradient differs by 2e-4 and the decrement is 1032.
+  - The Gauss–Newton steps from both FD Jacobians also raise the actual cost: 17 723 / 18 060 (h, α = 1 / 0.1) and
+    18 027 / 17 829 (h/4).
+
+#### D4: which rows carry the jump
+
+| case | χ² | Δχ² | range Δr RMS | max \|Δr\| | rows with \|Δr\| > 1 cm | share of top 25 rows |
+|---|---|---|---|---|---|---|
+| repeat at the end point | 17 153.6527 | 0 | 0 | 0 | 0 | — |
+| x0[0] + 1 µm | 17 633.5 | +479.8 | 0.28 m | 0.75 m | 8 699 | 14 % |
+| 0.01 × GN step | 17 097.5 | −56.2 | 0.09 m | 0.22 m | 8 600 | 31 % |
+
+The evaluation is deterministic. A 1 µm change of the start state moves the range residuals by 0.28 m RMS, spread
+over all passes and stations. That is not a measurement-model discontinuity; it is the propagated orbit.
+
+#### D5: the propagated orbit itself
+
+All cases use F2g's empirical propagator at the F2j end point and compare positions on the 20 s grid.
+
+| comparison | position difference RMS / max |
+|---|---|
+| x0[0] + 1 µm, rtol 1e-10 | **0.35 / 0.75 m** |
+| the same, with the base's shadow cuts frozen | 0.16 / 0.35 m |
+| x0[0] + 1 µm, rtol / atol 1e-12 / 1e-13 | **0.37 / 0.79 mm** |
+| rtol 1e-10 against rtol 1e-12, same start | **0.68 / 1.39 m** |
+
+- All cases find 128 shadow contacts.
+- A 1 µm start change shifts a contact time by up to 0.46 ms, far more than the ~1e-9 s the geometry implies. The
+  contact pre-pass carries its own integration jitter.
+- At rtol 1e-12, the 1 µm change moves the orbit by under 1 mm. That is the size linear dynamics allows over three
+  days.
+
+#### Reading
+
+1. **By the predeclared D0–D3 rules: UNEXPLAINED, as computed.**
+   - H_J is not supported: both FD Jacobians match the solver's gradient to 2e-4, far inside 10 %.
+   - H_Q is not supported: the small-α slope is not within 20 % of the model.
+   - H_N's first condition holds (slope off by a factor of 5). Its second condition, FD gradients at h and h/4
+     disagreeing by more than 10 %, does not hold, because the gradient is dominated by the state columns and their
+     steps are large against the jitter. That condition was the wrong test.
+2. **D4 and D5 (amendments) identify the mechanism: integrator jitter at rtol 1e-10.**
+   - At F2's integration tolerance, the three-day orbit is a discontinuous function of the parameters at the
+     0.3–0.8 m level.
+   - About half of it comes from the shadow-segment restarts: the cut times jitter and the integrator restarts at
+     shifted epochs. Freezing the cuts halves it.
+   - The rest comes from the adaptive step control.
+   - At rtol 1e-12 it falls by a factor of ~1000.
+3. **Consequence for F2j G1.**
+   - Residual jitter of ~0.3 m over ~14 000 rows (6 989 range, 6 851 Doppler) makes the cost noisy at the level of several hundred χ².
+   - A Gauss–Newton decrement of 977 is inside that noise.
+   - The LM line search accepted points where the jitter happened to be favourable, and ended at one that no nearby
+     point beats. G1's damping-limit end is a cost-noise floor, not a Jacobian error and not a true minimum.
+   - F2i's two-day decrements (1e-3 and 5e-5 of χ²) are the same effect, smaller on a shorter arc.
+4. **A second consequence: rtol 1e-10 is a metre-level orbit error on a three-day arc.**
+   - Against rtol 1e-12, the rtol 1e-10 orbit differs by 0.68 m RMS and 1.39 m at most.
+   - That is comparable to the 1.09 m range post-fit.
+   - It is a candidate contributor to the F2j fit and prediction numbers. How much of the 7.1 m prediction it
+     explains is not measured here.
+5. **Cost of the fix:** all five D5 propagations, the two rtol 1e-12 ones included, ran in parallel in about 7
+   minutes. A tighter tolerance looks affordable, but a per-propagation timing was not recorded.
+
+#### Next steps
+
+1. Re-run F2j at rtol / atol 1e-12 / 1e-13 (new predeclaration), with the same start and gates. Expect G1 to be
+   decidable and the fit and prediction numbers to move at the metre level.
+2. Rescore F2h's two-day solution at the tight tolerance. This shows how much the best predictor so far moves.
+3. Then the §16 next steps: per-day empirical terms and the 2009-263 Doppler bias.
+
