@@ -52,11 +52,22 @@ def set_tolerance(rtol: float, atol: float) -> None:
     RTOL, ATOL = float(rtol), float(atol)
 
 
-def _worker_init(nmax, doppler, days, n_emp=0, tol=None):
+#: F2p: counted-Doppler intervals excluded from the fit and the prediction, as (PAD, UTC ISO of the first record).
+DOPPLER_EDITS: frozenset = frozenset()
+
+
+def set_doppler_edits(keys) -> None:
+    global DOPPLER_EDITS
+    DOPPLER_EDITS = frozenset((int(p), str(u)) for p, u in keys)
+
+
+def _worker_init(nmax, doppler, days, n_emp=0, tol=None, edits=None):
     import warnings
     warnings.simplefilter("ignore")
     if tol is not None:
         set_tolerance(*tol)
+    if edits:
+        set_doppler_edits(edits)
     _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
 
 
@@ -156,6 +167,8 @@ class Problem:
                 ft = ra.transmit_frequency_hz
                 obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
                 if abs(obs) > MAX_DOPPLER_MPS:     # F2e A1: physically impossible interval
+                    continue
+                if (pad, ra.utc.isoformat()) in DOPPLER_EDITS:    # F2p: F2o-edited interval
                     continue
                 self.dop.append(dict(pad=pad, tm=0.5 * (td[i] + td[j]), tc=td[j] - td[i], obs=obs,
                                      media=MediaModel(uplink_hz=ft, downlink_hz=ft * D.TURNAROUND)))
@@ -266,7 +279,7 @@ class Problem:
         """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
         self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
                                         initargs=(self.nmax, self.use_doppler, self.days, self.n_emp,
-                                                  (RTOL, ATOL)))
+                                                  (RTOL, ATOL), sorted(DOPPLER_EDITS)))
 
     def close_pool(self) -> None:
         if self.pool is not None:
@@ -559,6 +572,8 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
         ft = ra.transmit_frequency_hz
         obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
         if abs(obs) > MAX_DOPPLER_MPS:             # F2e A1
+            continue
+        if (q, ra.utc.isoformat()) in DOPPLER_EDITS:   # F2p: F2o-edited interval
             continue
         from lunar_od.media import MediaModel
         val, _, _ = R.counted_doppler(0.5 * (td[i] + td[j]), td[j] - td[i], s.tide[q], sc, s.eph,
@@ -942,8 +957,39 @@ def main_f2k():
     print(json.dumps(dict(gates=gates), indent=1))
 
 
+OUT_F2P = HERE.parent / "results" / "phase_f2p_lro_three_day_arc_edited.json"
+
+
+def f2o_edits() -> list:
+    """F2o's edited Doppler intervals against F2k's orbit, as (PAD, UTC ISO)."""
+    o = json.loads((HERE.parent / "results" / "phase_f2o_doppler_editing.json").read_text(encoding="utf-8"))
+    return [(e["pad"], e["utc"]) for e in o["orbits"]["F2k"]["edited"]]
+
+
+def main_f2p():
+    """Phase F2p (studies/phase17/configs/phase_f2p_edited_refit_predeclaration.json): F2k on F2o-edited Doppler."""
+    set_tolerance(*F2K_TOL)
+    set_doppler_edits(f2o_edits())
+    x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
+        encoding="utf-8"))["runs"]["S1"]["x0"], float)
+    run = solve(300, 1.0, F2H_PRIORS, "p1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
+                len(EMP_NAMES), gn_stationarity=True, gn_relative_tol=1e-3,
+                checkpoint=HERE.parent / "results" / "phase_f2p_checkpoint.json")
+    run.pop("est_positions")
+    gates = dict(G1=run["status"] in ("Converged", "STATIONARY"),
+                 G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2p_edited_refit_predeclaration.json",
+               gates=gates, rtol_atol=F2K_TOL, doppler_edits=sorted(DOPPLER_EDITS),
+               priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2J_FIT_DAYS,
+               predict_days=F2J_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    OUT_F2P.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
 if __name__ == "__main__":
-    if "--f2k" in sys.argv:
+    if "--f2p" in sys.argv:
+        main_f2p()
+    elif "--f2k" in sys.argv:
         main_f2k()
     elif "--f2j" in sys.argv:
         main_f2j()
