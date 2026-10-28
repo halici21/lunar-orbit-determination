@@ -964,3 +964,57 @@ Doppler per pass on 263, RMS (mm/s), LOLA / F2k:
 2. Look at the bad pass's residual time series and raw counts (count-rate continuity, the 470 s gap) to find
    the cause.
 3. Per-day empirical terms remain an option, but the case for them made in §16 is weakened by this section.
+
+### 17.4 F2m — per-pass Doppler screening rule
+
+Predeclaration `studies/phase17/configs/phase_f2m_doppler_pass_screening_predeclaration.json` (`4aa562f`), written
+after F2l with its per-pass numbers known (disclosed there). Rule: reject a Doppler pass whose residual RMS about
+the pass mean, against F2k's own orbit, exceeds 5 × the median of that statistic over all passes of 260–263. The
+same rule against the LOLA orbit is the cross-check. Script `studies/phase17/scripts/phase_f2m_doppler_screening.py`,
+result `studies/phase17/results/phase_f2m_doppler_screening.json`.
+
+| | F2k orbit (applied) | LOLA orbit (cross-check) |
+|---|---|---|
+| median per-pass scatter | 1.91 mm/s | 2.01 mm/s |
+| threshold (5 × median) | 9.57 mm/s | 10.05 mm/s |
+| rejected | PAD 103, 2009-263 10:50–11:20, n = 220, 69.4 mm/s | the same pass, 69.3 mm/s |
+
+The two rejected sets agree. **No fit-day pass is rejected**, so by the consequence declared in advance F2k's fit
+(`5516b19`) stands unchanged and only the 263 scoring changes.
+
+Doppler RMS / mean after screening (mm/s; before screening only 263 differs):
+
+| day | F2k | LOLA |
+|---|---|---|
+| 260 | 2.08 / −0.30 | 4.03 / −3.21 |
+| 261 | 2.85 / 0.13 | 4.53 / −3.24 |
+| 262 | 1.60 / 0.18 | 4.20 / −3.55 |
+| 263 (predicted) | 5.22 / −4.46 (before: 23.81 / −4.25) | 3.93 / −3.37 (before: 23.52 / −3.01) |
+
+#### Reading
+
+1. **The rule removes exactly the bad pass and nothing else.** The threshold (~10 mm/s) sits between the bad
+   pass (69 mm/s) and every other pass, fitted or predicted, against either orbit.
+2. **F2k's screened 263 Doppler prediction is 5.2 mm/s, mostly a mean offset.** Its mean is −4.5 mm/s and its
+   scatter about that mean is 2.7 mm/s; on the fit days the mean is within ±0.3 mm/s. LOLA's mean is −3.2 to
+   −3.6 mm/s on every day (the Doppler bias was estimated with our orbit), so relative to LOLA the F2k 263 mean
+   drifts by about −1 mm/s. The largest single contribution is the last 263 pass (PAD 126, 23.7 h after the fit
+   end; 7.8 mm/s in F2l).
+3. **The same rule cannot screen range across fit and prediction days** (reported only, not applied). Against
+   F2k's orbit the median range-pass scatter is 0.44 m, set by the fitted days, and every 263 range pass
+   (3.2–7.4 m, the prediction error) would be rejected. Against LOLA no range pass would be. A pass-scatter rule
+   on residuals of one's own orbit is valid only where the orbit's own error stays well below the threshold; for
+   Doppler on 263 it does (≤ 8 mm/s against 9.6), for range it does not.
+4. **Updated F2k prediction on 263 (screened):** range 5.2 m RMS, Doppler 5.2 mm/s RMS, RIC vs LOLA 1.9 / 5.1 /
+   2.9 m. For comparison F2h's two-day fit predicted its next day (262, nothing screened there) to 1.6 m /
+   1.8 mm/s and 2.3 / 6.6 / 10.5 m against LOLA. Against the data the three-day fit predicts its next day worse
+   than the two-day fit did; against LOLA it predicts better. The range part of that gap is at the level the
+   LOLA orbit itself reaches on 263 (5.0 m), so it reflects the 263 data in our model as much as the orbit.
+
+#### Next steps
+
+1. Find the cause of the bad pass (residual time series, raw count continuity, the 470 s gap).
+2. Adopt the Doppler pass-screening rule for future prediction scoring (fit days included, F2k's orbit, 5 ×
+   median), recorded in each phase's predeclaration.
+3. The range-level question on 263 (LOLA itself 5.0 m with F2k's biases; §16's −13 to −17 m/h per-pass slopes /
+   ~3 ms timing offset) is open.
