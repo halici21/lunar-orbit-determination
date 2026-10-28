@@ -904,3 +904,63 @@ Prediction per pass on 263, range RMS / mean (m), F2k (F2j in brackets): PAD 103
 2. Per-day empirical terms on the three-day arc at rtol 1e-12, with the same 263 test.
 3. Phase E (owner approval): analytic harmonic STM. At rtol 1e-12 one F2k iteration took 20–28 min of wall time
    with the CPU to itself.
+
+### 17.3 F2l — the LOLA orbit scored against the 260–263 data (no fit)
+
+Predeclaration `studies/phase17/configs/phase_f2l_lola_orbit_scoring_predeclaration.json` (`501fe63`), written
+before any number. Script `studies/phase17/scripts/phase_f2l_lola_scoring.py`, result
+`studies/phase17/results/phase_f2l_lola_scoring.json`. The LRO reference ephemeris used as "LOLA" in every RIC
+comparison is sampled on the 20 s grid and passed through `predict()`'s measurement code unchanged (light time,
+media, counted Doppler, F2e A1 bound), with F2k's range and Doppler biases.
+
+**Reproduction check: PASS.** F2k's orbit through the same script reproduces F2k's stored 263 prediction RMS to a
+relative 1.1e-16.
+
+| day | LOLA range RMS / mean / about mean (m) | LOLA Doppler RMS / mean / about mean (mm/s) |
+|---|---|---|
+| 260 (fitted by F2k) | 4.83 / 3.80 / 2.98 | 4.03 / −3.22 / 2.43 |
+| 261 (fitted) | 4.59 / 3.05 / 3.44 | 4.53 / −3.24 / 3.16 |
+| 262 (fitted) | 5.37 / 3.87 / 3.73 | 4.20 / −3.55 / 2.23 |
+| 263 (predicted) | 5.02 / 3.65 / 3.45 | **23.52** / −3.01 / 23.33 |
+
+**Verdict by the predeclared rule: H_DATA.** LOLA's 263 Doppler RMS is 23.5 mm/s (≥ 10) while each of 260–262 is
+≤ 4.5 mm/s (≤ 5). The reference orbit misfits the 263 Doppler exactly as much as F2k's (23.8 mm/s), so F2k's 263
+Doppler misfit is not an orbit error.
+
+Doppler per pass on 263, RMS (mm/s), LOLA / F2k:
+
+| pass (PAD, UTC 2009-09-20) | n | LOLA | F2k |
+|---|---|---|---|
+| 103, 03:18–04:08 | 440 | 4.15 | 3.47 |
+| 103, 05:13–06:01 | 425 | 3.73 | 3.88 |
+| 103, 07:04–07:54 | 439 | 3.85 | 4.66 |
+| **103, 10:50–11:20** | 220 | **69.3** (mean −0.1) | **69.5** |
+| 126, 12:44–13:33 | 434 | 3.97 | 7.77 |
+
+#### Reading
+
+1. **One pass carries the whole 263 Doppler misfit.** PAD 103's 10:50–11:20 pass scatters by 69 mm/s about a
+   near-zero mean against both orbits; every other 263 pass is at the fit days' 4 mm/s level. Its UTDF headers
+   (mode 9830, flags 11, PAD 103 transmit and receive) match the clean passes; it is short (30 min against ~50)
+   and has a 470 s gap. The PAD 103 pass just before it (08:57–09:50) is the only one with flags 9 instead of 11;
+   its Doppler is already removed by the F2e A1 physical bound and it gives only two range points. Why the 10:50
+   pass is bad is not determined here.
+2. **Without that pass (post hoc, not predeclared)** the 263 Doppler RMS is 3.9 mm/s for LOLA and 5.2 mm/s for F2k.
+   The remaining F2k excess is the last pass (PAD 126, 23.7 h after the fit end: 7.8 against LOLA's 4.0 mm/s), a
+   genuine prediction degradation at the end of the day.
+3. **Range on 263 is also at the reference orbit's level.** With F2k's biases LOLA gives 4.6–5.4 m RMS on every
+   day, fitted or not, so F2k's 5.2 m range prediction on 263 equals what the reference orbit itself achieves in
+   our measurement model. The day-to-day constant ~+3.5 m LOLA range mean says the biases were estimated with our
+   orbit, not LOLA's; the ~3 m scatter about the mean is the reference orbit's level in our model.
+4. **Consequence for F2j / F2k.** The "7.1 m / 24 mm/s" prediction failure of §16 was mostly one bad Doppler pass
+   plus a range level that even the reference orbit does not beat. Against LOLA, F2k's 263 prediction
+   (1.9 / 5.1 / 2.9 m) is the best in the series. The constant once-per-rev model is not shown to fail over three
+   days.
+
+#### Next steps
+
+1. Exclude PAD 103 2009-263 10:50–11:20 Doppler from prediction scoring by a predeclared data-screening rule
+   (for example a per-pass Doppler scatter bound, applied to every day), not by hand.
+2. Look at the bad pass's residual time series and raw counts (count-rate continuity, the 470 s gap) to find
+   the cause.
+3. Per-day empirical terms remain an option, but the case for them made in §16 is weakened by this section.
