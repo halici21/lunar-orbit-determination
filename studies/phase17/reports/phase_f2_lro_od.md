@@ -994,7 +994,8 @@ Doppler RMS / mean after screening (mm/s; before screening only 263 differs):
 #### Reading
 
 1. **The rule removes exactly the bad pass and nothing else.** The threshold (~10 mm/s) sits between the bad
-   pass (69 mm/s) and every other pass, fitted or predicted, against either orbit.
+   pass (69 mm/s) and every other pass, fitted or predicted, against either orbit: the largest kept scatter
+   about a pass mean is 3.5 mm/s (F2k) and 3.8 mm/s (LOLA).
 2. **F2k's screened 263 Doppler prediction is 5.2 mm/s, mostly a mean offset.** Its mean is −4.5 mm/s and its
    scatter about that mean is 2.7 mm/s; on the fit days the mean is within ±0.3 mm/s. LOLA's mean is −3.2 to
    −3.6 mm/s on every day (the Doppler bias was estimated with our orbit), so relative to LOLA the F2k 263 mean
@@ -1004,7 +1005,8 @@ Doppler RMS / mean after screening (mm/s; before screening only 263 differs):
    F2k's orbit the median range-pass scatter is 0.44 m, set by the fitted days, and every 263 range pass
    (3.2–7.4 m, the prediction error) would be rejected. Against LOLA no range pass would be. A pass-scatter rule
    on residuals of one's own orbit is valid only where the orbit's own error stays well below the threshold; for
-   Doppler on 263 it does (≤ 8 mm/s against 9.6), for range it does not.
+   Doppler on 263 it does (the largest kept pass scatter about its mean is 3.5 mm/s against 9.6), for range it
+   does not.
 4. **Updated F2k prediction on 263 (screened):** range 5.2 m RMS, Doppler 5.2 mm/s RMS, RIC vs LOLA 1.9 / 5.1 /
    2.9 m. For comparison F2h's two-day fit predicted its next day (262, nothing screened there) to 1.6 m /
    1.8 mm/s and 2.3 / 6.6 / 10.5 m against LOLA. Against the data the three-day fit predicts its next day worse
