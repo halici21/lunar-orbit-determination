@@ -1064,7 +1064,7 @@ is 0.7–0.8.
 1. F2m's pass rule rejects 220 intervals for one bad one; the rest of the pass, at 5.65 mm/s, would also pass
    F2m's threshold if the slip were removed first.
 2. **A pass rule does not catch smaller slips.** One interval of 100 mm/s in a 440-interval pass raises the pass
-   scatter by only about 4.8 mm/s (to ~5 mm/s, under the 9.6 mm/s threshold). Fit-day passes have not been
+   scatter from ~1.9 to ~5.1 mm/s, still under the 9.6 mm/s threshold. Fit-day passes have not been
    checked for single-interval outliers; their F2k residuals were never inspected interval by interval.
 3. The right tool is per-interval outlier editing (for example |r − running median| > k × robust σ of the
    pass), declared before use, applied to fit and prediction days alike, with every edited interval listed.
