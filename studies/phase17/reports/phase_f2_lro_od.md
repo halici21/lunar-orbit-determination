@@ -831,3 +831,76 @@ digits.
    residuals is far below the decametre along-track / cross-track offsets to LOLA.
 5. Wall time of each case was 4.4–5.0 h. The computer spent most of that span in Modern Standby, so it is not a
    measure of the tolerance cost.
+
+### 17.2 K — F2j's fit re-run at rtol / atol 1e-12 / 1e-13
+
+Result `studies/phase17/results/phase_f2k_lro_three_day_arc_tight_tol.json`. Same data, model, priors, weights, start
+and relative Gauss–Newton rule as F2j (§16); only the integrator tolerance differs.
+
+**Run history (amendment A1, `eaabed0`).** The first K run died in iteration 10 on 2026-10-27 21:40: a pool worker
+was killed when the laptop, just unplugged, was put to sleep (`BrokenProcessPool`, no result). The restart added an
+exact-resume checkpoint and ran outside the session's process tree. Its iterations 1–9 reproduce the dead run's
+logged iterations 1–9 exactly (range RMS, K, step, λ), so the evaluation is deterministic, as A1 required. The
+checkpoint was not needed: the restart ran to the end in one process. Its 8.6 h wall time includes about 2 h of
+Modern Standby and is not a measure of the tolerance cost.
+
+#### Gates as computed
+
+| gate | rule | value | outcome |
+|---|---|---|---|
+| G1 | Converged or STATIONARY (decrement < 1e-3 χ²) | STATIONARY at iteration 12; Gauss–Newton decrement 9.4e-4 χ² (5.8e-8 of χ²) | **PASS** |
+| G3 | range ≤ 2 m, Doppler ≤ 5 mm/s | 1.030 m, 2.143 mm/s | **PASS** |
+
+#### Results against F2j
+
+| quantity | F2j (rtol 1e-10) | F2k (rtol 1e-12) |
+|---|---|---|
+| end | DampingLimit, iteration 18, decrement 977 χ² | STATIONARY, iteration 12, decrement 9.4e-4 χ² |
+| χ² (own tolerance) | 17153.65 (19177.04 rescored at 1e-12, §17.1) | 16110.91 |
+| range / Doppler post-fit | 1.086 m / 2.172 mm/s | 1.030 m / 2.143 mm/s |
+| K_SRP (m²/kg) | 0.07558 | 0.07451 (σ 1.1e-4) |
+| C_T / S_T (m/s²) | −1.918e-8 / 2.562e-7 | −1.908e-8 / 2.548e-7 |
+| range biases 103 / 105 / 126 (m) | 486.08 / 475.22 / 472.01 | 485.08 / 474.19 / 471.03 |
+| Doppler bias (mm/s) | −7.99 | −7.97 |
+| RIC vs LOLA, fit arc, RMS (m) | 1.57 / 16.15 / 23.18 | 2.01 / 9.92 / 12.26 |
+| RIC vs LOLA, fit arc, max (m) | 3.75 / 45.04 / 54.09 | 4.05 / 30.64 / 35.89 |
+| prediction 263, range RMS / mean (m) | 7.12 / 0.07 | 5.21 / 1.31 |
+| prediction 263, Doppler RMS / mean (mm/s) | 24.39 / −6.25 | 23.81 / −4.25 |
+| RIC vs LOLA, 263, RMS (m) | 2.26 / 5.83 / 10.39 | 1.88 / 5.05 / 2.90 |
+| RIC vs LOLA, 263, max (m) | 3.45 / 13.23 / 15.49 | 2.77 / 11.35 / 4.67 |
+
+The epoch state moved by 11.6 / 16.0 / 11.0 m and 4 / 11 / −10 mm/s from F2j's.
+
+Prediction per pass on 263, range RMS / mean (m), F2k (F2j in brackets): PAD 103 at 14.3 h 3.53 / 1.44 (4.79),
+16.2 h 3.85 / 0.76 (5.51), 18.1 h 4.77 / 1.31 (6.51), 20.3 h 1.36 / 1.36 (0.36), 20.8 h 6.96 / −6.96 (11.79),
+21.8 h 5.89 / 4.60 (6.67); PAD 126 at 23.7 h 7.41 / 0.06 (10.52).
+
+#### Reading
+
+1. **F2j's G1 failure was the integrator.** With the only change being rtol 1e-10 → 1e-12, the same fit ends
+   STATIONARY with a decrement six orders of magnitude below the threshold, in 12 iterations instead of 18. The
+   §16.1 diagnosis (cost noise from integrator jitter) is confirmed by the outcome it predicted.
+2. **The accurate fit is a different, better solution.** χ² is 1043 lower than F2j's own and 3066 lower than F2j's
+   point rescored at the same tolerance. Against LOLA the along-track and cross-track errors on the fit arc fall
+   from 16.2 / 23.2 m to 9.9 / 12.3 m RMS; radial rises from 1.6 to 2.0 m. This is the best fit-arc agreement with
+   LOLA in the F2 series (F2h: 1.7 / 20.4 / 27.9 m).
+3. **The prediction improves against LOLA, much less against the data.** On 263 the orbit is 1.9 / 5.1 / 2.9 m
+   from LOLA (cross-track 10.4 → 2.9 m), better than F2h's own next-day prediction against LOLA (2.3 / 6.6 /
+   10.5 m). Against the 263 measurements the range RMS falls from 7.1 to 5.2 m, but the Doppler RMS stays at
+   24 mm/s.
+4. **The 263 Doppler misfit does not look like an orbit error.** An orbit within a few metres of LOLA has velocity
+   errors of the order of mm/s, not 24 mm/s. Together with §16's day-263 range diagnostic (per-pass slopes of
+   −13 to −17 m/h against LOLA, or equivalently a ~3 ms timing offset), this points at the day-263 data or at a
+   day-specific measurement-model term rather than at the dynamics. Not tested here: scoring the LOLA orbit itself
+   against the 263 Doppler would settle it.
+5. **Consequence for the F2 series.** The rtol 1e-10 numbers of F2j are superseded by F2k's. F2h's are not
+   (§17.1: unchanged at 1e-12). Any further multi-day fit uses rtol ≤ 1e-12.
+
+#### Next steps
+
+1. Score the LOLA orbit against the 263 range and Doppler with the same measurement model (no fit). If LOLA also
+   gives ~24 mm/s, the prediction test on 263 measures the data, and the LOLA comparison is the prediction metric
+   for that day.
+2. Per-day empirical terms on the three-day arc at rtol 1e-12, with the same 263 test.
+3. Phase E (owner approval): analytic harmonic STM. At rtol 1e-12 one F2k iteration took 20–28 min of wall time
+   with the CPU to itself.
