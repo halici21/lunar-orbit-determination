@@ -1020,3 +1020,57 @@ Doppler RMS / mean after screening (mm/s; before screening only 263 differs):
    median), recorded in each phase's predeclaration.
 3. The range-level question on 263 (LOLA itself 5.0 m with F2k's biases; §16's −13 to −17 m/h per-pass slopes /
    ~3 ms timing offset) is open.
+
+### 17.5 F2n — what is wrong with the PAD 103 2009-263 10:50–11:20 Doppler pass
+
+Predeclaration `studies/phase17/configs/phase_f2n_bad_doppler_pass_diagnostic_predeclaration.json` (`3ce9106`),
+diagnostic only. Script `studies/phase17/scripts/phase_f2n_bad_pass_diagnostic.py`; result
+`studies/phase17/results/phase_f2n_bad_pass_diagnostic.json` (every interval with its raw UTDF fields) and figure
+`studies/phase17/results/phase_f2n_bad_pass_residuals.png`. Residuals are against the LOLA ephemeris, so nothing
+here depends on our estimate. Controls: PAD 103 07:04–07:54 on 263 and 08:25–09:14 on 262.
+
+| pass | intervals | RMS / mean / std (mm/s) | lag-1 autocorrelation | \|r\| > 20 mm/s | max \|r\| (mm/s) |
+|---|---|---|---|---|---|
+| bad, 263 10:50 | 220 | 69.30 / −0.08 / 69.30 | −0.006 | 1 | 1024.5 |
+| control, 263 07:04 | 439 | 3.85 / −3.32 / 1.96 | 0.74 | 0 | 9.9 |
+| control, 262 08:25 | 440 | 4.00 / −3.56 / 1.83 | 0.81 | 0 | 8.6 |
+
+All three passes have microseconds = 0 on every record, 5 s spacing and the station's regular 80–85 s gaps every
+5 min; the bad pass's only odd spacing is the 470 s gap 220 s after its start.
+
+**One interval carries the whole 69 mm/s.** The 5 s interval 11:03:15–11:03:20 UTC has a residual of
++1024 mm/s, i.e. its count increment is about 7.86e4 counts (1.55e4 Hz × 5 s) short of the trend. The intervals
+before and after it are normal (−5.5 and −5.4 mm/s). A wrong count in a single record would move two adjacent
+intervals in opposite directions; here only one interval moves and the counter stays offset afterwards, which is
+a one-off count discontinuity (cycle-slip type) in the Doppler counter. Without that interval the pass is
+5.65 mm/s RMS (mean −4.76, std 3.04, lag-1 0.04).
+
+**The rest of the pass is also degraded, mildly (post hoc, not predeclared).** Against a 9-point running median,
+38 of its 219 remaining intervals deviate by more than 4 mm/s, against 9 / 439 and 3 / 440 in the controls (the
+figure shows them as isolated ±6.5 mm/s steps from the baseline). Its scatter about the running median is
+3.0 mm/s against 0.97 and 0.80 in the controls, and its lag-1 autocorrelation is near zero where the controls'
+is 0.7–0.8.
+
+#### Hypotheses as computed
+
+- **H_TIME: not supported.** Lag-1 −0.006 (not < −0.3); microseconds and spacing are normal.
+- **H_SEGMENT: met by the letter** (the single |r| > 20 mm/s interval lies after the gap, 1 of 1), but the
+  "segment" is one 5 s interval. The finding is narrower than the hypothesis: a single count discontinuity.
+- **H_NOISE: partly.** Without the slip, the pass has white-looking, larger-than-normal scatter with ±6.5 mm/s
+  steps, but no |r| > 20 mm/s.
+
+#### Consequences
+
+1. F2m's pass rule rejects 220 intervals for one bad one; the rest of the pass, at 5.65 mm/s, would also pass
+   F2m's threshold if the slip were removed first.
+2. **A pass rule does not catch smaller slips.** One interval of 100 mm/s in a 440-interval pass raises the pass
+   scatter by only about 4.8 mm/s (to ~5 mm/s, under the 9.6 mm/s threshold). Fit-day passes have not been
+   checked for single-interval outliers; their F2k residuals were never inspected interval by interval.
+3. The right tool is per-interval outlier editing (for example |r − running median| > k × robust σ of the
+   pass), declared before use, applied to fit and prediction days alike, with every edited interval listed.
+
+#### Next steps
+
+1. Predeclare per-interval Doppler outlier editing and count what it removes on 260–263 (against LOLA and
+   against F2k).
+2. If it removes anything on 260–262, refit F2k on the edited data (separate predeclared phase).
