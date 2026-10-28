@@ -1,0 +1,23 @@
+{
+ "phase": "Phase F2m - per-pass Doppler screening rule, applied to every day 2009-260..263; F2k's 263 prediction rescored on the screened data",
+ "written": "2026-10-28, after F2l (e50eb15) and before any F2m number",
+ "disclosure": "written with F2l's per-pass Doppler RMS known: the PAD 103 2009-263 10:50-11:20 pass scatters 69 mm/s against both LOLA and F2k; every other 263 pass is 3.5-7.8 mm/s RMS (F2k) and 3.7-4.2 (LOLA). The fit days' per-pass about-mean scatter against our own orbit is not known. The factor below is chosen from the expected Gaussian behaviour, not tuned between the known values: 5 times the median sits far from both 69 and the <= 8 mm/s passes",
+ "rule": {
+  "statistic": "for every Doppler pass (same PAD, gaps <= F1's PASS_GAP_S = 600 s) on 260..263: the RMS about the pass mean of the counted-Doppler residuals against F2k's orbit (our own estimate; no external orbit used for screening), F2k's Doppler bias applied",
+  "threshold": "reject the pass when that statistic exceeds 5 x the median of the same statistic over all Doppler passes of 260..263",
+  "scope": "Doppler only, whole pass; range is not screened here. The same statistic for range passes is reported, not applied",
+  "cross_check": "the same rule evaluated against the LOLA orbit's residuals; the rejected set is reported for both and should agree"
+ },
+ "consequences_declared_now": {
+  "no_fit_day_pass_rejected": "F2k's fit (5516b19) stands unchanged; only the 263 prediction scoring changes",
+  "fit_day_pass_rejected": "F2k's fit used data the rule rejects; a refit on the screened data is a separate predeclared phase, and F2k's numbers are flagged as unscreened",
+  "263_rescore": "F2k and LOLA 263 range and Doppler RMS / mean, before and after screening"
+ },
+ "implementation": "the scoring code of phase_f2l_lola_scoring.py (predict()'s measurement code, reproduced to 1.1e-16 in F2l), F2k's orbit at rtol/atol 1e-12/1e-13 and the LOLA ephemeris on each of 260..263; one process per (orbit, day)",
+ "not_changed": "no production code; F2k's and F2l's results are not changed",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2m_doppler_screening.py",
+  "results": "studies/phase17/results/phase_f2m_doppler_screening.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.4"
+ }
+}
