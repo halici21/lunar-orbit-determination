@@ -53,6 +53,12 @@ S1's 10 764.84. The fits were killed, so these are not records.
 3. A test: a toy problem where `stationary` is reached before `max_nfev` stops early, returns the same `x` (to the
    certification tolerance) as a run to `max_nfev`, and reports the same status.
 
+**Status 2026-10-28 (owner: "Yes, afterwards"):** items 1–3 are implemented on branch `feat/f2-trf-certified-stop`.
+`solve_bounded(..., stop_when_stationary=True)` defaults to off; only the F2 TRF adapter turns it on. Trial residuals
+go to the progress log and to `numerical_diagnostics.residual_evaluations`. On the toy problem the stopped solve
+used 25 evaluations instead of 200, with Δχ² = 0.008 ≤ 0.01. The branch merges into
+`fix/f2-g4e-sensitivity-station-epoch` only after the running refits finish.
+
 **Not done now, on purpose.** Any change to `phase_f2_lro_od.py` or `src/lunar_od/` changes `numerical_identity()`.
 `_require_current_runs` would then refuse to merge the refits that are running now. The proposal should land only
 after these refits finish, or together with a decision to restart them.
