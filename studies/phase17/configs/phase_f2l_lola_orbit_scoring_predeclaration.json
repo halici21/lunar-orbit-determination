@@ -1,0 +1,21 @@
+{
+ "phase": "Phase F2l - the LOLA reference orbit scored against the 2009-260..263 range and Doppler (no fit)",
+ "written": "2026-10-28, after F2k (5516b19: on 263 our orbit is 1.9 / 5.1 / 2.9 m RIC from LOLA, yet 5.2 m / 23.8 mm/s from the data) and before any F2l number",
+ "question": "Is F2k's 24 mm/s Doppler misfit on 2009-263 an orbit error, or does it belong to the day-263 data / a day-specific measurement term?",
+ "orbit": "the LRO reference ephemeris already used as 'LOLA' in every F2 RIC comparison (spkezr -85, J2000, Moon-centred, no aberration), sampled on F2's 20 s grid and passed to the same SpacecraftHistory / two-way range / counted Doppler code as predict() in phase_f2_lro_od.py (DSN_C2 light time, media, F2e A1 bound). Nothing is fitted",
+ "biases": "F2k's estimated range biases (PAD 103 / 105 / 126: 485.083 / 474.192 / 471.026 m) and Doppler bias (-7.974 mm/s) are applied. Per-pass means and RMS about the mean are reported as well, so the conclusion does not depend on those biases",
+ "cases": "LOLA on each of 260, 261, 262 (control: days F2k fitted) and 263; F2k's own orbit on 263 (reproduction check)",
+ "reproduction_check": "F2k's orbit through this script must reproduce F2k's stored 263 prediction range and Doppler RMS to a relative 1e-6; otherwise the script is not the same measurement model and nothing is concluded",
+ "decision_rules": {
+  "H_DATA": "LOLA's 263 Doppler RMS >= 10 mm/s while its Doppler RMS on each of 260..262 is <= 5 mm/s: the 263 Doppler misfit is not an orbit error; the 263 data (or a day-specific term) is anomalous",
+  "H_ORBIT": "LOLA's 263 Doppler RMS <= 5 mm/s: the reference orbit fits 263, so F2k's misfit is its orbit's (despite the metre-level RIC agreement)",
+  "otherwise": "MIXED, reported as computed"
+ },
+ "reported_not_gated": "range RMS / mean per day and per pass for LOLA; Doppler RMS / mean per day and per pass; for 263 the difference F2k minus LOLA per pass",
+ "not_changed": "no production code; F2k's result and gates are not changed",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2l_lola_scoring.py",
+  "results": "studies/phase17/results/phase_f2l_lola_scoring.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.3"
+ }
+}
