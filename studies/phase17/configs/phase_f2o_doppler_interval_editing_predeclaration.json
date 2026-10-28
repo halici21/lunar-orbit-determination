@@ -1,0 +1,24 @@
+{
+ "phase": "Phase F2o - per-interval counted-Doppler outlier editing on 2009-260..263 (F2k orbit applied, LOLA cross-check)",
+ "written": "2026-10-28, after F2n (7c636c0) and before any F2o number. Known beforehand: the 263 10:50 pass has one +1024 mm/s interval and more +-6.5 mm/s steps than its controls (38/219 vs 9/439 and 3/440 beyond 4 mm/s from a 9-point running median; control scatter about that median 0.8-1.0 mm/s). Fit-day intervals have never been inspected",
+ "purpose": "remove gross single-interval errors (count discontinuities), not trim the noise tails",
+ "rule": {
+  "residual": "counted-Doppler residual per 5 s interval against F2k's orbit (rtol 1e-12), F2k's Doppler bias, predict()'s measurement code (F2l)",
+  "detrend": "running median over 9 consecutive intervals within the pass (same PAD, gaps <= 600 s), truncated at the pass ends",
+  "scale": "sigma_rob = 1.4826 x median absolute deviation of (residual - running median) over the pass",
+  "edit": "an interval is edited when |residual - running median| > 5 x max(sigma_rob, SIGMA_DOP), SIGMA_DOP = 2 mm/s (the fit weight), i.e. never below 10 mm/s",
+  "scope": "Doppler only, every pass of 260..263; range is not edited",
+  "cross_check": "the same rule against the LOLA ephemeris; edited sets reported for both, with each edited interval's UTC, PAD, residual and threshold"
+ },
+ "consequences_declared_now": {
+  "no_fit_day_interval_edited": "F2k's fit stands; the 263 prediction is rescored on the edited data",
+  "fit_day_intervals_edited": "F2k's fit used data the rule edits; a refit on the edited data is a separate predeclared phase (F2p); F2k's numbers are flagged as unedited until then",
+  "263": "F2k and LOLA 263 Doppler RMS / mean on the edited data; whether F2m's pass rule, applied after editing, still rejects the 10:50 pass (reported)"
+ },
+ "not_changed": "no production code; F2k, F2l, F2m, F2n results are not changed",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2o_doppler_editing.py",
+  "results": "studies/phase17/results/phase_f2o_doppler_editing.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.6"
+ }
+}
