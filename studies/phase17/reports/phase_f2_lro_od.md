@@ -1113,8 +1113,8 @@ F2m's pass rule applied after editing rejects no pass, against either orbit (thr
 #### Reading
 
 1. **The 263 slip is the only gross error.** Every other edit is a 10–12 mm/s step except one pair on the 262
-   PAD 105 pass (+28.5, +20.4 mm/s), the only adjacent pair: the signature of a small count error in the record
-   between them.
+   PAD 105 pass (+28.5, +20.4 mm/s), the only adjacent pair. Both have the same sign, so it is not a wrong count
+   in the shared record (that would move the two intervals in opposite directions); its cause is not determined.
 2. **Fit-day intervals are edited (19 of 6 851), so by the consequence declared in advance F2k's fit used data
    the rule edits.** They carry 792 χ² of F2k's 16 111 (4.9 %), most of it in the 262 PAD 105 pass. F2k's numbers
    are flagged as unedited until a refit on the edited data (F2p, separately predeclared).
