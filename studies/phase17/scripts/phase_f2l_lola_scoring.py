@@ -40,7 +40,7 @@ def _groups(pads, t):
     return out
 
 
-def score(pb, p, day: str, orbit: str) -> dict:
+def score(pb, p, day: str, orbit: str, intervals: bool = False) -> dict:
     """predict() for one day, returning the residuals; the history is the LOLA ephemeris or our propagation."""
     import spiceypy as spice
     from lunar_od import station_time as ST
@@ -68,7 +68,7 @@ def score(pb, p, day: str, orbit: str) -> dict:
                               media=pb.media, media_site=s.media_sites[q])
         res_r.append(M.F.C * r.rtlt_s / 2.0 - R.two_way_range_m(sol) - p[7 + M.PADS.index(q)])
     res_r = np.array(res_r)
-    res_d, td_mid, d_pad = [], [], []
+    res_d, td_mid, d_pad, d_utc = [], [], [], []
     for i, j in D.intervals(drows, td):
         q, ra = drows[i]
         rb = drows[j][1]
@@ -84,15 +84,21 @@ def score(pb, p, day: str, orbit: str) -> dict:
         res_d.append(obs - val - p[10])
         td_mid.append(0.5 * (td[i] + td[j]))
         d_pad.append(q)
+        d_utc.append(ra.utc.isoformat())
     res_d, td_mid = np.array(res_d), np.array(td_mid)
     r_pass = [dict(pad=int(rows[g[0]][0]), t_start_h=float(t3[g].min() / 3600.0), **_stats(res_r[g]))
               for g in M.F.passes(rows, t3)]
     d_pass = [dict(pad=int(q), t_start_h=float(td_mid[g].min() / 3600.0), **_stats(res_d[g] * 1e3))
               for q, g in _groups(d_pad, td_mid)]
-    return dict(range_m=_stats(res_r), doppler_mmps=_stats(res_d * 1e3), range_passes=r_pass, doppler_passes=d_pass)
+    out = dict(range_m=_stats(res_r), doppler_mmps=_stats(res_d * 1e3), range_passes=r_pass, doppler_passes=d_pass)
+    if intervals:   # F2o: every Doppler interval, in pass order
+        out["doppler_intervals"] = [dict(pad=int(q), utc=d_utc[k], t_mid_s=float(td_mid[k]),
+                                         resid_mmps=float(res_d[k] * 1e3), pass_index=n)
+                                    for n, (q, g) in enumerate(_groups(d_pad, td_mid)) for k in g]
+    return out
 
 
-def case(key):
+def case(key, intervals: bool = False):
     import warnings
     warnings.simplefilter("ignore")
     orbit, day = key
@@ -100,7 +106,7 @@ def case(key):
     M.set_tolerance(*M.F2K_TOL)
     p = K.point_vector(json.loads(M.OUT_F2K.read_text(encoding="utf-8"))["runs"]["S1"])
     pb = M.Problem(300, doppler=True, days=M.F2J_FIT_DAYS, n_emp=len(M.EMP_NAMES))
-    out = score(pb, p, day, orbit)
+    out = score(pb, p, day, orbit, intervals)
     out["elapsed_s"] = time.time() - t0
     return key, out
 

@@ -1074,3 +1074,58 @@ is 0.7–0.8.
 1. Predeclare per-interval Doppler outlier editing and count what it removes on 260–263 (against LOLA and
    against F2k).
 2. If it removes anything on 260–262, refit F2k on the edited data (separate predeclared phase).
+
+### 17.6 F2o — per-interval Doppler outlier editing
+
+Predeclaration `studies/phase17/configs/phase_f2o_doppler_interval_editing_predeclaration.json` (`faee907`). Rule:
+per pass, a 9-interval running median, σ_rob = 1.4826 MAD of the deviations, edit when |r − median| >
+5 × max(σ_rob, 2 mm/s). Applied against F2k's orbit, LOLA as cross-check. Script
+`studies/phase17/scripts/phase_f2o_doppler_editing.py` (uses F2l's `score()`, extended with an option that
+returns every interval; default output unchanged), result `studies/phase17/results/phase_f2o_doppler_editing.json`.
+
+**σ_rob is 0.37–0.86 mm/s in every pass, so the 10 mm/s floor sets the threshold everywhere.** The rule edits
+deviations of more than about 12–27 σ_rob, i.e. glitches, not noise tails.
+
+**23 intervals edited, the same 23 against F2k and against LOLA.**
+
+| day | edited | where | residuals of the edited intervals (mm/s) |
+|---|---|---|---|
+| 260 | 2 | PAD 103, two passes | −10.7, −9.9 |
+| 261 | 5 | PAD 103, three passes | 10.4, −11.1, −10.2, −9.3, 10.1 |
+| 262 | 12 | PAD 105 02:48 pass (the only PAD 105 pass that day) | ±10–12, and +28.5 / +20.4 in two consecutive intervals (03:31:40, 03:31:45) |
+| 263 | 4 | PAD 103 10:50 pass | +1023.5 (the F2n slip), −16.8, −17.7, and one at 2.5 whose running median is displaced |
+
+Residuals listed are against F2k's orbit; the rule acts on the deviation from the running median, so a listed
+residual can be below 10 mm/s.
+
+Doppler RMS / mean / std before → after editing (mm/s):
+
+| day | F2k | LOLA |
+|---|---|---|
+| 260 | 2.08 / −0.30 / 2.06 → 2.06 / −0.29 / 2.04 | 4.03 → 4.02 |
+| 261 | 2.85 / 0.13 / 2.85 → 2.80 / 0.14 / 2.80 | 4.53 → 4.49 |
+| 262 | 1.60 / 0.18 / 1.59 → 1.29 / 0.17 / 1.28 | 4.20 → 4.09 |
+| 263 (predicted) | 23.81 / −4.25 / 23.43 → 5.62 / −4.76 / 2.97 | 23.52 → 4.13 |
+
+F2m's pass rule applied after editing rejects no pass, against either orbit (threshold 9.57 / 10.05 mm/s): the
+10:50 pass is kept once its slip is edited.
+
+#### Reading
+
+1. **The 263 slip is the only gross error.** Every other edit is a 10–12 mm/s step except one pair on the 262
+   PAD 105 pass (+28.5, +20.4 mm/s), the only adjacent pair: the signature of a small count error in the record
+   between them.
+2. **Fit-day intervals are edited (19 of 6 851), so by the consequence declared in advance F2k's fit used data
+   the rule edits.** They carry 792 χ² of F2k's 16 111 (4.9 %), most of it in the 262 PAD 105 pass. F2k's numbers
+   are flagged as unedited until a refit on the edited data (F2p, separately predeclared).
+3. **The size of the expected change is small.** Removing 19 intervals of 10–28 mm/s from 6 851 should move the
+   fit by much less than the fit-day noise. That is an expectation, not a result.
+4. **Updated 263 Doppler scoring (edited, F2k's current fit):** 5.62 mm/s RMS, almost all of it a −4.8 mm/s mean
+   (std 3.0). LOLA: 4.13 mm/s, mean −3.5. Editing intervals instead of rejecting the pass keeps 216 of the bad
+   pass's 220 intervals.
+
+#### Next steps
+
+1. F2p: refit F2k on the F2o-edited Doppler (same everything else, rtol 1e-12, checkpointed, started detached),
+   with the 263 prediction scored on edited data.
+2. Adopt F2o's interval editing (not F2m's pass rule) for all later fits and prediction scoring.
