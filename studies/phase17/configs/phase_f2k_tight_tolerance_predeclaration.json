@@ -17,6 +17,12 @@
   "reported_not_gated": "Gauss-Newton decrement at the end; RIC vs LOLA over the fit arc and on 2009-263; prediction per pass; K_SRP, empirical terms and biases vs F2j; end-state difference to F2j; elapsed time and its ratio to F2j's 10.2 h (other jobs share the CPU during this run, so the ratio is an upper bound on the tolerance cost)"
  },
  "order": "R first (minutes), then K",
+ "amendment_A1": {
+  "written": "2026-10-28, after the first K run died in iteration 10 (2026-10-27 21:40, a pool worker was terminated when the laptop, just unplugged, was put to sleep; BrokenProcessPool, no result written) and before the restart",
+  "change": "procedure only: K restarts from the predeclared start with an iteration checkpoint (studies/phase17/results/phase_f2k_checkpoint.json, written after every accepted step: p, lambda, relative improvement, cost, history). A resumed run recomputes the residual at the checkpointed p and refuses to continue unless the cost equals the stored one exactly; the evaluation is deterministic, so a resumed run is the uninterrupted run. The process is started outside the Claude session's process tree",
+  "check": "the restart's iterations 1-9 must equal the dead run's logged iterations 1-9 (range RMS, K, step, lambda as printed in f2k1_progress_N300_p.log). Reported; a mismatch means the evaluation is not deterministic and is reported as such",
+  "dead_run_log": "it 1..9: rms 2.646, 1.102, 1.079, 1.075, 1.070, 1.044, 1.030, 1.030, 1.031 m; K 0.05662 .. 0.07451; last step 0.162 m at lambda 1e-9; 22570 s to iteration 9 with another session's 15 workers sharing the CPU"
+ },
  "not_changed": "no production code; F2h's and F2j's results and gate outcomes are not changed by F2k",
  "outputs": {
   "results": "studies/phase17/results/phase_f2k_rescore.json and studies/phase17/results/phase_f2k_lro_three_day_arc_tight_tol.json",

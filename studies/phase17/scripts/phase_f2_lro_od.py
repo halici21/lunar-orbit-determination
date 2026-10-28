@@ -357,7 +357,7 @@ GN_DECREMENT_TOL = 1e-2
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
           days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
           n_emp: int = 0, step_limit: tuple | None = None, gn_stationarity: bool = False,
-          gn_relative_tol: float | None = None) -> dict:
+          gn_relative_tol: float | None = None, checkpoint: Path | None = None) -> dict:
     t0 = time.time()
     gn_decrement = float("nan")
     pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp)
@@ -394,10 +394,20 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
                      + [EMP_SCALE] * pb.n_emp)
     lam, status, history = 1e-3, "MaxIter", []
     rel = 1.0
+    first = 1
+    if checkpoint is not None and checkpoint.exists():
+        # F2k A1: resume after the last accepted iteration; the evaluation is deterministic, so the loop
+        # continues exactly as an uninterrupted run would (JSON floats round-trip exactly)
+        ck = json.loads(checkpoint.read_text(encoding="utf-8"))
+        p, lam, rel, history = np.array(ck["p"], float), ck["lam"], ck["rel"], ck["history"]
+        first = ck["iteration"] + 1
+        t0 -= ck["elapsed_s"]
     res, h, hist = pb.residual(p)
     ra, ha = aug(res, h, p)
     cost = float(ra @ ra)
-    for it in range(1, MAX_ITER + 1):
+    if first > 1 and cost != ck["cost"]:
+        raise RuntimeError(f"checkpoint cost {ck['cost']!r} not reproduced: {cost!r}")
+    for it in range(first, MAX_ITER + 1):
         hs = ha * scale / SIGMA_M
         a = hs.T @ hs
         g = hs.T @ (ra / SIGMA_M)
@@ -432,6 +442,11 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
         with open(F.REPO.parent / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
             log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
                       f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
+        if accepted and checkpoint is not None:
+            tmp = checkpoint.with_suffix(".tmp")
+            tmp.write_text(json.dumps(dict(iteration=it, p=p.tolist(), lam=lam, rel=rel, cost=cost, history=history,
+                                           elapsed_s=time.time() - t0)), encoding="utf-8")
+            tmp.replace(checkpoint)
         if not accepted:
             if gn_stationarity:
                 # F2i: stationary when the undamped Gauss-Newton step predicts a cost decrease below
@@ -915,7 +930,8 @@ def main_f2k():
     x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
         encoding="utf-8"))["runs"]["S1"]["x0"], float)
     run = solve(300, 1.0, F2H_PRIORS, "k1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
-                len(EMP_NAMES), gn_stationarity=True, gn_relative_tol=1e-3)
+                len(EMP_NAMES), gn_stationarity=True, gn_relative_tol=1e-3,
+                checkpoint=HERE.parent / "results" / "phase_f2k_checkpoint.json")
     run.pop("est_positions")
     gates = dict(G1=run["status"] in ("Converged", "STATIONARY"),
                  G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
