@@ -413,10 +413,14 @@ def _write_result(historical_path, text, *, encoding="utf-8"):
 
 
 def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
-    """Adapt the unchanged F2 residual/FD/pool to a bound-aware whitened solve."""
+    """Adapt the unchanged F2 residual/FD/pool to a bound-aware whitened solve.
+
+    Stops at the first accepted point that passes the final-point stationarity certification (G1 unchanged);
+    residual-only evaluations (trial steps) are logged as evaluation_kind "residual", outside ``history``.
+    """
     from lunar_od.bounded_least_squares import solve_bounded
     cache = {"x": None, "partial": False}
-    history = []
+    history, trials = [], []
 
     def evaluate(p, partial):
         if cache["x"] is not None and np.array_equal(p, cache["x"]) and (not partial or cache["partial"]):
@@ -424,6 +428,11 @@ def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
         r, h, hist = pb.residual(p, partials=partial)
         ra, ha = augment(r, h, p)
         cache.update(x=p.copy(), partial=partial, value=(r, h, hist, ra, ha))
+        if not partial:
+            trials.append(dict(evaluation=len(history) + len(trials) + 1, evaluation_kind="residual",
+                               cost=float(ra @ ra / SIGMA_M**2), k_srp=float(p[6])))
+            if on_linearization is not None:
+                on_linearization(trials[-1])
         if partial:
             history.append(dict(iteration=len(history) + 1, evaluation_kind="jacobian_linearization",
                                 cost=float(ra @ ra / SIGMA_M**2),
@@ -437,10 +446,10 @@ def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
     jac = lambda p: -evaluate(p, True)[4] / SIGMA_M
     lower = np.full(initial.size, -np.inf)
     lower[6] = 0.0
-    fit = solve_bounded(fun, jac, initial, scale, lower=lower, max_nfev=MAX_ITER)
+    fit = solve_bounded(fun, jac, initial, scale, lower=lower, max_nfev=MAX_ITER, stop_when_stationary=True)
     r, h, hist, ra, ha = evaluate(fit.x, True)
     diag = fit.diagnostics | dict(scipy_status=fit.scipy_status, scipy_message=fit.message,
-                                 nfev=fit.nfev, njev=fit.njev)
+                                 nfev=fit.nfev, njev=fit.njev, residual_evaluations=trials)
     status = "STATIONARY" if diag["stationary"] else "MaxIter" if fit.scipy_status == 0 else "NumericallyLimited"
     cov = None if diag["covariance"] is None else np.asarray(diag["covariance"], float)
     linearization = dict(residual_whitened=(ra / SIGMA_M).tolist(),

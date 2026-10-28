@@ -82,19 +82,36 @@ def posterior_diagnostics(jacobian, residual, x, scale, *, lower=None, upper=Non
 
 
 def solve_bounded(residual, jacobian, x0, scale, *, lower=None, upper=None,
-                  max_nfev=200, stationarity_sigma=0.1):
+                  max_nfev=200, stationarity_sigma=0.1, stop_when_stationary=False):
     """Dense SVD trust-region reflection; no normal-equation inversion.
 
     Cost/step stopping is disabled: small improvements are not stationarity.
     Native solver termination and independent certification are both returned.
+    stop_when_stationary ends the solve at the first accepted point the same
+    certification passes (scipy status -2). It re-evaluates residual and
+    Jacobian at that point, so callers should cache them; the final
+    diagnostics are recomputed at the returned point either way.
     """
     x0=np.asarray(x0,float);scale=np.asarray(scale,float)
     lo=np.full(x0.size,-np.inf) if lower is None else np.broadcast_to(lower,x0.shape).astype(float)
     hi=np.full(x0.size,np.inf) if upper is None else np.broadcast_to(upper,x0.shape).astype(float)
     if scale.shape!=x0.shape or np.any(scale<=0) or not np.all(np.isfinite(scale)):
         raise ValueError('Positive finite x_scale matching x0 is required.')
+    checked=[]
+    def certified(intermediate_result):
+        # SciPy passes an OptimizeResult only to a parameter of this name. trf also calls back after
+        # rejected steps; certify each accepted point once.
+        x=intermediate_result.x
+        if checked and np.array_equal(x,checked[-1]):
+            return
+        checked.append(x.copy())
+        z=posterior_diagnostics(jacobian(x),residual(x),x,scale,lower=lo,upper=hi,
+                                stationarity_sigma=stationarity_sigma)
+        if z['stationary']:
+            raise StopIteration
     fit=least_squares(residual,x0,jac=jacobian,bounds=(lo,hi),method='trf',tr_solver='exact',
-                      x_scale=scale,loss='linear',ftol=None,xtol=None,gtol=1e-12,max_nfev=max_nfev)
+                      x_scale=scale,loss='linear',ftol=None,xtol=None,gtol=1e-12,max_nfev=max_nfev,
+                      callback=certified if stop_when_stationary else None)
     # Evaluate both at the actual returned point, independently of the stop code.
     r=np.asarray(residual(fit.x),float);j=np.asarray(jacobian(fit.x),float)
     diag=posterior_diagnostics(j,r,fit.x,scale,lower=lo,upper=hi,stationarity_sigma=stationarity_sigma)

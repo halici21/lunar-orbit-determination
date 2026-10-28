@@ -45,3 +45,46 @@ def test_small_decrement_is_not_lost_beside_large_irreducible_residual():
                                    np.array([0.]), np.array([1.]))
     assert result['gn_decrement'] == pytest.approx(1.)
     assert not result['stationary']
+
+
+def _curved_problem():
+    """Nonlinear residuals with a non-zero minimum; counts Jacobian calls by point."""
+    calls = []
+    def residual(x):
+        return np.array([10 * (x[1] - x[0]**2), 1 - x[0], 0.3 * np.sin(x[0] + x[1]), 0.5])
+    def jacobian(x):
+        calls.append(np.array(x, float))
+        c = 0.3 * np.cos(x[0] + x[1])
+        return np.array([[-20 * x[0], 10.], [-1., 0.], [c, c], [0., 0.]])
+    return residual, jacobian, calls
+
+
+def test_stop_when_stationary_ends_early_at_a_certified_point():
+    solve, _ = api()
+    residual, jacobian, _ = _curved_problem()
+    full = solve(residual, jacobian, np.array([-1.2, 1.]), np.ones(2), max_nfev=200)
+    residual, jacobian, calls = _curved_problem()
+    early = solve(residual, jacobian, np.array([-1.2, 1.]), np.ones(2), max_nfev=200, stop_when_stationary=True)
+    assert early.scipy_status == -2
+    assert early.diagnostics['stationary'] and full.diagnostics['stationary']
+    assert early.nfev < full.nfev
+    # certified: at most 0.1^2 of chi-square left to gain, so it is that close to the full solve
+    assert early.diagnostics['gn_decrement'] <= 0.1
+    assert early.residual @ early.residual - full.residual @ full.residual <= 0.1**2 + 1e-12
+
+
+def test_stop_when_stationary_certifies_each_accepted_point_once():
+    solve, _ = api()
+    residual, jacobian, calls = _curved_problem()
+    fit = solve(residual, jacobian, np.array([-1.2, 1.]), np.ones(2), max_nfev=200, stop_when_stationary=True)
+    points = {tuple(c) for c in calls}
+    # solver Jacobians + one certification per accepted point + the final diagnostics: no point evaluated 4 times
+    assert all(sum(np.array_equal(c, np.array(p)) for c in calls) <= 3 for p in points)
+    assert len(calls) <= 2 * fit.njev + 1
+
+
+def test_default_still_runs_to_max_nfev_without_cost_stopping():
+    solve, _ = api()
+    residual, jacobian, _ = _curved_problem()
+    fit = solve(residual, jacobian, np.array([-1.2, 1.]), np.ones(2), max_nfev=40)
+    assert fit.scipy_status != -2
