@@ -945,10 +945,16 @@ def main_f2g_merge():
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
     gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
                  G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
-    checks = json.loads((_output_dir() / "phase_f2g_checks.json").read_text(encoding="utf-8"))
+    # G4e qualified the legacy numerics only; the TRF path is gated by G4e-R (phase_f2_g4er_checks.py).
+    legacy = SOLVER_BACKEND == "legacy"
+    name = "phase_f2g_checks.json" if legacy else "phase_f2_g4er_checks.json"
+    checks = json.loads((_output_dir() / name).read_text(encoding="utf-8"))
     if checks.get("numerical_identity") != numerical_identity():
         raise ValueError("F2g checks do not match the current numerical code; rerun checks before merging.")
-    gates.update(G0=checks["G0"]["PASS"], G4e=checks["G4e"]["PASS"])
+    if legacy:
+        gates.update(G0=checks["G0"]["PASS"], G4e=checks["G4e"]["PASS"])
+    else:
+        gates.update(G0=checks["G0R"]["PASS"], G4eR=checks["PASS"])
     for r in runs.values():
         r.pop("est_positions")
     out = dict(predeclaration="studies/phase17/configs/phase_f2g_lro_empirical_predeclaration.json",
