@@ -1129,3 +1129,56 @@ F2m's pass rule applied after editing rejects no pass, against either orbit (thr
 1. F2p: refit F2k on the F2o-edited Doppler (same everything else, rtol 1e-12, checkpointed, started detached),
    with the 263 prediction scored on edited data.
 2. Adopt F2o's interval editing (not F2m's pass rule) for all later fits and prediction scoring.
+
+### 17.7 F2p — F2k's fit repeated on the F2o-edited Doppler
+
+Predeclaration `studies/phase17/configs/phase_f2p_edited_refit_predeclaration.json` (`ed71bfa`). Only change
+from F2k: the 23 intervals F2o edits against F2k's orbit are excluded, keyed by (PAD, UTC of the interval's
+first record), in the fit and in the 263 prediction. Code `3693519` (`phase_f2_lro_od.py --f2p`); result
+`studies/phase17/results/phase_f2p_lro_three_day_arc_edited.json`. Pre-launch check PASS: the edit list removes
+exactly 19 fit-day Doppler rows (6 851 → 6 832). Started detached 2026-10-28 23:04; 14 iterations; 25.6 h wall
+(laptop sleep overnight, and another session's job sharing the CPU), not comparable with F2k's 8.6 h.
+
+#### Gates as computed
+
+| gate | criterion | value | result |
+|---|---|---|---|
+| G1 | Converged or STATIONARY | STATIONARY, Gauss–Newton decrement 0.022 χ² (rule: < 1e-3 χ² = 15.3) | PASS |
+| G3 | range RMS ≤ 2 m, Doppler RMS ≤ 5 mm/s | 1.030 m, 2.035 mm/s | PASS |
+
+#### Results (F2k → F2p)
+
+| quantity | F2k | F2p | change / formal σ |
+|---|---|---|---|
+| χ² | 16 110.91 | 15 318.57 | — (see below) |
+| range / Doppler RMS | 1.0305 m / 2.143 mm/s | 1.0304 m / 2.035 mm/s | |
+| K_SRP | 0.074509 | 0.074502 | −0.07 σ |
+| C_T / S_T (m/s²) | −1.908e-8 / 2.5480e-7 | −1.908e-8 / 2.5469e-7 | +0.06 σ / −0.13 σ |
+| range biases 103/105/126 (m) | 485.083 / 474.192 / 471.026 | 485.093 / 474.202 / 471.036 | +0.15 / +0.13 / +0.15 σ |
+| Doppler bias (mm/s) | −7.9744 | −7.9746 | −0.006 σ |
+| epoch state | | | Δr 2.5 cm, Δv 2.2e-5 m/s |
+| fit-arc RIC vs LOLA, RMS (m) | 2.01 / 9.92 / 12.26 | 2.00 / 9.92 / 12.26 | |
+| 263 range RMS / mean (m) | 5.21 / 1.31 | 5.21 / 1.31 | |
+| 263 Doppler RMS / mean (mm/s) | 23.81 / −4.25 (unedited) | 5.62 / −4.76 (edited, 1 954 intervals) | |
+| 263 RIC vs LOLA, RMS (m) | 1.88 / 5.05 / 2.90 | 1.88 / 5.05 / 2.90 | |
+
+χ² check: at F2k's point the 19 edited fit-day intervals carry 792.09 χ² (recomputed from F2o's list), so F2k
+without them is 15 318.82. Refitting lowers that by 0.25 χ² to 15 318.57.
+
+#### Reading
+
+1. **The edits change nothing that matters.** Every parameter moves by at most 0.15 of its formal σ and the
+   epoch state by 2.5 cm; the fit-arc and 263 orbit comparisons with LOLA agree to the centimetre. The
+   predeclared expectation (F2o reading 3: the solution moves much less than its fit-day noise) holds. It was not
+   a gate.
+2. **F2k's numbers stand.** The flag F2o put on them (fit on data the rule edits) is cleared by this result:
+   the edited and unedited fits are the same solution within 0.15 σ.
+3. **The only visible change is the 263 Doppler score**, and it comes from editing the prediction data, not from
+   the refit: 5.62 mm/s, almost all of it a −4.8 mm/s mean, the same as F2o's edited score of F2k's orbit.
+   That mean offset over the prediction day is the remaining Doppler signal to explain.
+
+#### Next steps
+
+1. Use F2p (edited Doppler) as the reference fit for later phases; F2o editing applies to every later fit and
+   prediction score.
+2. The −4.8 mm/s mean Doppler offset on 263 (LOLA −3.5) is the next open item.
