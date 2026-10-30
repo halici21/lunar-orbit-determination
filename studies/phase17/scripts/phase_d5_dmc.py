@@ -1,6 +1,7 @@
 """Phase D5: dynamic model compensation on the iterated extended Kalman smoother.
 
 Predeclaration: studies/phase17/configs/phase_d5_dmc_predeclaration.json.
+``--d5r``: the D5-R sigma sweep (studies/phase17/configs/phase_d5r_dmc_tuning_predeclaration.json).
 Per cell (measurement type x truth case) and seed, IS, IS_DMC and EKF_RTS_DMC get the same
 truth, observations, noise realisation, x_guess and P0 on [r, v].
 """
@@ -8,6 +9,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sys
 import time
 import warnings
@@ -35,6 +37,8 @@ from lunar_od.geometry import wrap_to_pi  # noqa: E402
 from tests.test_filters import _synthetic_position_station, _synthetic_range_rate_station  # noqa: E402
 
 OUT = HERE.parent / "results" / "phase_d5_dmc.json"
+OUT_D5R = HERE.parent / "results" / "phase_d5r_dmc_tuning.json"
+SIGMAS_D5R = (1e-6, 2e-6, 5e-6, 1e-5)
 MU_MOON = 4902.800066e9
 TOL = dict(rtol=1e-12, atol=1e-13)
 MEASUREMENTS = ("position", "range_rate")
@@ -123,6 +127,7 @@ def metrics(result, t, truth, elapsed, error, extra=None):
                pos_max_m=float(np.max(np.linalg.norm(d, axis=1))),
                first_pos_err_m=float(np.linalg.norm(x0[:3] - truth[0, :3])),
                nees_first=float(normalized_estimation_error_squared(x0[:6], truth[0], p0[:6, :6])),
+               mean_pos_trace_m2=float(np.mean(np.trace(sm.covariances[:, :3, :3], axis1=1, axis2=2))),
                elapsed_s=elapsed, **(extra or {}))
     if sm.state_estimates.shape[1] >= 9:
         v = ref[:, 3:6] / np.linalg.norm(ref[:, 3:6], axis=1)[:, None]
@@ -156,13 +161,41 @@ def one_seed(job):
         EKF_RTS_DMC=metrics(ekd, t, truth, t_ekd, e_ekd))
 
 
-def summarise(runs):
+def one_seed_d5r(job):
+    """D5-R: IS once and IS_DMC at every swept sigma, on D5's observations and x_guess."""
+    mi, ci, seed = job
+    measurement_type, case = MEASUREMENTS[mi], CASES[ci]
+    x_true0, t, truth, geo, clean = arc(measurement_type, case)
+    rng = np.random.default_rng([20261031, mi, ci, seed])
+    obs = noisy(clean, measurement_type, rng)
+    p0 = np.diag([SCALE[0] ** 2] * 3 + [SCALE[1] ** 2] * 3)
+    x_guess = x_true0 + rng.multivariate_normal(np.zeros(6), p0)
+    it, t_it, e_it = _timed(lambda: run_lunar_iterated_smoother(t, obs, x_guess, p0, geo, MU_MOON, 0.0, 0.0,
+                                                                _earth, _sun, **TOL))
+    out = dict(cell=f"{measurement_type}/{case}", seed=seed,
+               IS=metrics(None if it is None else it.result, t, truth, t_it, e_it,
+                          None if it is None else dict(status=it.status, iterations=it.iterations)))
+    for sigma in SIGMAS_D5R:
+        dmc = DMCOptions(sigma_mps2=sigma, tau_s=DMC.tau_s)
+        p9 = np.zeros((9, 9))
+        p9[:6, :6] = p0
+        p9[6:, 6:] = sigma**2 * np.eye(3)
+        args9 = (t, obs, np.concatenate([x_guess, np.zeros(3)]), p9, geo, MU_MOON, 0.0, 0.0, _earth, _sun)
+        itd, t_itd, e_itd = _timed(lambda: run_lunar_iterated_smoother(*args9, dmc=dmc, **TOL))
+        out[f"IS_DMC@{sigma:g}"] = metrics(None if itd is None else itd.result, t, truth, t_itd, e_itd,
+                                           None if itd is None else dict(status=itd.status,
+                                                                         iterations=itd.iterations))
+    return out
+
+
+def summarise(runs, names=("IS", "IS_DMC", "EKF_RTS_DMC")):
     out = {}
-    for name in ("IS", "IS_DMC", "EKF_RTS_DMC"):
+    for name in names:
         ok = [r[name] for r in runs if r[name]["ok"]]
         s = dict(n_ok=len(ok), n_failed=len(runs) - len(ok))
         if ok:
             s.update(pos_rms_m=float(np.sqrt(np.mean([o["pos_rms_m"] ** 2 for o in ok]))),
+                     pos_sigma_rms_m=float(np.sqrt(np.mean([o["mean_pos_trace_m2"] for o in ok]))),
                      mean_nees_first=float(np.mean([o["nees_first"] for o in ok])),
                      mean_elapsed_s=float(np.mean([o["elapsed_s"] for o in ok])))
             if "status" in ok[0]:
@@ -213,5 +246,73 @@ def main():
     print(json.dumps(gates, indent=1))
 
 
+def main_d5r():
+    names = ("IS",) + tuple(f"IS_DMC@{sigma:g}" for sigma in SIGMAS_D5R)
+    jobs = [(mi, ci, seed) for mi in range(len(MEASUREMENTS)) for ci in range(len(CASES)) for seed in range(SEEDS)]
+    with Pool(8) as pool:
+        runs = pool.map(one_seed_d5r, jobs, chunksize=1)
+    results = {}
+    for m in MEASUREMENTS:
+        for c in CASES:
+            cell = f"{m}/{c}"
+            cell_runs = [r for r in runs if r["cell"] == cell]
+            results[cell] = dict(summary=summarise(cell_runs, names), runs=cell_runs)
+            print(cell, json.dumps(results[cell]["summary"]), flush=True)
+
+    def in_band(v):
+        return v is not None and NEES_BAND[0] <= v <= NEES_BAND[1]
+
+    d5 = json.loads(OUT.read_text(encoding="utf-8"))["results"]
+    g0 = True
+    for cell, v in results.items():
+        old = {r["seed"]: r for r in d5[cell]["runs"]}
+        for r in v["runs"]:
+            for new_name, old_name in (("IS", "IS"), ("IS_DMC@5e-06", "IS_DMC")):
+                for key in ("pos_rms_m", "nees_first"):
+                    a, b = r[new_name][key], old[r["seed"]][old_name][key]
+                    g0 = g0 and abs(a - b) <= 1e-6 * abs(b)
+    mismodel = [f"{m}/{c}" for m in MEASUREMENTS for c in CASES[1:]]
+    per_sigma = {}
+    for sigma in SIGMAS_D5R:
+        name = f"IS_DMC@{sigma:g}"
+        g = {"matched": {}}
+        for m in MEASUREMENTS:
+            s_is, s_d = results[f"{m}/C0_matched"]["summary"]["IS"], results[f"{m}/C0_matched"]["summary"][name]
+            empirical = s_d["pos_rms_m"] / s_is["pos_rms_m"]
+            predicted = s_d["pos_sigma_rms_m"] / s_is["pos_sigma_rms_m"]
+            g["matched"][m] = dict(empirical_ratio=empirical, predicted_ratio=predicted,
+                                   empirical_over_predicted=empirical / predicted,
+                                   nees_first=s_d["mean_nees_first"], d5_g3_ratio_le_2=empirical <= 2.0)
+        g["G3R_matched_honest_cost"] = all(0.8 <= v["empirical_over_predicted"] <= 1.25 and in_band(v["nees_first"])
+                                           for v in g["matched"].values())
+        g["G4_mismodel_accuracy"] = all(
+            results[c]["summary"][name]["n_failed"] == 0
+            and results[c]["summary"][name]["pos_rms_m"] <= 0.5 * results[c]["summary"]["IS"]["pos_rms_m"]
+            for c in mismodel)
+        g["G5_mismodel_consistency"] = all(in_band(results[c]["summary"][name].get("mean_nees_first"))
+                                           for c in mismodel)
+        g["G6_convergence"] = all(results[c]["summary"][name]["n_failed"] == 0
+                                  and results[c]["summary"][name]["statuses"] == {"Converged": SEEDS}
+                                  for c in results)
+        g["all_pass"] = all(g[k] for k in ("G3R_matched_honest_cost", "G4_mismodel_accuracy",
+                                           "G5_mismodel_consistency", "G6_convergence"))
+        per_sigma[f"{sigma:g}"] = g
+    passing = [s for s, g in per_sigma.items() if g["all_pass"]]
+    recommended = (min(passing, key=lambda s: sum(results[f"{m}/C0_matched"]["summary"][f"IS_DMC@{s}"]["pos_rms_m"]
+                                                  for m in MEASUREMENTS)) if passing and g0 else None)
+    gates = dict(G0_d5_reproduction=g0, per_sigma=per_sigma, passing_sigmas=passing, recommended_sigma=recommended,
+                 decision="D5R_QUALIFIED" if recommended is not None else "D5R_NOT_QUALIFIED")
+    out = dict(predeclaration="studies/phase17/configs/phase_d5r_dmc_tuning_predeclaration.json",
+               gates_computed_here=gates, nees_band=NEES_BAND, seeds=SEEDS, sigmas=SIGMAS_D5R, tau_s=DMC.tau_s,
+               tolerances=TOL, results=results)
+    OUT_D5R.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+    print(json.dumps(gates, indent=1))
+
+
 if __name__ == "__main__":
-    main()
+    if "--d5r" in sys.argv:
+        for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMBA_NUM_THREADS"):
+            os.environ[var] = "1"  # inherited by the spawned workers
+        main_d5r()
+    else:
+        main()

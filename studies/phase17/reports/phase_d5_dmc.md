@@ -1,6 +1,6 @@
 # Phase D5: dynamic model compensation on the iterated extended Kalman smoother
 
-**Outcome as computed: `D5_NOT_QUALIFIED`.** G1, G2, G4 and G6 pass. G3 and G5 fail.
+**Outcome as computed: `D5_NOT_QUALIFIED`.** G1, G2, G4 and G6 pass. G3 and G5 fail. **D5-R (§7): `D5R_QUALIFIED` at σ = 2e-6 m/s².**
 
 - **G3 fails on its accuracy ratio.** On the matched control, DMC costs 2.7–6× position RMS against the predeclared ≤ 2.0×.
 - **G5 fails in one cell.** For position M1 the NEES is 3.99, just below the 4.19 band edge.
@@ -118,3 +118,66 @@ The run used 12 worker processes while another session's 12-process pool was als
 Rerunning position / C0 seed 0 alone gave an IS_DMC time of **10.9 s**, with bit-identical numbers (pos RMS 0.4205708656175265 for IS_DMC and 0.16506796627629902 for IS). The comparable IS time is about 4–5 s.
 
 The DMC path integrates a Python right-hand side with DOP853. It is roughly 2–3× slower than the IS path when it has the CPU to itself.
+
+## 7. D5-R: tuning sweep and a derived matched-control criterion
+
+**Outcome as computed: `D5R_QUALIFIED` at σ = 2e-6 m/s²**, the only one of the four swept values that passes. D5's own outcome stays `D5_NOT_QUALIFIED` as computed.
+
+- Predeclaration: [`phase_d5r_dmc_tuning_predeclaration.json`](../configs/phase_d5r_dmc_tuning_predeclaration.json). Committed at `86f3668`, before any D5-R number.
+- Driver: `phase_d5_dmc.py --d5r`.
+- Results: [`phase_d5r_dmc_tuning.json`](../results/phase_d5r_dmc_tuning.json).
+
+**What changed from D5.**
+
+- **σ is swept.** The values are 1e-6, 2e-6, 5e-6 and 1e-5 m/s², with τ = 1800 s.
+- **The cells are D5's.** Cells, seeds, observations and x_guess are the same as in D5.
+- **G3 is replaced by G3R.** G3R asks whether the matched-model accuracy loss is the loss the DMC covariance reports. It compares the empirical position-RMS ratio IS_DMC/IS with the ratio of their smoothed position σ over the arc, and requires empirical/predicted ∈ [0.8, 1.25] plus NEES in band. D5's ≤ 2.0 rule is still reported.
+
+**G0.** At σ = 5e-6, D5's IS and IS_DMC numbers are reproduced to ≤ 1e-6 relative: **PASS**.
+
+### Gates per σ
+
+| σ (m/s²) | G3R | G4 | G5 | G6 | All |
+|---|---|---|---|---|---|
+| 1e-6 | PASS | PASS | **FAIL** (pos/M1 9.38, pos/M2 20.06) | PASS | no |
+| **2e-6** | PASS | PASS | PASS | PASS | **yes** |
+| 5e-6 (= D5) | PASS | PASS | **FAIL** (pos/M1 3.99) | PASS | no |
+| 1e-5 | **FAIL** (pos/C0 NEES 4.13) | PASS | **FAIL** (pos/M1 3.71, pos/M2 3.92) | PASS | no |
+
+### Matched control: is the cost honest?
+
+| σ | Position: empirical / predicted ratio | Range rate: empirical / predicted ratio | D5's G3 (≤ 2.0) |
+|---|---|---|---|
+| 1e-6 | 2.03 / 2.07 = 0.98 | 5.41 / 5.48 = 0.99 | fail |
+| 2e-6 | 2.29 / 2.33 = 0.98 | 5.86 / 5.75 = 1.02 | fail |
+| 5e-6 | 2.73 / 2.75 = 0.99 | 6.03 / 5.85 = 1.03 | fail |
+| 1e-5 | 3.11 / 3.11 = 1.00 | 6.06 / 5.87 = 1.03 | fail |
+
+**The covariance predicts the matched-model cost to within 3% at every σ.** The cost is real and unavoidable at these σ, but it is not hidden: it is 2–3× for position measurements and 5.4–6× for range rate. Even σ = 1e-6 does not meet D5's 2.0× guess.
+
+### IS_DMC position RMS and NEES at σ = 2e-6
+
+| Cell | IS RMS (m) | IS_DMC RMS (m) | IS_DMC NEES |
+|---|---|---|---|
+| position / C0 | 0.168 | 0.383 | 4.54 |
+| position / M1 | 28.4 | 0.404 | 5.06 |
+| position / M2 | 4.16 | 0.385 | 7.24 |
+| range_rate / C0 | 0.0262 | 0.153 | 6.27 |
+| range_rate / M1 | 28.5 | 0.147 | 5.91 |
+| range_rate / M2 | 5.04 | 0.143 | 5.41 |
+
+### What the sweep shows
+
+**The consistency window is narrow.**
+
+- **Too small: σ = 1e-6.** The smoother is overconfident when the missing acceleration is larger than σ allows (pos/M2 NEES 20).
+- **Too large: σ ≥ 5e-6.** It turns conservative for position measurements.
+
+**Accuracy is not where the window bites.** G4 passes at every σ.
+
+**σ = 2e-6 equals the injected M1 push.** The passing tuning is the one matched to the size of the unmodelled acceleration. This is the expected DMC behaviour, but it means:
+
+- σ must be set from an a-priori estimate of the force-model error level, for example the size of the omitted terms;
+- 2e-6 is this experiment's value, not a universal default.
+
+**Runtime.** Runtimes in the JSON are again contaminated by another session's 12-process pool running at the same time. Section 6 gives the uncontaminated reference.
