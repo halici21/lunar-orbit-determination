@@ -1243,6 +1243,7 @@ measurement parameters):
 #### Next steps
 
 1. The 263 Doppler offset is not a data problem. It is the same along-track prediction error the range shows,
-   seen with mm/s sensitivity. Closing it belongs to the dynamics work (Phase E), not to Doppler editing.
+   seen with mm/s sensitivity. Closing it belongs to the force model (the Phase C dynamics candidates, e.g. box-wing SRP, albedo / IR), not to
+   Doppler editing. (Phase E is speed optimization; an earlier draft of this line said Phase E by mistake.)
 2. A future diagnostic of this kind must state its rules relative to the fit-day level, and must check that the
    reference orbit has no constant offset of its own before using it as the baseline.
