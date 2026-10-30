@@ -33,6 +33,7 @@ are included; they are ~1e-8 of the geometric term.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Callable
 
 import numpy as np
@@ -128,6 +129,9 @@ class BarycentricEphemeris:
     def body_position(self, name: str, t_s: float) -> np.ndarray:
         return self._ssb_state(SHAPIRO_BODY_CODES[name], t_s)[:3]
 
+    def body_velocity(self, name: str, t_s: float) -> np.ndarray:
+        return self._ssb_state(SHAPIRO_BODY_CODES[name], t_s)[3:6]
+
     def gm(self, name: str) -> float:
         if name not in self._gm:
             import spiceypy as spice
@@ -185,6 +189,24 @@ def shapiro_delay_s(model: LightTimeModel, eph: BarycentricEphemeris, r_tx: np.n
     return total, g_tx, g_rx
 
 
+def _shapiro_receive_epoch_partial(model, eph, r_tx, r_rx, t_rx_s, d12):
+    """Explicit dS/dt_rx with link endpoints fixed and delay bodies moving.
+
+    Each body's position is sampled at the RECEIVE epoch in the value model.
+    Its gradient is -(dS/dr_tx + dS/dr_rx); geometric LOS terms cancel.
+    """
+    total = 0.0
+    r12 = float(np.linalg.norm(d12))
+    for name in model.shapiro_bodies:
+        b = eph.body_position(name, t_rx_s)
+        a1, a2 = r_tx - b, r_rx - b
+        r1, r2 = float(np.linalg.norm(a1)), float(np.linalg.norm(a2))
+        k = 2.0 * eph.gm(name) / C_LIGHT_MPS**3
+        coefficient = k * (1.0/(r1+r2+r12) - 1.0/(r1+r2-r12))
+        total -= coefficient * float((a1/r1+a2/r2) @ eph.body_velocity(name, t_rx_s))
+    return total
+
+
 # ======================================================================
 # light-time legs
 # ======================================================================
@@ -202,6 +224,7 @@ class Leg:
     shapiro_grad_tx: np.ndarray
     shapiro_grad_rx: np.ndarray
     two_cycle: bool
+    shapiro_epoch_partial: float = 0.0  # explicit dS/dt_rx, endpoints fixed
 
     @property
     def light_time_s(self) -> float:
@@ -275,7 +298,8 @@ def _leg(model, eph, *, t_rx=None, rx_fn=None, rx_fixed=None, t_tx=None, tx_fn=N
     d = _relative(model, eph, t_tx_s, t_rx_s, tau, tx_m, rx_m)
     tx, rx = _to_frame(model, eph, t_tx_s, tx_m), _to_frame(model, eph, t_rx_s, rx_m)
     sh, g_tx, g_rx = shapiro_delay_s(model, eph, tx[:3], rx[:3], t_rx_s, d)
-    return Leg(t_tx_s, t_rx_s, tx, rx, d, float(np.linalg.norm(d)) / c, sh, g_tx, g_rx, cyc)
+    epoch_partial = _shapiro_receive_epoch_partial(model, eph, tx[:3], rx[:3], t_rx_s, d)
+    return Leg(t_tx_s, t_rx_s, tx, rx, d, float(np.linalg.norm(d)) / c, sh, g_tx, g_rx, cyc, epoch_partial)
 
 
 def exact_epoch_station_state(station_state: Callable, et0_s: float, t_grid_s, earth_pos_mci_m, earth_vel_mci_mps
@@ -339,6 +363,18 @@ class TwoWaySolution:
     tdb_minus_tt_rate: float
     media_group_s: float = 0.0     # Phase C5-I: up + down media group delay (range)
     media_phase_s: float = 0.0     # up + down media phase delay (counted Doppler)
+    interval_rate_curvature: float = 0.0  # d²(TDB-TT)/dt² at the rate epoch
+    rate_at_midpoint: bool = False
+    media_context: tuple | None = field(default=None, repr=False, compare=False)
+
+    @cached_property
+    def media_leg_partials(self):
+        if self.media_context is None:
+            return None
+        from .media_partials import leg_partials
+        media,site,et0=self.media_context
+        return (leg_partials(media,site,et0+self.downlink.t_rx_s,-self.downlink.rel,False),
+                leg_partials(media,site,et0+self.uplink.t_tx_s,self.uplink.rel,True))
 
     @property
     def t1_s(self) -> float:
@@ -370,6 +406,7 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         t3 = t3 + float(clock_offset_s)
     down = _leg(model, eph, t_rx=t3, rx_fixed=station_state(t3), tx_fn=sc.state, label="downlink")
     up = _leg(model, eph, t_rx=down.t_tx_s, rx_fixed=sc.state(down.t_tx_s), tx_fn=station_state, label="uplink")
+    curvature = 0.0
     if model.interval_time_scale != "TT":
         rate = 0.0
     elif model.full_station_time:
@@ -378,20 +415,41 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         # D_site(t3) - D_site(t1) = round trip x the rate at the interval midpoint (exact to ~1e-20 s)
         mid = t3 - 0.5 * (down.light_time_s + up.light_time_s)
         rate = float(_station_time.tdb_minus_tt_rate(eph.et0_s, mid, site))
+        # Difference the analytic rate in relative seconds, never large ET/TT
+        # epochs. Independent C2 checks compare this 1 s stencil with 10 s.
+        curvature = float((_station_time.tdb_minus_tt_rate(eph.et0_s, mid+1., site)
+                           - _station_time.tdb_minus_tt_rate(eph.et0_s, mid-1., site))/2.)
     else:
         rate = eph.tdb_minus_tt_rate(t3)
+        curvature = float((eph.tdb_minus_tt_rate(t3+1.) - eph.tdb_minus_tt_rate(t3-1.))/2.)
+    interval = dict(interval_rate_curvature=curvature, rate_at_midpoint=model.full_station_time,
+                    media_context=None if media is None else (media,media_site,eph.et0_s))
     if media is None:
-        return TwoWaySolution(t3, down, up, rate)
+        return TwoWaySolution(t3, down, up, rate, **interval)
     if media_site is None:
         raise ValueError("media delays need the station's media_site (lunar_od.media.MediaSite).")
     et0 = eph.et0_s
     gd, pd, _ = media.leg_delays(media_site, et0 + down.t_rx_s, -down.rel, uplink=False)
     gu, pu, _ = media.leg_delays(media_site, et0 + up.t_tx_s, up.rel, uplink=True)
-    return TwoWaySolution(t3, down, up, rate, (gd + gu) / C_LIGHT_MPS, (pd + pu) / C_LIGHT_MPS)
+    return TwoWaySolution(t3, down, up, rate, (gd + gu) / C_LIGHT_MPS, (pd + pu) / C_LIGHT_MPS, **interval)
 
 
 def _interval_scale(sol: TwoWaySolution) -> float:
     return 1.0 - sol.tdb_minus_tt_rate
+
+
+def _interval_tau_derivative(sol: TwoWaySolution) -> float:
+    """d[tau*(1-D'(epoch))]/d tau at fixed receive epoch.
+
+    Midpoint timing uses epoch=t3-tau/2; geocentric timing uses epoch=t3.
+    """
+    return _interval_scale(sol) + (0.5*sol.round_trip_s*sol.interval_rate_curvature
+                                  if sol.rate_at_midpoint else 0.0)
+
+
+def _measured_interval_receive_partial(sol: TwoWaySolution) -> float:
+    return (_interval_tau_derivative(sol)*_round_trip_receive_epoch_partial(sol)
+            - sol.round_trip_s*sol.interval_rate_curvature)
 
 
 def two_way_range_m(sol: TwoWaySolution) -> float:
@@ -402,7 +460,7 @@ def two_way_range_m(sol: TwoWaySolution) -> float:
     return value
 
 
-def _round_trip_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarray:
+def _two_way_event_partials(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarray:
     """d(round trip)/d[x0 (, K)] from the implicit uplink/downlink equations (receive epoch t3 fixed).
 
     Unknowns y = [t1, t2]; G_d = t3 - t2 - |r_st(t3) - r_sc(t2)|/c - S_d, G_u = t2 - t1 - |r_sc(t2) - r_st(t1)|/c - S_u.
@@ -420,20 +478,54 @@ def _round_trip_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarra
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx         # spacecraft is the uplink receiver
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx          # station transmitter position at t1
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc)]])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
     g_x = np.vstack([dGd_dr2 @ m, dGu_dr2 @ m])
     dy = np.linalg.solve(g_y, -g_x)
-    return -dy[0]
+    return dy
+
+
+def _round_trip_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarray:
+    return -_two_way_event_partials(sol,sc)[0]
+
+
+def _media_interval_state_partial(sol,sc,*,phase=False):
+    if sol.media_context is None:
+        # Empirical adapters can extend the sensitivity matrix beyond the
+        # six/seven-column history marker. Preserve every consumer column.
+        return np.zeros(sc.position_sensitivity(sol.downlink.t_tx_s).shape[1])
+    down,up=sol.media_leg_partials
+    dt1,dt2=_two_way_event_partials(sol,sc)
+    d,u=sol.downlink,sol.uplink
+    m=sc.position_sensitivity(d.t_tx_s)
+    los_down=m+d.tx[3:6,None]*dt2[None,:]
+    los_up=m+u.rx[3:6,None]*dt2[None,:]-u.tx[3:6,None]*dt1[None,:]
+    name="phase" if phase else "group"
+    return (getattr(down,name+"_los_gradient")@los_down
+            +getattr(up,name+"_los_gradient")@los_up+getattr(up,name+"_time_rate")*dt1)
+
+
+def _media_interval_clock_partial(sol,*,phase=False):
+    if sol.media_context is None:return 0.
+    down,up=sol.media_leg_partials
+    dt1,dt2=_two_way_receive_partials(sol)
+    d,u=sol.downlink,sol.uplink
+    los_down=d.tx[3:6]*dt2-d.rx[3:6]
+    los_up=u.rx[3:6]*dt2-u.tx[3:6]*dt1
+    name="phase" if phase else "group"
+    return float(getattr(down,name+"_los_gradient")@los_down+getattr(down,name+"_time_rate")
+                 +getattr(up,name+"_los_gradient")@los_up+getattr(up,name+"_time_rate")*dt1)
 
 
 def two_way_range_partial(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.ndarray:
-    return 0.5 * C_LIGHT_MPS * _interval_scale(sol) * _round_trip_partial(sol, sc)
+    return (0.5 * C_LIGHT_MPS * _interval_tau_derivative(sol) * _round_trip_partial(sol, sc)
+            +0.5*_media_interval_state_partial(sol,sc))
 
 
-def _round_trip_receive_epoch_partial(sol: TwoWaySolution) -> float:
+def _two_way_receive_partials(sol: TwoWaySolution) -> np.ndarray:
     """d(round trip)/d t3 [s/s] from the same implicit equations: dG_d/dt3 = 1 - (los_d/c + dS_d/dr_rx) . v_st(t3),
-    dG_u/dt3 = 0; round trip = t3 - t1, so d/dt3 = 1 - dt1/dt3. The interval scale's own epoch dependence (~1e-10
-    relative) is neglected, as in the state partials."""
+    dG_u/dt3 = 0; round trip = t3 - t1, so d/dt3 = 1 - dt1/dt3. Explicit Shapiro-body
+    motion enters the leg equations; the measured TT interval factor is
+    differentiated separately by _measured_interval_receive_partial."""
     c = C_LIGHT_MPS
     d, u = sol.downlink, sol.uplink
     los_d = d.rel / np.linalg.norm(d.rel)
@@ -443,15 +535,20 @@ def _round_trip_receive_epoch_partial(sol: TwoWaySolution) -> float:
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc)]])
-    g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3), 0.0])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
+    g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3) - d.shapiro_epoch_partial, 0.0])
     dy = np.linalg.solve(g_y, -g_t3)
-    return 1.0 - float(dy[0])
+    return dy
+
+
+def _round_trip_receive_epoch_partial(sol: TwoWaySolution) -> float:
+    return 1.0-float(_two_way_receive_partials(sol)[0])
 
 
 def two_way_range_clock_partial(sol: TwoWaySolution) -> float:
     """d(two-way range)/d(station clock offset b) [m/s]: the receive tag is read as t3 + b."""
-    return 0.5 * C_LIGHT_MPS * _interval_scale(sol) * _round_trip_receive_epoch_partial(sol)
+    return (0.5 * C_LIGHT_MPS * _measured_interval_receive_partial(sol)
+            +0.5*_media_interval_clock_partial(sol))
 
 
 def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Callable, sc: SpacecraftHistory,
@@ -473,10 +570,14 @@ def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Call
         value = value + k * (b.media_phase_s - a.media_phase_s)
     partial = None
     if with_partial:
-        partial = k * (_interval_scale(b) * _round_trip_partial(b, sc) - _interval_scale(a) * _round_trip_partial(a, sc))
+        partial = k * (_interval_tau_derivative(b) * _round_trip_partial(b, sc)
+                       - _interval_tau_derivative(a) * _round_trip_partial(a, sc))
+        partial += .5/tc*(_media_interval_state_partial(b,sc,phase=True)
+                           -_media_interval_state_partial(a,sc,phase=True))
     if with_clock_partial:
-        clock = k * (_interval_scale(b) * _round_trip_receive_epoch_partial(b)
-                     - _interval_scale(a) * _round_trip_receive_epoch_partial(a))
+        clock = k * (_measured_interval_receive_partial(b) - _measured_interval_receive_partial(a))
+        clock += .5/tc*(_media_interval_clock_partial(b,phase=True)
+                         -_media_interval_clock_partial(a,phase=True))
         return value, partial, (a, b), clock
     return value, partial, (a, b)
 
@@ -505,7 +606,7 @@ def solve_delta_dor(t_obs_s: float, station_a_state_at_obs: np.ndarray, station_
     return DeltaDorSolution(float(t_obs_s), a, b)
 
 
-def delta_dor_partial(sol: DeltaDorSolution, sc: SpacecraftHistory) -> np.ndarray:
+def _delta_dor_event_partials(sol: DeltaDorSolution, sc: SpacecraftHistory) -> np.ndarray:
     """d(t_B - t_obs)/d[x0 (, K)]. Unknowns y = [t_tx, t_B];
     G_A = t_obs - t_tx - |r_A - r_sc(t_tx)|/c - S_A, G_B = t_B - t_tx - |r_B(t_B) - r_sc(t_tx)|/c - S_B."""
     c = C_LIGHT_MPS
@@ -518,9 +619,28 @@ def delta_dor_partial(sol: DeltaDorSolution, sc: SpacecraftHistory) -> np.ndarra
     dGb_drsc = (los_b / c) - b.shapiro_grad_tx
     dGb_drb = -(los_b / c) - b.shapiro_grad_rx
     g_y = np.array([[-1.0 + float(dGa_drsc @ v_sc), 0.0],
-                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b)]])
+                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b) - b.shapiro_epoch_partial]])
     g_x = np.vstack([dGa_drsc @ m, dGb_drsc @ m])
-    return np.linalg.solve(g_y, -g_x)[1]
+    return np.linalg.solve(g_y, -g_x)
+
+
+def delta_dor_partial(sol, sc: SpacecraftHistory) -> np.ndarray:
+    """Derivative of a geometric solution or of the full measured value.
+
+    Pass DeltaDorStationTime for station-time/media corrections; the legacy
+    geometric DeltaDorSolution remains a distinct, supported value model.
+    """
+    if not isinstance(sol,DeltaDorStationTime):
+        return _delta_dor_event_partials(sol,sc)[1]
+    geometric=sol.solution;a,b=geometric.leg_a,geometric.leg_b
+    dtx,dtb=_delta_dor_event_partials(geometric,sc)
+    result=(1.-sol.station_rates[1])*dtb
+    if sol.media_context is not None:
+        pa,pb=sol.media_leg_partials;m=sc.position_sensitivity(a.t_tx_s)
+        la=m+a.tx[3:6,None]*dtx[None,:]
+        lb=m+b.tx[3:6,None]*dtx[None,:]-b.rx[3:6,None]*dtb[None,:]
+        result+=(pb.group_los_gradient@lb+pb.group_time_rate*dtb-pa.group_los_gradient@la)/C_LIGHT_MPS
+    return result
 
 
 @dataclass(frozen=True)
@@ -531,6 +651,16 @@ class DeltaDorStationTime:
     delay_s: float                     # measured delay: tag at B minus tag at A
     station_time_correction_s: float   # -[D_B(t_B) - D_A(t_A)], D = TDB - TT at each site (0 under DELTET)
     clock_term_s: float                # b_A - b_B
+    station_rates: tuple = (0.,0.)
+    media_context: tuple | None = field(default=None,repr=False,compare=False)
+
+    @cached_property
+    def media_leg_partials(self):
+        if self.media_context is None:return None
+        from .media_partials import leg_partials
+        model,sites,et0=self.media_context;a,b=self.solution.leg_a,self.solution.leg_b
+        return (leg_partials(model,sites[0],et0+a.t_rx_s,-a.rel,False),
+                leg_partials(model,sites[1],et0+b.t_rx_s,-b.rel,False))
 
 
 def delta_dor_station_time(t_obs_s: float, station_a_state: Callable, station_b_state: Callable,
@@ -550,12 +680,15 @@ def delta_dor_station_time(t_obs_s: float, station_a_state: Callable, station_b_
     t_a = float(t_obs_s) + b_a if b_a else float(t_obs_s)
     sol = solve_delta_dor(t_a, np.asarray(station_a_state(t_a), dtype=float), station_b_state, sc, eph, model)
     corr = 0.0
+    rates=(0.,0.)
     if model.full_station_time:
         site_a, site_b = sites
         if site_a is None or site_b is None:
             raise ValueError("station_time='FULL_TOPOCENTRIC' needs both stations' sites.")
         corr = -(float(_station_time.tdb_minus_tt(eph.et0_s, sol.leg_b.t_rx_s, site_b))
                  - float(_station_time.tdb_minus_tt(eph.et0_s, t_a, site_a)))
+        rates=(float(_station_time.tdb_minus_tt_rate(eph.et0_s,t_a,site_a)),
+               float(_station_time.tdb_minus_tt_rate(eph.et0_s,sol.leg_b.t_rx_s,site_b)))
     clock = b_a - b_b
     delay = sol.differential_delay_s
     if corr:
@@ -570,10 +703,11 @@ def delta_dor_station_time(t_obs_s: float, station_a_state: Callable, station_b_
         ga, _, _ = media.leg_delays(ma, eph.et0_s + sol.leg_a.t_rx_s, -sol.leg_a.rel, uplink=False)
         gb, _, _ = media.leg_delays(mb, eph.et0_s + sol.leg_b.t_rx_s, -sol.leg_b.rel, uplink=False)
         delay = delay + (gb - ga) / C_LIGHT_MPS
-    return DeltaDorStationTime(sol, delay, corr, clock)
+    return DeltaDorStationTime(sol, delay, corr, clock,rates,
+                                None if media is None else (media,media_sites,eph.et0_s))
 
 
-def delta_dor_clock_partials(sol: DeltaDorSolution) -> tuple[float, float]:
+def _delta_dor_receive_partials(sol: DeltaDorSolution) -> np.ndarray:
     """(d delay/d b_A, d delay/d b_B) [s/s]. With A's epoch moving, dG_A/dt_obs = 1 - (los_a/c + dS_A/dr_A) . v_A;
     d(measured)/d b_A = d(t_B - t_obs)/dt_obs + 1 = dt_B/dt_obs, and d/d b_B = -1."""
     c = C_LIGHT_MPS
@@ -585,10 +719,25 @@ def delta_dor_clock_partials(sol: DeltaDorSolution) -> tuple[float, float]:
     dGb_drsc = (los_b / c) - b.shapiro_grad_tx
     dGb_drb = -(los_b / c) - b.shapiro_grad_rx
     g_y = np.array([[-1.0 + float(dGa_drsc @ v_sc), 0.0],
-                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b)]])
-    g_t = np.array([1.0 - float(((los_a / c) + a.shapiro_grad_rx) @ v_a), 0.0])
+                    [-1.0 + float(dGb_drsc @ v_sc), 1.0 + float(dGb_drb @ v_b) - b.shapiro_epoch_partial]])
+    g_t = np.array([1.0 - float(((los_a / c) + a.shapiro_grad_rx) @ v_a) - a.shapiro_epoch_partial, 0.0])
     dy = np.linalg.solve(g_y, -g_t)
-    return float(dy[1]), -1.0
+    return dy
+
+
+def delta_dor_clock_partials(sol) -> tuple[float, float]:
+    if not isinstance(sol,DeltaDorStationTime):
+        return float(_delta_dor_receive_partials(sol)[1]),-1.
+    geo=sol.solution;a,b=geo.leg_a,geo.leg_b
+    dtx,dtb=_delta_dor_receive_partials(geo)
+    result=(1.-sol.station_rates[1])*dtb+sol.station_rates[0]
+    if sol.media_context is not None:
+        pa,pb=sol.media_leg_partials
+        la=a.tx[3:6]*dtx-a.rx[3:6]
+        lb=b.tx[3:6]*dtx-b.rx[3:6]*dtb
+        result+=(pb.group_los_gradient@lb+pb.group_time_rate*dtb
+                  -pa.group_los_gradient@la-pa.group_time_rate)/C_LIGHT_MPS
+    return float(result),-1.
 
 
 def one_way_range(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,

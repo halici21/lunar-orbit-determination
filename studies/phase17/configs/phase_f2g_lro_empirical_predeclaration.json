@@ -1,0 +1,25 @@
+{
+ "phase": "Phase F2g - empirical once-per-revolution accelerations (N = 300), two-day arc + one-day prediction",
+ "written": "2026-10-25, before any F2g number; F2f (N = 300 without empirical accelerations) still running",
+ "authorisation": "owner 2026-10-25: 'Improve the dynamics model: N=300, empirical once-per-revolution accelerations and momentum desaturations from the SFF files; report the SFF files before downloading'",
+ "sff_finding": "the archive's SFF directory (174 files) holds thruster-maneuver calibrations only (LOI, MCC, MOI, SK); there are no momentum-desaturation records. In the window: MOI1 burn 2009-258 19:32:26-19:35:30 UTC (before the reference SPK start and the arc), MOI2 2009-268, MOI3 269, MOI4 280, SK02a/b 296: none inside the 2009-09-16 23:57 to 2009-09-19 span. MOI1 reports an average spacecraft mass of 1279.93 kg. Downloaded (reported first): the 6 txt + 6 lbl files of these maneuvers (~35 KB) to lro_data/sff",
+ "model": {
+  "empirical": "a_emp = (C_T cos u + S_T sin u) T + (C_N cos u + S_N sin u) N, u = argument of latitude in J2000, T = N x R, N = h/|h|; 4 parameters, constant over the arc, prior N(0, 1e-8 m/s^2) each",
+  "implementation": "study-level (frozen dynamics.py unchanged): production propagate_state's own RHS via dynamics._build_state_rhs plus a_emp, integrated with dynamics._shadow_contact_times / _integrate_segmented (DOP853, rtol 1e-10)",
+  "rest": "F2e/F2f unchanged: GL1800F N = 300, Earth/Sun DE440, cannonball SRP (K prior 0.010 +- 0.005), range + Doppler (A1 bound), range-bias priors, global Doppler bias, A1 FD sensitivities extended by 4 empirical columns (step 1e-9 m/s^2), parallel workers"
+ },
+ "starts": "S1 = F2e's S1 (F2d solution); S2 = S1 + (100 m, 0.1 m/s) via F2f's arc continuation (one-day stage first)",
+ "gates": {
+  "G0_equivalence": "with the empirical parameters at zero, the study propagation equals production propagate_state(method DOP853, shadow_events True) bit for bit on the two-day grid (N = 300, F2d solution state)",
+  "G4e_partials": "the empirical-parameter range and Doppler partials (from the FD sensitivity history through the light-time partials) agree with direct central differences of the full measurement function (step 1e-9 m/s^2) to <= 1e-3 relative per column on 20 sampled measurements (N = 300)",
+  "G1_convergence": "S1 and the two-day stage of S2 end Converged or STATIONARY",
+  "G2_start_independence": "S1 and S2 agree to <= 1 m in position",
+  "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s for both"
+ },
+ "reported_not_gated": "vs F2e (N=200) and F2f (N=300, no empirical): post-fit RMS, K_SRP, empirical estimates and sigmas, Kiruna pass means, RIC vs LOLA, 2009-262 prediction growth",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2g_lro_empirical.json",
+  "checks": "studies/phase17/results/phase_f2g_checks.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 13"
+ }
+}

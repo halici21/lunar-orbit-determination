@@ -25,6 +25,13 @@ K0 = 0.01
 SIGMA_M = 1.0
 RTOL, ATOL = 1e-10, 1e-11
 GRID_S = 20.0
+QUALIFIED_GRID_S = 10.0  # 20 s exceeded the LRO counted-Doppler numerical budget.
+#: G4e root cause (2026-10-27): at rtol 1e-10 the central-difference dx/d(empirical) columns were 14-76 % off a
+#: converged reference and dx/dK 4.3 % off; a +/-1e-9 m/s^2 perturbation moves LRO only 0.1-0.7 m, the size of
+#: the adaptive integrator's run-to-run error. The qualified path integrates at 1e-12 and steps the empirical
+#: accelerations by 1e-8 m/s^2 (gate G4e-R, phase_f2_g4er_checks.py). RTOL/ATOL/EMP_FD_STEP stay legacy.
+QUALIFIED_RTOL, QUALIFIED_ATOL = 1e-12, 1e-13
+QUALIFIED_EMP_FD_STEP = 1e-8
 EPOCH_LEAD_S = 120.0
 MAX_ITER = 30
 OFFSET = np.array([1000.0, 1000.0, 1000.0, 1.0, 1.0, 1.0])
@@ -36,17 +43,97 @@ FD_STEPS = np.array([10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2, 1e-3])
 SIGMA_DOP = 2e-3
 #: Phase F2e A1: observed |range rate| above this is physically impossible for LRO seen from Earth.
 MAX_DOPPLER_MPS = 3000.0
+#: Parallel evaluation: measurements per worker task.
+MEASURE_CHUNK = 300
+
+# ----------------------------------------------------------------------
+# Parallel evaluation (behaviour-preserving): each worker process holds its own Problem, built once by the
+# initializer with the same arguments as the main one, and runs exactly the serial code on its share.
+# ----------------------------------------------------------------------
+_WORKER: dict = {}
+
+
+def _worker_init(nmax, doppler, days, n_emp=0, grid_s=GRID_S, numerics=None):
+    import warnings
+    warnings.simplefilter("ignore")
+    _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=grid_s, numerics=numerics)
+
+
+def _worker_propagate(q):
+    return _WORKER["pb"].propagate(q[:6], q[6], sensitivity=False, emp=q[7:] if len(q) > 7 else None)
+
+
+# ----------------------------------------------------------------------
+# Phase F2g: empirical once-per-revolution accelerations (study-level model; frozen dynamics.py unchanged)
+# ----------------------------------------------------------------------
+#: a_emp = (C_T cos u + S_T sin u) T + (C_N cos u + S_N sin u) N, u = argument of latitude in J2000,
+#: T = N x R (along-track), N = h / |h| (cross-track).
+EMP_NAMES = ("C_T", "S_T", "C_N", "S_N")
+EMP_FD_STEP = 1e-9      # m/s^2
+EMP_SCALE = 1e-9        # m/s^2, LM column scale
+EMP_PRIOR_SIGMA = 1e-8  # m/s^2
+
+
+def empirical_acceleration(y, emp) -> np.ndarray:
+    r, v = np.asarray(y[:3], float), np.asarray(y[3:6], float)
+    h = np.cross(r, v)
+    n_hat = h / np.linalg.norm(h)
+    r_hat = r / np.linalg.norm(r)
+    t_hat = np.cross(n_hat, r_hat)
+    node = np.cross(np.array([0.0, 0.0, 1.0]), h)
+    node /= np.linalg.norm(node)
+    cos_u = float(node @ r_hat)
+    sin_u = float(np.cross(node, r_hat) @ n_hat)
+    return (emp[0] * cos_u + emp[1] * sin_u) * t_hat + (emp[2] * cos_u + emp[3] * sin_u) * n_hat
+
+
+def _spacecraft_history(grid, hist, n_emp: int):
+    """SpacecraftHistory whose position sensitivity also carries the empirical-parameter columns (F2g): the
+    light-time partials (_round_trip_partial) are linear in that matrix, so extra columns pass straight through."""
+    from lunar_od import relativistic_light_time as R
+    if n_emp == 0 or hist.shape[1] <= 48:
+        return R.SpacecraftHistory(grid, hist)
+
+    class _WithEmpirical(R.SpacecraftHistory):
+        def __init__(self):
+            super().__init__(grid, hist[:, :48])
+            self.extra = hist[:, 48:48 + 6 * n_emp]
+
+        def position_sensitivity(self, t_s):
+            base = super().position_sensitivity(t_s)
+            cols = [R._interp_state(self.t_grid, self.extra[:, 6 * i:6 * i + 6], t_s)[:3].reshape(3, 1)
+                    for i in range(n_emp)]
+            return np.hstack([base] + cols)
+
+    return _WithEmpirical()
+
+
+def _worker_measure(task):
+    kind, hist, lo, hi, partials = task
+    pb = _WORKER["pb"]
+    if kind == "range":
+        return pb.computed(hist, partials, idx=range(lo, hi))
+    return pb.computed_doppler(hist, partials, idx=range(lo, hi))
 
 
 class Problem:
-    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,)):
+    def __init__(self, nmax: int, doppler: bool = False, days: tuple = (F.DAY_DIR,), n_emp: int = 0,
+                 grid_s: float | None = None, numerics: dict | None = None):
         import spiceypy as spice
         from lunar_od import relativistic_light_time as R
         from lunar_od import station_time as ST
         from lunar_od.ephemeris import sample_moon_centered_ephemeris
         from lunar_od.gravity_model_loader import load_lunar_gravity_model
         from lunar_od.project_paths import gravity_data_root
-        self.data = Path(F.REPO.parent / "lro_data")
+        from lunar_od.project_paths import project_root
+        self.data = project_root() / "lro_data"
+        self.nmax = nmax
+        self.n_emp = int(n_emp)
+        self.grid_s = _grid_for_backend() if grid_s is None else float(grid_s)
+        self.numerics = dict(_numerics_for_backend() if numerics is None else numerics)
+        self.rtol, self.atol = float(self.numerics["rtol"]), float(self.numerics["atol"])
+        self.emp_fd_step = float(self.numerics["emp_fd_step"])
+        self.pool = None
         self.days = tuple(days)
         self.rows = []
         for day in self.days:                    # F2e: several day directories in one arc
@@ -80,7 +167,7 @@ class Problem:
             t_all += [min(d["tm"] - d["tc"] for d in self.dop), max(d["tm"] + d["tc"] for d in self.dop)]
         self.t_epoch = min(t_all) - EPOCH_LEAD_S
         self.t_end = max(t_all) + 10.0
-        self.grid = np.arange(self.t_epoch, self.t_end + GRID_S, GRID_S)
+        self.grid = np.arange(self.t_epoch, self.t_end + self.grid_s, self.grid_s)
         eph_t = np.arange(self.t_epoch - 600.0, self.t_end + 600.0, 60.0)
         self.eph = sample_moon_centered_ephemeris(s.et0, eph_t)
         self.mu_e = float(spice.bodvrd("399", "GM", 1)[1][0]) * 1e9
@@ -94,41 +181,119 @@ class Problem:
         self.media = MediaModel(uplink_hz=F.UPLINK_HZ, downlink_hz=F.DOWNLINK_HZ)
         self.R = R
 
-    def propagate(self, x0, k, t_eval=None, sensitivity=True):
+    def propagate(self, x0, k, t_eval=None, sensitivity=True, emp=None):
         from lunar_od.dynamics import PropagationProfile, propagate_state, propagate_state_with_k_sensitivity
         from lunar_od.srp import SRPOptions
-        kw = dict(srp=SRPOptions(k_srp_m2_per_kg=float(k)), rtol=RTOL, atol=ATOL, harmonic_model=self.model,
+        kw = dict(srp=SRPOptions(k_srp_m2_per_kg=float(k)), rtol=self.rtol, atol=self.atol, harmonic_model=self.model,
                   harmonic_epoch_et0=self.setup.et0, **PropagationProfile().propagator_kwargs())
         t = self.grid if t_eval is None else t_eval
         args = (t, np.asarray(x0, float), self.mu_m, self.mu_e, self.mu_s, self.eph.earth_position,
                 self.eph.sun_position)
+        if emp is not None:
+            return self._propagate_empirical(np.asarray(t, float), np.asarray(x0, float), float(k), emp)
         if sensitivity:
             return np.asarray(propagate_state_with_k_sensitivity(*args, harmonic_stm_opt_in=True, **kw))
         return np.asarray(propagate_state(*args, **kw))
 
-    def fd_history(self, x0, k) -> np.ndarray:
-        """A1: [x, Phi (column-major), dx/dK] from central differences of the 6-state propagator."""
-        base = self.propagate(x0, k, sensitivity=False)
+    def _propagate_empirical(self, t, x0, k, emp):
+        """F2g: production propagate_state's own RHS (dynamics._build_state_rhs) plus the empirical acceleration,
+        integrated with production's shadow-event segmentation (DOP853). With emp = 0 this reproduces
+        propagate_state(method='DOP853', shadow_events=True) bit for bit (gate G0)."""
+        from lunar_od import dynamics as dyn
+        from lunar_od.srp import SRPOptions
+        srp = SRPOptions(k_srp_m2_per_kg=k)
+        rhs, get_sun = dyn._build_state_rhs(t, self.mu_m, self.mu_e, self.mu_s, self.eph.earth_position,
+                                            self.eph.sun_position, 0.0, 0.0, "indirect", self.model, None,
+                                            self.setup.et0, srp)
+        e = np.asarray(emp, float)
+
+        def rhs_e(tt, y):
+            out = np.array(rhs(tt, y), dtype=float, copy=True)
+            out[3:6] += empirical_acceleration(y, e)
+            return out
+
+        cuts = dyn._shadow_contact_times(rhs_e, t, x0, get_sun, srp, self.rtol, self.atol)
+        return np.asarray(dyn._integrate_segmented(t, x0, rhs_e, self.rtol, self.atol, "DOP853", cuts,
+                                                   "F2g empirical propagation",
+                                                   contact_check=dyn._shadow_contact_check(get_sun, srp)))
+
+    def emp_of(self, p):
+        return p[11:11 + self.n_emp] if self.n_emp else None
+
+    def propagate_p(self, p, t_eval=None):
+        """6-state history for a full parameter vector (state, K and, F2g, the empirical accelerations)."""
+        return self.propagate(p[:6], p[6], t_eval=t_eval, sensitivity=False, emp=self.emp_of(p))
+
+    def fd_history(self, x0, k, emp=None, keep: list | None = None) -> np.ndarray:
+        """A1: [x, Phi (column-major), dx/dK (, dx/d emp_i)] from central differences of the 6-state propagator.
+
+        The propagations (base, then plus/minus per parameter; plus only for K at its bound) are
+        independent; with a worker pool attached they run in parallel, otherwise in this order serially.
+        ``keep``, when given, receives (parameter vector, history) of every propagation (gate G4e-R oracle).
+        """
+        q0 = np.concatenate([np.asarray(x0, float), [float(k)]] + ([np.asarray(emp, float)] if emp is not None
+                                                                  else []))
+        steps = list(FD_STEPS) + [self.emp_fd_step] * (0 if emp is None else len(emp))
+        qs, plan = [q0], []
+        for j in range(len(steps)):
+            hj = steps[j]
+            plus = q0.copy()
+            plus[j] += hj
+            qs.append(plus)
+            # K must stay non-negative (SRPOptions refuses K < 0): forward difference near the bound
+            forward = j == 6 and float(k) < hj
+            if not forward:
+                minus = q0.copy()
+                minus[j] -= hj
+                qs.append(minus)
+            plan.append((j, hj, forward))
+        if self.pool is not None:
+            hists = list(self.pool.map(_worker_propagate, qs))
+        else:
+            hists = [self.propagate(q[:6], q[6], sensitivity=False, emp=q[7:] if len(q) > 7 else None)
+                     for q in qs]
+        if keep is not None:
+            keep.extend(zip(qs, hists))
+        base = hists[0]
         n = base.shape[0]
-        cols = np.zeros((n, 6, 7))
-        for j in range(7):
-            q = np.concatenate([np.asarray(x0, float), [float(k)]])
-            hj = FD_STEPS[j]
-            q[j] += hj
-            plus = self.propagate(q[:6], q[6], sensitivity=False)
-            if j == 6 and float(k) < hj:
-                # K must stay non-negative (SRPOptions refuses K < 0): forward difference near the bound
+        cols = np.zeros((n, 6, len(steps)))
+        pos = 1
+        for j, hj, forward in plan:
+            plus = hists[pos]
+            pos += 1
+            if forward:
                 cols[:, :, j] = (plus - base) / hj
                 continue
-            q[j] -= 2.0 * hj
-            minus = self.propagate(q[:6], q[6], sensitivity=False)
+            minus = hists[pos]
+            pos += 1
             cols[:, :, j] = (plus - minus) / (2.0 * hj)
         phi = cols[:, :, :6]
-        return np.hstack([base, phi.transpose(0, 2, 1).reshape(n, 36), cols[:, :, 6]])
+        extra = [cols[:, :, j] for j in range(7, len(steps))]
+        return np.hstack([base, phi.transpose(0, 2, 1).reshape(n, 36), cols[:, :, 6]] + extra)
+
+    def attach_pool(self, workers: int) -> None:
+        """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
+        self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
+                                        initargs=(self.nmax, self.use_doppler, self.days, self.n_emp, self.grid_s,
+                                                  self.numerics))
+
+    def close_pool(self) -> None:
+        if self.pool is not None:
+            self.pool.shutdown()
+            self.pool = None
+
+    def _parallel_measure(self, kind: str, hist, partials: bool, n: int):
+        tasks = [(kind, hist, lo, min(lo + MEASURE_CHUNK, n), partials) for lo in range(0, n, MEASURE_CHUNK)]
+        parts = list(self.pool.map(_worker_measure, tasks))
+        comp = np.concatenate([c for c, _ in parts])
+        jac = np.concatenate([j for _, j in parts]) if partials else None
+        return comp, jac
 
     def computed(self, hist, partials=True, idx=None):
+        if idx is None and self.pool is not None:
+            return self._parallel_measure("range", hist, partials, len(self.rows))
         R, s = self.R, self.setup
-        sc = R.SpacecraftHistory(self.grid, hist)
+        sc = _spacecraft_history(self.grid, hist, self.n_emp)
         idx = range(len(self.rows)) if idx is None else idx
         comp, jac = [], []
         for i in idx:
@@ -140,12 +305,14 @@ class Problem:
                 jac.append(R.two_way_range_partial(sol, sc))
         return np.array(comp), (np.array(jac) if partials else None)
 
-    def computed_doppler(self, hist, partials=True):
+    def computed_doppler(self, hist, partials=True, idx=None):
         """F2d: counted Doppler of every interval [m/s] and its partials (7 columns)."""
+        if idx is None and self.pool is not None:
+            return self._parallel_measure("doppler", hist, partials, len(self.dop))
         R, s = self.R, self.setup
-        sc = R.SpacecraftHistory(self.grid, hist)
+        sc = _spacecraft_history(self.grid, hist, self.n_emp)
         comp, jac = [], []
-        for d in self.dop:
+        for d in (self.dop if idx is None else [self.dop[i] for i in idx]):
             pad = d["pad"]
             val, part, _ = R.counted_doppler(d["tm"], d["tc"], s.tide[pad], sc, s.eph, R.DSN_C2_LIGHT_TIME_MODEL,
                                              with_partial=partials, site=s.sites[pad], media=d["media"],
@@ -157,18 +324,27 @@ class Problem:
 
     @property
     def n_par(self) -> int:
-        return 11 if self.use_doppler else 10
+        """[x0 (6), K, range biases (3)] (+ Doppler bias, F2d) (+ empirical accelerations, F2g at 11..)."""
+        if self.n_emp and not self.use_doppler:
+            raise ValueError("the empirical-acceleration layout (indices 11..) assumes the Doppler bias at 10")
+        return (11 if self.use_doppler else 10) + self.n_emp
+
+    def _dyn_columns(self, hh, jac, w=1.0):
+        """Place the dynamical partials: x0 and K at 0..6, the empirical accelerations (F2g) at 11.."""
+        hh[:, :7] = jac[:, :7] * w
+        if self.n_emp:
+            hh[:, 11:11 + self.n_emp] = jac[:, 7:7 + self.n_emp] * w
 
     def residual(self, p, partials=True):
         """Range rows [m] followed (F2d) by Doppler rows scaled to range units by SIGMA_M / SIGMA_DOP."""
-        hist = self.fd_history(p[:6], p[6]) if partials else self.propagate(p[:6], p[6], sensitivity=False)
+        hist = self.fd_history(p[:6], p[6], self.emp_of(p)) if partials else self.propagate_p(p)
         comp, jac = self.computed(hist, partials)
         res = self.obs - comp - p[7:10][self.pad_index]
         nr = len(self.rows)
         h = None
         if partials:
             h = np.zeros((nr, self.n_par))
-            h[:, :7] = jac
+            self._dyn_columns(h, jac)
             h[np.arange(nr), 7 + self.pad_index] = 1.0
         if self.use_doppler:
             w = SIGMA_M / SIGMA_DOP
@@ -177,16 +353,134 @@ class Problem:
             res = np.concatenate([res, (obs_d - cd - p[10]) * w])
             if partials:
                 hd = np.zeros((len(self.dop), self.n_par))
-                hd[:, :7] = jd * w
+                self._dyn_columns(hd, jd, w)
                 hd[:, 10] = w
                 h = np.vstack([h, hd])
         return res, h, hist
 
 
+# The new numerical path is explicit in every result; legacy is reproduction-only.
+GN_DECREMENT_TOL = 1e-2  # Historical F2i legacy gate only.
+SOLVER_BACKEND = "trf"
+
+
+def _grid_for_backend(backend=None):
+    return GRID_S if (SOLVER_BACKEND if backend is None else backend) == "legacy" else QUALIFIED_GRID_S
+
+
+def _numerics_for_backend(backend=None) -> dict:
+    """Integration tolerances and empirical FD step: legacy reproduces the historical records, TRF is qualified."""
+    if (SOLVER_BACKEND if backend is None else backend) == "legacy":
+        return dict(rtol=RTOL, atol=ATOL, emp_fd_step=EMP_FD_STEP)
+    return dict(rtol=QUALIFIED_RTOL, atol=QUALIFIED_ATOL, emp_fd_step=QUALIFIED_EMP_FD_STEP)
+
+
+def numerical_identity():
+    """Prevent a merge from borrowing gates from another numerical code state.
+
+    This is a code guard, not a complete force/data/run manifest. In particular
+    it must include media derivatives and the study readers used by this solve.
+    """
+    import hashlib
+    paths = sorted((F.REPO / "src/lunar_od").glob("*.py"))
+    paths += [Path(__file__), HERE / "phase_f2g_checks.py", HERE / "phase_f2_g4er_checks.py",
+              HERE / "phase_f1_lro_residuals.py", HERE / "phase_f1c_lro_doppler.py"]
+    return {str(p.relative_to(F.REPO)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+
+
+def _require_current_runs(runs):
+    if any(run.get("numerical_identity") != numerical_identity() for run in runs.values()):
+        raise ValueError("F2 parts do not match the current numerical code; rerun the parts before merging.")
+
+
+def _certified_stationary(run):
+    """Legacy labels are historical evidence, not the new convergence gate."""
+    return (run.get("solver") == "trf" and run.get("status") == "STATIONARY"
+            and bool((run.get("numerical_diagnostics") or {}).get("stationary")))
+
+
+def _output_dir(backend=None):
+    path = F.REPO / "outputs" / "numerical-core" / (backend or SOLVER_BACKEND)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _write_result(historical_path, text, *, encoding="utf-8"):
+    """Historical study records are inputs, never overwritten by a new fit."""
+    path = _output_dir() / historical_path.name
+    path.write_text(text, encoding=encoding)
+    return path
+
+
+def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
+    """Adapt the unchanged F2 residual/FD/pool to a bound-aware whitened solve.
+
+    Stops at the first accepted point that passes the final-point stationarity certification (G1 unchanged);
+    residual-only evaluations (trial steps) are logged as evaluation_kind "residual", outside ``history``.
+    """
+    from lunar_od.bounded_least_squares import solve_bounded
+    cache = {"x": None, "partial": False}
+    history, trials = [], []
+
+    def evaluate(p, partial):
+        if cache["x"] is not None and np.array_equal(p, cache["x"]) and (not partial or cache["partial"]):
+            return cache["value"]
+        r, h, hist = pb.residual(p, partials=partial)
+        ra, ha = augment(r, h, p)
+        cache.update(x=p.copy(), partial=partial, value=(r, h, hist, ra, ha))
+        if not partial:
+            trials.append(dict(evaluation=len(history) + len(trials) + 1, evaluation_kind="residual",
+                               cost=float(ra @ ra / SIGMA_M**2), k_srp=float(p[6])))
+            if on_linearization is not None:
+                on_linearization(trials[-1])
+        if partial:
+            history.append(dict(iteration=len(history) + 1, evaluation_kind="jacobian_linearization",
+                                cost=float(ra @ ra / SIGMA_M**2),
+                                rms_m=float(np.sqrt(np.mean(r[:nr]**2))), k_srp=float(p[6])))
+            if on_linearization is not None:
+                on_linearization(history[-1])
+        return cache["value"]
+
+    fun = lambda p: evaluate(p, False)[3] / SIGMA_M
+    # Problem returns +H = dh/dp. least_squares requires d(y-h)/dp = -H.
+    jac = lambda p: -evaluate(p, True)[4] / SIGMA_M
+    lower = np.full(initial.size, -np.inf)
+    lower[6] = 0.0
+    fit = solve_bounded(fun, jac, initial, scale, lower=lower, max_nfev=MAX_ITER, stop_when_stationary=True)
+    r, h, hist, ra, ha = evaluate(fit.x, True)
+    diag = fit.diagnostics | dict(scipy_status=fit.scipy_status, scipy_message=fit.message,
+                                 nfev=fit.nfev, njev=fit.njev, residual_evaluations=trials)
+    status = "STATIONARY" if diag["stationary"] else "MaxIter" if fit.scipy_status == 0 else "NumericallyLimited"
+    cov = None if diag["covariance"] is None else np.asarray(diag["covariance"], float)
+    linearization = dict(residual_whitened=(ra / SIGMA_M).tolist(),
+                         residual_jacobian_whitened=(-ha / SIGMA_M).tolist(),
+                         parameters=fit.x.tolist(), parameter_scales=scale.tolist(), lower_bounds=[None]*6+[0.0]+[None]*(initial.size-7),
+                         data_rows=int(r.size), prior_rows=int(ra.size-r.size))
+    return fit.x, r, h, hist, ra, ha, status, history, cov, diag, linearization
+
+
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
-          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = ()) -> dict:
+          days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
+          n_emp: int = 0, solver: str | None = None, step_limit: tuple | None = None,
+          gn_stationarity: bool = False) -> dict:
+    backend = SOLVER_BACKEND if solver is None else solver
+    if backend != "legacy" and (step_limit is not None or gn_stationarity):
+        raise ValueError("step_limit/gn_stationarity reproduce the legacy F2i algorithm only; "
+                         "TRF always uses bound-aware final-point diagnostics.")
+    pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=_grid_for_backend(solver),
+                 numerics=_numerics_for_backend(solver))
+    try:
+        if workers > 1:
+            pb.attach_pool(workers)
+        return _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days,
+                              solver, step_limit, gn_stationarity)
+    finally:
+        pb.close_pool()
+
+
+def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, solver,
+                   step_limit=None, gn_stationarity=False):
     t0 = time.time()
-    pb = Problem(nmax, doppler=doppler, days=days)
     nr = len(pb.rows)
     x0 = pb.reference_epoch + sign * OFFSET if x_start is None else np.asarray(x_start, float)
     p = np.concatenate([x0, [K0], np.zeros(pb.n_par - 7)])
@@ -214,54 +508,78 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
             h_p[row, j] = w[row]
         return r_out, np.vstack([hh, h_p])
 
-    scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0] + ([1e-3] if doppler else []))
-    lam, status, history = 1e-3, "MaxIter", []
-    rel = 1.0
-    res, h, hist = pb.residual(p)
-    ra, ha = aug(res, h, p)
-    cost = float(ra @ ra)
-    for it in range(1, MAX_ITER + 1):
-        hs = ha * scale / SIGMA_M
-        a = hs.T @ hs
-        g = hs.T @ (ra / SIGMA_M)
-        accepted = False
-        while lam < 1e10:
-            step = scale * np.linalg.solve(a + lam * np.diag(np.diag(a)), g)
-            pc = p + step
-            if pc[6] < 0.0:
+    scale = np.array([1e3, 1e3, 1e3, 1.0, 1.0, 1.0, 1e-3, 1.0, 1.0, 1.0] + ([1e-3] if doppler else [])
+                     + [EMP_SCALE] * pb.n_emp)
+    backend = SOLVER_BACKEND if solver is None else solver
+    if backend not in ("trf", "legacy"):
+        raise ValueError("solver must be 'trf' or 'legacy'")
+    if backend == "legacy":
+        lam, status, history = 1e-3, "MaxIter", []
+        rel = 1.0
+        res, h, hist = pb.residual(p)
+        ra, ha = aug(res, h, p)
+        cost = float(ra @ ra)
+        for it in range(1, MAX_ITER + 1):
+            hs = ha * scale / SIGMA_M
+            a = hs.T @ hs
+            g = hs.T @ (ra / SIGMA_M)
+            accepted = False
+            while lam < 1e10:
+                step = scale * np.linalg.solve(a + lam * np.diag(np.diag(a)), g)
+                if step_limit is not None:
+                    factor = min(1., step_limit[0]/max(np.linalg.norm(step[:3]), 1e-300),
+                                 step_limit[1]/max(np.linalg.norm(step[3:6]), 1e-300))
+                    step *= factor
+                pc = p + step
+                if pc[6] < 0.0:
+                    lam *= 10.0
+                    continue
+                rc, _, _ = pb.residual(pc, partials=False)
+                rca, _ = aug(rc, None, pc)
+                cc = float(rca @ rca)
+                if cc < cost:
+                    rel = (cost - cc) / cost
+                    p, cost = pc, cc
+                    res, h, hist = pb.residual(p)
+                    ra, ha = aug(res, h, p)
+                    lam = max(lam / 10.0, 1e-9)
+                    accepted = True
+                    break
                 lam *= 10.0
-                continue
-            rc, _, _ = pb.residual(pc, partials=False)
-            rca, _ = aug(rc, None, pc)
-            cc = float(rca @ rca)
-            if cc < cost:
-                rel = (cost - cc) / cost
-                p, cost = pc, cc
-                res, h, hist = pb.residual(p)
-                ra, ha = aug(res, h, p)
-                lam = max(lam / 10.0, 1e-9)
-                accepted = True
+            history.append(dict(iteration=it, cost=cost, rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), lam=lam,
+                                pos_step_m=float(np.linalg.norm(step[:3])) if accepted else None))
+            if doppler:
+                history[-1]["doppler_rms_mmps"] = float(np.sqrt(np.mean(res[nr:] ** 2)) * SIGMA_DOP / SIGMA_M * 1e3)
+            with open(_output_dir(backend) / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
+                log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
+                          f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
+            if not accepted:
+                # F2d: the damping limit after a near-zero relative improvement is a stationary point
+                if gn_stationarity:
+                    legacy_decrement = float(g @ np.linalg.solve(a, g))
+                    status = "STATIONARY" if legacy_decrement < GN_DECREMENT_TOL else "DampingLimit"
+                else:
+                    status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
                 break
-            lam *= 10.0
-        history.append(dict(iteration=it, cost=cost, rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), lam=lam,
-                            pos_step_m=float(np.linalg.norm(step[:3])) if accepted else None))
-        if doppler:
-            history[-1]["doppler_rms_mmps"] = float(np.sqrt(np.mean(res[nr:] ** 2)) * SIGMA_DOP / SIGMA_M * 1e3)
-        with open(F.REPO.parent / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
-            log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
-                      f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
-        if not accepted:
-            # F2d: the damping limit after a near-zero relative improvement is a stationary point
-            status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
-            break
-        if rel < 1e-8 and np.linalg.norm(step[:3]) < 1e-3:
-            status = "Converged"
-            break
-    # formal covariance and comparison with the reference over the observed span
-    hs = ha / SIGMA_M
-    cov = np.linalg.inv(hs.T @ hs)
+            if rel < 1e-8 and np.linalg.norm(step[:3]) < 1e-3:
+                status = "Converged"
+                break
+        # formal covariance and comparison with the reference over the observed span
+        hs = ha / SIGMA_M
+        cov = np.linalg.inv(hs.T @ hs)
+        numerical = None
+        linearization = None
+    else:
+        def progress(record):
+            path = _output_dir(backend) / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log"
+            with path.open("a", encoding="utf-8") as log:
+                log.write(json.dumps(record | {"solver": backend, "elapsed_s": time.time()-t0}) + "\n")
+        p, res, h, hist, ra, ha, status, history, cov, numerical, linearization = _fit_trf(
+            pb, p, aug, scale, nr, on_linearization=progress)
+    def sigma(i):
+        return None if cov is None else float(np.sqrt(max(0.0, cov[i, i])))
     t_cmp = np.arange(float(pb.setup.t3.min()), float(pb.setup.t3.max()), 60.0)
-    est = pb.propagate(p[:6], p[6], t_eval=np.concatenate([[pb.t_epoch], t_cmp]), sensitivity=False)[1:]
+    est = pb.propagate_p(p, t_eval=np.concatenate([[pb.t_epoch], t_cmp]))[1:]
     import spiceypy as spice
     ref = np.array([spice.spkezr(F.LRO, pb.setup.et0 + t, "J2000", "NONE", "MOON")[0] for t in t_cmp]) * 1e3
     ric = []
@@ -280,19 +598,40 @@ def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", dop
     extra = {}
     if doppler:
         rd = res[nr:] * SIGMA_DOP / SIGMA_M
-        extra = dict(doppler_bias_mmps=float(p[10] * 1e3), doppler_bias_sigma_mmps=float(np.sqrt(cov[10, 10]) * 1e3),
+        extra = dict(doppler_bias_mmps=float(p[10] * 1e3), doppler_bias_sigma_mmps=None if sigma(10) is None else sigma(10) * 1e3,
                      doppler_postfit_rms_mmps=float(np.sqrt(np.mean(rd ** 2)) * 1e3), n_doppler=int(rd.size))
     return dict(nmax=nmax, sign=sign, status=status, iterations=len(history), history=history, **extra,
+                solver=backend, numerical_identity=numerical_identity(),
+                numerical_variant="bounded_trf" if backend == "trf" else "historical_legacy",
+                numerical_profile=dict(grid_s=pb.grid_s, rtol=pb.rtol, atol=pb.atol, emp_fd_step=pb.emp_fd_step,
+                                       fd_steps=FD_STEPS.tolist(), exact_epoch_stations=F.EXACT_EPOCH_STATIONS,
+                                       method="DOP853", shadow_events=True,
+                                       earth_interpolation=pb.eph.earth_interpolation),
+                numerical_diagnostics=numerical, final_linearization=linearization,
+                prior_semantics=("conditional_calibration_same_tracking_day" if any(7 <= j <= 9 for j, _ in prior_items)
+                                 else "explicit_supplied_prior" if prior_items else "data_only"),
+                prior_definitions={str(j): {"mean": float(mean), "sigma": float(sigma_value)}
+                                   for j, (mean, sigma_value) in prior_items},
                 postfit_rms_m=float(np.sqrt(np.mean(res[:nr] ** 2))), per_pass=per_pass,
-                x0=p[:6].tolist(), k_srp=float(p[6]), k_srp_sigma=float(np.sqrt(cov[6, 6])),
+                x0=p[:6].tolist(), k_srp=float(p[6]), k_srp_sigma=sigma(6),
                 biases_m=dict(zip(map(str, PADS), map(float, p[7:10]))),
-                bias_sigma_m=dict(zip(map(str, PADS), map(float, np.sqrt(np.diag(cov)[7:10])))),
+                empirical_mps2=(dict(zip(EMP_NAMES, map(float, p[11:11 + pb.n_emp]))) if pb.n_emp else None),
+                empirical_sigma_mps2=(dict(zip(EMP_NAMES, [sigma(i) for i in range(11, 11 + pb.n_emp)]))
+                                      if pb.n_emp else None),
+                bias_sigma_m=dict(zip(map(str, PADS), [sigma(i) for i in range(7, 10)])),
                 x0_minus_reference=(p[:6] - pb.reference_epoch).tolist(),
                 ric_rms_m=np.sqrt(np.mean(ric ** 2, axis=0)).tolist(), ric_max_m=np.max(np.abs(ric), axis=0).tolist(),
                 total_rms_m=float(np.sqrt(np.mean(tot ** 2))), total_max_m=float(tot.max()),
                 est_positions=est[:, :3].tolist(),
-                prediction=predict(pb, p, predict_days) if predict_days else None,
+                prediction=_predict_and_close(pb, p, predict_days),
                 elapsed_s=time.time() - t0)
+
+
+def _predict_and_close(pb: Problem, p, predict_days: tuple):
+    try:
+        return predict(pb, p, predict_days) if predict_days else None
+    finally:
+        pb.close_pool()
 
 
 def _ric(est, ref):
@@ -324,11 +663,11 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
     drows.sort(key=lambda x: (x[0], x[1].utc))
     td = np.array([ST.utc_to_tdb_seconds([r.utc.strftime("%Y-%m-%dT%H:%M:%S.%f")], s.et0, s.sites[q])[0]
                    for q, r in drows])
-    grid = np.arange(pb.t_epoch, max(t3.max(), td.max()) + 10.0 + GRID_S, GRID_S)
+    grid = np.arange(pb.t_epoch, max(t3.max(), td.max()) + 10.0 + pb.grid_s, pb.grid_s)
     from lunar_od.ephemeris import sample_moon_centered_ephemeris
     # the fit sampled Earth/Sun over the fit span only; cover the prediction span as well
     pb.eph = sample_moon_centered_ephemeris(s.et0, np.arange(pb.t_epoch - 600.0, grid[-1] + 600.0, 60.0))
-    hist = pb.propagate(p[:6], p[6], t_eval=grid, sensitivity=False)
+    hist = pb.propagate_p(p, t_eval=grid)
     sc = R.SpacecraftHistory(grid, hist)
     res_r = []
     for (q, r), t in zip(rows, t3):
@@ -359,7 +698,7 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
             (t3[idx].min() - s.t3.max()) / 3600.0), range_mean_m=float(res_r[idx].mean()),
             range_rms_m=float(np.sqrt(np.mean(res_r[idx] ** 2)))))
     t_cmp = np.arange(float(t3.min()), float(t3.max()), 60.0)
-    est = pb.propagate(p[:6], p[6], t_eval=np.concatenate([[pb.t_epoch], t_cmp]), sensitivity=False)[1:]
+    est = pb.propagate_p(p, t_eval=np.concatenate([[pb.t_epoch], t_cmp]))[1:]
     ref = np.array([spice.spkezr(F.LRO, s.et0 + t, "J2000", "NONE", "MOON")[0] for t in t_cmp]) * 1e3
     ric = _ric(est, ref)
     return dict(n_range=int(res_r.size), n_doppler=int(res_d.size),
@@ -400,13 +739,13 @@ def main():
     a, b = runs["N100_+"], runs["N100_-"]
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
     dbias = max(abs(a["biases_m"][k] - b["biases_m"][k]) for k in a["biases_m"])
-    gates = dict(G1=a["status"] == "Converged" and b["status"] == "Converged",
+    gates = dict(G1=_certified_stationary(a) and _certified_stationary(b),
                  G2=dpos <= 1e-2 and dbias <= 1e-3, G3=a["postfit_rms_m"] <= 2.0, G4=g4["PASS"])
     for r in runs.values():
         r.pop("est_positions")
     out = dict(predeclaration="studies/phase17/configs/phase_f2_lro_od_predeclaration.json", gates=gates,
                G2_start_difference=dict(position_max_m=dpos, bias_max_m=dbias), G4=g4, runs=runs)
-    OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    _write_result(OUT, json.dumps(out, indent=1), encoding="utf-8")
     brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "k_srp", "k_srp_sigma", "biases_m",
                                        "ric_rms_m", "ric_max_m", "total_rms_m", "total_max_m", "elapsed_s")}
              for k, r in runs.items()}
@@ -427,14 +766,14 @@ def main_f2b():
         a, b = fp.result(), fm.result()
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
     dbias = max(abs(a["biases_m"][k] - b["biases_m"][k]) for k in a["biases_m"])
-    gates = dict(G1=a["status"] == "Converged" and b["status"] == "Converged",
+    gates = dict(G1=_certified_stationary(a) and _certified_stationary(b),
                  G2=dpos <= 1.0 and dbias <= 0.1, G3=a["postfit_rms_m"] <= 20.0 and b["postfit_rms_m"] <= 20.0)
     for r in (a, b):
         r.pop("est_positions")
     out = dict(predeclaration="studies/phase17/configs/phase_f2b_lro_od_priors_predeclaration.json", gates=gates,
                G2_start_difference=dict(position_max_m=dpos, bias_max_m=dbias), priors=F2B_PRIORS,
                runs={"N100_+": a, "N100_-": b})
-    OUT_F2B.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    _write_result(OUT_F2B, json.dumps(out, indent=1), encoding="utf-8")
     brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "k_srp", "k_srp_sigma", "biases_m",
                                        "ric_rms_m", "ric_max_m", "total_rms_m", "total_max_m", "elapsed_s")}
              for k, r in out["runs"].items()}
@@ -454,13 +793,13 @@ def main_f2c():
     a, b = runs["N200_+"], runs["N200_-"]
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
     dbias = max(abs(a["biases_m"][k] - b["biases_m"][k]) for k in a["biases_m"])
-    gates = dict(G1=a["status"] == "Converged" and b["status"] == "Converged",
+    gates = dict(G1=_certified_stationary(a) and _certified_stationary(b),
                  G2=dpos <= 1.0 and dbias <= 0.1, G3=all(r["postfit_rms_m"] <= 5.0 for r in runs.values()))
     for r in runs.values():
         r.pop("est_positions")
     out = dict(predeclaration="studies/phase17/configs/phase_f2c_lro_od_degree_predeclaration.json", gates=gates,
                G2_start_difference=dict(position_max_m=dpos, bias_max_m=dbias), priors=F2B_PRIORS, runs=runs)
-    OUT_F2C.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    _write_result(OUT_F2C, json.dumps(out, indent=1), encoding="utf-8")
     brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "k_srp", "k_srp_sigma", "biases_m",
                                        "ric_rms_m", "ric_max_m", "total_rms_m", "total_max_m", "elapsed_s")}
              for k, r in runs.items()}
@@ -478,13 +817,13 @@ def main_f2d():
         runs = {k: f.result() for k, f in futs.items()}
     a, b = runs["N200_+"], runs["N200_-"]
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
-    gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
+    gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
                  G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
     for r in runs.values():
         r.pop("est_positions")
     out = dict(predeclaration="studies/phase17/configs/phase_f2d_lro_od_range_doppler_predeclaration.json",
                gates=gates, G2_start_difference_m=dpos, priors=F2B_PRIORS, sigma_doppler_mps=SIGMA_DOP, runs=runs)
-    OUT_F2D.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    _write_result(OUT_F2D, json.dumps(out, indent=1), encoding="utf-8")
     brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "doppler_postfit_rms_mmps",
                                        "doppler_bias_mmps", "k_srp", "biases_m", "ric_rms_m", "ric_max_m",
                                        "total_rms_m", "total_max_m", "elapsed_s")}
@@ -493,6 +832,13 @@ def main_f2d():
 
 
 OUT_F2E = HERE.parent / "results" / "phase_f2e_lro_two_day_arc.json"
+
+
+def _workers_arg() -> int:
+    """``--workers N`` on the command line: parallel evaluation with N worker processes (0: serial)."""
+    if "--workers" in sys.argv:
+        return int(sys.argv[sys.argv.index("--workers") + 1])
+    return 0
 F2E_FIT_DAYS = ("trk/lro_no_01/2009260", "trk/lro_no_01/2009261")
 F2E_PREDICT_DAYS = ("trk/lro_no_01/2009262",)
 
@@ -503,28 +849,213 @@ def main_f2e():
         encoding="utf-8"))
     s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
     s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
-    with ProcessPoolExecutor(2) as ex:
-        futs = {"S1": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS),
-                "S2": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, ())}
-        runs = {k: f.result() for k, f in futs.items()}
+    workers = _workers_arg()
+    if workers > 1:
+        # one start after the other, each with the whole worker pool (identical numbers, see
+        # phase_f2_parallel_equivalence.py)
+        runs = {"S1": solve(200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers),
+                "S2": solve(200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, (), workers)}
+    else:
+        with ProcessPoolExecutor(2) as ex:
+            futs = {"S1": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS),
+                    "S2": ex.submit(solve, 200, 1.0, F2B_PRIORS, "e2", True, F2E_FIT_DAYS, s2, ())}
+            runs = {k: f.result() for k, f in futs.items()}
     a, b = runs["S1"], runs["S2"]
     dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
-    gates = dict(G1=all(r["status"] in ("Converged", "STATIONARY") for r in runs.values()), G2=dpos <= 1.0,
+    gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
                  G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
     for r in runs.values():
         r.pop("est_positions")
     out = dict(predeclaration="studies/phase17/configs/phase_f2e_lro_two_day_arc_predeclaration.json",
                gates=gates, G2_start_difference_m=dpos, priors=F2B_PRIORS, fit_days=F2E_FIT_DAYS,
                predict_days=F2E_PREDICT_DAYS, runs=runs)
-    OUT_F2E.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    _write_result(OUT_F2E, json.dumps(out, indent=1), encoding="utf-8")
     brief = {k: {kk: r[kk] for kk in ("status", "iterations", "postfit_rms_m", "doppler_postfit_rms_mmps",
                                        "doppler_bias_mmps", "k_srp", "biases_m", "ric_rms_m", "total_rms_m")}
              for k, r in runs.items()}
     print(json.dumps(dict(gates=gates, G2=dpos, runs=brief, prediction=a["prediction"]), indent=1))
 
 
+OUT_F2F = HERE.parent / "results" / "phase_f2f_lro_degree300_continuation.json"
+
+
+def _f2f_part_path(name: str) -> Path:
+    return _output_dir() / f"phase_f2f_part_{name}.json"
+
+
+def main_f2f_part(name: str):
+    """One F2f start in its own OS process (CSPICE is not thread-safe, so the starts cannot share a process)."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    workers = _workers_arg() or 7
+    if name == "s1":
+        run = solve(300, 1.0, F2B_PRIORS, "f1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers)
+    else:
+        one = solve(300, 1.0, F2B_PRIORS, "f2a", True, (F.DAY_DIR,), s2, (), workers)
+        run = solve(300, 1.0, F2B_PRIORS, "f2b", True, F2E_FIT_DAYS, np.array(one["x0"]), (), workers)
+        one.pop("est_positions")
+        run["continuation_stage1"] = one
+    _f2f_part_path(name).write_text(json.dumps(run), encoding="utf-8")
+
+
+def main_f2f():
+    """Phase F2f (studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json): merge the
+    two parts written by ``--f2f-part s1`` and ``--f2f-part s2``."""
+    runs = {"S1": json.loads(_f2f_part_path("s1").read_text(encoding="utf-8")),
+            "S2": json.loads(_f2f_part_path("s2").read_text(encoding="utf-8"))}
+    _require_current_runs(runs)
+    a, b = runs["S1"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2f_lro_degree300_continuation_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, priors=F2B_PRIORS, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs=runs)
+    _write_result(OUT_F2F, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
+
+
+#: Phase F2g: F2b's priors plus N(0, EMP_PRIOR_SIGMA) on each empirical acceleration (indices 11..14).
+F2G_PRIORS = {**F2B_PRIORS, **{11 + i: (0.0, EMP_PRIOR_SIGMA) for i in range(len(EMP_NAMES))}}
+OUT_F2G = HERE.parent / "results" / "phase_f2g_lro_empirical.json"
+
+
+def _f2g_part_path(name: str) -> Path:
+    return _output_dir() / f"phase_f2g_part_{name}.json"
+
+
+def main_f2g_part(name: str):
+    """One F2g start in its own OS process (empirical 1/rev accelerations, N = 300)."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    s2 = s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    workers = _workers_arg() or 7
+    ne = len(EMP_NAMES)
+    if name == "s1":
+        run = solve(300, 1.0, F2G_PRIORS, "g1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, workers, ne)
+    else:
+        one = solve(300, 1.0, F2G_PRIORS, "g2a", True, (F.DAY_DIR,), s2, (), workers, ne)
+        run = solve(300, 1.0, F2G_PRIORS, "g2b", True, F2E_FIT_DAYS, np.array(one["x0"]), (), workers, ne)
+        one.pop("est_positions")
+        run["continuation_stage1"] = one
+    _f2g_part_path(name).write_text(json.dumps(run), encoding="utf-8")
+
+
+def main_f2g_merge():
+    runs = {"S1": json.loads(_f2g_part_path("s1").read_text(encoding="utf-8")),
+            "S2": json.loads(_f2g_part_path("s2").read_text(encoding="utf-8"))}
+    _require_current_runs(runs)
+    a, b = runs["S1"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    # G4e qualified the legacy numerics only; the TRF path is gated by G4e-R (phase_f2_g4er_checks.py).
+    legacy = SOLVER_BACKEND == "legacy"
+    name = "phase_f2g_checks.json" if legacy else "phase_f2_g4er_checks.json"
+    checks = json.loads((_output_dir() / name).read_text(encoding="utf-8"))
+    if checks.get("numerical_identity") != numerical_identity():
+        raise ValueError("F2g checks do not match the current numerical code; rerun checks before merging.")
+    if legacy:
+        gates.update(G0=checks["G0"]["PASS"], G4e=checks["G4e"]["PASS"])
+    else:
+        gates.update(G0=checks["G0R"]["PASS"], G4eR=checks["PASS"])
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2g_lro_empirical_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, priors={str(k): v for k, v in F2G_PRIORS.items()},
+               fit_days=F2E_FIT_DAYS, predict_days=F2E_PREDICT_DAYS, nmax=300, runs=runs)
+    _write_result(OUT_F2G, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
+
+
+#: Phase F2h: along-track-only empirical accelerations (cross-track terms pinned by a 1e-11 m/s^2 prior).
+F2H_PRIORS = {**F2G_PRIORS, 13: (0.0, 1e-11), 14: (0.0, 1e-11)}
+OUT_F2H = HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json"
+
+
+def main_f2h():
+    """Phase F2h (studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json): S1 only."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    run = solve(300, 1.0, F2H_PRIORS, "h1", True, F2E_FIT_DAYS, s1, F2E_PREDICT_DAYS, _workers_arg() or 14,
+                len(EMP_NAMES))
+    run.pop("est_positions")
+    gates = dict(G1=_certified_stationary(run),
+                 G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2h_lro_alongtrack_empirical_predeclaration.json",
+               gates=gates, priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    _write_result(OUT_F2H, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
+F2I_STEP_LIMIT = (200.0, 0.2)
+OUT_F2I = HERE.parent / "results" / "phase_f2i_lro_basin_robustness.json"
+
+
+def _f2i_part_path(name: str) -> Path:
+    return _output_dir() / f"phase_f2i_part_{name}.json"
+
+
+def main_f2i_part(name: str):
+    """One F2i start in its own OS process (F2h model + step limit + Gauss-Newton stationarity)."""
+    pre = json.loads((HERE.parent / "configs" / "phase_f2e_lro_two_day_arc_predeclaration.json").read_text(
+        encoding="utf-8"))
+    s1 = np.array(json.loads(pre["starts"]["S1"].split(": ", 1)[1]), float)
+    start = s1 if name == "s1r" else s1 + np.array([100.0, 100.0, 100.0, 0.1, 0.1, 0.1])
+    run = solve(300, 1.0, F2H_PRIORS, "i" + name, True, F2E_FIT_DAYS, start,
+                F2E_PREDICT_DAYS if name == "s1r" else (), _workers_arg() or 5, len(EMP_NAMES),
+                step_limit=F2I_STEP_LIMIT if SOLVER_BACKEND == "legacy" else None,
+                gn_stationarity=SOLVER_BACKEND == "legacy")
+    _f2i_part_path(name).write_text(json.dumps(run), encoding="utf-8")
+
+
+def main_f2i_merge():
+    runs = {"S1R": json.loads(_f2i_part_path("s1r").read_text(encoding="utf-8")),
+            "S2": json.loads(_f2i_part_path("s2").read_text(encoding="utf-8"))}
+    _require_current_runs(runs)
+    a, b = runs["S1R"], runs["S2"]
+    dpos = float(np.max(np.linalg.norm(np.array(a["est_positions"]) - np.array(b["est_positions"]), axis=1)))
+    gates = dict(G1=all(_certified_stationary(r) for r in runs.values()), G2=dpos <= 1.0,
+                 G3=all(r["postfit_rms_m"] <= 2.0 and r["doppler_postfit_rms_mmps"] <= 5.0 for r in runs.values()))
+    for r in runs.values():
+        r.pop("est_positions")
+    out = dict(predeclaration="studies/phase17/configs/phase_f2i_lro_basin_robustness_predeclaration.json",
+               gates=gates, G2_start_difference_m=dpos, step_limit=F2I_STEP_LIMIT if SOLVER_BACKEND == "legacy" else None,
+               numerical_variant=SOLVER_BACKEND, gn_decrement_tol=GN_DECREMENT_TOL,
+               priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2E_FIT_DAYS,
+               predict_days=F2E_PREDICT_DAYS, nmax=300, runs=runs)
+    _write_result(OUT_F2I, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
+
+
+
 if __name__ == "__main__":
-    if "--f2e" in sys.argv:
+    if "--solver" in sys.argv:
+        SOLVER_BACKEND = sys.argv[sys.argv.index("--solver") + 1]
+        if SOLVER_BACKEND not in ("trf", "legacy"):
+            raise SystemExit("--solver must be trf or legacy")
+    if "--f2i-part" in sys.argv:
+        main_f2i_part(sys.argv[sys.argv.index("--f2i-part") + 1])
+    elif "--f2i-merge" in sys.argv:
+        main_f2i_merge()
+    elif "--f2h" in sys.argv:
+        main_f2h()
+    elif "--f2g-part" in sys.argv:
+        main_f2g_part(sys.argv[sys.argv.index("--f2g-part") + 1])
+    elif "--f2g-merge" in sys.argv:
+        main_f2g_merge()
+    elif "--f2f-part" in sys.argv:
+        main_f2f_part(sys.argv[sys.argv.index("--f2f-part") + 1])
+    elif "--f2f-merge" in sys.argv:
+        main_f2f()
+    elif "--f2e" in sys.argv:
         main_f2e()
     elif "--f2b" in sys.argv:
         main_f2b()

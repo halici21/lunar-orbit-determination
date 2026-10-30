@@ -1,0 +1,11 @@
+{
+ "workers": 10,
+ "rows": 4889,
+ "residual_identical": true,
+ "jacobian_identical": true,
+ "max_abs_residual_diff": 0.0,
+ "max_abs_jacobian_diff": 0.0,
+ "serial_s": 305.3837037086487,
+ "parallel_s": 49.250659465789795,
+ "speedup": 6.200601312166643
+}

@@ -416,9 +416,12 @@ class _AnalysisWorker(QThread):
         from lunar_od.scenario_config import (
             scenario_force_model_preflight,
             validate_official_earth_j2_support,
+            force_execution_spec_from_scenario_config, force_runtime_kwargs,
+            scenario_measurement_identity,
         )
+        from lunar_od.propagation_contract import model_options, truth_numerical_metadata
         from lunar_od.force_contract import scenario_result_force_fields
-        from lunar_od.reporting import write_force_model_manifest
+        from lunar_od.reporting import write_force_model_manifest, write_numerical_profile_manifest
 
         # R0A-F1 preflight: validate every variant config (incl. the shared
         # Earth-J2 fail-closed gate and the R0B-2 force-parity gate) before
@@ -453,15 +456,9 @@ class _AnalysisWorker(QThread):
             et0 = float(spice.str2et(epoch_utc))
 
             self.log_line.emit("Propagating reference trajectory…")
-            _rtol = float(self._base.get("rtol", 1e-11))
-            _atol = float(self._base.get("atol", 1e-12))
-            _j2   = float(self._base.get("j2_moon", 0.0))
             ephemeris = sample_moon_centered_ephemeris(et0, t_ephem)
             xforms    = sample_j2000_to_itrf93_transforms(et0, t_eval)
-            truth     = propagate_truth_with_ephemeris(
-                t_eval, x0, mu_moon, mu_earth, mu_sun, ephemeris,
-                rtol=_rtol, atol=_atol, j2_moon=_j2,
-            )
+            truth_cache = {}
 
             all_stns = {s.name: s for s in range_rate_stations()}
             selected_station_names = tuple(self._base.get("station_names") or ())
@@ -489,8 +486,8 @@ class _AnalysisWorker(QThread):
                 min_elevation_deg=THESIS_MIN_ELEVATION_DEG,
             )
 
-            # Arc cache: keyed by (measurement_type, network, noise) so we only rebuild
-            # arcs when measurement-level parameters actually change between variants.
+            # Truth and observations have distinct physical/numerical identities.
+            # Estimator-only variants may share an identical observation package.
             arc_cache: dict[tuple, Any] = {}
 
             n_total = len(preflighted_configs)
@@ -508,16 +505,22 @@ class _AnalysisWorker(QThread):
                     continue
 
                 stations = selected_stations
-
-                arc_key = (
-                    config.measurement_type,
-                    selected_station_names,
-                    config.noise,
-                    config.range_rate_physics,
-                    config.apply_light_time,
-                    config.apply_stellar_aberration,
-                    config.stellar_aberration_model,
-                )
+                spec=force_execution_spec_from_scenario_config(config,
+                    mu_moon_m3_s2=mu_moon,mu_earth_m3_s2=mu_earth,mu_sun_m3_s2=mu_sun)
+                runtime=force_runtime_kwargs(spec)
+                force_decision = scenario_force_model_preflight(
+                    config,mu_moon_m3_s2=mu_moon,mu_earth_m3_s2=mu_earth,mu_sun_m3_s2=mu_sun,
+                    context=f"desktop analysis variant '{variant.label}' force-model binding")
+                truth_key=(spec.fingerprint(),config.rtol,config.atol,
+                    json.dumps(config.to_dict()['propagation_profile'],sort_keys=True))
+                if truth_key not in truth_cache:
+                    truth_cache[truth_key]=propagate_truth_with_ephemeris(
+                        t_eval,x0,mu_moon,mu_earth,mu_sun,ephemeris,
+                        rtol=config.rtol,atol=config.atol,j2_moon=runtime['j2_moon'],
+                        **model_options(runtime.get('srp'),config.propagation_profile))
+                truth=truth_cache[truth_key]
+                arc_key=(truth_key,selected_station_names,
+                    json.dumps(scenario_measurement_identity(config),sort_keys=True))
                 if arc_key not in arc_cache:
                     self.log_line.emit(f"  Building visibility arcs ({config.measurement_type})…")
                     seg_starts, seg_ends, vis_mask_raw, _ = analyze_visibility_gap_with_transforms(
@@ -582,19 +585,13 @@ class _AnalysisWorker(QThread):
                     ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
                     ukf_bias_regularization_std=config.ukf_bias_regularization_std,
                     j2_moon=config.j2_moon,
+                    **model_options(runtime.get('srp'),config.propagation_profile),
                 )
 
                 # R0B-F1 (V04): Stage-B force-model decision from the EFFECTIVE
                 # fixture GM, applied to the emitted result and persisted as a
                 # canonical side manifest in the same output bundle. Uses the
                 # SAME shared helpers as the CLI (no separate desktop copy).
-                force_decision = scenario_force_model_preflight(
-                    config,
-                    mu_moon_m3_s2=mu_moon,
-                    mu_earth_m3_s2=mu_earth,
-                    mu_sun_m3_s2=mu_sun,
-                    context=f"desktop analysis variant '{variant.label}' force-model binding",
-                )
                 manifest_path = (
                     Path(config.output_dir)
                     / f"analysis_{self._spec.title}_{variant.label}_force_model_manifest.json"
@@ -603,6 +600,9 @@ class _AnalysisWorker(QThread):
                 result = _dc_replace(
                     result, **scenario_result_force_fields(force_decision)
                 )
+                write_numerical_profile_manifest(
+                    truth_numerical_metadata(runtime.get('srp'),config.propagation_profile,config.rtol,config.atol),
+                    result,manifest_path.with_name(manifest_path.name.replace('_force_model_manifest.json','_numerical_profile.json')))
 
                 n_arcs = len(result.arc_results)
                 med = float(np.median(result.final_position_errors_m)) if n_arcs else 0.0

@@ -1,0 +1,21 @@
+{
+ "phase": "Phase F2f - two-day arc at gravity degree 300, and arc continuation for the second start",
+ "written": "2026-10-25, before any F2f number",
+ "motivation": "F2e: the two-day post-fit range rose to 2.26 m with systematic Kiruna pass means, K_SRP grew to 0.036 and the one-day prediction diverged at ~1 m/h (dynamics limit); S2 (S1 + 100 m, 0.1 m/s) fell into another basin",
+ "maneuver_check": "the archive's FDF-25 thruster calibration files list MOI1 (2009-258/259), MOI2 (268/269), MOI3 (269/270), MOI4 (280/281) and SK02 (296/297) in the LRO_NO_01 window; no thruster maneuver falls inside the 2009-09-16 23:57 to 2009-09-19 arc + prediction span. Momentum desaturations are not in the archive and remain unmodelled",
+ "change_from_F2e": {
+  "S1": "identical to F2e S1 except GL1800F N = 300 (6-state numba path; A1 FD sensitivities)",
+  "S2": "N = 300; arc continuation: S2 is first fitted on F2d's one-day data (2009-260) and the converged state is then the start of the two-day fit (2009-260/261)"
+ },
+ "parallel": "--workers: S1 and S2 run concurrently, 7 workers each (bit-identical pooled evaluation, phase_f2_parallel_equivalence.json)",
+ "gates": {
+  "G1_convergence": "S1 and the two-day stage of S2 end Converged or STATIONARY",
+  "G2_start_independence": "S1 and S2 two-day solutions agree to <= 1 m in position",
+  "G3_postfit": "post-fit range RMS <= 2 m and Doppler RMS <= 5 mm/s for both"
+ },
+ "reported_not_gated": "S1 at N = 300 vs F2e (N = 200): post-fit RMS, K_SRP, Kiruna pass means, RIC vs LOLA, and the 2009-262 prediction (range RMS per pass vs hours after the fit end)",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2f_lro_degree300_continuation.json",
+  "report": "appended to studies/phase17/reports/phase_f2_lro_od.md as section 12"
+ }
+}
