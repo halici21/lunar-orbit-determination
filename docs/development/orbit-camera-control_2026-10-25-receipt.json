@@ -1,0 +1,561 @@
+{
+  "base_commit": "d637c44b2f151067267c46c41434398a4b5bfe00",
+  "source_scope": {
+    "base": "d637c44b2f151067267c46c41434398a4b5bfe00",
+    "changed": [
+      "_OrbitDesigner._build",
+      "_OrbitDesigner._animate_preview",
+      "_OrbitDesigner.showEvent",
+      "GroundTrackController._add_orbit_designer_tab"
+    ],
+    "added": [
+      "_OrbitDesigner._set_preview_rotation"
+    ],
+    "protected_segments": 72,
+    "protected": {
+      "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+      "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+      "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+      "_TrackWorker": "962c87dd239e0786e9eafdebfd932716cd6a41b466ec66cbc616be42b9ddf818",
+      "_draw_moon_bg": "a3146590952ca2c7cb21456352bb2ac009c021b61fb0ee0ad54bc4564e0c5754",
+      "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+      "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+      "_build_static_figure": "51b02fd98acd3e394bb87a288bc2456ac1b8e5f57e0517d7da5cdecf047a253a",
+      "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+      "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+      "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+      "_draw_orbit_preview": "ba8662daae732a14774fc4a72b83457fbc5878cdff6e461fec060226b29f35d5",
+      "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+      "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+      "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+      "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+      "_draw_moon_sphere": "61f9d2990f15bc6a34f46d152519d50d88792f047e3c2ded6d2863834ad1e97d",
+      "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+      "_CurrentTabWidget.minimumSizeHint": "d2a097d4c9ed8e4f35169d6596e98ccfffcff7af07830b0c885415af89d0c7b6",
+      "_CurrentTabWidget.sizeHint": "ac2414afd83df34ded9e4f1744d14bde4cc94901c883ee278789a69d2fd5e6f3",
+      "_OrbitDesigner.__init__": "fc125f635aad141f2418e2d3cb47f75d5404cff1cf450dc1add20d8831e0f49d",
+      "_OrbitDesigner._adapt_layout": "3d563b56392622e869085277526543334164d9ca6581767b62edcb4b09d07941",
+      "_OrbitDesigner.minimumSizeHint": "ee61c755f0de94bba805b7e8a1c7adc9b9299776896e7f96b2f1aefe0f7c391b",
+      "_OrbitDesigner._get_elements": "76e6e66797fe9689812c7435aede90dc9e70cb7ed413c23beeed22585cd6245d",
+      "_OrbitDesigner._update_preview": "7e504496f2f12f7a100395d09088da14a55cb4dc84ceaf1fa2b79f582645b2e7",
+      "_OrbitDesigner._init_preview_canvas": "7bb5e7570a849490c48aeca96d1b5206dc5249f2fd655e49e3c42deca19487f9",
+      "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+      "_OrbitDesigner._set_preview_target": "55d3e97537e039fe2aff1de36e7597ca3bad53236ada8e6874eec8d1dd4c5d55",
+      "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+      "_OrbitDesigner._generate_track": "96984c0a949fadf5e8f6f7afcab861d39b5350284f402246c7f4aa640236e906",
+      "GroundTrackController.__init__": "ce9528b4f1ed6f15d7633e2e7a7d87b92301d69ec654990cb99016d45c0b2089",
+      "GroundTrackController.resizeEvent": "3fee49d490f2c33eec0639979708d3c5aef5d3ef77b0f66adfe0cd0129335299",
+      "GroundTrackController._adapt_layout": "8c09eceae7f5f289bd681947653c59108bf58f1d8a6f396c0ed84990eda69ab7",
+      "GroundTrackController.minimumSizeHint": "ee61c755f0de94bba805b7e8a1c7adc9b9299776896e7f96b2f1aefe0f7c391b",
+      "GroundTrackController._setup": "de6a21c9a58c0dfebcfc33172e4b0e44a2a87eace70da7516a5d21fb60b05b6d",
+      "GroundTrackController.eventFilter": "b363d776e13a9f4c21c7c8829ad633fedc4ad664f26ba2b41bb91694377290c3",
+      "GroundTrackController._reveal_keyboard_focus": "65dd426e7a9254d444560e4b843fba6bfd801c8506793fe1d969618af2248194",
+      "GroundTrackController._build_model_notes": "72be5542e8dfb1d47a75d194de692adff29bc32f5988184853f37b4299e673ef",
+      "GroundTrackController._input_snapshot": "7136dad480c37898b2da0beb963670eb6b6d2ec6d9a07c59d3797e4a46f65185",
+      "GroundTrackController._set_busy": "1e7e378b8b101d245582b0ae01a62d31a6b316233d60df1d8319cc1e74b55aae",
+      "GroundTrackController._inputs_changed": "f6620ae91e10a382a749602bb04b20734bcfe543e3eb485577d91d723b561b99",
+      "GroundTrackController._refresh_result_context": "b8dfb89649b7396f55db83a841e1ce041dd06c397191374826fafc3fcd178cc6",
+      "GroundTrackController._build_log_panel": "e81a7b129a5c1d9427dc2919fa0ed18897cdef1def13b38fbfee9a0bafcb9cf1",
+      "GroundTrackController._log": "543162988b4fd6da4ed92424589671d2f210f8ba76e3e519f5659ac20e490a35",
+      "GroundTrackController._build_export_buttons": "431069f1af3b679f4d0583b1db433b508fea6b667615dddc5baca5f6987c4fa7",
+      "GroundTrackController.on_shown": "4b0a7fd44897260d739c38499e2e90dd544face93158f0c2c18e92646c37e496",
+      "GroundTrackController._build_checkboxes": "cfa30da9af344082f84fda73accbb4649c2a70d17c0873c07cd34b78efc0644f",
+      "GroundTrackController._select_all": "ac8c4524681d3489bcb6b7fd7386005efe7a6480f22d02e49c6e8e1ff59a5ead",
+      "GroundTrackController._deselect_all": "7a1c0f4d9f9c3d0f565d765c571c68856e3552c2ef33f3e4d2ef4d4a654fb069",
+      "GroundTrackController._compute": "6defdc21e6ab389856b8a08f1c03a0ee7de68ad7a32d888a0ee19f0a8abc34fc",
+      "GroundTrackController._on_progress": "2df0911709a27809ea3db1883e4cdf60ed1fb8cf3561c7c6d78be4d0dcda59cf",
+      "GroundTrackController._on_data": "daeac11a37564f655062445dd6b78d9345882665d8bccce211953d99c578d1e7",
+      "GroundTrackController._install_result": "d985b5cf47a4d181b5f4ab86622142c559e23fd3df0aa1b656fdbbae5fb6ec3a",
+      "GroundTrackController._on_fail": "a8d2a349f90914044abc1ecc6d3d959ef19ec900e494b2af51598af58764e04e",
+      "GroundTrackController._pause_playback": "caad5864924489605b71e7015800894f60689f363716e17792ec7cd4f88b79b4",
+      "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+      "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+      "GroundTrackController._on_tab_changed": "485ed370d1f0799aba55171c05d9a55c99da1ff32e8e7f4f7512460bd6c4c3bd",
+      "GroundTrackController._play_pause": "a0b79dc798c4cfbd702944d2fcaac1b8be83b078476bcc68742b1d9e660035c6",
+      "GroundTrackController._reset_anim": "5525c1288967e81b69286ba71c23bf2628fce9e5b8d5cef6defb91c49d4ffcab",
+      "GroundTrackController._anim_tick": "bd79c15740e8275b3d3c8c584d062829bc938e35cfd05b205732938d8a4e16c6",
+      "GroundTrackController._anim_step": "89f0bc499c816ba7b3f56f3fd38cef9ab5ba5565dc021d0c086c538c6cf5bb29",
+      "GroundTrackController._cache_background": "f5cbdd6b14b6cb63c752afe79beb6eacea2de043967ccb11c439e8beb7d252d2",
+      "GroundTrackController._draw_animated": "61b7f96b1dba606683f8ec9e03fd94c761d1b8d7ade10acd4bf69faf15a1b066",
+      "GroundTrackController._blit_frame": "2cc01c38c16b252429a60d82b379ee5b088ac2d7e6288ea06b7510904a9046df",
+      "GroundTrackController._set_canvas": "18ce8b0cb8622b0822dc43d3f934bd005e003f9c51f394090a4b320a768fbf19",
+      "GroundTrackController._init_placeholder": "5b97b73060c2cc201806819d19437903933adaa860dd05a833ac95f1d9f2f0bd",
+      "GroundTrackController._set_status": "425a4cf61a3ab2370bce5a63400678b628dd0f4ee89a4b93e5c5dd9fb73a4917",
+      "GroundTrackController._export_png": "0649f60b1ffb08f013dee9bcf1c817f197a09139ad13f7aacee4ccad3ecf5b7f",
+      "GroundTrackController._export_csv": "2823d81ccb50db26c3e88b6f81252d41f7bc001392d09eb51594c4b894f7df1d",
+      "GroundTrackController._show_keplerian_track": "ce918f23049ab222120c75fce40607fe2104155b10614959efa57003f6d14ec8",
+      "_show_error_dialog": "4e4fa1f87c87d68378d82d6168c194628019fd3aefa7fb68839028123ba9caba"
+    },
+    "controller_normalized_source_sha256": "59608c510b989dd5f8094808e9bdd81a64234e83ae6ee18fb29b85d293b7847d",
+    "kepler_spice_source_math_guards_and_exports_unchanged": true
+  },
+  "local_checks": {
+    "targeted": {
+      "tests": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "named_cases": 73,
+      "sha256": "cdddcc3947071359444daa9a44e799d045e665fa8a94652acdcd0f24136d1737"
+    },
+    "public": {
+      "tests": 398,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "named_cases": 398,
+      "sha256": "d015995e26b525198b4e08132c54cc995cbbdaf355a982f88903651160e0daf9"
+    },
+    "full": {
+      "tests": 2071,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "named_cases": 1925,
+      "sha256": "bada396396407dee294660477626c7e7dca4371b43fb0df2c2a21d1138e053e5"
+    },
+    "environment": {
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "named_cases": 15,
+      "sha256": "c8e68fffb79c799373ba7f31fb70cce059e49bc1da1609850636a85549e5f7d0"
+    }
+  },
+  "local_gates": [
+    {
+      "name": "public",
+      "returncode": 0,
+      "started": "2026-10-25T10:31:27.333568+00:00",
+      "duration_s": 116.083711
+    },
+    {
+      "name": "full",
+      "returncode": 0,
+      "started": "2026-10-25T10:33:23.417839+00:00",
+      "duration_s": 601.98368
+    },
+    {
+      "name": "dependencies",
+      "returncode": 0,
+      "started": "2026-10-25T10:43:25.402228+00:00",
+      "duration_s": 0.830139
+    },
+    {
+      "name": "repository",
+      "returncode": 0,
+      "started": "2026-10-25T10:43:26.233112+00:00",
+      "duration_s": 4.615042
+    },
+    {
+      "name": "whitespace",
+      "returncode": 0,
+      "started": "2026-10-25T10:43:30.848861+00:00",
+      "duration_s": 0.052154
+    }
+  ],
+  "native_gates": [
+    {
+      "name": "gece-camera",
+      "returncode": 0
+    },
+    {
+      "name": "gece-native",
+      "returncode": 0
+    },
+    {
+      "name": "modern-camera",
+      "returncode": 0
+    },
+    {
+      "name": "modern-native",
+      "returncode": 0
+    },
+    {
+      "name": "orchid-camera",
+      "returncode": 0
+    },
+    {
+      "name": "orchid-native",
+      "returncode": 0
+    },
+    {
+      "name": "mission-review",
+      "returncode": 0
+    },
+    {
+      "name": "legacy",
+      "returncode": 0
+    }
+  ],
+  "camera": {
+    "gece": {
+      "palette": "gece",
+      "cases": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "rotation_enabled": true,
+          "full_draws": 15,
+          "phase_advanced": true,
+          "manual_camera_preserved": false,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "gece-camera-1480-True-control.png",
+          "preview_image": "gece-camera-1480-True-preview.png"
+        },
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "rotation_enabled": false,
+          "full_draws": 0,
+          "phase_advanced": false,
+          "manual_camera_preserved": true,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "gece-camera-1480-False-control.png",
+          "preview_image": "gece-camera-1480-False-preview.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "rotation_enabled": true,
+          "full_draws": 15,
+          "phase_advanced": true,
+          "manual_camera_preserved": false,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "gece-camera-760-True-control.png",
+          "preview_image": "gece-camera-760-True-preview.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "rotation_enabled": false,
+          "full_draws": 0,
+          "phase_advanced": false,
+          "manual_camera_preserved": true,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "gece-camera-760-False-control.png",
+          "preview_image": "gece-camera-760-False-preview.png"
+        }
+      ],
+      "base_callback_overwrites_manual_orientation": true,
+      "paused_callback_keeps_manual_orientation": true,
+      "scope": "Native Qt/Fusion offscreen; simulated manual camera uses public Matplotlib view_init, not a qualified native Windows mouse gesture. No physics, propagation or recorded-run changes."
+    },
+    "modern": {
+      "palette": "modern",
+      "cases": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "rotation_enabled": true,
+          "full_draws": 15,
+          "phase_advanced": true,
+          "manual_camera_preserved": false,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "modern-camera-1480-True-control.png",
+          "preview_image": "modern-camera-1480-True-preview.png"
+        },
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "rotation_enabled": false,
+          "full_draws": 0,
+          "phase_advanced": false,
+          "manual_camera_preserved": true,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "modern-camera-1480-False-control.png",
+          "preview_image": "modern-camera-1480-False-preview.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "rotation_enabled": true,
+          "full_draws": 15,
+          "phase_advanced": true,
+          "manual_camera_preserved": false,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "modern-camera-760-True-control.png",
+          "preview_image": "modern-camera-760-True-preview.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "rotation_enabled": false,
+          "full_draws": 0,
+          "phase_advanced": false,
+          "manual_camera_preserved": true,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "modern-camera-760-False-control.png",
+          "preview_image": "modern-camera-760-False-preview.png"
+        }
+      ],
+      "base_callback_overwrites_manual_orientation": true,
+      "paused_callback_keeps_manual_orientation": true,
+      "scope": "Native Qt/Fusion offscreen; simulated manual camera uses public Matplotlib view_init, not a qualified native Windows mouse gesture. No physics, propagation or recorded-run changes."
+    },
+    "orchid": {
+      "palette": "orchid",
+      "cases": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "rotation_enabled": true,
+          "full_draws": 15,
+          "phase_advanced": true,
+          "manual_camera_preserved": false,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "orchid-camera-1480-True-control.png",
+          "preview_image": "orchid-camera-1480-True-preview.png"
+        },
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "rotation_enabled": false,
+          "full_draws": 0,
+          "phase_advanced": false,
+          "manual_camera_preserved": true,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "orchid-camera-1480-False-control.png",
+          "preview_image": "orchid-camera-1480-False-preview.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "rotation_enabled": true,
+          "full_draws": 15,
+          "phase_advanced": true,
+          "manual_camera_preserved": false,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "orchid-camera-760-True-control.png",
+          "preview_image": "orchid-camera-760-True-preview.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "rotation_enabled": false,
+          "full_draws": 0,
+          "phase_advanced": false,
+          "manual_camera_preserved": true,
+          "parameters_preserved": true,
+          "checkbox_reached_by_tab": true,
+          "checkbox_fully_visible": true,
+          "control_image": "orchid-camera-760-False-control.png",
+          "preview_image": "orchid-camera-760-False-preview.png"
+        }
+      ],
+      "base_callback_overwrites_manual_orientation": true,
+      "paused_callback_keeps_manual_orientation": true,
+      "scope": "Native Qt/Fusion offscreen; simulated manual camera uses public Matplotlib view_init, not a qualified native Windows mouse gesture. No physics, propagation or recorded-run changes."
+    }
+  },
+  "preview_state_cases": 27,
+  "analytical_csv_sha256": {
+    "gece": {
+      "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+      "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+    },
+    "modern": {
+      "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+      "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+    },
+    "orchid": {
+      "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+      "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+    }
+  },
+  "historical_numerical_reference_commit": "3b2a746",
+  "current_guard_source_identical_to_base": true,
+  "spice_example": {
+    "samples": 361,
+    "sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+    "prior_replay_only": true
+  },
+  "recorded_run": {
+    "palette": "modern",
+    "head": "d637c44b2f151067267c46c41434398a4b5bfe00",
+    "pages": [
+      {
+        "name": "scenario",
+        "initial_navigation_s": 0.0007578999939141795
+      },
+      {
+        "name": "run_monitor",
+        "initial_navigation_s": 0.016141500003868714
+      },
+      {
+        "name": "console",
+        "initial_navigation_s": 0.09052189999783877
+      },
+      {
+        "name": "archive",
+        "initial_navigation_s": 0.07484520001162309
+      },
+      {
+        "name": "stations",
+        "initial_navigation_s": 0.7217888999875868
+      },
+      {
+        "name": "visibility",
+        "initial_navigation_s": 0.18149749998701736
+      }
+    ],
+    "shared_station_and_threshold_transfer": true,
+    "recorded_states": 145,
+    "stations": 4,
+    "measurement_sample_windows": 12,
+    "playback_before_s": 21600.0,
+    "playback_after_s": 25800.0,
+    "source_hashes_unchanged": true,
+    "captures": [
+      "modern-mission-1480.png",
+      "modern-stations-1480.png",
+      "modern-visibility-1480.png",
+      "modern-mission-910.png",
+      "modern-stations-910.png",
+      "modern-visibility-910.png",
+      "modern-mission-760.png",
+      "modern-stations-760.png",
+      "modern-visibility-760.png"
+    ],
+    "scope": "Read-only review of existing local six-page commit; no application source edits or publishing. Recorded solver output has synthetic observations, not spacecraft telemetry."
+  },
+  "legacy": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "İşlem tamamlandı · 1/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "İşlem tamamlandı · 0/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "İşlem tamamlandı · 0/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "İşlem tamamlandı · 0/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "İşlem tamamlandı · 1/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "İşlem tamamlandı · 1/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "İşlem tamamlandı · 0/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "İşlem tamamlandı · 0/1 yay kaydı başarılı · Yakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "runtime": {
+    "only_project_editable_metadata_differs": {
+      "lunar-orbit-determination": [
+        "0.1.0a2",
+        "0.1.0a4"
+      ]
+    },
+    "third_party_dependency_versions_identical": true,
+    "versions": {
+      "colorama": "0.4.6",
+      "contourpy": "1.4.0",
+      "cycler": "0.12.1",
+      "fonttools": "4.66.1",
+      "h5py": "3.16.0",
+      "iniconfig": "2.3.1",
+      "kiwisolver": "1.5.1",
+      "llvmlite": "0.47.0",
+      "matplotlib": "3.10.7",
+      "numba": "0.65.1",
+      "numpy": "2.4.3",
+      "packaging": "26.3",
+      "pandas": "3.0.6",
+      "pillow": "12.3.0",
+      "pip": "24.3.1",
+      "pluggy": "1.6.0",
+      "pygments": "2.21.0",
+      "pyparsing": "3.3.3",
+      "pyqt5": "5.15.11",
+      "pyqt5-qt5": "5.15.2",
+      "pyqt5_sip": "12.18.0",
+      "pyqtgraph": "0.14.0",
+      "pytest": "9.1.1",
+      "python-dateutil": "2.9.0.post0",
+      "scipy": "1.17.1",
+      "six": "1.17.0",
+      "spiceypy": "8.2.0",
+      "tzdata": "2026.5"
+    }
+  },
+  "rejected_initial_full_attempt": {
+    "tests": 2064,
+    "failures": 2,
+    "errors": 11,
+    "skipped": 144,
+    "named_cases": 1918,
+    "sha256": "238cf6fcc2fe0d6434917ceafc1e7e3f9cdfedbce614c12c47f5a25654d478a2"
+  },
+  "initial_attempt_note": "Excluded: editable runtime pointed at another checkout and isolated paths lacked the shared read-only campaign/gravity roots. A copied verified runtime with its own editable install and explicit project-data root passed import isolation and the corrected full rerun; tests/tolerances unchanged.",
+  "limits": [
+    "Offscreen Qt/Fusion; simulated manual pose uses public view_init, not native Windows mouse-gesture qualification.",
+    "Pause is session-local and survives page/tab navigation. Explicit element edits retain the existing preview rebuild/view-reset behavior.",
+    "This change adds camera control; rendering optimizations already merged in PR52 remain intact."
+  ],
+  "hosted_ci": "Required checks and Release qualification before merge; exact merged-main JUnit recorded outside Git."
+}

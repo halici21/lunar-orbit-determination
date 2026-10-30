@@ -1,0 +1,158 @@
+{
+ "retired_on": "2026-10-25",
+ "reason": "Every tagged commit is an ancestor of main (checked with git merge-base --is-ancestor), so the tags only repeated history main already holds. They were removed to keep the tag list to releases and qualification milestones.",
+ "restore": "git switch -c <name> <commit>  (or: git tag -a <tag> <commit> -m <message>)",
+ "main_at_retirement": "97edff9cb6448464c8be15b803666e643c9bfb42",
+ "tags": [
+  {
+   "tag": "branch-history/2026-10-10/archive/worktree-snapshots-2026-09-24",
+   "tag_object": "7dd87712f206c29adb2dd1dbaed65310ea9cb545",
+   "commit": "a25d6faeecc7399b341b0f2c7847035eda3cb953",
+   "message": "Preserved branch tip before consolidation: archive/worktree-snapshots-2026-09-24"
+  },
+  {
+   "tag": "branch-history/2026-10-10/codex/lunar-od-workspace",
+   "tag_object": "1b323ae08777f597768d1474e1193b8e73b1fc96",
+   "commit": "a9f9e56c2556b98a68493e3425ae42b836f34f8c",
+   "message": "Preserved branch tip before consolidation: codex/lunar-od-workspace"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/lunar-high-order-gravity-closure",
+   "tag_object": "ac6e40edfcb90396fd272efb740e89c3d520e807",
+   "commit": "fc13cc4000767ac07abeb3856ec18521bfbc0f76",
+   "message": "Preserved branch tip before consolidation: feature/lunar-high-order-gravity-closure"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/lunar-j2-force-models",
+   "tag_object": "faa5f78ff33b48ef1c498607a6260a9743961604",
+   "commit": "632560d72d51b3d77b401365b1839908c2c8e85f",
+   "message": "Preserved branch tip before consolidation: feature/lunar-j2-force-models"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/phase14-17ar-qualified",
+   "tag_object": "482cf420b96b90964bef34fcd3d22269fd174e98",
+   "commit": "0e785f624a4e512177b3e7b5c0adc00d2c809e34",
+   "message": "Preserved branch tip before consolidation: feature/phase14-17ar-qualified"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/phase17-r-k-srp-estimation",
+   "tag_object": "c0e435bf741d60ab94bc58c788f86fb7d7c70abe",
+   "commit": "46e21c80c7ee2ff3caf2b650d2c5e8fc3fc01fc7",
+   "message": "Preserved branch tip before consolidation: feature/phase17-r-k-srp-estimation"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/r0b-force-contract-parity",
+   "tag_object": "ffe847ec42ce0a3b36f6845bc65ae97cbd43e1ed",
+   "commit": "9dd19c39b0ca2d0eee33498b754454b8e4dc395b",
+   "message": "Preserved branch tip before consolidation: feature/r0b-force-contract-parity"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/r1-covariance-observability-parity",
+   "tag_object": "3f08f38ac9c7d4e7ce0785b71e39874050f0c9bd",
+   "commit": "6e88015114540253cf64892d9a6ff22342bb9d1b",
+   "message": "Preserved branch tip before consolidation: feature/r1-covariance-observability-parity"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/r2-measurement-fidelity-parity",
+   "tag_object": "d980bee4a2e386c68a59e43a6bb785de1d3bf81b",
+   "commit": "5ca652a4659375fa9a053cee8450ad2375b3bbf3",
+   "message": "Preserved branch tip before consolidation: feature/r2-measurement-fidelity-parity"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/r3-exact-station-transform",
+   "tag_object": "a47dcf1ddfe6dace364467ec1a56e796e4d3ac9d",
+   "commit": "d03a9132a842ad8f4aa559d22e9d2ee295270345",
+   "message": "Preserved branch tip before consolidation: feature/r3-exact-station-transform"
+  },
+  {
+   "tag": "branch-history/2026-10-10/feature/r4-four-event-counted-doppler",
+   "tag_object": "4af23a702b853efc1120c9717e38ff481fd1f45b",
+   "commit": "5bf0c542898913c7a283e5495f8a1c884ea4dd71",
+   "message": "Preserved branch tip before consolidation: feature/r4-four-event-counted-doppler"
+  },
+  {
+   "tag": "branch-history/2026-10-10/fix/history-domain-enforcement",
+   "tag_object": "58d41d481e18483eae10b65529d0cc3a99861a9d",
+   "commit": "da28e5acb8dba0367f2252070ed77c8941b86de5",
+   "message": "Preserved branch tip before consolidation: fix/history-domain-enforcement"
+  },
+  {
+   "tag": "branch-history/2026-10-10/fix/light-time-nonconvergence",
+   "tag_object": "35764625ce7d963cdeb7a479af57e78dea74e565",
+   "commit": "e572a64be38c81102c5d6d95e2d527cd78464390",
+   "message": "Preserved branch tip before consolidation: fix/light-time-nonconvergence"
+  },
+  {
+   "tag": "branch-history/2026-10-10/fix/measurement-model-safety",
+   "tag_object": "5ecffa6dc42b9850fda05b60006688578856ee8b",
+   "commit": "3265dbe96826e2fb843362c61913b1c6d7c47629",
+   "message": "Preserved branch tip before consolidation: fix/measurement-model-safety"
+  },
+  {
+   "tag": "branch-history/2026-10-10/fix/r0a-force-config-ukf-parity",
+   "tag_object": "d41a072baea4ede669cec991ccfa565c490be524",
+   "commit": "543b6b9472f5a227c2e2b2857d0086bc14d45ffd",
+   "message": "Preserved branch tip before consolidation: fix/r0a-force-config-ukf-parity"
+  },
+  {
+   "tag": "branch-history/2026-10-10/fix/r1-r4-long-arc-time-conditioning",
+   "tag_object": "3bb9f01d0fca9965ff5c6a0684a1defc1daf1eee",
+   "commit": "a347397e89f0c7b921eaa66c3f94909f75113bd7",
+   "message": "Preserved branch tip before consolidation: fix/r1-r4-long-arc-time-conditioning"
+  },
+  {
+   "tag": "branch-history/2026-10-10/integration/phase17-canonical",
+   "tag_object": "b5ab93f633dce2733ee14de9265768106273c158",
+   "commit": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+   "message": "Preserved branch tip before consolidation: integration/phase17-canonical"
+  },
+  {
+   "tag": "branch-history/2026-10-10/main",
+   "tag_object": "51e48ec3777969f59276cbce0e5389cbc31cdf1e",
+   "commit": "fea476f81dad07b3914e53eab709e10fa6e9d10b",
+   "message": "Preserved branch tip before consolidation: main"
+  },
+  {
+   "tag": "branch-history/2026-10-10/remote/archive/worktree-snapshots-2026-09-24",
+   "tag_object": "1816fb748543835539e81c7e5cac2b699d3c7e61",
+   "commit": "a25d6faeecc7399b341b0f2c7847035eda3cb953",
+   "message": "Preserved remote branch tip before consolidation: origin/archive/worktree-snapshots-2026-09-24"
+  },
+  {
+   "tag": "branch-history/2026-10-10/remote/codex/lunar-od-workspace",
+   "tag_object": "b55c8c6c6c14e75e156002de1c393d38672a9fc3",
+   "commit": "a9f9e56c2556b98a68493e3425ae42b836f34f8c",
+   "message": "Preserved remote branch tip before consolidation: origin/codex/lunar-od-workspace"
+  },
+  {
+   "tag": "branch-history/2026-10-10/remote/feature/phase17-r-k-srp-estimation",
+   "tag_object": "69a463c074b9b2b8d1d7462cbf1210a2cb21569c",
+   "commit": "595f5b9853048bcb74ee622688821d237095a24b",
+   "message": "Preserved remote branch tip before consolidation: origin/feature/phase17-r-k-srp-estimation"
+  },
+  {
+   "tag": "branch-history/2026-10-10/remote/main",
+   "tag_object": "2fe988c86df8e0153da8a3e690a7923d08db1826",
+   "commit": "b12bd7349d48f827eb82fb732ab7d7c8f3ce23fe",
+   "message": "Preserved remote branch tip before consolidation: origin/main"
+  },
+  {
+   "tag": "branch-history/2026-10-10/remote/wip/phase17-r-estimator-integration",
+   "tag_object": "0bd8180f232d7859bebf3465bca8e1aae553261d",
+   "commit": "13e75f111dbb13bd6ee57d405a66e15c4d909f7d",
+   "message": "Preserved remote branch tip before consolidation: origin/wip/phase17-r-estimator-integration"
+  },
+  {
+   "tag": "branch-history/2026-10-10/validation/r1-r4-long-arc-qualification",
+   "tag_object": "904560fa698cfad409ef32df08325201cdb191ed",
+   "commit": "3c6f3b092b95dea9cf2e4539cf9ac0d95e6b31a3",
+   "message": "Preserved branch tip before consolidation: validation/r1-r4-long-arc-qualification"
+  },
+  {
+   "tag": "branch-history/2026-10-10/wip/phase17-r-estimator-integration",
+   "tag_object": "52c8088ce065e860ea80c026595245a3ff90d970",
+   "commit": "13e75f111dbb13bd6ee57d405a66e15c4d909f7d",
+   "message": "Preserved branch tip before consolidation: wip/phase17-r-estimator-integration"
+  }
+ ]
+}

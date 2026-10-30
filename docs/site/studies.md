@@ -15,6 +15,13 @@ Use the [Phase 17 reproduction guide](../../studies/phase17/README.md) for scrip
 configurations, results and provenance. The [baseline research guide](../research/research-guide.md)
 explains earlier estimator-comparison families.
 
+## Roadmap phases C1–F2
+
+After Phase 17 the work follows a roadmap: materiality surveys and implementations for
+light time, time scales, station frames, DE440, media and propagation (C1–D2), then real
+LRO tracking (F1–F2). Their files carry the `phase_` prefix in the same study directories.
+The [research studies guide](../../studies/README.md) lists every phase with its outcome.
+
 ## A safe reading order
 
 1. Read the question, truth assumptions and external-data requirements.

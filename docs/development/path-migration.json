@@ -2457,7 +2457,7 @@
         "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4"
       ],
       "refrozen_from_sha256": "bc3a5597b32b957e6892c205b613d5c212aeefbaac55ba4022a72ab9c84765c4",
-      "note": " Re-frozen 2026-10-26: Existing C4-I exports: pre-existing identity drift, no source edit in this closure. All previous source identities retained; this is not scientific requalification."
+      "note": "Re-frozen for Phase C4-I (DE440 production ephemeris; exports DEFAULT_PLANETARY_EPHEMERIS, planetary_ephemeris, required_kernels), authorized by the owner on 2026-10-25; previous identity kept in refrozen_from_sha256."
     },
     "lunar_od/accelerated.py": {
       "path": "src/lunar_od/accelerated.py",

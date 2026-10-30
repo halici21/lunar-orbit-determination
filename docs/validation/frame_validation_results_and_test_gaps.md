@@ -12,10 +12,10 @@ not execute the D2 frame, PCHIP, visibility, or lunar-frame campaigns.
 
 | Field | Value |
 |---|---|
-| Repository | `C:/Users/erayh/Documents/Python/Grad/python_port_measurement_fix` |
+| Repository | `<workspace>/python_port_measurement_fix` |
 | Branch | `fix/measurement-model-safety` |
 | HEAD | `eb92461f781c3fccd39012e3a02cd6ace64d893b` |
-| Python | 3.13.12, `C:/Users/erayh/miniforge3/python.exe` |
+| Python | 3.13.12, `<python>` |
 | pytest | 9.0.3 |
 | Platform | Windows 11 / win32 |
 | Date | 2026-07-13 |
@@ -28,7 +28,7 @@ The main-worktree Phase13G commit `f360687` was not merged or cherry-picked.
 Issue: **FA-06**.
 
 The parent config is
-`C:/Users/erayh/Documents/Python/Grad/pytest.ini`. It declares both
+`<workspace>/pytest.ini`. It declares both
 `python_port` and `python_port/desktop_app` under `pythonpath`. A plain pytest
 session can therefore import the main worktree even when the current directory
 is the isolated worktree.
@@ -44,9 +44,9 @@ Focused-session evidence from
 
 | Field | Observed |
 |---|---|
-| pytest rootdir | `C:/Users/erayh/Documents/Python/Grad` |
-| pytest config | `C:/Users/erayh/Documents/Python/Grad/pytest.ini` |
-| repository root | `C:/Users/erayh/Documents/Python/Grad/python_port_measurement_fix` |
+| pytest rootdir | `<workspace>` |
+| pytest config | `<workspace>/pytest.ini` |
+| repository root | `<workspace>/python_port_measurement_fix` |
 | `lunar_od.__file__` | isolated `python_port_measurement_fix/src/lunar_od/__init__.py` |
 | effective pytest `pythonpath` | `[]` |
 | relevant `sys.path` entry | isolated worktree only |

@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtCore import QSettings, Qt, QEvent, QCoreApplication
 from PyQt5.QtTest import QSignalSpy, QTest
 from app import MainWindow
 from controllers import ground_track_controller as gt
@@ -17,8 +17,8 @@ def window(tmp_path,monkeypatch):
     monkeypatch.setattr('PyQt5.QtCore.QSettings',lambda *a,**kw:settings)
     w=MainWindow();w.environment.shutdown();w.resize(1480,1000)
     w.show();w.navigate('ground_track');app.processEvents()
-    yield w,w._pages['ground_track'],app
-    page=w._pages['ground_track']
+    yield w,w._pages['visibility'].track,app
+    page=w._pages['visibility'].track
     page._anim_timer.stop();page._orbit_designer._preview_timer.stop()
     w.close();app.processEvents()
 
@@ -86,3 +86,53 @@ def test_window_close_stops_timers_on_retained_page_objects(window):
     QTest.qWait(180)
     assert not page._anim_timer.isActive() and not page._orbit_designer._preview_timer.isActive()
     assert len(spy)==count
+
+
+@pytest.mark.parametrize('size', [(910, 465), (760, 420)])
+def test_scrolling_preview_out_of_view_pauses_only_camera_rotation(window, size):
+    w, page, app = window
+    designer = page._orbit_designer
+    page._tab_widget.setCurrentIndex(1)
+    w.resize(*size)
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    for _ in range(6):
+        app.processEvents()
+    assert designer.isVisible() and designer._preview_timer.isActive()
+    designer._preview_timer.stop()  # Drive frames explicitly, without wall-clock races.
+    canvas = designer._canvas
+    figure = designer._fig
+    elements = designer._get_elements()
+    scroll = w.pageScroll.verticalScrollBar()
+    scroll.setValue(0)
+    app.processEvents()
+    assert canvas.isVisible() and canvas.visibleRegion().isEmpty()
+    phase = designer._preview_phase_deg
+    designer._ax.view_init(elev=13, azim=73, roll=17)
+    with patch.object(canvas, 'draw_idle') as draw, patch.object(designer._ax, 'view_init') as view:
+        for _ in range(30):
+            designer._animate_preview()
+        assert designer._preview_phase_deg == phase
+        draw.assert_not_called()
+        view.assert_not_called()
+
+        # Even a partially revealed canvas must animate, then pause again on scroll up.
+        scroll.setValue(scroll.maximum())
+        app.processEvents()
+        assert not canvas.visibleRegion().isEmpty()
+        assert canvas.visibleRegion().boundingRect().height() < canvas.height()
+        draw.reset_mock()
+        designer._animate_preview()
+        resumed_phase = 75.4  # Continue from the inspected azimuth, 73 degrees.
+        assert designer._preview_phase_deg == resumed_phase
+        view.assert_called_once_with(elev=13, azim=resumed_phase, roll=17)
+        draw.assert_called_once_with()
+        scroll.setValue(0)
+        app.processEvents()
+        draw.reset_mock()
+        view.reset_mock()
+        designer._animate_preview()
+        assert designer._preview_phase_deg == resumed_phase
+        draw.assert_not_called()
+        view.assert_not_called()
+    assert designer._get_elements() == elements
+    assert designer._fig is figure and designer._canvas is canvas

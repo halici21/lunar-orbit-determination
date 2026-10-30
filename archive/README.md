@@ -1,4 +1,22 @@
-# Worktree snapshots — 2026-09-24
+# Archive
+
+Preserved historical and unfinished work. Nothing here is imported by the library, collected by
+`tests/` or part of current documentation. Files are kept byte-exact (`.gitattributes: * -text`),
+so absolute paths and older layouts inside them are historical, not current instructions.
+
+| folder | what it holds |
+|---|---|
+| `worktree_snapshots/` + `index.json` | Uncommitted content of every development worktree as of 2026-09-24 (below). |
+| [`branch_consolidation_2026-10-10/`](branch_consolidation_2026-10-10/README.md) | Conflict versions and dirty-worktree content from the 2026-10-10 branch consolidation. |
+| [`phase17_orphans/`](phase17_orphans/README.md) | Two untracked Phase 17-R1O-D scripts written against a superseded `delta_dor` API. |
+| `phase_notes/` | Loose July–September phase reports, run logs and patches from the earlier workspace. |
+
+Former branch heads: work that never reached `main` is kept as the tag
+`snapshot/phase17r0-desktop-wip-2026-10-10`. The `branch-history/2026-10-10/*` tags were retired on
+2026-10-25 because every tagged commit is in `main`; their names and commits are recorded in
+`docs/development/branch_consolidation_2026-10-10/retired_tags_2026-10-25.json`.
+
+## Worktree snapshots — 2026-09-24
 
 A preservation archive, **not code to merge**. Every lunar-OD worktree on the development machine
 was scanned for uncommitted content whose exact bytes exist in no commit on any branch. Those
@@ -19,7 +37,7 @@ Restore: `git worktree add <dir> <base_commit>`, then `git apply changes.patch` 
 All files here are stored byte-exact (`.gitattributes: * -text`), so patches survive
 `core.autocrlf`.
 
-## What each snapshot is
+### What each snapshot is
 
 | worktree | base | what it is | status |
 |---|---|---|---|

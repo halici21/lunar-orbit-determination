@@ -16,6 +16,7 @@
 ```
 STATUS     D2_NOT_QUALIFIED as computed: G4, G6 and G7 (SRIF status) FAIL; G1, G2, G3, G5, G8 PASS
 PROPOSED   owner adjudication for G4, G6 and G7-SRIF (s4); each failure is a floor or a label, not a defect
+OUTCOME    G4, G6 and G7-SRIF adjudications ACCEPTED by the owner 2026-10-25 -> D2_QUALIFIED (merged in PR #55)
 HEADLINE   with the profile, BLS-LM converges 0.041 mm from the truth (D1: "Converged" 13 m off, best 5.6 mm);
            SRIF ends 0.044 mm from the truth (D1: 17.6 mm)
 DEFAULTS   unchanged; flipping them is C4-I (with DE440), per the owner

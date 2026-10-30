@@ -1,5 +1,32 @@
 # Native scenario workflow
 
+## Current page layout (2026-10-23)
+
+The sidebar has six task pages plus Ayarlar. Sections below that predate this
+layout use the old page names; read them through this map:
+
+| Old name | Now |
+|---|---|
+| Scenario Builder | **Senaryo** (measurement type and station network are in the main form) |
+| Run Monitor | **Çalıştır** — monitors the job started from Senaryo; no script picker |
+| Sonuçlar / result console | **Sonuçlar** tabs *Grafikler* and *Kayıtlar* |
+| Görev görünümü | **Sonuçlar › Genel görünüm** (first tab) |
+| Koşu arşivi | **Arşiv** |
+| Karşılaştırma | opened from **Arşiv** ("Karşılaştır"), "← Arşive dön" returns |
+| Temas planı, Yüzey izi, Yörünge tasarımı | tabs of **Görünürlük** |
+| İstasyonlar | **İstasyonlar** (network presets removed: the executor accepts only single/multi) |
+
+Removed: Genel bakış, Dosya tarayıcı, the legacy CSV summary comparison, and the
+Dinamik / Ölçümler / Kestiriciler pages (their saved values reached no run).
+Analiz is no longer in the sidebar; `controllers/analysis_controller.py` is kept
+byte-identical because the R2 measurement-fidelity gate hash-freezes it.
+Widget looks come from `styles/workspace_light.py`; pages pick a shared look with
+`set_role(widget, "caption" | "eyebrow" | "placeholder" | "summary" | "log" | "disclosure" | "danger")`.
+The default palette is **Gece** (sunumatik.vercel.app catalogue: near-black ground,
+hairline borders, one gold accent for the primary action, active item and focus);
+Modern and Orchid stay selectable in Ayarlar. Use palette tokens (`C.*`), never
+hex literals, so all three palettes keep working; `C.LAND` colours map land.
+
 Launch `python desktop_app/main.py` with the desktop dependencies installed.
 Choose Scenario Builder, configure a scenario, and press Run Scenario.
 The form is saved in a unique `desktop_runs/<name>_<id>` folder below the chosen

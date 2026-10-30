@@ -63,8 +63,8 @@ def test_label_shortcut_reveals_field_respects_busy_and_hidden_page(window, tmp_
     assert control.isEnabled() and page._data is original[0]
 
     # A hidden tool must not intercept a key from the current Mission page.
-    view.navigate("mission")
-    view._nav_btns["mission"].setFocus()
+    view.navigate("console")
+    view._nav_btns["console"].setFocus()
     focus = app.focusWidget()
     QTest.keyClick(view, key, Qt.AltModifier)
     settle(app)
