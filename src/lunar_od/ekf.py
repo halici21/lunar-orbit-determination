@@ -34,6 +34,7 @@ from numpy.typing import ArrayLike
 
 from .dmc import DMC_SIZE, DMCOptions, dmc_process_noise, propagate_dmc_state
 from .dynamics import propagate_augmented_state, propagate_state
+from .ekf_partials import analytic_measurement_jacobian, validate_analytic_support
 from .filters import (
     MeasurementFunction,
     ProcessNoiseModel,
@@ -224,6 +225,7 @@ def run_lunar_ekf(
     smooth: bool = False,
     linearization: ArrayLike | None = None,
     dmc: DMCOptions | None = None,
+    measurement_jacobian: str = "finite_difference",
 ) -> LunarEKFResult:
     """Run an EKF (optionally followed by the RTS smoother) over one prepared lunar OD arc.
 
@@ -235,6 +237,10 @@ def run_lunar_ekf(
     linearised filter about that trajectory instead of about its own
     prediction: dynamics and measurement are expanded around it. The iterated
     smoother (``run_lunar_iterated_smoother``) passes its previous solution here.
+
+    ``measurement_jacobian='analytic'`` (Phase D6) takes dh/d[r, v] from ``ekf_partials`` instead of
+    central differences; bias columns stay differenced (they are additive and hit the measurement
+    cache, so they cost no physical evaluation).
 
     ``dmc`` adds the empirical acceleration ``w`` as state elements 6:9 (``x0_mci``,
     ``p0`` and ``linearization`` include it). It replaces ``process_noise``, which
@@ -277,6 +283,10 @@ def run_lunar_ekf(
     steps = (np.asarray(list(DEFAULT_JACOBIAN_STEPS) + [DEFAULT_BIAS_JACOBIAN_STEP] * (nx - 6), dtype=float)
              if jacobian_steps is None else np.asarray(jacobian_steps, dtype=float).reshape(-1))
     residual_fn = _measurement_residual(measurement_type)
+    if measurement_jacobian not in {"finite_difference", "analytic"}:
+        raise ValueError("measurement_jacobian must be 'finite_difference' or 'analytic'.")
+    if measurement_jacobian == "analytic":
+        validate_analytic_support(measurement_type, pass_geo)
 
     order = np.argsort(obs[:, 0], kind="stable")
     current_t = float(t_pass[0])
@@ -326,7 +336,18 @@ def run_lunar_ekf(
         if dmc is not None:
             measurement_fn = _without_dmc(measurement_fn)
         centre = x_pred if x_bar is None else x_bar
-        h = finite_difference_measurement_jacobian(measurement_fn, centre, steps, residual_fn)
+        if measurement_jacobian == "analytic":
+            h = np.zeros((z.size, nx))
+            h[:, :6] = analytic_measurement_jacobian(
+                measurement_type, row, pass_geo, centre, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                get_earth_pos, get_sun_pos, rtol, atol, j2_moon=j2_moon, srp=srp,
+                propagation_profile=propagation_profile)
+            if nx > n_dyn:
+                bias_fn = lambda b, c=centre: measurement_fn(np.concatenate([c[:n_dyn], b]))  # noqa: E731
+                h[:, n_dyn:] = finite_difference_measurement_jacobian(bias_fn, centre[n_dyn:], steps[n_dyn:],
+                                                                      residual_fn)
+        else:
+            h = finite_difference_measurement_jacobian(measurement_fn, centre, steps, residual_fn)
         z_pred = np.asarray(measurement_fn(centre), dtype=float) + h @ (x_pred - centre)
         x, p, diag = ekf_update(x_pred, p_pred, z, z_pred, h, r, residual_fn=residual_fn, nis_gate=nis_gate)
         current_t = target_t
