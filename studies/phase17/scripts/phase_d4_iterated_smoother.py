@@ -19,6 +19,8 @@ from lunar_od import normalized_estimation_error_squared  # noqa: E402
 from lunar_od.ekf import run_lunar_iterated_smoother  # noqa: E402
 
 OUT = HERE.parent / "results" / "phase_d4_iterated_smoother.json"
+#: D4-R (--d4r): same run on the certified-stop code, written beside the D4 record
+OUT_D4R = HERE.parent / "results" / "phase_d4r_iterated_smoother.json"
 
 
 def _strip_times(obj):
@@ -56,7 +58,7 @@ def one_seed(measurement_type, mi, si, scale, seed, case, bls_run):
     x = it.result.smoothed.state_estimates[0]
     p = it.result.smoothed.covariances[0]
     bls_sigma = np.asarray(bls_run["sigma"])
-    return dict(status=it.status, iterations=it.iterations, halvings=[h["halvings"] for h in it.history],
+    return dict(status=it.status, iterations=it.iterations, final_gn_decrement=it.final_gn_decrement, halvings=[h["halvings"] for h in it.history],
                 x=list(map(float, x)), sigma=list(map(float, np.sqrt(np.diag(p)))),
                 pos_err_m=float(np.linalg.norm(x[:3] - truth[0, :3])),
                 vel_err_mps=float(np.linalg.norm(x[3:6] - truth[0, 3:6])),
@@ -96,9 +98,15 @@ def main():
         G2_bls_agreement=all(r["statuses"] == {"Converged": D3.SEEDS} and r["max_vs_bls_sigma"] <= 0.1
                              for r in results.values()),
         G3_consistency=all(D3.NEES_BAND[0] <= r["mean_nees"] <= D3.NEES_BAND[1] for r in results.values()))
-    out = dict(predeclaration="studies/phase17/configs/phase_d4_iterated_smoother_predeclaration.json",
+    if "--d4r" in sys.argv:
+        gates["G5_stop_is_certified"] = all(
+            run["status"] != "Converged" or run["final_gn_decrement"] is None or run["final_gn_decrement"] <= 0.01
+            for r in results.values() for run in r["runs"])
+    d4r = "--d4r" in sys.argv
+    out = dict(predeclaration="studies/phase17/configs/" + ("phase_d4r_certified_stop_predeclaration.json" if d4r
+                                                            else "phase_d4_iterated_smoother_predeclaration.json"),
                gates_computed_here=gates, d3_mismatches=mismatches, results=results)
-    OUT.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
+    (OUT_D4R if d4r else OUT).write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
     print(json.dumps(gates, indent=1))
 
 

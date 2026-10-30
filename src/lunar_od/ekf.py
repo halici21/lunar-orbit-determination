@@ -347,6 +347,7 @@ class IteratedSmootherResult:
     status: str
     iterations: int
     history: tuple[dict, ...]
+    final_gn_decrement: float | None = None
 
 
 def run_lunar_iterated_smoother(
@@ -364,6 +365,7 @@ def run_lunar_iterated_smoother(
     max_iter: int = 20,
     tol_sigma: float = 1e-3,
     max_halvings: int = 10,
+    stationarity_chi2: float = 0.01,
     **ekf_options,
 ) -> IteratedSmootherResult:
     """Iterated EKF + RTS smoother: Gauss-Newton on the arc's MAP problem, one EKF+RTS pass per iteration.
@@ -376,7 +378,9 @@ def run_lunar_iterated_smoother(
     - with process noise the next linearization is the smoothed state sequence itself (the iterated
       extended Kalman smoother); no line search.
 
-    Stops when the largest change of the linearization point, in smoothed sigmas, is below ``tol_sigma``.
+    Stops when the largest change of the linearization point, in smoothed sigmas, is below ``tol_sigma``,
+    or (without process noise) when the Gauss-Newton decrement of the next step, the chi2 decrease the
+    linearised problem predicts, is at most ``stationarity_chi2`` (D4-R; the F2 TRF certified-stop bound).
     Status: ``Converged``, ``MaxIter`` or ``NoDescent`` (the line search found no lower cost).
     """
     if ekf_options.pop("smooth", True) is not True or "linearization" in ekf_options:
@@ -398,8 +402,9 @@ def run_lunar_iterated_smoother(
     x_bar0 = x_prior.copy()
     nominal = None
     cost = None if with_q else cost_of(x_bar0)[0]
-    history = [dict(iteration=0, cost=cost, step_sigma=None, halvings=0)]
+    history = [dict(iteration=0, cost=cost, step_sigma=None, halvings=0, gn_decrement=None)]
     status = "MaxIter"
+    final_gn_decrement = None
     for iteration in range(1, max_iter + 1):
         smoothed = result.smoothed
         sigma = np.sqrt(np.diag(smoothed.covariances[0]))
@@ -411,12 +416,14 @@ def run_lunar_iterated_smoother(
                 status = "Converged"
                 break
             nominal = smoothed.state_estimates.copy()
-            history.append(dict(iteration=iteration, cost=None, step_sigma=change, halvings=0))
+            history.append(dict(iteration=iteration, cost=None, step_sigma=change, halvings=0, gn_decrement=None))
         else:
             step = smoothed.state_estimates[0] - x_bar0
             change = float(np.max(np.abs(step) / sigma))
-            if change < tol_sigma:
+            gn_decrement = float(step @ np.linalg.solve(smoothed.covariances[0], step))
+            if change < tol_sigma or gn_decrement <= stationarity_chi2:
                 status = "Converged"
+                final_gn_decrement = gn_decrement
                 break
             for halvings in range(max_halvings + 1):
                 candidate = x_bar0 + step * 0.5 ** halvings
@@ -427,10 +434,11 @@ def run_lunar_iterated_smoother(
                 status = "NoDescent"
                 break
             x_bar0, cost, nominal = candidate, cand_cost, trajectory
-            history.append(dict(iteration=iteration, cost=cost, step_sigma=change, halvings=halvings))
+            history.append(dict(iteration=iteration, cost=cost, step_sigma=change, halvings=halvings,
+                                gn_decrement=gn_decrement))
         result = run_lunar_ekf(*common, smooth=True, linearization=nominal, **ekf_options)
     return IteratedSmootherResult(result=result, status=status, iterations=len(history) - 1,
-                                  history=tuple(history))
+                                  history=tuple(history), final_gn_decrement=final_gn_decrement)
 
 
 def _map_cost_function(obs, order, x_prior, p_prior, pass_geo, mu_moon, mu_earth, mu_sun, get_earth_pos,
