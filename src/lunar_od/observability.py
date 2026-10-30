@@ -7,6 +7,8 @@ from dataclasses import dataclass, replace
 from itertools import combinations
 from typing import Literal
 
+from .propagation_contract import model_options, propagator_options, resolve_profile
+
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -151,6 +153,8 @@ def analyze_arc_observability(
     atol: float = 1e-12,
     rank_tol: float | None = None,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> ObservabilityResult:
     """Analyze initial-state observability for one prepared measurement arc."""
     x0 = (
@@ -173,6 +177,7 @@ def analyze_arc_observability(
         atol=atol,
         rank_tol=rank_tol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
 
 
@@ -191,6 +196,8 @@ def analyze_augmented_arc_observability(
     atol: float = 1e-12,
     rank_tol: float | None = None,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> ObservabilityResult:
     """Analyze joint initial-state and measurement-bias observability."""
     x0 = (
@@ -212,6 +219,7 @@ def analyze_augmented_arc_observability(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
     h_bias = build_measurement_bias_jacobian(
         measurement_type,
@@ -286,6 +294,8 @@ def analyze_initial_state_observability(
     atol: float = 1e-12,
     rank_tol: float | None = None,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> ObservabilityResult:
     """Build a whitened initial-state Jacobian and Fisher information summary."""
     h_initial = build_initial_state_jacobian(
@@ -302,6 +312,7 @@ def analyze_initial_state_observability(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
     sigma = measurement_sigma_vector(obs_data, pass_geo, measurement_type)
     weighted_jacobian = h_initial / sigma[:, None]
@@ -330,6 +341,8 @@ def build_initial_state_jacobian(
     rtol: float = 1e-11,
     atol: float = 1e-12,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     """Return the measurement Jacobian with respect to the arc initial state."""
     measurement_type = _normalize_measurement_type(measurement_type)
@@ -349,6 +362,7 @@ def build_initial_state_jacobian(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )
 
     if measurement_type == "two_way_range":

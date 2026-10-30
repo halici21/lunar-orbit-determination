@@ -12,16 +12,11 @@ import numpy as np
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QLabel
 
 from app import _NAV, _TITLES
 from controllers.run_monitor_controller import RunMonitorController
-from controllers.system_pages_controller import (
-    DynamicsController,
-    EstimatorsController,
-    MeasurementsController,
-    SettingsController,
-)
+from controllers.system_pages_controller import SettingsController
 
 
 _APP = None
@@ -33,33 +28,19 @@ def _app():
     return _APP
 
 
-def test_desktop_navigation_registry_contains_core_pages():
+def test_desktop_navigation_is_the_six_page_workflow_plus_settings():
     _app()
-    expected = {
-        "dashboard",
-        "results",
-        "run_monitor",
-        "comparison",
-        "scenario",
-        "dynamics",
-        "measurements",
-        "estimators",
-        "stations",
-        "visibility",
-        "analysis",
-        "ground_track",
-        "settings",
-    }
-    nav_ids = {page_id for page_id, _label, _hint in _NAV}
-    assert expected.issubset(nav_ids)
-    assert expected.issubset(set(_TITLES))
+    nav_ids = [page_id for page_id, _label, _hint in _NAV]
+    assert nav_ids == ["scenario", "run_monitor", "console", "archive", "stations", "visibility", "settings"]
+    assert set(nav_ids).issubset(set(_TITLES))
 
 
-def test_new_system_page_shells_load_offscreen():
+def test_settings_page_loads_offscreen_without_model_settings():
     _app()
-    for cls in (DynamicsController, MeasurementsController, EstimatorsController, SettingsController):
-        widget = cls()
-        assert widget.mainLayout.count() >= 3
+    widget = SettingsController()
+    assert widget.mainLayout.count() >= 2
+    texts = {label.text() for label in widget.findChildren(QLabel)}
+    assert not any("seed" in text.lower() or "worker" in text.lower() for text in texts)
 
 
 def test_run_monitor_preset_keeps_extra_args_in_command_preview():
@@ -72,6 +53,9 @@ def test_run_monitor_preset_keeps_extra_args_in_command_preview():
     assert "scenario_config_cli.py" in text
     assert "scenario file.json" in text
     assert "--help" not in text
+    # The page only monitors: no script picker, no free-form parameter group.
+    assert not hasattr(monitor, "scriptCombo") and not hasattr(monitor, "_sp_box")
+    assert "scenario_config_cli.py" in monitor.jobLabel.text()
 
 
 # ---------------------------------------------------------------------------

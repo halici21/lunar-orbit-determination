@@ -17,8 +17,16 @@ def wait(qt, predicate, timeout=60):
     assert predicate(), "Tutorial Qt workflow timed out"
 
 
+def _isolate_session(monkeypatch, desktop, tmp_path):
+    """Never let a test window save its session into the user's real settings."""
+    from PyQt5.QtCore import QSettings
+    settings = QSettings(str(tmp_path / "tutorial-window.ini"), QSettings.IniFormat)
+    monkeypatch.setattr(desktop, "QSettings", lambda *args, **kwargs: settings)
+
+
 def test_menu_runs_real_solver_and_produces_two_readable_seeded_runs(monkeypatch, tmp_path):
     import app as desktop
+    _isolate_session(monkeypatch, desktop, tmp_path)
     monkeypatch.setattr(project_paths, "RESULTS_DIR", tmp_path)
     qt = QApplication.instance() or QApplication([])
     window = desktop.MainWindow()
@@ -46,6 +54,7 @@ def test_menu_runs_real_solver_and_produces_two_readable_seeded_runs(monkeypatch
 
 def test_cancelled_tutorial_cannot_publish_success(monkeypatch, tmp_path):
     import app as desktop
+    _isolate_session(monkeypatch, desktop, tmp_path)
     monkeypatch.setattr(project_paths, "RESULTS_DIR", tmp_path)
     qt = QApplication.instance() or QApplication([])
     window = desktop.MainWindow()

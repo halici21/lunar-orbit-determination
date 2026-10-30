@@ -33,7 +33,9 @@ class EphemerisTests(unittest.TestCase):
 
         load_spice_kernels()
         try:
-            sampled = sample_moon_centered_ephemeris(fixture["et"], grid["t_ephem_s"])
+            # This frozen MATLAB record predates coherent Hermite ephemerides.
+            sampled = sample_moon_centered_ephemeris(
+                fixture["et"], grid["t_ephem_s"], earth_interpolation="legacy_pchip")
         finally:
             spice.kclear()
 

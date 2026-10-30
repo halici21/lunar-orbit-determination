@@ -46,7 +46,7 @@ def comparison_summary(comparison):
     fields = [f'{d["field"]}: {value(d["A"])} → {value(d["B"])}' for d in ordered[:3]]
     settings = ("Değişen ayarlar: " + "; ".join(fields)) if fields else "Kayıtlı ayarlarda fark yok."
     if len(changes) > 3:
-        settings += f" · +{len(changes)-3} fark: Ayar farkları sekmesinde"
+        settings += f" · +{len(changes)-3} fark: Ayarlar ve kaynaklar sekmesinde"
     if not all(s.get("config") for s in comparison.snapshots):
         settings += " · Ayar kaynağı eksik; ayar eşitliği doğrulanamadı."
     if not comparison.time_compatible or not comparison.pairs:

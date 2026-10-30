@@ -1473,7 +1473,7 @@ The app should auto-detect the project root.
 Expected root:
 
 ```text
-C:\Users\erayh\Documents\Python\Grad
+<workspace>
 ```
 
 But do not hard-code this path. Use relative discovery:

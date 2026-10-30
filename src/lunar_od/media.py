@@ -174,3 +174,8 @@ class MediaModel:
         doy = int(date.strip().split("-")[1])
         h, m, sec = clock.strip().split(":")
         return doy + (int(h) * 3600 + int(m) * 60 + float(sec)) / 86400.0
+
+    def leg_delay_partials(self, site: MediaSite, et: float, los_j2000, uplink: bool):
+        """Group/phase LOS and explicit-epoch derivatives of leg_delays."""
+        from .media_partials import model_partials
+        return model_partials(self,site,et,los_j2000,uplink)

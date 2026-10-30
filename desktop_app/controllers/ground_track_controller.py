@@ -21,6 +21,7 @@ from PyQt5 import uic
 
 from services.project_paths import DESKTOP_APP_DIR, PYTHON_PORT
 from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+from styles.workspace_light import set_role
 
 UI_PATH  = DESKTOP_APP_DIR / "ui" / "pages" / "ground_track_page.ui"
 FIXTURE  = PYTHON_PORT / "fixtures" / "spice_snapshots.json"
@@ -106,7 +107,7 @@ class _TrackWorker(QThread):
         )
         from lunar_od.thesis_matrix import THESIS_MAX_GAP_S
 
-        self.progress.emit("Loading fixture…")
+        self.progress.emit("Örnek başlangıç durumu okunuyor…")
         fixture   = json.loads(FIXTURE.read_text(encoding="utf-8"))
         initial   = fixture["initial_state"]
         constants = fixture["constants"]
@@ -121,12 +122,12 @@ class _TrackWorker(QThread):
         t_eval  = np.arange(0.0, self.duration_days * 86400.0 + _SAMPLE_STEP_S, _SAMPLE_STEP_S)
         t_ephem = np.arange(0.0, self.duration_days * 86400.0 + _EPHEM_STEP_S,  _EPHEM_STEP_S)
 
-        self.progress.emit("Loading SPICE kernels…")
+        self.progress.emit("SPICE dosyaları yükleniyor…")
         load_spice_kernels()
         try:
             et0 = float(spice.str2et(epoch_utc))
 
-            self.progress.emit("Propagating orbit…")
+            self.progress.emit("Yörünge yayılıyor…")
             ephemeris = sample_moon_centered_ephemeris(et0, t_ephem)
             xforms    = sample_j2000_to_itrf93_transforms(et0, t_eval)
             states    = propagate_truth_with_ephemeris(
@@ -134,16 +135,16 @@ class _TrackWorker(QThread):
                 rtol=1e-9, atol=1e-10,
             )
 
-            self.progress.emit("Computing selenographic coordinates…")
+            self.progress.emit("Selenografik koordinatlar hesaplanıyor…")
             lons, lats = self._selenographic(
                 np.asarray(states)[:, :3], t_eval, et0, spice
             )
 
-            self.progress.emit("Computing station visibility…")
+            self.progress.emit("İstasyon görünürlüğü hesaplanıyor…")
             by_name  = {s.name: s for s in range_rate_stations()}
             stations = [by_name[n] for n in self.station_names if n in by_name]
             if not stations:
-                self.failed.emit("No valid stations selected.")
+                self.failed.emit("Geçerli istasyon seçilmedi.")
                 return
 
             vis_cfg = VisibilityConfig(
@@ -220,7 +221,7 @@ def _draw_moon_bg(ax) -> None:
 
     # Sub-Earth label
     ax.text(
-        2, 2, "● Sub-Earth",
+        2, 2, "● Dünya altı nokta",
         color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS,
         fontfamily=FONT.MONO, zorder=3, va="bottom",
     )
@@ -373,13 +374,13 @@ def _build_static_figure(data: dict) -> "Figure":
             )
 
     # Start / end markers
-    ax.plot(lons[0],  lats[0],  "o", color=C.GREEN,  ms=6, zorder=7, label="Start")
-    ax.plot(lons[-1], lats[-1], "s", color=C.YELLOW, ms=5, zorder=7, label="End")
+    ax.plot(lons[0],  lats[0],  "o", color=C.GREEN,  ms=6, zorder=7, label="Başlangıç")
+    ax.plot(lons[-1], lats[-1], "s", color=C.YELLOW, ms=5, zorder=7, label="Bitiş")
 
     # Coverage stats
     covered = int(np.any(vis_mask, axis=0).sum()) if vis_mask.size else 0
     pct = 100.0 * covered / max(n, 1)
-    visibility_text = f"Visible samples: {pct:.0f}%" if vis_mask.size else "Visibility not computed"
+    visibility_text = f"Görünür örnek: %{pct:.0f}" if vis_mask.size else "Görünürlük hesaplanmadı"
 
     # Axes
     ax.set_xlim(-180, 180)
@@ -387,11 +388,10 @@ def _build_static_figure(data: dict) -> "Figure":
     ax.set_xticks(range(-180, 181, 30))
     ax.set_yticks(range(-90, 91, 30))
     ax.tick_params(colors=C.TEXT_TICK, labelsize=FONT.SIZE_XS)
-    ax.set_xlabel("Selenographic Longitude (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
-    ax.set_ylabel("Selenographic Latitude (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
+    ax.set_xlabel("Selenografik boylam (°)", color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
+    ax.set_ylabel("Selenografik enlem (°)",  color=C.TEXT_MUTED, fontsize=FONT.SIZE_SM - 1)
     ax.set_title(
-        f"Selenographic Ground Track\n{data['duration_days']:g} "
-        f"{'day' if data['duration_days'] == 1 else 'days'} · {visibility_text}",
+        f"Ay yüzey izi\n{data['duration_days']:g} gün · {visibility_text}",
         color=C.TEXT_SECONDARY, fontsize=FONT.SIZE_SM,
     )
     for sp in ax.spines.values():
@@ -408,10 +408,10 @@ def _build_static_figure(data: dict) -> "Figure":
         for net, col in seen_nets.items()
     ]
     handles += [
-        Patch(facecolor=_NO_VIS_COLOR, label="No sample visibility" if vis_mask.size
-              else "Visibility not computed"),
-        Line2D([0], [0], marker="o", color=C.GREEN,  linestyle="None", ms=6, label="Start"),
-        Line2D([0], [0], marker="s", color=C.YELLOW, linestyle="None", ms=5, label="End"),
+        Patch(facecolor=_NO_VIS_COLOR, label="Örnekte görünürlük yok" if vis_mask.size
+              else "Görünürlük hesaplanmadı"),
+        Line2D([0], [0], marker="o", color=C.GREEN,  linestyle="None", ms=6, label="Başlangıç"),
+        Line2D([0], [0], marker="s", color=C.YELLOW, linestyle="None", ms=5, label="Bitiş"),
     ]
     leg = ax.legend(
         handles=handles, loc="lower left",
@@ -425,8 +425,8 @@ def _build_static_figure(data: dict) -> "Figure":
     from textwrap import fill
     fig.text(
         0.07, 0.012,
-        fill("Moon rotates ~27× slower than Earth — passes drift only ~1°/orbit, "
-             "so selenographic tracks stay near-vertical.", width=60),
+        fill("Ay, Dünya'dan ~27 kat yavaş döner; geçişler turda yalnız ~1° kayar, "
+             "bu yüzden selenografik izler neredeyse dikey kalır.", width=60),
         ha="left", va="bottom", color=C.TEXT_MUTED, fontsize=FONT.SIZE_XS - 1,
     )
 
@@ -527,50 +527,49 @@ def _draw_orbit_preview(
     *,
     fig: "Figure | None" = None,
 ) -> "Figure":
-    """3-D Moon-centered orbit preview for the orbit designer."""
+    """3-D Moon-centered orbit preview for the orbit designer.
+
+    The axes, Moon wireframe and markers are built once per figure; later calls
+    with the same figure only move the orbit artists. Rebuilding the 3-D axes
+    (ticks, grid, panes) on every slider step cost ~90 ms per frame.
+    """
     from matplotlib.figure import Figure
 
-    if fig is None:
-        fig = Figure(figsize=(5.2, 5.2), tight_layout={"pad": 0.35})
-    else:
-        fig.clf()
-    fig.patch.set_facecolor(C.BG_DEEP)
-    ax = fig.add_subplot(111, projection="3d")
-    _draw_moon_sphere(ax)
-
-    x, y, z = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-    )
-    ax.plot(x, y, z, color=C.CYAN, linewidth=1.9, alpha=0.92, zorder=5)
-
-    x0, y0, z0 = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-        nu_deg=[nu0_deg],
-    )
-    ax.plot(x0, y0, z0, "o", color="white", ms=6,
-            markeredgecolor=C.CYAN, markeredgewidth=1.2, zorder=9)
-
-    xp, yp, zp = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-        nu_deg=[0.0],
-    )
-    xa, ya, za = _keplerian_orbit_xyz(
-        alt_km=alt_km, e=e, inc_deg=inc_deg,
-        raan_deg=raan_deg, argp_deg=argp_deg,
-        nu_deg=[180.0],
-    )
-    ax.plot(xp, yp, zp, "v", color=C.GREEN, ms=5, zorder=8)
-    ax.plot(xa, ya, za, "^", color=C.YELLOW, ms=5, zorder=8)
+    def orbit(nu=None):
+        return _keplerian_orbit_xyz(alt_km=alt_km, e=e, inc_deg=inc_deg, raan_deg=raan_deg,
+                                    argp_deg=argp_deg, **({} if nu is None else {"nu_deg": nu}))
 
     metrics = _orbit_metrics(alt_km, e)
-    _configure_orbit_axis(ax, _orbit_axis_limit(metrics))
-    ax.set_title(
-        f"a = {metrics['a_km']:.0f} km    e = {e:.3f}    i = {inc_deg:.0f} deg",
-        fontsize=9, color=C.TEXT_SECONDARY, pad=5,
-    )
+    limit = _orbit_axis_limit(metrics)
+    title = f"a = {metrics['a_km']:.0f} km    e = {e:.3f}    i = {inc_deg:.0f}°"
+    artists = getattr(fig, "_orbit_preview", None) if fig is not None else None
+    if artists is None:
+        if fig is None:
+            fig = Figure(figsize=(5.2, 5.2))
+        else:
+            fig.clf()
+        # Fixed margins: the preview's axes never change size, so no layout pass.
+        fig.subplots_adjust(left=0.0, right=1.0, bottom=0.02, top=0.95)
+        fig.patch.set_facecolor(C.BG_DEEP)
+        ax = fig.add_subplot(111, projection="3d")
+        _draw_moon_sphere(ax)
+        line, = ax.plot(*orbit(), color=C.NAV_ACTIVE, linewidth=1.9, alpha=0.92, zorder=5)
+        start, = ax.plot(*orbit([nu0_deg]), "o", color=C.BG_DEEP, ms=6,
+                         markeredgecolor=C.NAV_ACTIVE, markeredgewidth=1.6, zorder=9)
+        peri, = ax.plot(*orbit([0.0]), "v", color=C.GREEN, ms=5, zorder=8)
+        apo, = ax.plot(*orbit([180.0]), "^", color=C.YELLOW, ms=5, zorder=8)
+        _configure_orbit_axis(ax, limit)
+        ax.set_title(title, fontsize=9, color=C.TEXT_SECONDARY, pad=5)
+        fig._orbit_preview = dict(ax=ax, line=line, start=start, peri=peri, apo=apo, limit=limit)
+        return fig
+    for key, nu in (("line", None), ("start", [nu0_deg]), ("peri", [0.0]), ("apo", [180.0])):
+        x, y, z = orbit(nu)
+        artists[key].set_data_3d(np.atleast_1d(x), np.atleast_1d(y), np.atleast_1d(z))
+    ax = artists["ax"]
+    if limit != artists["limit"]:
+        ax.set_xlim(-limit, limit); ax.set_ylim(-limit, limit); ax.set_zlim(-limit, limit)
+        artists["limit"] = limit
+    ax.set_title(title, fontsize=9, color=C.TEXT_SECONDARY, pad=5)
     return fig
 
 
@@ -638,22 +637,29 @@ def _orbit_axis_limit(metrics: dict[str, float]) -> float:
     return max(moon_km * 1.35, metrics["apo_radius_km"] * 1.08)
 
 
+_FRAME_MS = 33  # ground-track playback frame clock
+
+
 def _draw_moon_sphere(ax) -> None:
+    """Moon as a light latitude/longitude wireframe.
+
+    A shaded 36x18 surface (648 translucent polygons, depth-sorted on every
+    redraw) made each designer slider step cost ~90 ms; a dozen lines cost a
+    fraction of that and read as the same reference sphere.
+    """
     moon_km = R_MOON_M / 1_000.0
-    u = np.linspace(0.0, 2.0 * np.pi, 36)
-    v = np.linspace(0.0, np.pi, 18)
-    x = moon_km * np.outer(np.cos(u), np.sin(v))
-    y = moon_km * np.outer(np.sin(u), np.sin(v))
-    z = moon_km * np.outer(np.ones_like(u), np.cos(v))
-    ax.plot_surface(
-        x, y, z,
-        color=C.BG_PANEL, edgecolor=C.BORDER_MID, linewidth=0.12,
-        alpha=0.78, shade=False, zorder=1,
-    )
-    equ = np.linspace(0.0, 2.0 * np.pi, 180)
+    s = np.linspace(0.0, 2.0 * np.pi, 120)
+    for lat in np.radians((-60, -30, 30, 60)):
+        ax.plot(moon_km * np.cos(lat) * np.cos(s), moon_km * np.cos(lat) * np.sin(s),
+                np.full_like(s, moon_km * np.sin(lat)), color=C.BORDER_MID, linewidth=0.5, zorder=1)
+    half = np.linspace(-np.pi / 2, np.pi / 2, 60)
+    for lon in np.radians(range(0, 180, 30)):
+        ring = np.concatenate([half, half[::-1] + np.pi])
+        ax.plot(moon_km * np.cos(ring) * np.cos(lon), moon_km * np.cos(ring) * np.sin(lon),
+                moon_km * np.sin(ring), color=C.BORDER_MID, linewidth=0.5, zorder=1)
     ax.plot(
-        moon_km * np.cos(equ), moon_km * np.sin(equ), np.zeros_like(equ),
-        color=C.BORDER_EQUATOR, linewidth=0.8, alpha=0.7, zorder=2,
+        moon_km * np.cos(s), moon_km * np.sin(s), np.zeros_like(s),
+        color=C.BORDER_EQUATOR, linewidth=0.9, alpha=0.9, zorder=2,
     )
 
 
@@ -767,17 +773,12 @@ class _OrbitDesigner(QWidget):
             f"QSlider::groove:horizontal {{ height:4px; background:{C.BORDER_MAIN};"
             f" border-radius:2px; }}"
             f"QSlider::handle:horizontal {{ width:12px; height:12px; margin:-4px 0;"
-            f" background:{C.CYAN}; border-radius:6px; }}"
+            f" background:{C.NAV_ACTIVE}; border-radius:6px; }}"
             f"QSlider::handle:horizontal:focus {{ width:8px; height:8px;"
-            f" background:{C.BG_DEEP}; border:2px solid {C.CYAN}; }}"
-            f"QSlider::sub-page:horizontal {{ background:{C.CYAN}; border-radius:2px; }}"
+            f" background:{C.BG_DEEP}; border:2px solid {C.NAV_ACTIVE}; }}"
+            f"QSlider::sub-page:horizontal {{ background:{C.NAV_ACTIVE}; border-radius:2px; }}"
         )
-        _btn_ss = (
-            f"QPushButton {{ background:{C.BG_HOVER}; color:{C.TEXT_PRIMARY};"
-            f" border:1px solid {C.BORDER_MAIN}; border-radius:4px;"
-            f" padding:5px 12px; font-size:12px; }}"
-            f"QPushButton:hover {{ background:{C.BG_ACTIVE}; }}"
-        )
+
 
         outer = QHBoxLayout(self)
         outer.setContentsMargins(4, 4, 4, 4)
@@ -873,12 +874,12 @@ class _OrbitDesigner(QWidget):
         self._dur_spin.setStyleSheet(_spin_ss)
         self._dur_spin.setAccessibleName("Analitik inceleme süresi (gün)")
         self._dur_spin.setToolTip("Yerel t=0 başlangıcından hesap süresi; UTC epoku belirlemez.")
-        dur_form.addRow("Süre:", self._dur_spin)
+        dur_form.addRow("Süre", self._dur_spin)
         ctrl_lay.addWidget(dur_box)
 
         gen_btn = QPushButton("Analitik yüzey izi üret")
         gen_btn.setObjectName("generateAnalyticalTrackButton")
-        gen_btn.setStyleSheet(_btn_ss)
+        gen_btn.setProperty("primary", True)
         gen_btn.setMinimumHeight(38)
         gen_btn.setToolTip(
             "Analitik iki cisim yörüngesinin yaklaşık yüzey izini üretir.\n"
@@ -890,6 +891,21 @@ class _OrbitDesigner(QWidget):
         self._generate_tooltip = gen_btn.toolTip()
         gen_btn.clicked.connect(self._generate_track)
         ctrl_lay.addWidget(gen_btn)
+
+        self._rotation_toggle = QCheckBox("3B kamerayı döndür")
+        self._rotation_toggle.setObjectName("previewRotationToggle")
+        self._rotation_toggle.setChecked(True)
+        self._rotation_toggle.setAccessibleName("3B önizleme kamera dönüşü")
+        camera_help = (
+            "Kamerayı durdurup yörüngeyi fareyle inceleyebilirsiniz.\n"
+            "Yeniden açınca seçtiğiniz açıdan devam eder.\n"
+            "Bu seçenek yalnızca bakış açısını değiştirir; kayıtlı koşunun\n"
+            "zamanını veya analitik hesaplamayı değiştirmez."
+        )
+        self._rotation_toggle.setToolTip(camera_help)
+        self._rotation_toggle.setAccessibleDescription(camera_help)
+        self._rotation_toggle.toggled.connect(self._set_preview_rotation)
+        ctrl_lay.addWidget(self._rotation_toggle)
 
         note = QLabel(
             "a − R_Ay: yarı büyük eksen ile Ay yarıçapının farkı.\n"
@@ -983,21 +999,31 @@ class _OrbitDesigner(QWidget):
         self._redraw_preview(self._display_elems)
 
     def _animate_preview(self) -> None:
-        if self._ax is None or self._canvas is None:
+        if self._ax is None or self._canvas is None or not self._rotation_toggle.isChecked():
             return
-        self._preview_phase_deg = (self._preview_phase_deg + 2.4) % 360
+        # A visible tab can still have its preview clipped by the page scroll area.
+        if self._canvas.visibleRegion().isEmpty():
+            return
+        # Continue from the inspected view, including a manual drag while rotating.
+        self._preview_phase_deg = (self._ax.azim + 2.4) % 360
         try:
-            self._ax.view_init(elev=25, azim=self._preview_phase_deg)
+            self._ax.view_init(elev=self._ax.elev, azim=self._preview_phase_deg,
+                               roll=self._ax.roll)
             self._canvas.draw_idle()
         except Exception:
             pass
+
+    def _set_preview_rotation(self, enabled: bool) -> None:
+        if enabled and self.isVisible():
+            self._preview_timer.start()
+        else:
+            self._preview_timer.stop()
 
     # Pause the expensive 3-D redraw loop whenever the designer is not
     # visible, so it does not bog down the rest of the UI on other pages.
     def showEvent(self, event) -> None:
         super().showEvent(event)
-        if not self._preview_timer.isActive():
-            self._preview_timer.start()
+        self._set_preview_rotation(self._rotation_toggle.isChecked())
 
     def hideEvent(self, event) -> None:
         super().hideEvent(event)
@@ -1013,16 +1039,16 @@ class _OrbitDesigner(QWidget):
         r_peri = a * (1 - elems["e"])
         if r_peri < R_MOON_M * 1.005:
             QMessageBox.warning(
-                self, "Invalid orbit",
-                "Periapsis is below (or too close to) the lunar surface.\n"
-                "Reduce eccentricity or increase altitude.",
+                self, "Geçersiz yörünge",
+                "Periapsis Ay yüzeyinin altında veya ona çok yakın.\n"
+                "Dışmerkezliği azaltın veya yüksekliği artırın.",
             )
             return
 
         try:
             t, lons, lats = _keplerian_ground_track(duration_days=dur, **elems)
         except Exception as exc:
-            QMessageBox.critical(self, "Propagation failed", str(exc))
+            QMessageBox.critical(self, "Yörünge yayılamadı", str(exc))
             return
 
         n    = len(t)
@@ -1061,7 +1087,8 @@ class GroundTrackController(QWidget):
 
         # Animation state
         self._anim_timer  = QTimer(self)
-        self._anim_timer.timeout.connect(self._anim_step)
+        self._anim_timer.timeout.connect(self._anim_tick)
+        self._anim_carry = 0.0
         self._anim_idx    = 0
         self._anim_dot    = None
         self._anim_tail   = None
@@ -1085,6 +1112,7 @@ class GroundTrackController(QWidget):
         orientation = Qt.Vertical if narrow else Qt.Horizontal
         self.controlPanel.setMaximumWidth(16777215 if narrow else 320)
         self.stationScrollArea.setMaximumHeight(160 if narrow else 16777215)
+        self.stationScrollArea.setMinimumHeight(120 if narrow else 210)
         if self.splitter.orientation() != orientation:
             self.splitter.setOrientation(orientation)
             self.splitter.setSizes([self.controlPanel.minimumSizeHint().height(), 520]
@@ -1115,6 +1143,7 @@ class GroundTrackController(QWidget):
         self.deselectAllBtn.clicked.connect(self._deselect_all)
         self.computeBtn.clicked.connect(self._compute)
         self.computeBtn.setText("SPICE örneğini hesapla")
+        self.computeBtn.setProperty("primary", True)
         self.playBtn.clicked.connect(self._play_pause)
         self.playBtn.setToolTip("Sekme veya sayfa değişince oynatma durur; Oynat ile aynı konumdan devam edin.")
         self.resetBtn.clicked.connect(self._reset_anim)
@@ -1182,7 +1211,7 @@ class GroundTrackController(QWidget):
 
     def _build_model_notes(self) -> None:
         self._scope_note = QLabel(
-            "Bu araçlar ayrı örnek/ön inceleme modelleridir; kayıtlı koşunun yörüngesi Görev görünümündedir."
+            "Örnek yörüngeyle ön inceleme; kayıtlı koşunun yörüngesi Sonuçlar › Genel görünüm sekmesindedir."
         )
         self._model_note = QLabel("İstasyonları seçip SPICE hesabını çalıştırın veya Yörünge tasarımı sekmesini açın.")
         self._model_note.setAccessibleName("Görünen yüzey izinin modeli ve kaynağı")
@@ -1270,11 +1299,7 @@ class GroundTrackController(QWidget):
         self._log_edit.setReadOnly(True)
         self._log_edit.setFixedHeight(82)
         self._log_edit.setPlaceholderText("Hesap günlüğü…")
-        self._log_edit.setStyleSheet(
-            f"QPlainTextEdit {{ background:{C.BG_DEEP}; color:{C.TEXT_MUTED};"
-            f" font-family:Consolas,monospace; font-size:10px;"
-            f" border:1px solid {C.BORDER_MAIN}; border-radius:3px; }}"
-        )
+        set_role(self._log_edit, "log")
         self._log_edit.setVisible(False)
         self.controlLayout.addWidget(self._log_edit)
 
@@ -1303,18 +1328,7 @@ class GroundTrackController(QWidget):
         self.controlLayout.insertLayout(self.controlLayout.indexOf(self.statusLabel), row)
 
     def on_shown(self) -> None:
-        self._sync_duration_from_settings()
-
-    def _sync_duration_from_settings(self) -> None:
-        if self._busy:
-            return
-        from PyQt5.QtCore import QSettings
-        s = QSettings("LunarOD", "DesktopApp")
-        try:
-            dur_days = float(s.value("dynamics/duration_days", self.durationSpin.value()))
-            self.durationSpin.setValue(dur_days)
-        except Exception:
-            pass
+        pass  # inputs belong to this page; nothing external overrides them on show
 
     # ------------------------------------------------------------------
     # Checkbox setup
@@ -1322,8 +1336,9 @@ class GroundTrackController(QWidget):
 
     def _build_checkboxes(self) -> None:
         try:
-            from lunar_od import range_rate_stations
-            stations = range_rate_stations()
+            from types import SimpleNamespace
+            from services.mission_data import range_rate_station_names
+            stations = [SimpleNamespace(name=name) for name in range_rate_station_names()]
         except Exception:
             return
 
@@ -1419,15 +1434,17 @@ class GroundTrackController(QWidget):
             bounds = _pass_boundaries(data["lats"], data["lons"])
             fig = _build_static_figure(data)
             ax = fig.axes[0]
-            dot, = ax.plot([], [], "o", color="white", ms=8, zorder=10,
-                           markeredgecolor=C.CYAN, markeredgewidth=1.5)
-            tail, = ax.plot([], [], "-", color=C.CYAN, linewidth=2.2,
-                            alpha=_TAIL_ALPHA, zorder=9)
+            # Playback artists are "animated": the static track is drawn once and
+            # cached, and each frame only blits these three (see _blit_frame).
+            dot, = ax.plot([], [], "o", color=C.BG_DEEP, ms=8, zorder=10,
+                           markeredgecolor=C.NAV_ACTIVE, markeredgewidth=2, animated=True)
+            tail, = ax.plot([], [], "-", color=C.NAV_ACTIVE, linewidth=2.2,
+                            alpha=_TAIL_ALPHA, zorder=9, animated=True)
             label = ax.text(
                 0.99, 0.97, "", transform=ax.transAxes, ha="right", va="top",
                 color=C.TEXT_PRIMARY, fontsize=FONT.SIZE_SM, fontfamily=FONT.MONO,
                 bbox=dict(boxstyle="round,pad=0.3", facecolor=C.BG_PANEL,
-                          alpha=0.8, edgecolor=C.BORDER_MID), zorder=11,
+                          alpha=0.8, edgecolor=C.BORDER_MID), zorder=11, animated=True,
             )
             self._set_canvas(fig)
         except Exception as exc:
@@ -1456,7 +1473,7 @@ class GroundTrackController(QWidget):
         self._set_status(f"Hata: {short}\n{context}", C.RED)
         self._log(f"Hata: {short} — {context}")
         self._refresh_result_context(context)
-        _show_error_dialog(self, "Ground-track result failed", msg)
+        _show_error_dialog(self, "Yüzey izi hesaplanamadı", msg)
 
     # ------------------------------------------------------------------
     # Animation
@@ -1485,8 +1502,10 @@ class GroundTrackController(QWidget):
         if self._anim_timer.isActive():
             self._pause_playback()
         else:
-            interval_ms = max(40, 200 // self.speedSpin.value())
-            self._anim_timer.start(interval_ms)
+            # A steady ~30 fps frame clock; speed sets how many samples pass per
+            # second (the same 5·speed² samples/s the old 200/speed ms ticks gave).
+            self._anim_carry = 0.0
+            self._anim_timer.start(_FRAME_MS)
             self.playBtn.setText("Duraklat")
 
     def _reset_anim(self) -> None:
@@ -1497,10 +1516,18 @@ class GroundTrackController(QWidget):
             self._anim_dot.set_data([], [])
             self._anim_tail.set_data([], [])
             self._anim_label.set_text("")
-            if self._canvas:
-                self._canvas.draw_idle()
+            self._blit_frame()
 
-    def _anim_step(self) -> None:
+    def _anim_tick(self) -> None:
+        """Frame clock: advance by the samples due since the last frame."""
+        speed = max(1, self.speedSpin.value())
+        self._anim_carry += 5.0 * speed * speed * _FRAME_MS / 1000.0
+        whole = int(self._anim_carry)
+        if whole:
+            self._anim_carry -= whole
+            self._anim_step(whole)
+
+    def _anim_step(self, skip: int | None = None) -> None:
         if self._data is None or self._anim_dot is None:
             return
 
@@ -1509,7 +1536,7 @@ class GroundTrackController(QWidget):
         t_s  = self._data["t_s"]
         n    = len(lons)
 
-        skip = max(1, self.speedSpin.value())
+        skip = max(1, self.speedSpin.value()) if skip is None else skip
         self._anim_idx = (self._anim_idx + skip) % n
 
         idx = self._anim_idx
@@ -1531,16 +1558,39 @@ class GroundTrackController(QWidget):
         vis_names = _visible_station_names(
             self._data["vis_mask"], idx, self._data["station_names"]
         )
-        lines = [f"D {t_day:.2f}"]
+        lines = [f"G {t_day:.2f}"]
         if vis_names:
-            lines.append("Tracking:")
+            lines.append("İzleyen:")
             lines.extend(f"  {n}" for n in vis_names[:4])
         else:
-            lines.append("No sample visibility" if self._data["vis_mask"].size else "Visibility not computed")
+            lines.append("Örnekte görünürlük yok" if self._data["vis_mask"].size else "Görünürlük hesaplanmadı")
         self._anim_label.set_text("\n".join(lines))
+        self._blit_frame()
 
-        if self._canvas:
-            self._canvas.draw_idle()
+    def _cache_background(self, event=None) -> None:
+        """After every full draw, keep the static track for frame blitting."""
+        canvas = event.canvas if event is not None else self._canvas
+        if canvas is None:
+            return
+        self._anim_bg = canvas.copy_from_bbox(canvas.figure.bbox)
+        self._draw_animated(canvas.figure)
+
+    def _draw_animated(self, figure=None) -> None:
+        figure = figure or (self._canvas.figure if self._canvas is not None else None)
+        for artist in (self._anim_tail, self._anim_dot, self._anim_label):
+            if artist is not None and artist.axes is not None and artist.figure is figure:
+                artist.axes.draw_artist(artist)
+
+    def _blit_frame(self) -> None:
+        """Repaint only the moving marker, tail and label over the cached track."""
+        if self._canvas is None:
+            return
+        if getattr(self, "_anim_bg", None) is None:
+            self._canvas.draw_idle()  # the draw_event will cache the background
+            return
+        self._canvas.restore_region(self._anim_bg)
+        self._draw_animated()
+        self._canvas.blit(self._canvas.figure.bbox)
 
     # ------------------------------------------------------------------
     # Canvas helpers
@@ -1550,13 +1600,12 @@ class GroundTrackController(QWidget):
         from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT
         canvas = FigureCanvasQTAgg(fig)
         toolbar = None
+        self._anim_bg = None
         try:
             canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            canvas.mpl_connect("draw_event", self._cache_background)
             toolbar = NavigationToolbar2QT(canvas, self.canvasHolder)
-            toolbar.setStyleSheet(
-                f"QToolBar {{ background:{C.BG_PANEL}; border:none; }}"
-                f"QToolButton {{ color:{C.TEXT_SECONDARY}; background:transparent; }}"
-            )
+
             # Catch first-paint failures while the previous canvas is still installed.
             canvas.draw()
         except Exception:
@@ -1588,7 +1637,7 @@ class GroundTrackController(QWidget):
         )
         ph.setWordWrap(True)
         ph.setAlignment(Qt.AlignCenter)
-        ph.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:{FONT.SIZE_LG}px;")
+        set_role(ph, "placeholder")
         lay.addWidget(ph)
 
     def _set_status(self, text: str, color: str = C.TEXT_MUTED) -> None:
@@ -1600,26 +1649,26 @@ class GroundTrackController(QWidget):
 
     def _export_png(self) -> None:
         if self._fig is None:
-            QMessageBox.information(self, "Export unavailable", "Compute ground track first.")
+            QMessageBox.information(self, "Kaydedilecek sonuç yok", "Önce yüzey izini hesaplayın.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export ground track PNG",
+            "Yüzey izini görüntü olarak kaydet",
             str(Path.home() / "ground_track.png"),
-            "PNG images (*.png);;PDF files (*.pdf)",
+            "PNG görüntüleri (*.png);;PDF dosyaları (*.pdf)",
         )
         if path:
             self._fig.savefig(path, dpi=180, bbox_inches="tight", facecolor=self._fig.get_facecolor())
 
     def _export_csv(self) -> None:
         if self._data is None:
-            QMessageBox.information(self, "Export unavailable", "Compute ground track first.")
+            QMessageBox.information(self, "Kaydedilecek sonuç yok", "Önce yüzey izini hesaplayın.")
             return
         path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export ground track CSV",
+            "Yüzey izini CSV olarak kaydet",
             str(Path.home() / "ground_track_visibility.csv"),
-            "CSV files (*.csv)",
+            "CSV dosyaları (*.csv)",
         )
         if not path:
             return
@@ -1652,22 +1701,12 @@ class GroundTrackController(QWidget):
     def _add_orbit_designer_tab(self) -> None:
         """Wrap the existing splitter in a QTabWidget and add the Orbit Designer tab."""
         self._tab_widget = _CurrentTabWidget(self)
-        self._tab_widget.setStyleSheet(
-            f"QTabBar::tab {{ background:{C.BG_SIDEBAR}; color:{C.TEXT_MUTED};"
-            f" padding:6px 18px; font-size:12px; border:none;"
-            f" border-bottom:2px solid transparent; }}"
-            f"QTabBar::tab:selected {{ color:{C.NAV_ACTIVE_FG};"
-            f" border-bottom-color:{C.NAV_ACTIVE}; }}"
-            f"QTabBar::tab:hover {{ background:{C.BG_ACTIVE};"
-            f" color:{C.TEXT_SECONDARY}; }}"
-            f"QTabWidget::pane {{ border:none; }}"
-        )
         self.mainLayout.removeWidget(self.splitter)
         self._tab_widget.addTab(self.splitter, "Yüzey izi")
         self._orbit_designer = _OrbitDesigner(self)
         designer = self._orbit_designer
         controls = (*designer._spins.values(), *designer._sliders.values(),
-                    designer._dur_spin, designer._generate_btn)
+                    designer._dur_spin, designer._generate_btn, designer._rotation_toggle)
         self._keyboard_controls += controls
         for control in controls:
             control.installEventFilter(self)
@@ -1705,7 +1744,7 @@ def _show_error_dialog(parent, title: str, msg: str) -> None:
     box = QMessageBox(parent)
     box.setWindowTitle(title)
     box.setIcon(QMessageBox.Critical)
-    short = msg.splitlines()[0][:200] if msg else "An error occurred."
+    short = msg.splitlines()[0][:200] if msg else "Bir hata oluştu."
     box.setText(short)
     if "\n" in msg:
         box.setDetailedText(msg)

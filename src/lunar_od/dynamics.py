@@ -713,7 +713,7 @@ def _integrate(t_eval_s, y0, rhs, rtol, atol, method, label):
     return solution.y.T
 
 
-def _integrate_segmented(t_eval_s, y0, rhs, rtol, atol, method, cuts, label):
+def _integrate_segmented(t_eval_s, y0, rhs, rtol, atol, method, cuts, label, *, contact_check=None):
     """Integrate across ``cuts``, restarting the integrator at each one.
 
     The full state (6, 42 or 48 elements) is carried across a cut unchanged.
@@ -744,6 +744,8 @@ def _integrate_segmented(t_eval_s, y0, rhs, rtol, atol, method, cuts, label):
         seg = _integrate(seg_t, y, rhs, rtol, atol, method, label)
         out[i:j] = seg[1:1 + (j - i)]
         y = seg[-1]
+        if contact_check is not None and b != t_end:
+            contact_check(float(b), y[:6])
         a = b
         i = j
     return out
@@ -760,6 +762,7 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
     above 90 degrees and neither function changes sign.
     """
     from scipy.integrate import solve_ivp
+    from scipy.optimize import brentq, minimize_scalar
 
     from .srp import apparent_radii_and_separation
 
@@ -779,14 +782,97 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
 
     solution = solve_ivp(
         rhs6, (t0, t1), np.asarray(x0, dtype=float)[:6], method="DOP853",
-        rtol=rtol, atol=atol, events=(outer, inner), max_step=_CONTACT_MAX_STEP_S,
+        # An unsegmented pre-pass at the final trajectory's tolerance can
+        # itself accumulate shadow-crossing error. Resolve its geometry more
+        # tightly before using its contacts to segment the nominal integration.
+        rtol=max(100 * np.finfo(float).eps, rtol * 0.01), atol=atol * 0.01,
+        events=(outer, inner), max_step=_CONTACT_MAX_STEP_S,
+        dense_output=True,
     )
     if not solution.success:
         raise RuntimeError(f"Shadow contact pre-pass failed: {solution.message}")
     sgn = 1.0 if t1 > t0 else -1.0
-    times = [float(c) for c in np.concatenate(solution.t_events)
-             if sgn * (c - t0) > 1e-9 and sgn * (t1 - c) > 1e-9]
-    return sorted(times, key=lambda c: sgn * c)
+    # A grazing eclipse can enter AND leave inside one step. Endpoint sign
+    # checks miss that pair. Search extrema of each geometric contact function
+    # on the dense trajectory, never the rounded illumination fraction.
+    times = list(np.concatenate(solution.t_events))
+    angle_roundoff = 64.0 * np.finfo(float).eps
+    for event in (outer, inner):
+        f = lambda t: float(event(float(t), solution.sol(float(t))))
+        for a, b in zip(solution.t[:-1], solution.t[1:]):
+            lo, hi = sorted((float(a), float(b)))
+            fl, fh = f(lo), f(hi)
+            if fl * fh < 0.0:
+                times.append(brentq(f, lo, hi, xtol=1e-9))
+                continue
+            sign = 1.0 if fl >= 0.0 and fh >= 0.0 else -1.0
+            # Bounded Brent uses sqrt(eps)*abs(x) in its stopping rule.
+            # Search in local seconds so an epoch translation cannot hide a
+            # short contact pair, even if the caller's origin is a large ET.
+            extremum = minimize_scalar(lambda u: sign * f(lo + u), bounds=(0.0, hi-lo),
+                                       method="bounded", options={"xatol": 1e-8})
+            mid = lo + float(extremum.x)
+            fm = f(mid)
+            if abs(fm) <= angle_roundoff:
+                times.append(mid)  # one tangent, not two rounding-induced roots
+            elif sign * fm < 0.0:
+                for left, right in ((lo, mid), (mid, hi)):
+                    if f(left) * f(right) < 0.0:
+                        times.append(brentq(f, left, right, xtol=1e-9))
+    interior = sorted(float(c) for c in times
+                      if sgn * (c - t0) > 1e-9 and sgn * (t1 - c) > 1e-9)
+    unique = []
+    for c in interior:
+        if not unique or c - unique[-1] > 1e-6:
+            unique.append(c)
+    return unique if sgn > 0.0 else unique[::-1]
+
+
+#: A pre-pass cut must lie within this time of a contact on the final trajectory.
+_CONTACT_TIME_TOL_S = 1e-3
+#: Contact-function angle accepted regardless of its rate (and the only test at a tangent, where the rate vanishes).
+_CONTACT_ANGLE_TOL_RAD = 1e-9
+_CONTACT_RATE_STEP_S = 1e-2
+
+
+def _shadow_contact_check(get_sun_pos, srp):
+    """Fail closed if a pre-pass cut is not a contact on the final trajectory.
+
+    The pre-pass is integrated 100x tighter than the final trajectory, so on a long high-degree arc the two
+    differ by millimetres and a genuine cut keeps an angular residual near 1e-9 rad whatever the final rtol
+    (F2 LRO arc, N = 300, two days: 3.4e-9, 2.2e-9, 1.1e-9 rad at rtol 1e-10, 1e-11, 1e-12). Segmentation needs
+    the contact's *time*: the residual over its rate along the trajectory (~1e-6 s there). A cut within
+    ``_CONTACT_TIME_TOL_S`` of the final contact only restarts the integrator next to the SRP kink, which the
+    final integration's own error control absorbs; a cut with no contact nearby still fails. At a tangent
+    (grazing pair) the rate vanishes and the ``_CONTACT_ANGLE_TOL_RAD`` angle test applies alone.
+
+    This numerical guard is not an orbit-accuracy certificate; the observable/parameter error budget is checked
+    separately.
+    """
+    from .srp import apparent_radii_and_separation
+
+    radius = srp.occulting_body_radius_m
+
+    def contact_functions(t, r):
+        a, b, g, _, _ = apparent_radii_and_separation(r, get_sun_pos(t), np.zeros(3), radius)
+        return np.array([g - a - b, g - abs(a - b)])
+
+    def check(t, state):
+        state = np.asarray(state, dtype=float)
+        f = contact_functions(t, state[:3])
+        i = int(np.argmin(np.abs(f)))
+        residual = float(abs(f[i]))
+        if residual <= _CONTACT_ANGLE_TOL_RAD:
+            return
+        h = _CONTACT_RATE_STEP_S
+        rate = abs(float(contact_functions(t + h, state[:3] + h * state[3:6])[i]
+                         - contact_functions(t - h, state[:3] - h * state[3:6])[i])) / (2.0 * h)
+        offset = residual / rate if rate > 0.0 else np.inf
+        if offset > _CONTACT_TIME_TOL_S:
+            raise RuntimeError(f"Shadow contact inconsistent with final trajectory at {t:.12g} s: "
+                               f"angular residual {residual:.3e} rad, {offset:.3e} s from the contact "
+                               f"(> {_CONTACT_TIME_TOL_S:.0e} s); tighten propagation tolerances.")
+    return check
 
 
 def shadow_contact_times(
@@ -986,7 +1072,8 @@ def propagate_state(
     if shadow_events and _shadow_events_active(srp):
         cuts = _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
         return _integrate_segmented(
-            t_eval_s, state0_mci, rhs, rtol, atol, method, cuts, "State propagation"
+            t_eval_s, state0_mci, rhs, rtol, atol, method, cuts, "State propagation",
+            contact_check=_shadow_contact_check(get_sun_pos, srp),
         )
 
     if method.upper() == "ADAMS":
@@ -1082,7 +1169,7 @@ def _propagate_augmented_with_harmonics(
     if cuts is not None:
         return _integrate_segmented(
             t_eval_s, state_aug0_mci, rhs, rtol, atol, method, cuts,
-            "Augmented harmonic propagation",
+            "Augmented harmonic propagation", contact_check=_shadow_contact_check(get_sun_pos, srp),
         )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
@@ -1253,7 +1340,7 @@ def propagate_augmented_state(
     if _cuts is not None:
         return _integrate_segmented(
             t_eval_s, state_aug0_mci, rhs, rtol, atol, method, _cuts,
-            "Augmented propagation",
+            "Augmented propagation", contact_check=_shadow_contact_check(get_sun_pos, srp),
         )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
@@ -1312,7 +1399,7 @@ def make_fast_sigma_propagator(
     _cbfe = _J2000_TO_EARTH_BF
 
     def _propagate(t0: float, t1: float, state6: np.ndarray) -> np.ndarray:
-        if np.isclose(t0, t1):
+        if t0 == t1:
             return state6.copy()
         return _rk4_6state_fast(
             np.asarray(state6, dtype=np.float64),
@@ -1339,8 +1426,15 @@ def propagate_truth_with_ephemeris(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     """Propagate truth dynamics using Moon-centered ephemeris interpolants."""
+    from .propagation_contract import propagator_options
+    options = propagator_options(srp, propagation_profile)
+    if 'method' in options and method != 'DOP853' and method != options['method']:
+        raise ValueError('method conflicts with the explicit propagation profile.')
+    options.setdefault('method', method)
     return propagate_state(
         t_eval_s,
         state0_mci,
@@ -1351,7 +1445,7 @@ def propagate_truth_with_ephemeris(
         ephemeris.sun_position,
         rtol=rtol,
         atol=atol,
-        method=method,
+        **options,
         j2_moon=j2_moon,
         j2_earth=j2_earth,
         earth_j2_mode=earth_j2_mode,
@@ -1530,7 +1624,8 @@ def propagate_state_with_k_sensitivity(
             harmonic_epoch_et0=harmonic_epoch_et0,
         )
         return _integrate_segmented(
-            t_eval_s, aug0, rhs, rtol, atol, method, cuts, "K-sensitivity propagation"
+            t_eval_s, aug0, rhs, rtol, atol, method, cuts, "K-sensitivity propagation",
+            contact_check=_shadow_contact_check(get_sun_pos, srp),
         )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, aug0, rhs, rtol, atol)

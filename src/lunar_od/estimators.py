@@ -7,6 +7,8 @@ import warnings
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
+from .propagation_contract import model_options, propagator_options, resolve_profile
+
 import numpy as np
 from numpy.typing import ArrayLike
 # Phase 17-R1COV.  scipy is already a hard dependency of lunar_od (dynamics,
@@ -55,6 +57,7 @@ def _adaptive_tol(iteration: int, max_iter: int, rtol: float, atol: float) -> tu
 @dataclass(frozen=True)
 class EstimatorStats:
     iterations: int
+    # Batch: accepted data + explicit-prior objective; UKF: accumulated NIS.
     final_cost: float
     position_step_norm_m: float
     velocity_step_norm_mps: float
@@ -103,6 +106,8 @@ def estimate_position_srif(
     prior_covariance: ArrayLike | None = None,
     prior_sqrt_information: ArrayLike | None = None,
     return_posterior: bool = False,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Position-only SRIF/QR estimator for the initial state.
 
@@ -112,6 +117,7 @@ def estimate_position_srif(
     - 6 + 2*num_stations elements with `bias_mode="station_angles"`
     - 6 + 3*num_stations elements with `bias_mode="station_full"`
     """
+    propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -145,7 +151,7 @@ def estimate_position_srif(
     for iteration in range(1, max_iter + 1):
         x_dyn_nominal = x_nominal[:nx]
         b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
 
         x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
         x_aug_hist = propagate_augmented_state(
@@ -159,12 +165,14 @@ def estimate_position_srif(
             rtol=_atol_r,
             atol=_atol_a,
             j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         x_hist = x_aug_hist[:, :6]
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
         h_nom_aug = _apply_position_bias(h_nom, obs_data, b_nominal, bias_cfg)
         residual = _position_residual_from_h(obs_data, h_nom_aug)
-        current_cost = float(np.dot(w_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -212,11 +220,13 @@ def estimate_position_srif(
         x_hist_candidate = propagate_state(
             t_pass_s, x_dyn_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         _, h_candidate, _ = compute_position_residuals_analytic(x_hist_candidate, obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -254,6 +264,7 @@ def estimate_position_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            **model_options(srp, propagation_profile),
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
         posterior_sqrt_information = _position_posterior_sqrt_information(
@@ -272,6 +283,7 @@ def estimate_position_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            **model_options(srp, propagation_profile),
         )
 
     stats = EstimatorStats(
@@ -312,6 +324,8 @@ def estimate_range_rate_srif(
     prior_covariance: ArrayLike | None = None,
     prior_sqrt_information: ArrayLike | None = None,
     return_posterior: bool = False,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Range/range-rate/azimuth/elevation SRIF estimator.
 
@@ -321,6 +335,7 @@ def estimate_range_rate_srif(
     - 6 + 2*num_stations elements with `bias_mode="station_angles"`
     - 6 + 4*num_stations elements with `bias_mode="station_full"`
     """
+    propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -357,7 +372,7 @@ def estimate_range_rate_srif(
     for iteration in range(1, max_iter + 1):
         x_dyn_nominal = x_nominal[:nx]
         b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
         x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
         x_aug_hist = propagate_augmented_state(
             t_pass_s,
@@ -370,6 +385,7 @@ def estimate_range_rate_srif(
             rtol=_atol_r,
             atol=_atol_a,
             j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         h_nom, h_initial_state = _range_rate_nominal_and_initial_jacobian(
             t_pass_s,
@@ -384,6 +400,7 @@ def estimate_range_rate_srif(
             x_aug_hist,
             rtol,
             atol,
+            **model_options(srp, propagation_profile),
         )
         h_nom_aug = _apply_range_rate_bias(h_nom, obs_data, b_nominal, bias_cfg)
         residual = _range_rate_residual_from_h(obs_data, h_nom_aug)
@@ -398,7 +415,8 @@ def estimate_range_rate_srif(
         w_sqrt = np.sqrt(w_curr_diag)
         max_rejected_components = max(max_rejected_components, last_rejected_components)
         min_active_weight_fraction = min(min_active_weight_fraction, last_active_weight_fraction)
-        current_cost = float(np.dot(w_curr_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_curr_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -442,11 +460,13 @@ def estimate_range_rate_srif(
         x_hist_candidate = propagate_state(
             t_pass_s, x_dyn_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         _, h_candidate = compute_range_rate_residuals(x_hist_candidate, obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -484,6 +504,7 @@ def estimate_range_rate_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            **model_options(srp, propagation_profile),
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
         posterior_sqrt_information = _range_rate_posterior_sqrt_information(
@@ -502,6 +523,7 @@ def estimate_range_rate_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            **model_options(srp, propagation_profile),
         )
 
     stats = EstimatorStats(
@@ -542,8 +564,11 @@ def estimate_position_bls_lm(
     prior_covariance: ArrayLike | None = None,
     prior_sqrt_information: ArrayLike | None = None,
     return_posterior: bool = False,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Position-only batch least-squares with Levenberg-Marquardt damping."""
+    propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -555,7 +580,7 @@ def estimate_position_bls_lm(
 
     has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
     x_prior = x_nominal.copy()
-    prior_inv, _, scale, prior_inv_scaled, _ = _prior_information_and_scale(
+    prior_inv, prior_sqrt_info, scale, prior_inv_scaled, _ = _prior_information_and_scale(
         nx,
         bias_cfg,
         _position_bias_prior_and_scale,
@@ -586,6 +611,7 @@ def estimate_position_bls_lm(
             rtol=r_tol,
             atol=a_tol,
             j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         x_hist = x_aug_hist[:, :6]
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
@@ -602,9 +628,10 @@ def estimate_position_bls_lm(
         return h_initial, residual
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
-        current_cost = float(np.dot(w_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -635,11 +662,13 @@ def estimate_position_bls_lm(
         x_aug_hist_cand = propagate_augmented_state(
             t_pass_s, x_aug0_cand, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         _, h_candidate, _ = compute_position_residuals_analytic(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -688,6 +717,7 @@ def estimate_position_bls_lm(
             rtol,
             atol,
             j2_moon=j2_moon,
+            **model_options(srp, propagation_profile),
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -731,8 +761,11 @@ def estimate_range_rate_bls_lm(
     prior_covariance: ArrayLike | None = None,
     prior_sqrt_information: ArrayLike | None = None,
     return_posterior: bool = False,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Range-rate batch least-squares with LM damping and optional outlier rejection."""
+    propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -744,7 +777,7 @@ def estimate_range_rate_bls_lm(
 
     has_explicit_prior = prior_covariance is not None or prior_sqrt_information is not None
     x_prior = x_nominal.copy()
-    prior_inv, _, scale, prior_inv_scaled, _ = _prior_information_and_scale(
+    prior_inv, prior_sqrt_info, scale, prior_inv_scaled, _ = _prior_information_and_scale(
         nx,
         bias_cfg,
         _range_rate_bias_prior_and_scale,
@@ -781,6 +814,7 @@ def estimate_range_rate_bls_lm(
             rtol=r_tol,
             atol=a_tol,
             j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         h_nom, h_initial_state = _range_rate_nominal_and_initial_jacobian(
             t_pass_s,
@@ -795,13 +829,14 @@ def estimate_range_rate_bls_lm(
             x_aug_hist,
             rtol,
             atol,
+            **model_options(srp, propagation_profile),
         )
         h_nom_aug = _apply_range_rate_bias(
             h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
         return h_initial_state, _range_rate_residual_from_h(obs_data, h_nom_aug)
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial_state, residual = _linearize(x_nominal, _atol_r, _atol_a)
         w_curr_diag, last_rejected_components, last_active_weight_fraction = _robust_weight_diagonal(
             w_diag,
@@ -813,7 +848,8 @@ def estimate_range_rate_bls_lm(
         )
         max_rejected_components = max(max_rejected_components, last_rejected_components)
         min_active_weight_fraction = min(min_active_weight_fraction, last_active_weight_fraction)
-        current_cost = float(np.dot(w_curr_diag * residual, residual))
+        current_cost = _weighted_map_cost(residual, w_curr_diag, x_nominal, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if iteration == 1:
             best_cost = current_cost
@@ -849,11 +885,13 @@ def estimate_range_rate_bls_lm(
         x_aug_hist_cand = propagate_augmented_state(
             t_pass_s, x_aug0_cand, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         _, h_candidate = compute_range_rate_residuals(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
         residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
+        candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
+            prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
@@ -905,6 +943,7 @@ def estimate_range_rate_bls_lm(
             rtol,
             atol,
             j2_moon=j2_moon,
+            **model_options(srp, propagation_profile),
         )
         posterior_covariance = _safe_covariance_from_information(posterior_information)
 
@@ -923,6 +962,19 @@ def estimate_range_rate_bls_lm(
         gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
+
+
+def _weighted_map_cost(residual, weights, state, prior_mean, prior_sqrt_information=None):
+    """The accepted objective: data chi-square plus explicit prior chi-square.
+
+    A numerical step regularizer is not a physical prior. Callers pass None
+    for it so the data-only objective stays byte-for-byte identical.
+    """
+    cost = float(np.dot(weights * residual, residual))
+    if prior_sqrt_information is not None:
+        prior_residual = prior_sqrt_information @ (state - prior_mean)
+        cost += float(prior_residual @ prior_residual)
+    return cost
 
 
 def _posterior_prior_terms(prior_inv, prior_sqrt_info, has_explicit_prior: bool):
@@ -1019,6 +1071,8 @@ def _position_posterior_information(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1032,6 +1086,7 @@ def _position_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _position_initial_state_jacobian(
@@ -1057,6 +1112,8 @@ def _range_rate_nominal_and_initial_jacobian(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, np.ndarray]:
     if x_aug_hist is None:
         x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
@@ -1071,6 +1128,7 @@ def _range_rate_nominal_and_initial_jacobian(
             rtol=rtol,
             atol=atol,
             j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
 
     rr_physics = range_rate_physics_config(pass_geo.range_rate_physics)
@@ -1145,6 +1203,10 @@ def _range_rate_numerical_initial_jacobian(
     get_sun_pos: Callable[[float], ArrayLike],
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     warnings.warn(
         "_range_rate_numerical_initial_jacobian runs 12 ODE integrations per call "
@@ -1169,6 +1231,7 @@ def _range_rate_numerical_initial_jacobian(
             get_sun_pos,
             rtol,
             atol,
+            j2_moon=j2_moon, **model_options(srp, propagation_profile),
         )
         h_minus = _range_rate_h_vector_from_initial(
             t_pass_s,
@@ -1182,6 +1245,7 @@ def _range_rate_numerical_initial_jacobian(
             get_sun_pos,
             rtol,
             atol,
+            j2_moon=j2_moon, **model_options(srp, propagation_profile),
         )
         delta = (h_plus - h_minus).reshape(-1, 4)
         delta[:, 2] = wrap_to_pi(delta[:, 2])
@@ -1202,6 +1266,10 @@ def _range_rate_h_vector_from_initial(
     get_sun_pos: Callable[[float], ArrayLike],
     rtol: float,
     atol: float,
+    *,
+    j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1214,6 +1282,7 @@ def _range_rate_h_vector_from_initial(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
+        j2_moon=j2_moon, **propagator_options(srp, propagation_profile),
     )
     _, h_meas = compute_range_rate_residuals(x_aug_hist[:, :6], obs_data, pass_geo)
     return h_meas.reshape(-1)
@@ -1244,6 +1313,8 @@ def _range_rate_posterior_information(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1257,6 +1328,7 @@ def _range_rate_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )
     _, h_initial = _range_rate_nominal_and_initial_jacobian(
         t_pass_s,
@@ -1272,6 +1344,7 @@ def _range_rate_posterior_information(
         rtol,
         atol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
@@ -1295,6 +1368,8 @@ def _position_posterior_sqrt_information(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     h_initial = _position_initial_jacobian(
         t_pass_s,
@@ -1310,6 +1385,7 @@ def _position_posterior_sqrt_information(
         rtol,
         atol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
     rows = np.vstack([prior_sqrt_info, h_initial * np.sqrt(w_diag)[:, None]])
     return _upper_triangular_qr_factor(rows)
@@ -1332,6 +1408,8 @@ def _range_rate_posterior_sqrt_information(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     h_initial = _range_rate_initial_jacobian(
         t_pass_s,
@@ -1347,6 +1425,7 @@ def _range_rate_posterior_sqrt_information(
         rtol,
         atol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
     rows = np.vstack([prior_sqrt_info, h_initial * np.sqrt(w_diag)[:, None]])
     return _upper_triangular_qr_factor(rows)
@@ -1367,6 +1446,8 @@ def _position_initial_jacobian(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1380,6 +1461,7 @@ def _position_initial_jacobian(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _position_initial_state_jacobian(
@@ -1405,6 +1487,8 @@ def _range_rate_initial_jacobian(
     atol: float,
     *,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1418,6 +1502,7 @@ def _range_rate_initial_jacobian(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )
     _, h_initial = _range_rate_nominal_and_initial_jacobian(
         t_pass_s,
@@ -1433,6 +1518,7 @@ def _range_rate_initial_jacobian(
         rtol,
         atol,
         j2_moon=j2_moon,
+        **model_options(srp, propagation_profile),
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])

@@ -21,13 +21,13 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import ArrayLike
-from scipy.interpolate import PchipInterpolator
+from scipy.interpolate import CubicHermiteSpline, PchipInterpolator
 
 #: Moon->Earth distance bounds [m] (perigee ~356 000 km, apogee ~407 000 km, with
 #: margin).  A Moon-centred metre-valued Earth position outside them is a unit,
 #: centre or epoch-contract error, never physics.
 MOON_EARTH_DISTANCE_BOUNDS_M = (3.40e8, 4.20e8)
-#: Qualified PCHIP extrapolation allowed past a sampled ephemeris grid: it covers
+#: Bounded end-polynomial continuation allowed past a sampled ephemeris grid:
 #: light-time pre-roll (two-way Earth-Moon light time < 3 s) and nothing more.
 DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S = 10.0
 
@@ -102,12 +102,15 @@ def require_moon_earth_distance(earth_pos_mci_m: ArrayLike, name: str = "Earth p
 
 @dataclass(frozen=True)
 class MoonCenteredEphemeris:
-    """Moon-centered J2000 ephemeris samples and PCHIP interpolants.
+    """Moon-centered J2000 samples with coherent Earth position and velocity.
 
     ``et0_s`` (optional, set by :func:`sample_moon_centered_ephemeris`) is the
     SPICE ET of ``t = 0``.  Queries more than ``extrapolation_margin_s`` outside
     the sampled grid raise :class:`EphemerisCoverageError` instead of silently
-    extrapolating the PCHIP interpolant.
+    extrapolating the end polynomial. Earth uses a position/velocity Hermite
+    spline; Sun positions retain PCHIP. ``earth_interpolation='legacy_pchip'``
+    explicitly reproduces the historical, independently interpolated Earth
+    position and velocity tables; it is not a derivative-consistent profile.
     """
 
     t_ephem_s: np.ndarray
@@ -119,6 +122,7 @@ class MoonCenteredEphemeris:
     frame: str = "J2000"
     center: str = "MOON"
     units: str = "m, m/s"
+    earth_interpolation: str = "hermite"
 
     @property
     def et_origin(self) -> float | None:
@@ -145,10 +149,18 @@ class MoonCenteredEphemeris:
         if self.earth_pos_m.shape[0] != n or self.sun_pos_m.shape[0] != n or self.earth_vel_mps.shape[0] != n:
             raise ValueError("Ephemeris arrays must have the same number of rows as t_ephem_s.")
 
-        # Build interpolants once at construction — reused across all RHS calls.
-        object.__setattr__(self, "_ep", PchipInterpolator(self.t_ephem_s, self.earth_pos_m, axis=0))
+        # Build once. Velocity must be the derivative of the position curve.
+        if self.earth_interpolation == "hermite":
+            earth = CubicHermiteSpline(self.t_ephem_s, self.earth_pos_m, self.earth_vel_mps, axis=0)
+            velocity = earth.derivative()
+        elif self.earth_interpolation == "legacy_pchip":
+            earth = PchipInterpolator(self.t_ephem_s, self.earth_pos_m, axis=0)
+            velocity = PchipInterpolator(self.t_ephem_s, self.earth_vel_mps, axis=0)
+        else:
+            raise ValueError("earth_interpolation must be 'hermite' or 'legacy_pchip'.")
+        object.__setattr__(self, "_ep", earth)
         object.__setattr__(self, "_sp", PchipInterpolator(self.t_ephem_s, self.sun_pos_m, axis=0))
-        object.__setattr__(self, "_ev", PchipInterpolator(self.t_ephem_s, self.earth_vel_mps, axis=0))
+        object.__setattr__(self, "_ev", velocity)
 
     def earth_position(self, t_s: ArrayLike) -> np.ndarray:
         return self._ep(self._covered(t_s))
@@ -178,6 +190,10 @@ def perturb_moon_centered_ephemeris(
         earth_vel_mps=ephemeris.earth_vel_mps + earth_velocity_bias,
         et0_s=ephemeris.et0_s,
         extrapolation_margin_s=ephemeris.extrapolation_margin_s,
+        frame=ephemeris.frame,
+        center=ephemeris.center,
+        units=ephemeris.units,
+        earth_interpolation=ephemeris.earth_interpolation,
     )
 
 
@@ -188,7 +204,9 @@ def _as_n_by_3(value: ArrayLike, name: str) -> np.ndarray:
     return array
 
 
-def sample_moon_centered_ephemeris(et0: float, t_ephem_s: ArrayLike) -> MoonCenteredEphemeris:
+def sample_moon_centered_ephemeris(
+    et0: float, t_ephem_s: ArrayLike, *, earth_interpolation: str = "hermite",
+) -> MoonCenteredEphemeris:
     """Sample Earth/Sun Moon-centered J2000 ephemerides using loaded SPICE kernels.
 
     This mirrors the MATLAB runner:
@@ -222,4 +240,5 @@ def sample_moon_centered_ephemeris(et0: float, t_ephem_s: ArrayLike) -> MoonCent
         sun_pos_m=np.vstack(sun_pos_rows),
         earth_vel_mps=np.vstack(earth_vel_rows),
         et0_s=float(et0),
+        earth_interpolation=earth_interpolation,
     )

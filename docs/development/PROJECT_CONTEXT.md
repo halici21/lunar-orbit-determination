@@ -42,7 +42,7 @@ Current state of work:
 
 ## 2. Current Repository and Git State
 
-- Repo root: `C:\Users\erayh\Documents\Python\Grad\python_port` (the parent
+- Repo root: `<workspace>\python_port` (the parent
   `Grad/` folder holds the MATLAB reference code and `pytest.ini`).
 - Remote: `https://github.com/halici21/lunar-orbit-determination.git`.
   `origin/main` = `3867105`. The working branch has **never been pushed**.
@@ -290,7 +290,7 @@ physical radius used for altitude). Real loaded values: C̄20 ≈ −9.088e-5 (a
 three; derived J2 ~0.12% from the constants value), C̄22 ≈ 3.467e-5,
 S̄22 ≈ 1e-10 ≈ 0 (PA-frame signature).
 
-SPICE kernels live outside the repo at `C:\Users\erayh\Documents\mice\kernels`:
+SPICE kernels live outside the repo at `<kernel-dir>`:
 
 - **DE421 profile** (default): `naif0012.tls.txt`, `de421.bsp`,
   `earth_assoc_itrf93.tf.txt`, `moon_080317.tf.txt`,
@@ -530,7 +530,7 @@ the desktop app.
 - `results/` — generated outputs: gitignored, reproducible from scripts.
 - `exports/` — visible artifact copies (`phase6_j2_campaign/`): intentionally
   untracked.
-- Kernels — outside the repo (`C:\Users\erayh\Documents\mice\kernels`), never
+- Kernels — outside the repo (`<kernel-dir>`), never
   committed. `ephemeris_data.mat` gitignored via `*.mat`.
 - Dense/full trajectory files are never written by default — summary
   CSV/JSON/MD only.

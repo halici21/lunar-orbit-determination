@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLa
     QPlainTextEdit, QFileDialog, QHeaderView, QSplitter, QFrame, QScrollArea)
 
 from services.run_comparison import load_run_comparison, export_comparison
-from services.comparison_session import load_comparison_session, TABS
+from services.comparison_session import load_comparison_session, TABS, view_tab
 from services.project_paths import RESULTS_DIR
 from styles.artifact_workspace import ARTIFACT_STYLE
 from widgets.comparison_chart import ComparisonChart
@@ -115,17 +115,16 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
         root.setContentsMargins(24, 18, 24, 18)
         root.setSpacing(11)
         head = QHBoxLayout()
-        title = QLabel("Koşu karşılaştırması")
-        title.setObjectName("workspaceTitle")
-        head.addWidget(title)
+        self.back_button = QPushButton("← Arşive dön")
+        self.back_button.setToolTip("Koşu listesine dönün; başka iki koşu seçerek yeniden karşılaştırın.")
+        self.back_button.clicked.connect(lambda: self.window().navigate("archive") if hasattr(self.window(), "navigate") else None)
+        head.addWidget(self.back_button)
         head.addStretch()
-        archive = QPushButton("Koşu arşivinden seç")
-        archive.clicked.connect(lambda: self.window().navigate("archive") if hasattr(self.window(), "navigate") else None)
-        head.addWidget(archive)
-        self.open_report_button = QPushButton("Kayıtlı karşılaştırma aç")
+        self.open_report_button = QPushButton("Kayıtlı karşılaştırmayı aç…")
         self.open_report_button.clicked.connect(self._choose_report)
         head.addWidget(self.open_report_button)
-        self.export_button = QPushButton("Rapor + eşleşme CSV aktar")
+        self.export_button = QPushButton("Raporu aktar…")
+        self.export_button.setToolTip("Karşılaştırma raporunu (JSON) ve eşleşen kayıtları (CSV) kaydet")
         self.export_button.clicked.connect(self._export)
         head.addWidget(self.export_button)
         root.addLayout(head)
@@ -179,7 +178,7 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
             label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             box.addWidget(label)
             self.summary_labels.append(label)
-            open_btn = QPushButton(f"{'AB'[side]} kaynağını konsolda aç")
+            open_btn = QPushButton(f"{'AB'[side]} koşusunu Sonuçlarda aç")
             open_btn.clicked.connect(lambda checked=False, s=side: self.open_source(s))
             box.addWidget(open_btn, 0, Qt.AlignLeft)
             summaries.addWidget(frame, 1)
@@ -237,7 +236,7 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
         diff_table.setColumnWidth(0, 370)
         diff_table.setColumnWidth(1, 290)
         diff_table.setColumnWidth(2, 290)
-        self.tabs.addTab(diff_table, "Ayar farkları")
+        # Setting differences and the files they come from are read together.
         provenance = QSplitter(Qt.Horizontal)
         self.provenance = []
         for side in (0, 1):
@@ -246,7 +245,11 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
             editor.setPlaceholderText(f"{'AB'[side]} / dosya yolları, SHA-256 ve kaydedilmiş ayarlar")
             provenance.addWidget(editor)
             self.provenance.append(editor)
-        self.tabs.addTab(provenance, "Kaynaklar")
+        settings_and_sources = QSplitter(Qt.Vertical)
+        settings_and_sources.addWidget(diff_table)
+        settings_and_sources.addWidget(provenance)
+        settings_and_sources.setSizes([320, 220])
+        self.tabs.addTab(settings_and_sources, "Ayarlar ve kaynaklar")
         self.notes = QPlainTextEdit()
         self.notes.setReadOnly(True)
         self.tabs.addTab(self.notes, "Yorum sınırları")
@@ -321,7 +324,7 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
             self.status_label.setText(f"Karşılaştırma geri açıldı; kaynak hash'leri doğrulandı ve değerler yeniden hesaplandı: {path.name}")
         else:
             self.accept_comparison(result)
-            self.status_label.setText("Kaynaklar salt okunur yüklendi. Ayar farkları ve yorum sınırları sekmelerini inceleyin.")
+            self.status_label.setText("Kaynaklar salt okunur yüklendi. Ayarlar ve kaynaklar ile Yorum sınırları sekmelerini inceleyin.")
         self._busy(False)
 
     def _job_failed(self, generation, message):
@@ -361,7 +364,7 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
         if not any(row.get("normalized_nis") is not None for source in (result.left, result.right) for row in source.updates):
             self.caution_label.setText(self.caution_label.text() + " NIS kaynaklarda kayıtlı değil.")
         self.tabs.setTabText(1, f"Eşleşen kayıtlar ({n})")
-        self.tabs.setTabText(3, f"Ayar farkları ({len(result.differences)})")
+        self.tabs.setTabText(3, f"Ayarlar ve kaynaklar ({len(result.differences)} fark)")
         self.paired_check.setEnabled(result.time_compatible and bool(result.pairs))
         if not self.paired_check.isEnabled():
             self.paired_check.setChecked(False)
@@ -487,4 +490,4 @@ class RecordedComparisonController(ArtifactJobs, QWidget):
                 chart.selected_pair = None
                 chart.update()
             self.selection_label.setText("Eşleşme seçilmedi · Δ = B−A, kaydedilmiş hata normlarının farkı")
-        self.tabs.setCurrentIndex(TABS.index(view.get("tab", "charts")))
+        self.tabs.setCurrentIndex(TABS.index(view_tab(view)))

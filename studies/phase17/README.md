@@ -13,6 +13,9 @@ qualified production paths and retain scientific errata and failed hypotheses.
 | [reports](reports/) | Qualification reports, literature contracts, status and defect ledger |
 | [provenance](provenance/) | Original integration/reconstruction manifests |
 
+The roadmap phases C1–F2 (`phase_*` files) share these directories so that their recorded
+paths stay valid; the [research studies guide](../README.md) lists them with their outcomes.
+
 Begin with [authoritative status](reports/phase17_authoritative_status.md),
 [closure report](reports/phase17_harden_closure_report.md), and
 [defect ledger](reports/phase17_harden_defect_ledger.md). Later qualification
