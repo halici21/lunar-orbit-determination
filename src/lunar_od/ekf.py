@@ -14,6 +14,10 @@ The measurement Jacobian is a central difference of that shared measurement
 function, so the EKF linearises exactly the physics the UKF evaluates. The
 covariance update uses the Joseph form.
 
+With ``dmc=`` (Phase D5) the state is ``[r, v, w, biases]``: ``w`` is the
+Gauss-Markov empirical acceleration of ``dmc.py``, propagated with its 9x9 STM
+and van Loan process noise. The measurement function never sees ``w``.
+
 ``rts_smooth`` is the fixed-interval smoother over the stored filter history.
 For a linear model it equals the batch least-squares solution with the same
 prior (tests/test_ekf_smoother.py checks this exactly).
@@ -28,6 +32,7 @@ from time import perf_counter
 import numpy as np
 from numpy.typing import ArrayLike
 
+from .dmc import DMC_SIZE, DMCOptions, dmc_process_noise, propagate_dmc_state
 from .dynamics import propagate_augmented_state, propagate_state
 from .filters import (
     MeasurementFunction,
@@ -218,6 +223,7 @@ def run_lunar_ekf(
     propagation_profile=None,
     smooth: bool = False,
     linearization: ArrayLike | None = None,
+    dmc: DMCOptions | None = None,
 ) -> LunarEKFResult:
     """Run an EKF (optionally followed by the RTS smoother) over one prepared lunar OD arc.
 
@@ -229,6 +235,11 @@ def run_lunar_ekf(
     linearised filter about that trajectory instead of about its own
     prediction: dynamics and measurement are expanded around it. The iterated
     smoother (``run_lunar_iterated_smoother``) passes its previous solution here.
+
+    ``dmc`` adds the empirical acceleration ``w`` as state elements 6:9 (``x0_mci``,
+    ``p0`` and ``linearization`` include it). It replaces ``process_noise``, which
+    must then be None, and propagates with DOP853 (``propagation_profile`` is not
+    applied on that path).
     """
     start_time = perf_counter()
     propagation_profile = resolve_profile(srp, propagation_profile)
@@ -250,15 +261,19 @@ def run_lunar_ekf(
         raise ValueError("obs_data must be a 2-D array.")
     x = np.asarray(x0_mci, dtype=float).reshape(-1).copy()
     nx = x.size
-    if nx < 6:
-        raise ValueError("x0_mci must contain at least the 6 dynamic state elements.")
+    n_dyn = 6 if dmc is None else 6 + DMC_SIZE
+    if nx < n_dyn:
+        raise ValueError(f"x0_mci must contain at least the {n_dyn} dynamic state elements.")
+    if dmc is not None and process_noise is not None:
+        raise ValueError("dmc= supplies the process noise; process_noise must be None.")
     p = _symmetrize(np.asarray(p0, dtype=float))
     if p.shape != (nx, nx):
         raise ValueError("p0 must be an NxN covariance matrix matching x0_mci.")
-    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx, len(pass_geo.stations), bias_mode)
+    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx - (n_dyn - 6), len(pass_geo.stations), bias_mode)
     if process_noise_model not in {"discrete", "continuous_white_acceleration"}:
         raise ValueError("process_noise_model must be 'discrete' or 'continuous_white_acceleration'.")
     q = _coerce_process_noise(process_noise, nx, process_noise_model)
+    # the measurement does not depend on w, so its step only has to be nonzero
     steps = (np.asarray(list(DEFAULT_JACOBIAN_STEPS) + [DEFAULT_BIAS_JACOBIAN_STEP] * (nx - 6), dtype=float)
              if jacobian_steps is None else np.asarray(jacobian_steps, dtype=float).reshape(-1))
     residual_fn = _measurement_residual(measurement_type)
@@ -283,15 +298,23 @@ def run_lunar_ekf(
         x_prop = x.copy()
         if target_t != current_t:
             centre = x if x_bar_prev is None else x_bar_prev
-            aug = propagate_augmented_state(
-                [current_t, target_t], np.concatenate([centre[:6], _IDENTITY_6_COL]),
-                mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, get_earth_pos, get_sun_pos,
-                rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp, **propagation_kwargs,
-            )[-1, :]
-            phi[:6, :6] = aug[6:42].reshape(6, 6, order="F")
+            if dmc is None:
+                aug = propagate_augmented_state(
+                    [current_t, target_t], np.concatenate([centre[:6], _IDENTITY_6_COL]),
+                    mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, get_earth_pos, get_sun_pos,
+                    rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp, **propagation_kwargs,
+                )[-1, :]
+                q_step = _discretize_process_noise(q, abs(target_t - current_t), nx, process_noise_model)
+            else:
+                aug = propagate_dmc_state(
+                    [current_t, target_t], centre[:n_dyn], dmc, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                    get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp,
+                )[-1, :]
+                q_step = np.zeros((nx, nx))
+                q_step[:n_dyn, :n_dyn] = dmc_process_noise(dmc, target_t - current_t)
+            phi[:n_dyn, :n_dyn] = aug[n_dyn:n_dyn + n_dyn * n_dyn].reshape(n_dyn, n_dyn, order="F")
             # f(x) about the linearization centre: exact when the centre is the filter state itself
-            x_prop[:6] = aug[:6] + phi[:6, :6] @ (x[:6] - centre[:6])
-            q_step = _discretize_process_noise(q, abs(target_t - current_t), nx, process_noise_model)
+            x_prop[:n_dyn] = aug[:n_dyn] + phi[:n_dyn, :n_dyn] @ (x[:n_dyn] - centre[:n_dyn])
         else:
             q_step = None
         x_pred, p_pred = ekf_predict(p, x_prop, phi, q_step)
@@ -300,6 +323,8 @@ def run_lunar_ekf(
             get_earth_pos, get_sun_pos, rtol, atol, bias_cfg,
             j2_moon=j2_moon, srp=srp, solve_for_k_srp=False, propagation_profile=propagation_profile,
         )
+        if dmc is not None:
+            measurement_fn = _without_dmc(measurement_fn)
         centre = x_pred if x_bar is None else x_bar
         h = finite_difference_measurement_jacobian(measurement_fn, centre, steps, residual_fn)
         z_pred = np.asarray(measurement_fn(centre), dtype=float) + h @ (x_pred - centre)
@@ -339,6 +364,14 @@ def run_lunar_ekf(
     )
 
 
+def _without_dmc(measurement_fn: MeasurementFunction) -> MeasurementFunction:
+    """The shared measurement function evaluated on [r, v, biases] of a [r, v, w, biases] state."""
+    def wrapped(x):
+        x = np.asarray(x, dtype=float)
+        return measurement_fn(np.concatenate([x[:6], x[6 + DMC_SIZE:]]))
+    return wrapped
+
+
 @dataclass(frozen=True)
 class IteratedSmootherResult:
     """The last linearised EKF+RTS pass of the iterated smoother and how it got there."""
@@ -376,7 +409,7 @@ def run_lunar_iterated_smoother(
       propagated from the smoothed first-epoch state; the step is accepted only if it lowers the MAP cost
       (prior + whitened measurement residuals), halving it up to ``max_halvings`` times (damped Gauss-Newton);
     - with process noise the next linearization is the smoothed state sequence itself (the iterated
-      extended Kalman smoother); no line search.
+      extended Kalman smoother); no line search. ``dmc=`` (Phase D5) is process noise too.
 
     Stops when the largest change of the linearization point, in smoothed sigmas, is below ``tol_sigma``,
     or (without process noise) when the Gauss-Newton decrement of the next step, the chi2 decrease the
@@ -387,7 +420,7 @@ def run_lunar_iterated_smoother(
         raise ValueError("the iterated smoother controls smooth= and linearization= itself.")
     common = (t_pass_s, obs_data, x0_mci, p0, pass_geo, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
               get_earth_pos, get_sun_pos)
-    with_q = ekf_options.get("process_noise") is not None
+    with_q = ekf_options.get("process_noise") is not None or ekf_options.get("dmc") is not None
     x_prior = np.asarray(x0_mci, dtype=float).reshape(-1)
     p_prior = np.asarray(p0, dtype=float)
     obs = np.asarray(obs_data, dtype=float)

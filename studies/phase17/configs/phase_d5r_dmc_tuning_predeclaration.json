@@ -1,0 +1,25 @@
+{
+ "phase": "Phase D5-R - DMC tuning sweep and a derived matched-control criterion",
+ "written": "2026-10-30, after D5 (D5_NOT_QUALIFIED as computed: G3 matched-control RMS ratio 2.73x position / 6.03x range rate > 2.0x; G5 position/M1 NEES 3.99 < 4.19) and before any D5-R number; D5's code, cells, seeds and noise streams are unchanged",
+ "motivation": {
+  "G3": "D5's G3 bounded the accuracy DMC gives up on a perfect force model by a guessed 2.0x. DMC frees 3 accelerations per correlation time, so some loss is by design; the question a gate can answer is whether the loss is the one the DMC covariance claims, i.e. whether the smoother is honest about its own cost. D5's matched NEES (4.32, 6.68) says the covariance was honest at the first epoch; D5-R tests it over the whole arc",
+  "G5": "D5's single tuning sigma = 5e-6 m/s^2 was 2.5x the injected M1 push; position/M1 NEES 3.99 (conservative). A predeclared sweep shows whether one tuning passes every cell, instead of choosing sigma after seeing D5"
+ },
+ "sweep": {"sigma_mps2": [1e-6, 2e-6, 5e-6, 1e-5], "tau_s": 1800.0, "w_prior": "N(0, sigma^2 I) at each sigma"},
+ "configuration": "D5's exactly (3 h arc, cells position|range_rate x C0|M1|M2, S2km prior, 20 seeds, default_rng([20261031, m, c, seed]), rtol 1e-12 / atol 1e-13); IS and, per sigma, IS_DMC on the same observations and x_guess. EKF_RTS_DMC is not rerun. Worker processes run with one BLAS/OpenMP thread each",
+ "derived_matched_criterion": {
+  "predicted_ratio": "sqrt(mean over seeds and update epochs of trace P_pos of IS_DMC) / sqrt(the same for IS), P_pos = the smoothed 3x3 position covariance",
+  "empirical_ratio": "IS_DMC position RMS / IS position RMS (D5's metric)",
+  "meaning": "if empirical / predicted is near 1 the accuracy DMC gives up is exactly what its covariance reports"
+ },
+ "gates_per_sigma": {
+  "G0_d5_reproduction": "sigma = 5e-6: every IS and IS_DMC position RMS and first-epoch NEES of results/phase_d5_dmc.json reproduced to <= 1e-6 relative (thread count may change rounding)",
+  "G3R_matched_honest_cost": "C0, both measurement types: empirical_ratio / predicted_ratio in [0.8, 1.25] and IS_DMC mean first-epoch NEES in [4.19, 8.18]",
+  "G4_mismodel_accuracy": "unchanged from D5: M1 and M2, both types, IS_DMC position RMS <= 0.5 x IS",
+  "G5_mismodel_consistency": "unchanged from D5: M1 and M2, both types, IS_DMC mean first-epoch NEES in [4.19, 8.18]",
+  "G6_convergence": "unchanged from D5: every IS_DMC run Converged"
+ },
+ "reported_not_gated": "D5's original G3 (empirical_ratio <= 2.0) at every sigma, as computed; the accuracy/consistency trade-off curve over sigma; estimated along-track w in M1; runtime",
+ "decision_rule": "D5R_QUALIFIED if G0 passes and at least one sigma passes G3R, G4, G5 and G6 in every cell; the recommended default is the passing sigma with the lowest C0 IS_DMC position RMS (summed over the two measurement types). Otherwise D5R_NOT_QUALIFIED and the sweep stands as a characterization. D5's own outcome stays D5_NOT_QUALIFIED as computed",
+ "outputs": {"report": "studies/phase17/reports/phase_d5_dmc.md (D5-R section)", "results": "studies/phase17/results/phase_d5r_dmc_tuning.json", "script": "studies/phase17/scripts/phase_d5_dmc.py --d5r"}
+}

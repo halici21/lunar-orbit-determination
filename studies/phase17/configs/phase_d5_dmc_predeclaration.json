@@ -1,0 +1,40 @@
+{
+ "phase": "Phase D5 - dynamic model compensation (DMC) on the iterated extended Kalman smoother",
+ "written": "2026-10-30, after src/lunar_od/dmc.py was written and before the EKF hook, the tests or any study number; no smoke run of the study had been made",
+ "motivation": "D3/D4: the EKF, RTS and iterated smoother are qualified only when the filter's force model equals the truth's. A real force model is never exact (F2q: the LRO 263 Doppler offset is a force-model prediction error). DMC lets the smoother absorb unmodelled acceleration as a stochastic state instead of aliasing it into the orbit",
+ "model": {
+  "state": "[r, v, w, biases]: w is a 3-axis first-order Gauss-Markov acceleration in the inertial (MCI) frame, r'' = a_model(r, t) + w, w' = -w/tau + u, steady-state sigma per axis (Tapley, Schutz & Born 2004, 4.9)",
+  "dynamics": "src/lunar_od/dmc.py propagate_dmc_state: f3body_moon + w, 9x9 STM from dynamics_jacobian_a_matrix (A9 = [[0,I,0],[G,0,I],[0,0,-I/tau]]), DOP853 at the caller's rtol/atol; dynamics.py unchanged",
+  "process_noise": "dmc_process_noise: exact van Loan discretisation of the linear [r,v,w] Gauss-Markov chain (gravity gradient left out of Q); biases have no process noise",
+  "ekf_hook": "run_lunar_ekf(dmc=DMCOptions) inserts w after v; the measurement function receives the state without w and the bias configuration is sized as without DMC. dmc=None leaves every D3/D4 path unchanged. The iterated smoother with dmc set takes the IEKS (process-noise) branch"
+ },
+ "tuning": {"sigma_mps2": 5e-6, "tau_s": 1800.0, "w_prior": "w0 ~ N(0, sigma^2 I), uncorrelated with [r, v]"},
+ "experiment": {
+  "arc": "D3's synthetic arc extended to 3 h: Moon point mass (mu_earth = mu_sun = 0), x0 = D3's, 60 s spacing, the same three synthetic stations, rtol 1e-12 / atol 1e-13",
+  "measurements": ["position", "range_rate"],
+  "truth_cases": {
+   "C0_matched": "truth = filter model",
+   "M1_along_track": "truth adds a constant 2e-6 m/s^2 acceleration along the instantaneous velocity direction",
+   "M2_j2": "truth adds lunar J2 = 2.03e-6 (0.01 x the Moon's J2) through f3body_moon; the filter has j2_moon = 0"
+  },
+  "prior": "S2km: P0 = diag((2 km)^2 x3, (2 m/s)^2 x3) on [r, v], x_guess = truth + N(0, P0); the DMC estimator adds w0 = 0 with sigma^2 I",
+  "seeds": "20 per cell, default_rng([20261031, measurement index, case index, seed]); noise as in D3 (1 m range, 1e-4 m/s range rate, 1e-5 rad angles)",
+  "estimators": {
+   "IS": "run_lunar_iterated_smoother without process noise (the D4-R estimator)",
+   "IS_DMC": "run_lunar_iterated_smoother with dmc = tuning (IEKS)",
+   "EKF_RTS_DMC": "pass 0 of IS_DMC (single EKF+RTS with DMC), reported only"
+  },
+  "metrics": "smoothed position error RMS over all update epochs and seeds (m); [r, v] NEES of the smoothed first-epoch state, mean over seeds; status"
+ },
+ "gates": {
+  "G1_stm": "tests: the 9x9 DMC STM matches a central finite difference of propagate_dmc_state to <= 1e-6 relative per column over a 1 h propagation, and with w = 0 the DMC trajectory matches propagate_state to <= 1 mm",
+  "G2_noise_and_invariance": "tests: van Loan Q_ww = sigma^2 (1 - exp(-2 dt/tau)) to <= 1e-10 relative and Q -> Qc dt for small dt; the unchanged tests/test_ekf_smoother.py (dmc=None) all pass",
+  "G3_matched_control": "C0, both measurement types: IS_DMC position RMS <= 2.0 x IS position RMS, and IS_DMC mean first-epoch NEES in the 99% chi2(120)/20 band [4.19, 8.18]",
+  "G4_mismodel_accuracy": "M1 and M2, both measurement types: IS_DMC position RMS <= 0.5 x IS position RMS",
+  "G5_mismodel_consistency": "M1 and M2, both measurement types: IS_DMC mean first-epoch NEES in [4.19, 8.18]",
+  "G6_convergence": "every IS_DMC run ends Converged (max_iter 20, tol 1e-3 sigma)"
+ },
+ "reported_not_gated": "IS NEES in the mismodelled cases; EKF_RTS_DMC metrics; iterations; runtime; estimated w history against the injected acceleration",
+ "decision_rule": "D5_QUALIFIED if G1-G6 all PASS; otherwise D5_NOT_QUALIFIED with each failure reported as computed. The tuning is not changed after any number is seen; a retune would be a new predeclared phase",
+ "outputs": {"report": "studies/phase17/reports/phase_d5_dmc.md", "results": "studies/phase17/results/phase_d5_dmc.json", "script": "studies/phase17/scripts/phase_d5_dmc.py"}
+}
