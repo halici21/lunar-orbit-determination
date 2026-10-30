@@ -43,6 +43,7 @@ A materiality survey (no production change) decides what an implementation phase
 | D2 | Propagation profile (opt-in) | `D2_QUALIFIED` | [D2](phase17/reports/phase_d2_propagation_consistency.md) |
 | D3 | Extended Kalman filter, RTS smoother | `D3_QUALIFIED` | [D3](phase17/reports/phase_d3_ekf_rts_smoother.md) |
 | D4 / D4-R | Iterated EKF + RTS smoother | D4 `NOT_QUALIFIED` as computed; `D4R_QUALIFIED` | [D4](phase17/reports/phase_d4_iterated_smoother.md) |
+| D5 | Dynamic model compensation (Gauss-Markov) on the iterated smoother | `D5_NOT_QUALIFIED` as computed (G3 matched-control RMS ratio, G5 one NEES cell); mismodel error cut 10-185x | [D5](phase17/reports/phase_d5_dmc.md) |
 | F1 | Real LRO two-way range residuals | H1 not met as computed; H2, H3 met | [F1](phase17/reports/phase_f1_lro_residuals.md) |
 | F1c | Real LRO two-way Doppler residuals | H1, H2 not met (constant Doppler bias); H3 met | [F1c](phase17/reports/phase_f1c_lro_doppler.md) |
 | F2 | First LRO orbit determination (12 h, range) | `F2_NOT_QUALIFIED` as computed | [F2](phase17/reports/phase_f2_lro_od.md) |
