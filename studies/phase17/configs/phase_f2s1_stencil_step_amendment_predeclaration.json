@@ -1,0 +1,25 @@
+{
+ "phase": "Phase F2s-1 - amendment of F2s: step A repeated with a 1 s stencil step after F2s failed its method check",
+ "written": "2026-10-31, after F2s step A (206d8a3, F2S_INCONCLUSIVE) and the own-trajectory diagnosis, before any F2s-1 number; owner request: record F2s, diagnose, amend",
+ "amends": "configs/phase_f2s_lola_arc_structure_predeclaration.json; everything not named here is unchanged (envelope, taper rule, ARC_STRUCTURE rule, step B, decision rules, method-check threshold 1e-9 m/s^2)",
+ "F2s_stands": "F2s itself stays F2S_INCONCLUSIVE; F2s-1 is a separate classification",
+ "known_beforehand": [
+  "F2s step A at h = 5 s: method check RMS R/T/N 9.0e-8 / 8.5e-8 / 2.9e-8 m/s^2 (limit 1e-9); LOLA a_res RMS ~2.7e-6 m/s^2 per component; envelope median 4.6e-6; ARC_STRUCTURE_NOT_FOUND (no run above 3 x median)",
+  "diagnosis (scripts/phase_f2s_method_check_diagnosis.py, results/phase_f2s_parts/diag.json; own E2 trajectory only, first 3 h of F, no LOLA data): check RMS R at h = 1/2/5/10/20 s = 2.3e-10 / 3.4e-9 / 1.3e-7 / 1.7e-6 / 1.7e-5, i.e. ~h^4 (stencil truncation of the short-period GL1800F N=300 signal); integrator tolerance 1e-10..1e-13 changes it by < 0.2 %",
+  "LOLA SPK lro_no_01_grgm900c_l600.bsp is type 13 (Hermite), window 4, samples every 5.0 s: at h = 1 s the stencil points fall between SPK samples",
+  "the h choice below follows from the own-trajectory diagnosis only; no LOLA residual at h != 5 s has been computed"
+ ],
+ "change": {
+  "stencil_step": "h = 1 s (was 5 s), for both the LOLA acceleration and the method check; own trajectory propagated on a 1 s grid through every stencil point",
+  "spk_noise_check": "new: a_res is also computed at h = 2 s on the same 30 s grid. D = RMS over the span of |a_res(h=1) - a_res(h=2)| (3-vector). If D > 0.1 x the envelope median at h = 1 s, the LOLA stencil is dominated by SPK interpolation error: F2S1_INCONCLUSIVE",
+  "inconclusive": "F2S1_INCONCLUSIVE if the method check (<= 1e-9 per component, h = 1 s, full F u P span) fails, the SPK noise check fails, or more than half of the window fits do not reach the stopping rule"
+ },
+ "secondary_descriptive": "F2s's h = 5 s envelope and runs compared with h = 1 s (no classification from it); fraction of the LOLA a_res explained by the h = 5 s truncation",
+ "not_changed": "no production code; F2r and F2s classifications not rewritten; nothing tuned on day 263 or on LOLA",
+ "git": "branch phase-f1-lro-residuals, push per the owner's standing approval; main not touched",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2s_lola_arc_structure.py --h1 (parts A_h1.json, window parts W1_*.json)",
+  "results": "studies/phase17/results/phase_f2s1_lola_arc_structure.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.10"
+ }
+}
