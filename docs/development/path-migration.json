@@ -2493,15 +2493,16 @@
     },
     "lunar_od/dynamics.py": {
       "path": "src/lunar_od/dynamics.py",
-      "original_sha256": "ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3",
+      "original_sha256": "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
       "byte_preserved": true,
-      "refrozen_from_sha256": "1b060a04d1434798f3b1335d62fe7cd67d33eeb42b5f4b29a7dee18f44b91d7a",
-      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate.",
+      "refrozen_from_sha256": "ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3",
+      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-27 (a8f1bef) for the user-requested F2 G4e-R fix: the shadow-contact guard judges a pre-pass cut by its time offset from the contact (1e-3 s) instead of the angle-only 1e-9 rad test, which refused the two-day N=300 F2 arc; qualified by G4e-R (studies/phase17/reports/phase_f2_g4er_root_cause_and_requalification.md). All previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
         "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
         "0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf",
-        "1b060a04d1434798f3b1335d62fe7cd67d33eeb42b5f4b29a7dee18f44b91d7a"
+        "1b060a04d1434798f3b1335d62fe7cd67d33eeb42b5f4b29a7dee18f44b91d7a",
+        "ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3"
       ]
     },
     "lunar_od/ephemeris.py": {
