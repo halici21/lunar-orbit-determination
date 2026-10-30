@@ -28,7 +28,7 @@ from time import perf_counter
 import numpy as np
 from numpy.typing import ArrayLike
 
-from .dynamics import propagate_augmented_state
+from .dynamics import propagate_augmented_state, propagate_state
 from .filters import (
     MeasurementFunction,
     ProcessNoiseModel,
@@ -217,12 +217,18 @@ def run_lunar_ekf(
     srp=None,
     propagation_profile=None,
     smooth: bool = False,
+    linearization: ArrayLike | None = None,
 ) -> LunarEKFResult:
     """Run an EKF (optionally followed by the RTS smoother) over one prepared lunar OD arc.
 
     Arguments mirror ``run_lunar_ukf``. The prior ``(x0_mci, p0)`` holds at the
     first observation epoch, as in the UKF. Not supported here: K_SRP
     solve-for, state freezing/regularisation, adaptive Q/R and robust updates.
+
+    ``linearization`` (one state per observation, in time order) makes this a
+    linearised filter about that trajectory instead of about its own
+    prediction: dynamics and measurement are expanded around it. The iterated
+    smoother (``run_lunar_iterated_smoother``) passes its previous solution here.
     """
     start_time = perf_counter()
     propagation_profile = resolve_profile(srp, propagation_profile)
@@ -259,21 +265,32 @@ def run_lunar_ekf(
 
     order = np.argsort(obs[:, 0], kind="stable")
     current_t = float(t_pass[0])
+    nominal = None
+    if linearization is not None:
+        nominal = np.asarray(linearization, dtype=float)
+        if nominal.shape != (order.size, nx):
+            raise ValueError("linearization must hold one full state per observation.")
+        if float(obs[order[0], 0]) != current_t:
+            raise ValueError("a linearization trajectory requires the first observation at t_pass_s[0].")
+    x_bar_prev = None
     rows: dict[str, list] = {key: [] for key in (
         "t", "idx", "x", "p", "xp", "pp", "phi", "innov", "s", "zpred", "nis", "accepted")}
-    for obs_idx in order:
+    for step, obs_idx in enumerate(order):
         row = obs[obs_idx, :]
         target_t = float(row[0])
+        x_bar = None if nominal is None else nominal[step]
         phi = np.eye(nx)
         x_prop = x.copy()
         if target_t != current_t:
+            centre = x if x_bar_prev is None else x_bar_prev
             aug = propagate_augmented_state(
-                [current_t, target_t], np.concatenate([x[:6], _IDENTITY_6_COL]),
+                [current_t, target_t], np.concatenate([centre[:6], _IDENTITY_6_COL]),
                 mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, get_earth_pos, get_sun_pos,
                 rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp, **propagation_kwargs,
             )[-1, :]
-            x_prop[:6] = aug[:6]
             phi[:6, :6] = aug[6:42].reshape(6, 6, order="F")
+            # f(x) about the linearization centre: exact when the centre is the filter state itself
+            x_prop[:6] = aug[:6] + phi[:6, :6] @ (x[:6] - centre[:6])
             q_step = _discretize_process_noise(q, abs(target_t - current_t), nx, process_noise_model)
         else:
             q_step = None
@@ -283,10 +300,12 @@ def run_lunar_ekf(
             get_earth_pos, get_sun_pos, rtol, atol, bias_cfg,
             j2_moon=j2_moon, srp=srp, solve_for_k_srp=False, propagation_profile=propagation_profile,
         )
-        z_pred = np.asarray(measurement_fn(x_pred), dtype=float)
-        h = finite_difference_measurement_jacobian(measurement_fn, x_pred, steps, residual_fn)
+        centre = x_pred if x_bar is None else x_bar
+        h = finite_difference_measurement_jacobian(measurement_fn, centre, steps, residual_fn)
+        z_pred = np.asarray(measurement_fn(centre), dtype=float) + h @ (x_pred - centre)
         x, p, diag = ekf_update(x_pred, p_pred, z, z_pred, h, r, residual_fn=residual_fn, nis_gate=nis_gate)
         current_t = target_t
+        x_bar_prev = x_bar
         for key, value in (("t", target_t), ("idx", int(obs_idx)), ("x", x), ("p", p), ("xp", x_pred),
                            ("pp", p_pred), ("phi", phi), ("innov", diag.innovation),
                            ("s", diag.innovation_covariance), ("zpred", diag.predicted_measurement),
@@ -318,3 +337,135 @@ def run_lunar_ekf(
             if measurement_type == "range_rate" else "not_applicable"),
         smoothed=smoothed,
     )
+
+
+@dataclass(frozen=True)
+class IteratedSmootherResult:
+    """The last linearised EKF+RTS pass of the iterated smoother and how it got there."""
+
+    result: LunarEKFResult
+    status: str
+    iterations: int
+    history: tuple[dict, ...]
+
+
+def run_lunar_iterated_smoother(
+    t_pass_s: ArrayLike,
+    obs_data: ArrayLike,
+    x0_mci: ArrayLike,
+    p0: ArrayLike,
+    pass_geo,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    *,
+    max_iter: int = 20,
+    tol_sigma: float = 1e-3,
+    max_halvings: int = 10,
+    **ekf_options,
+) -> IteratedSmootherResult:
+    """Iterated EKF + RTS smoother: Gauss-Newton on the arc's MAP problem, one EKF+RTS pass per iteration.
+
+    Pass 0 is the ordinary EKF+RTS. Each later pass relinearises about the previous solution:
+
+    - without process noise the solution is one trajectory, so the next linearization is that trajectory
+      propagated from the smoothed first-epoch state; the step is accepted only if it lowers the MAP cost
+      (prior + whitened measurement residuals), halving it up to ``max_halvings`` times (damped Gauss-Newton);
+    - with process noise the next linearization is the smoothed state sequence itself (the iterated
+      extended Kalman smoother); no line search.
+
+    Stops when the largest change of the linearization point, in smoothed sigmas, is below ``tol_sigma``.
+    Status: ``Converged``, ``MaxIter`` or ``NoDescent`` (the line search found no lower cost).
+    """
+    if ekf_options.pop("smooth", True) is not True or "linearization" in ekf_options:
+        raise ValueError("the iterated smoother controls smooth= and linearization= itself.")
+    common = (t_pass_s, obs_data, x0_mci, p0, pass_geo, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+              get_earth_pos, get_sun_pos)
+    with_q = ekf_options.get("process_noise") is not None
+    x_prior = np.asarray(x0_mci, dtype=float).reshape(-1)
+    p_prior = np.asarray(p0, dtype=float)
+    obs = np.asarray(obs_data, dtype=float)
+    order = np.argsort(obs[:, 0], kind="stable")
+    t_obs = obs[order, 0]
+    cost_of = _map_cost_function(obs, order, x_prior, p_prior, pass_geo, mu_moon_m3_s2, mu_earth_m3_s2,
+                                 mu_sun_m3_s2, get_earth_pos, get_sun_pos, ekf_options) if not with_q else None
+
+    result = run_lunar_ekf(*common, smooth=True, **ekf_options)
+    if not with_q and float(t_obs[0]) != float(np.asarray(t_pass_s, dtype=float).reshape(-1)[0]):
+        raise ValueError("the iterated smoother requires the first observation at t_pass_s[0].")
+    x_bar0 = x_prior.copy()
+    nominal = None
+    cost = None if with_q else cost_of(x_bar0)[0]
+    history = [dict(iteration=0, cost=cost, step_sigma=None, halvings=0)]
+    status = "MaxIter"
+    for iteration in range(1, max_iter + 1):
+        smoothed = result.smoothed
+        sigma = np.sqrt(np.diag(smoothed.covariances[0]))
+        if with_q:
+            previous = result.predicted_states if nominal is None else nominal
+            change = float(np.max(np.abs(smoothed.state_estimates - previous) / np.sqrt(
+                np.diagonal(smoothed.covariances, axis1=1, axis2=2))))
+            if change < tol_sigma:
+                status = "Converged"
+                break
+            nominal = smoothed.state_estimates.copy()
+            history.append(dict(iteration=iteration, cost=None, step_sigma=change, halvings=0))
+        else:
+            step = smoothed.state_estimates[0] - x_bar0
+            change = float(np.max(np.abs(step) / sigma))
+            if change < tol_sigma:
+                status = "Converged"
+                break
+            for halvings in range(max_halvings + 1):
+                candidate = x_bar0 + step * 0.5 ** halvings
+                cand_cost, trajectory = cost_of(candidate)
+                if np.isfinite(cand_cost) and cand_cost < cost:
+                    break
+            else:
+                status = "NoDescent"
+                break
+            x_bar0, cost, nominal = candidate, cand_cost, trajectory
+            history.append(dict(iteration=iteration, cost=cost, step_sigma=change, halvings=halvings))
+        result = run_lunar_ekf(*common, smooth=True, linearization=nominal, **ekf_options)
+    return IteratedSmootherResult(result=result, status=status, iterations=len(history) - 1,
+                                  history=tuple(history))
+
+
+def _map_cost_function(obs, order, x_prior, p_prior, pass_geo, mu_moon, mu_earth, mu_sun, get_earth_pos,
+                       get_sun_pos, options):
+    """MAP cost of a process-noise-free arc as a function of the first-epoch state, and its trajectory."""
+    rtol, atol = options.get("rtol", 1e-11), options.get("atol", 1e-12)
+    srp, j2_moon = options.get("srp"), options.get("j2_moon", 0.0)
+    profile = resolve_profile(srp, options.get("propagation_profile"))
+    kwargs = {} if profile is None else profile.propagator_kwargs()
+    measurement_type = (options.get("measurement_type") or pass_geo.measurement_type).lower()
+    nx = x_prior.size
+    bias_cfg = _resolve_ukf_bias_config(measurement_type, nx, len(pass_geo.stations), options.get("bias_mode"))
+    residual_fn = _measurement_residual(measurement_type)
+    rows = [obs[i, :] for i in order]
+    t_obs = np.array([row[0] for row in rows])
+    epochs, inverse = np.unique(t_obs, return_inverse=True)
+    prior_info = np.linalg.inv(p_prior)
+
+    def cost_of(x0):
+        x0 = np.asarray(x0, dtype=float)
+        try:
+            states = propagate_state(epochs, x0[:6], mu_moon, mu_earth, mu_sun, get_earth_pos, get_sun_pos,
+                                     rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp, **kwargs)
+        except Exception:
+            return np.inf, None
+        trajectory = np.column_stack([states[inverse], np.tile(x0[6:], (len(rows), 1))])
+        d = x0 - x_prior
+        total = float(d @ prior_info @ d)
+        for row, x in zip(rows, trajectory):
+            z, r, measurement_fn, _, _ = _measurement_context(
+                measurement_type, row, pass_geo, mu_moon, mu_earth, mu_sun, get_earth_pos, get_sun_pos,
+                rtol, atol, bias_cfg, j2_moon=j2_moon, srp=srp, solve_for_k_srp=False,
+                propagation_profile=profile)
+            res = np.asarray(residual_fn(np.asarray(z, float), np.asarray(measurement_fn(x), float)))
+            total += float(res @ np.linalg.solve(r, res))
+        return total, trajectory
+
+    return cost_of

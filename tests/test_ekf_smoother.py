@@ -261,3 +261,72 @@ def test_lunar_ekf_and_smoother_are_statistically_consistent(measurement_type):
     # mean NEES of 20 runs of a 6-dof chi-square: 95% interval about [4.3, 7.9]
     assert 4.0 < np.mean(nees_filter) < 8.5
     assert 4.0 < np.mean(nees_smoothed) < 8.5
+
+
+# ----------------------------------------------------------------------------------------------
+# Phase D4: iterated EKF + RTS smoother.
+# ----------------------------------------------------------------------------------------------
+
+
+def test_linearization_about_the_filter_predictions_stays_on_the_ekf():
+    x_true0, t_pass, _, pass_geo, clean = _arc("position")
+    rng = np.random.default_rng(7)
+    obs = _add_noise(clean, "position", rng)
+    p0 = np.diag([20.0**2] * 3 + [0.02**2] * 3)
+    x_guess = x_true0 + rng.multivariate_normal(np.zeros(6), p0)
+    args = (t_pass, obs, x_guess, p0, pass_geo, MU_MOON, 0.0, 0.0, _earth, _sun)
+    plain = run_lunar_ekf(*args, rtol=1e-12, atol=1e-13, smooth=True)
+    # the plain EKF expands the dynamics about x_k-1|k-1 and the measurement about x_k|k-1; a linearization
+    # trajectory of the predictions matches the second exactly and the first to the update size (sub-metre)
+    relinearized = run_lunar_ekf(*args, rtol=1e-12, atol=1e-13, smooth=True,
+                                 linearization=plain.predicted_states)
+    np.testing.assert_allclose(relinearized.state_estimates, plain.state_estimates, rtol=0, atol=1e-6)
+    np.testing.assert_allclose(relinearized.covariances, plain.covariances, rtol=1e-6, atol=1e-12)
+
+
+@pytest.mark.parametrize("measurement_type", ["position", "range_rate"])
+def test_iterated_smoother_reaches_bls_from_a_far_start(measurement_type):
+    from lunar_od.ekf import run_lunar_iterated_smoother
+    from lunar_od.estimators import estimate_position_bls_lm, estimate_range_rate_bls_lm
+    x_true0, t_pass, truth, pass_geo, clean = _arc(measurement_type, duration_s=1801.0)
+    rng = np.random.default_rng(11)
+    obs = _add_noise(clean, measurement_type, rng)
+    p0 = np.diag([2000.0**2] * 3 + [2.0**2] * 3)
+    x_guess = x_true0 + rng.multivariate_normal(np.zeros(6), p0)
+    args = (t_pass, obs, x_guess, p0, pass_geo, MU_MOON, 0.0, 0.0, _earth, _sun)
+    it = run_lunar_iterated_smoother(*args, rtol=1e-12, atol=1e-13)
+    bls_fn = estimate_position_bls_lm if measurement_type == "position" else estimate_range_rate_bls_lm
+    x_bls, _, stats = bls_fn(*args[:2], x_guess, *args[4:], prior_covariance=p0, return_posterior=True,
+                             rtol=1e-12, atol=1e-13)
+    sigma = np.sqrt(np.diag(stats.posterior_covariance))
+    assert it.status == "Converged" and 1 <= it.iterations <= 10
+    assert np.all(np.abs(it.result.smoothed.state_estimates[0] - x_bls) < 0.1 * sigma)
+    # the single-pass smoother from the same start is far worse
+    single = run_lunar_ekf(*args, rtol=1e-12, atol=1e-13, smooth=True)
+    assert (np.linalg.norm(it.result.smoothed.state_estimates[0][:3] - truth[0, :3])
+            < 0.1 * np.linalg.norm(single.smoothed.state_estimates[0][:3] - truth[0, :3]))
+    costs = [h["cost"] for h in it.history]
+    assert all(b < a for a, b in zip(costs, costs[1:]))
+
+
+def test_iterated_smoother_with_process_noise_converges_on_the_bias_fixture():
+    from lunar_od.ekf import run_lunar_iterated_smoother
+    x_true0, t_pass, _, pass_geo, obs = _arc("position")
+    true_bias = np.array([20.0, 1.2e-5, -8.0e-6])
+    obs[:, 1:4] += true_bias
+    x_guess = np.concatenate([x_true0, np.zeros(3)])
+    p0 = np.diag([5.0**2] * 3 + [0.01**2] * 3 + [100.0**2, 1e-4**2, 1e-4**2])
+    q = np.diag([0.01**2] * 3 + [1e-5**2] * 3)
+    it = run_lunar_iterated_smoother(t_pass, obs, x_guess, p0, pass_geo, MU_MOON, 0.0, 0.0, _earth, _sun,
+                                     process_noise=q, rtol=1e-12, atol=1e-13)
+    assert it.status == "Converged"
+    assert np.all(np.abs(it.result.smoothed.state_estimates[0][6:9] - true_bias) < [3.0, 4e-6, 4e-6])
+    assert np.all(np.abs(it.result.final_state[6:9] - true_bias) < [3.0, 4e-6, 4e-6])
+
+
+def test_iterated_smoother_rejects_options_it_controls():
+    from lunar_od.ekf import run_lunar_iterated_smoother
+    x_true0, t_pass, _, pass_geo, obs = _arc("position")
+    with pytest.raises(ValueError):
+        run_lunar_iterated_smoother(t_pass, obs, x_true0, np.eye(6), pass_geo, MU_MOON, 0.0, 0.0, _earth, _sun,
+                                    linearization=np.zeros((obs.shape[0], 6)))
