@@ -1,0 +1,47 @@
+{
+ "phase": "F2s",
+ "predeclaration": "configs/phase_f2s_lola_arc_structure_predeclaration.json",
+ "classification": "F2S_INCONCLUSIVE",
+ "decision_inputs": {
+  "method_check": false,
+  "ARC_STRUCTURE": "NOT_FOUND",
+  "n_windows": 0,
+  "n_converged": 0
+ },
+ "step_A": {
+  "spans": {
+   "F": [
+    86222.49998135692,
+    306042.49996014015
+   ],
+   "P": [
+    357489.9999554687,
+    394379.9999526974
+   ]
+  },
+  "period_s": 6787.158639159553,
+  "window_samples": 226,
+  "method_check": {
+   "rms_rtn_mps2": [
+    9.002026045309212e-08,
+    8.517116921785406e-08,
+    2.8704573181211315e-08
+   ],
+   "PASS": false
+  },
+  "a_res_rms_rtn_mps2": [
+   2.6921946715329553e-06,
+   2.7169349003313976e-06,
+   2.658819148081217e-06
+  ],
+  "envelope_median_mps2": 4.640013326397726e-06,
+  "threshold_mps2": 1.3920039979193178e-05,
+  "raw_runs": [],
+  "tapers": [],
+  "taper_hours": [],
+  "taper_spacing_days": [],
+  "ARC_STRUCTURE": "NOT_FOUND",
+  "elapsed_s": 520.6952028274536
+ },
+ "windows": []
+}
