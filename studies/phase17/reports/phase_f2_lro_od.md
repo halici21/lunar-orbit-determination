@@ -1182,3 +1182,67 @@ without them is 15 318.82. Refitting lowers that by 0.25 χ² to 15 318.57.
 1. Use F2p (edited Doppler) as the reference fit for later phases; F2o editing applies to every later fit and
    prediction score.
 2. The −4.8 mm/s mean Doppler offset on 263 (LOLA −3.5) is the next open item.
+
+### 17.8 F2q — where the 263 Doppler mean offset comes from (diagnostic, no fit)
+
+Predeclaration `studies/phase17/configs/phase_f2q_doppler_mean_offset_predeclaration.json` (`7628283`). F2o-edited
+Doppler (23 intervals excluded), days 260–263, scored against F2p's orbit and the LOLA ephemeris, **both with F2p's
+measurement parameters** (Doppler bias −7.97 mm/s). Script `studies/phase17/scripts/phase_f2q_doppler_offset_diagnostic.py`
+(F2l's `score()` gains an option that returns each interval's transmit frequency; default output unchanged), result
+`studies/phase17/results/phase_f2q_doppler_offset_diagnostic.json`.
+
+#### Hypotheses as computed
+
+Fit-day pass-mean band (LOLA orbit): median −3.37 mm/s, 1.4826 MAD 0.36, band −4.44 … −2.30 mm/s.
+
+| hypothesis | rule (predeclared) | computed | result |
+|---|---|---|---|
+| H_ORBIT | 263 \|mean(r_LOLA − r_F2p)\| ≥ 0.5 \|mean(r_F2p)\| | 1.24 vs 2.38 | not supported |
+| H_DAY | every 263 pass mean (LOLA) same sign and outside the band | 4 of 5 passes inside | not supported |
+| H_PASS | dropping one or the worst two 263 passes puts the day mean (LOLA) in the band | every drop-one mean −3.37 … −3.61, all inside | **supported** |
+| H_PAD | 263 PAD 126 vs 103 > 3 mm/s and all-day PAD medians differ > 3 | 0.07; 0.48 | not supported |
+| H_FREQ | 263 frequencies absent from fit days, and so on | one transmit frequency, 2 091 414 110 Hz, in every pass of all four days | not supported |
+
+Reading as computed: **H_PASS**. **That result is vacuous and the predeclared design was wrong.** Against LOLA the
+263 day mean (−3.52) is already inside the band before any pass is dropped. The rules assumed LOLA's −3.5 mm/s on
+263 was a 263 feature. It is not: LOLA's Doppler mean is about −3.3 mm/s on **every** day, fit days included.
+
+| day | mean vs F2p (mm/s) | mean vs LOLA (mm/s) | n |
+|---|---|---|---|
+| 260 | −0.29 | −3.21 | 2 414 |
+| 261 | +0.14 | −3.23 | 1 737 |
+| 262 | +0.17 | −3.57 | 2 681 |
+| 263 (predicted) | −4.76 | −3.52 | 1 954 |
+
+#### Post-hoc analysis (not predeclared)
+
+The F2p − LOLA difference of the pass means is the computed-Doppler difference of the two orbits (same data, same
+measurement parameters):
+
+| | passes, in time order | F2p − LOLA (mm/s) |
+|---|---|---|
+| 260–262 (fit) | 16 passes | +2.6 … +3.8, slowly rising |
+| 263 (predicted) | 03:18, 05:13, 07:04, 10:50, 12:44 | +0.57, −0.29, −0.93, −2.53, −3.68 |
+
+1. **Against LOLA, 263 looks like the fit days.** All passes except 10:50 (−4.71, just outside) sit inside the
+   fit-day band. The data on 263 carry no day-wide offset that the fit days do not have.
+2. **The 263 offset belongs to F2p's predicted orbit.** On the fit days F2p and LOLA differ by an almost constant
+   +3.3 mm/s, which the estimated Doppler bias absorbs together with F2p's orbit. After the end of the fit that
+   difference falls steadily, by about 3 mm/s by the first 263 pass and about 7 mm/s by the last, 24 h after the
+   fit ends. That is a prediction error growing with time, the signature of an orbit error, not of a measurement
+   error.
+3. **The size is consistent with the known orbit error.** F2p's 263 orbit differs from LOLA by 1.9 / 5.1 / 2.9 m
+   RMS (R / I / C). For a ~2 h lunar orbit, n × 5 m ≈ 4.5 mm/s, the same order as the drift.
+4. **H_ORBIT's rule missed this** because it compared the absolute orbit difference on 263 (+1.24 − (−4.76)) without
+   subtracting the constant fit-day difference (+3.3). The rule should have used the change in the difference from
+   the fit days; done that way, the change is about −4.6 mm/s, the whole F2p offset.
+5. **Side observation:** LOLA's best Doppler bias with this measurement model would be about −11.3 mm/s, not
+   −7.97. The estimated Doppler bias is correlated with the orbit (it absorbs ~3.3 mm/s of F2p − LOLA difference),
+   so it is not a clean station or transponder bias.
+
+#### Next steps
+
+1. The 263 Doppler offset is not a data problem. It is the same along-track prediction error the range shows,
+   seen with mm/s sensitivity. Closing it belongs to the dynamics work (Phase E), not to Doppler editing.
+2. A future diagnostic of this kind must state its rules relative to the fit-day level, and must check that the
+   reference orbit has no constant offset of its own before using it as the baseline.
