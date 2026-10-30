@@ -1,0 +1,22 @@
+{
+ "phase": "Phase F2q - where the 2009-263 counted-Doppler mean offset comes from (diagnostic, no fit)",
+ "written": "2026-10-30, after F2p (5cad9ff) and before any F2q number. Known beforehand: on the F2o-edited data the 263 Doppler mean is -4.76 mm/s against F2p's orbit (RMS 5.62, so std ~3.0) and -3.5 against LOLA (F2o, scored with F2k's parameters); F2k's edited fit-day day means are -0.29 / +0.14 / +0.17 mm/s (260 / 261 / 262). LOLA's fit-day day means, every per-pass mean on any day, and the transmit frequencies per pass have not been looked at. The fit estimates one Doppler bias common to all PADs and days (F2p: -7.97 mm/s)",
+ "question": "is the -4.8 mm/s offset an orbit-prediction error, a day-wide measurement offset, one or two passes, a station, or tied to the transmit frequency",
+ "data_and_model": "F2o-edited counted Doppler (the 23 edited intervals excluded), days 260..263, predict()'s measurement code (F2l score()), rtol/atol 1e-12/1e-13. Two orbits: F2p's estimate (propagated from its epoch state) and the LOLA ephemeris. Both scored with F2p's measurement parameters (Doppler bias -7.97 mm/s), so the residual difference between the two orbits is the computed-Doppler difference only",
+ "per_pass_record": "PAD, start UTC, n intervals, mean / RMS / std of the residual for each orbit, the transmit frequency values used in the pass (from the first record of each interval, as the model uses them)",
+ "hypotheses_and_rules": {
+  "H_ORBIT": "the offset comes from the predicted orbit. Supported if on 263 |mean(res_LOLA - res_F2p)| >= 0.5 x |mean(res_F2p)|. Expectation from the known numbers (-4.76 vs about -3.5): not supported; stated so it can be checked",
+  "H_DAY": "the offset is common to the whole day. Supported if every 263 pass mean (LOLA orbit) has the sign of the 263 day mean and lies outside the fit-day pass-mean band median +- 3 x 1.4826 MAD (fit-day passes, LOLA orbit)",
+  "H_PASS": "the offset sits in one or two passes. Supported if dropping one 263 pass, or the worst two, moves the 263 day mean (LOLA orbit) inside that fit-day band",
+  "H_PAD": "the offset is station-specific. Supported if on 263 the PAD 126 pass and the PAD 103 passes differ in mean by more than 3 mm/s and, over all four days, the per-PAD medians of the pass means differ by more than 3 mm/s",
+  "H_FREQ": "the offset follows the transmit frequency (a counter-reference or frequency-bookkeeping error enters as an offset that depends on the frequency). Supported if the 263 passes use transmit frequency values not used on any fit day AND every fit-day pass sharing a 263 frequency value is itself outside the fit-day band; not supported if fit-day passes with the same frequency values sit inside the band"
+ },
+ "reading_rule": "each hypothesis is reported as supported / not supported as computed. More than one can be supported (e.g. H_DAY and H_FREQ together); none supported is a valid outcome and is reported as 'not located'. Nothing here changes the fit, the editing, or the Doppler bias model",
+ "not_tested": "elevation-dependent media error (needs per-interval elevation; separate phase if the above locate nothing); a per-pass Doppler bias in the fit",
+ "not_changed": "no production code; F2k..F2p results are not changed. score() gains an option that adds the transmit frequency to each interval; default output unchanged",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2q_doppler_offset_diagnostic.py",
+  "results": "studies/phase17/results/phase_f2q_doppler_offset_diagnostic.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.8"
+ }
+}
