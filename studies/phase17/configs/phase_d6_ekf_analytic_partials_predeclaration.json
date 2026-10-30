@@ -1,0 +1,28 @@
+{
+ "phase": "Phase D6 - analytic measurement partials for the EKF / iterated smoother",
+ "written": "2026-10-31, after reading the measurement code and before any implementation, timing or study number",
+ "motivation": "D3-D5 linearise the measurement by central differences of the UKF's measurement function: 2 x n_state evaluations per observation. For two-way counted Doppler each evaluation propagates a local state history over the count window, so the EKF's measurement Jacobian dominates its cost, and its accuracy is limited by the light-time solve tolerance (1e-10 s round trip, i.e. up to c * 1e-10 / (2 Tc) in range-rate-equivalent units) divided by the step. The BLS-LM path already has analytic partials for every UKF-supported observable; D6 brings them to the EKF",
+ "design": {
+  "option": "run_lunar_ekf(measurement_jacobian='finite_difference' | 'analytic'); the default stays 'finite_difference', so D3-D5 numbers cannot change",
+  "position_and_instantaneous_range_rate": "local 3x6 / 4x6 H_tilde of compute_position_residuals_analytic / compute_range_rate_residuals_analytic (the BLS blocks) evaluated at the linearisation state",
+  "counted_doppler": "rows range/az/el from the geometric H_tilde (as BLS); the Doppler row from radiometrics.two_way_counted_doppler_initial_state_jacobian on the observable's own local window, with a 6+36 augmented local history propagated from the linearisation state at the receive mid-time (STM = I there), so 'initial state' is the state at the update epoch",
+  "biases": "the BLS bias columns (_position_bias_jacobian / _range_rate_bias_jacobian); DMC columns are zero",
+  "scope": "analytic is accepted only where it is the exact derivative of the evaluated observable: geometric_instantaneous position, geometric_instantaneous range rate, and two_way_counted_doppler with companion_geometry 'instantaneous' and local_state_model 'ode'. Any other combination raises ValueError instead of silently approximating",
+  "location": "new module src/lunar_od/ekf_partials.py plus the option in ekf.py; filters.py, measurements.py, radiometrics.py, estimators.py and dynamics.py unchanged"
+ },
+ "experiment": {
+  "arcs": "D3's synthetic arc (Moon point mass, 3 synthetic stations, 1 h, rtol 1e-12 / atol 1e-13) for position, instantaneous range rate and two-way counted Doppler (count interval 20 s, legacy interpolated station states, observations from t = 60 s to 3540 s every 60 s so every count window lies inside the pass grid, observations generated with the filter's own measurement function at the truth plus D3 noise)",
+  "seeds": "20 per measurement type, default_rng([20261031, 6, m, seed]); prior S20m (20 m, 2 cm/s) so the filters are in the linear regime and differences come from the Jacobian alone",
+  "oracle": "a Richardson-extrapolated central difference of the measurement function (steps h and h/2 with h = 10 m / 1 cm/s) at 5 states per arc: the truth at t = 600, 1200, 1800, 2400, 3000 s perturbed by the S20m prior draw of seed 0"
+ },
+ "gates": {
+  "G1_jacobian": "per observation and row, |H_analytic - H_oracle| / |H_oracle| (row 2-norm, state columns) <= 1e-6 for position and instantaneous range rate, <= 1e-4 for the counted-Doppler row, <= 1e-6 for the counted-Doppler range/az/el rows",
+  "G2_filter_equivalence": "every measurement type and seed: |x_analytic - x_FD| <= 0.01 sigma per component of the final EKF state, and smoothed first-epoch state the same",
+  "G3_consistency": "every measurement type: analytic EKF mean final NEES over 20 seeds in the 99% chi2(120)/20 band [4.19, 8.18]",
+  "G4_cost": "counted Doppler: median analytic EKF wall time <= 1/3 of the median FD EKF wall time over the 20 seeds (single process, one BLAS thread)",
+  "G5_invariance": "the default path is untouched: tests/test_ekf_smoother.py and tests/test_dmc.py pass unchanged"
+ },
+ "reported_not_gated": "the FD Jacobian's own error against the oracle (expected largest for counted Doppler); FD and analytic NEES side by side; wall times for position and instantaneous range rate; the iterated smoother with analytic partials on the counted-Doppler arc",
+ "decision_rule": "D6_QUALIFIED if G1-G5 all PASS; otherwise D6_NOT_QUALIFIED with each failure reported as computed. A default change to 'analytic' is not part of D6",
+ "outputs": {"report": "studies/phase17/reports/phase_d6_ekf_analytic_partials.md", "results": "studies/phase17/results/phase_d6_ekf_analytic_partials.json", "script": "studies/phase17/scripts/phase_d6_ekf_analytic_partials.py"}
+}
