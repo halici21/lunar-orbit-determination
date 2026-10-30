@@ -1,0 +1,23 @@
+{
+ "phase": "Phase F2n - why PAD 103 2009-263 10:50-11:20 UTC Doppler scatters 69 mm/s (diagnostic, no gate)",
+ "written": "2026-10-28, after F2m (2a8f799) and before any F2n number. Known beforehand: the pass's UTDF mode/flags/stations match clean passes; it is 30 min long with one 470 s gap; the preceding PAD 103 pass (08:57-09:50) has flags 9 and its Doppler fails the F2e A1 bound",
+ "orbit": "LOLA reference ephemeris (F2l), so the result does not depend on our estimate; F2k's Doppler bias",
+ "passes": "the bad pass, and as controls the PAD 103 07:04-07:54 pass on 263 and the PAD 103 pass of the same local geometry on 262 (the third PAD 103 pass of that day)",
+ "steps": {
+  "D1_residual_series": "counted-Doppler residual per 5 s interval vs time; lag-1 autocorrelation; fraction with |r| > 20 mm/s; statistics before and after the 470 s gap; figure",
+  "D2_raw_counts": "per record: time-tag spacing, the UTDF microseconds field, count increment dN, count rate dN/dt; the observed rate minus the rate implied by the LOLA-computed Doppler, per interval"
+ },
+ "hypotheses": {
+  "H_TIME": "time-tag error: lag-1 autocorrelation < -0.3 (an error in one tag moves two adjacent intervals in opposite directions), or the microseconds field / tag spacing varies in the bad pass but not in the controls",
+  "H_SEGMENT": "a contaminated stretch: >= 80 % of the |r| > 20 mm/s intervals lie in one contiguous segment (before or after the gap) while the rest of the pass is at the control level",
+  "H_NOISE": "broadband degradation: |lag-1 autocorrelation| < 0.3, large residuals spread over the pass, no tag anomaly",
+  "otherwise": "UNEXPLAINED; the hypotheses are not exclusive and are reported as computed"
+ },
+ "scale": "for reference, a 1 microsecond error in one count time tag changes a 5 s interval's Doppler by about 3 mm/s (count rate ~2.4e8 Hz bias-dominated)",
+ "not_changed": "no production code; F2k, F2l and F2m results are not changed; the F2m screening stays as declared",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2n_bad_pass_diagnostic.py",
+  "results": "studies/phase17/results/phase_f2n_bad_pass_diagnostic.json and phase_f2n_bad_pass_residuals.png",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.5"
+ }
+}

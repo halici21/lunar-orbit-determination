@@ -1,0 +1,40 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_f2j_g1_diagnostic_predeclaration.json (A2, D5)",
+ "dx0_m": 1e-06,
+ "tight_rtol_atol": [
+  1e-12,
+  1e-13
+ ],
+ "n_cuts": {
+  "base": 128,
+  "plus": 128,
+  "plus_frozen_cuts": 128,
+  "base_tight": 128,
+  "plus_tight": 128
+ },
+ "max_cut_shift_s": 0.00046012760140001774,
+ "plus_vs_base": {
+  "rms_m": 0.34633872711012287,
+  "max_m": 0.7538428684109776,
+  "end_m": 0.7535277907449535,
+  "t_of_max_h": 60.42777777777778
+ },
+ "plus_frozen_cuts_vs_base": {
+  "rms_m": 0.1626379238556027,
+  "max_m": 0.34830419867317647,
+  "end_m": 0.34830419867317647,
+  "t_of_max_h": 61.1
+ },
+ "plus_tight_vs_base_tight": {
+  "rms_m": 0.0003735606811492307,
+  "max_m": 0.0007896462071969883,
+  "end_m": 0.0007034704229745434,
+  "t_of_max_h": 55.666666666666664
+ },
+ "base_vs_base_tight": {
+  "rms_m": 0.6757433200716774,
+  "max_m": 1.3921085766161756,
+  "end_m": 1.381680321137624,
+  "t_of_max_h": 60.56111111111111
+ }
+}

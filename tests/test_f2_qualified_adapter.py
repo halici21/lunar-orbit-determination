@@ -69,7 +69,22 @@ def test_numerical_grid_is_explicit_and_forwarded_to_process_workers(monkeypatch
     pb.nmax, pb.use_doppler, pb.days, pb.n_emp, pb.grid_s = 2, True, ('day',), 4, 10.
     pb.numerics = F2._numerics_for_backend('trf')
     pb.attach_pool(2)
-    assert captured['initargs'] == (2, True, ('day',), 4, 10., pb.numerics)
+    assert captured['initargs'] == (2, True, ('day',), 4, 10., pb.numerics, [])
+    # F2p: edited Doppler intervals reach the workers too
+    monkeypatch.setattr(F2, 'DOPPLER_EDITS', frozenset({(103, '2009-09-20T01:00:00')}))
+    pb.attach_pool(2)
+    assert captured['initargs'][-1] == [(103, '2009-09-20T01:00:00')]
+
+
+def test_f2j_options_are_legacy_only(monkeypatch):
+    monkeypatch.setattr(F2, 'SOLVER_BACKEND', 'trf')
+    assert F2._f2j_solver_options('ck.json') == {}
+    with pytest.raises(ValueError):
+        F2.solve(2, 1.0, gn_relative_tol=1e-3)
+    monkeypatch.setattr(F2, 'SOLVER_BACKEND', 'legacy')
+    options = F2._f2j_solver_options('ck.json')
+    assert options['gn_stationarity'] and options['gn_relative_tol'] == 1e-3
+    assert options['checkpoint'].parent == F2._output_dir('legacy')
 
 
 def test_sensitivity_numerics_are_explicit_per_backend():

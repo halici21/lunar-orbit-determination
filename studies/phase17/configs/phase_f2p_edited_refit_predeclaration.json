@@ -1,0 +1,20 @@
+{
+ "phase": "Phase F2p - F2k's three-day fit repeated on the F2o-edited Doppler",
+ "written": "2026-10-28, after F2o (4e6f2c4, 7d45bc0) and before any F2p number",
+ "change": "only the data: the 23 counted-Doppler intervals F2o edits against F2k's orbit (studies/phase17/results/phase_f2o_doppler_editing.json, orbits.F2k.edited; 19 on 260..262, 4 on 263) are excluded, identified by (PAD, UTC of the interval's first record). The exclusion is applied where Problem builds its Doppler rows (main process and every worker, through the worker initializer) and where predict() builds the 263 Doppler. With an empty edit list both are unchanged",
+ "same_as_F2k": "data days 260..262 fit / 263 prediction, ranges unedited, F2h model (GL1800F N = 300, along-track empirical terms, cross-track pinned), priors, weights, FD steps, LM, MAX_ITER, rtol/atol 1e-12/1e-13, relative Gauss-Newton rule 1e-3 chi^2, start (F2h's S1 state, K0 = 0.01, empirical terms 0), 8 workers",
+ "pre_launch_check": "a Problem built with the edit list has exactly 19 fewer Doppler rows than without it (every fit-day edit found); otherwise the run is not started",
+ "gates": {
+  "G1_convergence": "Converged or STATIONARY (relative rule)",
+  "G3_postfit": "range RMS <= 2 m and Doppler RMS <= 5 mm/s"
+ },
+ "reported_not_gated": "every estimated parameter and the epoch state against F2k's; chi^2 against F2k's minus the 792 chi^2 the edited intervals carried; RIC vs LOLA on the fit arc and on 263; 263 prediction range / Doppler (edited) per pass",
+ "expectation_not_gate": "the solution moves by much less than its fit-day noise (F2o reading 3); stated so it can be checked, not used to accept or reject",
+ "procedure": "checkpointed (studies/phase17/results/phase_f2p_checkpoint.json, F2k A1 semantics), started detached from the session",
+ "not_changed": "no production code; F2k and F2o results are not changed",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2p_lro_three_day_arc_edited.json",
+  "entry": "phase_f2_lro_od.py --f2p",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.7"
+ }
+}

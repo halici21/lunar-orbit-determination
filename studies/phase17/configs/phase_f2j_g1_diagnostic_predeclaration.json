@@ -1,0 +1,34 @@
+{
+ "phase": "Phase F2j-G1 - diagnosis of the F2j damping-limit end (G1 FAIL): cost scan along the Gauss-Newton direction and an independent finite-difference Jacobian",
+ "written": "2026-10-27, after F2j (1cfaa4e) and before any diagnostic number",
+ "question": "At the F2j end point the undamped Gauss-Newton step predicts a cost decrease of 977.4 chi^2 (0.057 of chi^2 = 17153.65), yet no LM trial from lambda = 1e-5 to 1e10 lowered the cost. Is the solver's Jacobian wrong, is the cost not smooth there, or does the quadratic model only fail at full step length?",
+ "point": "F2j S1 end point from studies/phase17/results/phase_f2j_lro_three_day_arc.json (x0, K, range biases, Doppler bias, C_T, S_T, C_N, S_N); same Problem (N = 300, fit days 2009-260..262, Doppler, 4 empirical terms), same priors F2H_PRIORS, same LM scaling",
+ "steps": {
+  "D0_reproduce": "residual + solver Jacobian (A1 FD history + light-time partials) at the end point; chi^2 and the Gauss-Newton decrement must reproduce F2j's 17153.6527 and 977.41 to a relative 1e-6",
+  "D1_gn_scan": "actual cost at p + alpha * delta_GN for alpha in {-0.01, 0.01, 0.1, 0.3, 1}, against the quadratic model ||r - alpha H delta||^2",
+  "D2_lm_trials": "actual vs model cost for the LM steps the solver tried, lambda in {1e-5, 1e-2, 1, 1e2, 1e4}",
+  "D3_fd_jacobian": "residual-level central differences for each dynamical parameter (x0, K, C_T, S_T, C_N, S_N) at the A1 steps h and at h/4; per column: relative difference to the solver column; the gradient and the Gauss-Newton decrement recomputed with each FD Jacobian (bias columns are exact and kept)"
+ },
+ "decision_rules": {
+  "H_J_jacobian": "SUPPORTED when both FD Jacobians (h and h/4) agree with each other to 1% in the gradient but differ from the solver's gradient by more than 10%, and give a decrement below 1e-3 chi^2 or a step that lowers the cost",
+  "H_N_nonsmooth": "SUPPORTED when the central slope of the actual cost at alpha = +-0.01 differs from the model slope -2 r.(H delta) by more than 50% and the FD Jacobians at h and h/4 disagree with each other by more than 10% in the gradient",
+  "H_Q_nonlinear": "SUPPORTED when the small-alpha slope agrees with the model (within 20%) and a decrease is realised at some alpha < 1, but not at alpha = 1",
+  "otherwise": "UNEXPLAINED, reported as computed"
+ },
+ "amendment_A1": {
+  "written": "2026-10-27, after the D0-D2 numbers (D1/D2 showed cost changes of +600..+1100 chi^2 for LM steps of 1e-5..1e-7 m) and before D4",
+  "D4_rowdiff": "residual at the end point evaluated twice (determinism), after x0[0] += 1e-6 m, and at 0.01 of D0's Gauss-Newton step; report which rows carry the chi^2 change (top 25, their share, rows with |dr| > 1 cm). Script studies/phase17/scripts/phase_f2j_g1_rowdiff.py, result studies/phase17/results/phase_f2j_g1_rowdiff.json",
+  "reading": "a few rows carrying most of the change points to a measurement-level discontinuity (event solver, interpolation edge); a change spread over all rows points to the propagation (integrator step sequence); a non-zero change on the repeat means the evaluation is not deterministic"
+ },
+ "amendment_A2": {
+  "written": "2026-10-27, after D4 (evaluation deterministic; x0[0] += 1e-6 m moves range residuals by 0.28 m RMS over 8699 rows) and before D5",
+  "D5_propagation_jitter": "positions on the 20 s grid from F2g's empirical propagator at the F2j end point, five cases: base; x0[0] += 1e-6 m; the same with the base's shadow cuts frozen; base and +1e-6 m at rtol/atol 1e-12/1e-13. Script studies/phase17/scripts/phase_f2j_g1_propagation_jitter.py, result studies/phase17/results/phase_f2j_g1_propagation_jitter.json",
+  "reading": "linear dynamics would move positions by at most ~1e-3 m for a 1e-6 m start change over 3 days. A frozen-cut difference far below the free-cut one: the shadow-segment restarts carry the jitter. Both large but the tight-tolerance difference far below them: the integrator's error control carries it, and its size is the cost-noise floor at rtol 1e-10"
+ },
+ "not_changed": "no production code; F2j's result and its G1 FAIL are not changed by this diagnostic",
+ "outputs": {
+  "results": "studies/phase17/results/phase_f2j_g1_diagnostic.json",
+  "script": "studies/phase17/scripts/phase_f2j_g1_diagnostic.py",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 16.1"
+ }
+}

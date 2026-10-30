@@ -53,9 +53,27 @@ MEASURE_CHUNK = 300
 _WORKER: dict = {}
 
 
-def _worker_init(nmax, doppler, days, n_emp=0, grid_s=GRID_S, numerics=None):
+def set_tolerance(rtol: float, atol: float) -> None:
+    """F2k: integrator tolerance of every legacy propagation in this process (default 1e-10 / 1e-11).
+    The TRF path always integrates at QUALIFIED_RTOL / QUALIFIED_ATOL."""
+    global RTOL, ATOL
+    RTOL, ATOL = float(rtol), float(atol)
+
+
+#: F2p: counted-Doppler intervals excluded from the fit and the prediction, as (PAD, UTC ISO of the first record).
+DOPPLER_EDITS: frozenset = frozenset()
+
+
+def set_doppler_edits(keys) -> None:
+    global DOPPLER_EDITS
+    DOPPLER_EDITS = frozenset((int(p), str(u)) for p, u in keys)
+
+
+def _worker_init(nmax, doppler, days, n_emp=0, grid_s=GRID_S, numerics=None, edits=None):
     import warnings
     warnings.simplefilter("ignore")
+    if edits:
+        set_doppler_edits(edits)
     _WORKER["pb"] = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=grid_s, numerics=numerics)
 
 
@@ -161,6 +179,8 @@ class Problem:
                 ft = ra.transmit_frequency_hz
                 obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
                 if abs(obs) > MAX_DOPPLER_MPS:     # F2e A1: physically impossible interval
+                    continue
+                if (pad, ra.utc.isoformat()) in DOPPLER_EDITS:    # F2p: F2o-edited interval
                     continue
                 self.dop.append(dict(pad=pad, tm=0.5 * (td[i] + td[j]), tc=td[j] - td[i], obs=obs,
                                      media=MediaModel(uplink_hz=ft, downlink_hz=ft * D.TURNAROUND)))
@@ -275,7 +295,7 @@ class Problem:
         """Parallel evaluation: each worker builds its own identical Problem once (kernels, field, setup)."""
         self.pool = ProcessPoolExecutor(workers, initializer=_worker_init,
                                         initargs=(self.nmax, self.use_doppler, self.days, self.n_emp, self.grid_s,
-                                                  self.numerics))
+                                                  self.numerics, sorted(DOPPLER_EDITS)))
 
     def close_pool(self) -> None:
         if self.pool is not None:
@@ -362,6 +382,14 @@ class Problem:
 # The new numerical path is explicit in every result; legacy is reproduction-only.
 GN_DECREMENT_TOL = 1e-2  # Historical F2i legacy gate only.
 SOLVER_BACKEND = "trf"
+
+
+def use_historical_numerics() -> None:
+    """Pin this process to the numerics of the F2j-F2q records: legacy LM, 20 s grid, quantised station epochs.
+    The F2j-F2q diagnostic scripts call it on import so their reruns stay comparable with their records."""
+    global SOLVER_BACKEND
+    SOLVER_BACKEND = "legacy"
+    F.EXACT_EPOCH_STATIONS = False
 
 
 def _grid_for_backend(backend=None):
@@ -462,24 +490,26 @@ def _fit_trf(pb, initial, augment, scale, nr, *, on_linearization=None):
 def solve(nmax: int, sign: float, priors: dict | None = None, tag: str = "", doppler: bool = False,
           days: tuple = (F.DAY_DIR,), x_start=None, predict_days: tuple = (), workers: int = 0,
           n_emp: int = 0, solver: str | None = None, step_limit: tuple | None = None,
-          gn_stationarity: bool = False) -> dict:
+          gn_stationarity: bool = False, gn_relative_tol: float | None = None,
+          checkpoint: Path | None = None) -> dict:
     backend = SOLVER_BACKEND if solver is None else solver
-    if backend != "legacy" and (step_limit is not None or gn_stationarity):
-        raise ValueError("step_limit/gn_stationarity reproduce the legacy F2i algorithm only; "
-                         "TRF always uses bound-aware final-point diagnostics.")
+    if backend != "legacy" and (step_limit is not None or gn_stationarity or gn_relative_tol is not None
+                                or checkpoint is not None):
+        raise ValueError("step_limit/gn_stationarity/gn_relative_tol/checkpoint reproduce the legacy F2i-F2p "
+                         "algorithm only; TRF always uses bound-aware final-point diagnostics.")
     pb = Problem(nmax, doppler=doppler, days=days, n_emp=n_emp, grid_s=_grid_for_backend(solver),
                  numerics=_numerics_for_backend(solver))
     try:
         if workers > 1:
             pb.attach_pool(workers)
         return _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days,
-                              solver, step_limit, gn_stationarity)
+                              solver, step_limit, gn_stationarity, gn_relative_tol, checkpoint)
     finally:
         pb.close_pool()
 
 
 def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, solver,
-                   step_limit=None, gn_stationarity=False):
+                   step_limit=None, gn_stationarity=False, gn_relative_tol=None, checkpoint=None):
     t0 = time.time()
     nr = len(pb.rows)
     x0 = pb.reference_epoch + sign * OFFSET if x_start is None else np.asarray(x_start, float)
@@ -516,10 +546,20 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
     if backend == "legacy":
         lam, status, history = 1e-3, "MaxIter", []
         rel = 1.0
+        first = 1
+        if checkpoint is not None and checkpoint.exists():
+            # F2k A1: resume after the last accepted iteration; the evaluation is deterministic, so the loop
+            # continues exactly as an uninterrupted run would (JSON floats round-trip exactly)
+            ck = json.loads(checkpoint.read_text(encoding="utf-8"))
+            p, lam, rel, history = np.array(ck["p"], float), ck["lam"], ck["rel"], ck["history"]
+            first = ck["iteration"] + 1
+            t0 -= ck["elapsed_s"]
         res, h, hist = pb.residual(p)
         ra, ha = aug(res, h, p)
         cost = float(ra @ ra)
-        for it in range(1, MAX_ITER + 1):
+        if first > 1 and cost != ck["cost"]:
+            raise RuntimeError(f"checkpoint cost {ck['cost']!r} not reproduced: {cost!r}")
+        for it in range(first, MAX_ITER + 1):
             hs = ha * scale / SIGMA_M
             a = hs.T @ hs
             g = hs.T @ (ra / SIGMA_M)
@@ -553,11 +593,17 @@ def _solve_problem(pb, nmax, sign, priors, tag, doppler, x_start, predict_days, 
             with open(_output_dir(backend) / f"f2{tag}_progress_N{nmax}_{'p' if sign > 0 else 'm'}.log", "a", encoding="utf-8") as log:
                 log.write(f"it {it} rms {history[-1]['rms_m']:.3f} m K {p[6]:.5f} step {history[-1]['pos_step_m']} "
                           f"lam {lam:.1e} t {time.time() - t0:.0f}s\n")
+            if accepted and checkpoint is not None:
+                tmp = checkpoint.with_suffix(".tmp")
+                tmp.write_text(json.dumps(dict(iteration=it, p=p.tolist(), lam=lam, rel=rel, cost=cost,
+                                               history=history, elapsed_s=time.time() - t0)), encoding="utf-8")
+                tmp.replace(checkpoint)
             if not accepted:
                 # F2d: the damping limit after a near-zero relative improvement is a stationary point
                 if gn_stationarity:
                     legacy_decrement = float(g @ np.linalg.solve(a, g))
-                    status = "STATIONARY" if legacy_decrement < GN_DECREMENT_TOL else "DampingLimit"
+                    tol = GN_DECREMENT_TOL if gn_relative_tol is None else gn_relative_tol * cost   # F2j: relative
+                    status = "STATIONARY" if legacy_decrement < tol else "DampingLimit"
                 else:
                     status = "STATIONARY" if (doppler and rel < 1e-6) else "DampingLimit"
                 break
@@ -683,6 +729,8 @@ def predict(pb: Problem, p, predict_days: tuple) -> dict:
         ft = ra.transmit_frequency_hz
         obs = -F.C * (a - D.BIAS_HZ) / (2.0 * ft * D.TURNAROUND * D.M_MULT)
         if abs(obs) > MAX_DOPPLER_MPS:             # F2e A1
+            continue
+        if (q, ra.utc.isoformat()) in DOPPLER_EDITS:   # F2p: F2o-edited interval
             continue
         from lunar_od.media import MediaModel
         val, _, _ = R.counted_doppler(0.5 * (td[i] + td[j]), td[j] - td[i], s.tide[q], sc, s.eph,
@@ -1035,13 +1083,99 @@ def main_f2i_merge():
     print(json.dumps(dict(gates=gates, G2=dpos), indent=1))
 
 
+OUT_F2J = HERE.parent / "results" / "phase_f2j_lro_three_day_arc.json"
+F2J_FIT_DAYS = ("trk/lro_no_01/2009260", "trk/lro_no_01/2009261", "trk/lro_no_01/2009262")
+F2J_PREDICT_DAYS = ("trk/lro_no_01/2009263",)
+
+
+def _f2j_solver_options(checkpoint_name: str | None = None) -> dict:
+    """F2j-F2p ran on the legacy LM with a relative GN stationarity test and a resumable checkpoint. TRF has
+    its own certified stop and integrates at QUALIFIED_RTOL / QUALIFIED_ATOL, so these are legacy-only."""
+    if SOLVER_BACKEND != "legacy":
+        return {}
+    return dict(gn_stationarity=True, gn_relative_tol=1e-3,
+                checkpoint=None if checkpoint_name is None else _output_dir() / checkpoint_name)
+
+
+def _f2j_g1(run) -> bool:
+    return run["status"] in ("Converged", "STATIONARY") if SOLVER_BACKEND == "legacy" else _certified_stationary(run)
+
+
+def main_f2j():
+    """Phase F2j (studies/phase17/configs/phase_f2j_lro_three_day_arc_predeclaration.json)."""
+    x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
+        encoding="utf-8"))["runs"]["S1"]["x0"], float)
+    run = solve(300, 1.0, F2H_PRIORS, "j1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
+                len(EMP_NAMES), **_f2j_solver_options())
+    run.pop("est_positions")
+    gates = dict(G1=_f2j_g1(run), G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2j_lro_three_day_arc_predeclaration.json",
+               gates=gates, priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2J_FIT_DAYS,
+               predict_days=F2J_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    _write_result(OUT_F2J, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
+OUT_F2K = HERE.parent / "results" / "phase_f2k_lro_three_day_arc_tight_tol.json"
+F2K_TOL = (1e-12, 1e-13)
+
+
+def main_f2k():
+    """Phase F2k (studies/phase17/configs/phase_f2k_tight_tolerance_predeclaration.json): F2j at rtol/atol
+    1e-12/1e-13, nothing else changed."""
+    set_tolerance(*F2K_TOL)
+    x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
+        encoding="utf-8"))["runs"]["S1"]["x0"], float)
+    run = solve(300, 1.0, F2H_PRIORS, "k1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
+                len(EMP_NAMES), **_f2j_solver_options("phase_f2k_checkpoint.json"))
+    run.pop("est_positions")
+    gates = dict(G1=_f2j_g1(run), G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2k_tight_tolerance_predeclaration.json",
+               gates=gates, rtol_atol=F2K_TOL, priors={str(k): v for k, v in F2H_PRIORS.items()},
+               fit_days=F2J_FIT_DAYS, predict_days=F2J_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    _write_result(OUT_F2K, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
+
+OUT_F2P = HERE.parent / "results" / "phase_f2p_lro_three_day_arc_edited.json"
+
+
+def f2o_edits() -> list:
+    """F2o's edited Doppler intervals against F2k's orbit, as (PAD, UTC ISO)."""
+    o = json.loads((HERE.parent / "results" / "phase_f2o_doppler_editing.json").read_text(encoding="utf-8"))
+    return [(e["pad"], e["utc"]) for e in o["orbits"]["F2k"]["edited"]]
+
+
+def main_f2p():
+    """Phase F2p (studies/phase17/configs/phase_f2p_edited_refit_predeclaration.json): F2k on F2o-edited Doppler."""
+    set_tolerance(*F2K_TOL)
+    set_doppler_edits(f2o_edits())
+    x0 = np.array(json.loads((HERE.parent / "results" / "phase_f2h_lro_alongtrack_empirical.json").read_text(
+        encoding="utf-8"))["runs"]["S1"]["x0"], float)
+    run = solve(300, 1.0, F2H_PRIORS, "p1", True, F2J_FIT_DAYS, x0, F2J_PREDICT_DAYS, _workers_arg() or 8,
+                len(EMP_NAMES), **_f2j_solver_options("phase_f2p_checkpoint.json"))
+    run.pop("est_positions")
+    gates = dict(G1=_f2j_g1(run), G3=run["postfit_rms_m"] <= 2.0 and run["doppler_postfit_rms_mmps"] <= 5.0)
+    out = dict(predeclaration="studies/phase17/configs/phase_f2p_edited_refit_predeclaration.json",
+               gates=gates, rtol_atol=F2K_TOL, doppler_edits=sorted(DOPPLER_EDITS),
+               priors={str(k): v for k, v in F2H_PRIORS.items()}, fit_days=F2J_FIT_DAYS,
+               predict_days=F2J_PREDICT_DAYS, nmax=300, runs={"S1": run})
+    _write_result(OUT_F2P, json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps(dict(gates=gates), indent=1))
+
 
 if __name__ == "__main__":
     if "--solver" in sys.argv:
         SOLVER_BACKEND = sys.argv[sys.argv.index("--solver") + 1]
         if SOLVER_BACKEND not in ("trf", "legacy"):
             raise SystemExit("--solver must be trf or legacy")
-    if "--f2i-part" in sys.argv:
+    if "--f2p" in sys.argv:
+        main_f2p()
+    elif "--f2k" in sys.argv:
+        main_f2k()
+    elif "--f2j" in sys.argv:
+        main_f2j()
+    elif "--f2i-part" in sys.argv:
         main_f2i_part(sys.argv[sys.argv.index("--f2i-part") + 1])
     elif "--f2i-merge" in sys.argv:
         main_f2i_merge()
