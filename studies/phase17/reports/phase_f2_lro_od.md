@@ -1247,3 +1247,143 @@ measurement parameters):
    Doppler editing. (Phase E is speed optimization; an earlier draft of this line said Phase E by mistake.)
 2. A future diagnostic of this kind must state its rules relative to the fit-day level, and must check that the
    reference orbit has no constant offset of its own before using it as the baseline.
+
+### 17.9 F2r — post-fit orbit-error growth against LOLA: dynamics root-cause isolation
+
+This is the owner brief "Phase E-D1", renamed F2r because Phase E is the roadmap's speed phase.
+
+- Predeclaration: `studies/phase17/configs/phase_f2r_postfit_growth_predeclaration.json` (`9447cd3`), committed
+  before any F2r number.
+- Script: `studies/phase17/scripts/phase_f2r_postfit_growth.py`.
+- Per-experiment parts: `studies/phase17/results/phase_f2r_parts/`.
+- Merged result and classification: `studies/phase17/results/phase_f2r_postfit_growth.json`.
+
+Analysis only:
+
+- no production code;
+- no change to data editing, weights, Doppler bias or the measurement model;
+- no constant or parameter set by hand;
+- F2Q_PREDECLARED_OUTCOME = H_PASS unchanged.
+
+Definitions (predeclared):
+
+- Δ = estimate − LOLA, in LOLA's own R/T/N axes.
+- F = fit-day measurement span; P = day-263 span.
+- Baseline b = mean of Δ over F; growth g = Δ − b.
+- Primary metric: G_T = RMS of g_T over P.
+
+#### Classification as computed
+
+**F2R_CLASSIFICATION = E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT.**
+
+- All validation steps passed.
+- Half of the growth stays when our dynamics are fitted directly to LOLA: share_dyn = 0.52. That is the MIXED
+  branch, so E2b, E3 and E4 were all run.
+- The two substitutions that could be tested explain 0.08 m of the 2.05 m dynamics share, i.e. under 25 %. They
+  are the DE421 ephemeris and frame, and the GRGM1200L gravity field.
+- G_T(E0) = 3.97 m is **below LOLA's stated accuracy (~10 m total)**. From the LOLA comparison alone it therefore
+  cannot be called our defect.
+
+| step | what | G_T (m) | G_R / G_N (m) | G_vN (mm/s) | fit-arc RMS N (m) | Doppler-proj G (mm/s) | status |
+|---|---|---|---|---|---|---|---|
+| E0 | F2p, rtol 1e-12 | **3.97** | 1.50 / 2.78 | 7.87 | 12.36 | 4.15 | — |
+| E1 | F2p, rtol 1e-13 | 3.97 (ΔG_T 4e-5) | 1.50 / 2.78 | 7.87 | 12.36 | 4.15 | negligible |
+| E2 | our dynamics fitted to LOLA positions over F | **2.05** | 0.44 / 10.99 | 10.30 | **8.44** | 2.78 | STATIONARY, 6 it |
+| E3 | E2 with DE421 + MOON_PA_DE421 | 1.98 | 0.44 / 11.00 | 10.30 | 8.44 | 2.71 | STATIONARY, 6 it |
+| E4 | E2 with GRGM1200L N=300 | **4.40** | 0.39 / 9.24 | 8.64 | 7.93 | 1.62 | STATIONARY, 6 it |
+
+Validation details:
+
+- **Doppler projection check:** PASS. It reproduces the F2q pass means to 0.13 mm/s RMS; the limit is 0.5.
+- **Integrator:** negligible. ΔG_T = 4e-5 m, Δmean = 1e-4 m.
+
+The other steps:
+
+- **Time scale.** Not run; only a bound. Annual TDB−TT rate × 3.6 d span × 1.6 km/s gives ≤ 0.16 m, about 4 % of
+  G_T(E0).
+- **Maneuvers.** None in the arc. The SPK comment puts the first dH at 2009-09-25 15:45.
+- **E5 (SRP and shadow).** LOLA's panel SRP model is not implemented, so its form can't be tested with existing
+  code. The numerical side of shadow crossings is covered by E1.
+- **E2b (state vs parameters).**
+  - F2p's state with E2's K/C_T/S_T: G_T 87.1 m.
+  - E2's state with F2p's parameters: G_T 86.1 m.
+  - The growth means are −86.8 m and +85.7 m.
+  - The epoch state and the dynamic parameters are so strongly coupled that swapping either one alone ruins the
+    orbit. A state/parameter split is not meaningful here; the interaction term dominates.
+
+Candidate criteria as computed:
+
+- Each candidate is tested against the share G_T(E2) = 2.05 m.
+- The predeclaration states criteria 3–5 only in words. The script gives them numeric thresholds, chosen after the
+  E2 result but before E3 and E4 finished:
+  - the removed growth is within ×10 of the share;
+  - the baseline change is smaller than the G_T reduction;
+  - the relative Doppler reduction is within ×0.5–2 of the relative G_T reduction.
+
+| candidate | ΔG_T (m) | share of G_T(E0) | corr(removed, g_T(E0)) | criteria 1–5 |
+|---|---|---|---|---|
+| DE421 ephemeris + frame (E3) | +0.08 | 1.9 % | −0.25 | F F F T T: not met |
+| GRGM1200L gravity (E4) | **−2.35** (worse) | −59 % | −0.37 | F F T T F: not met |
+
+#### Reading
+
+1. **The growth does not come from integration, time scale, maneuvers or the planetary ephemeris/frame.** Together
+   these are below 0.25 m, against a G_T of 3.97 m.
+2. **About half of the growth is the fit.**
+   - Fitting the same dynamics to LOLA's positions instead of to the tracking data halves G_T (3.97 → 2.05 m).
+   - So roughly 2 m is what the solution takes on from three sources: the S-band data, F2p's measurement parameters,
+     and the state/parameter correlation.
+   - E2b shows that this part cannot be assigned to the state or to the parameters separately.
+3. **The other half lies in how our dynamics differ from LOLA's, but not in anything we could swap.**
+   - DE421 changes nothing: the E3 iterations match E2's to four digits.
+   - GRGM1200L fits the arc slightly better (fit RMS 4.60 m vs 4.90 m), but its 263 along-track prediction is worse
+     (4.40 m).
+   - A different field of the same family is no closer to LOLA's GRGM900C/600. At this level the gravity field
+     does not discriminate.
+4. **An observation outside the predeclared metric: cross-track.**
+   - With C_N and S_N pinned as predeclared, our dynamics do not follow LOLA's cross-track position over the fit
+     arc. The fit RMS is 8.4 m in N, against 0.25 m in R and 0.82 m in T.
+   - This holds in E2, E3 and E4 alike, so it comes from neither the ephemeris/frame nor the field.
+   - The velocity growth over 263 is also mostly cross-track: in E0 the mean of g_vN is −7.6 mm/s.
+   - A strong, untested candidate is the reference itself. LOLA's SPK is stitched from ~2.5 d GEODYN arcs that are
+     tapered over 8–12 h overlaps. Our 3.6 d span crosses at least one arc boundary, and no single dynamical
+     trajectory has to fit across it.
+   - Other candidates: LOLA's own constant along-track empirical acceleration per arc, its panel SRP model, and the
+     true-of-date conversion of the SPK.
+5. **Empirical terms.**
+   - E2's along-track sine term is S_T = 1.9e-7 m/s², about 19σ from its 1e-8 prior. F2p's value, 2.5e-7, is close.
+   - Both the tracking data and LOLA's trajectory therefore demand a once-per-rev along-track acceleration of that
+     size.
+   - That is the signature either of an unmodelled force (SRP form, albedo/IR) or of a reference-frame effect.
+
+#### DONE list (owner brief)
+
+| criterion | status | evidence | caveat |
+|---|---|---|---|
+| PHASE_E_D1_GATE (here F2r) | DONE, classification computed | `phase_f2r_postfit_growth.json` | label E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT |
+| predeclaration before results | DONE | `9447cd3` before `c988e81` | criteria 3–5 numeric thresholds fixed after E2, before E3/E4 |
+| growth quantified, shape reported | DONE | E0 G and shape_T: linear +0.65 m/h, quadratic +0.013 m/h² | below LOLA's 10 m stated accuracy |
+| Doppler projection consistent with F2q | PASS | 0.13 mm/s RMS | — |
+| integrator excluded | PASS | E1 ΔG_T 4e-5 m | — |
+| time scale excluded | bound only | ≤ 0.16 m | analytic, not run |
+| maneuvers excluded | DONE | SPK comment | — |
+| state vs parameters split | DONE, not separable | E2b 87 / 86 m | interaction dominates |
+| ephemeris/frame tested | DONE | E3: 1.9 % | — |
+| gravity tested | DONE | E4: worse by 2.35 m | one alternative field only |
+| SRP / albedo / box-wing | not testable | not implemented | Phase C candidate |
+| production defect found | none | — | no HARDEN id |
+| GMAT not used as oracle | DONE | — | — |
+| F2Q outcome unchanged | DONE | 17.8 untouched | — |
+| NEXT_PHASE_RECOMMENDATION | see below | — | — |
+
+#### Next steps
+
+1. **Check the reference before the dynamics.**
+   - Fit E2 separately inside each LOLA arc. Take the arc boundaries from the SPK segment list or from its comment.
+   - If the cross-track misfit and half of the growth disappear within a single arc, the remaining "dynamics share"
+     comes from how the reference is stitched together, not from our force model.
+2. **Then move to the Phase C force-model candidates:** box-wing/panel SRP and albedo/IR.
+   - Freeing the cross-track empirical pair (C_N, S_N) in E2 would be a cheap probe of the cross-track signal.
+   - It would be a new run, predeclared separately.
+3. **The ~2 m fit share (reading item 2) is a measurement/estimation question.** It is the Doppler-bias/orbit
+   correlation seen in F2q, and it is outside this phase's no-measurement-change scope.

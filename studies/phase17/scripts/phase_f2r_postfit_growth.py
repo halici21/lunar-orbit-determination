@@ -329,8 +329,106 @@ def main_e2b():
     write_part("E2b", out)
 
 
+# ----------------------------------------------------------------------
+# summary and classification
+# ----------------------------------------------------------------------
+TDB_TT_AMP_S = 1.657e-3          # leading annual term of TDB - TT
+ORBIT_SPEED_MPS = 1.6e3
+
+
+def _series_P(pb, spans, with_mids):
+    """Grid times inside P for a propagate_and_score call (E0 ran with the Doppler mid-times added)."""
+    mids = [m for d in spans["mids"].values() for _, m in d] if with_mids else ()
+    t = grid_for(pb, spans, mids)[1:]
+    return t[(t >= spans["P"][0]) & (t <= spans["P"][1])]
+
+
+def _candidate(name, part, ref_part, gT0, g0):
+    """Predeclared criteria 1-5 for a substitution tested against the dynamics share G_T(E2).
+
+    Operationalised here (the predeclaration states them in words): (3) RMS of the removed growth within a
+    factor 10 of the share; (4) the change of the along-track baseline is smaller than the G_T reduction;
+    (5) relative Doppler-projection G reduction / relative G_T reduction in [0.5, 2]."""
+    m, r = part["metrics"], ref_part["metrics"]
+    share = r["G"]["T"]
+    red = share - m["G"]["T"]
+    removed = np.array(r["series_T_P"]) - np.array(m["series_T_P"])
+    corr = float(np.corrcoef(removed, g0)[0, 1]) if removed.std() > 0 else 0.0
+    rms_removed = float(np.sqrt(np.mean(removed ** 2)))
+    d_rel = (r["doppler_proj"]["G_mmps"] - m["doppler_proj"]["G_mmps"]) / r["doppler_proj"]["G_mmps"]
+    t_rel = red / share
+    crit = {"1_reduces_half_share": bool(red >= 0.5 * share),
+            "2_shape_corr_ge_0.8": bool(corr >= 0.8),
+            "3_order_of_magnitude": bool(0.1 * share <= rms_removed <= 10.0 * share),
+            "4_acts_on_growth": bool(abs(m["baseline"]["T"] - r["baseline"]["T"]) < abs(red)),
+            "5_doppler_same_proportion": bool(t_rel != 0 and 0.5 <= d_rel / t_rel <= 2.0)}
+    return dict(candidate=name, fit_status=part["status"], G_T=m["G"]["T"], reduction_m=red,
+                fraction_of_G_T_E0=red / gT0, removed_rms_m=rms_removed, corr_removed_vs_gT_E0=corr,
+                doppler_G_rel_reduction=d_rel, G_T_rel_reduction=t_rel,
+                baseline_T_change_m=m["baseline"]["T"] - r["baseline"]["T"], criteria=crit,
+                criteria_1_5_met=all(crit.values()))
+
+
+def main_summary():
+    parts = {n: json.loads((PARTS / f"{n}.json").read_text(encoding="utf-8"))
+             for n in ("E0", "E1", "E2", "E2b", "E3", "E4")}
+    pb, spans = problem()
+    t0P, t2P = _series_P(pb, spans, True), _series_P(pb, spans, False)
+    keep = np.isin(t0P, t2P)
+    g0 = np.array(parts["E0"]["metrics"]["series_T_P"])[keep]
+    assert g0.size == len(parts["E2"]["metrics"]["series_T_P"])
+    gT0 = parts["E0"]["metrics"]["G"]["T"]
+    gT2 = parts["E2"]["metrics"]["G"]["T"]
+    share_dyn = gT2 / gT0
+    branch = "E2b" if share_dyn <= 0.25 else ("E3_E4" if share_dyn >= 0.75 else "MIXED_both")
+    span_s = spans["P"][1] - spans["F"][0]
+    ts_bound = 2 * np.pi / (365.25 * 86400) * TDB_TT_AMP_S * span_s * ORBIT_SPEED_MPS
+    validation = {"doppler_projection_check": parts["E0"]["doppler_projection_check"]["PASS"],
+                  "integrator_E1_negligible": parts["E1"]["contribution"]["negligible"],
+                  "E2_fit_converged": parts["E2"]["status"] == "STATIONARY"}
+    cands = [_candidate(n, parts[e], parts["E2"], gT0, g0) for n, e in
+             (("ephemeris_frame_DE421", "E3"), ("gravity_GRGM1200L", "E4"))]
+    e2b = {k: dict(G_T=v["G"]["T"], growth_mean_P_T=v["growth_mean_P"]["T"]) for k, v in parts["E2b"].items()}
+    met = [c for c in cands if c["criteria_1_5_met"] and c["fit_status"] == "STATIONARY"]
+    mid = [c for c in cands if 0.25 <= c["fraction_of_G_T_E0"] < 0.75]
+    explained = sum(max(c["reduction_m"], 0.0) for c in cands)
+    if not all(validation.values()):
+        label = "E_INCONCLUSIVE"
+    elif any(c["fraction_of_G_T_E0"] >= 0.75 for c in met):
+        label = "E_DYNAMICS_ROOT_CAUSE_IDENTIFIED"
+    elif len(mid) >= 2 and sum(c["fraction_of_G_T_E0"] for c in mid) >= 0.75:
+        label = "E_MULTIPLE_COMPARABLE_CONTRIBUTORS"
+    elif any(0.25 <= c["fraction_of_G_T_E0"] < 0.75 for c in met):
+        label = "E_DYNAMICS_ROOT_CAUSE_PARTIALLY_IDENTIFIED"
+    elif share_dyn <= 0.25:
+        label = "E_INITIAL_STATE_DOMINATED"
+    elif explained < 0.25 * gT2:
+        label = "E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT"
+    else:
+        label = "NO_PREDECLARED_LABEL_APPLIES"
+    out = dict(phase="F2r", predeclaration="configs/phase_f2r_postfit_growth_predeclaration.json",
+               classification=label, validation=validation,
+               G_T_E0_m=gT0, G_T_E2_m=gT2, share_dyn=share_dyn, E2_decision_branch=branch,
+               G_T_E0_below_LOLA_stated_accuracy_10m=bool(gT0 < 10.0),
+               time_scale_bound_m=dict(value=float(ts_bound), span_s=float(span_s),
+                                       basis="annual TDB-TT rate x span x orbital speed"),
+               maneuvers="none in the arc (SPK comment)", E5_srp_shadow="SRP model form not testable; numerics: E1",
+               E2b=e2b, candidates=cands, explained_by_candidates_m=explained,
+               parts={k: {x: v[x] for x in v if x not in ("metrics",)} if k != "E2b" else None
+                      for k, v in parts.items()},
+               metrics={k: {x: y for x, y in v["metrics"].items() if x != "series_T_P"}
+                        for k, v in parts.items() if "metrics" in v})
+    OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(json.dumps({k: out[k] for k in ("classification", "validation", "G_T_E0_m", "G_T_E2_m", "share_dyn",
+                                          "time_scale_bound_m", "E2b", "explained_by_candidates_m")}, indent=1))
+    for c in cands:
+        print(json.dumps(c))
+
+
 if __name__ == "__main__":
-    if "--e0" in sys.argv:
+    if "--summary" in sys.argv:
+        main_summary()
+    elif "--e0" in sys.argv:
         main_e0()
     elif "--e2" in sys.argv:
         main_e2(sys.argv[sys.argv.index("--e2") + 1], M._workers_arg() or 8)
