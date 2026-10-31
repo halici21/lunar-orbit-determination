@@ -129,3 +129,66 @@ Decision: **F3_NO_DMC_GAIN.**
    disagree at the level of LOLA's quoted accuracy.
 3. The force-model route F2q pointed to (Phase C: box-wing SRP, albedo / IR) is unchanged by F3. DMC at the
    levels tried does not substitute for it in the LOLA comparison.
+
+## 7. F3b — where σ*'s 263 prediction gain comes from (diagnostic, no new fit)
+
+- **Predeclaration:** `studies/phase17/configs/phase_f3b_prediction_split_predeclaration.json` (`60181e0`).
+- **Code:** `studies/phase17/scripts/phase_f3b_prediction_split.py` and `phase_f3_core.propagate_from` with a
+  closed-form test (`504a684`). F3's sweep setup was factored into `prepare()` / `smooth_sigma()`; the rerun sweep
+  reproduces F3's JSON exactly, runtimes aside.
+- **Result:** `studies/phase17/results/phase_f3b_prediction_split.json`.
+
+**Method.** t_e is the last fit epoch. There, σ*'s smoothed state x_e = [dx_e, w_e, dc] is split into three parts:
+- STATE = dx_e, w_e;
+- DYN = the dynamic constants K, C_T, S_T, C_N, S_N;
+- MEAS = the range biases and Doppler bias.
+
+Each part is propagated to every 263 epoch with F3's transition and scored against the 263 data and LOLA.
+share = (χ²_F2p − χ²_part) / (χ²_F2p − χ²_FULL).
+
+### Gates as computed
+
+| gate | criterion | value | result |
+|---|---|---|---|
+| G_F3 | σ = 0 and σ* 263 χ² reproduce F3's within 1e-6 relative | equal to the last digit | PASS |
+| G_ADD | the parts sum to the smoother's own 263 deviations within 1e-3 m | 1.1e-11 m | PASS |
+| G_LIN | nonlinear F2 trajectory with σ*'s dynamic constants vs S(t) dc on 263: ≤ max(0.1 m, 2 % of max \|S dc\|) | 0.049 m on a 169 m offset (limit 3.39 m) | PASS |
+
+### Results
+
+| part | 263 χ² | share | range RMS (m) | Doppler RMS / mean (mm/s) | 263 RIC vs LOLA (m) |
+|---|---|---|---|---|---|
+| F2p (reference residuals) | 69 981 | 0 | 5.21 | 5.62 / −4.76 | 1.88 / 5.05 / 2.90 |
+| STATE | 184 174 | −1.72 | 8.45 | 9.14 / −8.07 | 1.98 / 8.68 / 0.73 |
+| CONST | 39 290 | 0.46 | 3.81 | 4.54 / +3.92 | 1.80 / 11.56 / 2.53 |
+| DYN | 39 269 | 0.46 | 3.81 | 4.56 / +3.94 | 1.80 / 11.56 / 2.53 |
+| MEAS | 69 858 | 0.00 | 5.20 | 5.63 / −4.78 | 1.88 / 5.05 / 2.90 |
+| STATE + DYN | 3 629 | 1.00 | 1.04 | 1.73 / +0.64 | 1.89 / 7.52 / 1.06 |
+| FULL | 3 643 | 1.00 | 1.04 | 1.72 / +0.62 | 1.89 / 7.52 / 1.06 |
+
+End-of-fit state relative to F2p (approximate RIC frame, 35 s away): dr = 0.06 / −0.24 / **4.63 m**, dv =
+0.22 / −0.07 / 1.28 mm/s, w = −0.17 / −0.45 / −0.06 × 1e-9 m/s².
+
+Hypotheses as computed: H_STATE (share ≥ 0.8) not met, H_CONST (share ≥ 0.8) not met. **Decision: F3B_MIXED.**
+
+### Reading
+
+1. **The gain needs both parts together.** The end-of-fit state alone makes the 263 prediction 2.6× worse in χ². The new
+   dynamic constants alone recover about half. Together they recover all of it. The measurement biases contribute
+   nothing.
+2. **σ*'s improvement is a different orbit-plus-force-model pair, not a DMC effect after the fit.** Its two halves
+   are a 4.6 m cross-track shift of the end-of-fit state and a K_SRP / along-track empirical split that changes the
+   F2p trajectory by up to 169 m by the end of 263 when applied from the epoch. The halves only work together. w
+   at t_e is 0.5e-9 m/s² and decays with τ = 30 min.
+3. **The pair is tied to the end of the fit, not to the whole arc.** It reaches the 263 data only because DMC frees the
+   fit-arc path between the epoch and t_e. With the same constants, F2p's batch has to follow one force model over
+   all three days. F2r saw the same thing: S_T at about 19 σ, and fitting to LOLA halves the along-track growth.
+   The 3-day batch force model cannot keep the start and end of the arc consistent at the metre level.
+4. **The linear treatment is sound at this size.** G_LIN agrees to 5 cm on 169 m.
+
+### Next steps
+
+1. A short-arc batch test that needs no DMC: fit day 262 only, or 261–262, with F2p's model, then predict 263. If a
+   short batch arc reproduces σ*'s gain, the 3-day arc's force-model inconsistency is confirmed as the limit and
+   the LOLA disagreement becomes the open question. Needs its own predeclaration; one fit is about 2–6 h.
+2. Phase C dynamics (box-wing SRP, albedo / IR) remain the route to a force model that holds over three days.
