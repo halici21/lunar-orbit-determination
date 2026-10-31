@@ -109,6 +109,30 @@ def test_transition_matches_exact_augmented_exponential():
         assert abs(q[i, i] / q_exact[i, i] - 1.0) < 0.05
 
 
+def test_propagate_from_reproduces_the_smoother_after_the_last_update_and_splits_linearly():
+    rng = np.random.default_rng(3)
+    sigma = 1e-6
+    fit = np.arange(60.0, 7200.0, 60.0)
+    pred = np.arange(7230.0, 14400.0, 90.0)
+    rows = rows_for(fit, rng)
+    truth = np.array([30.0, -20.0, 10.0, 0.02, -0.01, 0.03, 2e-6, 5.0])
+    data = [(h[None, :], np.array([h @ truth + rng.normal()])) for h, _ in rows] + [None] * pred.size
+    prior_cov = np.diag([1e4 ** 2] * 3 + [10.0 ** 2] * 3 + [1e-5 ** 2, 10.0 ** 2])
+    ref = reference(pred[-1])
+    out = C.smooth(ref, 0.0, np.concatenate([fit, pred]), data, np.zeros(8), prior_cov, sigma, TAU, SCALES_W)
+    k_e = fit.size                                     # index of the last fit epoch (index 0 is t0)
+    x_e = out["x"][k_e]
+    state, const = x_e.copy(), x_e.copy()
+    state[9:] = 0.0
+    const[:9] = 0.0
+    parts = C.propagate_from(ref, fit[-1], np.stack([state, const], axis=1), pred, sigma, TAU)
+    want = out["x"][k_e + 1:]
+    scale = np.abs(want).max(axis=0) + 1e-30
+    assert np.max(np.abs(parts.sum(axis=2) - want) / scale) < 1e-9
+    whole = C.propagate_from(ref, fit[-1], x_e, pred, sigma, TAU)
+    np.testing.assert_allclose(whole, want, rtol=0, atol=1e-9 * float(np.abs(want).max()))
+
+
 def test_dmc_smoother_is_consistent_and_beats_no_dmc():
     rng = np.random.default_rng(7)
     sigma = 3e-6

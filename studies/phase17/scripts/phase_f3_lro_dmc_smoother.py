@@ -159,10 +159,8 @@ def prior(z):
     return mean, np.diag(sig ** 2)
 
 
-def sweep() -> None:
-    z = load()
-    g0r = g0(z)
-    _, run = f2p()
+def prepare(z) -> dict:
+    """F3's filter inputs from the cached reference: epochs, per-epoch fit rows, local rows of every measurement."""
     ref = reference_of(z)
     t0 = float(z["t_epoch"])
     h, r, t_row, kind, is263 = z["h"], z["res"], z["t_row"], z["kind"], z["is263"]
@@ -187,15 +185,33 @@ def sweep() -> None:
     row_epoch = np.array([pos[t] for t in t_row])
     cmp_epoch = np.array([pos[t] for t in t_cmp])
     pm, pc = prior(z)
+    return dict(ref=ref, t0=t0, h=h, r=r, kind=kind, is263=is263, nf=nf, t_cmp=t_cmp, epochs=epochs, rows=rows,
+                upd_kind=upd_kind, hx=hx, hc=hc, row_epoch=row_epoch, cmp_epoch=cmp_epoch, pm=pm, pc=pc)
+
+
+def smooth_sigma(f: dict, sigma: float) -> dict:
+    """F3's smoother at one sigma (0 = no w in the state)."""
+    sg = None if sigma == 0.0 else sigma
+    nw = 0 if sg is None else 3
+    return C.smooth(f["ref"], f["t0"], f["epochs"], f["rows"], f["pm"], f["pc"], sg, TAU_S,
+                    STATE_SCALES + [W_SCALE] * nw + CONST_SCALES)
+
+
+def sweep() -> None:
+    z = load()
+    g0r = g0(z)
+    _, run = f2p()
+    f = prepare(z)
+    ref, t0, h, r, kind, is263, nf, t_cmp, epochs, rows, upd_kind, hx, hc, row_epoch, cmp_epoch, pm, pc = (
+        f[k] for k in ("ref", "t0", "h", "r", "kind", "is263", "nf", "t_cmp", "epochs", "rows", "upd_kind", "hx",
+                       "hc", "row_epoch", "cmp_epoch", "pm", "pc"))
     oracle_x, oracle_cov = C.batch_oracle(h[~is263], r[~is263], pm, pc)
 
     results = {}
     for sigma in SIGMAS:
         tic = time.time()
-        sg = None if sigma == 0.0 else sigma
-        nw = 0 if sg is None else 3
-        scales = STATE_SCALES + [W_SCALE] * nw + CONST_SCALES
-        out = C.smooth(ref, t0, epochs, rows, pm, pc, sg, TAU_S, scales)
+        nw = 0 if sigma == 0.0 else 3
+        out = smooth_sigma(f, sigma)
         xs = out["x"][1:]                                 # epochs (index 0 is t0)
         dx = xs[:, :6]
         dc = xs[:, 6 + nw:]

@@ -153,6 +153,21 @@ def smooth(ref: Reference, t0: float, epochs, rows, prior_mean, prior_cov, sigma
                 nis=np.array(nis), n_state=n, nw=nw)
 
 
+def propagate_from(ref: Reference, t_e: float, x_e, times, sigma, tau):
+    """Deviations [dx, (w), dc] (physical units) propagated from t_e to the sorted ``times`` (all >= t_e), with no
+    updates: sequential transitions, as the filter's prediction step.  ``x_e`` (n,) or (n, k) for k parts at once;
+    returns (len(times), n) or (len(times), n, k)."""
+    x = np.asarray(x_e, float)
+    out = np.empty((len(times),) + x.shape)
+    t_prev = t_e
+    for i, t in enumerate(times):
+        if t > t_prev:
+            x = transition(ref, t_prev, t, sigma, tau)[0] @ x
+            t_prev = t
+        out[i] = x
+    return out
+
+
 def batch_oracle(h0, r, prior_mean, prior_cov):
     """sigma = 0 reference: weighted least squares with the prior, in epoch form (unit-weight rows)."""
     info = np.linalg.inv(prior_cov)
