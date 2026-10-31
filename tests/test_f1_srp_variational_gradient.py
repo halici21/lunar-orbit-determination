@@ -290,6 +290,8 @@ def test_f1_refreeze_is_additive_and_history_is_preserved():
     # Phase D2 (owner-authorized 2026-10-23) re-froze dynamics.py after F1.
     assert r2.PHASE_D2_REFROZEN_CURRENT_TREE_SHA256[path].startswith("2f531a04")
     # The user-requested numerical-core correction is a later additive identity.
-    new = r2.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert r2.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ea6f6322")
+    # Phase F2 G4e-R (PR #61 shadow-contact guard) re-frozen 2026-10-31 by the owner.
+    new = r2.PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
