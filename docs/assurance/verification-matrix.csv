@@ -2,7 +2,7 @@ requirement,method,work_package,evidence,status,findings
 REQ-DYN-001,T,WP1.2,,open,DYN-01;DYN-02;CFG-04
 REQ-DYN-002,T,WP1.3,tests/test_assessment_evidence.py::test_dyn05_lunar_orientation_continuous_across_grid_midpoint,failing_as_expected,DYN-05
 REQ-DYN-003,T/A,WP1.3,,open,DYN-03;DYN-04
-REQ-DYN-004,T,WP1.5,tests/test_assessment_evidence.py::test_dyn10_force_identity_records_ephemeris_kernel_and_interpolation,failing_as_expected,DYN-10;DYN-11
+REQ-DYN-004,T,WP1.5,tests/test_assessment_evidence.py::test_dyn10_force_identity_records_ephemeris_kernel_and_interpolation;tests/test_force_identity_wp1_5.py,partial,DYN-10;DYN-11;DYN-16 (Moon rotation mode not yet hashed; CLI/desktop runners attach the ephemeris identity in WP1.6)
 REQ-DYN-005,T,WP1.8,,open,DYN-14;DYN-15
 REQ-DYN-006,A,WP3.3,docs/development/numerical-core/error_budget.csv,partial,DYN-14
 REQ-DYN-007,A/T,WP3.1;WP3.2,,open,DYN-06;DYN-07;DYN-08;DYN-09

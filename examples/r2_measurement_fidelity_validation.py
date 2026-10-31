@@ -456,6 +456,24 @@ PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256 = {
         "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
 }
 
+# F1 WP1.5 re-freeze (owner-authorized V&V programme, 2026-10-31; assessment
+# DYN-10/DYN-11). The force fingerprint did not cover the executed ephemeris, so
+# different Earth/Sun samples hashed equal. force_contract.py adds an optional
+# EphemerisExecutionContract (schema v3; v1/v2 payloads and fingerprints are
+# unchanged), hashes disabled Earth J2 as not_applicable under v3, and refuses
+# to bind a spec that declares Earth J2. scenario_config.py passes the optional
+# identity through force_execution_spec_from_scenario_config.
+#
+#   lunar_od/force_contract.py   536096e3... -> 60c72036...
+#   lunar_od/scenario_config.py  6c95d615... -> 45bb408d...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/force_contract.py":
+        "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
+    "lunar_od/scenario_config.py":
+        "45bb408dee3e9a3a47a548aa6ee24501b7232d79c032abc4915bfcda4cba88a9",
+}
+
 
 
 
@@ -473,6 +491,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:

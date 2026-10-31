@@ -808,6 +808,7 @@ def force_execution_spec_from_scenario_config(
     mu_sun_m3_s2: float = MU_SUN_M3S2,
     j2_moon: float | None = None,
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
+    ephemeris_execution=None,
 ) -> ForceExecutionSpec:
     """Build the executable force spec implied by ``config`` (R0B-F1).
 
@@ -830,6 +831,8 @@ def force_execution_spec_from_scenario_config(
         earth_j2_reference_radius_m=float(R_EARTH_J2_REF_M),
         force_ephemeris_policy=str(force_ephemeris_policy),
         solar_radiation_pressure=_srp_force_contract(config.srp),
+        # WP1.5 (DYN-10): when given, the v3 contract carries the executed ephemeris identity.
+        ephemeris_execution=ephemeris_execution,
     )
 
 

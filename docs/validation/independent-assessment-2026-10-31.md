@@ -31,7 +31,7 @@ bir kontrol testi vardır.
 | EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | XFAIL | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
 | EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
 | EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
-| DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | XFAIL | `ForceModelContract` ve `ForceExecutionSpec` alanlarında kernel/SPK/interpolasyon yok |
+| DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | PASS (WP1.5) | v3 şeması `EphemerisExecutionContract` ekler (SPK adları, örnek SHA-256, ızgara adımı, interpolasyon); v1/v2 parmak izleri değişmedi. Üretim koşucularına bağlama WP1.6'da |
 
 **Not (MEAS-03):** ilk sürüm testi istisna bekliyordu ve XPASS verdi; çözücü istisna atmıyor,
 `converged=False` döndürüyor ve üretim çağıranları `RoundTripLightTimeConvergenceError` atıyor. Test
@@ -104,12 +104,12 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | DYN-08 | O | Dünya gölgesi (Ay tutulması) yok; gölge olayları opt-in | `srp.py:518`, `dynamics.py:937` | tutulma günlerinde büyük |
 | DYN-09 | O | Göreli dinamik (1PN Schwarzschild) yok | `src/` | ~1e-9–1e-8 m/s² |
 | DYN-10 ✔T | B | Kuvvet parmak izi efemeris kimliğini (SPK, ızgara, interpolasyon türü, pertürbasyon) ve dönüş modunu hash'lemiyor → farklı fizik aynı hash | `force_contract.py:444,517` | parite iddiası geçersiz olabilir |
-| DYN-11 | D | `earth_j2_mode` J2 kapalıyken de hash'leniyor (sahte FAIL); `bind_spec_to_runtime` Earth J2/harmonikleri bağlamıyor | `force_contract.py:504,551-571` | — |
+| DYN-11 | D | `earth_j2_mode` J2 kapalıyken de hash'leniyor (sahte FAIL); `bind_spec_to_runtime` Earth J2/harmonikleri bağlamıyor. **WP1.5:** v3'te kapalı terim `not_applicable`; Earth J2 bildiren spec bağlamada reddediliyor (v1/v2 tarihsel davranış korunur) | `force_contract.py:504,551-571` | — |
 | DYN-12 | O | Yükleyici `frame="MOON_PA"` etiketliyor, STM yolu reddediyor; scenario_config Pines gradyanı varken harmonikleri "gradient yok" diye engelliyor | `gravity_model_loader.py:443`, `dynamics.py:1101`, `scenario_config.py:~1173` | yüksek derece gravite senaryoda kullanılamıyor |
 | DYN-13 | D | Harmonikler dosya GM'i, merkez terim DE GM'i | `gravity_model_loader.py:330`, `dynamics.py:262` | 1.6e-8 m/s² |
 | DYN-14 | O | Entegratör: tez rtol 1e-10, kütüphane 1e-11; tek atol m/m/s/STM için; truth DOP853, BLS Adams, UKF RK4+doğrusal efemeris; sayısal çekirdek yalnız 8 481 s yayları sertifikalıyor | `dynamics.py:437,1338,1363`, `thesis_matrix.py:43` | mm–m |
 | DYN-15 | D | Numba Pines `fastmath=True` truth yolunda; 42-durum yolu saf Python → farklı uygulamalar, N≥300 parite yok | `accelerated.py:1033,1323` | — |
-| DYN-16 | D | `propagation_contract`: SRP açık + NO_SHADOW'da `shadow_events=True` raporluyor | `propagation_contract.py:17,53` | rapor hatası |
+| DYN-16 | D | `propagation_contract`: SRP açık + NO_SHADOW'da `shadow_events=True` raporluyor. **Kapatıldı (WP1.5):** `shadow_events` yürütüleni, `requested_shadow_events` istenen profili raporlar | `propagation_contract.py:17,53` | rapor hatası |
 | DYN-17 | D | SRP/gölge için Güneş geometrik (`NONE`), ışık zamanı yok | `ephemeris.py:230` | gölge temas ~0.1 s |
 | DYN-18 ✔ | D | `orbit.lunar_initial_state_mci` sxform kullanıyor → elemanlar dönen MOON_PA'da; belgelenmemiş | `orbit.py:94` | eğimde ~0.17° |
 | DYN-19 | D | Efemeris 10 s ekstrapolasyon izni, history-domain politikası (2 ULP) ile çelişiyor; Dünya J2 çerçevesi birim matris; `et0+t` tek float64 | `ephemeris.py:32`, `dynamics.py:93,585` | küçük |
