@@ -21,6 +21,7 @@ from .measurements import PassGeometry, _range_rate_companion_observable, normal
 from .radiometrics import (
     RangeRatePhysicsConfig,
     _clock_corrected_receive_time,
+    _interp_state,
     instantaneous_geometric_range_rate,
     range_rate_physics_config,
     two_way_counted_doppler_observable,
@@ -1805,9 +1806,10 @@ def _range_rate_measurement_from_state(
     if companion_geometry == "instantaneous":
         az_rad, el_rad, _ = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
     else:
-        local_t, local_state, local_earth_pos, _local_earth_vel, local_xforms = local_histories
-        earth_rx = _interp_pass_values(local_t, local_earth_pos, np.array([float(obs_row[0])]))[0]
-        xform_rx = _interp_pass_values(local_t, local_xforms, np.array([float(obs_row[0])]))[0]
+        local_t, local_state, local_earth_pos, local_earth_vel, local_xforms = local_histories
+        t_rx = np.array([float(obs_row[0])])
+        earth_rx = _interp_pass_earth_state(local_t, local_earth_pos, local_earth_vel, t_rx)[0][0]
+        xform_rx = _interp_pass_transforms(local_t, local_xforms, t_rx)[0]
         range_m, az_rad, el_rad = _range_rate_companion_observable(
             float(obs_row[0]),
             station,
@@ -1988,9 +1990,12 @@ def _two_way_local_histories(
             j2_moon=j2_moon, srp=srp, propagation_profile=propagation_profile,
         )
 
-    local_earth_pos = _interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, source_lookup_t)
-    local_earth_vel = _interp_pass_values(pass_geo.t_s, pass_geo.earth_vel_mci_mps, source_lookup_t)
-    local_xforms = _interp_pass_values(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, source_lookup_t)
+    # WP1.1 (MEAS-04): the same cubic-Hermite Earth state as the batch counted-Doppler path, and a
+    # rotation-preserving transform instead of element-wise linear interpolation.
+    local_earth_pos, local_earth_vel = _interp_pass_earth_state(
+        pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps, source_lookup_t
+    )
+    local_xforms = _interp_pass_transforms(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, source_lookup_t)
     return local_t, local_state, local_earth_pos, local_earth_vel, local_xforms
 
 
@@ -2091,16 +2096,10 @@ def _propagate_local_state_history(
     return state_history
 
 
-def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: ArrayLike) -> np.ndarray:
-    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
-    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
-    array = np.asarray(values, dtype=float)
-    original_shape = array.shape[1:]
-    flat = array.reshape(source_t.size, -1)
-    out = np.empty((target_t.size, flat.shape[1]), dtype=float)
-    # Phase 17-HARDEN-D19: the only production caller (_two_way_local_histories)
-    # normalizes its lookup interval onto closed support first, so the edge
-    # extrapolation below is reached only within the two-ULP representation
+def _require_pass_support(source_t: np.ndarray, target_t: np.ndarray, consumer: str) -> None:
+    # Phase 17-HARDEN-D19: the production callers (_two_way_local_histories)
+    # normalize their lookup interval onto closed support first, so edge
+    # extrapolation is reached only within the two-ULP representation
     # allowance; any farther (or non-finite) target raises.
     for target in target_t[~((target_t >= source_t[0]) & (target_t <= source_t[-1]))]:
         require_supported_epoch(
@@ -2109,8 +2108,67 @@ def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: Ar
             float(source_t[-1]),
             history_name="ukf_pass_history",
             model_context="ukf_pass_interpolation",
-            consumer="filters._interp_pass_values",
+            consumer=consumer,
         )
+
+
+def _interp_pass_earth_state(
+    source_t_s: ArrayLike, earth_pos: ArrayLike, earth_vel: ArrayLike, target_t_s: ArrayLike
+) -> tuple[np.ndarray, np.ndarray]:
+    """Cubic-Hermite Earth position and velocity, the batch counted-Doppler interpolation (HARDEN-D23)."""
+    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
+    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
+    _require_pass_support(source_t, target_t, "filters._interp_pass_earth_state")
+    history = np.hstack([np.asarray(earth_pos, dtype=float), np.asarray(earth_vel, dtype=float)])
+    out = np.array([_interp_state(source_t, history, float(t)) for t in target_t]).reshape(target_t.size, 6)
+    return out[:, :3], out[:, 3:6]
+
+
+def _interp_pass_transforms(source_t_s: ArrayLike, xforms: ArrayLike, target_t_s: ArrayLike) -> np.ndarray:
+    """Interpolate 6x6 J2000->ITRF93 state transforms [[R, 0], [dR, R]] as rotations.
+
+    R follows the constant-rate rotation between the bracketing samples (geodesic
+    interpolation, so it stays orthonormal); dR = W R with W = dR R^T, the
+    skew-symmetric rate matrix, interpolated linearly. Grid samples are returned
+    exactly. Element-wise linear interpolation is not a rotation between nodes
+    (assessment MEAS-04: 15-244 m of station position at a 60-240 s midpoint).
+    """
+    from scipy.spatial.transform import Rotation
+
+    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
+    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
+    x = np.asarray(xforms, dtype=float).reshape(source_t.size, 6, 6)
+    _require_pass_support(source_t, target_t, "filters._interp_pass_transforms")
+    out = np.empty((target_t.size, 6, 6), dtype=float)
+    for k, t in enumerate(target_t):
+        node = np.flatnonzero(source_t == t)
+        if node.size:
+            out[k] = x[node[0]]
+            continue
+        i1 = int(np.clip(np.searchsorted(source_t, t, side="right"), 1, source_t.size - 1))
+        i0 = i1 - 1
+        s = (t - source_t[i0]) / (source_t[i1] - source_t[i0])
+        r0, r1 = x[i0, :3, :3], x[i1, :3, :3]
+        step = Rotation.from_matrix(r1 @ r0.T).as_rotvec()
+        r = Rotation.from_rotvec(s * step).as_matrix() @ r0
+        w = (1.0 - s) * (x[i0, 3:6, :3] @ r0.T) + s * (x[i1, 3:6, :3] @ r1.T)
+        w = 0.5 * (w - w.T)
+        out[k] = 0.0
+        out[k, :3, :3] = r
+        out[k, 3:6, 3:6] = r
+        out[k, 3:6, :3] = w @ r
+    return out
+
+
+def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: ArrayLike) -> np.ndarray:
+    """Element-wise linear interpolation of pass histories (not for rotations; see _interp_pass_transforms)."""
+    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
+    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
+    array = np.asarray(values, dtype=float)
+    original_shape = array.shape[1:]
+    flat = array.reshape(source_t.size, -1)
+    out = np.empty((target_t.size, flat.shape[1]), dtype=float)
+    _require_pass_support(source_t, target_t, "filters._interp_pass_values")
     left_mask = target_t < source_t[0]
     right_mask = target_t > source_t[-1]
     for col in range(flat.shape[1]):

@@ -9,7 +9,7 @@ REQ-DYN-007,A/T,WP3.1;WP3.2,,open,DYN-06;DYN-07;DYN-08;DYN-09
 REQ-MEAS-001,T,WP2.1,tests/test_relativistic_light_time.py,partial,MEAS-01
 REQ-MEAS-002,T,WP1.10,,open,MEAS-02
 REQ-MEAS-003,T,WP1.4,tests/test_assessment_evidence.py::test_meas03_counted_doppler_solver_converges_on_long_arcs,failing_as_expected,MEAS-03
-REQ-MEAS-004,T,WP1.1,tests/test_assessment_evidence.py::test_meas04_ukf_interpolated_station_transform_is_orthonormal_and_mm_accurate,failing_as_expected,MEAS-04;MEAS-05
+REQ-MEAS-004,T,WP1.1,tests/test_assessment_evidence.py::test_meas04_rotation_interpolation_against_spice_sxform,partial (MEAS-04 closed; MEAS-05 open),MEAS-04;MEAS-05
 REQ-MEAS-005,T,WP2.2,tests/test_media.py,partial,MEAS-06;MEAS-07
 REQ-MEAS-006,T,WP2.4,tests/test_station_displacement.py,partial,MEAS-06
 REQ-MEAS-007,T,WP2.3,,open,MEAS-08;RD-07;RD-08;RD-09
