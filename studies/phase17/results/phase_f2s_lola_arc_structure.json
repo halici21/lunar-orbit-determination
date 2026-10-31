@@ -5,6 +5,7 @@
  "decision_inputs": {
   "method_check": false,
   "ARC_STRUCTURE": "NOT_FOUND",
+  "spk_noise_check": null,
   "n_windows": 0,
   "n_converged": 0
  },

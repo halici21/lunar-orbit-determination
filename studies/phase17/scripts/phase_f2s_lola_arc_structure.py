@@ -35,6 +35,16 @@ MIN_CORE_S = 6 * 3600.0
 N_RMS_E2 = 8.44
 H_REF_CORE_MAX = 0.25 * N_RMS_E2
 
+# F2s-1 amendment (configs/phase_f2s1_stencil_step_amendment_predeclaration.json): h = 1 s + SPK noise check
+H1 = "--h1" in sys.argv
+if H1:
+    H_STENCIL = 1.0
+    OUT = HERE.parent / "results" / "phase_f2s1_lola_arc_structure.json"
+H_NOISE = 2.0
+SPK_NOISE_MAX = 0.1
+A_PART = "A_h1" if H1 else "A"
+W_PREFIX = "W1_" if H1 else ""
+
 
 def write_part(name, obj):
     PARTS.mkdir(parents=True, exist_ok=True)
@@ -108,13 +118,14 @@ def main_detect():
     et0 = pb.setup.et0
     x0, k, emp = e2_solution()
     t = np.arange(spans["F"][0], spans["P"][1], DT_A)
-    offs = np.array([-2, -1, 1, 2]) * H_STENCIL
 
     # LOLA
     ref = R.lola(et0, t)
-    vs = [R.lola(et0, t + o)[:, 3:] for o in offs]
-    a_lola = stencil(*vs, H_STENCIL)
-    a_res = to_rtn(a_lola - model_accel(pb, t, ref, k, emp), ref)
+    a_mod = model_accel(pb, t, ref, k, emp)
+
+    def lola_res(h):
+        return to_rtn(stencil(*[R.lola(et0, t + o)[:, 3:] for o in np.array([-2, -1, 1, 2]) * h], h) - a_mod, ref)
+    a_res = lola_res(H_STENCIL)
 
     # method check on our own E2 trajectory (5 s grid through every stencil point)
     t5 = np.arange(t[0] - 2 * H_STENCIL, t[-1] + 2 * H_STENCIL + 1e-6, H_STENCIL)
@@ -156,8 +167,14 @@ def main_detect():
                series_5min=dict(t=t[::10].tolist(), env=env[::10].tolist(),
                                 mean_rev_rtn=mean_rev[::10].tolist()),
                elapsed_s=time.time() - t0)
-    write_part("A", out)
-    print(json.dumps({x: out[x] for x in ("period_s", "method_check", "a_res_rms_rtn_mps2", "envelope_median_mps2",
+    if H1:
+        d = float(np.sqrt(np.mean(np.sum((a_res - lola_res(H_NOISE)) ** 2, axis=1))))
+        out["h_stencil_s"] = H_STENCIL
+        out["spk_noise_check"] = dict(D_mps2=d, limit_mps2=SPK_NOISE_MAX * out["envelope_median_mps2"],
+                                      PASS=bool(d <= SPK_NOISE_MAX * out["envelope_median_mps2"]))
+    write_part(A_PART, out)
+    print(json.dumps({x: out.get(x) for x in ("period_s", "method_check", "spk_noise_check", "a_res_rms_rtn_mps2",
+                                              "envelope_median_mps2",
                                           "threshold_mps2", "raw_runs", "tapers", "taper_hours",
                                           "taper_spacing_days", "ARC_STRUCTURE")}, indent=1))
 
@@ -174,15 +191,15 @@ def windows(a, spans) -> list:
         cores = [c for c in cores if c[1] - c[0] >= MIN_CORE_S]
         L = float(np.median([b - a_ for a_, b in cores])) if cores else 86400.0
         L = min(L, P1 - F0)
-        out = [dict(name=f"core{i}", kind="core", ws=c[0], we=c[1]) for i, c in enumerate(cores)]
+        out = [dict(name=f"{W_PREFIX}core{i}", kind="core", ws=c[0], we=c[1]) for i, c in enumerate(cores)]
         for i, (a_, b) in enumerate(tap):
             mid = 0.5 * (a_ + b)
             ws = min(max(mid - L / 2, F0), P1 - L)
-            out.append(dict(name=f"straddle{i}", kind="straddle", ws=ws, we=ws + L))
+            out.append(dict(name=f"{W_PREFIX}straddle{i}", kind="straddle", ws=ws, we=ws + L))
         return out
     out, ws, i = [], F0, 0
     while ws + 86400.0 <= P1 + 1e-6:
-        out.append(dict(name=f"slide{i}", kind="slide", ws=ws, we=ws + 86400.0))
+        out.append(dict(name=f"{W_PREFIX}slide{i}", kind="slide", ws=ws, we=ws + 86400.0))
         ws += 43200.0
         i += 1
     return out
@@ -286,7 +303,7 @@ def fit_window(win, workers):
 
 
 def main_fit_all(workers):
-    a = read_part("A")
+    a = read_part(A_PART)
     wins = windows(a, a["spans"])
     i, n = (map(int, sys.argv[sys.argv.index("--shard") + 1].split("/")) if "--shard" in sys.argv else (0, 1))
     for k, w in enumerate(wins):
@@ -298,16 +315,17 @@ def main_fit_all(workers):
 # summary
 # ----------------------------------------------------------------------
 def main_summary():
-    a = read_part("A")
-    # a failed method check is F2S_INCONCLUSIVE whatever the fits give, so step B is not needed for the label
+    a = read_part(A_PART)
+    checks = a["method_check"]["PASS"] and a.get("spk_noise_check", {}).get("PASS", True)
+    # a failed check is inconclusive whatever the fits give, so step B is not needed for the label
     names = [w["name"] for w in windows(a, a["spans"])]
-    wins = [read_part(x) for x in names if (PARTS / f"{x}.json").exists() or a["method_check"]["PASS"]]
-    ok =[w for w in wins if w["status"] == "STATIONARY"]
+    wins = [read_part(x) for x in names if (PARTS / f"{x}.json").exists() or checks]
+    ok = [w for w in wins if w["status"] == "STATIONARY"]
     N = lambda w: w["fit_rms_RTN_m"][2]
     res = dict(method_check=a["method_check"]["PASS"], ARC_STRUCTURE=a["ARC_STRUCTURE"],
-               n_windows=len(wins), n_converged=len(ok))
-    if not a["method_check"]["PASS"] or len(ok) * 2 < len(wins):
-        label = "F2S_INCONCLUSIVE"
+               spk_noise_check=a.get("spk_noise_check"), n_windows=len(wins), n_converged=len(ok))
+    if not checks or len(ok) * 2 < len(wins):
+        label = "F2S1_INCONCLUSIVE" if H1 else "F2S_INCONCLUSIVE"
     elif a["ARC_STRUCTURE"] == "FOUND":
         core = [w for w in ok if w["kind"] == "core"]
         strad = [w for w in ok if w["kind"] == "straddle"]
@@ -330,7 +348,9 @@ def main_summary():
             label = "H_DYN_SUPPORTED"
         else:
             label = "MIXED"
-    out = dict(phase="F2s", predeclaration="configs/phase_f2s_lola_arc_structure_predeclaration.json",
+    out = dict(phase="F2s-1" if H1 else "F2s",
+               predeclaration=("configs/phase_f2s1_stencil_step_amendment_predeclaration.json + " if H1 else "")
+               + "configs/phase_f2s_lola_arc_structure_predeclaration.json",
                classification=label, decision_inputs=res,
                step_A={x: y for x, y in a.items() if x != "series_5min"},
                windows=[{x: y for x, y in w.items() if x != "iterations"} | dict(n_iter=len(w["iterations"]))
