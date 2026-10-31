@@ -292,7 +292,9 @@ def fit_window(win, workers):
         r, J, h = res_jac(q)
         cost = float(r @ r)
     pb.close_pool()
-    hf = pb.propagate(q[:6], q[6], t_eval=np.concatenate([[pb.t_epoch], ts]), sensitivity=False, emp=emp_of(q))[1:]
+    write_part(win["name"] + "_q", dict(q=q.tolist(), status=status, iterations=log))
+    # ts starts at the window epoch ws = pb.t_epoch: no extra epoch sample (solve_ivp needs strictly increasing t)
+    hf = pb.propagate(q[:6], q[6], t_eval=ts, sensitivity=False, emp=emp_of(q))
     fit_rms = np.sqrt(np.mean(to_rtn(hf[:, :3] - ref_all[:, :3], ref_all) ** 2, axis=0))
     out = dict(**win, hours=(win["we"] - win["ws"]) / 3600.0, status=status, iterations=log,
                k_srp=float(q[6]), C_T=float(q[7]), S_T=float(q[8]),
