@@ -47,6 +47,11 @@ from .radiometrics import (
 from .measurement_contracts import generate_two_way_range_measurements_checked
 from .two_way_range import TwoWayRangeConfig
 
+#: Default UKF initial state sigma (position m, velocity m/s): the thesis cold-start error the
+#: campaigns inject (``thesis_matrix.THESIS_COLD_START_SIGMA_*``), so NEES and the BLS-UKF comparison
+#: start from the uncertainty actually present (assessment EST-19). It was 100 m / 0.1 m/s.
+DEFAULT_UKF_INITIAL_STATE_SIGMA = (180.0, 0.03)
+
 MeasurementType = Literal["position", "range_rate", "two_way_range"]
 StartMode = Literal["cold", "hot", "formal", "sqrt_formal"]
 EstimatorType = Literal["srif", "bls_lm", "ukf"]
@@ -626,6 +631,7 @@ def _run_arc_worker(args: tuple) -> "ArcResult":
         ukf_bias_freeze_relative_information=kwargs["ukf_bias_freeze_relative_information"],
         ukf_bias_regularize_relative_information=kwargs["ukf_bias_regularize_relative_information"],
         ukf_bias_regularization_std=kwargs["ukf_bias_regularization_std"],
+        ukf_initial_state_sigma=kwargs["ukf_initial_state_sigma"],
         j2_moon=kwargs["j2_moon"],
         **model_options(kwargs.get('srp'), kwargs.get('propagation_profile')),
     ).arc_results[0]
@@ -661,6 +667,7 @@ def run_batch_arc_sequence(
     ukf_bias_freeze_relative_information: float = 1e-12,
     ukf_bias_regularize_relative_information: float = 1e-5,
     ukf_bias_regularization_std: float = 1.0,
+    ukf_initial_state_sigma: tuple[float, float] = DEFAULT_UKF_INITIAL_STATE_SIGMA,
     ephemeris=None,
     j2_moon: float = 0.0,
     parallel: bool = False,
@@ -740,6 +747,7 @@ def run_batch_arc_sequence(
             "ukf_bias_freeze_relative_information": ukf_bias_freeze_relative_information,
             "ukf_bias_regularize_relative_information": ukf_bias_regularize_relative_information,
             "ukf_bias_regularization_std": ukf_bias_regularization_std,
+            "ukf_initial_state_sigma": ukf_initial_state_sigma,
             "j2_moon": j2_moon,
             "srp": srp,
             "propagation_profile": propagation_profile,
@@ -935,6 +943,7 @@ def run_batch_arc_sequence(
                 measurement_type,
                 bias_mode,
                 len(arc.pass_geo.stations),
+                ukf_initial_state_sigma,
             )
             frozen_state_indices: tuple[int, ...] = ()
             regularization_std_by_state: dict[int, float] = {}
@@ -1429,9 +1438,13 @@ def _ukf_default_initial_covariance(
     measurement_type: MeasurementType,
     bias_mode: str | None,
     num_stations: int,
+    state_sigma: tuple[float, float] = DEFAULT_UKF_INITIAL_STATE_SIGMA,
 ) -> np.ndarray:
+    sigma_pos_m, sigma_vel_mps = (float(s) for s in state_sigma)
+    if not (sigma_pos_m > 0.0 and sigma_vel_mps > 0.0):
+        raise ValueError("ukf_initial_state_sigma must be positive (position m, velocity m/s).")
     covariance = np.zeros((state_size, state_size), dtype=float)
-    covariance[:6, :6] = np.diag([100.0**2] * 3 + [0.1**2] * 3)
+    covariance[:6, :6] = np.diag([sigma_pos_m**2] * 3 + [sigma_vel_mps**2] * 3)
     if state_size <= 6:
         return covariance
 

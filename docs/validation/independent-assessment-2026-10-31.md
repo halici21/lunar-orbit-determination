@@ -29,7 +29,7 @@ bir kontrol testi vardır.
 | MEAS-04 | UKF yerel J2000→ITRF93 dönüşümü ortonormal ve mm doğru | XFAIL | ızgara ortasında ‖RRᵀ−I‖ = 6.8e-6 / 1.5e-5 / 1.1e-4; istasyon konum hatası 15 / 34 / 244 m (60 / 90 / 240 s ızgara) |
 | DYN-05 | Ay yönelimi ızgara ortasında sürekli | XFAIL | 60 s ızgarada sıçrama 1.6e-4 rad (= ω·cadence) |
 | EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | XFAIL | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
-| EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
+| EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | PASS (WP1.9 kapattı) | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
 | EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
 | DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | XFAIL | `ForceModelContract` ve `ForceExecutionSpec` alanlarında kernel/SPK/interpolasyon yok |
 
@@ -155,7 +155,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-16 | O | ANEES/ANIS χ² aralıkları yok; adaptif R'de NIS aşağı yanlı; artık lag-1 iç içe [ρ,az,el] vektöründe; adaptif ayarda truth başlangıç durumuna yayınlanıyor; ortalama NIS reddedilenleri içeriyor | `diagnostics.py:202`, `adaptive_tuning.py:316,387`, `filters.py:594` |
 | EST-17 | O | Batch ayıklama: a priori σ, sert 3σ, %30 "ya hep ya hiç" | `estimators.py:1876-1900` |
 | EST-18 | O | Gözlemlenebilirlik koşul/rank/zayıf yön ölçeklenmemiş Jacobian'dan; bias dondurma kararı birime bağlı | `observability.py:114,467` |
-| EST-19 ✔T | B | UKF P0 (100 m / 0.1 m/s) enjekte edilen soğuk başlangıç hatasıyla (180 m / 0.03 m/s) uyumsuz → NEES ve BLS–UKF karşılaştırması bozuk | `scenarios.py:1434`, `thesis_matrix.py:40-41` |
+| EST-19 ✔T (kapandı, WP1.9) | B | UKF P0 (100 m / 0.1 m/s) enjekte edilen soğuk başlangıç hatasıyla (180 m / 0.03 m/s) uyumsuz → NEES ve BLS–UKF karşılaştırması bozuk | `scenarios.py:1434`, `thesis_matrix.py:40-41` |
 | EST-20 | D | Monte Carlo tohumları durum başına farklı (ortak rastgele sayı yok), kampanyalar arası çakışma | `monte_carlo.py:79,312` |
 | EST-21 | D | DMC yalnız EKF'de; UKF ışık zamanlı/iki yönlü gözlemleri reddediyor → karşılaştırma yalnız geometrik gözlemlerde | `filters.py:733-768` |
 
@@ -224,7 +224,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | X-07 | İki yönlü menzil (SSB+Shapiro+medya seçeneği) | Doppler/ΔDOR/tek yönlü (yalnız Ay merkezli) | m / 10 µm/s | Hayır | MEAS-01 |
 | X-08 | `spice_ssb` aberasyon (SSB hızı) | Işık zamanı (Ay merkezli) | ~11–20″ | Hayır | MEAS-02 |
 | X-09 | SSB yolu istasyon (ITRF2020+gelgit+topo TDB) | Varsayılan (ITRF93 predict) | 0.2–0.3 m | Hayır | MEAS-06 |
-| X-10 | UKF P0 | Enjekte edilen soğuk başlangıç hatası | 1.8× / 3.3× | **Evet** | EST-19 |
+| X-10 | UKF P0 | Enjekte edilen soğuk başlangıç hatası | 1.8× / 3.3× | **Evet** | EST-19 (kapandı) |
 | X-11 | Masaüstü (rtol 1e-8, 3600 s) | Kütüphane/tez (1e-10/1e-11, 600 s) | m | **Evet** | CFG-01 |
 | X-12 | Kuvvet parmak izi | Gerçek yürütülen efemeris/dönüş | eşit hash farklı fizik | — | DYN-10 |
 | X-13 | Gravite yükleyici etiketi | STM çerçeve kontrolü | çalışmıyor | — | DYN-12 |
