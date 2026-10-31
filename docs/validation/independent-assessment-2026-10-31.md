@@ -181,15 +181,15 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | ID | Ö | Bulgu |
 |---|---|---|
 | CFG-01 ✔ | B | Masaüstü gizli varsayılanlar: rtol 1e-8/atol 1e-10 (tezin 100× gevşeği), efemeris adımı 3600 s, λ0 1e-3 (`desktop_app/models/scenario_model.py:14,42-43`) |
-| CFG-02 ✔ | B | Senaryo şemasında tohum alanı yok; CLI `measurement_seed=None` → tohumsuz gürültü, kaydedilmiyor (`examples/run_scenario_config.py:86,238`) |
+| CFG-02 ✔ | B | Senaryo şemasında tohum alanı yok; CLI `measurement_seed=None` → tohumsuz gürültü, kaydedilmiyor (`examples/run_scenario_config.py:86,238`). **Kapatıldı (WP1.6):** `measurement_seed`/`cold_start_seed` şemada; `noise=true` tohumsuz JSON reddedilir |
 | CFG-03 | B | Elevasyon maskesi, boşluk eşiği, efemeris adımı, yay modu config alanı değil (`desktop_options`); JSON koşuyu tam tanımlamıyor |
 | CFG-04 | B | Üç efemeris nesli karışık (DE440 Dünya/Güneş; DE421 başlangıç durumu/Ay yönelimi; DE431 GM); kernel listesi çıktılara yazılmıyor |
-| CFG-05 | O | CLI JSON'daki `bls_lambda0`, `tol_cost_stability` yok sayılıyor; bilinmeyen anahtarlar sessizce yok sayılıyor; şema eksik |
+| CFG-05 | O | CLI JSON'daki `bls_lambda0`, `tol_cost_stability` yok sayılıyor; bilinmeyen anahtarlar sessizce yok sayılıyor; şema eksik. **Kapatıldı (WP1.6):** iki alan her yolda geçirilir; JSON yükleyici bilinmeyen anahtarı reddeder |
 | CFG-06 | O | Geçersiz kombinasyonlar kabul ediliyor (aberasyon profili/model, sayım > örnek adımı, UKF alanları BLS'de) |
 | CFG-07 | O | `enable_lunar_harmonics`, `enable_earth_j2` her zaman hata veriyor ama şemada |
 | CFG-08 | O | İstasyon koordinatları 0.01° (~1 km) yuvarlanmış, yükseklikler 100 m yer tutucu; σ'lar isimde "ITU" geçmesine göre; iki istasyon tablosu |
 | CFG-09 | O | Masaüstü tek tohumu gürültü ve soğuk başlangıç için kullanıyor; "prescribed" yay modu görünürlük segmentasyonunu değiştiriyor; ön ayar açıklamaları yanlış |
-| CFG-10 | O | CLI çıktıları commit/config hash/tohum/kernel/paket sürümü kaydetmiyor (benchmark kaydediyor) |
+| CFG-10 | O | CLI çıktıları commit/config hash/tohum/kernel/paket sürümü kaydetmiyor (benchmark kaydediyor). **Kapatıldı (WP1.6):** her koşu `<name>_run_provenance.json` yazar (commit, config SHA-256, tohumlar, kernel + SHA-256, efemeris kimliği, paket sürümleri) |
 | CFG-11 | O | Üç sayılan Doppler uygulaması, iki efemeris interpolatörü, altı `C_LIGHT` tanımı — yetkili olan belgelenmemiş |
 | CFG-12 | D | Depoda 48 MB çalışma sonucu, 15 MB docs ikilisi, arşiv WIP kopyaları; numba için numpy üst sınırı yok; pyproject extras yok |
 
