@@ -897,7 +897,8 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
     pass_geo = PassGeometry(
         t_s=t_grid,
         earth_pos_mci_m=np.column_stack([t_grid, 2.0 * t_grid, 3.0 * t_grid]),
-        earth_vel_mci_mps=np.zeros((t_grid.size, 3)),
+        # Velocity consistent with the linear position (WP1.1: Earth is Hermite-interpolated).
+        earth_vel_mci_mps=np.tile([1.0, 2.0, 3.0], (t_grid.size, 1)),
         x_j2000_to_itrf93=xforms,
         stations=(station,),
         measurement_type="range_rate",

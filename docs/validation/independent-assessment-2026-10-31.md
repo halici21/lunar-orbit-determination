@@ -26,7 +26,7 @@ bir kontrol testi vardır.
 | Bulgu | Test | Sonuç | Ölçülen büyüklük |
 |---|---|---|---|
 | MEAS-03 | uzun yayda sayılan Doppler yakınsaması | XFAIL | `converged` oranı yay başlangıç epoch'una göre: 0 s → 200/200; 1.4e5 s → 140; 3e5 s → 66; 1.1e6 s → 16; 2.5e6 s → 12 |
-| MEAS-04 | UKF yerel J2000→ITRF93 dönüşümü ortonormal ve mm doğru | XFAIL | ızgara ortasında ‖RRᵀ−I‖ = 6.8e-6 / 1.5e-5 / 1.1e-4; istasyon konum hatası 15 / 34 / 244 m (60 / 90 / 240 s ızgara) |
+| MEAS-04 | UKF yerel J2000→ITRF93 dönüşümü ortonormal ve mm doğru | PASS (WP1.1 kapattı; gerçek sxform karşısında 60/240 s ızgarada < 1 mm) — önceki XFAIL | ızgara ortasında ‖RRᵀ−I‖ = 6.8e-6 / 1.5e-5 / 1.1e-4; istasyon konum hatası 15 / 34 / 244 m (60 / 90 / 240 s ızgara) |
 | DYN-05 | Ay yönelimi ızgara ortasında sürekli | XFAIL | 60 s ızgarada sıçrama 1.6e-4 rad (= ω·cadence) |
 | EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | XFAIL | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
 | EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
@@ -121,8 +121,8 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | MEAS-01 ✔ | K | Üretim ışık zamanı Ay merkezli Newton, Shapiro yok. SSB yolu yalnız `two_way_light_time_ssb` profilli iki yönlü menzilde ve bu profil `scenario_config`'de izinli değil | `relativistic_light_time.py`, `scenario_config.py:79-84`, `estimators.py:2171` | 2YM +1.9–2.5 m; Doppler −68…+87 µm/s; 1YM 14–19 km; ΔDOR 97 µrad; Güneş Shapiro 7.3–7.8 m |
 | MEAS-02 ✔ | K | `spice_ssb` aberasyon: Ay merkezli ışık zamanı + SSB gözlemci hızı → çerçeve karışımı; belgedeki "~11″ SSB bias" muhtemelen bu artefakt | `measurements.py:1503-1561,1404,1354`; `docs/theory/stellar_aberration_od_impact.md` | ~11–20″ açı |
 | MEAS-03 ✔T | B | Sayılan Doppler tek-sekme çözücüsü yakınsamayı epoch farkıyla (`abs(new_t2 - t2)`, `(receive_time_s - t2) - ρ/c`) test ediyor → t ≳ 2^17 s'de ulp sınırı; `converged=False`, üretimde `RoundTripLightTimeConvergenceError` | `radiometrics.py:1074,1109,1122-1145` | 2.5e6 s'de 200 noktanın 12'si yakınsıyor (§0) |
-| MEAS-04 ✔T | B | SR-UKF/EKF sayılan Doppler: Dünya konum/hız ve 6×6 J2000→ITRF93 **doğrusal** interpolasyon (ortonormal değil); batch Hermite. Test bunu bit-bit sabitliyor | `filters.py:1991-1993,2118`; `tests/test_filters.py:50-80` | D23'e göre ~1.7e-3 m/s; dönüşümde ek |
-| MEAS-05 | O | UKF hızlı sigma yayıcısı Dünya/Güneş'i doğrusal interpolasyonla alıyor | `accelerated.make_lerp_vec3`, `dynamics.py:1363` | ~120 m (600 s), ~4 km (3600 s) Dünya konumu |
+| MEAS-04 ✔T (kapandı, WP1.1) | B | SR-UKF/EKF sayılan Doppler: Dünya konum/hız ve 6×6 J2000→ITRF93 **doğrusal** interpolasyon (ortonormal değil); batch Hermite. Test bunu bit-bit sabitliyor | `filters.py:1991-1993,2118`; `tests/test_filters.py:50-80` | D23'e göre ~1.7e-3 m/s; dönüşümde ek |
+| MEAS-05 (açık; WP1.1 dokunmadı) | O | UKF hızlı sigma yayıcısı Dünya/Güneş'i doğrusal interpolasyonla alıyor | `accelerated.make_lerp_vec3`, `dynamics.py:1363` | ~120 m (600 s), ~4 km (3600 s) Dünya konumu |
 | MEAS-06 | B | Medya, topocentric istasyon zamanı, ITRF2020+katı gelgit yalnız SSB yolunda; IERS EOP yok, predict BPC; levha hareketi, kutup gelgiti, okyanus yüklemesi yok | `media.py`, `station_frames.py`, `spice_loader.py:64` | troposfer 2–12 m; gelgit 0.23 m; ITRF 0.33 m; predict 112 m/2027 |
 | MEAS-07 | O | Az/El'de troposfer kırılması yok | `geometry.py:86`, `measurements.py:1365` | 5′ @10°, 1′ @45° |
 | MEAS-08 | O | Rampalı uplink yok; iki yönlü menzilde bias solve-for yok; SSB yolu transponder gecikmesini reddediyor | `radiometrics.py:704`, `estimators.py:~2160`, `relativistic_light_time.py:~808` | DSN verisi işlenemez |
