@@ -17,7 +17,7 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 | R-09 | Uzun yaylarda sayılan Doppler çözücü çöküşü | MEAS-03 | 4 | 3 | 12 | F1 | open |
 | R-10 | Tekrarlanamayan koşular (tohum yok, kernel kaydı yok, masaüstü farklı ayarlar) | CFG-01…04,10 | 4 | 3 | 12 | WP1.6 | open |
 | R-11 | Efemeris/GM/çerçeve nesil karışımı | DYN-01/02, CFG-04 | 5 | 3 | 15 | F1 | open |
-| R-12 | Kuvvet parmak izi farklı fiziği eşit gösterir → parite iddiaları geçersiz | DYN-10/11 | 3 | 4 | 12 | WP1.5 | open |
+| R-12 | Kuvvet parmak izi farklı fiziği eşit gösterir → parite iddiaları geçersiz | DYN-10/11 | 3 | 4 | 12 | WP1.5 | mitigating (v3 kimlik var; koşucu bağlantısı WP1.6) |
 | R-13 | Yakınsama gevşek toleransta ilan ediliyor; durma kriterleri birime bağlı | EST-04/05 | 4 | 3 | 12 | F4 | open |
 | R-14 | DMC Q taşması geçiş boşluklarında | EST-09 | 3 | 4 | 12 | F4 (F3'ten önce!) | open |
 | R-15 | İstasyon zinciri predict BPC, EOP yok; zamanla bozulan doğruluk | MEAS-06 | 3 | 4 | 12 | WP2.4 | open |

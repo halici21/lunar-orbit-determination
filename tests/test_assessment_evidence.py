@@ -244,15 +244,19 @@ def test_meas03_counted_doppler_solver_converges_on_long_arcs(arc_start_s):
 # --- DYN-10: the force fingerprint does not identify the executed ephemeris ---
 
 def _field_names(cls) -> set[str]:
+    """Field names of a contract dataclass and of the contract dataclasses it nests (X | None included)."""
+    import typing
+    hints = typing.get_type_hints(cls)
     names = set()
     for field in dataclasses.fields(cls):
         names.add(field.name.lower())
-        if dataclasses.is_dataclass(field.type) and not isinstance(field.type, str):
-            names |= _field_names(field.type)
+        for candidate in (hints[field.name], *typing.get_args(hints[field.name])):
+            if dataclasses.is_dataclass(candidate) and isinstance(candidate, type):
+                names |= _field_names(candidate)
     return names
 
 
-@pytest.mark.xfail(strict=True, reason="DYN-10: no ephemeris kernel, cadence or interpolation identity is hashed")
+# DYN-10 closed by WP1.5 (contract v3: EphemerisExecutionContract).
 def test_dyn10_force_identity_records_ephemeris_kernel_and_interpolation():
     names = _field_names(ForceModelContract) | _field_names(ForceExecutionSpec)
     assert any("kernel" in n or "spk" in n for n in names)
