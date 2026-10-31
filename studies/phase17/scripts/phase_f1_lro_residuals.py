@@ -59,6 +59,8 @@ def load_kernels(data: Path, ephemeris: str) -> None:
 
 def read_day(data: Path, day_dir: str = DAY_DIR) -> tuple[list, dict]:
     from lunar_od.utdf import file_pad_id, read_utdf
+    from lro_data_partition import require_readable_day
+    require_readable_day(day_dir)
     rows, r1 = [], dict(files=0, records=0, bad=[])
     for f in sorted((data / day_dir).glob("*.trk")):
         r1["files"] += 1

@@ -25,6 +25,8 @@ MAX_GAP_S = 60.0
 
 def read_doppler(data: Path, day_dir: str = F.DAY_DIR, pads=(103, 105, 126)) -> list:
     from lunar_od.utdf import file_pad_id, read_utdf
+    from lro_data_partition import require_readable_day
+    require_readable_day(day_dir)
     rows = []
     for f in sorted((data / day_dir).glob("*.trk")):
         pad = file_pad_id(f)

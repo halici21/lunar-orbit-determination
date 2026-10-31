@@ -28,7 +28,7 @@ bir kontrol testi vardır.
 | MEAS-03 | uzun yayda sayılan Doppler yakınsaması | XFAIL | `converged` oranı yay başlangıç epoch'una göre: 0 s → 200/200; 1.4e5 s → 140; 3e5 s → 66; 1.1e6 s → 16; 2.5e6 s → 12 |
 | MEAS-04 | UKF yerel J2000→ITRF93 dönüşümü ortonormal ve mm doğru | XFAIL | ızgara ortasında ‖RRᵀ−I‖ = 6.8e-6 / 1.5e-5 / 1.1e-4; istasyon konum hatası 15 / 34 / 244 m (60 / 90 / 240 s ızgara) |
 | DYN-05 | Ay yönelimi ızgara ortasında sürekli | XFAIL | 60 s ızgarada sıçrama 1.6e-4 rad (= ω·cadence) |
-| EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | XFAIL | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
+| EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | PASS (WP0.2; βdt > 1 için kapalı form) | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
 | EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
 | EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
 | DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | XFAIL | `ForceModelContract` ve `ForceExecutionSpec` alanlarında kernel/SPK/interpolasyon yok |
@@ -164,7 +164,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | ID | Ö | Bulgu |
 |---|---|---|
 | RD-01 ✔ | K | **F3**: σ*, gün 263'ün veriye karşı χ²'si ile seçiliyor; H2 aynı gün puanlanıyor → H2 geçmeye yanlı. **Sweep koşmadan önce** düzeltilmeli. (`phase_f3_lro_dmc_smoother.py:~237-240`, ön-kayıt `selection_rule`) |
-| RD-02 | K | Dokunulmamış hold-out gün kalmadı (262 model seçti, 263 F2j–F2r–F3'te defalarca kullanıldı). Manevrasız günler 264–268 mevcut. |
+| RD-02 | K | Dokunulmamış hold-out gün kalmadı (262 model seçti, 263 F2j–F2r–F3'te defalarca kullanıldı). Manevrasız günler 264–268 mevcut. **WP0.4:** 264–267 mühürlendi (`lro_data_partition.json`, okuyucularda koruma), 268 MOI-2 nedeniyle dışarıda; veriler henüz indirilmedi. |
 | RD-03 | B | İstasyon bias önselleri (489/477/475 m) F1'in LOLA'ya göre artıklarından → puanlama referansıyla döngüsel (`phase_f2_lro_od.py:805`) |
 | RD-04 | O | Eşik/kapı değişiklikleri sonuç görüldükten sonra (F2i, F2j-A1/A2, F2m, F2r, F2s-1) — her biri açıklanmış ama birlikte "forking paths" |
 | RD-05 | O | LOLA'nın ~10 m doğruluğunun altındaki farklarla çözüm sıralanıyor (F3 eşikleri 5–8 m) |
