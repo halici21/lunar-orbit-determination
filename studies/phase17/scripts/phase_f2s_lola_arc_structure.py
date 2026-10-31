@@ -233,14 +233,18 @@ def fit_window(win, workers):
                                       initargs=(win["ws"], win["we"], spans["P"][1], M.F2K_TOL))
     sel = np.arange(0, pb.grid.size, int(R.DT_S / M.GRID_S))
     ref = R.lola(et0, pb.grid[sel])
-    cn = empe[2:]                                    # C_N, S_N fixed at E2's values
-    q = np.concatenate([ref[0], [ke], empe[:2]])     # x0 (LOLA at ws), K, C_T, S_T
+    # F2t V1 (win["free_cn"]): C_N, S_N estimated with F2G's prior; otherwise fixed at E2's values
+    ne = 4 if win.get("free_cn") else 2
+    cn = empe[ne:]
+    q = np.concatenate([ref[0], [ke], empe[:ne]])    # x0 (LOLA at ws), K, C_T, S_T (, C_N, S_N)
     pri = [(6, *M.F2H_PRIORS[6]), (7, *M.F2H_PRIORS[11]), (8, *M.F2H_PRIORS[12])]
-    scale = np.array([1e3] * 3 + [1.0] * 3 + [1e-3] + [M.EMP_SCALE] * 2)
+    pri += [(9, *M.F2G_PRIORS[13]), (10, *M.F2G_PRIORS[14])][:ne - 2]
+    npar = 7 + ne
+    scale = np.array([1e3] * 3 + [1.0] * 3 + [1e-3] + [M.EMP_SCALE] * ne)
     sig = R.SIGMA_POS_M
 
     def emp_of(qq):
-        return np.concatenate([qq[7:9], cn])
+        return np.concatenate([qq[7:7 + ne], cn])
 
     def res_jac(qq, partials=True):
         if partials:
@@ -252,16 +256,16 @@ def fit_window(win, workers):
         if not partials:
             return np.concatenate([r, rp]), None, h
         n = sel.size
-        J = np.zeros((n, 3, 9))
+        J = np.zeros((n, 3, npar))
         for j in range(6):
             J[:, :, j] = h[sel, 6 + 6 * j:6 + 6 * j + 3]
         J[:, :, 6] = h[sel, 42:45]
-        for kk in range(2):
+        for kk in range(ne):
             J[:, :, 7 + kk] = h[sel, 48 + 6 * kk:48 + 6 * kk + 3]
-        Jp = np.zeros((len(pri), 9))
+        Jp = np.zeros((len(pri), npar))
         for row, (j, _, s) in enumerate(pri):
             Jp[row, j] = sig / s
-        return np.concatenate([r, rp]), np.vstack([J.reshape(-1, 9) / sig, Jp]), h
+        return np.concatenate([r, rp]), np.vstack([J.reshape(-1, npar) / sig, Jp]), h
 
     lam, log, status = 1e-3, [], "MaxIter"
     r, J, h = res_jac(q)
@@ -297,7 +301,7 @@ def fit_window(win, workers):
     hf = pb.propagate(q[:6], q[6], t_eval=ts, sensitivity=False, emp=emp_of(q))
     fit_rms = np.sqrt(np.mean(to_rtn(hf[:, :3] - ref_all[:, :3], ref_all) ** 2, axis=0))
     out = dict(**win, hours=(win["we"] - win["ws"]) / 3600.0, status=status, iterations=log,
-               k_srp=float(q[6]), C_T=float(q[7]), S_T=float(q[8]),
+               k_srp=float(q[6]), C_T=float(q[7]), S_T=float(q[8]), C_N=float(emp_of(q)[2]), S_N=float(emp_of(q)[3]),
                fit_rms_RTN_m=fit_rms.tolist(), e2_restricted_rms_RTN_m=e2_rms.tolist(), elapsed_s=time.time() - t0)
     write_part(win["name"], out)
     print(win["name"], "DONE", status, "fit RTN", fit_rms.round(3).tolist(), "E2 RTN", e2_rms.round(3).tolist(),
