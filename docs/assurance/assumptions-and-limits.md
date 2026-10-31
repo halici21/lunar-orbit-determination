@@ -12,7 +12,7 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    sayıları gerçek veri doğruluğu değildir.
 2. **Tahminci karşılaştırmaları** şu farkları içerir: UKF/EKF sayılan Doppler'de doğrusal Dünya ve
    dönüşüm interpolasyonu (X-05; ızgara ortasında istasyon konumu 15–244 m kayar), UKF hızlı yayıcıda
-   RK4 + doğrusal efemeris (X-04), UKF P0 ile enjekte başlangıç hatası uyumsuzluğu (X-10), BLS ve SRIF'in
+   RK4 + doğrusal efemeris (X-04), BLS ve SRIF'in
    farklı tekillik eşikleri (X-14). SRIF adım kabulü iki farklı yayılım yolunu karşılaştırır (X-06;
    rtol 1e-10'da 0.21 m, 1e-8'de 2.95 m fark).
 3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS ilk iterasyonlarda

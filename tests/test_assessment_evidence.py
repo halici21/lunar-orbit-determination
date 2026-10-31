@@ -149,12 +149,19 @@ def test_est09_dmc_q_long_gap_finite_psd_and_accurate(gap_over_tau):
 
 # --- EST-19: UKF default initial covariance vs the injected cold-start error ---
 
-@pytest.mark.xfail(strict=True, reason="EST-19: UKF P0 is 100 m / 0.1 m/s; cold start injects 180 m / 0.03 m/s")
+# EST-19 closed by WP1.9: the default UKF P0 is the injected thesis cold-start sigma.
 def test_est19_ukf_default_p0_matches_injected_cold_start_sigma():
     p0 = _ukf_default_initial_covariance(6, "position", None, 1)
     sigma = np.sqrt(np.diag(p0))
     np.testing.assert_allclose(sigma[:3], THESIS_COLD_START_SIGMA_POS_M, rtol=0.01)
     np.testing.assert_allclose(sigma[3:6], THESIS_COLD_START_SIGMA_VEL_MPS, rtol=0.01)
+
+
+def test_ukf_initial_state_sigma_overrides_the_default():
+    p0 = _ukf_default_initial_covariance(6, "position", None, 1, (250.0, 0.04))
+    np.testing.assert_allclose(np.sqrt(np.diag(p0)), [250.0] * 3 + [0.04] * 3)
+    with pytest.raises(ValueError):
+        _ukf_default_initial_covariance(6, "position", None, 1, (0.0, 0.04))
 
 
 # --- EST-01: SRIF scores the current point (42-state) and the candidate (6-state) differently ---

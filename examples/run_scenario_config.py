@@ -293,6 +293,8 @@ def run_configured_scenario(
             ukf_bias_freeze_relative_information=config.ukf_bias_freeze_relative_information,
             ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
             ukf_bias_regularization_std=config.ukf_bias_regularization_std,
+            ukf_initial_state_sigma=(THESIS_COLD_START_SIGMA_POS_M * float(cold_start_scale),
+                                     THESIS_COLD_START_SIGMA_VEL_MPS * float(cold_start_scale)),
             j2_moon=_estimator_runtime["j2_moon"],
             **model_options(_estimator_runtime.get('srp'), config.propagation_profile),
         )
