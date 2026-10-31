@@ -68,3 +68,4 @@ Doğrulama yöntemi: **T** test, **A** analiz, **I** inceleme, **D** gösterim. 
 | REQ-SW-004 | Testler sıradan bağımsızdır (rastgele sırada üç koşu yeşil). | D | 7.3 |
 | REQ-SW-005 | Kritik modüllerde satır kapsamı ≥ %80; ruff ve mypy CI'da. | D | 7.5 |
 | REQ-SW-006 | Masaüstü uygulaması kütüphane varsayılanlarından farklı bilimsel ayar kullanmaz ya da farkı formda gösterir. | T | 1.6 |
+| REQ-SW-007 | `main`'de kernel'lı tam regresyon ve R2/R3 koruma kapısı yeşildir; korumalı dosya değişikliği aynı PR'da eklemeli re-freeze kimliği taşır; koruma hash'leri satır sonu ayarından bağımsızdır. | T | 0.5 |

@@ -42,6 +42,23 @@ bayrağı sayacak biçimde düzeltildi. Ölçüm, inceleme ajanının öngörüs
 gözlemine etkisi sayım uçlarının ızgara hücresi içindeki konumuna bağlıdır ve WP1.1'deki UKF–batch
 parite testiyle ölçülecektir; burada Doppler büyüklüğü iddia edilmez.
 
+### 0.1 Tam regresyon (kernel'lı, `origin/main` 549093d + bu belge commit'i)
+
+2205 test: 2146 geçti, 29 atlandı, 10 XFAIL (yukarıdaki kanıt testleri), **10 FAIL, 10 ERROR**.
+Bu commit yalnız belge ve test dosyası ekler (`src/`, `examples/` değişmedi); 20 sorunun tamamı
+`origin/main`'de vardır ve üç kök nedene iner (TST-09…TST-11):
+
+| Kök neden | Etkilenen testler | Kanıt |
+|---|---|---|
+| TST-09: `dynamics.py` korumalı kimliği kaydı | 10 ERROR (R2 kampanya fixture'ı: `R2 compatibility gate failed: ['lunar_od/dynamics.py', …, 'accepted_r1_zero_j2_vector']`), `test_r2_current_tree_protection_holds…`, `test_f1_refreeze_is_additive…`, `test_a_later_bridge_edit_still_fails…` | 17 korumalı satırdan yalnız `dynamics.py` FAIL: beklenen `ea6f6322…` (71e088f'nin CRLF baytları, sayısal çekirdek re-freeze'i), gerçek `b19c2d80…` (a8f1bef, PR #61 "Phase F2 G4e-R", 2026-10-27). PR #61 eklemeli re-freeze satırı eklemedi. |
+| TST-10: D19 eski bayt testleri | `test_d19_accepted_edge_requests_return_the_legacy_bytes[×5]`, `test_d19_explicit_opt_in_extends_the_bound…` | `_interp_state` kenar devamı 4ce66da'da (sayısal çekirdek, 2026-10-26) bilerek Hermite'e geçti; test hâlâ eski doğrusal baytları bekliyor. |
+| TST-11: köprü provenans testi | `test_refreeze_keeps_the_historical_record_and_protects_approved_bytes` | Sayısal çekirdek re-freeze'i `examples/run_scenario_config.py` beklenen kimliğini `1bf731…` yaptı; test hâlâ `APPROVED_COMMIT` a9f9e56 baytlarını (`fd427a…`) bekliyor. |
+
+Ek kırılganlık: koruma hash'leri CRLF çalışma ağacı baytlarıdır; sonuç `core.autocrlf=true`
+olmasına bağlıdır (LF checkout'ta `dynamics.py` = `28e29ce8…`, tüm satırlar FAIL olur).
+Düzeltme (yeni eklemeli re-freeze kimliği, D19 ve köprü testlerinin güncellenmesi) korumalı
+dosyalara dokunduğu için sahibin açık "re-freeze" onayını bekler; burada yapılmadı.
+
 ## 1. Genel hüküm
 
 | Eksen | Not | Gerekçe |
@@ -177,6 +194,9 @@ parite testiyle ölçülecektir; burada Doppler büyüklüğü iddia edilmez.
 | TST-06 | O | Doğrudan test dosyası olmayan modüller: `radiometrics.py` (62 KB, en büyük boşluk), `propagation_contract.py`, `measurement_contracts.py`, `constants.py`, `rf/*` |
 | TST-07 | O | Negatif testler eksik (UTC/TT etiket hatası, çerçeve merkezi takası, kernel kapsam sınırı, model uyumsuzluğunda iyimser kovaryans, bozuk UTDF); en iyi negatif takım `test_harden_mutants` kampanyaya bağlı → CI'da atlanıyor |
 | TST-08 | O | Gereksinim/ID/izlenebilirlik matrisi/ICD yok; hata bütçesi yalnız sayısal; `docs/external_cross_validation.md` yok; kernel manifest/SHA yok; ruff/mypy/coverage yok |
+| TST-09 ✔ | B | `main` kendi R2/R3 koruma kapısını geçmiyor: PR #61 (a8f1bef) `dynamics.py`'yi sayısal çekirdek kimliğinden (`ea6f63`) sonra eklemeli re-freeze olmadan değiştirdi → 10 ERROR + 3 FAIL; kapı CI'da koşmadığı için merge'de görülmedi (bkz. TST-01) |
+| TST-10 ✔ | O | D19 testleri 4ce66da'nın bilerek yaptığı Hermite kenar değişikliğinden sonra güncellenmedi (6 FAIL) |
+| TST-11 ✔ | O | Köprü provenans testi sayısal çekirdek re-freeze'i sonrası eski onaylı baytları bekliyor (1 FAIL); koruma hash'leri `core.autocrlf`'e bağlı |
 
 ---
 
@@ -246,6 +266,7 @@ estimator) ve bağımsız dış kehanet zorunlu.**
 | R-19 | Gizli (kullanılmayan) modüllerde yanlış fizik ileride kullanılır | MEAS-13 | 2 | 4 | 8 | WP2.6 |
 | R-20 | CCSDS arayüzü yok → bağımsız araçlarla çapraz kontrol zor | — | 4 | 2 | 8 | F6 |
 | R-21 | Depo şişmesi ve sıra bağımlı testler | CFG-12, TST-05 | 3 | 2 | 6 | F7 |
+| R-22 | Bilinen-kırmızı tam regresyon: yeni regresyonlar mevcut 20 hatanın arasında kaybolur; koruma kapısı anlamını yitirir | TST-09/10/11, TST-01 | 5 | 3 | 15 | WP0.5 |
 
 ---
 
