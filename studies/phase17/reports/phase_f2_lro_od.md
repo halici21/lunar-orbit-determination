@@ -1387,3 +1387,80 @@ Candidate criteria as computed:
    - It would be a new run, predeclared separately.
 3. **The ~2 m fit share (reading item 2) is a measurement/estimation question.** It is the Doppler-bias/orbit
    correlation seen in F2q, and it is outside this phase's no-measurement-change scope.
+
+### 17.10 F2s / F2s-1 — is F2r's cross-track misfit LOLA's arc stitching or our dynamics?
+
+F2r next step 1 (owner request 2026-10-31).
+
+- Predeclarations, both committed before any number they govern:
+  - F2s: `studies/phase17/configs/phase_f2s_lola_arc_structure_predeclaration.json` (`5e7b2fb`).
+  - F2s-1 amendment: `studies/phase17/configs/phase_f2s1_stencil_step_amendment_predeclaration.json` (`fedd6ca`).
+- Scripts: `studies/phase17/scripts/phase_f2s_lola_arc_structure.py` (F2s-1 = `--h1`) and
+  `phase_f2s_method_check_diagnosis.py`.
+- Parts: `studies/phase17/results/phase_f2s_parts/` (`A`, `diag`, `A_h1`, `W1_slide0..5` and their `_q`).
+- Results: `phase_f2s_lola_arc_structure.json` (F2s) and `phase_f2s1_lola_arc_structure.json` (F2s-1).
+
+Analysis only: no production code, no data/weight/bias/measurement change, F2r's classification unchanged.
+
+#### F2s as computed: F2S_INCONCLUSIVE
+
+- Step A (acceleration residual of LOLA against our model, 5-point stencil, h = 5 s): the method check on our own E2
+  trajectory gave R/T/N 9.0e-8 / 8.5e-8 / 2.9e-8 m/s² against the predeclared 1e-9. That is F2S_INCONCLUSIVE by
+  rule; step B was not run.
+- Diagnosis (own trajectory only, first 3 h of F): the check error scales as h⁴ (R: 2.3e-10, 3.4e-9, 1.3e-7,
+  1.7e-6, 1.7e-5 m/s² at h = 1, 2, 5, 10, 20 s) and the integrator tolerance (1e-10 to 1e-13) changes it by
+  < 0.2 %. It is the stencil's truncation of the short-period GL1800F N=300 signal, not the propagator.
+- The LOLA SPK is type 13 (Hermite), window 4, samples every 5.0 s.
+
+#### F2s-1 as computed: **H_REF_SUPPORTED**
+
+Amendment: h = 1 s; new SPK-noise check D = RMS |a_res(h=1) − a_res(h=2)| ≤ 0.1 × envelope median. Everything else
+as F2s.
+
+- Method check: PASS, 1.7e-10 / 1.8e-10 / 5.7e-11 m/s².
+- SPK noise check: PASS, D = 1.32e-7 against 1.83e-7 (passes, but not by much).
+- LOLA a_res RMS 1.09 / 1.08 / 1.02 e-6 m/s² (R/T/N); envelope median 1.83e-6; no run above 3 × median:
+  **ARC_STRUCTURE_NOT_FOUND**. So step B used the predeclared sliding 24 h windows, stepped by 12 h.
+- All six window fits STATIONARY.
+
+| window | UTC (2009-09) | fit RMS R / T / N (m) | E2 restricted R / T / N (m) | K |
+|---|---|---|---|---|
+| slide0 | 16 23:57 – 17 23:57 | 0.10 / 0.82 / **4.11** | 0.33 / 0.79 / 10.04 | 0.044 |
+| slide1 | 17 11:57 – 18 11:57 | 0.12 / 0.73 / 3.51 | 0.26 / 0.82 / 4.42 | 0.037 |
+| slide2 | 17 23:57 – 18 23:57 | 0.10 / 0.83 / 3.20 | 0.18 / 0.85 / 4.73 | 0.041 |
+| slide3 | 18 11:57 – 19 11:57 | 0.08 / 0.63 / 2.28 | 0.16 / 0.76 / 8.54 | 0.029 |
+| slide4 | 18 23:57 – 19 23:57 | 0.06 / 0.33 / 0.64 | 0.15 / 1.50 / 10.98 | 0.037 |
+| slide5 | 19 11:57 – 20 11:57 | 0.05 / 0.12 / **0.47** | 0.28 / 2.08 / 11.54 | 0.039 |
+
+Decision (not-found branch): max / min window N = 4.11 / 0.47 = **8.8** (≥ 3) and min 0.47 m (≤ 2.1 m):
+H_REF_SUPPORTED.
+
+#### Reading
+
+1. **The cross-track misfit is not uniform in time.** With the same 24 h window, the same free parameters and the
+   same priors, our dynamics follow LOLA to 0.5–0.6 m N from 2009-09-19 on (day 262–263) but only to 3–4 m on
+   09-17. The predeclared H_DYN (a misfit that stays whatever window is chosen) is rejected.
+2. **What H_REF_SUPPORTED does and does not show.** The arc boundaries themselves were not found (no taper signal
+   in the acceleration residual), and the N misfit falls fairly steadily rather than jumping at one time. The
+   result therefore points at something time-local in the reference (consistent with LOLA's arc stitching), but it
+   does not locate an arc boundary. A force that acts only on 09-17/18, and that is in LOLA's model but not ours,
+   would give the same pattern; this test cannot tell the two apart.
+3. **Day 263 itself is matched.** slide5 covers most of F2r's prediction span P and fits to 0.47 m N and 0.12 m T.
+   Our dynamics can reproduce LOLA on day 263 inside a single day. E2's 11.5 m N there (partly a prediction past
+   F) is the cost of one solution fitted across 09-17..19.
+4. **Descriptive, not classified:** the LOLA a_res RMS drops from 2.7e-6 (h = 5 s) to 1.1e-6 m/s² (h = 1 s), much
+   more than the h = 5 s truncation of our own trajectory (1.3e-7). LOLA's trajectory carries more short-period
+   acceleration than our model at h = 5 s; whether this is GRGM900C high-degree content or the type-13 interpolation
+   is not resolved.
+5. Step B's first run crashed after the fits (duplicate epoch in the post-fit propagation, fixed in `c422244`); the
+   rerun is the one reported.
+
+#### Next steps
+
+1. **F2r's dynamics share can no longer be blamed on our force model alone.** Before Phase C force-model work
+   (box-wing SRP, albedo/IR) is justified by the LOLA comparison, the early-arc (09-17/18) misfit needs an
+   explanation.
+2. Cheap probes, each to be predeclared separately:
+   - 12 h windows over 09-17..18, to see whether the misfit sits at one time (a boundary) or is spread out;
+   - the same windows with the cross-track empirical pair (C_N, S_N) free;
+   - a second LOLA SPK release over the same days, if one is available, as an independent reference.
