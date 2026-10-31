@@ -485,13 +485,12 @@ def test_p0b1_one_way_nonconverged_last_iterate_is_rejected():
 def _round_trip_equation_residuals(solution, t_grid: np.ndarray, states: np.ndarray, config):
     sc_t2 = interp_state_history(t_grid, states, solution.transponder_time_s)[:3]
     geometric_light_time = float(np.linalg.norm(sc_t2) / config.light_speed_mps)
-    downlink = (solution.receive_time_s - solution.transponder_time_s) - geometric_light_time
-    uplink = (
-        solution.transponder_time_s
-        - config.transponder_delay_s
-        - solution.transmit_time_s
-        - geometric_light_time
-    )
+    # F1 WP1.4 (MEAS-03): each leg's interval is the solver's reported LOCAL
+    # light time (the quantity the events are built from), not one re-derived
+    # by differencing two rounded epochs; the epoch form differs from it by
+    # epoch rounding (1.1e-16 s here) and grows as ulp(t) on long arcs.
+    downlink = solution.downlink_light_time_s - geometric_light_time
+    uplink = solution.uplink_light_time_s - geometric_light_time
     return np.array([downlink, uplink], dtype=float)
 
 
