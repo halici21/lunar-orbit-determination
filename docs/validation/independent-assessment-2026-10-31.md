@@ -56,8 +56,19 @@ Bu commit yalnız belge ve test dosyası ekler (`src/`, `examples/` değişmedi)
 
 Ek kırılganlık: koruma hash'leri CRLF çalışma ağacı baytlarıdır; sonuç `core.autocrlf=true`
 olmasına bağlıdır (LF checkout'ta `dynamics.py` = `28e29ce8…`, tüm satırlar FAIL olur).
-Düzeltme (yeni eklemeli re-freeze kimliği, D19 ve köprü testlerinin güncellenmesi) korumalı
-dosyalara dokunduğu için sahibin açık "re-freeze" onayını bekler; burada yapılmadı.
+**Durum (2026-10-31, sahip onayıyla "re-freeze"):** TST-09, TST-10 ve TST-11 testleri kapandı;
+CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam regresyon: 2205 test, 2166 geçti,
+29 atlandı, 10 XFAIL (kanıt testleri), 0 FAIL, 0 ERROR.
+- `examples/r2_measurement_fidelity_validation.py`: eklemeli `PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256`
+  (`dynamics.py` `ea6f63 → b19c2d`). PR #61'in değişikliği yalnız `_shadow_contact_check` koruyucusudur
+  (ön-geçiş gölge kesiminin son yörüngedeki temasa ≤ 1e-3 s uzaklıkta olması ya da ≤ 1e-9 rad);
+  entegrasyon, kuvvetler ve STM değişmedi. Önceki tablolar tarihsel kayıt olarak aynen duruyor.
+- `tests/test_harden_d18_d19_interpolation_bounds.py`: `_interp_vector` hâlâ eski baytlarla bit-bit;
+  `_interp_state` ve `_interp_state_transition_position` kenar devamı SciPy `CubicHermiteSpline`
+  kehanetine karşı (atol 1e-12 × ölçek), uç noktalar saklanan örneğe bit-bit.
+- `tests/test_desktop_bridge_provenance.py`: onaylı a9f9e56 baytları tarihsel tabloda, güncel beklenen
+  kimlik 71e088f baytları (sayısal çekirdek) olarak doğrulanıyor.
+- `tests/test_f1_srp_variational_gradient.py`: re-freeze zinciri `ea6f6322 → b19c2d80` ile uzatıldı.
 
 ## 1. Genel hüküm
 
@@ -194,9 +205,9 @@ dosyalara dokunduğu için sahibin açık "re-freeze" onayını bekler; burada y
 | TST-06 | O | Doğrudan test dosyası olmayan modüller: `radiometrics.py` (62 KB, en büyük boşluk), `propagation_contract.py`, `measurement_contracts.py`, `constants.py`, `rf/*` |
 | TST-07 | O | Negatif testler eksik (UTC/TT etiket hatası, çerçeve merkezi takası, kernel kapsam sınırı, model uyumsuzluğunda iyimser kovaryans, bozuk UTDF); en iyi negatif takım `test_harden_mutants` kampanyaya bağlı → CI'da atlanıyor |
 | TST-08 | O | Gereksinim/ID/izlenebilirlik matrisi/ICD yok; hata bütçesi yalnız sayısal; `docs/external_cross_validation.md` yok; kernel manifest/SHA yok; ruff/mypy/coverage yok |
-| TST-09 ✔ | B | `main` kendi R2/R3 koruma kapısını geçmiyor: PR #61 (a8f1bef) `dynamics.py`'yi sayısal çekirdek kimliğinden (`ea6f63`) sonra eklemeli re-freeze olmadan değiştirdi → 10 ERROR + 3 FAIL; kapı CI'da koşmadığı için merge'de görülmedi (bkz. TST-01) |
-| TST-10 ✔ | O | D19 testleri 4ce66da'nın bilerek yaptığı Hermite kenar değişikliğinden sonra güncellenmedi (6 FAIL) |
-| TST-11 ✔ | O | Köprü provenans testi sayısal çekirdek re-freeze'i sonrası eski onaylı baytları bekliyor (1 FAIL); koruma hash'leri `core.autocrlf`'e bağlı |
+| TST-09 ✔ (kapandı) | B | `main` kendi R2/R3 koruma kapısını geçmiyor: PR #61 (a8f1bef) `dynamics.py`'yi sayısal çekirdek kimliğinden (`ea6f63`) sonra eklemeli re-freeze olmadan değiştirdi → 10 ERROR + 3 FAIL; kapı CI'da koşmadığı için merge'de görülmedi (bkz. TST-01) |
+| TST-10 ✔ (kapandı) | O | D19 testleri 4ce66da'nın bilerek yaptığı Hermite kenar değişikliğinden sonra güncellenmedi (6 FAIL) |
+| TST-11 ✔ (test kapandı; CRLF açık) | O | Köprü provenans testi sayısal çekirdek re-freeze'i sonrası eski onaylı baytları bekliyor (1 FAIL); koruma hash'leri `core.autocrlf`'e bağlı |
 
 ---
 

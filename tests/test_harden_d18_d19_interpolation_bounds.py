@@ -11,8 +11,12 @@ callables do); the counted-Doppler slope helper and
 ``filters._interp_pass_values`` accept only closed support plus the two-ULP
 representation allowance.
 
-Every accepted request must return exactly the legacy bytes; the legacy
-formulas are written out here independently of the code under test.
+Every accepted ``_interp_vector`` request must return exactly the legacy bytes;
+the legacy formula is written out here independently of the code under test.
+Since the numerical-core correction (4ce66da) ``_interp_state`` and
+``_interp_state_transition_position`` continue the edge interval's cubic Hermite
+polynomial instead (endpoints return the stored sample); their oracle is SciPy's
+``CubicHermiteSpline`` on that interval.
 """
 from __future__ import annotations
 
@@ -26,6 +30,7 @@ import lunar_od.filters as filters
 import lunar_od.radiometrics as radiometrics
 from lunar_od.ephemeris import DEFAULT_EPHEMERIS_EXTRAPOLATION_MARGIN_S, EphemerisCoverageError
 from lunar_od.history_domain import HistoryDomainError, require_supported_epoch
+from scipy.interpolate import CubicHermiteSpline
 
 H_S = 60.0
 T_GRID = np.arange(0.0, 1200.0 + 0.5 * H_S, H_S)
@@ -40,6 +45,17 @@ def _legacy_edge_linear(t_grid, values, t):
     dt = t_grid[i1] - t_grid[i0]
     return np.array([float(values[i0, c] + (values[i1, c] - values[i0, c]) / dt * (t - t_grid[i0]))
                      for c in range(values.shape[1])])
+
+
+def _edge_hermite(t_grid, values, derivatives, t, nu=0):
+    """Edge-interval cubic Hermite continuation of ``values`` (SciPy oracle, ``nu``-th derivative)."""
+    i0, i1 = (0, 1) if t <= t_grid[0] else (t_grid.size - 2, t_grid.size - 1)
+    spline = CubicHermiteSpline(t_grid[[i0, i1]], values[[i0, i1]], derivatives[[i0, i1]], extrapolate=True)
+    return spline(t, nu)
+
+
+def _assert_hermite_close(got, expected, scale):
+    np.testing.assert_allclose(got, expected, rtol=0.0, atol=1e-12 * scale)
 
 
 def _bitwise(a, b):
@@ -83,12 +99,20 @@ def test_d19_every_generic_helper_fails_closed(t):
     T_GRID[-1],                       # endpoints keep their legacy edge branch
     T_GRID[0],
 ])
-def test_d19_accepted_edge_requests_return_the_legacy_bytes(t):
+def test_d19_accepted_edge_requests_keep_their_contracted_values(t):
     assert _bitwise(radiometrics._interp_vector(T_GRID, STATES, t), _legacy_edge_linear(T_GRID, STATES, t))
-    assert _bitwise(radiometrics._interp_state(T_GRID, STATES, t), _legacy_edge_linear(T_GRID, STATES, t))
-    flat = PHI.reshape(T_GRID.size, -1)
-    assert _bitwise(radiometrics._interp_state_transition_position(T_GRID, PHI, t),
-                    _legacy_edge_linear(T_GRID, flat, t).reshape(6, 6)[:3, :])
+    state = radiometrics._interp_state(T_GRID, STATES, t)
+    phi_r = radiometrics._interp_state_transition_position(T_GRID, PHI, t)
+    if t in (T_GRID[0], T_GRID[-1]):
+        k = 0 if t == T_GRID[0] else -1
+        assert _bitwise(state, STATES[k])
+        assert _bitwise(phi_r, PHI[k, :3, :])
+        return
+    scale = np.max(np.abs(STATES))
+    _assert_hermite_close(state[:3], _edge_hermite(T_GRID, STATES[:, :3], STATES[:, 3:6], t), scale)
+    _assert_hermite_close(state[3:6], _edge_hermite(T_GRID, STATES[:, :3], STATES[:, 3:6], t, nu=1), scale)
+    _assert_hermite_close(phi_r, _edge_hermite(T_GRID, PHI[:, :3, :], PHI[:, 3:6, :], t),
+                          H_S * np.max(np.abs(PHI)))
 
 
 def test_d19_interior_requests_are_untouched():
@@ -106,12 +130,13 @@ def test_d19_default_bound_is_the_d15_ephemeris_margin():
             radiometrics._interp_state(T_GRID, STATES, t)
 
 
-def test_d19_explicit_opt_in_extends_the_bound_and_keeps_the_legacy_bytes():
+def test_d19_explicit_opt_in_extends_the_bound_with_the_hermite_continuation():
     t = T_GRID[-1] + 1.46 * H_S                        # worst measured VODE overrun
     with pytest.raises(HistoryDomainError):
         radiometrics._interp_state(T_GRID, STATES, t)
     got = radiometrics._interp_state(T_GRID, STATES, t, max_extrapolation_s=300.0)
-    assert _bitwise(got, _legacy_edge_linear(T_GRID, STATES, t))
+    _assert_hermite_close(got[:3], _edge_hermite(T_GRID, STATES[:, :3], STATES[:, 3:6], t),
+                          np.max(np.abs(STATES)))
     with pytest.raises(HistoryDomainError):
         radiometrics._interp_state(T_GRID, STATES, T_GRID[-1] + 300.5, max_extrapolation_s=300.0)
     with pytest.raises(ValueError):

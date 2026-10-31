@@ -9,6 +9,12 @@ from examples import r2_measurement_fidelity_validation as campaign
 ROOT = Path(__file__).resolve().parents[1]
 BRIDGE = "examples/run_scenario_config.py"
 APPROVED_COMMIT = "a9f9e56c2556b98a68493e3425ae42b836f34f8c"
+NUMERICAL_CORE_COMMIT = "71e088fabaf793935bcf8a346d91aca8337215f0"
+
+
+def _filtered_sha256(commit):
+    blob = subprocess.check_output(["git", "cat-file", "--filters", commit + ":" + BRIDGE], cwd=ROOT)
+    return hashlib.sha256(blob).hexdigest()
 
 
 def test_refreeze_keeps_the_historical_record_and_protects_approved_bytes():
@@ -16,11 +22,10 @@ def test_refreeze_keeps_the_historical_record_and_protects_approved_bytes():
         "f6cf74b69fa15a15148cb6ca59db56980b9afa3340b59fcaf4de8a2a2a533bac"
     )
     assert BRIDGE in campaign.R2_CURRENT_TREE_PROTECTED_PATHS
-    accepted = subprocess.check_output(
-        ["git", "cat-file", "--filters", APPROVED_COMMIT + ":" + BRIDGE],
-        cwd=ROOT,
-    )
-    assert campaign.expected_current_tree_sha256(BRIDGE) == hashlib.sha256(accepted).hexdigest()
+    assert campaign.DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256[BRIDGE] == _filtered_sha256(APPROVED_COMMIT)
+    # The numerical-core correction is the later additive identity of the bridge.
+    assert campaign.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[BRIDGE] == _filtered_sha256(NUMERICAL_CORE_COMMIT)
+    assert campaign.expected_current_tree_sha256(BRIDGE) == _filtered_sha256(NUMERICAL_CORE_COMMIT)
 
 
 def test_a_later_bridge_edit_still_fails_the_provenance_gate(tmp_path):

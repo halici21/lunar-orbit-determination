@@ -27,7 +27,7 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 | R-19 | Gizli (kullanılmayan) modüllerde yanlış fizik ileride kullanılır | MEAS-13 | 2 | 4 | 8 | WP2.6 | open |
 | R-20 | CCSDS arayüzü yok → bağımsız araçlarla çapraz kontrol zor | — | 4 | 2 | 8 | F6 | open |
 | R-21 | Depo şişmesi ve sıra bağımlı testler | CFG-12, TST-05 | 3 | 2 | 6 | F7 | open |
-| R-22 | Bilinen-kırmızı tam regresyon: yeni regresyonlar mevcut 20 hatanın arasında kaybolur; koruma kapısı anlamını yitirir | TST-09/10/11, TST-01 | 5 | 3 | 15 | WP0.5 | open |
+| R-22 | Bilinen-kırmızı tam regresyon: yeni regresyonlar mevcut 20 hatanın arasında kaybolur; koruma kapısı anlamını yitirir | TST-09/10/11, TST-01 | 5 | 3 | 15 | WP0.5 | mitigated (CRLF bağımlılığı ve CI kapısı açık) |
 
 ## Değişiklik geçmişi
 
@@ -35,3 +35,4 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 |---|---|---|---|
 | 2026-10-31 | hepsi | İlk kayıt | bağımsız değerlendirme |
 | 2026-10-31 | R-22 | Tam regresyon sonrası eklendi (10 FAIL / 10 ERROR, `origin/main`'de mevcut) | değerlendirme §0.1 |
+| 2026-10-31 | R-22 | Sahip onaylı re-freeze ve test güncellemeleri; skor düştü, CRLF ve CI kapısı açık | değerlendirme §0.1 Durum |

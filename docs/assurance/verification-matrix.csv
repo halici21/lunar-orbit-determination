@@ -35,4 +35,4 @@ REQ-SW-003,T,WP7.1,tests/test_de440_kernel_contract.py,partial,TST-01
 REQ-SW-004,D,WP7.3,,open,TST-05
 REQ-SW-005,D,WP7.5,,open,TST-06;TST-08
 REQ-SW-006,T,WP1.6,,open,CFG-01;CFG-09
-REQ-SW-007,T,WP0.5,outputs/full_regression_2026-10-31.txt,failing,TST-09;TST-10;TST-11
+REQ-SW-007,T,WP0.5,outputs/full_regression_2026-10-31_refreeze.txt,partial,TST-09;TST-10;TST-11
