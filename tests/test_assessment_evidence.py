@@ -135,8 +135,8 @@ def test_control_dmc_q_matches_substepped_reference_short_gap():
     assert _relative_difference(q, _dmc_q_substepped(options, 600.0, 8)) < 1e-9
 
 
-@pytest.mark.xfail(strict=True, reason="EST-09: van Loan block grows like exp(dt/tau) and cancels")
-@pytest.mark.parametrize("gap_over_tau", [30.0, 144.0])
+# EST-09 closed by WP0.2: steps with beta*dt > 1 use the closed-form integrals.
+@pytest.mark.parametrize("gap_over_tau", [30.0, 144.0, 1000.0])
 def test_est09_dmc_q_long_gap_finite_psd_and_accurate(gap_over_tau):
     options = DMCOptions(sigma_mps2=1e-8, tau_s=600.0)
     dt = gap_over_tau * options.tau_s
@@ -145,6 +145,16 @@ def test_est09_dmc_q_long_gap_finite_psd_and_accurate(gap_over_tau):
     assert np.all(np.isfinite(q))
     assert np.min(np.linalg.eigvalsh(q)) >= -1e-12 * np.max(np.abs(reference))
     assert _relative_difference(q, reference) < 1e-8
+
+
+def test_dmc_q_closed_form_agrees_with_van_loan_where_both_are_accurate():
+    """Both branches near the switch (beta*dt = 1): the closed form must agree with van Loan."""
+    from lunar_od.dmc import _dmc_process_noise_closed_form
+    options = DMCOptions(sigma_mps2=1e-8, tau_s=600.0)
+    for gap_over_tau in (0.5, 1.0, 2.0, 5.0):
+        dt = gap_over_tau * options.tau_s
+        closed = _dmc_process_noise_closed_form(options.sigma_mps2, 1.0 / options.tau_s, dt)
+        assert _relative_difference(closed, _dmc_q_substepped(options, dt, 64)) < 1e-9
 
 
 # --- EST-19: UKF default initial covariance vs the injected cold-start error ---

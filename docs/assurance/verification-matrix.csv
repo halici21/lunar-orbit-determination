@@ -17,12 +17,12 @@ REQ-EST-001,T,WP4.1,tests/test_assessment_evidence.py::test_est01_six_and_augmen
 REQ-EST-002,T,WP4.2,,open,EST-04;EST-05;EST-08
 REQ-EST-003,T,WP4.3,,open,EST-06;EST-07;EST-18
 REQ-EST-004,T,WP4.4,,open,EST-10;EST-11;EST-12;EST-13;EST-14
-REQ-EST-005,T,WP0.2,tests/test_assessment_evidence.py::test_est09_dmc_q_long_gap_finite_psd_and_accurate,failing_as_expected,EST-09
+REQ-EST-005,T,WP0.2,tests/test_assessment_evidence.py::test_est09_dmc_q_long_gap_finite_psd_and_accurate;tests/test_assessment_evidence.py::test_dmc_q_closed_form_agrees_with_van_loan_where_both_are_accurate,passed,EST-09
 REQ-EST-006,T,WP1.9,tests/test_assessment_evidence.py::test_est19_ukf_default_p0_matches_injected_cold_start_sigma,failing_as_expected,EST-19
 REQ-EST-007,T,WP4.6,,open,EST-16
 REQ-EST-008,T,WP4.5,,open,EST-15;RD-06
-REQ-DATA-001,I,WP0.2;WP0.4,,open,RD-01;RD-02
-REQ-DATA-002,I,WP0.4,,open,RD-02
+REQ-DATA-001,I,WP0.2;WP0.4,docs/assurance/amendment-log.md;studies/phase17/configs/lro_data_partition.json,partial,RD-01;RD-02 (F3 result recorded as exploratory; independent-day F3 rerun pending)
+REQ-DATA-002,T,WP0.4,tests/test_lro_data_partition.py,passed,RD-02
 REQ-DATA-003,I,WP3.4,,open,RD-03
 REQ-DATA-004,I,WP0.3,docs/assurance/amendment-log.md,partial,RD-04
 REQ-DATA-005,T,WP5.6,tests/test_utdf.py,partial,RD-11
