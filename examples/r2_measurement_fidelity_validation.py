@@ -457,6 +457,27 @@ PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# Phase F1 WP1.4 re-freeze (owner-authorized 2026-10-31, independent assessment
+# MEAS-03).  solve_two_way_light_time tested convergence on absolute epoch
+# differences (abs(new_t2 - t2), (receive_time_s - t2) - rho/c), which quantise
+# to ulp(t) and returned converged=False for most receive times beyond ~2^17 s.
+# The update and equation residuals are now formed on the local light times the
+# events are constructed from, as solve_two_way_range_events does (Q1-F01/F08).
+# Equations, tolerances and iterates are unchanged: event epochs, light times
+# and iteration counts are bitwise identical on every existing solver test;
+# only the reported residual diagnostics and the long-arc converged flag differ.
+#
+#   old (numerical core)  aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1
+#   new (F1 WP1.4)        57f2bea2f3949f069300164d37866c198c6ad078ae4e92c1ad0b2d21cd91eaaa
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+#
+# All earlier tables are left untouched as truthful historical records.
+F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/radiometrics.py":
+        "57f2bea2f3949f069300164d37866c198c6ad078ae4e92c1ad0b2d21cd91eaaa",
+}
+
+
 
 
 
@@ -473,6 +494,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:

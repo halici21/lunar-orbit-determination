@@ -196,6 +196,7 @@ def test_est01_six_and_augmented_paths_agree_at_estimator_tolerance(rtol, atol):
 
 
 # --- MEAS-03: counted-Doppler round-trip solver convergence tests use epoch differences ---
+# Closed by F1 WP1.4: the solver now tests convergence on local light times.
 
 class _Station:
     name = "Synthetic Station"
@@ -235,7 +236,6 @@ def test_control_counted_doppler_solver_converges_near_zero_epoch():
     assert _solve_count(0.0) == 200
 
 
-@pytest.mark.xfail(strict=True, reason="MEAS-03: epoch-difference residuals hit ulp(t) on long arcs")
 @pytest.mark.parametrize("arc_start_s", [3.0e5, 2.5e6])
 def test_meas03_counted_doppler_solver_converges_on_long_arcs(arc_start_s):
     assert _solve_count(arc_start_s) == 200
