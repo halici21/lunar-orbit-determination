@@ -1,0 +1,26 @@
+{
+ "phase": "Phase F3c - short-arc batch fits (2009-262, 2009-261..262) predicting 2009-263, no DMC",
+ "written": "2026-10-31, after F3b (37d4d2a) and before any F3c code or number",
+ "motivation": "F3b (phase_f3_lro_dmc_smoother.md section 7) found that the sigma* DMC smoother's 263 prediction gain (263 chi2 69 981 -> 3 643) is a joint end-of-fit state + K_SRP / along-track empirical re-split that F2p's 3-day batch cannot reach (state alone share -1.72, constants alone 0.46, both 1.00). If the limit is that one force model cannot hold over three days, a batch fit on a shorter arc ending at the same time should reach a similar end-of-fit state + constants and reproduce the gain without DMC.",
+ "method": {
+  "variants": {"A": ["trk/lro_no_01/2009262"], "B": ["trk/lro_no_01/2009261", "trk/lro_no_01/2009262"]},
+  "predict_days": ["trk/lro_no_01/2009263"],
+  "fit": "exactly F2p's recipe (phase_f2_lro_od.main_f2p) except the fit days and the start: N = 300, range + counted Doppler, n_emp = 4, priors F2H_PRIORS (K 0.010 +- 0.005, range biases +- 3 m, C_T / S_T +- 1e-8 m/s^2, C_N / S_N pinned 1e-11), F2o Doppler edits, historical numerics (legacy LM, 20 s grid, quantised station epochs), rtol / atol 1e-12 / 1e-13, emp FD step 1e-9, relative GN stationarity 1e-3, resumable checkpoint. The epoch is the variant's own (first measurement - 120 s, et0 = 00:00 UTC of its first day)",
+  "start": "F2p's own trajectory at the variant epoch, cubic-spline interpolated from F3's cached reference history (20 s grid, F2p's parameters); the other parameters start as F2p's solve() initialises them (K 0.01, biases from mean residuals, empirical at the prior means)",
+  "scores": "F2's predict(): 263 range and Doppler RMS and mean, RIC RMS vs LOLA on 263 (scoring only), per-pass hours after the fit end; fit-arc RIC vs LOLA. 263 chi2 = n_range * rms_range^2 + n_doppler * (rms_doppler / 2 mm/s)^2, computed the same way for F2p from its JSON prediction block. share = (chi2_F2p - chi2_X) / (chi2_F2p - chi2_sigma*) with chi2_sigma* = 3 642.61 (F3)",
+  "parallel": "A and B run at the same time, 6 workers each"
+ },
+ "gates": {
+  "G1": "per variant: legacy status Converged or STATIONARY",
+  "G3": "per variant: fit range RMS <= 2 m and Doppler RMS <= 5 mm/s",
+  "G_START": "the spline-interpolated start reproduces the cached F2p history at the two nearest grid nodes to <= 1 mm (interpolation sanity)"
+ },
+ "hypotheses": {
+  "H_SHORT": "the best qualified variant's share >= 0.8",
+  "H_PARTIAL": "0.3 <= best qualified share < 0.8"
+ },
+ "decision_rule": "no variant passes G1, G3 and G_START -> F3C_NOT_QUALIFIED. Otherwise H_SHORT -> F3C_SHORT_ARC_REPRODUCES; H_PARTIAL -> F3C_SHORT_ARC_PARTIAL; else F3C_NO_SHORT_ARC_GAIN",
+ "reading_rule": "F3C_SHORT_ARC_REPRODUCES supports 'a single force model over 3 days is the limit' (F3b reading 3) and makes the LOLA disagreement the open question; F3C_NO_SHORT_ARC_GAIN means the gain needs DMC's process noise inside the fit arc and is not a plain arc-length effect",
+ "reported_not_gated": "per variant K_SRP, C_T, S_T, biases with formal sigma and their difference from F2p and from sigma*'s; 263 RIC vs LOLA; fit-arc RIC vs LOLA; iterations and wall time. Known limitation stated in advance: on one day the K_SRP prior (0.010 +- 0.005) weighs more against F2p's 0.0745 than on three days",
+ "outputs": {"report": "studies/phase17/reports/phase_f3_lro_dmc_smoother.md (new section F3c)", "results": "studies/phase17/results/phase_f3c_short_arc_batch.json (merged), phase_f3c_short_arc_A.json / _B.json (parts)", "script": "studies/phase17/scripts/phase_f3c_short_arc_batch.py"}
+}
