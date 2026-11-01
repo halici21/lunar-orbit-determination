@@ -42,3 +42,10 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 11. Masaüstü uygulaması formda görünmeyen rtol 1e-8 / atol 1e-10 ve 3600 s efemeris adımı kullanır;
     bu ayarlarla üretilen sayılar kütüphane veya tez sayılarıyla karşılaştırılamaz.
 12. CLI senaryo koşuları ölçüm gürültüsü tohumunu kaydetmez; `noise=true` koşuları tekrarlanamaz.
+
+## Tahminci ayarları
+
+13. UKF `process_noise` **adım başına ayrık varyanstır** (sahip kararı 2026-11-01, EST-14): Q,
+    yayılım adımı dt'den bağımsız her adıma eklenir. Ölçüm aralığı ya da yayılım adımı değişince
+    birim zamandaki gürültü değişir; Q taraması ve ayarlanmış Q değerleri yalnız ayarlandıkları
+    örnekleme düzeninde geçerlidir. dt'ye bağlı SNC/DMC modeli seçimli olarak kullanılabilir.
