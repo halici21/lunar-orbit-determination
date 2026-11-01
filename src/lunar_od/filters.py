@@ -11,6 +11,7 @@ from typing import Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
+from .dmc import DMC_SIZE, DMCOptions, dmc_process_noise, propagate_dmc_state
 from .dynamics import PropagationProfile, dynamics_jacobian_a_matrix, f3body_moon, propagate_augmented_state, propagate_state
 from .propagation_contract import resolve_profile, numerical_metadata
 
@@ -796,8 +797,14 @@ def run_lunar_ukf(
     srp=None,
     solve_for_k_srp: bool = False,
     propagation_profile=None,
+    dmc: DMCOptions | None = None,
 ) -> LunarUKFResult:
     """Run a sequential UKF over one prepared lunar OD arc.
+
+    WP4.8c (EST-21): ``dmc`` adds the Gauss-Markov empirical acceleration ``w`` of
+    ``dmc.py`` as state elements 6:9 (state ``[r, v, w, biases]``); every sigma point
+    propagates under its own ``w`` and ``dmc_process_noise`` supplies the process noise
+    (``process_noise`` must then be None).  Measurements see the state without ``w``.
 
     The first 6 elements are the dynamic lunar state. Optional trailing bias
     states follow the BLS/SRIF conventions: global_full, station_angles, or
@@ -864,6 +871,14 @@ def run_lunar_ukf(
                 "solve_for_k_srp requires the unscented (sigma-point) process "
                 "path; use_stm_linearization bypasses it."
             )
+    if dmc is not None:
+        if process_noise is not None:
+            raise ValueError("dmc= supplies the process noise; process_noise must be None.")
+        if solve_for_k_srp or fast_sigma_propagator is not None or use_stm_linearization:
+            raise ValueError("dmc= is not combined with solve_for_k_srp, fast_sigma_propagator "
+                             "or use_stm_linearization.")
+        if propagation_profile is not None:
+            raise ValueError("dmc= propagates with DOP853 at rtol/atol; propagation_profile is not supported.")
     # FA-01 runtime defense-in-depth: one check per arc, before any sigma-point
     # work, covering callers that bypass scenario-config validation.
     validate_ukf_measurement_support(
@@ -889,6 +904,8 @@ def run_lunar_ukf(
     if x0.size < 6:
         raise ValueError("x0_mci must contain at least the 6 dynamic state elements.")
     nx = x0.size
+    if dmc is not None and nx < 6 + DMC_SIZE:
+        raise ValueError("dmc= requires x0_mci = [r, v, w(3), biases...].")
     if solve_for_k_srp:
         if nx != 7:
             raise ValueError(
@@ -910,7 +927,7 @@ def run_lunar_ukf(
     # K occupies index 6 but is not a measurement-bias state; size the bias
     # config off the dynamics+bias portion only (nx-1), so bias_mode=None
     # still resolves to "none" instead of raising on the extra dimension.
-    nx_for_bias = nx - 1 if solve_for_k_srp else nx
+    nx_for_bias = nx - 1 if solve_for_k_srp else (nx - DMC_SIZE if dmc is not None else nx)
     bias_cfg = _resolve_ukf_bias_config(measurement_type, nx_for_bias, len(pass_geo.stations), bias_mode)
 
     if solve_for_k_srp:
@@ -970,11 +987,15 @@ def run_lunar_ukf(
                 float(np.mean(epoch_accepted_nis)),
                 measurement_dim,
                 adaptive,
-                enabled=q is not None,
+                enabled=q is not None or dmc is not None,
             )
             epoch_accepted_nis = []
         dt_s = abs(target_t - current_t)
         q_step = _discretize_process_noise(q, dt_s, nx, process_noise_model) if is_time_advance else None
+        if dmc is not None and is_time_advance:
+            mean = sqrt_state.x if covariance_form == "square_root" else state.x
+            q_step = np.zeros((nx, nx))
+            q_step[:6 + DMC_SIZE, :6 + DMC_SIZE] = dmc_process_noise(dmc, target_t - current_t, state6=mean[:6])
         propagation_cache: dict[bytes, np.ndarray] = {}
 
         def process_fn(x: np.ndarray, t0: float = current_t, t1: float = target_t) -> np.ndarray:
@@ -984,6 +1005,19 @@ def run_lunar_ukf(
             process_function_evaluations += 1
             if t0 == t1:
                 return x.copy()
+            if dmc is not None:
+                n_dyn = 6 + DMC_SIZE
+                key = np.ascontiguousarray(x[:n_dyn]).tobytes()
+                if key in propagation_cache:
+                    dynamic_propagation_cache_hits += 1
+                    return np.concatenate([propagation_cache[key], x[n_dyn:]])
+                propagated_dyn = propagate_dmc_state(
+                    [t0, t1], x[:n_dyn], dmc, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                    get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp, stm=False,
+                )[-1, :]
+                unique_dynamic_propagations += 1
+                propagation_cache[key] = propagated_dyn
+                return np.concatenate([propagated_dyn, x[n_dyn:]])
             if fast_sigma_propagator is not None:
                 unique_dynamic_propagations += 1
                 return np.concatenate([fast_sigma_propagator(t0, t1, x[:6]), x[6:]])
@@ -1078,6 +1112,8 @@ def run_lunar_ukf(
             j2_moon=j2_moon, srp=srp, solve_for_k_srp=solve_for_k_srp,
             propagation_profile=propagation_profile,
         )
+        if dmc is not None:
+            measurement_fn = _without_dmc_state(measurement_fn)
         measurement_function_evaluations += int(sigma_x.shape[0])
         if covariance_form == "square_root":
             sqrt_state, diagnostics = square_root_ukf_update(
@@ -1184,6 +1220,12 @@ def run_lunar_ukf(
             measurement_model_cache_hits=measurement_model_cache_hits,
         ),
     )
+
+
+def _without_dmc_state(measurement_fn: Callable[[np.ndarray], np.ndarray]) -> Callable[[np.ndarray], np.ndarray]:
+    def wrapped(x: np.ndarray) -> np.ndarray:
+        return measurement_fn(np.concatenate([x[:6], x[6 + DMC_SIZE:]]))
+    return wrapped
 
 
 def _residual(value: np.ndarray, reference: np.ndarray, residual_fn: ResidualFunction | None) -> np.ndarray:
