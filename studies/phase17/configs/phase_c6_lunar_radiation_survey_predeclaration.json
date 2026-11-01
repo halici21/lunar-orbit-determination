@@ -1,0 +1,41 @@
+{
+ "phase": "Phase C6 - lunar albedo + thermal-IR radiation pressure: effect-size survey on the real LRO arc (2009-260..263)",
+ "written": "2026-11-01, before any C6 code or number",
+ "motivation": "F2p estimates K_SRP = 0.0745 m^2/kg against a physical prior of 0.010 +- 0.005 (FDF LRO operations: cannonball 14 m^2, Cr 1.0-1.67, Slojkowski et al. ISSFD 2014 Table 1) and F3b found the sigma* gain is partly a K / S_T re-split. Lunar radiation pressure is absent from the F2 force model. At 50 km the dayside thermal IR flux is of order the solar flux (sigma T^4 with T ~ 380 K is ~1.2 kW/m^2) and points radially outward, so a cannonball K could be absorbing it. FDF did not model it ('assumed quite small', Slojkowski 2014 sec. 6.2); the TU Delft LRO study (Stiller and Dirkx 2023, poster) found lunar RP dominated by the thermal part and affecting secular a and omega. This survey measures, linearly and without new long fits, whether adding it moves K toward the physical value and improves the 263 prediction.",
+ "model": {
+  "moon": "uniform sphere, R = lunar_od.srp R_MOON_M; the cap visible from the spacecraft is discretised in spacecraft-nadir polar coordinates, N_theta = 60 rings (midpoint in theta from 0 to acos(R/r)) x N_phi = 72 azimuths, dA = R^2 sin(theta) dtheta dphi",
+  "albedo": "Lambertian, constant Bond albedo a = 0.12; radiance L = a S(d) cos(psi) / pi where psi = solar zenith angle of the element (0 contribution for cos psi <= 0) and S(d) = c * lunar_od.srp.solar_pressure_at(d)",
+  "thermal": "Lambertian emission, emissivity 0.95; T = max(T_ss cos(psi)^(1/4), T_night) with T_ss = ((1 - a) S(d) / (0.95 sigma))^(1/4) (radiative equilibrium) and T_night = 100 K; radiance L = 0.95 sigma T^4 / pi",
+  "target": "cannonball with the SRP convention a = K_LRP * sum_i L_i cos(e_i) dA_i / (c d_i^2) * u_i, u_i the unit vector from the element to the spacecraft, e_i the emission angle; no self-shadowing, no occultation besides the Moon itself (by construction of the cap)",
+  "sun": "SPICE spkpos SUN wrt MOON, J2000, NONE, at et0 + t (same kernels F2 loads)",
+  "k_lrp_nominal": "0.010 m^2/kg = F2H_PRIORS' physical K_SRP prior mean (the same cannonball)",
+  "frame_and_epoch": "J2000 Moon-centred; F3's cached reference (lro_data/f3_cache/reference.npz, F2p's parameters, 20 s grid, t from F2p's et0)"
+ },
+ "linear_method": {
+  "sensitivity": "S_lrp(t) = Phi(t) * integral_{t_epoch}^{t} Phi(tau)^-1 [0; a_lrp(tau)] dtau, trapezoid on F3's 20 s reference grid, Phi from the cached history (column-major hist[:, 6:42]); at K_LRP = 1 m^2/kg (unit column)",
+  "rows": "the LRP column of each measurement row is hx(t_row) @ S_lrp(t_row) with F3's local rows hx (unit-weight, Doppler scaled as in F3)",
+  "batch": "linearised batch about F2p (= F3's sigma = 0 smoother), fit rows only, F3's prior(z) on the 15 F2p parameters (epoch 10 km / 10 m/s, Doppler bias 1 m/s, F2H priors); solved with phase_f3_core.batch_oracle; 263 rows predicted with the solved deviation"
+ },
+ "experiments": {
+  "E0": "no LRP (must reproduce F3's sigma = 0 263 chi2)",
+  "E1": "LRP fixed at K_LRP = 0.010 (residuals shifted by the nominal column), 15 parameters re-solved",
+  "E2": "LRP scale estimated as a 16th parameter with no prior (unit column scaled to K_LRP = 0.010)",
+  "E1b": "as E1 with albedo 0.19 (DLAM-1 mean used by Stiller and Dirkx 2023), reported only"
+ },
+ "scores": "fit-day and 263 range RMS (m) and Doppler RMS (mm/s); 263 chi2 = sum of squared unit-weight 263 residuals (F3's definition); share = (chi2_E0 - chi2_X) / (chi2_E0 - 3642.61), 3642.61 = F3 sigma* (c15d5c8); solved K_SRP, C_T, S_T and formal sigma; E2 scale and its correlation with K; acceleration statistics along the arc (RMS and max of |a_lrp|, RIC split, ratio to |a_srp| at K = 0.010)",
+ "gates": {
+  "G_UNIT": "unit tests pass: (a) uniform-temperature sphere, flux = sigma T^4 (R/r)^2 radial, to 1e-3 relative at 50 km altitude and at r = 10 R; (b) zero-phase Lambert albedo far field (2/3) a S (R/r)^2 to 1e-2 at r = 20 R; (c) spacecraft over the subsolar point: non-radial part <= 1e-6 of the magnitude",
+  "G_QUAD": "the same quadrature applied to the SRP acceleration (srp_acceleration_kernel, K = 1) and to the C_T empirical acceleration reproduces the cached K and C_T sensitivity columns: max position difference over the fit arc <= 1e-3 of the column's max position norm",
+  "G_E0": "E0 reproduces F3's sigma = 0 263 chi2 69 899.79 to 1e-6 relative",
+  "G_SIZE": "max position norm of the nominal LRP column (K_LRP = 0.010) over 260-263 <= 200 m (inside the range F3b's G_LIN verified linear: 0.049 m error on a 169 m offset)"
+ },
+ "hypotheses": {
+  "H_K": "E1 lowers the solved K_SRP by >= 0.03 m^2/kg (about half of F2p's 0.0645 excess over the prior mean)",
+  "H_PRED": "E1 share >= 0.3",
+  "H_SCALE": "E2 scale is > 3 sigma from 0 and within 3 sigma of 1"
+ },
+ "decision_rule": "any gate FAIL -> C6_NOT_QUALIFIED. Otherwise H_K or H_PRED -> C6_LRP_MATERIAL; neither -> C6_LRP_IMMATERIAL",
+ "reading_rule": "C6_LRP_MATERIAL -> C6-I: lunar radiation pressure as a study-level force term in F2's propagation and a nonlinear refit (own predeclaration). C6_LRP_IMMATERIAL -> the K excess is not lunar radiation; next candidate box-wing / panel SRP. H_SCALE is reported with the decision and read with its correlation to K",
+ "limitations_stated_in_advance": "linear (first order about F2p); uniform albedo; analytic temperature model, not Diviner maps; cannonball target (LRO's solar array tracks the Sun, so the true response to a nadir source differs; Stiller and Dirkx found opposite along/cross signs between cannonball and paneled targets); spacecraft thermal re-radiation not modelled",
+ "outputs": {"script": "studies/phase17/scripts/phase_c6_lunar_radiation_survey.py", "model": "studies/phase17/scripts/phase_c6_lunar_radiation.py", "tests": "tests/test_phase_c6_lunar_radiation.py", "results": "studies/phase17/results/phase_c6_lunar_radiation_survey.json", "report": "studies/phase17/reports/phase_c6_lunar_radiation_survey.md"}
+}
