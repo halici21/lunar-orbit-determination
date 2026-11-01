@@ -537,6 +537,20 @@ F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F4 WP4.4b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-13).  A frozen state is a Schmidt-Kalman consider state (x_c, P_cc kept at
+# the prediction, P_xc updated); the regularisation pseudo-measurement is applied
+# on the first update only.
+#
+#   old (WP4.4a)          e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac
+#   new (WP4.4b)          6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38",
+}
+
+
 
 
 
@@ -553,6 +567,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256:
