@@ -474,6 +474,22 @@ F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256 = {
         "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c",
 }
 
+# F4 WP4.2 (owner-authorized re-freeze for the independent-assessment programme;
+# EST-04/05).  In the six BLS-LM/SRIF loops the cost-stability and step-norm
+# tests no longer declare convergence: they nominate the point, switch the
+# propagation to the caller's tolerance, and the next iteration declares
+# Converged/J-Stab only if the re-linearised Gauss-Newton decrement is <= 0.1
+# (posterior-sigma units); otherwise iteration resumes.  The LM/QR step, the
+# lambda schedule, the priors and the posterior are unchanged.
+#
+#   old (WP4.1)  028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c
+#   new (WP4.2)  c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353",
+}
+
 
 
 
@@ -491,6 +507,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:

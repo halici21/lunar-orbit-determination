@@ -140,11 +140,11 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-01 ✔T | K | SRIF'te mevcut maliyet 42-durum, aday maliyeti 6-durum yayılımıyla → iyi adımlar reddediliyor (düzeltme yalnız iki yönlü BLS-LM'e taşınmış) | `estimators.py:157 vs 220`, `:377 vs 460`, `:3115 vs 3214` |
 | EST-02 | K | İki yönlü SRIF MAP adımı atıyor, yalnız veri maliyetiyle puanlıyor **Kapatıldı (WP4.1):** iki yönlü SRIF adımı, z̄'nin arkasındaki önsel satırlar dahil MAP amacıyla puanlanıyor; sıkı önselli testte MAP-durağanlık ≤ 1e-2σ. | `estimators.py:3144,3167,3222` |
 | EST-03 | K | SRIF'te sönümleme/line-search yok → MaxIter (benchmark'ta yakınsama %25–44) **Kapatıldı (WP4.1):** reddedilen adım kendi yönünde ≤10 kez yarılanıyor; iniş bulunmazsa Gauss-Newton azalımıyla sertifika (Converged / NoDescent). Gürültüsüz sentetik probe: önce 16/16 MaxIter (40 it), sonra 16/16 Converged (3–16 it), konum hatası ≤ 0.11 mm. | `estimators.py:244,484` |
-| EST-04 | B | Yakınsama, `_adaptive_tol` rtol 1e-8 iken ilan edilebiliyor; sonuç istenen toleranstan 1000× gevşek | `estimators.py:45-54,237,477,680,904,3233` |
-| EST-05 | B | Durma testleri birim bağımlı (m, m/s, rad, K karışık); J-Stab ağır sönümlü adımda tetikleniyor | `estimators.py:240,683,907,2841` |
+| EST-04 ✔T | B | Yakınsama, `_adaptive_tol` rtol 1e-8 iken ilan edilebiliyor; sonuç istenen toleranstan 1000× gevşek. **Kapatıldı (WP4.2):** BLS-LM konum/range-rate eskiden son doğrusallaştırması rtol 1e-8 olan noktada Converged diyordu; artık ilan, istenen toleransta yeniden doğrusallaştırma ve GN azalması ≤ 0.1 ile | `estimators.py:45-54,237,477,680,904,3233` |
+| EST-05 | B | Durma testleri birim bağımlı (m, m/s, rad, K karışık); J-Stab ağır sönümlü adımda tetikleniyor. **WP4.2:** birim bağımlı testler artık yalnız aday gösteriyor, ilanı birimsiz GN azalması veriyor; ağır sönümlü J-Stab λ0 1e-3/1e2/1e4 ile yeniden üretilemedi (hesaplandığı gibi) | `estimators.py:240,683,907,2841` |
 | EST-06 | B | Posterior kovaryans fiziksel birimde eigen-taban ile kırpılıyor (açı bias bilgisi max'ı belirliyor → aşırı güvenli); rank eşikleri cond 1e14–1e15'e izin | `estimators.py:1561-1572,1661`, `bounded_least_squares.py:45` |
 | EST-07 | O | BLS ve SRIF farklı tekillik eşikleri (1e15 normal vs 1e14 R → ~1e28) → karşılaştırma yanlı | `estimators.py:1697,206,446,3181` |
-| EST-08 | O | LM λ güncellemesi kazanç oranını yok sayıyor; D = diag(AᵀA) önseli dışlıyor | `estimators.py:678,688,1701` |
+| EST-08 | O | LM λ güncellemesi kazanç oranını yok sayıyor; D = diag(AᵀA) önseli dışlıyor. **Açık** (WP4.2 kapsamında değiştirilmedi) | `estimators.py:678,688,1701` |
 | EST-09 ✔T | B | DMC van Loan: −A bloğu +β → e^{dt/τ} büyüme; dt/τ=30'da 8.7e-5 bağıl hata, dt/τ=144'te negatif tanımlı (§0) | `dmc.py:61-68` |
 | EST-10 | B | SR-UKF zaman güncellemesi negatif ağırlık downdate geri dönüşsüz → yakalanmamış `LinAlgError` | `filters.py:1389` |
 | EST-11 | O | UKF varsayılan α=1e-3 (Wc0≈−1e6), ortalama mutlak formda → ~1 m² kovaryans hatası; senaryo α=0.35 | `filters.py:34,1341` |
@@ -268,7 +268,7 @@ estimator) ve bağımsız dış kehanet zorunlu.**
 | R-10 | Tekrarlanamayan koşular (tohum yok, kernel kaydı yok, masaüstü farklı ayarlar) | CFG-01…04,10 | 4 | 3 | 12 | WP1.6 |
 | R-11 | Efemeris/GM/çerçeve nesil karışımı | DYN-01/02, CFG-04 | 5 | 3 | 15 | F1 |
 | R-12 | Kuvvet parmak izi farklı fiziği eşit gösterir → parite iddiaları geçersiz | DYN-10/11 | 3 | 4 | 12 | WP1.5 |
-| R-13 | Yakınsama gevşek toleransta ilan ediliyor; durma kriterleri birime bağlı | EST-04/05 | 4 | 3 | 12 | F4 |
+| R-13 | Yakınsama gevşek toleransta ilan ediliyor; durma kriterleri birime bağlı | EST-04/05 | 4 | 3 | 12 | F4 (WP4.2: azaltılıyor) |
 | R-14 | DMC Q taşması geçiş boşluklarında | EST-09 | 3 | 4 | 12 | F4 (F3'ten önce!) |
 | R-15 | İstasyon zinciri predict BPC, EOP yok; zamanla bozulan doğruluk | MEAS-06 | 3 | 4 | 12 | WP2.4 |
 | R-16 | Gereksinim/izlenebilirlik yok → "NASA/ESA seviyesi" iddiası denetlenemez | TST-08 | 5 | 2 | 10 | WP0.3 |

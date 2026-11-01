@@ -147,6 +147,7 @@ def estimate_position_srif(
     termination_detail = ""
     gn_decrement = float("nan")
     caller_tolerance = propagation_profile is not None
+    pending_convergence = None
     last_step = np.zeros(6)
     last_condition_number = float("nan")
     last_rank = 0
@@ -202,6 +203,15 @@ def estimate_position_srif(
         else:
             h_initial = h_initial_state
 
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_diag, scale, *_objective_prior_terms(
+                    scale, prior_sqrt_info if has_explicit_prior else None, x_prior - x_nominal))
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         h_scaled = h_initial @ scale
         weighted_h = h_scaled * w_sqrt[:, None]
         weighted_r = residual * w_sqrt
@@ -239,12 +249,11 @@ def estimate_position_srif(
             best_cost = candidate_cost
 
             # A halved step's small gain says nothing about convergence.
-            if halvings == 0 and relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if halvings == 0 and np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            if halvings == 0 and (relative_improvement < tol_cost_stability
+                                  or np.linalg.norm(step) < tol_step_norm):
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             if not caller_tolerance:
@@ -378,6 +387,7 @@ def estimate_range_rate_srif(
     termination_detail = ""
     gn_decrement = float("nan")
     caller_tolerance = propagation_profile is not None
+    pending_convergence = None
     last_step = np.zeros(6)
     last_condition_number = float("nan")
     last_rank = 0
@@ -456,6 +466,15 @@ def estimate_range_rate_srif(
         else:
             h_initial = h_initial_state
 
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, *_objective_prior_terms(
+                    scale, prior_sqrt_info if has_explicit_prior else None, x_prior - x_nominal))
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         h_scaled = h_initial @ scale
         weighted_h = h_scaled * w_sqrt[:, None]
         weighted_r = residual * w_sqrt
@@ -493,12 +512,11 @@ def estimate_range_rate_srif(
             best_cost = candidate_cost
 
             # A halved step's small gain says nothing about convergence.
-            if halvings == 0 and relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if halvings == 0 and np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            if halvings == 0 and (relative_improvement < tol_cost_stability
+                                  or np.linalg.norm(step) < tol_step_norm):
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             if not caller_tolerance:
@@ -623,6 +641,8 @@ def estimate_position_bls_lm(
     termination_detail = ""
     gn_decrement = float("nan")
     lambda_damping = float(lambda0)
+    pending_convergence = None
+    caller_tolerance = propagation_profile is not None
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
@@ -656,7 +676,7 @@ def estimate_position_bls_lm(
         return h_initial, residual
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
         current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
@@ -667,6 +687,14 @@ def estimate_position_bls_lm(
 
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
                             else np.zeros(na))
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_diag, scale, prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled)
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
@@ -705,12 +733,10 @@ def estimate_position_bls_lm(
             best_cost = candidate_cost
             lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
-            if relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            if relative_improvement < tol_cost_stability or np.linalg.norm(step) < tol_step_norm:
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
@@ -819,6 +845,8 @@ def estimate_range_rate_bls_lm(
     best_cost = np.inf
     stop_reason = "MaxIter"
     lambda_damping = float(lambda0)
+    pending_convergence = None
+    caller_tolerance = propagation_profile is not None
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
@@ -864,7 +892,7 @@ def estimate_range_rate_bls_lm(
         return h_initial_state, _range_rate_residual_from_h(obs_data, h_nom_aug)
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial_state, residual = _linearize(x_nominal, _atol_r, _atol_a)
         w_curr_diag, last_rejected_components, last_active_weight_fraction = _robust_weight_diagonal(
             w_diag,
@@ -890,6 +918,14 @@ def estimate_range_rate_bls_lm(
 
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
                             else np.zeros(na))
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled)
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
@@ -929,12 +965,11 @@ def estimate_range_rate_bls_lm(
             lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
             min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
-            if relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            cost_stable = relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration
+            if cost_stable or np.linalg.norm(step) < tol_step_norm:
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if cost_stable else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             lambda_damping *= 10.0
@@ -1932,17 +1967,34 @@ def _srif_exhaustion_status(
     the square root of that objective's prior term (``None`` for data only) and
     ``prior_offset`` the prior mean minus the incumbent, both in solve units.
     """
-    if objective_prior_sqrt is None:
-        prior_inv_scaled, prior_rhs_scaled = None, None
-    else:
-        information = objective_prior_sqrt.T @ objective_prior_sqrt
-        prior_inv_scaled = scale.T @ information @ scale
-        prior_rhs_scaled = scale.T @ information @ prior_offset
-    decrement = _gauss_newton_decrement(
-        h_initial, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled)
-    if np.isfinite(decrement) and decrement <= STATIONARITY_DECREMENT_TOL:
+    certified, decrement = _stationarity_certified(
+        h_initial, residual, w_diag, scale, *_objective_prior_terms(scale, objective_prior_sqrt, prior_offset))
+    if certified:
         return "Converged", "STATIONARY_AT_LINE_SEARCH_LIMIT", decrement
     return "NoDescent", "LINE_SEARCH_EXHAUSTED", decrement
+
+
+def _objective_prior_terms(scale, objective_prior_sqrt, prior_offset):
+    """``(prior_inv_scaled, prior_rhs_scaled)`` of a square-root prior for the decrement; ``(None, None)`` if absent."""
+    if objective_prior_sqrt is None:
+        return None, None
+    information = objective_prior_sqrt.T @ objective_prior_sqrt
+    return scale.T @ information @ scale, scale.T @ information @ prior_offset
+
+
+def _stationarity_certified(*decrement_args) -> tuple[bool, float]:
+    """WP4.2 (EST-04/05): the unit-free convergence certificate.
+
+    ``True`` when the undamped Gauss-Newton decrement (:func:`_gauss_newton_decrement`,
+    same arguments) is within ``STATIONARITY_DECREMENT_TOL`` posterior sigma.  The
+    historical triggers -- relative cost change below ``tol_cost_stability`` or a
+    step norm below ``tol_step_norm`` -- mix metres, m/s and bias units and fire on
+    any heavily damped step; they now only nominate the accepted point, which is
+    re-linearised at the caller's tolerance and declared converged only if this
+    certificate holds there.
+    """
+    decrement = _gauss_newton_decrement(*decrement_args)
+    return bool(np.isfinite(decrement) and decrement <= STATIONARITY_DECREMENT_TOL), decrement
 
 
 def _limit_step(step: np.ndarray, *, pos_limit_m: float) -> np.ndarray:
@@ -2635,6 +2687,8 @@ def estimate_two_way_range_bls_lm(
     stop_reason = "MaxIter"
     termination_detail = "MAX_ITER"
     lambda_damping = float(lambda0)
+    pending_convergence = None
+    caller_tolerance = False
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
@@ -2729,8 +2783,8 @@ def estimate_two_way_range_bls_lm(
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-        if propagation_profile is not None:
-            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard
+        if propagation_profile is not None or caller_tolerance:
+            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard (WP4.2: also once nominated)
         if solve_for_k_srp:
             # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
             # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
@@ -2796,6 +2850,14 @@ def estimate_two_way_range_bls_lm(
                           else x_nominal)
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior_full - x_current_full)
                             if prior_active else np.zeros(na))
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, prior_inv_scaled if prior_active else None, prior_rhs_scaled)
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         step, last_condition_number, last_rank, singular = _step_fn(
             h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
             prior_rhs_scaled, lambda_damping,
@@ -2914,14 +2976,11 @@ def estimate_two_way_range_bls_lm(
             lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
             min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
-            if relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration:
-                stop_reason = "J-Stab"
-                termination_detail = "COST_STABLE"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                termination_detail = "STEP_NORM"
-                break
+            cost_stable = relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration
+            if cost_stable or np.linalg.norm(step) < tol_step_norm:
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if cost_stable else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             k_current = k_best
@@ -3180,6 +3239,7 @@ def estimate_two_way_range_srif(
     termination_detail = ""
     gn_decrement = float("nan")
     caller_tolerance = propagation_profile is not None   # Phase D2: the F4 guard
+    pending_convergence = None
     scored_prior = has_explicit_prior or solve_for_k_srp
     x_prior_full = np.concatenate([x_prior, [k_prior_mean]]) if solve_for_k_srp else x_prior
 
@@ -3251,6 +3311,17 @@ def estimate_two_way_range_srif(
             x_best = x_nominal.copy()
             k_best = k_current
 
+        x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
+                          else x_nominal)
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, *_objective_prior_terms(
+                    scale, prior_rhs_sqrt if scored_prior else None, x_prior_full - x_current_full))
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         h_scaled = h_initial @ scale
         weighted_h = h_scaled * w_sqrt[:, None]
         weighted_r = residual * w_sqrt
@@ -3313,12 +3384,11 @@ def estimate_two_way_range_srif(
             best_cost = candidate_cost
 
             # A halved step's small gain says nothing about convergence.
-            if halvings == 0 and relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if halvings == 0 and np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            if halvings == 0 and (relative_improvement < tol_cost_stability
+                                  or np.linalg.norm(step) < tol_step_norm):
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             k_current = k_best
