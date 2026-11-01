@@ -522,6 +522,20 @@ F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256 = {
         "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440",
 }
 
+# F4 WP4.4a (owner-authorized re-freeze for the independent-assessment programme;
+# EST-11/12).  The unscented mean is formed as X0 + sum w_i (X_i - X0) (no offset
+# cancellation at Wm0 = -1e6); _cholesky_psd factors a positive-definite matrix as
+# it is and applies jitter only after a failed factorization, relative to each
+# diagonal (Jacobi-equilibrated); _ensure_psd floors the equilibrated eigenvalues.
+#
+#   old (numerical core)  05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba
+#   new (WP4.4a)          e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac",
+}
+
 
 
 
@@ -539,6 +553,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256:

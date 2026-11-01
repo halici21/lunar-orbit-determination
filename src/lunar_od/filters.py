@@ -1338,7 +1338,9 @@ def _unscented_mean(
     residual_fn: ResidualFunction | None,
 ) -> np.ndarray:
     if residual_fn is None:
-        return weights @ points
+        # WP4.4a (EST-11): X0 + sum w_i (X_i - X0).  sum w_i X_i on ~1e6 m states with
+        # Wm0 = -1e6 (alpha 1e-3) cancelled to 3e-5 m; the deviations carry no offset.
+        return points[0] + weights @ (points - points[0])
 
     mean = np.asarray(points[0], dtype=float).copy()
     for _ in range(20):
@@ -1419,27 +1421,47 @@ def _cholupdate_lower(lower: np.ndarray, vector: ArrayLike, *, sign: int) -> np.
     return result
 
 
+def _jacobi_scale(matrix: np.ndarray) -> np.ndarray:
+    """sqrt of the diagonal (1 where it is not positive): the matrix's own units."""
+    d = np.sqrt(np.clip(np.diag(matrix), 0.0, None))
+    d[d == 0.0] = 1.0
+    return d
+
+
 def _cholesky_psd(matrix: np.ndarray, jitter: float) -> np.ndarray:
+    # WP4.4a (EST-12): jitter was an ABSOLUTE 1e-12 added to every diagonal, doubling a
+    # 1e-12 rad^2 angle variance.  A positive-definite matrix is now factored as it is;
+    # only a failed factorization gets jitter, relative to each diagonal (in the
+    # Jacobi-equilibrated matrix), so no state is regularised in another's units.
     matrix = _symmetrize(matrix)
+    d = _jacobi_scale(matrix)
+    equilibrated = matrix / d[:, None] / d[None, :]
     eye = np.eye(matrix.shape[0], dtype=float)
+    try:
+        return d[:, None] * np.linalg.cholesky(equilibrated)
+    except np.linalg.LinAlgError:
+        pass
     attempt = jitter
     for _ in range(8):
         try:
-            return np.linalg.cholesky(matrix + attempt * eye)
+            return d[:, None] * np.linalg.cholesky(equilibrated + attempt * eye)
         except np.linalg.LinAlgError:
             attempt *= 10.0
-    vals, vecs = np.linalg.eigh(matrix)
+    vals, vecs = np.linalg.eigh(equilibrated)
     vals = np.clip(vals, attempt, None)
-    return vecs @ np.diag(np.sqrt(vals))
+    return d[:, None] * (vecs @ np.diag(np.sqrt(vals)))
 
 
 def _ensure_psd(matrix: np.ndarray, jitter: float) -> np.ndarray:
+    # WP4.4a (EST-12): the eigenvalue floor is relative, in the Jacobi-equilibrated matrix.
     matrix = _symmetrize(matrix)
-    vals, vecs = np.linalg.eigh(matrix)
+    d = _jacobi_scale(matrix)
+    equilibrated = matrix / d[:, None] / d[None, :]
+    vals, vecs = np.linalg.eigh(equilibrated)
     if np.min(vals) >= jitter:
         return matrix
     vals = np.clip(vals, jitter, None)
-    return _symmetrize((vecs * vals) @ vecs.T)
+    return _symmetrize(d[:, None] * ((vecs * vals) @ vecs.T) * d[None, :])
 
 
 def normalized_innovation_squared(innovation: ArrayLike, innovation_covariance: ArrayLike) -> float:
