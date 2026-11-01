@@ -13,7 +13,7 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 | R-05 | Fizik testlerinin CI'da koşmaması → regresyonlar fark edilmeden main'e girer | TST-01/05 | 4 | 4 | **16** | F7 | open |
 | R-06 | UKF/EKF ile batch arasında model farkı (Doppler interp, efemeris, P0) | MEAS-04/05, EST-19 | 4 | 4 | **16** | F1 | open |
 | R-07 | Eksik kuvvetler (k2, albedo/IR, Dünya gölgesi) F2r kalıntısını açıklıyor olabilir | DYN-06/07/08, RD-10 | 4 | 4 | **16** | F3 | open |
-| R-08 | Kovaryans gerçekçi değil (birim bağımlı kırpma, jitter, regülarizasyon, korelasyonlu gürültü beyaz) | EST-06/12/13/15, RD-06 | 4 | 4 | **16** | F4 | open |
+| R-08 | Kovaryans gerçekçi değil (birim bağımlı kırpma, jitter, regülarizasyon, korelasyonlu gürültü beyaz) | EST-06/12/13/15, RD-06 | 4 | 4 | **16** | F4 | mitigating (WP4.3: EST-06 kapatıldı; EST-12/13/15 WP4.4/4.5) |
 | R-09 | Uzun yaylarda sayılan Doppler çözücü çöküşü | MEAS-03 | 4 | 3 | 12 | F1 | open |
 | R-10 | Tekrarlanamayan koşular (tohum yok, kernel kaydı yok, masaüstü farklı ayarlar) | CFG-01…04,10 | 4 | 3 | 12 | WP1.6 | open |
 | R-11 | Efemeris/GM/çerçeve nesil karışımı | DYN-01/02, CFG-04 | 5 | 3 | 15 | F1 | open |

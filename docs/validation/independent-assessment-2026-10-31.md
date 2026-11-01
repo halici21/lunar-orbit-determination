@@ -142,8 +142,8 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-03 | K | SRIF'te sönümleme/line-search yok → MaxIter (benchmark'ta yakınsama %25–44) **Kapatıldı (WP4.1):** reddedilen adım kendi yönünde ≤10 kez yarılanıyor; iniş bulunmazsa Gauss-Newton azalımıyla sertifika (Converged / NoDescent). Gürültüsüz sentetik probe: önce 16/16 MaxIter (40 it), sonra 16/16 Converged (3–16 it), konum hatası ≤ 0.11 mm. | `estimators.py:244,484` |
 | EST-04 ✔T | B | Yakınsama, `_adaptive_tol` rtol 1e-8 iken ilan edilebiliyor; sonuç istenen toleranstan 1000× gevşek. **Kapatıldı (WP4.2):** BLS-LM konum/range-rate eskiden son doğrusallaştırması rtol 1e-8 olan noktada Converged diyordu; artık ilan, istenen toleransta yeniden doğrusallaştırma ve GN azalması ≤ 0.1 ile | `estimators.py:45-54,237,477,680,904,3233` |
 | EST-05 | B | Durma testleri birim bağımlı (m, m/s, rad, K karışık); J-Stab ağır sönümlü adımda tetikleniyor. **WP4.2:** birim bağımlı testler artık yalnız aday gösteriyor, ilanı birimsiz GN azalması veriyor; ağır sönümlü J-Stab λ0 1e-3/1e2/1e4 ile yeniden üretilemedi (hesaplandığı gibi) | `estimators.py:240,683,907,2841` |
-| EST-06 | B | Posterior kovaryans fiziksel birimde eigen-taban ile kırpılıyor (açı bias bilgisi max'ı belirliyor → aşırı güvenli); rank eşikleri cond 1e14–1e15'e izin | `estimators.py:1561-1572,1661`, `bounded_least_squares.py:45` |
-| EST-07 | O | BLS ve SRIF farklı tekillik eşikleri (1e15 normal vs 1e14 R → ~1e28) → karşılaştırma yanlı | `estimators.py:1697,206,446,3181` |
+| EST-06 ✔T | B | Posterior kovaryans fiziksel birimde eigen-taban ile kırpılıyor (açı bias bilgisi max'ı belirliyor → aşırı güvenli); rank eşikleri cond 1e14–1e15'e izin. **Kapatıldı (WP4.3):** altı-durum batch posteriorları tasarım QR'ı ile; station_full'da konum σ'sı %0.25 küçüktü. `bounded_least_squares` zaten ölçekli SVD kullanıyor, değişiklik gerekmedi | `estimators.py:1561-1572,1661`, `bounded_least_squares.py:45` |
+| EST-07 ✔T | O | BLS ve SRIF farklı tekillik eşikleri (1e15 normal vs 1e14 R → ~1e28) → karşılaştırma yanlı. **Kapatıldı (WP4.3):** ortak `SINGULAR_CONDITION_LIMIT` = 1e15, sütun-dengelenmiş normal-eşdeğer koşul sayısı; aynı problemde BLS 9.96e12 / SRIF 3.16e6 raporluyordu, artık ikisi 1.12e4 | `estimators.py:1697,206,446,3181` |
 | EST-08 | O | LM λ güncellemesi kazanç oranını yok sayıyor; D = diag(AᵀA) önseli dışlıyor. **Açık** (WP4.2 kapsamında değiştirilmedi) | `estimators.py:678,688,1701` |
 | EST-09 ✔T | B | DMC van Loan: −A bloğu +β → e^{dt/τ} büyüme; dt/τ=30'da 8.7e-5 bağıl hata, dt/τ=144'te negatif tanımlı (§0) | `dmc.py:61-68` |
 | EST-10 | B | SR-UKF zaman güncellemesi negatif ağırlık downdate geri dönüşsüz → yakalanmamış `LinAlgError` | `filters.py:1389` |
@@ -154,7 +154,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-15 | O | Korelasyonlu/AR(1) gürültü üretiliyor ama hiç beyazlatılmıyor; AR(1) satır indeksinde (zaman/istasyon karışık) | `noise_models.py:51-66` |
 | EST-16 | O | ANEES/ANIS χ² aralıkları yok; adaptif R'de NIS aşağı yanlı; artık lag-1 iç içe [ρ,az,el] vektöründe; adaptif ayarda truth başlangıç durumuna yayınlanıyor; ortalama NIS reddedilenleri içeriyor | `diagnostics.py:202`, `adaptive_tuning.py:316,387`, `filters.py:594` |
 | EST-17 | O | Batch ayıklama: a priori σ, sert 3σ, %30 "ya hep ya hiç" | `estimators.py:1876-1900` |
-| EST-18 | O | Gözlemlenebilirlik koşul/rank/zayıf yön ölçeklenmemiş Jacobian'dan; bias dondurma kararı birime bağlı | `observability.py:114,467` |
+| EST-18 | O | Gözlemlenebilirlik koşul/rank/zayıf yön ölçeklenmemiş Jacobian'dan; bias dondurma kararı birime bağlı. **Açık** (WP4.3b) | `observability.py:114,467` |
 | EST-19 ✔T | B | UKF P0 (100 m / 0.1 m/s) enjekte edilen soğuk başlangıç hatasıyla (180 m / 0.03 m/s) uyumsuz → NEES ve BLS–UKF karşılaştırması bozuk | `scenarios.py:1434`, `thesis_matrix.py:40-41` |
 | EST-20 | D | Monte Carlo tohumları durum başına farklı (ortak rastgele sayı yok), kampanyalar arası çakışma | `monte_carlo.py:79,312` |
 | EST-21 | D | DMC yalnız EKF'de; UKF ışık zamanlı/iki yönlü gözlemleri reddediyor → karşılaştırma yalnız geometrik gözlemlerde | `filters.py:733-768` |
@@ -228,7 +228,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | X-11 | Masaüstü (rtol 1e-8, 3600 s) | Kütüphane/tez (1e-10/1e-11, 600 s) | m | **Evet** | CFG-01 |
 | X-12 | Kuvvet parmak izi | Gerçek yürütülen efemeris/dönüş | eşit hash farklı fizik | — | DYN-10 |
 | X-13 | Gravite yükleyici etiketi | STM çerçeve kontrolü | çalışmıyor | — | DYN-12 |
-| X-14 | BLS tekillik eşiği | SRIF tekillik eşiği | 1e15 vs ~1e28 | Evet | EST-07 |
+| X-14 | BLS tekillik eşiği | SRIF tekillik eşiği | 1e15 vs ~1e28, **kapatıldı (WP4.3)** | Evet | EST-07 |
 | X-15 | Ay merkezli 2YM (transponder var) | SSB (reddediyor) | — | — | MEAS-08 |
 
 **Ana sistemik sorun:** sentetik doğrulama "aynı-model gidiş-dönüş" ağırlıklı olduğu için X-01, X-02,

@@ -2517,10 +2517,10 @@
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
-      "original_sha256": "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353",
+      "original_sha256": "eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6",
       "byte_preserved": true,
-      "refrozen_from_sha256": "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c",
-      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-26: explicit MAP candidate/objective consistency; historical data and gates unchanged. Re-frozen 2026-11-01 for V&V programme F4 WP4.1 (EST-01/02/03, owner-authorized): the SRIF estimators score incumbent and trials on one propagation path and (two-way) on the MAP objective, halve rejected steps and certify stationarity by the Gauss-Newton decrement; QR step, priors, posteriors and BLS-LM unchanged. All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.2 (independent-assessment programme, EST-04/05): convergence declared only after a caller-tolerance re-linearisation certified by the Gauss-Newton decrement; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353",
+      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-26: explicit MAP candidate/objective consistency; historical data and gates unchanged. Re-frozen 2026-11-01 for V&V programme F4 WP4.1 (EST-01/02/03, owner-authorized): the SRIF estimators score incumbent and trials on one propagation path and (two-way) on the MAP objective, halve rejected steps and certify stationarity by the Gauss-Newton decrement; QR step, priors, posteriors and BLS-LM unchanged. All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.2 (independent-assessment programme, EST-04/05): convergence declared only after a caller-tolerance re-linearisation certified by the Gauss-Newton decrement; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.3 (independent-assessment programme, EST-06/07): batch posteriors by design QR; one equilibrated singularity criterion for BLS-LM and SRIF; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
         "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
@@ -2528,7 +2528,8 @@
         "f23ad27e99653b7e4fc07be228b2c425502986789f9058c35ecee8653af79093",
         "b7d61fa4ccb0633cd22a7a23c1c297e8b2b43dd389e74010ee6015a0a5d2274c",
         "c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf",
-        "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c"
+        "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c",
+        "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353"
       ]
     },
     "lunar_od/filters.py": {

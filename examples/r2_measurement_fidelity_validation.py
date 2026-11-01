@@ -490,6 +490,23 @@ F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256 = {
         "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353",
 }
 
+# F4 WP4.3 (owner-authorized re-freeze for the independent-assessment programme;
+# EST-06/07).  The six-state batch posteriors (position/range-rate BLS-LM and
+# SRIF, two-way six-state branches) take their covariance from a QR of the
+# whitened, scaled design (_square_root_covariance_from_design) instead of
+# clipping the information eigenvalues at max*1e-14 in physical units; BLS-LM
+# and SRIF test and report one column-equilibrated normal-equivalent condition
+# number against SINGULAR_CONDITION_LIMIT = 1e15, and the normal-matrix LM step
+# solves the Jacobi-equilibrated system.
+#
+#   old (WP4.2)  c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353
+#   new (WP4.3)  eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6",
+}
+
 
 
 
@@ -507,6 +524,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256:

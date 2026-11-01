@@ -225,10 +225,9 @@ def estimate_position_srif(
         _, r_qr = np.linalg.qr(combined, mode="reduced")
         r_hat = r_qr[:na, :na]
         z_hat = r_qr[:na, na]
-        last_condition_number = float(np.linalg.cond(r_hat))
-        last_rank = int(np.linalg.matrix_rank(r_hat))
+        last_condition_number, last_rank = _equilibrated_condition(r_hat, normal=False)
 
-        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > SINGULAR_CONDITION_LIMIT:
             stop_reason = "Singular"
             break
 
@@ -269,7 +268,7 @@ def estimate_position_srif(
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, prior_sqrt_info, has_explicit_prior)
-        posterior_information = _position_posterior_information(
+        posterior_information, posterior_design = _position_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -285,9 +284,13 @@ def estimate_position_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_diag, post_prior_inv, scale)
         posterior_sqrt_information = _position_posterior_sqrt_information(
             t_pass_s,
             obs_data,
@@ -488,10 +491,9 @@ def estimate_range_rate_srif(
         _, r_qr = np.linalg.qr(combined, mode="reduced")
         r_hat = r_qr[:na, :na]
         z_hat = r_qr[:na, na]
-        last_condition_number = float(np.linalg.cond(r_hat))
-        last_rank = int(np.linalg.matrix_rank(r_hat))
+        last_condition_number, last_rank = _equilibrated_condition(r_hat, normal=False)
 
-        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > SINGULAR_CONDITION_LIMIT:
             stop_reason = "Singular"
             break
 
@@ -532,7 +534,7 @@ def estimate_range_rate_srif(
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, prior_sqrt_info, has_explicit_prior)
-        posterior_information = _range_rate_posterior_information(
+        posterior_information, posterior_design = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -548,9 +550,13 @@ def estimate_range_rate_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_curr_diag, post_prior_inv, scale)
         posterior_sqrt_information = _range_rate_posterior_sqrt_information(
             t_pass_s,
             obs_data,
@@ -755,7 +761,7 @@ def estimate_position_bls_lm(
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, None, has_explicit_prior)
-        posterior_information = _position_posterior_information(
+        posterior_information, posterior_design = _position_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -771,9 +777,13 @@ def estimate_position_bls_lm(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_diag, post_prior_inv, scale)
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -990,7 +1000,7 @@ def estimate_range_rate_bls_lm(
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, None, has_explicit_prior)
-        posterior_information = _range_rate_posterior_information(
+        posterior_information, posterior_design = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -1006,9 +1016,13 @@ def estimate_range_rate_bls_lm(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_curr_diag, post_prior_inv, scale)
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -1136,6 +1150,7 @@ def _position_posterior_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    return_design: bool = False,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1157,7 +1172,9 @@ def _position_posterior_information(
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _position_bias_jacobian(obs_data, bias_cfg)])
-    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    information = _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    # WP4.3: the design lets the caller take the covariance by QR (no eigenvalue clip).
+    return (information, h_initial) if return_design else information
 
 
 def _range_rate_nominal_and_initial_jacobian(
@@ -1378,6 +1395,7 @@ def _range_rate_posterior_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    return_design: bool = False,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1411,7 +1429,9 @@ def _range_rate_posterior_information(
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
-    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    information = _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    # WP4.3: the design lets the caller take the covariance by QR (no eigenvalue clip).
+    return (information, h_initial) if return_design else information
 
 
 def _position_posterior_sqrt_information(
@@ -1744,6 +1764,38 @@ def _square_root_covariance_from_design(
     return _symmetrize(covariance), sqrt_information
 
 
+# WP4.3 (EST-07).  Before WP4.3 BLS-LM called a step singular when the normal matrix,
+# formed in bookkeeping units (1e6 m, 1e3 m/s, bias/K scales), had cond > 1e15, while
+# SRIF tested cond(R) > 1e14 -- i.e. a normal-equivalent 1e28 -- in the same units, and
+# stats.condition_number reported the two different quantities under one name.  Every
+# batch estimator now measures the condition of the column-equilibrated system as a
+# normal-equivalent number (cond(R_eq)**2, or cond of the Jacobi-equilibrated normal
+# matrix, identical in exact arithmetic), so the test is invariant to the units and the
+# same for every estimator.  The 1e15 limit is HARDEN-BLS1's (_lm_step_square_root).
+SINGULAR_CONDITION_LIMIT = 1e15
+
+
+def _equilibrated_condition(matrix: np.ndarray, *, normal: bool) -> tuple[float, int]:
+    """(normal-equivalent condition number, numerical rank) after column equilibration.
+
+    ``normal=True``: ``matrix`` is a symmetric normal matrix, equilibrated by its
+    diagonal.  ``normal=False``: ``matrix`` is a factor or design (R, or [A; ...]),
+    equilibrated by its column norms; the condition number is squared.
+    """
+    m = np.asarray(matrix, dtype=float)
+    if not np.all(np.isfinite(m)):
+        return float("inf"), 0
+    if normal:
+        d = np.sqrt(np.abs(np.diag(m)))
+        d[d == 0.0] = 1.0
+        eq = m / d[:, None] / d[None, :]
+        return float(np.linalg.cond(eq)), int(np.linalg.matrix_rank(eq, hermitian=True))
+    col = np.linalg.norm(m, axis=0)
+    col[col == 0.0] = 1.0
+    eq = m / col
+    return float(np.linalg.cond(eq)) ** 2, int(np.linalg.matrix_rank(eq))
+
+
 def _symmetrize(matrix: np.ndarray) -> np.ndarray:
     return 0.5 * (matrix + matrix.T)
 
@@ -1765,12 +1817,14 @@ def _lm_step(
     if not np.any(np.diag(damping_diag)):
         damping_diag = np.eye(atwa.shape[0])
     normal_matrix = atwa + lambda_damping * damping_diag + prior_inv_scaled
-    condition_number = float(np.linalg.cond(normal_matrix))
-    rank = int(np.linalg.matrix_rank(normal_matrix))
-    if not np.all(np.isfinite(normal_matrix)) or condition_number > 1e15:
+    condition_number, rank = _equilibrated_condition(normal_matrix, normal=True)
+    if not np.all(np.isfinite(normal_matrix)) or condition_number > SINGULAR_CONDITION_LIMIT:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
+    # WP4.3: solve the Jacobi-equilibrated system the condition test was made on.
+    d = np.sqrt(np.abs(np.diag(normal_matrix)))
+    d[d == 0.0] = 1.0
     try:
-        step_bar = np.linalg.solve(normal_matrix, atwb)
+        step_bar = np.linalg.solve(normal_matrix / d[:, None] / d[None, :], atwb / d) / d
     except np.linalg.LinAlgError:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
     return scale @ step_bar, condition_number, rank, False
@@ -1832,7 +1886,7 @@ def _lm_step_square_root(
     q, r = np.linalg.qr(stacked / col)
     condition_number = float(np.linalg.cond(r)) ** 2
     rank = int(np.linalg.matrix_rank(r))
-    if not np.isfinite(condition_number) or condition_number > 1e15:
+    if not np.isfinite(condition_number) or condition_number > SINGULAR_CONDITION_LIMIT:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
     step_bar = np.linalg.solve(r, q.T @ np.concatenate(rhs)) / col
     return scale @ step_bar, condition_number, rank, False
@@ -2429,6 +2483,7 @@ def _two_way_range_posterior_information(
     srp=None,
     harmonic_kwargs: dict | None = None,
     propagation_kwargs: dict | None = None,
+    return_design: bool = False,
 ) -> np.ndarray:
     """(6,6) posterior information at the converged state.
 
@@ -2454,7 +2509,9 @@ def _two_way_range_posterior_information(
         **_posterior_dynamics_kwargs(srp, harmonic_kwargs, propagation_kwargs),
     )
     _, h_initial = _two_way_nominal_and_jacobian(obs_data, pass_geo, x_aug_hist)
-    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    information = _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    # WP4.3: the design lets the caller take the covariance by QR (no eigenvalue clip).
+    return (information, h_initial) if return_design else information
 
 
 def _two_way_range_posterior_information_with_k(
@@ -3048,7 +3105,7 @@ def estimate_two_way_range_bls_lm(
                 posterior_design, w_curr_diag, post_prior_inv, scale
             )
         else:
-            posterior_information = _two_way_range_posterior_information(
+            posterior_information, posterior_design = _two_way_range_posterior_information(
                 t_pass_s,
                 obs_data,
                 x_best,
@@ -3066,8 +3123,11 @@ def estimate_two_way_range_bls_lm(
                 srp=srp,                   # Phase 17-HARDEN-D25: the solve's own
                 harmonic_kwargs=_harm,     # dynamics contract (fixed SRP, field)
                 propagation_kwargs=_prop,
+                return_design=True,
             )
-            posterior_covariance = _safe_covariance_from_information(posterior_information)
+            # WP4.3 (EST-06): QR of the design, as the K branch above.
+            posterior_covariance, _ = _square_root_covariance_from_design(
+                posterior_design, w_curr_diag, post_prior_inv, scale)
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3338,10 +3398,9 @@ def estimate_two_way_range_srif(
         _, r_qr = np.linalg.qr(combined, mode="reduced")
         r_hat = r_qr[:na, :na]
         z_hat = r_qr[:na, na]
-        last_condition_number = float(np.linalg.cond(r_hat))
-        last_rank = int(np.linalg.matrix_rank(r_hat))
+        last_condition_number, last_rank = _equilibrated_condition(r_hat, normal=False)
 
-        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > SINGULAR_CONDITION_LIMIT:
             stop_reason = "Singular"
             break
 
@@ -3429,7 +3488,7 @@ def estimate_two_way_range_srif(
         else:
             # Phase 17-HARDEN-D28: data-only objective unless a prior was supplied.
             post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
-            posterior_information = _two_way_range_posterior_information(
+            posterior_information, posterior_design = _two_way_range_posterior_information(
                 t_pass_s,
                 obs_data,
                 x_best,
@@ -3446,9 +3505,12 @@ def estimate_two_way_range_srif(
                 j2_moon,
                 srp=srp,                   # Phase 17-HARDEN-D25: the solve's fixed SRP
                 propagation_kwargs=_prop,
+                return_design=True,
             )
-            posterior_covariance = _safe_covariance_from_information(posterior_information)
-            k_sqrt_information = None
+            # WP4.3 (EST-06): the six-state path now takes the same design QR as the
+            # K path, for the covariance and the sqrt-information alike.
+            posterior_covariance, k_sqrt_information = _square_root_covariance_from_design(
+                posterior_design, w_curr_diag, post_prior_inv, scale)
         # Phase 17-R1COV.  _sqrt_information_from_information applies the SAME
         # eigenvalue floor and then factors the already-floored matrix, so on
         # the K path it is a square root OF the defect (measured 90-99.6%
