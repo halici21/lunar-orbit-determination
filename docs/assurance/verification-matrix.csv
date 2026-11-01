@@ -33,6 +33,6 @@ REQ-SW-001,T,WP1.6;WP7.4,examples/quickstart_od.py,partial,CFG-10;TST-08
 REQ-SW-002,I/D,WP7.1;WP7.2,,open,TST-01
 REQ-SW-003,T,WP7.1,tests/test_de440_kernel_contract.py,partial,TST-01
 REQ-SW-004,D,WP7.3,,open,TST-05
-REQ-SW-005,D,WP7.5,,open,TST-06;TST-08
+REQ-SW-005,D,WP7.5,tests/test_measurement_contracts.py,partial,TST-06;TST-07;TST-08 (measurement_contracts covered without campaign data; radiometrics/propagation_contract/constants test files + ruff/mypy/coverage still open)
 REQ-SW-006,T,WP1.6,,open,CFG-01;CFG-09
 REQ-SW-007,T,WP0.5,outputs/full_regression_2026-10-31_refreeze.txt,partial,TST-09;TST-10;TST-11
