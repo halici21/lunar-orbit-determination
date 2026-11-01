@@ -2543,13 +2543,14 @@
     },
     "lunar_od/force_contract.py": {
       "path": "src/lunar_od/force_contract.py",
-      "original_sha256": "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
+      "original_sha256": "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813"
+        "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
+        "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a"
       ],
-      "refrozen_from_sha256": "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained."
     },
     "lunar_od/force_models.py": {
       "path": "src/lunar_od/force_models.py",
@@ -2741,13 +2742,14 @@
     },
     "lunar_od/scenario_config.py": {
       "path": "src/lunar_od/scenario_config.py",
-      "original_sha256": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+      "original_sha256": "5da4b353b1c1dd0dc8d3a6ef1debb58fabceab263757b6e1d5c5db912b11d4f6",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6"
+        "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
+        "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c"
       ],
-      "refrozen_from_sha256": "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained."
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
@@ -2802,13 +2804,14 @@
     },
     "examples/run_scenario_config.py": {
       "path": "examples/run_scenario_config.py",
-      "original_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+      "original_sha256": "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed"
+        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
+        "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da"
       ],
-      "refrozen_from_sha256": "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained."
     },
     "examples/r1_covariance_observability_validation.py": {
       "path": "examples/r1_covariance_observability_validation.py",
