@@ -37,5 +37,15 @@
  "decision_rule": "any gate FAIL -> C6_NOT_QUALIFIED. Otherwise H_K or H_PRED -> C6_LRP_MATERIAL; neither -> C6_LRP_IMMATERIAL",
  "reading_rule": "C6_LRP_MATERIAL -> C6-I: lunar radiation pressure as a study-level force term in F2's propagation and a nonlinear refit (own predeclaration). C6_LRP_IMMATERIAL -> the K excess is not lunar radiation; next candidate box-wing / panel SRP. H_SCALE is reported with the decision and read with its correlation to K",
  "limitations_stated_in_advance": "linear (first order about F2p); uniform albedo; analytic temperature model, not Diviner maps; cannonball target (LRO's solar array tracks the Sun, so the true response to a nadir source differs; Stiller and Dirkx found opposite along/cross signs between cannonball and paneled targets); spacecraft thermal re-radiation not modelled",
- "outputs": {"script": "studies/phase17/scripts/phase_c6_lunar_radiation_survey.py", "model": "studies/phase17/scripts/phase_c6_lunar_radiation.py", "tests": "tests/test_phase_c6_lunar_radiation.py", "results": "studies/phase17/results/phase_c6_lunar_radiation_survey.json", "report": "studies/phase17/reports/phase_c6_lunar_radiation_survey.md"}
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_c6_lunar_radiation_survey.py",
+  "model": "studies/phase17/scripts/phase_c6_lunar_radiation.py",
+  "tests": "tests/test_phase_c6_lunar_radiation.py",
+  "results": "studies/phase17/results/phase_c6_lunar_radiation_survey.json",
+  "report": "studies/phase17/reports/phase_c6_lunar_radiation_survey.md"
+ },
+ "amendments_before_any_survey_number": {
+  "A1": "theta quadrature: Gauss-Legendre in x with theta = theta_max x^2 instead of the midpoint rule; the midpoint rule with 60 rings missed G_UNIT (a) at 50 km altitude by 1.7e-3 (the integrand peaks under the nadir). Model, gates and thresholds unchanged",
+  "A2": "G_UNIT (b) evaluated at r = 500 R instead of 20 R: (2/3) a S (R/r)^2 is the far-field limit and at 20 R the model is 3.7 % above it through O(R/r) finite-distance terms (part of the limb is hidden, elements are not at zero phase), not through quadrature error"
+ }
 }
