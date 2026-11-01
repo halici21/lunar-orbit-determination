@@ -2751,14 +2751,15 @@
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
-      "original_sha256": "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
+      "original_sha256": "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
-        "f241594661c4976dd2514b001784cb21fa50684a19be1377cfa968fad739fd48"
+        "f241594661c4976dd2514b001784cb21fa50684a19be1377cfa968fad739fd48",
+        "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2"
       ],
-      "refrozen_from_sha256": "f241594661c4976dd2514b001784cb21fa50684a19be1377cfa968fad739fd48",
-      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
+      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained."
     },
     "lunar_od/spice_loader.py": {
       "path": "src/lunar_od/spice_loader.py",
@@ -2802,13 +2803,14 @@
     },
     "examples/run_scenario_config.py": {
       "path": "examples/run_scenario_config.py",
-      "original_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+      "original_sha256": "9a909719ed105b49129fd9d8bd2c7860b9c6474b948b28f4d4224a17057822eb",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed"
+        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
+        "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da"
       ],
-      "refrozen_from_sha256": "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained."
     },
     "examples/r1_covariance_observability_validation.py": {
       "path": "examples/r1_covariance_observability_validation.py",
