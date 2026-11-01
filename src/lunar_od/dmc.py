@@ -95,8 +95,12 @@ def _rtn_basis(r: np.ndarray, v: np.ndarray) -> np.ndarray:
     return np.column_stack([r_hat, np.cross(n_hat, r_hat), n_hat])
 
 
+#: Above this beta*dt the closed form replaces van Loan, whose -A block grows as exp(+beta*dt).
+_DMC_CLOSED_FORM_MIN_BETA_DT = 1.0
+
+
 def dmc_process_noise(options: DMCOptions, dt_s: float, *, state6: ArrayLike | None = None) -> np.ndarray:
-    """Exact discrete process noise of [r, v, w] for the Gauss-Markov model (van Loan, 9x9).
+    """Exact discrete process noise of [r, v, w] for the Gauss-Markov model (9x9).
 
     With ``axes="rtn"`` (``state6`` required) w is in RTN coordinates; the r and v
     blocks are rotated to the inertial frame with C at ``state6`` (held over the step).
@@ -104,16 +108,16 @@ def dmc_process_noise(options: DMCOptions, dt_s: float, *, state6: ArrayLike | N
     The kinematic coupling r' = v, v' = w is exact; the gravity gradient is left
     out of Q, as is standard (its effect over one step is second order).
 
-    WP0.2 (EST-09): the van Loan block carries +beta on the diagonal of -A and grows
-    like exp(dt / tau), so phi @ e[:9, 9:] cancelled (inaccurate at dt/tau ~ 30, not
-    PSD at ~144, overflow at ~700).  It is now evaluated on h = dt / 2^k <= tau and
-    doubled exactly, Q(2h) = Phi(h) Q(h) Phi(h)^T + Q(h), Phi(2h) = Phi(h)^2.
+    Short steps use van Loan's matrix exponential. Its -A block grows as
+    exp(beta*dt), losing precision near beta*dt ~ 30 and overflowing past ~700
+    (assessment EST-09), so longer steps use the closed-form integrals of
+    Phi(s) G q G^T Phi(s)^T, which contain only exp(-beta*dt).
     """
     if options.axes == "rtn" and state6 is None:
         raise ValueError("RTN DMC process noise needs the state (state6).")
     # WP4.8b: Q is linear in sigma^2, and van Loan's accuracy depends on the size of
-    # the Qc block against A (5e-8 relative at sigma = 1e-4 m/s^2 over one day, 3e-5 at
-    # 1 m/s^2), so Q is evaluated at a well-scaled reference sigma and scaled per axis.
+    # the Qc block against A (2.8e-9 relative at sigma = 1 m/s^2 and beta*dt = 1), so Q
+    # is evaluated at a well-scaled reference sigma and scaled per axis.
     sig = (np.full(3, options.sigma_mps2) if options.sigma_axes_mps2 is None
            else np.asarray(options.sigma_axes_mps2, dtype=float))
     reference = _gauss_markov_q(DMCOptions(_SIGMA_REFERENCE_MPS2, options.tau_s), dt_s)
@@ -130,15 +134,8 @@ def dmc_process_noise(options: DMCOptions, dt_s: float, *, state6: ArrayLike | N
 def _gauss_markov_q(options: DMCOptions, dt_s: float) -> np.ndarray:
     dt = abs(float(dt_s))
     beta = 1.0 / options.tau_s
-    doublings = max(0, int(np.ceil(np.log2(dt * beta)))) if dt * beta > 1.0 else 0
-    phi, q = _van_loan(options, beta, dt / 2.0**doublings)
-    for _ in range(doublings):
-        q = phi @ q @ phi.T + q
-        phi = phi @ phi
-    return 0.5 * (q + q.T)
-
-
-def _van_loan(options: DMCOptions, beta: float, dt: float) -> tuple[np.ndarray, np.ndarray]:
+    if beta * dt > _DMC_CLOSED_FORM_MIN_BETA_DT:
+        return _dmc_process_noise_closed_form(options.sigma_mps2, beta, dt)
     a = np.zeros((9, 9))
     a[0:3, 3:6] = np.eye(3)
     a[3:6, 6:9] = np.eye(3)
@@ -152,7 +149,24 @@ def _van_loan(options: DMCOptions, beta: float, dt: float) -> tuple[np.ndarray, 
     e = expm(big * dt)
     phi = e[9:, 9:].T
     q = phi @ e[:9, 9:]
-    return phi, 0.5 * (q + q.T)
+    return 0.5 * (q + q.T)
+
+
+def _dmc_process_noise_closed_form(sigma_mps2: float, beta: float, dt: float) -> np.ndarray:
+    """Per-axis integrals of g_i(s) g_j(s), g = [(beta s - 1 + e^{-beta s}) / beta^2, (1 - e^{-beta s}) / beta, e^{-beta s}]."""
+    x = beta * dt
+    e1 = np.exp(-x)
+    e2 = np.exp(-2.0 * x)
+    i_rr = (x**3 / 3.0 - x**2 + x + 0.5 - 0.5 * e2 - 2.0 * x * e1) / beta**5
+    i_rv = (0.5 * x**2 - x + 0.5 - e1 + x * e1 + 0.5 * e2) / beta**4
+    i_rw = (0.5 * (1.0 - e2) - x * e1) / beta**3
+    i_vv = (x - 2.0 * (1.0 - e1) + 0.5 * (1.0 - e2)) / beta**3
+    i_vw = ((1.0 - e1) - 0.5 * (1.0 - e2)) / beta**2
+    i_ww = 0.5 * (1.0 - e2) / beta
+    per_axis = 2.0 * sigma_mps2**2 * beta * np.array([[i_rr, i_rv, i_rw],
+                                                      [i_rv, i_vv, i_vw],
+                                                      [i_rw, i_vw, i_ww]])
+    return np.kron(per_axis, np.eye(3))
 
 
 def propagate_dmc_state(
