@@ -30,7 +30,7 @@ bir kontrol testi vardır.
 | DYN-05 | Ay yönelimi ızgara ortasında sürekli | XFAIL | 60 s ızgarada sıçrama 1.6e-4 rad (= ω·cadence) |
 | EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | XFAIL | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
 | EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
-| EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
+| EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL **Kapatıldı (WP4.1):** mevcut nokta ve tüm denemeler aynı 6-durum yolunda, aynı toleransta puanlanıyor. | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
 | DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | XFAIL | `ForceModelContract` ve `ForceExecutionSpec` alanlarında kernel/SPK/interpolasyon yok |
 
 **Not (MEAS-03):** ilk sürüm testi istisna bekliyordu ve XPASS verdi; çözücü istisna atmıyor,
@@ -138,8 +138,8 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | ID | Ö | Bulgu | Konum |
 |---|---|---|---|
 | EST-01 ✔T | K | SRIF'te mevcut maliyet 42-durum, aday maliyeti 6-durum yayılımıyla → iyi adımlar reddediliyor (düzeltme yalnız iki yönlü BLS-LM'e taşınmış) | `estimators.py:157 vs 220`, `:377 vs 460`, `:3115 vs 3214` |
-| EST-02 | K | İki yönlü SRIF MAP adımı atıyor, yalnız veri maliyetiyle puanlıyor | `estimators.py:3144,3167,3222` |
-| EST-03 | K | SRIF'te sönümleme/line-search yok → MaxIter (benchmark'ta yakınsama %25–44) | `estimators.py:244,484` |
+| EST-02 | K | İki yönlü SRIF MAP adımı atıyor, yalnız veri maliyetiyle puanlıyor **Kapatıldı (WP4.1):** iki yönlü SRIF adımı, z̄'nin arkasındaki önsel satırlar dahil MAP amacıyla puanlanıyor; sıkı önselli testte MAP-durağanlık ≤ 1e-2σ. | `estimators.py:3144,3167,3222` |
+| EST-03 | K | SRIF'te sönümleme/line-search yok → MaxIter (benchmark'ta yakınsama %25–44) **Kapatıldı (WP4.1):** reddedilen adım kendi yönünde ≤10 kez yarılanıyor; iniş bulunmazsa Gauss-Newton azalımıyla sertifika (Converged / NoDescent). Gürültüsüz sentetik probe: önce 16/16 MaxIter (40 it), sonra 16/16 Converged (3–16 it), konum hatası ≤ 0.11 mm. | `estimators.py:244,484` |
 | EST-04 | B | Yakınsama, `_adaptive_tol` rtol 1e-8 iken ilan edilebiliyor; sonuç istenen toleranstan 1000× gevşek | `estimators.py:45-54,237,477,680,904,3233` |
 | EST-05 | B | Durma testleri birim bağımlı (m, m/s, rad, K karışık); J-Stab ağır sönümlü adımda tetikleniyor | `estimators.py:240,683,907,2841` |
 | EST-06 | B | Posterior kovaryans fiziksel birimde eigen-taban ile kırpılıyor (açı bias bilgisi max'ı belirliyor → aşırı güvenli); rank eşikleri cond 1e14–1e15'e izin | `estimators.py:1561-1572,1661`, `bounded_least_squares.py:45` |
@@ -220,7 +220,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | X-03 | Harmonik dönüş "en yakın örnek" | Exact-epoch DE440 modu | ≤8e-5 rad | Kısmen | DYN-05 |
 | X-04 | Truth DOP853 (+Numba fastmath Pines) | BLS Adams + gevşek erken tol; UKF RK4 + doğrusal efemeris; 42-durum saf Python | mm–m | Kısmen | DYN-14/15, MEAS-05, EST-04 |
 | X-05 | Batch Doppler (Hermite Dünya) | UKF/EKF (doğrusal Dünya + doğrusal dönüşüm) | ~1.7e-3 m/s | **Evet** | MEAS-04 |
-| X-06 | SRIF mevcut maliyet (42-durum) | SRIF aday maliyeti (6-durum, önselsiz) | 1–7 m yörünge | **Evet** | EST-01/02 |
+| X-06 | SRIF mevcut maliyet (42-durum) | SRIF aday maliyeti (6-durum, önselsiz) | 1–7 m yörünge, **kapatıldı (WP4.1)** | **Evet** | EST-01/02 |
 | X-07 | İki yönlü menzil (SSB+Shapiro+medya seçeneği) | Doppler/ΔDOR/tek yönlü (yalnız Ay merkezli) | m / 10 µm/s | Hayır | MEAS-01 |
 | X-08 | `spice_ssb` aberasyon (SSB hızı) | Işık zamanı (Ay merkezli) | ~11–20″ | Hayır | MEAS-02 |
 | X-09 | SSB yolu istasyon (ITRF2020+gelgit+topo TDB) | Varsayılan (ITRF93 predict) | 0.2–0.3 m | Hayır | MEAS-06 |

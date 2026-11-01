@@ -9,7 +9,7 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 | R-01 | Gerçek veride metre seviyesi sistematik hata (ışık zamanı/Shapiro/medya/istasyon) | MEAS-01/02/06/07 | 5 | 5 | **25** | F2 | open |
 | R-02 | Sentetik testler tutarsızlıkları gizliyor → yanlış "doğrulandı" kanısı | X-01…X-09, TST-02/03 | 5 | 4 | **20** | F1, WP5.1, F7 | open |
 | R-03 | Gerçek veri sonuçlarının bağımsızlığı bozuk (F3 aynı gün ayar+puan, hold-out yok, döngüsel önseller) | RD-01…RD-05 | 5 | 4 | **20** | WP0.2, F5 | open |
-| R-04 | SRIF yanlış kabul testi → durma ve yanlı tahminci karşılaştırması | EST-01/02/03/07 | 5 | 4 | **20** | F4 | open |
+| R-04 | SRIF yanlış kabul testi → durma ve yanlı tahminci karşılaştırması | EST-01/02/03/07 | 5 | 4 | **20** | F4 | mitigating (WP4.1: EST-01/02/03 kapatıldı; EST-07 tekillik eşiği WP4.3) |
 | R-05 | Fizik testlerinin CI'da koşmaması → regresyonlar fark edilmeden main'e girer | TST-01/05 | 4 | 4 | **16** | F7 | open |
 | R-06 | UKF/EKF ile batch arasında model farkı (Doppler interp, efemeris, P0) | MEAS-04/05, EST-19 | 4 | 4 | **16** | F1 | open |
 | R-07 | Eksik kuvvetler (k2, albedo/IR, Dünya gölgesi) F2r kalıntısını açıklıyor olabilir | DYN-06/07/08, RD-10 | 4 | 4 | **16** | F3 | open |

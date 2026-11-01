@@ -456,6 +456,24 @@ PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256 = {
         "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
 }
 
+# Programme WP4.1 re-freeze (owner-authorized 2026-10-31 for the independent-
+# assessment programme; EST-01/02/03).  The three SRIF estimators now score the
+# incumbent and every trial on one propagation path (the 6-state one, at the
+# iteration's tolerance) and, for two-way range, on the MAP objective the QR step
+# minimises; a rejected step is halved along its own direction (at most 10
+# times) and, when no trial descends at the caller's tolerance, the incumbent is
+# certified by the Gauss-Newton decrement (Converged / NoDescent) instead of
+# recomputing the identical step until max_iter.  The step itself, the prior
+# rows, the posterior and BLS-LM are unchanged.
+#
+#   old (numerical core)  c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf
+#   new (WP4.1)           028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c",
+}
+
 
 
 
@@ -473,6 +491,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:

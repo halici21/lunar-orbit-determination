@@ -13,7 +13,7 @@ REQ-MEAS-004,T,WP1.1,tests/test_assessment_evidence.py::test_meas04_ukf_interpol
 REQ-MEAS-005,T,WP2.2,tests/test_media.py,partial,MEAS-06;MEAS-07
 REQ-MEAS-006,T,WP2.4,tests/test_station_displacement.py,partial,MEAS-06
 REQ-MEAS-007,T,WP2.3,,open,MEAS-08;RD-07;RD-08;RD-09
-REQ-EST-001,T,WP4.1,tests/test_assessment_evidence.py::test_est01_six_and_augmented_paths_agree_at_estimator_tolerance,failing_as_expected,EST-01;EST-02;EST-03
+REQ-EST-001,T,WP4.1,tests/test_srif_acceptance_wp4_1.py,passed,EST-01;EST-02;EST-03 (SRIF scores incumbent and trials on one path and on the MAP objective; step halving + Gauss-Newton certification; the propagator difference itself stays pinned by test_assessment_evidence::test_est01 as a documented property, no longer compared across)
 REQ-EST-002,T,WP4.2,,open,EST-04;EST-05;EST-08
 REQ-EST-003,T,WP4.3,,open,EST-06;EST-07;EST-18
 REQ-EST-004,T,WP4.4,,open,EST-10;EST-11;EST-12;EST-13;EST-14
