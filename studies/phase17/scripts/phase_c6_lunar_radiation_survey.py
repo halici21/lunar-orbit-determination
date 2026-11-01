@@ -25,7 +25,7 @@ PRE = "studies/phase17/configs/phase_c6_lunar_radiation_survey_predeclaration.js
 OUT = HERE.parent / "results" / "phase_c6_lunar_radiation_survey.json"
 #: A3: the first run used quadrature_column (inverts F3's FD Phi) and failed G_QUAD; this run integrates the
 #: forced variational equations directly (phase_c6_forced_columns.py)
-METHOD = "forced_variational_rk4"
+METHOD = "forced_variational_rk4_exact_forcing_A4"
 F3_ET0_UTC = "2009-09-16T00:00:00"          # F2p's et0 (checked against LOLA in phase_f3c_short_arc_batch.py)
 K_LRP = 0.010                               # m^2/kg, F2H_PRIORS' physical K_SRP mean
 CHI2_F3_SIGMA0 = 69899.78968941572          # F3 (c15d5c8)
@@ -120,9 +120,24 @@ def main() -> None:
     interp = lambda tab: (lambda t: np.array([np.interp(t, grid, tab[:, i]) for i in range(3)]))  # noqa: E731
     gradient = FC.lunar_gradient(et0, gravity, float(spice.bodvrd("399", "GM", 1)[1][0]) * 1e9,
                                  float(spice.bodvrd("10", "GM", 1)[1][0]) * 1e9, interp(earth), interp(sun))
-    forcing = np.stack([a_srp, a_ct, acc["nominal"], acc["albedo_0.19"]], axis=2)
+    # A4: every forcing evaluated at the RK4 sub-step nodes (run 2 interpolated the shadow transitions linearly)
+    sub, r_sub = FC.sub_nodes(grid, states)
+    sun_sub = np.array([np.interp(sub, grid, sun[:, i]) for i in range(3)]).T
+    # empirical acceleration needs the velocity: Hermite derivative at the nodes
+    from scipy.interpolate import CubicHermiteSpline
+    v_sub = CubicHermiteSpline(grid, states[:, :3], states[:, 3:6], axis=0).derivative()(sub)
     t_col = time.time()
-    xcols = FC.forced_columns(grid, states, forcing, gradient)
+    f_sub = np.stack([np.array([srp_acceleration_kernel(r, q, srp) for r, q in zip(r_sub, sun_sub)]),
+                      np.array([M.empirical_acceleration(np.concatenate([r, v]), [1.0, 0.0, 0.0, 0.0])
+                                for r, v in zip(r_sub, v_sub)]),
+                      L.acceleration_kernel(r_sub, sun_sub, models["nominal"]),
+                      L.acceleration_kernel(r_sub, sun_sub, models["albedo_0.19"])], axis=2)
+    print(f"forcings at {sub.size} sub-step nodes in {time.time() - t_col:.0f} s", flush=True)
+    g_cache = project_root() / "lro_data" / "f3_cache" / "c6_gradients.npy"
+    g_nodes = np.load(g_cache) if g_cache.exists() else np.array([gradient(t, r) for t, r in zip(sub, r_sub)])
+    if not g_cache.exists():
+        np.save(g_cache, g_nodes)
+    xcols = FC.forced_columns(grid, states, f_sub, gradient, g_nodes=g_nodes)
     print(f"forced columns in {time.time() - t_col:.0f} s", flush=True)
     gq = {}
     for name, j, col in (("K", 0, ref.s[:, :, 0]), ("C_T", 1, ref.s[:, :, 5])):

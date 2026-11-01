@@ -16,22 +16,38 @@ import numpy as np
 from scipy.interpolate import CubicHermiteSpline
 
 
-def forced_columns(grid, states, forcings, gradient, n_sub: int = 10, local_transitions: bool = False):
-    """X on the grid, (k, 6, nf), for forcings (k, 3, nf) given on the grid; gradient(t, r) -> (3, 3).
+def sub_nodes(grid, states, n_sub: int = 10):
+    """RK4 sub-step node times (stages included) and the Hermite-interpolated spacecraft positions there."""
+    grid = np.asarray(grid, float)
+    states = np.asarray(states, float)
+    pos = CubicHermiteSpline(grid, states[:, :3], states[:, 3:6], axis=0)
+    sub = np.concatenate([np.linspace(grid[i], grid[i + 1], 2 * n_sub + 1)[:-1] for i in range(grid.size - 1)]
+                         + [grid[-1:]])
+    return sub, pos(sub)
 
-    With ``local_transitions`` also returns the (k-1, 6, 6) transitions over each grid interval.
+
+def forced_columns(grid, states, forcings, gradient, n_sub: int = 10, local_transitions: bool = False,
+                   g_nodes=None):
+    """X on the grid, (k, 6, nf); gradient(t, r) -> (3, 3).
+
+    ``forcings`` is either (k, 3, nf) on the grid (interpolated linearly to the sub-step nodes) or (m, 3, nf)
+    already evaluated at the sub_nodes() times (A4: exact at shadow transitions). ``g_nodes`` may pass the
+    gradients at the sub-step nodes from an earlier call. With ``local_transitions`` also returns the (k-1, 6, 6)
+    transitions over each grid interval.
     """
     grid = np.asarray(grid, float)
     states = np.asarray(states, float)
     forcings = np.asarray(forcings, float)
     k, nf = grid.size, forcings.shape[2]
-    pos = CubicHermiteSpline(grid, states[:, :3], states[:, 3:6], axis=0)
+    sub, r_sub = sub_nodes(grid, states, n_sub)
     # gradient at every sub-step node (shared between neighbouring RK4 stages)
-    sub = np.concatenate([np.linspace(grid[i], grid[i + 1], 2 * n_sub + 1)[:-1] for i in range(k - 1)]
-                         + [grid[-1:]])
-    g_nodes = np.array([gradient(t, r) for t, r in zip(sub, pos(sub))])
-    f_nodes = np.stack([np.stack([np.interp(sub, grid, forcings[:, a, j]) for a in range(3)], axis=1)
-                        for j in range(nf)], axis=2)                          # (m, 3, nf)
+    if g_nodes is None:
+        g_nodes = np.array([gradient(t, r) for t, r in zip(sub, r_sub)])
+    if forcings.shape[0] == sub.size:
+        f_nodes = forcings
+    else:
+        f_nodes = np.stack([np.stack([np.interp(sub, grid, forcings[:, a, j]) for a in range(3)], axis=1)
+                            for j in range(nf)], axis=2)                      # (m, 3, nf)
     out = np.zeros((k, 6, nf))
     trans = np.zeros((k - 1, 6, 6)) if local_transitions else None
 

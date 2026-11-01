@@ -54,5 +54,11 @@
   "change": "columns are computed by integrating d/dt X = A(t) X + [0; F(t)] from X(t_epoch) = 0 along F3's cached trajectory (RK4, 10 sub-steps per 20 s interval, cubic Hermite states, linear forcing), A from the full gravity gradient (Moon point mass + GL1800F N = 300 in MOON_PA_DE440 at et0 + t + Earth and Sun third body); SRP and empirical gradients omitted (negligible). Integrator unit-tested against the closed-form oscillator (tests/test_phase_c6_lunar_radiation.py)",
   "unchanged": "model, experiments, gates and thresholds; G_QUAD is re-evaluated with the new column method on the same cached K and C_T columns",
   "consequence_outside_C6": "F3's transition() forms local transitions from the same FD Phi; this affects the sigma > 0 DMC runs of F3/F3b (not F3c, which is plain batch). To be assessed in its own step"
+ },
+ "amendment_A4_after_run2": {
+  "what_happened": "Run 2 (A3 method; results/..._run2_interp_forcing.json): G_QUAD C_T PASS (8.5e-4) but K FAIL (2.4e-3 > 1e-3) -> C6_NOT_QUALIFIED as computed; experiment numbers recorded, not read",
+  "diagnosis": "the SRP forcing switches on and off at shadow entry/exit inside the 20 s intervals and run 2 interpolated all forcings linearly between grid nodes, which smears each transition",
+  "change": "all four forcings (SRP kernel K = 1, C_T, LRP nominal, LRP albedo 0.19) are evaluated exactly at every RK4 sub-step node (positions and velocities from the cubic Hermite spline of the cached states; Sun interpolated linearly); gradients cached in lro_data/f3_cache/c6_gradients.npy",
+  "unchanged": "model, experiments, gates and thresholds"
  }
 }
