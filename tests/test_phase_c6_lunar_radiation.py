@@ -74,3 +74,18 @@ def test_forced_columns_match_the_closed_form_oscillator():
     ct, st = np.cos(n * 20.0), np.sin(n * 20.0)
     want = np.block([[ct * np.eye(3), st / n * np.eye(3)], [-n * st * np.eye(3), ct * np.eye(3)]])
     assert np.max(np.abs(trans - want[None]) / (np.abs(want[None]) + 1.0)) < 1e-10      # RK4 truncation 5e-11
+
+
+def test_local_dynamics_matches_the_closed_form_oscillator_transition():
+    """F3d G_LOC: Phi(t_b, t_a) over an arbitrary sub-grid interval."""
+    import phase_c6_forced_columns as FC
+    n = 2.0 * np.pi / 7200.0
+    grid = np.arange(0.0, 400.0 + 1.0, 20.0)
+    g_nodes = np.repeat((-n ** 2 * np.eye(3))[None], 20 * (grid.size - 1) + 1, axis=0)
+    ld = FC.LocalDynamics(grid, g_nodes)
+    for t_a, t_b in ((3.25, 17.5), (40.0, 100.0), (101.7, 333.3)):
+        dt = t_b - t_a
+        c, s = np.cos(n * dt), np.sin(n * dt)
+        want = np.block([[c * np.eye(3), s / n * np.eye(3)], [-n * s * np.eye(3), c * np.eye(3)]])
+        got = ld.phi(t_a, t_b)
+        assert np.max(np.abs(got - want) / (np.abs(want) + 1.0)) < 1e-10

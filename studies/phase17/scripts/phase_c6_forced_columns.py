@@ -98,3 +98,49 @@ def lunar_gradient(et0: float, model, mu_earth: float, mu_sun: float, earth_fn, 
                 + third_body_gravity_gradient(r, earth_fn(t), mu_earth)
                 + third_body_gravity_gradient(r, sun_fn(t), mu_sun))
     return gradient
+
+
+class LocalDynamics:
+    """F3d: accurate local transitions Phi(t_b, t_a) from gravity gradients at the sub_nodes() times.
+
+    G is interpolated linearly between the nodes (1 s apart for F3's 20 s grid and n_sub = 10); Phi(t_b, t_a)
+    is RK4 from the identity with steps <= ``step`` s. Results are memoised by (t_a, t_b).
+    """
+
+    def __init__(self, grid, g_nodes, n_sub: int = 10, step: float = 1.0):
+        grid = np.asarray(grid, float)
+        d = np.diff(grid)
+        assert np.allclose(d, d[0], rtol=0.0, atol=1e-9), "F3's grid is uniform"
+        self.t0, self.dt = float(grid[0]), float(d[0]) / (2 * n_sub)
+        self.g = np.asarray(g_nodes, float)
+        assert self.g.shape[0] == 2 * n_sub * (grid.size - 1) + 1
+        self.step = step
+        self.cache = {}
+
+    def gradient(self, t: float) -> np.ndarray:
+        x = (t - self.t0) / self.dt
+        i = min(max(int(np.floor(x)), 0), self.g.shape[0] - 2)
+        f = x - i
+        return (1.0 - f) * self.g[i] + f * self.g[i + 1]
+
+    def phi(self, t_a: float, t_b: float) -> np.ndarray:
+        key = (float(t_a), float(t_b))
+        out = self.cache.get(key)
+        if out is not None:
+            return out
+        m = max(1, int(np.ceil((t_b - t_a) / self.step - 1e-9)))
+        h = (t_b - t_a) / m
+        p = np.eye(6)
+
+        def rhs(x, g):
+            return np.vstack([x[3:], g @ x[:3]])
+        for i in range(m):
+            t = t_a + i * h
+            g0, g1, g2 = self.gradient(t), self.gradient(t + 0.5 * h), self.gradient(t + h)
+            k1 = rhs(p, g0)
+            k2 = rhs(p + 0.5 * h * k1, g1)
+            k3 = rhs(p + 0.5 * h * k2, g1)
+            k4 = rhs(p + h * k3, g2)
+            p = p + h / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        self.cache[key] = p
+        return p
