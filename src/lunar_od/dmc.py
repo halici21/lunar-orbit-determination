@@ -49,9 +49,23 @@ def dmc_process_noise(options: DMCOptions, dt_s: float) -> np.ndarray:
 
     The kinematic coupling r' = v, v' = w is exact; the gravity gradient is left
     out of Q, as is standard (its effect over one step is second order).
+
+    WP0.2 (EST-09): the van Loan block carries +beta on the diagonal of -A and grows
+    like exp(dt / tau), so phi @ e[:9, 9:] cancelled (inaccurate at dt/tau ~ 30, not
+    PSD at ~144, overflow at ~700).  It is now evaluated on h = dt / 2^k <= tau and
+    doubled exactly, Q(2h) = Phi(h) Q(h) Phi(h)^T + Q(h), Phi(2h) = Phi(h)^2.
     """
     dt = abs(float(dt_s))
     beta = 1.0 / options.tau_s
+    doublings = max(0, int(np.ceil(np.log2(dt * beta)))) if dt * beta > 1.0 else 0
+    phi, q = _van_loan(options, beta, dt / 2.0**doublings)
+    for _ in range(doublings):
+        q = phi @ q @ phi.T + q
+        phi = phi @ phi
+    return 0.5 * (q + q.T)
+
+
+def _van_loan(options: DMCOptions, beta: float, dt: float) -> tuple[np.ndarray, np.ndarray]:
     a = np.zeros((9, 9))
     a[0:3, 3:6] = np.eye(3)
     a[3:6, 6:9] = np.eye(3)
@@ -65,7 +79,7 @@ def dmc_process_noise(options: DMCOptions, dt_s: float) -> np.ndarray:
     e = expm(big * dt)
     phi = e[9:, 9:].T
     q = phi @ e[:9, 9:]
-    return 0.5 * (q + q.T)
+    return phi, 0.5 * (q + q.T)
 
 
 def propagate_dmc_state(

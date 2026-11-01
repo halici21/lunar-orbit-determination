@@ -135,7 +135,7 @@ def test_control_dmc_q_matches_substepped_reference_short_gap():
     assert _relative_difference(q, _dmc_q_substepped(options, 600.0, 8)) < 1e-9
 
 
-@pytest.mark.xfail(strict=True, reason="EST-09: van Loan block grows like exp(dt/tau) and cancels")
+# EST-09 repaired in WP0.2 (scaling and squaring); kept as a regression test.
 @pytest.mark.parametrize("gap_over_tau", [30.0, 144.0])
 def test_est09_dmc_q_long_gap_finite_psd_and_accurate(gap_over_tau):
     options = DMCOptions(sigma_mps2=1e-8, tau_s=600.0)

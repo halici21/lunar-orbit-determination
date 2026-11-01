@@ -23,7 +23,8 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 
 5. Tek-sekme sayılan Doppler çözücüsü yay başlangıç epoch'u ~1.3e5 s'yi aştığında giderek daha sık
    `converged=False` döndürür (2.5e6 s'de %94); 28 günlük yay-yay kampanyaları bu yoldan geçemez.
-6. DMC süreç gürültüsü dt/τ ≳ 30 olduğunda hassasiyetini, ≳ 100'de pozitif yarı tanımlılığını kaybeder.
+6. ~~DMC süreç gürültüsü dt/τ ≳ 30 olduğunda hassasiyetini, ≳ 100'de pozitif yarı tanımlılığını kaybeder.~~
+   Kapatıldı (WP0.2/WP4.8a): Q dt/τ = 5000'e kadar kapalı form kehanete 1e-9 bağıl doğrulukta.
 
 ## Gerçek veri
 
