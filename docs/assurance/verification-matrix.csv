@@ -20,7 +20,7 @@ REQ-EST-004,T,WP4.4,tests/test_ukf_numerics_wp4_4a.py;tests/test_ukf_constraints
 REQ-EST-005,T,WP0.2,tests/test_assessment_evidence.py::test_est09_dmc_q_long_gap_finite_psd_and_accurate,failing_as_expected,EST-09
 REQ-EST-006,T,WP1.9,tests/test_assessment_evidence.py::test_est19_ukf_default_p0_matches_injected_cold_start_sigma,failing_as_expected,EST-19
 REQ-EST-007,T,WP4.6,,open,EST-16
-REQ-EST-008,T,WP4.5,,open,EST-15;RD-06
+REQ-EST-008,T,WP4.5,tests/test_correlated_noise_wp4_5.py,partial,EST-15 closed (WP4.5: AR(1) is a per-station Gauss-Markov process in time; exact Prais-Winsten whitening and variance-inflation factor); applying them inside BLS/SRIF/UKF weighting and the consider-covariance report remain open; RD-06
 REQ-DATA-001,I,WP0.2;WP0.4,,open,RD-01;RD-02
 REQ-DATA-002,I,WP0.4,,open,RD-02
 REQ-DATA-003,I,WP3.4,,open,RD-03

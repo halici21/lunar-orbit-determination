@@ -2615,8 +2615,11 @@
     },
     "lunar_od/noise_models.py": {
       "path": "src/lunar_od/noise_models.py",
-      "original_sha256": "440b679adaab7b3aca702bfbc2b62c39b28a19968ec64cd220127be9bbf694bb",
-      "byte_preserved": true
+      "original_sha256": "817d90788b1330f1a79702b705954cc99055b993f28d28a0ea11a83a8abe8a2c",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "440b679adaab7b3aca702bfbc2b62c39b28a19968ec64cd220127be9bbf694bb"
+      ]
     },
     "lunar_od/observability.py": {
       "path": "src/lunar_od/observability.py",
