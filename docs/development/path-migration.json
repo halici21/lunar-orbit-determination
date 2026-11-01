@@ -2534,16 +2534,17 @@
     },
     "lunar_od/filters.py": {
       "path": "src/lunar_od/filters.py",
-      "original_sha256": "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38",
+      "original_sha256": "1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec",
       "byte_preserved": true,
-      "refrozen_from_sha256": "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.4a (independent-assessment programme, EST-11/12): deviation-form unscented mean; unit-free on-demand jitter; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.4b: filters.py Schmidt consider states + regularisation once (EST-13); all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.4a (independent-assessment programme, EST-11/12): deviation-form unscented mean; unit-free on-demand jitter; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.4b: filters.py Schmidt consider states + regularisation once (EST-13); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.8c: filters.py UKF DMC (EST-21); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
         "d92d9975a7ef5ab49ee6723904261a8210643d19a5c55a2069ece6de38d8aa42",
         "83b25c55ac8459926790dad09e9d189cd3b6d4a293aab1bcbd2dc66b200856ec",
         "05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba",
-        "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac"
+        "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac",
+        "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38"
       ]
     },
     "lunar_od/force_contract.py": {

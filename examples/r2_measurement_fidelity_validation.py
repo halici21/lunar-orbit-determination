@@ -551,6 +551,20 @@ F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F4 WP4.8c (owner-authorized re-freeze for the independent-assessment programme;
+# EST-21).  run_lunar_ukf gains dmc=DMCOptions: the Gauss-Markov empirical
+# acceleration as state elements 6:9, propagated per sigma point, Q from
+# dmc_process_noise, measurements on the state without w.
+#
+#   old (WP4.4b)          6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38
+#   new (WP4.8c)          1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec",
+}
+
+
 
 
 
@@ -567,6 +581,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256:
