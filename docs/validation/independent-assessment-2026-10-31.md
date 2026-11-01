@@ -183,7 +183,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | CFG-01 ✔ | B | Masaüstü gizli varsayılanlar: rtol 1e-8/atol 1e-10 (tezin 100× gevşeği), efemeris adımı 3600 s, λ0 1e-3 (`desktop_app/models/scenario_model.py:14,42-43`) |
 | CFG-02 ✔ | B | Senaryo şemasında tohum alanı yok; CLI `measurement_seed=None` → tohumsuz gürültü, kaydedilmiyor (`examples/run_scenario_config.py:86,238`) |
 | CFG-03 | B | Elevasyon maskesi, boşluk eşiği, efemeris adımı, yay modu config alanı değil (`desktop_options`); JSON koşuyu tam tanımlamıyor |
-| CFG-04 | B | Üç efemeris nesli karışık (DE440 Dünya/Güneş; DE421 başlangıç durumu/Ay yönelimi; DE431 GM); kernel listesi çıktılara yazılmıyor |
+| CFG-04 | B | Üç efemeris nesli karışık (DE440 Dünya/Güneş; DE421 başlangıç durumu/Ay yönelimi; DE431 GM); kernel listesi çıktılara yazılmıyor. **WP7.4:** `load_spice_kernels` artık her kerneli `lunar_od.kernel_manifest` SHA-256'sına karşı yüklemeden önce doğruluyor (bilinmeyen/değişmiş kernel → `KernelIntegrityError`); nesil birliği WP1.2'de, kayıtların çıktılara yazılması WP1.6 `run_provenance` ile |
 | CFG-05 | O | CLI JSON'daki `bls_lambda0`, `tol_cost_stability` yok sayılıyor; bilinmeyen anahtarlar sessizce yok sayılıyor; şema eksik |
 | CFG-06 | O | Geçersiz kombinasyonlar kabul ediliyor (aberasyon profili/model, sayım > örnek adımı, UKF alanları BLS'de) |
 | CFG-07 | O | `enable_lunar_harmonics`, `enable_earth_j2` her zaman hata veriyor ama şemada |
