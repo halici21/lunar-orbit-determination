@@ -507,6 +507,21 @@ F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256 = {
         "eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6",
 }
 
+# F4 WP4.3b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-18).  Observability rank, condition number and weakest direction come from the
+# column-equilibrated design (an explicit rank_tol keeps its absolute meaning on the
+# raw singular values); the bias decision measures each bias's conditional
+# information against its own unconditional information (unit-free) instead of
+# against the strongest bias, and the state-block pseudo-inverse is equilibrated.
+#
+#   old (numerical core)  6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956
+#   new (WP4.3b)          cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/observability.py":
+        "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440",
+}
+
 
 
 
@@ -524,6 +539,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256:

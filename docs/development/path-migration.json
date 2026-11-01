@@ -2618,13 +2618,14 @@
     },
     "lunar_od/observability.py": {
       "path": "src/lunar_od/observability.py",
-      "original_sha256": "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956",
+      "original_sha256": "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f"
+        "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f",
+        "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956"
       ],
-      "refrozen_from_sha256": "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.3b (independent-assessment programme, EST-18): unit-invariant observability rank/condition and bias classification; all previous identities and historical scientific results retained."
     },
     "lunar_od/orbit.py": {
       "path": "src/lunar_od/orbit.py",

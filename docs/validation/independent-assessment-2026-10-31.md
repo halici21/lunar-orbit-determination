@@ -154,7 +154,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-15 | O | Korelasyonlu/AR(1) gürültü üretiliyor ama hiç beyazlatılmıyor; AR(1) satır indeksinde (zaman/istasyon karışık) | `noise_models.py:51-66` |
 | EST-16 | O | ANEES/ANIS χ² aralıkları yok; adaptif R'de NIS aşağı yanlı; artık lag-1 iç içe [ρ,az,el] vektöründe; adaptif ayarda truth başlangıç durumuna yayınlanıyor; ortalama NIS reddedilenleri içeriyor | `diagnostics.py:202`, `adaptive_tuning.py:316,387`, `filters.py:594` |
 | EST-17 | O | Batch ayıklama: a priori σ, sert 3σ, %30 "ya hep ya hiç" | `estimators.py:1876-1900` |
-| EST-18 | O | Gözlemlenebilirlik koşul/rank/zayıf yön ölçeklenmemiş Jacobian'dan; bias dondurma kararı birime bağlı. **Açık** (WP4.3b) | `observability.py:114,467` |
+| EST-18 ✔T | O | Gözlemlenebilirlik koşul/rank/zayıf yön ölçeklenmemiş Jacobian'dan; bias dondurma kararı birime bağlı. **Kapatıldı (WP4.3b):** rank/koşul/zayıf yön sütun-dengelenmiş tasarımdan; bias kararı her bias'ın kendi bilgisinin durumdan ayrıştıktan sonra kalan (birimsiz) oranıyla; eskiden yalnız birim değişikliği kararı değiştiriyordu | `observability.py:114,467` |
 | EST-19 ✔T | B | UKF P0 (100 m / 0.1 m/s) enjekte edilen soğuk başlangıç hatasıyla (180 m / 0.03 m/s) uyumsuz → NEES ve BLS–UKF karşılaştırması bozuk | `scenarios.py:1434`, `thesis_matrix.py:40-41` |
 | EST-20 | D | Monte Carlo tohumları durum başına farklı (ortak rastgele sayı yok), kampanyalar arası çakışma | `monte_carlo.py:79,312` |
 | EST-21 | D | DMC yalnız EKF'de; UKF ışık zamanlı/iki yönlü gözlemleri reddediyor → karşılaştırma yalnız geometrik gözlemlerde | `filters.py:733-768` |
