@@ -39,6 +39,7 @@ Doğrulama yöntemi: **T** test, **A** analiz, **I** inceleme, **D** gösterim. 
 | REQ-EST-006 | UKF başlangıç kovaryansı enjekte edilen başlangıç hatasıyla tutarlıdır ve kaydedilir. | T | 1.9 |
 | REQ-EST-007 | NIS/NEES iki taraflı χ² aralıklarıyla raporlanır; adaptif R altında ham ve düzeltilmiş NIS ayrı tutulur. | T | 4.6 |
 | REQ-EST-008 | Korelasyonlu ölçüm gürültüsü beyazlatılır ya da etkili örnek boyutuyla ağırlıklandırılır. | T | 4.5 |
+| REQ-EST-009 | Monte Carlo deneme tohumları `SeedSequence([taban, deneme])` ile türetilir (kampanyalar arası çakışma yok), kampanya durumları ortak rastgele sayı kullanır; ≥100 denemeli kampanyalar AC-1/AC-2'yi sınar. | T | 4.7 |
 
 ## Veri ve yöntem (REQ-DATA)
 

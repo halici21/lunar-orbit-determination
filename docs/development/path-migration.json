@@ -2610,8 +2610,11 @@
     },
     "lunar_od/monte_carlo.py": {
       "path": "src/lunar_od/monte_carlo.py",
-      "original_sha256": "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
-      "byte_preserved": true
+      "original_sha256": "d504063bbdb363410258550c6dc02e58945b555a96c169b0e1c3772775589ceb",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b"
+      ]
     },
     "lunar_od/noise_models.py": {
       "path": "src/lunar_od/noise_models.py",
