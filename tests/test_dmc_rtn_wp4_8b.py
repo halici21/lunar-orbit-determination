@@ -146,7 +146,8 @@ def test_invalid_rtn_options_rejected():
 
 @pytest.mark.parametrize("sigma", [1e-12, 1e-8, 1e-4, 1e-2, 1.0])
 def test_q_accuracy_is_independent_of_sigma(sigma):
-    """Was 5e-8 relative at sigma 1e-4 m/s^2 and 3e-5 at 1 m/s^2 over one day."""
+    """van Loan (beta*dt <= 1) evaluated at sigma itself reached 2.8e-9 at 1 m/s^2; Q is now
+    evaluated at a reference sigma and scaled (Q is linear in sigma^2)."""
     for dt in (60.0, 1800.0, 86400.0):
         q = dmc_process_noise(DMCOptions(sigma, 1800.0), dt)
         ref = _closed_form_q(sigma, 1800.0, dt)

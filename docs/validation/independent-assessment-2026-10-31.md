@@ -28,7 +28,7 @@ bir kontrol testi vardır.
 | MEAS-03 | uzun yayda sayılan Doppler yakınsaması | XFAIL | `converged` oranı yay başlangıç epoch'una göre: 0 s → 200/200; 1.4e5 s → 140; 3e5 s → 66; 1.1e6 s → 16; 2.5e6 s → 12 |
 | MEAS-04 | UKF yerel J2000→ITRF93 dönüşümü ortonormal ve mm doğru | XFAIL | ızgara ortasında ‖RRᵀ−I‖ = 6.8e-6 / 1.5e-5 / 1.1e-4; istasyon konum hatası 15 / 34 / 244 m (60 / 90 / 240 s ızgara) |
 | DYN-05 | Ay yönelimi ızgara ortasında sürekli | XFAIL | 60 s ızgarada sıçrama 1.6e-4 rad (= ω·cadence) |
-| EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | XFAIL | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
+| EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | PASS (WP0.2; βdt > 1 için kapalı form) | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
 | EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
 | EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL **Kapatıldı (WP4.1):** mevcut nokta ve tüm denemeler aynı 6-durum yolunda, aynı toleransta puanlanıyor. | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
 | DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | XFAIL | `ForceModelContract` ve `ForceExecutionSpec` alanlarında kernel/SPK/interpolasyon yok |
@@ -145,7 +145,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-06 ✔T | B | Posterior kovaryans fiziksel birimde eigen-taban ile kırpılıyor (açı bias bilgisi max'ı belirliyor → aşırı güvenli); rank eşikleri cond 1e14–1e15'e izin. **Kapatıldı (WP4.3):** altı-durum batch posteriorları tasarım QR'ı ile; station_full'da konum σ'sı %0.25 küçüktü. `bounded_least_squares` zaten ölçekli SVD kullanıyor, değişiklik gerekmedi | `estimators.py:1561-1572,1661`, `bounded_least_squares.py:45` |
 | EST-07 ✔T | O | BLS ve SRIF farklı tekillik eşikleri (1e15 normal vs 1e14 R → ~1e28) → karşılaştırma yanlı. **Kapatıldı (WP4.3):** ortak `SINGULAR_CONDITION_LIMIT` = 1e15, sütun-dengelenmiş normal-eşdeğer koşul sayısı; aynı problemde BLS 9.96e12 / SRIF 3.16e6 raporluyordu, artık ikisi 1.12e4 | `estimators.py:1697,206,446,3181` |
 | EST-08 | O | LM λ güncellemesi kazanç oranını yok sayıyor; D = diag(AᵀA) önseli dışlıyor. **Açık** (WP4.2 kapsamında değiştirilmedi) | `estimators.py:678,688,1701` |
-| EST-09 ✔T | B | DMC van Loan: −A bloğu +β → e^{dt/τ} büyüme; dt/τ=30'da 8.7e-5 bağıl hata, dt/τ=144'te negatif tanımlı (§0). **Kapatıldı (WP0.2/WP4.8a):** ölçekleme-kare alma; dt/τ ≤ 5000'de kapalı form kehanete 1e-9 | `dmc.py:61-68` |
+| EST-09 ✔T | B | DMC van Loan: −A bloğu +β → e^{dt/τ} büyüme; dt/τ=30'da 8.7e-5 bağıl hata, dt/τ=144'te negatif tanımlı (§0). **Kapatıldı (WP0.2):** βdt > 1 için kapalı form; WP4.8a bağımsız 60 basamaklı kehanetle doğruladı (σ 1e-12..1 m/s², dt/τ 1e-3..5000: ≤ 1.5e-12) | `dmc.py:61-68` |
 | EST-10 | B | SR-UKF zaman güncellemesi negatif ağırlık downdate geri dönüşsüz → yakalanmamış `LinAlgError`. **Yeniden üretilemedi (WP4.4a):** 1200 rastgele güçlü ikinci derece ve σ 3000 km'ye kadar menzil/az/el dönüşümünde hata yok; belirsiz kovaryansta `LinAlgError` dürüst sonuç, değiştirilmedi | `filters.py:1389` |
 | EST-11 ✔T | O | UKF varsayılan α=1e-3 (Wc0≈−1e6), ortalama mutlak formda → ~1 m² kovaryans hatası; senaryo α=0.35. **Kapatıldı (WP4.4a):** ortalama sapma formunda; birim dönüşümde ortalama hatası 3e-5 m → 4e-16 m; kovaryans hatası ölçülen 5.5e-6 m² (iddia edilen ~1 m² değil) | `filters.py:34,1341` |
 | EST-12 ✔T | O | Sabit 1e-12 jitter birimden bağımsız; açı ölçümünde P'yi ~%100 fazla küçültüyor. **Kapatıldı (WP4.4a):** jitter yalnız faktörleme başarısız olursa ve her köşegene göreli; 1e-12 rad² açı varyansı iki katına çıkıyordu | `filters.py:1428,673,1439` |
@@ -164,7 +164,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | ID | Ö | Bulgu |
 |---|---|---|
 | RD-01 ✔ | K | **F3**: σ*, gün 263'ün veriye karşı χ²'si ile seçiliyor; H2 aynı gün puanlanıyor → H2 geçmeye yanlı. **Sweep koşmadan önce** düzeltilmeli. (`phase_f3_lro_dmc_smoother.py:~237-240`, ön-kayıt `selection_rule`) |
-| RD-02 | K | Dokunulmamış hold-out gün kalmadı (262 model seçti, 263 F2j–F2r–F3'te defalarca kullanıldı). Manevrasız günler 264–268 mevcut. |
+| RD-02 | K | Dokunulmamış hold-out gün kalmadı (262 model seçti, 263 F2j–F2r–F3'te defalarca kullanıldı). Manevrasız günler 264–268 mevcut. **WP0.4:** 264–267 mühürlendi (`lro_data_partition.json`, okuyucularda koruma), 268 MOI-2 nedeniyle dışarıda; veriler henüz indirilmedi. |
 | RD-03 | B | İstasyon bias önselleri (489/477/475 m) F1'in LOLA'ya göre artıklarından → puanlama referansıyla döngüsel (`phase_f2_lro_od.py:805`) |
 | RD-04 | O | Eşik/kapı değişiklikleri sonuç görüldükten sonra (F2i, F2j-A1/A2, F2m, F2r, F2s-1) — her biri açıklanmış ama birlikte "forking paths" |
 | RD-05 | O | LOLA'nın ~10 m doğruluğunun altındaki farklarla çözüm sıralanıyor (F3 eşikleri 5–8 m) |
