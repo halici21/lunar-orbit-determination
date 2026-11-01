@@ -1120,6 +1120,10 @@ def run_lunar_ukf(
                     state.x.copy(),
                     _cholesky_psd(state.p, (config or UnscentedTransformConfig()).jitter),
                 )
+            # WP4.4b (EST-13): the regularisation pseudo-measurement is prior information
+            # about the initial mean; applied after every update it counted N times.
+            regularization = {}
+            constraints_active = bool(frozen_indices)
         unique_measurement_model_evaluations += measurement_stats["evaluations"]
         measurement_model_cache_hits += measurement_stats["cache_hits"]
         current_t = target_t
@@ -1224,10 +1228,15 @@ def _apply_state_constraints(
         x += gain * (prior_mean[idx] - x[idx])
         p -= np.outer(covariance_column, covariance_column) / max(innovation_variance, jitter)
         p = _symmetrize(p)
-    for idx in frozen_indices:
-        x[idx] = predicted.x[idx]
-        p[idx, :] = predicted.p[idx, :]
-        p[:, idx] = predicted.p[:, idx]
+    # WP4.4b (EST-13): a frozen state is a Schmidt-Kalman consider state -- its gain
+    # rows are zero.  With K_c = 0 the Joseph form leaves x_c and P_cc at their
+    # predicted values and gives the estimated block and the cross-covariance P_xc
+    # exactly as the full update did; resetting P_xc to the prediction (as before)
+    # discarded the correlation the update had learnt.
+    frozen_list = list(frozen_indices)
+    if frozen_list:
+        x[frozen_list] = predicted.x[frozen_list]
+        p[np.ix_(frozen_list, frozen_list)] = predicted.p[np.ix_(frozen_list, frozen_list)]
     return UKFState(x=x, p=_ensure_psd(p, jitter))
 
 
