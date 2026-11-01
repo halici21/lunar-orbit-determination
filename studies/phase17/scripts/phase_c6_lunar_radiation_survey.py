@@ -19,9 +19,13 @@ sys.path.insert(0, str(HERE))
 import phase_f3_lro_dmc_smoother as D  # noqa: E402  (sets F2p's historical numerics)
 from phase_f3_lro_dmc_smoother import C, M  # noqa: E402
 import phase_c6_lunar_radiation as L  # noqa: E402
+import phase_c6_forced_columns as FC  # noqa: E402
 
 PRE = "studies/phase17/configs/phase_c6_lunar_radiation_survey_predeclaration.json"
 OUT = HERE.parent / "results" / "phase_c6_lunar_radiation_survey.json"
+#: A3: the first run used quadrature_column (inverts F3's FD Phi) and failed G_QUAD; this run integrates the
+#: forced variational equations directly (phase_c6_forced_columns.py)
+METHOD = "forced_variational_rk4"
 F3_ET0_UTC = "2009-09-16T00:00:00"          # F2p's et0 (checked against LOLA in phase_f3c_short_arc_batch.py)
 K_LRP = 0.010                               # m^2/kg, F2H_PRIORS' physical K_SRP mean
 CHI2_F3_SIGMA0 = 69899.78968941572          # F3 (c15d5c8)
@@ -88,6 +92,8 @@ def score(name, x, cov, h, r, f, p):
 def main() -> None:
     import spiceypy as spice
     from lunar_od.project_paths import project_root
+    from lunar_od.gravity_model_loader import load_lunar_gravity_model
+    from lunar_od.project_paths import gravity_data_root
     from lunar_od.srp import SRPOptions, srp_acceleration_kernel
     t_start = time.time()
     M.F.load_kernels(project_root() / "lro_data", "DE440")
@@ -103,25 +109,33 @@ def main() -> None:
     t_fit_end = float(z["t_cmp_fit"][-1])
     fit = grid <= t_fit_end
 
-    # G_QUAD: the quadrature reproduces the cached K and C_T columns
+    # G_QUAD: the column method reproduces the cached K and C_T columns
     srp = SRPOptions(k_srp_m2_per_kg=1.0)
     a_srp = np.array([srp_acceleration_kernel(s[:3], q, srp) for s, q in zip(states, sun)])
     a_ct = np.array([M.empirical_acceleration(s, [1.0, 0.0, 0.0, 0.0]) for s in states])
+    models = {"nominal": L.LunarRadiation(), "albedo_0.19": L.LunarRadiation(albedo=0.19)}
+    acc = {name: L.acceleration_kernel(states[:, :3], sun, model) for name, model in models.items()}
+    earth = np.array([spice.spkpos("EARTH", float(e), "J2000", "NONE", "MOON")[0] for e in et0 + grid]) * 1e3
+    gravity = load_lunar_gravity_model(gravity_data_root() / "gl1800f" / "jggrx_1800f_sha.tab", nmax=300, mmax=300)
+    interp = lambda tab: (lambda t: np.array([np.interp(t, grid, tab[:, i]) for i in range(3)]))  # noqa: E731
+    gradient = FC.lunar_gradient(et0, gravity, float(spice.bodvrd("399", "GM", 1)[1][0]) * 1e9,
+                                 float(spice.bodvrd("10", "GM", 1)[1][0]) * 1e9, interp(earth), interp(sun))
+    forcing = np.stack([a_srp, a_ct, acc["nominal"], acc["albedo_0.19"]], axis=2)
+    t_col = time.time()
+    xcols = FC.forced_columns(grid, states, forcing, gradient)
+    print(f"forced columns in {time.time() - t_col:.0f} s", flush=True)
     gq = {}
-    for name, acc, col in (("K", a_srp, ref.s[:, :, 0]), ("C_T", a_ct, ref.s[:, :, 5])):
-        s_q = quadrature_column(grid, ref.phi, acc)
+    for name, j, col in (("K", 0, ref.s[:, :, 0]), ("C_T", 1, ref.s[:, :, 5])):
+        s_q = xcols[:, :, j]
         diff = float(np.max(np.linalg.norm(s_q[fit, :3] - col[fit, :3], axis=1)))
         size = float(np.max(np.linalg.norm(col[fit, :3], axis=1)))
+        diff_all = float(np.max(np.linalg.norm(s_q[:, :3] - col[:, :3], axis=1)))
         gq[name] = dict(max_position_difference=diff, column_max_position=size, relative=diff / size,
+                        relative_incl_263=diff_all / float(np.max(np.linalg.norm(col[:, :3], axis=1))),
                         PASS=diff <= 1e-3 * size)
-    print("G_QUAD", json.dumps(gq))
+    print("G_QUAD", json.dumps(gq), flush=True)
 
-    # the LRP columns (unit K_LRP) for the nominal model and the albedo-0.19 variant
-    models = {"nominal": L.LunarRadiation(), "albedo_0.19": L.LunarRadiation(albedo=0.19)}
-    acc, cols = {}, {}
-    for name, model in models.items():
-        acc[name] = L.acceleration_kernel(states[:, :3], sun, model)
-        cols[name] = quadrature_column(grid, ref.phi, acc[name])
+    cols = {"nominal": xcols[:, :, 2], "albedo_0.19": xcols[:, :, 3]}
     lit = np.linalg.norm(a_srp, axis=1) > 0.0
     a_nom = K_LRP * acc["nominal"]
     ric = ric_split(a_nom, states)
@@ -176,7 +190,7 @@ def main() -> None:
         decision = "C6_NOT_QUALIFIED"
     else:
         decision = "C6_LRP_MATERIAL" if (h_k or h_pred) else "C6_LRP_IMMATERIAL"
-    result = dict(predeclaration=PRE, gates=gates, G_QUAD=gq, G_E0=g_e0, G_SIZE=g_size,
+    result = dict(predeclaration=PRE, method=METHOD, gates=gates, G_QUAD=gq, G_E0=g_e0, G_SIZE=g_size,
                   hypotheses_as_computed=dict(H_K=h_k, H_PRED=h_pred, H_SCALE=h_scale), decision=decision,
                   k_drop_E1=dk, k_lrp_nominal=K_LRP, accelerations=accel, experiments=exps,
                   lrp_column_max_position_m={k: float(np.max(np.linalg.norm(K_LRP * v[:, :3], axis=1)))

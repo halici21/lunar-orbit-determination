@@ -47,5 +47,12 @@
  "amendments_before_any_survey_number": {
   "A1": "theta quadrature: Gauss-Legendre in x with theta = theta_max x^2 instead of the midpoint rule; the midpoint rule with 60 rings missed G_UNIT (a) at 50 km altitude by 1.7e-3 (the integrand peaks under the nadir). Model, gates and thresholds unchanged",
   "A2": "G_UNIT (b) evaluated at r = 500 R instead of 20 R: (2/3) a S (R/r)^2 is the far-field limit and at 20 R the model is 3.7 % above it through O(R/r) finite-distance terms (part of the limb is hidden, elements are not at zero phase), not through quadrature error"
+ },
+ "amendment_A3_after_run1": {
+  "what_happened": "Run 1 (results/phase_c6_lunar_radiation_survey_run1_quadrature.json) FAILED G_QUAD as computed: the quadrature reproduced the cached K column to 1.4 % and the C_T column to 7.2 % (max over the fit arc), so run 1 is C6_NOT_QUALIFIED and its experiment numbers are not read.",
+  "diagnosis": "the quadrature multiplies F3's finite-difference Phi(t) by Phi(tau)^-1; cond(Phi) grows to 8.5e11 by the arc end and the product loses accuracy after about a day (C_T column error 1e-5 at 6 h, 9e-3 at 1.4 d, 0.36 at 2.3 d; local 20 s transitions Phi(t+20)Phi(t)^-1 depart from symplectic by 0.6-0.8 after day 1). Orientation verified (transposed Phi gives 100 % error)",
+  "change": "columns are computed by integrating d/dt X = A(t) X + [0; F(t)] from X(t_epoch) = 0 along F3's cached trajectory (RK4, 10 sub-steps per 20 s interval, cubic Hermite states, linear forcing), A from the full gravity gradient (Moon point mass + GL1800F N = 300 in MOON_PA_DE440 at et0 + t + Earth and Sun third body); SRP and empirical gradients omitted (negligible). Integrator unit-tested against the closed-form oscillator (tests/test_phase_c6_lunar_radiation.py)",
+  "unchanged": "model, experiments, gates and thresholds; G_QUAD is re-evaluated with the new column method on the same cached K and C_T columns",
+  "consequence_outside_C6": "F3's transition() forms local transitions from the same FD Phi; this affects the sigma > 0 DMC runs of F3/F3b (not F3c, which is plain batch). To be assessed in its own step"
  }
 }
