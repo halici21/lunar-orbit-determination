@@ -456,6 +456,21 @@ PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256 = {
         "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
 }
 
+# F1 WP1.10 re-freeze (owner-authorized V&V programme, 2026-11-01; assessment
+# MEAS-02). stellar_aberration_model='spice_ssb' applied the SSB observer
+# velocity to the Moon-centred light-time line of sight, counting the Moon's
+# ~30 km/s SSB velocity twice (18.4 arcsec against an independent SPICE CN+S).
+# measurements.py now re-expresses that LOS in the SSB frame,
+# normalize(u - v_moon_ssb / c), in generation, prediction and the
+# initial-state Jacobian; spice_ssb and local_mci both match CN+S to ~1 mas.
+#
+#   lunar_od/measurements.py  4949a8d0... -> 60dc49a4...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_10_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/measurements.py":
+        "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
+}
+
 
 
 
@@ -473,6 +488,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_WP1_10_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_10_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:

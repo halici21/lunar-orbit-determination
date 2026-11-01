@@ -906,6 +906,7 @@ def one_way_light_time_position_initial_state_jacobian(
     horizontal_unit_norm_threshold: float = ANGLE_JACOBIAN_MIN_HORIZONTAL_UNIT_NORM,
     apply_stellar: bool = False,
     observer_reference_velocity_j2000_mps: ArrayLike | None = None,
+    light_time_frame_velocity_j2000_mps: ArrayLike | None = None,
 ) -> tuple[LightTimeSolution, OneWayLightTimeInitialStateSensitivity, np.ndarray]:
     """Return an implicit initial-state [range, azimuth, elevation] Jacobian.
 
@@ -941,13 +942,20 @@ def one_way_light_time_position_initial_state_jacobian(
             x_j2k_itrf_rx,
             observer_reference_velocity_j2000_mps,
         )
+        unit_los = sensitivity.unit_line_of_sight
+        j_unit_dx0 = sensitivity.j_unit_los_dx0
+        if light_time_frame_velocity_j2000_mps is not None:
+            unit_los, j_frame = _light_time_frame_unit_los(
+                unit_los, light_time_frame_velocity_j2000_mps, light_speed_mps=light_speed_mps
+            )
+            j_unit_dx0 = j_frame @ j_unit_dx0
         aberration = _stellar_aberration_local_jacobian(
-            sensitivity.unit_line_of_sight,
+            unit_los,
             observer_velocity,
             light_speed_mps=light_speed_mps,
         )
         direction_unit_los = aberration.apparent_unit_los
-        j_direction_dx0 = aberration.local_jacobian @ sensitivity.j_unit_los_dx0
+        j_direction_dx0 = aberration.local_jacobian @ j_unit_dx0
 
     block = _position_measurement_jacobian_from_unit_los(
         sensitivity.d_range_dx0,
@@ -1097,6 +1105,11 @@ def position_initial_state_jacobian_from_augmented_history(
                     "pass_geo.earth_vel_mci_mps for the Jacobian."
                 )
         observer_reference_velocity = np.asarray(observer_reference_velocity, dtype=float)
+    frame_velocity = (
+        light_time_frame_velocity_history(pass_geo)
+        if (use_stellar and stellar_model == "spice_ssb")
+        else None
+    )
     phi_history = np.stack(
         [row.reshape((6, 6), order="F") for row in x_aug_hist[:, 6:]], axis=0
     )
@@ -1122,12 +1135,51 @@ def position_initial_state_jacobian_from_augmented_history(
                     if observer_reference_velocity is None
                     else observer_reference_velocity[time_idx]
                 ),
+                light_time_frame_velocity_j2000_mps=(
+                    None if frame_velocity is None else frame_velocity[time_idx]
+                ),
             )
         )
         # position_initial already contains Phi_r(t_t,t0), including the CN+S
         # direction chain when active; another STM would double-map it.
         h_initial[row0 : row0 + 3, :] = position_initial
     return h_initial
+
+
+def _light_time_frame_unit_los(
+    unit_los: ArrayLike,
+    frame_velocity_j2000_mps: ArrayLike,
+    *,
+    light_speed_mps: float = C_LIGHT_MPS,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Re-express a Moon-centred light-time unit LOS in a frame moving at ``v``.
+
+    The one-way light time is solved in the Moon-centred frame. Its geometric
+    vector ``rho`` (spacecraft at transmit time minus station at receive time)
+    exceeds the same vector built in a frame where the Moon moves at ``v`` by
+    ``v * tau`` with ``tau = |rho| / c``, so the unit LOS in that frame is
+    ``normalize(u - v / c)``: a function of ``u`` alone. Returns that unit
+    vector and its 3x3 derivative with respect to ``u``.
+
+    Assessment MEAS-02 (WP1.10): ``spice_ssb`` applied SSB-relative aberration
+    to the Moon-centred LOS, counting the Moon's ~30 km/s SSB velocity twice
+    (~18 arcsec against SPICE CN+S). The Moon's SSB acceleration over ``tau``
+    (< 1 cm) is neglected.
+    """
+    u = np.asarray(unit_los, dtype=float).reshape(3)
+    w = u - np.asarray(frame_velocity_j2000_mps, dtype=float).reshape(3) / float(light_speed_mps)
+    w_norm = float(np.linalg.norm(w))
+    w_hat = w / w_norm
+    return w_hat, (np.eye(3) - np.outer(w_hat, w_hat)) / w_norm
+
+
+def light_time_frame_velocity_history(pass_geo) -> np.ndarray | None:
+    """Moon SSB velocity history for ``spice_ssb``: Earth SSB minus Earth Moon-relative velocity."""
+    earth_vel_ssb = getattr(pass_geo, "earth_vel_ssb_j2000_mps", None)
+    earth_vel_mci = getattr(pass_geo, "earth_vel_mci_mps", None)
+    if earth_vel_ssb is None or earth_vel_mci is None:
+        return None
+    return np.asarray(earth_vel_ssb, dtype=float) - np.asarray(earth_vel_mci, dtype=float)
 
 
 def apply_stellar_aberration(
@@ -1274,6 +1326,7 @@ def _apparent_position_observable(
     *,
     observer_earth_vel_rx: ArrayLike | None = None,
     apply_stellar: bool = False,
+    light_time_frame_velocity_rx: ArrayLike | None = None,
     light_speed_mps: float = C_LIGHT_MPS,
     tolerance_s: float = ONE_WAY_LIGHT_TIME_TOLERANCE_S,
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
@@ -1301,6 +1354,12 @@ def _apparent_position_observable(
     Moon for the local-MCI model, or relative to the SSB for the SPICE-like model.
     The station's Earth-rotation velocity (from the 6x6 transform) is added to it.
     The light-time solution itself is unchanged.
+
+    For the SSB model, ``light_time_frame_velocity_rx`` is the Moon's SSB
+    velocity: the Moon-centred light-time LOS is first re-expressed in the SSB
+    frame (:func:`_light_time_frame_unit_los`) so the SSB aberration acts on a
+    frame-consistent vector, reproducing SPICE CN+S directions. The range stays
+    the Moon-centred light-time range (SSB light time is MEAS-01, WP2.1).
     """
     earth_pos_mci_rx = np.asarray(earth_pos_mci_rx, dtype=float).reshape(3)
     x_rx = np.asarray(x_j2k_itrf_rx, dtype=float)
@@ -1352,8 +1411,15 @@ def _apparent_position_observable(
             station_relative_state_j2000=station_rel_state_j2000,
         )
         # CN-corrected inertial line of sight, then stellar aberration rotation.
+        rho_lt = r_sc_tt - station_mci_rx
+        if light_time_frame_velocity_rx is not None:
+            rho_norm = float(np.linalg.norm(rho_lt))
+            unit_frame, _ = _light_time_frame_unit_los(
+                rho_lt / rho_norm, light_time_frame_velocity_rx, light_speed_mps=light_speed_mps
+            )
+            rho_lt = rho_norm * unit_frame
         rho_inertial = apply_stellar_aberration(
-            r_sc_tt - station_mci_rx,
+            rho_lt,
             observer_vel_inertial,
             light_speed_mps=light_speed_mps,
         )
@@ -1409,6 +1475,11 @@ def _apparent_position_rowwise(
             )
     else:
         earth_vel = getattr(pass_geo, "earth_vel_mci_mps", None)
+    frame_vel = (
+        light_time_frame_velocity_history(pass_geo)
+        if (use_stellar and model == "spice_ssb")
+        else None
+    )
     n_obs = obs_data.shape[0]
     h_meas = np.zeros((n_obs, 3), dtype=float)
     r_tx = np.zeros((n_obs, 3), dtype=float)
@@ -1427,6 +1498,7 @@ def _apparent_position_rowwise(
                 earth_vel[time_idx] if (use_stellar and earth_vel is not None) else None
             ),
             apply_stellar=use_stellar,
+            light_time_frame_velocity_rx=None if frame_vel is None else frame_vel[time_idx],
             observation_index=i,
         )
         h_meas[i] = z
@@ -1566,6 +1638,11 @@ def generate_position_measurements(
                         r_earth_mci[k], x_j2k_itrf,
                         observer_earth_vel_rx=obs_earth_vel,
                         apply_stellar=apply_stellar_aberration,
+                        light_time_frame_velocity_rx=(
+                            v_earth_ssb_j2000[k] - v_earth_mci[k]
+                            if (apply_stellar_aberration and stellar_aberration_model == "spice_ssb")
+                            else None
+                        ),
                         observation_index=candidate_counter,
                     )
                 else:
