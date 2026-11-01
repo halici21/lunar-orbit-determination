@@ -1464,3 +1464,82 @@ H_REF_SUPPORTED.
    - 12 h windows over 09-17..18, to see whether the misfit sits at one time (a boundary) or is spread out;
    - the same windows with the cross-track empirical pair (C_N, S_N) free;
    - a second LOLA SPK release over the same days, if one is available, as an independent reference.
+
+### 17.11 F2t — 12 h windows over 09-17..18, and does a cross-track once-per-rev pair absorb the misfit?
+
+F2s-1 next step 2 (owner request 2026-11-01).
+
+- Predeclaration: `studies/phase17/configs/phase_f2t_short_windows_predeclaration.json` (`3dcd20b`), committed
+  before any F2t number.
+- Script: `studies/phase17/scripts/phase_f2t_short_windows.py`. It reuses F2s-1's `fit_window`; free C_N/S_N is
+  optional and the default path is unchanged (`daccf6a`).
+- Parts: `studies/phase17/results/phase_f2t_parts/`. Result: `studies/phase17/results/phase_f2t_short_windows.json`.
+
+Analysis only: no production code, no data/weight/bias/measurement change, F2r/F2s/F2s-1 classifications unchanged.
+
+Windows (12 h each):
+
+- B: seven windows starting F0 + 0, 6, …, 36 h, with F0 = 2009-09-16 23:57 UTC.
+- C (controls): two windows starting F0 + 60 h and F0 + 72 h.
+
+Variants:
+
+- V0: C_N and S_N fixed at E2's values, as in F2s-1.
+- V1: C_N and S_N estimated, with prior (0, 1e-8 m/s²).
+
+All 18 fits STATIONARY. Shard 1 died once on a worker MemoryError while other sessions' jobs were running. The
+two windows it lost were refitted unchanged.
+
+#### Result as computed: **SPREAD** + **EMP_ABSORBS**
+
+| window | start (UTC 2009-09) | V0 fit R / T / N (m) | V1 fit R / T / N (m) | V1 C_N / S_N (m/s²) | K V0 → V1 (m²/kg) |
+|---|---|---|---|---|---|
+| B00 | 16 23:57 | 0.11 / 0.58 / **2.03** | 0.10 / 0.48 / 0.81 | 2.70e-7 / 1.7e-8 | 0.0086 → 0.0186 |
+| B06 | 17 05:57 | 0.12 / 0.69 / 2.01 | 0.11 / 0.58 / 0.75 | 2.67e-7 / 2.5e-8 | 0.0092 → 0.0213 |
+| B12 | 17 11:57 | 0.10 / 0.42 / 1.82 | 0.09 / 0.33 / 0.68 | 2.36e-7 / 5.4e-8 | 0.0026 → 0.0127 |
+| B18 | 17 17:57 | 0.10 / 0.46 / 1.58 | 0.09 / 0.39 / 0.63 | 2.07e-7 / 3.9e-8 | 0.0072 → 0.0152 |
+| B24 | 17 23:57 | 0.10 / 0.49 / 1.48 | 0.09 / 0.42 / 0.56 | 1.94e-7 / 3.1e-8 | 0.0073 → 0.0162 |
+| B30 | 18 05:57 | 0.09 / 0.50 / 1.34 | 0.08 / 0.44 / 0.52 | 1.76e-7 / 2.8e-8 | 0.0099 → 0.0173 |
+| B36 | 18 11:57 | 0.10 / 0.44 / 1.69 | 0.09 / 0.38 / 0.67 | 2.23e-7 / −6.0e-9 | 0.0018 → 0.0118 |
+| C60 | 19 11:57 | 0.07 / 0.20 / 0.07 | 0.07 / 0.21 / 0.07 | −2.8e-9 / −3.4e-9 | 0.0140 → 0.0138 |
+| C72 | 19 23:57 | 0.07 / 0.15 / 0.48 | 0.07 / 0.17 / 0.19 | −6.3e-8 / −9.2e-9 | 0.0174 → 0.0145 |
+
+Decision inputs:
+
+- Control median c0 = 0.28 m (C60 0.07, C72 0.48); both are ≤ 1 m, so the controls are clean.
+- High threshold = max(2 c0, 1 m) = 1.0 m; it is set by the 1 m floor.
+- All 7 B windows are high (1.34–2.03 m) → **SPREAD**.
+- Median V0 N over the high windows is 1.69 m; median V1 N is 0.67 m.
+- 0.67 m ≤ max(1.5 c0, 1 m) = 1.0 m → **EMP_ABSORBS**.
+
+#### Reading
+
+1. **No boundary at 12 h resolution.** Every 12 h window on 09-17/18 misfits LOLA in N by 1.3–2.0 m. Every window
+   on 09-19/20 misfits by ≤ 0.5 m. The misfit falls slowly across 09-17..18 (2.03 → 1.34 m, then 1.69 m) and does
+   not sit in one window. A single arc-stitching seam inside 09-17..18 is not what this shows.
+2. **EMP_ABSORBS passes on the 1 m floor, not on the control level.** V1's high-window median 0.67 m is still 2.4 c0.
+   1.5 c0 = 0.42 m would have failed without the floor. The cross-track pair removes about 60 % of the N misfit,
+   not all of it.
+3. **The absorbing C_N is far larger than any plausible spacecraft force.** C_N is 1.8–2.7e-7 m/s² in every B
+   window, with one sign and a smooth trend; it is 18–27 σ against its 1e-8 prior. The SRP acceleration in these
+   fits is P·K ≈ 4.56e-6 × (0.01–0.02) ≈ 4–9e-8 m/s². The once-per-rev cross-track term would therefore have to be
+   3–6× the entire SRP acceleration. On 09-19/20 the same estimate is −0.3 to −6e-8, near zero. Freeing C_N also
+   roughly doubles K in the B windows (correlation through the cross-track SRP component); in the controls K does
+   not move.
+4. **What this points to.** A once-per-rev cross-track acceleration is in effect a slow rotation of the orbit plane.
+   The F2t numbers say LOLA's 09-17/18 trajectory carries a plane rotation that our dynamics do not have, and that
+   it fades by 09-19. A real force would have to be ~5× SRP and switch off within about two days. LOLA's stated
+   arc model has no cross-track empirical term. The more economical reading is that the reference's 09-17/18
+   orbit plane differs from what a single dynamical arc can reach. That is consistent with F2s-1's
+   H_REF_SUPPORTED, but it still is not proof: F2t cannot rule out a time-local force, nor a frame or orientation
+   effect specific to those days.
+
+#### Next steps
+
+1. **F2r's dynamics share on 09-17/18 should not be booked against our force model.** For Phase C force-model
+   work, use LOLA on 09-19/20 (and the days the controls cover) as the comparison reference. Do not use it on
+   09-17/18.
+2. An independent reference over 09-17..18 is the only test that separates "reference" from "time-local force". The
+   candidates are a second LOLA SPK release, or a GRGM1200A-based LRO orbit. Predeclare it before use.
+3. Not recommended: estimating C_N/S_N in the production LRO fits on the strength of this result. The required size
+   is non-physical, and it moves K.
