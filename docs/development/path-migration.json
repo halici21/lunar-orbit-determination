@@ -2543,13 +2543,14 @@
     },
     "lunar_od/force_contract.py": {
       "path": "src/lunar_od/force_contract.py",
-      "original_sha256": "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
+      "original_sha256": "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813"
+        "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
+        "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a"
       ],
-      "refrozen_from_sha256": "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained."
     },
     "lunar_od/force_models.py": {
       "path": "src/lunar_od/force_models.py",
@@ -2741,13 +2742,14 @@
     },
     "lunar_od/scenario_config.py": {
       "path": "src/lunar_od/scenario_config.py",
-      "original_sha256": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+      "original_sha256": "45bb408dee3e9a3a47a548aa6ee24501b7232d79c032abc4915bfcda4cba88a9",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6"
+        "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
+        "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c"
       ],
-      "refrozen_from_sha256": "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained."
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
