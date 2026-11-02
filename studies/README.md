@@ -48,5 +48,6 @@ A materiality survey (no production change) decides what an implementation phase
 | F1 | Real LRO two-way range residuals | H1 not met as computed; H2, H3 met | [F1](phase17/reports/phase_f1_lro_residuals.md) |
 | F1c | Real LRO two-way Doppler residuals | H1, H2 not met (constant Doppler bias); H3 met | [F1c](phase17/reports/phase_f1c_lro_doppler.md) |
 | F2 | First LRO orbit determination (12 h, range) | `F2_NOT_QUALIFIED` as computed | [F2](phase17/reports/phase_f2_lro_od.md) |
+| F2r–F2u | Post-fit error growth against LOLA; cross-track misfit on 2009-09-17/18 (window fits, C_N/S_N, FDF reference) | F2r `E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT`; F2s-1 `H_REF_SUPPORTED`; F2t `SPREAD` + `EMP_ABSORBS` (non-physical C_N); F2u `F2U_UNRESOLVED` | [F2 §17.9–17.12](phase17/reports/phase_f2_lro_od.md) |
 
 LRO tracking data and reference orbits are not committed; each F report names its PDS source.

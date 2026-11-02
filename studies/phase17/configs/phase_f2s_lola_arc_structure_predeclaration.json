@@ -1,0 +1,50 @@
+{
+ "phase": "Phase F2s - is F2r's cross-track misfit LOLA's arc stitching or our dynamics? Per-arc fits of our dynamics to LOLA",
+ "written": "2026-10-31, after F2r (d91726e) and before any F2s number; owner request: F2r next step 1",
+ "known_beforehand": [
+  "F2r E2: our dynamics (GL1800F N=300, DE440, MOON_PA_DE440, K, C_T, S_T free, C_N/S_N pinned, F2H priors) fitted to LOLA positions over the fit span F (2009-260..262, ~3 d): fit RMS R/T/N 0.25 / 0.82 / 8.44 m; the same with DE421 (8.44) and GRGM1200L (7.93)",
+  "SPK comment: LOLA POD arcs ~2.5 d, overlap ~8-12 h with the previous and next arc, overlap always a White Sands pass, trajectories of consecutive arcs linearly tapered in the overlap; each arc adjusts state, an SRP scale, a constant along-track empirical acceleration; version 05 (GRGM900C/600) accuracy ~10 m total, < 1 m radial. Arc start/end times are NOT given",
+  "SPK segment list: 17 contiguous segments 2009-09-15 21:00 .. 09-25 15:35, all exactly 13 h 52 m 45 s except the last: file chunking, not arc boundaries (looked at; no residual or fit computed)",
+  "No LOLA acceleration residual and no window fit has been computed"
+ ],
+ "hypotheses": {
+  "H_REF": "the cross-track misfit comes from the tapered stitching of LOLA arcs: inside one arc our dynamics follow LOLA closely",
+  "H_DYN": "the misfit is in our dynamics relative to LOLA's: restricting the fit to one arc does not remove it"
+ },
+ "step_A_arc_detection": {
+  "what": "no fit. Acceleration residual a_res(t) = a_LOLA(t) - a_model(t, y_LOLA(t)) on a 30 s grid over F and P (F2r spans), in LOLA's RTN",
+  "a_LOLA": "5-point central stencil of SPK velocities, h = 5 s: (v(t-2h) - 8 v(t-h) + 8 v(t+h) - v(t+2h)) / 12h",
+  "a_model": "the F2 study driver's RHS (dynamics._build_state_rhs, GL1800F N=300, MOON_PA_DE440, DE440, SRP with E2's K) plus the empirical acceleration with E2's C_T, S_T, C_N, S_N",
+  "method_check": "the same stencil + RHS applied to our own E2 trajectory (propagated on a 5 s grid) must give an RMS residual <= 1e-9 m/s^2 per component; otherwise F2S_INCONCLUSIVE",
+  "envelope": "e(t) = RMS over one orbital period (from LOLA's mean semi-major axis) of |a_res - its one-period running mean| (3 components)",
+  "taper_rule": "taper window = contiguous interval of >= 3 h with e(t) > 3 x median(e) over the span; windows closer than 2 h merged",
+  "ARC_STRUCTURE_FOUND": "at least one taper window, every window 4..16 h long, and consecutive windows (if any) 1.3..2.7 d apart (start to start). Otherwise ARC_STRUCTURE_NOT_FOUND"
+ },
+ "step_B_window_fits": {
+  "fit": "E2's set-up on a window [ws, we]: epoch = ws, estimate the state at ws, K, C_T, S_T (C_N, S_N pinned at E2's values), F2H priors on K and the empirical terms, LOLA positions every 60 s, 1 m weight; start: LOLA state at ws, E2's K and empirical terms; LM, stop on decrement < 1e-3 chi^2 or 10 iterations",
+  "if_found": "core windows = the parts of F u P between detected tapers (taper windows excluded), each >= 6 h; straddle windows = one per taper inside F u P, length = median core length (capped at the F u P span), centred on the taper",
+  "if_not_found": "sliding windows of 24 h stepped by 12 h over F u P; each reported with its overlap with any detected high-envelope interval",
+  "metric": "fit RMS of the position difference in LOLA's R, T, N over the window; reference: E2's own residual restricted to the same window (from E2's stored solution, recomputed)"
+ },
+ "decision": {
+  "if_found": {
+   "H_REF_SUPPORTED": "median core N RMS <= 2.1 m (0.25 x E2's 8.44) and median straddle N RMS >= 2 x median core N RMS",
+   "H_DYN_SUPPORTED": "median core N RMS >= 0.5 x median of E2's N RMS restricted to the same cores, and straddle / core < 1.5",
+   "MIXED": "otherwise"
+  },
+  "if_not_found": {
+   "H_REF_SUPPORTED": "max / min window N RMS >= 3 and min <= 2.1 m",
+   "H_DYN_SUPPORTED": "max / min < 1.5 and min > 2.1 m",
+   "MIXED": "otherwise"
+  },
+  "F2S_INCONCLUSIVE": "method check fails, or more than half of the window fits do not reach the stopping rule"
+ },
+ "secondary_descriptive": "K and C_T/S_T per window; whether F2r's prediction span P lies in a different LOLA arc than the end of F (consequence for F2r's G_T is discussed, not reclassified)",
+ "not_changed": "no production code; no data, weight, bias or measurement-model change; F2r's classification is not rewritten; nothing tuned on day 263",
+ "git": "branch phase-f1-lro-residuals, push per the owner's standing approval (owner OK for this branch 2026-10-31); main not touched",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2s_lola_arc_structure.py",
+  "results": "studies/phase17/results/phase_f2s_lola_arc_structure.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.10"
+ }
+}

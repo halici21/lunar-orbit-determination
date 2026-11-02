@@ -363,6 +363,7 @@ class ScenarioConfigTests(unittest.TestCase):
             "start_mode": "hot",
             "network": "multi",
             "noise": True,
+            "measurement_seed": 1,
         }
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

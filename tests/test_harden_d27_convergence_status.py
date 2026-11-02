@@ -203,8 +203,10 @@ class PositionBlsStatusContractTests(unittest.TestCase):
         x_guess = x_true0 + np.array([120.0, -90.0, 55.0, 0.05, -0.025, 0.018])
         _x, status, stats = _solve_position(x_guess, tol_step_norm=1.0)
         self.assertEqual(status, "Converged")
-        self.assertEqual(stats.termination_detail, "")  # step-norm path: no detail, as before
-        self.assertTrue(math.isnan(stats.gauss_newton_decrement))
+        # WP4.2: the step-norm test now only nominates; the point is certified at the
+        # caller's tolerance by the Gauss-Newton decrement (was: no detail, NaN decrement).
+        self.assertEqual(stats.termination_detail, "STEP_NORM")
+        self.assertLessEqual(stats.gauss_newton_decrement, STATIONARITY_DECREMENT_TOL)
 
 
 class DiagnosticsClassificationTests(unittest.TestCase):

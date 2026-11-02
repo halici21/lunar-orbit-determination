@@ -119,6 +119,7 @@ def main() -> None:
             ukf_transform_config=UnscentedTransformConfig(alpha=0.35),
             ukf_adaptive_config=ukf_adaptive_config,
             ukf_covariance_form="square_root",
+            ukf_initial_state_sigma=(args.cold_sigma_pos_m, args.cold_sigma_vel_mps),
             rtol=args.rtol,
             atol=args.atol,
         )

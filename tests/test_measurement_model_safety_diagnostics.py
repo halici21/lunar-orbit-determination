@@ -485,13 +485,12 @@ def test_p0b1_one_way_nonconverged_last_iterate_is_rejected():
 def _round_trip_equation_residuals(solution, t_grid: np.ndarray, states: np.ndarray, config):
     sc_t2 = interp_state_history(t_grid, states, solution.transponder_time_s)[:3]
     geometric_light_time = float(np.linalg.norm(sc_t2) / config.light_speed_mps)
-    downlink = (solution.receive_time_s - solution.transponder_time_s) - geometric_light_time
-    uplink = (
-        solution.transponder_time_s
-        - config.transponder_delay_s
-        - solution.transmit_time_s
-        - geometric_light_time
-    )
+    # F1 WP1.4 (MEAS-03): each leg's interval is the solver's reported LOCAL
+    # light time (the quantity the events are built from), not one re-derived
+    # by differencing two rounded epochs; the epoch form differs from it by
+    # epoch rounding (1.1e-16 s here) and grows as ulp(t) on long arcs.
+    downlink = solution.downlink_light_time_s - geometric_light_time
+    uplink = solution.uplink_light_time_s - geometric_light_time
     return np.array([downlink, uplink], dtype=float)
 
 
@@ -897,7 +896,8 @@ def test_fa03b_history_domain_matrix_documents_current_behavior():
     pass_geo = PassGeometry(
         t_s=t_grid,
         earth_pos_mci_m=np.column_stack([t_grid, 2.0 * t_grid, 3.0 * t_grid]),
-        earth_vel_mci_mps=np.zeros((t_grid.size, 3)),
+        # Velocity consistent with the linear position (WP1.1: Earth is Hermite-interpolated).
+        earth_vel_mci_mps=np.tile([1.0, 2.0, 3.0], (t_grid.size, 1)),
         x_j2000_to_itrf93=xforms,
         stations=(station,),
         measurement_type="range_rate",

@@ -1,0 +1,23 @@
+{
+ "phase": "Phase F3b - where the sigma* DMC smoother's 2009-263 prediction gain comes from: end-of-fit state or re-split constants (diagnostic, no new fit)",
+ "written": "2026-10-31, after F3 (c15d5c8) and before any F3b code or number",
+ "motivation": "F3 (studies/phase17/reports/phase_f3_lro_dmc_smoother.md) found that the sigma* = 1e-9 m/s^2 smoother predicts the 263 data far better than F2p (263 chi2 69 900 -> 3 643; range 5.21 -> 1.04 m, Doppler 5.61 -> 1.72 mm/s) while it also moves K_SRP 0.0745 -> 0.0513 and C_T / S_T by +12.5 / -16.6 sigma. w decays with tau = 1800 s after the fit, so the 263 prediction is carried by the end-of-fit state and the constants. F3 cannot say which. If the constants carry it, a batch fit with a different K_SRP / along-track empirical split is worth testing directly; if the state carries it, DMC's gain is a fit-arc-end correction that a batch force model does not reproduce.",
+ "method": {
+  "inputs": "F3's cached reference (lro_data/f3_cache/reference.npz, G0 PASS) and F3's filter (phase_f3_core.smooth) rerun at sigma = 0 and sigma* = 1e-9, tau = 1800 s, with F3's priors, scales and epochs. No new LRO propagation except the G_LIN check",
+  "split": "t_e = the last epoch before the first 263 epoch. The sigma* smoothed state there is x_e = [dx_e, w_e, dc]. Every 263 epoch's deviation is propagated from t_e with F3's transition (sequentially over the sorted 263 epochs) for three linear parts that sum to x_e: STATE = [dx_e, w_e, 0], DYN = [0, 0, dc with range biases and Doppler bias zeroed], MEAS = [0, 0, dc with only range biases and Doppler bias]. CONST = DYN + MEAS. Each part's 263 residuals are r_ref - H_loc dx_part - H_c dc_part; F2p's are r_ref",
+  "scores": "for F2p, STATE, CONST, DYN, MEAS, STATE+DYN, FULL: 263 chi2 against the data (range / 1 m, Doppler / 2 mm/s, F3's units), range and Doppler RMS and mean, 263 RIC RMS vs LOLA (scoring only)",
+  "share": "share_X = (chi2_F2p - chi2_X) / (chi2_F2p - chi2_FULL)"
+ },
+ "gates": {
+  "G_F3": "the reruns reproduce F3's JSON: sigma = 0 and sigma* 263 chi2 within 1e-6 relative of 69 899.79 / 3 642.61",
+  "G_ADD": "STATE + CONST propagated from t_e reproduces the sigma* smoother's own 263-epoch deviations: max |difference| <= 1e-3 m in position over all 263 epochs (it is the same linear map; this checks the sequential propagation and the split)",
+  "G_LIN": "linearity of the constant-parameter sensitivity at this size: one nonlinear F2 propagation from F2p's epoch with F2p's parameters plus sigma*'s dynamic constant deviation (K, C_T, S_T, C_N, S_N), minus F2p's own trajectory, against S(t) dc at the 263 comparison epochs: max position difference <= 0.1 m or <= 2 % of max |S dc|, whichever is larger"
+ },
+ "hypotheses": {
+  "H_STATE": "share_STATE >= 0.8",
+  "H_CONST": "share_CONST >= 0.8"
+ },
+ "decision_rule": "any gate FAIL -> F3B_NOT_QUALIFIED. Otherwise H_STATE only -> F3B_STATE_CARRIES; H_CONST only -> F3B_CONSTANTS_CARRY; both or neither -> F3B_MIXED",
+ "reported_not_gated": "share_DYN, share_MEAS, share_STATE+DYN, each part's 263 range / Doppler RMS and mean and RIC vs LOLA, the sigma* constant deviations (K, C_T, S_T, C_N, S_N, biases), the size of dx_e and w_e in RIC",
+ "outputs": {"report": "studies/phase17/reports/phase_f3_lro_dmc_smoother.md (new section F3b)", "results": "studies/phase17/results/phase_f3b_prediction_split.json", "script": "studies/phase17/scripts/phase_f3b_prediction_split.py"}
+}

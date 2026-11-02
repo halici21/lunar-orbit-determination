@@ -1252,6 +1252,373 @@ measurement parameters):
 2. A future diagnostic of this kind must state its rules relative to the fit-day level, and must check that the
    reference orbit has no constant offset of its own before using it as the baseline.
 
+### 17.9 F2r — post-fit orbit-error growth against LOLA: dynamics root-cause isolation
+
+This is the owner brief "Phase E-D1", renamed F2r because Phase E is the roadmap's speed phase.
+
+- Predeclaration: `studies/phase17/configs/phase_f2r_postfit_growth_predeclaration.json` (`9447cd3`), committed
+  before any F2r number.
+- Script: `studies/phase17/scripts/phase_f2r_postfit_growth.py`.
+- Per-experiment parts: `studies/phase17/results/phase_f2r_parts/`.
+- Merged result and classification: `studies/phase17/results/phase_f2r_postfit_growth.json`.
+
+Analysis only:
+
+- no production code;
+- no change to data editing, weights, Doppler bias or the measurement model;
+- no constant or parameter set by hand;
+- F2Q_PREDECLARED_OUTCOME = H_PASS unchanged.
+
+Definitions (predeclared):
+
+- Δ = estimate − LOLA, in LOLA's own R/T/N axes.
+- F = fit-day measurement span; P = day-263 span.
+- Baseline b = mean of Δ over F; growth g = Δ − b.
+- Primary metric: G_T = RMS of g_T over P.
+
+#### Classification as computed
+
+**F2R_CLASSIFICATION = E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT.**
+
+- All validation steps passed.
+- Half of the growth stays when our dynamics are fitted directly to LOLA: share_dyn = 0.52. That is the MIXED
+  branch, so E2b, E3 and E4 were all run.
+- The two substitutions that could be tested explain 0.08 m of the 2.05 m dynamics share, i.e. under 25 %. They
+  are the DE421 ephemeris and frame, and the GRGM1200L gravity field.
+- G_T(E0) = 3.97 m is **below LOLA's stated accuracy (~10 m total)**. From the LOLA comparison alone it therefore
+  cannot be called our defect.
+
+| step | what | G_T (m) | G_R / G_N (m) | G_vN (mm/s) | fit-arc RMS N (m) | Doppler-proj G (mm/s) | status |
+|---|---|---|---|---|---|---|---|
+| E0 | F2p, rtol 1e-12 | **3.97** | 1.50 / 2.78 | 7.87 | 12.36 | 4.15 | — |
+| E1 | F2p, rtol 1e-13 | 3.97 (ΔG_T 4e-5) | 1.50 / 2.78 | 7.87 | 12.36 | 4.15 | negligible |
+| E2 | our dynamics fitted to LOLA positions over F | **2.05** | 0.44 / 10.99 | 10.30 | **8.44** | 2.78 | STATIONARY, 6 it |
+| E3 | E2 with DE421 + MOON_PA_DE421 | 1.98 | 0.44 / 11.00 | 10.30 | 8.44 | 2.71 | STATIONARY, 6 it |
+| E4 | E2 with GRGM1200L N=300 | **4.40** | 0.39 / 9.24 | 8.64 | 7.93 | 1.62 | STATIONARY, 6 it |
+
+Validation details:
+
+- **Doppler projection check:** PASS. It reproduces the F2q pass means to 0.13 mm/s RMS; the limit is 0.5.
+- **Integrator:** negligible. ΔG_T = 4e-5 m, Δmean = 1e-4 m.
+
+The other steps:
+
+- **Time scale.** Not run; only a bound. Annual TDB−TT rate × 3.6 d span × 1.6 km/s gives ≤ 0.16 m, about 4 % of
+  G_T(E0).
+- **Maneuvers.** None in the arc. The SPK comment puts the first dH at 2009-09-25 15:45.
+- **E5 (SRP and shadow).** LOLA's panel SRP model is not implemented, so its form can't be tested with existing
+  code. The numerical side of shadow crossings is covered by E1.
+- **E2b (state vs parameters).**
+  - F2p's state with E2's K/C_T/S_T: G_T 87.1 m.
+  - E2's state with F2p's parameters: G_T 86.1 m.
+  - The growth means are −86.8 m and +85.7 m.
+  - The epoch state and the dynamic parameters are so strongly coupled that swapping either one alone ruins the
+    orbit. A state/parameter split is not meaningful here; the interaction term dominates.
+
+Candidate criteria as computed:
+
+- Each candidate is tested against the share G_T(E2) = 2.05 m.
+- The predeclaration states criteria 3–5 only in words. The script gives them numeric thresholds, chosen after the
+  E2 result but before E3 and E4 finished:
+  - the removed growth is within ×10 of the share;
+  - the baseline change is smaller than the G_T reduction;
+  - the relative Doppler reduction is within ×0.5–2 of the relative G_T reduction.
+
+| candidate | ΔG_T (m) | share of G_T(E0) | corr(removed, g_T(E0)) | criteria 1–5 |
+|---|---|---|---|---|
+| DE421 ephemeris + frame (E3) | +0.08 | 1.9 % | −0.25 | F F F T T: not met |
+| GRGM1200L gravity (E4) | **−2.35** (worse) | −59 % | −0.37 | F F T T F: not met |
+
+#### Reading
+
+1. **The growth does not come from integration, time scale, maneuvers or the planetary ephemeris/frame.** Together
+   these are below 0.25 m, against a G_T of 3.97 m.
+2. **About half of the growth is the fit.**
+   - Fitting the same dynamics to LOLA's positions instead of to the tracking data halves G_T (3.97 → 2.05 m).
+   - So roughly 2 m is what the solution takes on from three sources: the S-band data, F2p's measurement parameters,
+     and the state/parameter correlation.
+   - E2b shows that this part cannot be assigned to the state or to the parameters separately.
+3. **The other half lies in how our dynamics differ from LOLA's, but not in anything we could swap.**
+   - DE421 changes nothing: the E3 iterations match E2's to four digits.
+   - GRGM1200L fits the arc slightly better (fit RMS 4.60 m vs 4.90 m), but its 263 along-track prediction is worse
+     (4.40 m).
+   - A different field of the same family is no closer to LOLA's GRGM900C/600. At this level the gravity field
+     does not discriminate.
+4. **An observation outside the predeclared metric: cross-track.**
+   - With C_N and S_N pinned as predeclared, our dynamics do not follow LOLA's cross-track position over the fit
+     arc. The fit RMS is 8.4 m in N, against 0.25 m in R and 0.82 m in T.
+   - This holds in E2, E3 and E4 alike, so it comes from neither the ephemeris/frame nor the field.
+   - The velocity growth over 263 is also mostly cross-track: in E0 the mean of g_vN is −7.6 mm/s.
+   - A strong, untested candidate is the reference itself. LOLA's SPK is stitched from ~2.5 d GEODYN arcs that are
+     tapered over 8–12 h overlaps. Our 3.6 d span crosses at least one arc boundary, and no single dynamical
+     trajectory has to fit across it.
+   - Other candidates: LOLA's own constant along-track empirical acceleration per arc, its panel SRP model, and the
+     true-of-date conversion of the SPK.
+5. **Empirical terms.**
+   - E2's along-track sine term is S_T = 1.9e-7 m/s², about 19σ from its 1e-8 prior. F2p's value, 2.5e-7, is close.
+   - Both the tracking data and LOLA's trajectory therefore demand a once-per-rev along-track acceleration of that
+     size.
+   - That is the signature either of an unmodelled force (SRP form, albedo/IR) or of a reference-frame effect.
+
+#### DONE list (owner brief)
+
+| criterion | status | evidence | caveat |
+|---|---|---|---|
+| PHASE_E_D1_GATE (here F2r) | DONE, classification computed | `phase_f2r_postfit_growth.json` | label E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT |
+| predeclaration before results | DONE | `9447cd3` before `c988e81` | criteria 3–5 numeric thresholds fixed after E2, before E3/E4 |
+| growth quantified, shape reported | DONE | E0 G and shape_T: linear +0.65 m/h, quadratic +0.013 m/h² | below LOLA's 10 m stated accuracy |
+| Doppler projection consistent with F2q | PASS | 0.13 mm/s RMS | — |
+| integrator excluded | PASS | E1 ΔG_T 4e-5 m | — |
+| time scale excluded | bound only | ≤ 0.16 m | analytic, not run |
+| maneuvers excluded | DONE | SPK comment | — |
+| state vs parameters split | DONE, not separable | E2b 87 / 86 m | interaction dominates |
+| ephemeris/frame tested | DONE | E3: 1.9 % | — |
+| gravity tested | DONE | E4: worse by 2.35 m | one alternative field only |
+| SRP / albedo / box-wing | not testable | not implemented | Phase C candidate |
+| production defect found | none | — | no HARDEN id |
+| GMAT not used as oracle | DONE | — | — |
+| F2Q outcome unchanged | DONE | 17.8 untouched | — |
+| NEXT_PHASE_RECOMMENDATION | see below | — | — |
+
+#### Next steps
+
+1. **Check the reference before the dynamics.**
+   - Fit E2 separately inside each LOLA arc. Take the arc boundaries from the SPK segment list or from its comment.
+   - If the cross-track misfit and half of the growth disappear within a single arc, the remaining "dynamics share"
+     comes from how the reference is stitched together, not from our force model.
+2. **Then move to the Phase C force-model candidates:** box-wing/panel SRP and albedo/IR.
+   - Freeing the cross-track empirical pair (C_N, S_N) in E2 would be a cheap probe of the cross-track signal.
+   - It would be a new run, predeclared separately.
+3. **The ~2 m fit share (reading item 2) is a measurement/estimation question.** It is the Doppler-bias/orbit
+   correlation seen in F2q, and it is outside this phase's no-measurement-change scope.
+
+### 17.10 F2s / F2s-1 — is F2r's cross-track misfit LOLA's arc stitching or our dynamics?
+
+F2r next step 1 (owner request 2026-10-31).
+
+- Predeclarations, both committed before any number they govern:
+  - F2s: `studies/phase17/configs/phase_f2s_lola_arc_structure_predeclaration.json` (`5e7b2fb`).
+  - F2s-1 amendment: `studies/phase17/configs/phase_f2s1_stencil_step_amendment_predeclaration.json` (`fedd6ca`).
+- Scripts: `studies/phase17/scripts/phase_f2s_lola_arc_structure.py` (F2s-1 = `--h1`) and
+  `phase_f2s_method_check_diagnosis.py`.
+- Parts: `studies/phase17/results/phase_f2s_parts/` (`A`, `diag`, `A_h1`, `W1_slide0..5` and their `_q`).
+- Results: `phase_f2s_lola_arc_structure.json` (F2s) and `phase_f2s1_lola_arc_structure.json` (F2s-1).
+
+Analysis only: no production code, no data/weight/bias/measurement change, F2r's classification unchanged.
+
+#### F2s as computed: F2S_INCONCLUSIVE
+
+- Step A (acceleration residual of LOLA against our model, 5-point stencil, h = 5 s): the method check on our own E2
+  trajectory gave R/T/N 9.0e-8 / 8.5e-8 / 2.9e-8 m/s² against the predeclared 1e-9. That is F2S_INCONCLUSIVE by
+  rule; step B was not run.
+- Diagnosis (own trajectory only, first 3 h of F): the check error scales as h⁴ (R: 2.3e-10, 3.4e-9, 1.3e-7,
+  1.7e-6, 1.7e-5 m/s² at h = 1, 2, 5, 10, 20 s) and the integrator tolerance (1e-10 to 1e-13) changes it by
+  < 0.2 %. It is the stencil's truncation of the short-period GL1800F N=300 signal, not the propagator.
+- The LOLA SPK is type 13 (Hermite), window 4, samples every 5.0 s.
+
+#### F2s-1 as computed: **H_REF_SUPPORTED**
+
+Amendment: h = 1 s; new SPK-noise check D = RMS |a_res(h=1) − a_res(h=2)| ≤ 0.1 × envelope median. Everything else
+as F2s.
+
+- Method check: PASS, 1.7e-10 / 1.8e-10 / 5.7e-11 m/s².
+- SPK noise check: PASS, D = 1.32e-7 against 1.83e-7 (passes, but not by much).
+- LOLA a_res RMS 1.09 / 1.08 / 1.02 e-6 m/s² (R/T/N); envelope median 1.83e-6; no run above 3 × median:
+  **ARC_STRUCTURE_NOT_FOUND**. So step B used the predeclared sliding 24 h windows, stepped by 12 h.
+- All six window fits STATIONARY.
+
+| window | UTC (2009-09) | fit RMS R / T / N (m) | E2 restricted R / T / N (m) | K |
+|---|---|---|---|---|
+| slide0 | 16 23:57 – 17 23:57 | 0.10 / 0.82 / **4.11** | 0.33 / 0.79 / 10.04 | 0.044 |
+| slide1 | 17 11:57 – 18 11:57 | 0.12 / 0.73 / 3.51 | 0.26 / 0.82 / 4.42 | 0.037 |
+| slide2 | 17 23:57 – 18 23:57 | 0.10 / 0.83 / 3.20 | 0.18 / 0.85 / 4.73 | 0.041 |
+| slide3 | 18 11:57 – 19 11:57 | 0.08 / 0.63 / 2.28 | 0.16 / 0.76 / 8.54 | 0.029 |
+| slide4 | 18 23:57 – 19 23:57 | 0.06 / 0.33 / 0.64 | 0.15 / 1.50 / 10.98 | 0.037 |
+| slide5 | 19 11:57 – 20 11:57 | 0.05 / 0.12 / **0.47** | 0.28 / 2.08 / 11.54 | 0.039 |
+
+Decision (not-found branch): max / min window N = 4.11 / 0.47 = **8.8** (≥ 3) and min 0.47 m (≤ 2.1 m):
+H_REF_SUPPORTED.
+
+#### Reading
+
+1. **The cross-track misfit is not uniform in time.** With the same 24 h window, the same free parameters and the
+   same priors, our dynamics follow LOLA to 0.5–0.6 m N from 2009-09-19 on (day 262–263) but only to 3–4 m on
+   09-17. The predeclared H_DYN (a misfit that stays whatever window is chosen) is rejected.
+2. **What H_REF_SUPPORTED does and does not show.** The arc boundaries themselves were not found (no taper signal
+   in the acceleration residual), and the N misfit falls fairly steadily rather than jumping at one time. The
+   result therefore points at something time-local in the reference (consistent with LOLA's arc stitching), but it
+   does not locate an arc boundary. A force that acts only on 09-17/18, and that is in LOLA's model but not ours,
+   would give the same pattern; this test cannot tell the two apart.
+3. **Day 263 itself is matched.** slide5 covers most of F2r's prediction span P and fits to 0.47 m N and 0.12 m T.
+   Our dynamics can reproduce LOLA on day 263 inside a single day. E2's 11.5 m N there (partly a prediction past
+   F) is the cost of one solution fitted across 09-17..19.
+4. **Descriptive, not classified:** the LOLA a_res RMS drops from 2.7e-6 (h = 5 s) to 1.1e-6 m/s² (h = 1 s), much
+   more than the h = 5 s truncation of our own trajectory (1.3e-7). LOLA's trajectory carries more short-period
+   acceleration than our model at h = 5 s; whether this is GRGM900C high-degree content or the type-13 interpolation
+   is not resolved.
+5. Step B's first run crashed after the fits (duplicate epoch in the post-fit propagation, fixed in `c422244`); the
+   rerun is the one reported.
+
+#### Next steps
+
+1. **F2r's dynamics share can no longer be blamed on our force model alone.** Before Phase C force-model work
+   (box-wing SRP, albedo/IR) is justified by the LOLA comparison, the early-arc (09-17/18) misfit needs an
+   explanation.
+2. Cheap probes, each to be predeclared separately:
+   - 12 h windows over 09-17..18, to see whether the misfit sits at one time (a boundary) or is spread out;
+   - the same windows with the cross-track empirical pair (C_N, S_N) free;
+   - a second LOLA SPK release over the same days, if one is available, as an independent reference.
+
+### 17.11 F2t — 12 h windows over 09-17..18, and does a cross-track once-per-rev pair absorb the misfit?
+
+F2s-1 next step 2 (owner request 2026-11-01).
+
+- Predeclaration: `studies/phase17/configs/phase_f2t_short_windows_predeclaration.json` (`3dcd20b`), committed
+  before any F2t number.
+- Script: `studies/phase17/scripts/phase_f2t_short_windows.py`. It reuses F2s-1's `fit_window`; free C_N/S_N is
+  optional and the default path is unchanged (`daccf6a`).
+- Parts: `studies/phase17/results/phase_f2t_parts/`. Result: `studies/phase17/results/phase_f2t_short_windows.json`.
+
+Analysis only: no production code, no data/weight/bias/measurement change, F2r/F2s/F2s-1 classifications unchanged.
+
+Windows (12 h each):
+
+- B: seven windows starting F0 + 0, 6, …, 36 h, with F0 = 2009-09-16 23:57 UTC.
+- C (controls): two windows starting F0 + 60 h and F0 + 72 h.
+
+Variants:
+
+- V0: C_N and S_N fixed at E2's values, as in F2s-1.
+- V1: C_N and S_N estimated, with prior (0, 1e-8 m/s²).
+
+All 18 fits STATIONARY. Shard 1 died once on a worker MemoryError while other sessions' jobs were running. The
+two windows it lost were refitted unchanged.
+
+#### Result as computed: **SPREAD** + **EMP_ABSORBS**
+
+| window | start (UTC 2009-09) | V0 fit R / T / N (m) | V1 fit R / T / N (m) | V1 C_N / S_N (m/s²) | K V0 → V1 (m²/kg) |
+|---|---|---|---|---|---|
+| B00 | 16 23:57 | 0.11 / 0.58 / **2.03** | 0.10 / 0.48 / 0.81 | 2.70e-7 / 1.7e-8 | 0.0086 → 0.0186 |
+| B06 | 17 05:57 | 0.12 / 0.69 / 2.01 | 0.11 / 0.58 / 0.75 | 2.67e-7 / 2.5e-8 | 0.0092 → 0.0213 |
+| B12 | 17 11:57 | 0.10 / 0.42 / 1.82 | 0.09 / 0.33 / 0.68 | 2.36e-7 / 5.4e-8 | 0.0026 → 0.0127 |
+| B18 | 17 17:57 | 0.10 / 0.46 / 1.58 | 0.09 / 0.39 / 0.63 | 2.07e-7 / 3.9e-8 | 0.0072 → 0.0152 |
+| B24 | 17 23:57 | 0.10 / 0.49 / 1.48 | 0.09 / 0.42 / 0.56 | 1.94e-7 / 3.1e-8 | 0.0073 → 0.0162 |
+| B30 | 18 05:57 | 0.09 / 0.50 / 1.34 | 0.08 / 0.44 / 0.52 | 1.76e-7 / 2.8e-8 | 0.0099 → 0.0173 |
+| B36 | 18 11:57 | 0.10 / 0.44 / 1.69 | 0.09 / 0.38 / 0.67 | 2.23e-7 / −6.0e-9 | 0.0018 → 0.0118 |
+| C60 | 19 11:57 | 0.07 / 0.20 / 0.07 | 0.07 / 0.21 / 0.07 | −2.8e-9 / −3.4e-9 | 0.0140 → 0.0138 |
+| C72 | 19 23:57 | 0.07 / 0.15 / 0.48 | 0.07 / 0.17 / 0.19 | −6.3e-8 / −9.2e-9 | 0.0174 → 0.0145 |
+
+Decision inputs:
+
+- Control median c0 = 0.28 m (C60 0.07, C72 0.48); both are ≤ 1 m, so the controls are clean.
+- High threshold = max(2 c0, 1 m) = 1.0 m; it is set by the 1 m floor.
+- All 7 B windows are high (1.34–2.03 m) → **SPREAD**.
+- Median V0 N over the high windows is 1.69 m; median V1 N is 0.67 m.
+- 0.67 m ≤ max(1.5 c0, 1 m) = 1.0 m → **EMP_ABSORBS**.
+
+#### Reading
+
+1. **No boundary at 12 h resolution.** Every 12 h window on 09-17/18 misfits LOLA in N by 1.3–2.0 m. Every window
+   on 09-19/20 misfits by ≤ 0.5 m. The misfit falls slowly across 09-17..18 (2.03 → 1.34 m, then 1.69 m) and does
+   not sit in one window. A single arc-stitching seam inside 09-17..18 is not what this shows.
+2. **EMP_ABSORBS passes on the 1 m floor, not on the control level.** V1's high-window median 0.67 m is still 2.4 c0.
+   1.5 c0 = 0.42 m would have failed without the floor. The cross-track pair removes about 60 % of the N misfit,
+   not all of it.
+3. **The absorbing C_N is far larger than any plausible spacecraft force.** C_N is 1.8–2.7e-7 m/s² in every B
+   window, with one sign and a smooth trend; it is 18–27 σ against its 1e-8 prior. The SRP acceleration in these
+   fits is P·K ≈ 4.56e-6 × (0.01–0.02) ≈ 4–9e-8 m/s². The once-per-rev cross-track term would therefore have to be
+   3–6× the entire SRP acceleration. On 09-19/20 the same estimate is −0.3 to −6e-8, near zero. Freeing C_N also
+   roughly doubles K in the B windows (correlation through the cross-track SRP component); in the controls K does
+   not move.
+4. **What this points to.** A once-per-rev cross-track acceleration is in effect a slow rotation of the orbit plane.
+   The F2t numbers say LOLA's 09-17/18 trajectory carries a plane rotation that our dynamics do not have, and that
+   it fades by 09-19. A real force would have to be ~5× SRP and switch off within about two days. LOLA's stated
+   arc model has no cross-track empirical term. The more economical reading is that the reference's 09-17/18
+   orbit plane differs from what a single dynamical arc can reach. That is consistent with F2s-1's
+   H_REF_SUPPORTED, but it still is not proof: F2t cannot rule out a time-local force, nor a frame or orientation
+   effect specific to those days.
+
+#### Next steps
+
+1. **F2r's dynamics share on 09-17/18 should not be booked against our force model.** For Phase C force-model
+   work, use LOLA on 09-19/20 (and the days the controls cover) as the comparison reference. Do not use it on
+   09-17/18.
+2. An independent reference over 09-17..18 is the only test that separates "reference" from "time-local force". The
+   candidates are a second LOLA SPK release, or a GRGM1200A-based LRO orbit. Predeclare it before use.
+3. Not recommended: estimating C_N/S_N in the production LRO fits on the strength of this result. The required size
+   is non-physical, and it moves K.
+
+### 17.12 F2u — F2t's V0 window fits against an independent orbit (FDF definitive)
+
+F2t next step 2 (owner request 2026-11-01).
+
+- Predeclaration: `studies/phase17/configs/phase_f2u_independent_reference_predeclaration.json` (`59db8a5`),
+  committed before the FDF orbit was downloaded or read.
+- Script: `studies/phase17/scripts/phase_f2u_independent_reference.py`.
+- Parts: `studies/phase17/results/phase_f2u_parts/`. Result: `studies/phase17/results/phase_f2u_independent_reference.json`.
+- Reference: NAIF `lrorg_2009169_2010001_v01.bsp`, the LRO project's FDF definitive orbit merged from daily files.
+  SHA-256 `16257cc4…72fa`, under `lro_data/spk/`, not committed. It is the only orbit other than LOLA's that covers
+  2009-09. The LOLA node has no other release and no GRGM1200A/B reprocessing of this period.
+
+Analysis only: no production code, no data/weight/bias/measurement change, F2r/F2s/F2s-1/F2t classifications unchanged.
+
+#### Step A0/A (descriptive)
+
+- **Segments:** FDF is stored as daily segments in Moon-centred J2000, with boundaries at 00:00 UTC. Four windows
+  contain one: B00, B18, B24 and C72.
+- **LOLA − FDF:** 40–130 m along-track and 15–350 m cross-track per window, largely once-per-rev. The largest are on
+  09-18: B24 97 m, B30 263 m and B36 354 m N RMS.
+
+#### Step B as computed: **F2U_UNRESOLVED** (seam check: MIXED, SEAM_SENSITIVE)
+
+| window | seam | fit vs FDF R / T / N (m) | status | K (m²/kg) | F2t vs LOLA N (m) |
+|---|---|---|---|---|---|
+| B00 | 17 00:00 | 6.26 / 14.07 / 25.61 | MaxIter | 0.0 | 2.03 |
+| B06 | – | 1.29 / 1.78 / 1.80 | STATIONARY | 0.0104 | 2.01 |
+| B12 | – | 1.25 / 1.26 / 1.82 | STATIONARY | 0.0 | 1.82 |
+| B18 | 18 00:00 | 1.29 / 1.09 / 1.72 | STATIONARY | 0.0049 | 1.58 |
+| B24 | 18 00:00 | 5.00 / 22.51 / 86.76 | STATIONARY | 0.118 | 1.48 |
+| B30 | – | 5.05 / 28.21 / 161.41 | STATIONARY | 1.61 | 1.34 |
+| B36 | – | 1.22 / 1.90 / 1.13 | MaxIter | 0.0 | 1.69 |
+| C60 | – | 1.50 / 0.83 / 1.20 | STATIONARY | 0.0143 | 0.07 |
+| C72 | 20 00:00 | 1.27 / 2.00 / 2.38 | STATIONARY | 0.0162 | 0.48 |
+
+Decision inputs:
+
+- 7 of 9 fits STATIONARY, so not INCONCLUSIVE.
+- c_F = 1.79 m (median of C60 and C72) > E_L = 1.41 m → **F2U_UNRESOLVED**.
+- For the record: m_F = 1.82 m, E_F = 0.03 m, 3 of 7 B windows high.
+- Seam check (B00, B18, B24 and C72 removed, leaving C60 as the only control):
+  - c_F = 1.20, m_F = 1.81, E_F = 0.61 m (0.43 E_L), 1 high window.
+  - → MIXED. The class changes, so **SEAM_SENSITIVE**.
+
+#### Reading
+
+1. **FDF cannot settle F2t's question.** Our dynamics fit FDF to 1.1–1.8 m N in its clean windows, on control days as
+   well as on 09-17/18. That floor is as large as the 1.4 m LOLA excess being tested.
+2. **What the clean windows show** (B06, B12, B36, C60, all seam-free; descriptive):
+   - FDF's N level on 09-17/18 (1.13–1.82 m) is not clearly above its control level (1.20 m).
+   - With LOLA, the same windows were 1.69–2.03 m against 0.07 m.
+   - So FDF does not reproduce LOLA's sharp 09-17/18 versus 09-19/20 contrast. But one control and FDF's floor are too
+     little to call that H_LOLA_SPECIFIC.
+3. **FDF itself is not clean on 09-18.**
+   - B24 and B30 fit only to 87 and 161 m N. B30 contains no daily seam.
+   - The fits push K to its bounds (0 or 1.6 m²/kg) to absorb this.
+   - B00 (seam at 3 min) and B36 hit MaxIter.
+   - The FDF orbit of 2009-09 is an operational product with a weaker process. It carries both seams and
+     day-specific defects at the 10–300 m level.
+4. F2t's reading is unchanged: the 09-17/18 cross-track misfit is more likely a feature of the LOLA solution than a
+   force, but it is not proven. No available reference can prove it at the 1 m level.
+
+#### Next steps
+
+1. **Close the reference line.** No independent orbit of 2009-09 is accurate to ~1 m. Further probes of 09-17/18
+   cost hours per window and cannot change the class.
+2. For Phase C force-model work against LOLA, use the 09-19/20 span only, as stated in §17.11. Treat 09-17/18 LOLA
+   positions as reference-limited at ~2 m N.
+3. Shard notes: workers were lost twice (a BrokenProcessPool, and the session closing). Every window was fitted to
+   completion once, and those fits are the ones reported.
+
 ## 18. Merge of main (G4e-R fixes, bounded TRF) into this branch, 2026-10-30
 
 `main` now carries the G4e-R numerical fixes and the bounded TRF solver (PR #61,
@@ -1265,3 +1632,7 @@ measurement parameters):
   quantised station epochs.
 - A rerun after the merge has not been compared with the records. The merge also brings the
   `dynamics.py` shadow-guard change, so bitwise reproduction is not claimed.
+- F2r-F2u (§17.9-§17.12) were computed on this branch before the merge (2026-10-31..11-02), on the same
+  pre-merge numerics as F2j-F2q. Their scripts (`phase_f2r_postfit_growth.py`, `phase_f2s_*.py`,
+  `phase_f2t_short_windows.py`, `phase_f2u_independent_reference.py`) call `use_historical_numerics()` on
+  import as well. The same caveat applies: no post-merge rerun has been compared with their records.

@@ -1,0 +1,20 @@
+{
+ "phase": "Phase C7-I - lunar solid tide in F2's propagation and a nonlinear refit of the LRO arc with F2p's recipe",
+ "written": "2026-11-01, after C7 (804f9e8: C7_TIDE_MATERIAL, linear share 0.64, K 0.0745 -> 0.0395) and before any C7-I code or number",
+ "change": "F2's study-level propagation (Problem._propagate_empirical: production RHS + empirical acceleration, DOP853 with shadow-event segmentation) gets one more term: the C7 elastic tide acceleration, raising bodies Earth and Sun from the Problem's own ephemeris (eph.earth_position / eph.sun_position, the third-body inputs F2 already uses), GM from the Problem (mu_e, mu_s), degrees 2 and 3 with GL1800F's k2 = 0.024223 and k3 = 0.0163, R = 1738 km. Applied by a module-level substitution in the C7-I driver (worker processes re-import it), so dynamics.py, F2's script and F2p's records are untouched. The tide is a fixed model (not estimated)",
+ "fit": "exactly F2p's recipe (main_f2p): N = 300, range + counted Doppler, F2o edits, n_emp = 4, F2H_PRIORS, historical numerics, rtol / atol 1e-12 / 1e-13, legacy LM with relative GN stationarity 1e-3, resumable checkpoint; fit days 260-262, predict 263; start = F2p's own start (F2h S1 x0) so that only the force model differs",
+ "gates": {
+  "G_OFF": "with the tide scale set to 0 the substituted propagation reproduces F2's original _propagate_empirical bit for bit over the first 2 h of the arc at F2p's parameters",
+  "G_LIN": "the nonlinear tide effect (propagation at F2p's parameters with the tide minus F3's cached F2p history, 260-263) matches C7's linear tide column to <= max(0.1 m, 2 % of its max) in position",
+  "G1": "legacy status Converged or STATIONARY",
+  "G3": "fit range RMS <= 2 m and Doppler RMS <= 5 mm/s"
+ },
+ "scores": "F2's prediction block on 263 (range / Doppler RMS and mean, RIC vs LOLA), fit-arc RIC vs LOLA, K_SRP, biases, C_T / S_T with formal sigma; 263 chi2 = n_r rms_r^2 + n_d (rms_d / 2 mm/s)^2 (F3c's definition) against F2p's 69 981",
+ "hypotheses": {
+  "H_PRED": "263 chi2 <= 0.5 x F2p's",
+  "H_K": "K_SRP <= 0.05 m^2/kg"
+ },
+ "decision_rule": "G_OFF, G_LIN, G1 or G3 FAIL -> C7I_NOT_QUALIFIED. Otherwise H_PRED -> C7I_TIDE_CONFIRMED; H_K only -> C7I_TIDE_PARTIAL; neither -> C7I_TIDE_NOT_CONFIRMED",
+ "reading_rule": "C7I_TIDE_CONFIRMED makes the tide part of the LRO reference model from here on (F2t = F2p + tide becomes the reference fit) and a production implementation (lunar_od force model, owner decision on dynamics.py freeze) is proposed; LOLA comparisons are reported, never used for the decision",
+ "outputs": {"script": "studies/phase17/scripts/phase_c7i_tide_refit.py", "results": "studies/phase17/results/phase_c7i_tide_refit.json", "report": "studies/phase17/reports/phase_c7_dynamics_candidates_survey.md (section C7-I)"}
+}

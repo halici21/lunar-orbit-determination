@@ -50,7 +50,9 @@ def numerical_metadata(srp, propagation_profile, rtol, atol, *, fast_sigma=False
     effective_local = 'ode' if shadowed and local_state_model == 'taylor3' else local_state_model
     return dict(schema_version='numerical-profile.v1',
         method='RK4_FAST_SIGMA' if fast_sigma else profile.method if profile else 'ADAMS',
-        shadow_events=bool(profile and profile.shadow_events),rtol=float(rtol),atol=float(atol),
+        # DYN-16: report what executes; NO_SHADOW (or no SRP) has no shadow events to segment.
+        shadow_events=bool(profile and profile.shadow_events and shadowed),
+        requested_shadow_events=bool(profile and profile.shadow_events),rtol=float(rtol),atol=float(atol),
         error_control='fixed_step_external_sigma' if fast_sigma else
             'legacy_adaptive_estimator_tolerances' if profile is None and adaptive_tolerances
             else 'fixed_caller_tolerances',
