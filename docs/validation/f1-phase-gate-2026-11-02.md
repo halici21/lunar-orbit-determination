@@ -178,7 +178,7 @@ reddedilen PR kapatılır.
 | X-01 | **PR'da kapalı** | [#107](https://github.com/halici21/lunar-orbit-determination/pull/107) | senaryo `lunar_gravity_frame` varsayılanı `MOON_PA_DE440`; harmonik kapalıyken etkisiz olduğu için sayısal değişim yok; eski masaüstü arşivleri açılmaya devam ediyor |
 | X-02 | **PR'da kapalı** | [#103](https://github.com/halici21/lunar-orbit-determination/pull/103) | sahip kararı (2026-11-02); MOON_PA_DE440 kutbu + GRGM1200A; eski model bit-bit seçilebilir; 2602 test / 0 hata |
 | X-03 | **kapalı** | #100 (birleşti) | — |
-| X-04 | **kısmi, karar verildi** | [#101](https://github.com/halici21/lunar-orbit-determination/pull/101) | aşağıdaki karar 1; MEAS-05 açık |
+| X-04 | **PR'larda kapalı, karar verildi** | [#101](https://github.com/halici21/lunar-orbit-determination/pull/101), [#108](https://github.com/halici21/lunar-orbit-determination/pull/108) | aşağıdaki karar 1 ve karar 3 |
 | X-11 | **PR'da kapalı** | [#104](https://github.com/halici21/lunar-orbit-determination/pull/104) | rtol/atol/efemeris adımı/λ0 kütüphaneden; bağımsız soğuk başlangıç tohumu; eski job.json'lar kayıtlı tohumlarla çalışıyor |
 | X-12 | **PR'da kapalı** | [#106](https://github.com/halici21/lunar-orbit-determination/pull/106) | harmonik `rotation_mode` parmak izinde; donmuş harmoniksiz parmak izleri değişmedi |
 
@@ -187,15 +187,29 @@ Gerçek değer (truth) yörüngesinin tahminciden daha sıkı bir sayısal profi
 ve standart bir uygulamadır. Varsayılan ret bu uygulamayı yasaklar ve mevcut bütün senaryo
 koşularını kırar. Adil karşılaştırmanın asıl koşulu, karşılaştırılan tahmincilerin (BLS-LM / SRIF /
 SR-UKF) aynı profili paylaşmasıdır. #101 bunu `shared_profile` ve `profile_differences` olarak her
-manifeste yazıyor; ret isteyen çağıran açıkça açabiliyor. Kalan X-04 işi MEAS-05'tir (UKF hızlı
-sigma yayıcısının doğrusal efemerisi); bu, F2/F4'te Hermite efemerisle kapatılacak.
+manifeste yazıyor; ret isteyen çağıran açıkça açabiliyor. Kalan X-04 işi MEAS-05'ti (UKF hızlı
+sigma yayıcısının doğrusal efemerisi); karar 3'e bakın.
 
 **Ajan kararı 2 — G3 referansı yeniden kürate edildi** ([#105](https://github.com/halici21/lunar-orbit-determination/pull/105)).
 Aynı plan temiz main'de (`4d8819a`) yeniden koşuldu. BLS-LM ile SRIF artık tohum başına ±1 mm
 içinde ve SRIF 32/32 sonlanıyor. G3 FAIL'i bu raporda hesaplandığı gibi kalır; #105 yalnız bir
 sonraki kapının referansını değiştirir.
 
-**F1 hükmü (güncel):** F1 kalemlerinin hepsi ya main'de kapalı ya da açık bir PR'da kapalı. Tek
-istisna X-04'ün MEAS-05 parçasıdır. #101, #103, #104, #105, #106 ve #107 birleşince F1 kapısı
+**Ajan kararı 3 — MEAS-05 ölçümle kapatıldı** ([#108](https://github.com/halici21/lunar-orbit-determination/pull/108)).
+DE440 üzerinde doğrusal Dünya konumu ızgara ortasında 116.9 m sapıyor. Ancak hızlı sigma
+yayıcısının yörüngesi, Hermite/PCHIP efemerisli toplu (batch) fiziğe karşı yalnız şu kadar ayrışıyor
+(RK4 hatası dahil):
+
+| Süre | Ayrışma |
+|---|---|
+| 60 s (sigma adımı) | 4.6e-6 m |
+| 1 saat | 9.5e-4 m |
+| 1 gün | 4.1e-2 m |
+
+Bu fark ölçüm gürültüsünün çok altında. Korunan `accelerated.py` değiştirilmedi; sınır bir
+regresyon testiyle sabitlendi. WP1.8'in DYN-14/15 için izlediği yolun aynısıdır.
+
+**F1 hükmü (güncel):** F1 kalemlerinin hepsi ya main'de kapalı ya da açık bir PR'da kapalı.
+#101, #103, #104, #105, #106, #107 ve #108 birleşince F1 kapısı
 G3 referansı yenilenmiş olarak yeniden koşulmalıdır (yeni ön-kayıtla). Programın bir sonraki fazı
 F2'dir: WP2.1, üretim yolunda SSB ışık zamanı + Shapiro (MEAS-01, R-01).
