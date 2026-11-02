@@ -792,6 +792,27 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F2 WP2.1 (MEAS-01, X-07): opt-in barycentric DSN counted Doppler
+# (counted_doppler_model='barycentric_dsn').  radiometrics.py adds the model
+# constant, its cross-field rules and the dispatch (to the new module
+# counted_doppler_ssb.py, as the R4 four-event route does); scenarios.py and
+# scenario_config.py take the model-version label from radiometrics and add the
+# loader gate.  The default model is unchanged.
+#
+#   lunar_od/radiometrics.py     F1 WP1.4 -> e93cd6b1...
+#   lunar_od/scenarios.py        -> 2a63e95a...
+#   lunar_od/scenario_config.py  -> 4c62f4bf...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/radiometrics.py":
+        "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
+    "lunar_od/scenarios.py":
+        "2a63e95a596e2003fd5915d6b2ebcd379c1bafef643bf3b68e1622941f5e6505",
+    "lunar_od/scenario_config.py":
+        "4c62f4bf8c6d2f81eea8ce521080d54a9fba72690968b8c9caed8cc744bf4186",
+}
+
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -804,6 +825,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:

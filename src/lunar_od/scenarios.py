@@ -36,12 +36,10 @@ from .measurements import (
     measurement_model_metadata,
 )
 from .radiometrics import (
-    COUNTED_DOPPLER_MODEL_VERSION,
     DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
-    FOUR_EVENT_COUNTED_DOPPLER_MODEL,
-    FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION,
     RangeRatePhysicsConfig,
+    counted_doppler_model_version,
     range_rate_physics_config,
 )
 from .measurement_contracts import generate_two_way_range_measurements_checked
@@ -229,11 +227,7 @@ class ScenarioResult:
     @property
     def counted_doppler_model_version(self) -> str:
         """Truthful counted-Doppler model version for this run (R4-P17)."""
-        return (
-            FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION
-            if self.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL
-            else COUNTED_DOPPLER_MODEL_VERSION
-        )
+        return counted_doppler_model_version(self.counted_doppler_model)
 
     @property
     def algorithmic_success_fraction(self) -> float:

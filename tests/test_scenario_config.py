@@ -746,7 +746,8 @@ class R4CountedDopplerModelSelection(unittest.TestCase):
     def test_schema_publishes_the_enum_and_the_r3_default(self):
         schema = scenario_config_schema()["properties"]["counted_doppler_model"]
         self.assertEqual(
-            schema["enum"], ["single_bounce_exact_station", "four_event_delay"]
+            # F2 WP2.1 adds the opt-in barycentric DSN model; the default is unchanged.
+            schema["enum"], ["single_bounce_exact_station", "four_event_delay", "barycentric_dsn"]
         )
         self.assertEqual(schema["default"], "single_bounce_exact_station")
 

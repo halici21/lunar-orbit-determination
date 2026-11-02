@@ -894,7 +894,10 @@ class CountedDopplerLongArcConvergence(unittest.TestCase):
 
         path = "lunar_od/radiometrics.py"
         self.assertTrue(r2.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("aea6ad1c"))
-        new = r2.F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256[path]
+        # WP1.4 identity kept; F2 WP2.1 (barycentric_dsn dispatch) supersedes it additively.
+        self.assertTrue(r2.F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256[path])
+        new = r2.F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256[path]
+        self.assertNotEqual(new, r2.F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256[path])
         self.assertEqual(r2.expected_current_tree_sha256(path), new)
         actual = hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest()
         self.assertEqual(actual, new)

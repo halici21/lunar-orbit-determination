@@ -1,0 +1,35 @@
+{
+  "study": "F2 WP2.1 - barycentric DSN light time for production counted Doppler (MEAS-01, X-07)",
+  "date": "2026-11-03",
+  "source_of_predeclaration": "docs/assurance/vv-program.md F2 table (WP2.1 row, written 2026-10-31 before any WP2.1 code); this file formalises it for the first slice",
+  "scope_slice_1": "two-way counted Doppler in the batch estimators (BLS-LM, SRIF) and observability, via RangeRatePhysicsConfig(counted_doppler_model='barycentric_dsn'); SR-UKF fails closed at the scenario loader",
+  "out_of_scope_slice_1": ["delta-DOR", "one-way range", "position observables", "SR-UKF", "media", "ramped uplink"],
+  "physics": "relativistic_light_time.DSN_LIGHT_TIME_MODEL: SSB legs, Sun+Earth Shapiro (Moyer 8-38, gamma=1), TT interval",
+  "default_behaviour": "unchanged; the new model is opt-in, so every frozen baseline stays bitwise",
+  "gates": {
+    "G1_one_way_light_time_vs_spice_cn": {"oracle": "spkezr(..., 'CN', ...) light time, Moon centre -> Earth centre", "tolerance_s": 1e-12},
+    "G2_shapiro_vs_line_integral": {"oracle": "scipy.quad of 2GM/(c^3 r) along the straight leg", "tolerance_rel": 1e-10},
+    "G3_materiality": {"rule": "|barycentric - Moon-centred| < 2e-4 m/s and max > 1e-6 m/s (Phase C1: -68...+87 um/s)"},
+    "G4_jacobian_vs_central_differences": {"oracle": "re-propagated arcs", "tolerance": "max |diff| < 1e-6 * |row|"},
+    "G5_bls_recovery": {"rule": "noise-free BLS-LM from an 80 m / 0.02 m/s offset recovers position < 1 cm and velocity < 1e-5 m/s"},
+    "G6_model_mismatch_evidence": {"rule": "Moon-centred model at the truth misfits barycentric data with RMS > 1e-6 m/s"},
+    "G7_fail_closed": {"rule": "legacy station grid, hz output, clock drift, non-Doppler mode and UKF are rejected"}
+  },
+  "amendments": [
+    {
+      "gate": "G1",
+      "after_result": true,
+      "change": "tolerance 1e-12 s -> 2e-11 s",
+      "reason": "measured 4.0e-12 s. SPICE's own SSB states are evaluated at a rounded et, giving ~30 km/s x ulp(et) ~ 3.6 mm (1.2e-11 s) of epoch quantisation; direct differencing of spkezr positions over 0.65-2.6 s shows the same 0.7-1.5 mm scatter for MOON, EARTH and EMB. The module under test removes that quantisation, so 1e-12 s is below the oracle's floor",
+      "status": "exploratory for G1 (see docs/assurance/amendment-log.md)"
+    },
+    {
+      "gate": "G4",
+      "after_result": true,
+      "change": "per-element rtol 1e-5 with 1 m / 1e-3 m/s steps -> row-norm tolerance with 10 m / 1e-2 m/s steps",
+      "reason": "the FD estimate of the vz element moved as ~1/h (1e-4: 9.6e-6, 1e-3: 1.8e-6, 1e-2: 3.1e-7 absolute), i.e. re-propagation noise; the qualified Moon-centred Jacobian shows the same 1e-5 floor at these steps",
+      "status": "exploratory for G4"
+    }
+  ],
+  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes"
+}

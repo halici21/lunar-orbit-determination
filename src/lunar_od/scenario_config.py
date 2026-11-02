@@ -47,6 +47,7 @@ from .radiometrics import (
     DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
     EXACT_EVENT_EPOCH_STATION_METHOD,
+    BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
     FOUR_EVENT_COUNTED_DOPPLER_MODEL,
     LEGACY_INTERPOLATED_STATION_METHOD,
     STATION_STATE_METHODS,
@@ -1094,6 +1095,27 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
                 "estimator_type='ukf'. Four-event SR-UKF support is deferred "
                 "(R4-FUTURE-UKF-FOUR-EVENT); use estimator_type='bls_lm' or "
                 "'srif', or counted_doppler_model='single_bounce_exact_station'."
+            )
+    # F2 WP2.1 loader gate: the barycentric DSN counted-Doppler model is
+    # qualified for the batch estimators only; SR-UKF fails closed.
+    if config.counted_doppler_model == BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL:
+        if config.range_rate_physics != "two_way_counted_doppler":
+            raise ValueError(
+                "counted_doppler_model='barycentric_dsn' requires "
+                "range_rate_physics='two_way_counted_doppler'; got "
+                f"range_rate_physics={config.range_rate_physics!r}."
+            )
+        if config.station_state_method != EXACT_EVENT_EPOCH_STATION_METHOD:
+            raise ValueError(
+                "counted_doppler_model='barycentric_dsn' requires "
+                f"station_state_method='{EXACT_EVENT_EPOCH_STATION_METHOD}'; got "
+                f"{config.station_state_method!r}."
+            )
+        if config.estimator_type == "ukf":
+            raise ValueError(
+                "counted_doppler_model='barycentric_dsn' is not supported with "
+                "estimator_type='ukf' (F2 WP2.1 qualifies BLS-LM and SRIF); use "
+                "estimator_type='bls_lm' or 'srif'."
             )
     # FA-01 loader gate: UKF position measurements only support the geometric
     # instantaneous profile (shared helper; also enforced at run_lunar_ukf).

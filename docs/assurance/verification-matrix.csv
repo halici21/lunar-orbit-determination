@@ -6,7 +6,7 @@ REQ-DYN-004,T,WP1.5,tests/test_assessment_evidence.py::test_dyn10_force_identity
 REQ-DYN-005,T,WP1.8,,open,DYN-14;DYN-15
 REQ-DYN-006,A,WP3.3,docs/development/numerical-core/error_budget.csv,partial,DYN-14
 REQ-DYN-007,A/T,WP3.1;WP3.2,,open,DYN-06;DYN-07;DYN-08;DYN-09
-REQ-MEAS-001,T,WP2.1,tests/test_relativistic_light_time.py,partial,MEAS-01
+REQ-MEAS-001,T,WP2.1,tests/test_relativistic_light_time.py;tests/test_wp2_1_barycentric_counted_doppler.py,partial (counted Doppler in BLS-LM/SRIF via counted_doppler_model=barycentric_dsn; delta-DOR / one-way / position / SR-UKF open),MEAS-01
 REQ-MEAS-002,T,WP1.10,tests/test_stellar_aberration_vv.py::StellarAberrationFixtureVV::test_s11_both_models_match_independent_spice_cn_plus_s,passed,MEAS-02 (spice_ssb and local_mci match SPICE CN+S to ~1 mas; range is still the Moon-centred light-time range - MEAS-01/WP2.1)
 REQ-MEAS-003,T,WP1.4,tests/test_assessment_evidence.py::test_meas03_counted_doppler_solver_converges_on_long_arcs;tests/test_doppler_model_review.py::CountedDopplerLongArcConvergence::test_counted_doppler_converges_on_long_arcs,verified,MEAS-03
 REQ-MEAS-004,T,WP1.1,tests/test_assessment_evidence.py::test_meas04_rotation_interpolation_against_spice_sxform,partial (MEAS-04 closed; MEAS-05 open),MEAS-04;MEAS-05
