@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import shutil
 from pathlib import Path
 
@@ -59,7 +60,8 @@ def test_load_spice_kernels_refuses_a_changed_kernel_before_furnishing(tmp_path,
         real = spice_loader.required_kernel_paths()
     except FileNotFoundError as exc:
         pytest.skip(f"SPICE kernels unavailable: {exc}")
-    gm = tmp_path / "gm_de431.tpc.txt"
+    # WP1.2: the default generation loads its own GM kernel (gm_de440.tpc for DE440).
+    gm = tmp_path / spice_loader.GM_KERNELS[spice_loader.planetary_ephemeris()]
     shutil.copyfile(next(p for p in real if p.name == gm.name), gm)
     gm.write_bytes(gm.read_bytes() + b"\n")
     edited = [gm if p.name == gm.name else p for p in real]
@@ -68,7 +70,7 @@ def test_load_spice_kernels_refuses_a_changed_kernel_before_furnishing(tmp_path,
     furnished = []
     monkeypatch.setattr(spice, "furnsh", furnished.append)
     monkeypatch.setattr(spice, "kclear", lambda: None)
-    with pytest.raises(KM.KernelIntegrityError, match="gm_de431.tpc.txt"):
+    with pytest.raises(KM.KernelIntegrityError, match=re.escape(gm.name)):
         spice_loader.load_spice_kernels()
     assert furnished == []
     assert spice_loader.load_spice_kernels(verify=False) == edited

@@ -51,6 +51,9 @@ KERNEL_MANIFEST: dict[str, tuple[str, str]] = {
     "gm_de431.tpc.txt": (
         "15756c162151853f329d473fa00c38d35e62d83c3e25ddceece6516bbd98738b",
         NAIF_GENERIC + "pck/gm_de431.tpc"),
+    "gm_de440.tpc": (
+        "924ddf4fb9ead9fe8a1aa55780bcabde40b09d00065d58226e24b68d8092f140",
+        NAIF_GENERIC + "pck/gm_de440.tpc"),
     "pck00010.tpc.txt": (
         "59468328349aa730d18bf1f8d7e86efe6e40b75dfb921908f99321b3a7a701d2",
         NAIF_GENERIC + "pck/pck00010.tpc"),
