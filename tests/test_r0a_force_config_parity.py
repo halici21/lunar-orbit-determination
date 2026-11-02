@@ -40,6 +40,17 @@ from lunar_od.scenario_config import (
     validate_official_earth_j2_support,
 )
 from lunar_od.scenarios import PreparedArc
+import pytest
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 _RUNNER_PATH = Path(__file__).resolve().parents[1] / "examples" / "run_scenario_config.py"
 _spec = importlib.util.spec_from_file_location("r0a_runner_under_test", _RUNNER_PATH)

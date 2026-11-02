@@ -1,7 +1,7 @@
 requirement,method,work_package,evidence,status,findings
 REQ-DYN-001,T,WP1.2,,open,DYN-01;DYN-02;CFG-04
 REQ-DYN-002,T,WP1.3,tests/test_moon_orientation_wp1_3.py;tests/test_assessment_evidence.py::test_dyn05_lunar_orientation_continuous_across_grid_midpoint,passed,DYN-05
-REQ-DYN-003,T/A,WP1.3,tests/test_moon_orientation_wp1_3.py::test_dyn03_default_j2_acceleration_matches_the_pa_pole_j2;tests/test_moon_orientation_wp1_3.py::test_dyn04_default_j2_r2_product_matches_grail_c20,failing_as_expected,DYN-03;DYN-04
+REQ-DYN-003,T/A,WP1.3,tests/test_moon_orientation_wp1_3.py::test_dyn03_default_j2_acceleration_is_about_the_pa_pole;tests/test_moon_orientation_wp1_3.py::test_dyn04_default_j2_pair_is_grail_c20;tests/test_moon_orientation_wp1_3.py::test_default_j2_propagation_matches_the_degree_two_grail_harmonic_path;tests/test_moon_orientation_wp1_3.py::test_legacy_model_is_bit_for_bit_the_pre_switch_propagation,passed,DYN-03;DYN-04 (X-02 closed by owner decision 2026-11-02; legacy mean-pole model kept as lunar_j2_model=iau_mean_pole_legacy)
 REQ-DYN-004,T,WP1.5,tests/test_assessment_evidence.py::test_dyn10_force_identity_records_ephemeris_kernel_and_interpolation;tests/test_force_identity_wp1_5.py,partial,DYN-10;DYN-11;DYN-16 (Moon rotation mode not yet hashed; CLI/desktop runners attach the ephemeris identity in WP1.6)
 REQ-DYN-005,T,WP1.8,,open,DYN-14;DYN-15
 REQ-DYN-006,A,WP3.3,docs/development/numerical-core/error_budget.csv,partial,DYN-14

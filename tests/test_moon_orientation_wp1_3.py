@@ -5,10 +5,12 @@ geodesically (SLERP) instead of taking the nearest sample, so the force is no
 longer a step function of time.  Oracle: SPICE ``pxform`` MOON_PA_DE440 at the
 exact epoch, and the DIRECT exact-epoch propagation mode.
 
-DYN-03 and DYN-04 are quantified, not changed: the default point-mass J2 uses
-the IAU constant mean pole and the (J2, R_MOON_M) pair, which every frozen J2
-baseline was computed with.  The strict xfails record the open defects until
-the owner decides on the default.
+DYN-03 and DYN-04 are repaired by the owner's 2026-11-02 decision (X-02): the
+default point-mass J2 now takes its axis from MOON_PA_DE440 at the exact epoch
+and the GRGM1200A (C20, R_ref = 1738.0 km) pair.  Oracles: the analytic zonal
+formula about the SPICE pole, and the harmonic engine truncated to C20 in DIRECT
+mode.  The legacy mean-pole model (lunar_j2_model="iau_mean_pole_legacy") is
+pinned bit for bit so the earlier frozen J2 baselines stay reproducible.
 """
 from __future__ import annotations
 
@@ -19,7 +21,12 @@ import numpy as np
 import pytest
 
 from lunar_od import dynamics as dyn
-from lunar_od.constants import J2_MOON_UNNORMALIZED, R_MOON_M
+from lunar_od.constants import (
+    J2_MOON_GRAIL_UNNORMALIZED,
+    J2_MOON_UNNORMALIZED,
+    R_MOON_GRAIL_REF_M,
+    R_MOON_M,
+)
 from lunar_od.lunar_frames import interpolated_rotation_at_time, nearest_rotation_at_time
 
 ET0 = 820497669.18392
@@ -132,7 +139,20 @@ def test_grid_mode_propagation_tracks_the_exact_epoch_mode(spice):
     assert np.linalg.norm(direct[-1, :3] - grid[-1, :3]) < 2e-4
 
 
-# --- DYN-03 / DYN-04: quantified, default unchanged ------------------------------
+# --- DYN-03 / DYN-04: default lunar J2 = MOON_PA_DE440 pole + GRAIL pair ---------
+# Owner decision 2026-11-02 (X-02).  The legacy mean-pole model stays available as
+# lunar_j2_model="iau_mean_pole_legacy" and is pinned bit for bit below.
+
+MU_MOON = 4902.800066e9
+X0 = np.array([1.8374e6, 0.0, 2.0e5, 0.0, 1.6e3, 0.0])
+
+
+def _far(position):
+    return lambda t: np.tile(position, (np.size(np.asarray(t)), 1))
+
+
+EARTH, SUN = _far(np.array([384400e3, 0.0, 0.0])), _far(np.array([149.6e9, 0.0, 0.0]))
+
 
 def test_dyn03_iau_mean_pole_is_1p5_degrees_from_the_de440_figure_axis(spice):
     pole = dyn._MCI_TO_MOON_BF[2]
@@ -162,26 +182,87 @@ def test_dyn04_grail_pair_is_read_from_the_coefficient_file():
     assert j2 == pytest.approx(2.0322356e-4, rel=1e-7)
 
 
-@pytest.mark.xfail(strict=True, reason="DYN-04: (J2_MOON_UNNORMALIZED, R_MOON_M) is not GRAIL's "
-                   "(C20, R_ref) pair; J2*R^2 is 4.7e-4 high (default kept for frozen baselines)")
-def test_dyn04_default_j2_r2_product_matches_grail_c20():
+def test_dyn04_default_j2_pair_is_grail_c20():
     j2, r_ref = _grail_c20_pair()
-    assert J2_MOON_UNNORMALIZED * R_MOON_M**2 == pytest.approx(j2 * r_ref**2, rel=1e-6)
+    assert J2_MOON_GRAIL_UNNORMALIZED == pytest.approx(j2, rel=1e-15)
+    assert R_MOON_GRAIL_REF_M == r_ref
+    assert dyn.DEFAULT_LUNAR_J2_MODEL == "grail_pa_de440"
+    _, radius = dyn.lunar_j2_orientation(J2_MOON_GRAIL_UNNORMALIZED, epoch_et0=ET0)
+    assert radius == r_ref
+    # The legacy pair stays the legacy pair: J2 R^2 4.7e-4 high (what DYN-04 found).
+    legacy_rot, legacy_r = dyn.lunar_j2_orientation(J2_MOON_UNNORMALIZED, model="iau_mean_pole_legacy")
+    assert legacy_r == R_MOON_M and legacy_rot(0.0) is dyn._MCI_TO_MOON_BF
+    assert J2_MOON_UNNORMALIZED * R_MOON_M**2 / (j2 * r_ref**2) - 1.0 == pytest.approx(4.7e-4, abs=5e-6)
 
 
-@pytest.mark.xfail(strict=True, reason="DYN-03: default J2 uses the IAU constant mean pole, "
-                   "1.5 deg from MOON_PA_DE440 (default kept for frozen baselines)")
-def test_dyn03_default_j2_acceleration_matches_the_pa_pole_j2(spice):
-    from lunar_od.dynamics import f3body_moon
+def test_dyn03_default_j2_acceleration_is_about_the_pa_pole(spice):
+    """Analytic oracle: zonal J2 about the exact MOON_PA_DE440 z axis at the epoch."""
+    for t_s in (0.0, 43200.0):
+        rotation_at, r_ref = dyn.lunar_j2_orientation(J2_MOON_GRAIL_UNNORMALIZED, epoch_et0=ET0)
+        state = np.concatenate([X0[:3], np.zeros(3)])
+        earth, sun = np.array([384400e3, 0.0, 0.0]), np.array([149.6e9, 0.0, 0.0])
+        a = (dyn.f3body_moon(state, MU_MOON, 0.0, 0.0, earth, sun, j2_moon=J2_MOON_GRAIL_UNNORMALIZED,
+                             moon_j2_rotation=rotation_at(t_s), moon_j2_radius_m=r_ref)[3:]
+             - dyn.f3body_moon(state, MU_MOON, 0.0, 0.0, earth, sun)[3:])
+        z = np.asarray(spice.pxform("J2000", "MOON_PA_DE440", ET0 + t_s))[2]
+        r = X0[:3]
+        rn = np.linalg.norm(r)
+        sin_phi = (r @ z) / rn
+        k = 1.5 * J2_MOON_GRAIL_UNNORMALIZED * MU_MOON * r_ref**2 / rn**4
+        a_pa = k * ((5.0 * sin_phi**2 - 1.0) * r / rn - 2.0 * sin_phi * z)
+        np.testing.assert_allclose(a, a_pa, rtol=1e-12, atol=1e-20)
 
-    r = np.array([1.8374e6, 0.0, 2.0e5])
-    state = np.concatenate([r, np.zeros(3)])
-    earth, sun = np.array([384400e3, 0.0, 0.0]), np.array([149.6e9, 0.0, 0.0])   # GM 0: unused
-    a_default = (f3body_moon(state, 4902.800066e9, 0.0, 0.0, earth, sun, j2_moon=J2_MOON_UNNORMALIZED)[3:]
-                 - f3body_moon(state, 4902.800066e9, 0.0, 0.0, earth, sun, j2_moon=0.0)[3:])
-    z = np.asarray(spice.pxform("J2000", "MOON_PA_DE440", ET0))[2]
-    rn = np.linalg.norm(r)
-    sin_phi = (r @ z) / rn
-    k = 1.5 * J2_MOON_UNNORMALIZED * 4902.800066e9 * R_MOON_M**2 / rn**4
-    a_pa = k * ((5.0 * sin_phi**2 - 1.0) * r / rn - 2.0 * sin_phi * z)
-    np.testing.assert_allclose(a_default, a_pa, rtol=1e-3)
+
+def test_default_j2_propagation_matches_the_degree_two_grail_harmonic_path(spice):
+    """Independent oracle: the harmonic engine with GRGM1200A truncated to C20 only,
+    in DIRECT exact-epoch mode, is the same physics through different code."""
+    from lunar_od.gravity_model_loader import load_lunar_gravity_model
+    from lunar_od.gravity_harmonics import SphericalHarmonicGravityModel
+
+    if not GRGM1200A_TAB.is_file():
+        pytest.skip("GRGM1200A coefficient file not available")
+    full = load_lunar_gravity_model(str(GRGM1200A_TAB), nmax=2, mmax=2, frame="MOON_PA_DE440")
+    cbar = np.zeros_like(full.cbar)
+    cbar[2, 0] = full.cbar[2, 0]
+    c20 = SphericalHarmonicGravityModel(mu_m3_s2=MU_MOON, r_ref_m=full.r_ref_m, cbar=cbar,
+                                        sbar=np.zeros_like(full.sbar), nmax=2, mmax=0,
+                                        frame="MOON_PA_DE440")
+    t = np.array([0.0, 3600.0, 7200.0])
+    harmonic = np.asarray(dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN, rtol=1e-12, atol=1e-10,
+                                              method="DOP853", harmonic_model=c20, harmonic_epoch_et0=ET0))
+    j2 = np.asarray(dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN, rtol=1e-12, atol=1e-10,
+                                        method="DOP853", j2_moon=J2_MOON_GRAIL_UNNORMALIZED,
+                                        lunar_j2_epoch_et0=ET0))
+    legacy = np.asarray(dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN, rtol=1e-12, atol=1e-10,
+                                            method="DOP853", j2_moon=J2_MOON_UNNORMALIZED,
+                                            lunar_j2_model="iau_mean_pole_legacy"))
+    gap_default = np.linalg.norm(j2[-1, :3] - harmonic[-1, :3])
+    gap_legacy = np.linalg.norm(legacy[-1, :3] - harmonic[-1, :3])
+    assert gap_default < 1e-3                  # same physics, integration noise only
+    assert gap_legacy > 100.0 * gap_default    # what X-02 removed
+
+
+def test_legacy_model_is_bit_for_bit_the_pre_switch_propagation():
+    """The pre-switch code path took the constant mean-pole matrix and MOON_R_M."""
+    t = np.array([0.0, 600.0, 1200.0])
+    legacy = dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN, j2_moon=J2_MOON_UNNORMALIZED,
+                                 lunar_j2_model="iau_mean_pole_legacy")
+    rhs, _ = dyn._build_state_rhs(t, MU_MOON, 0.0, 0.0, EARTH, SUN, J2_MOON_UNNORMALIZED, 0.0, "indirect",
+                                  None, None, None, None, dyn._legacy_j2_rotation, R_MOON_M)
+    reference = dyn._propagate_vode(t, X0.copy(), rhs, 1e-11, 1e-12)
+    np.testing.assert_array_equal(np.asarray(legacy), reference)
+
+
+def test_default_j2_refuses_a_missing_epoch_and_the_legacy_coefficient():
+    t = np.array([0.0, 60.0])
+    with pytest.raises(ValueError, match="needs the arc epoch"):
+        dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN, j2_moon=J2_MOON_GRAIL_UNNORMALIZED)
+    with pytest.raises(ValueError, match="legacy coefficient"):
+        dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN, j2_moon=J2_MOON_UNNORMALIZED,
+                            lunar_j2_epoch_et0=ET0)
+    with pytest.raises(ValueError, match="lunar_j2_model"):
+        dyn.lunar_j2_orientation(J2_MOON_GRAIL_UNNORMALIZED, model="mean_pole", epoch_et0=ET0)
+    with pytest.raises(ValueError, match="disagree"):
+        dyn.lunar_j2_epoch(ET0, ET0 + 1.0)
+    # J2 off needs nothing.
+    dyn.propagate_state(t, X0, MU_MOON, 0.0, 0.0, EARTH, SUN)

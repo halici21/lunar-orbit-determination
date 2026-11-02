@@ -24,6 +24,7 @@ from .estimators import (
     estimate_two_way_range_srif,
 )
 from .filters import UKFAdaptiveConfig, UnscentedTransformConfig, assess_ukf_operational_stability, run_lunar_ukf
+from .lunar_j2_model import active_lunar_j2_model, use_lunar_j2_model
 from .history_domain import (
     HistoryDomainDropRecord,
     HistoryDomainError,
@@ -602,6 +603,12 @@ def run_srif_arc_sequence(
 
 def _run_arc_worker(args: tuple) -> "ArcResult":
     arc, kwargs = args
+    # A worker process starts with the default lunar J2 model; carry the parent's.
+    with use_lunar_j2_model(kwargs["lunar_j2_model"]):
+        return _run_arc_in_worker(arc, kwargs)
+
+
+def _run_arc_in_worker(arc, kwargs: dict) -> "ArcResult":
     return run_batch_arc_sequence(
         (arc,),
         kwargs["measurement_type"],
@@ -751,6 +758,7 @@ def run_batch_arc_sequence(
             "j2_moon": j2_moon,
             "srp": srp,
             "propagation_profile": propagation_profile,
+            "lunar_j2_model": active_lunar_j2_model(),
         }
         _tasks = [
             (arc, {**_base_kwargs, "cold_pert": np.asarray(cold_start_bank[arc_idx], dtype=float).reshape(6)})

@@ -69,8 +69,15 @@ R_EARTH_J2_REF_M: float = 6_378_136.3            # EGM96 gravity reference radiu
 # ---------------------------------------------------------------------------
 # Zonal J2 coefficients (unnormalized, dimensionless)
 # ---------------------------------------------------------------------------
-# Moon J2 (IAU/GRAIL). Unnormalized. Pairs with R_MOON_M. Equals legacy MOON_J2.
-J2_MOON_UNNORMALIZED: float = 2.0346e-4          # IAU/GRAIL lunar J2 (unnormalized)
+# Moon J2, legacy. Unnormalized. Pairs with R_MOON_M. Equals legacy MOON_J2.
+# Used only by the "iau_mean_pole_legacy" lunar J2 model (frozen baselines).
+J2_MOON_UNNORMALIZED: float = 2.0346e-4          # legacy lunar J2 (unnormalized)
+
+# Moon J2, default (X-02 / DYN-04, 2026-11-02). GRGM1200A degree-2 zonal:
+# J2 = -sqrt(5) * C-bar(2,0), C-bar(2,0) = -9.0884339347424299e-05, paired with
+# that model's reference radius 1738.0 km (gggrx_1200a_sha.tab header).
+J2_MOON_GRAIL_UNNORMALIZED: float = 9.0884339347424299e-05 * 5.0 ** 0.5
+R_MOON_GRAIL_REF_M: float = 1_738_000.0          # GRGM1200A reference radius
 
 # Earth J2 (EGM96). Unnormalized: J2 = -sqrt(5) * C-bar(2,0) with
 # C-bar(2,0) = -4.84165372e-4. Pairs with R_EARTH_J2_REF_M (EGM96 ref radius).

@@ -33,6 +33,16 @@ from lunar_od.srp import (
     srp_acceleration_position_gradient,
     srp_acceleration_with_lunar_shadow,
 )
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SUN_DIR = np.array([-0.83, 0.52, 0.19]) / np.linalg.norm([-0.83, 0.52, 0.19])
@@ -293,7 +303,9 @@ def test_f1_refreeze_is_additive_and_history_is_preserved():
     assert r2.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ea6f6322")
     # Phase F2 G4e-R (PR #61 shadow-contact guard) re-frozen 2026-10-31 by the owner.
     assert r2.PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[path].startswith("b19c2d80")
-    # F1 WP1.3 (continuous lunar orientation, DYN-05) is the current identity.
-    new = r2.F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[path]
+    # F1 WP1.3 (continuous lunar orientation, DYN-05).
+    assert r2.F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[path].startswith("6827b9d9")
+    # F1 X-02 (default lunar J2 = MOON_PA_DE440 pole + GRAIL pair) is the current identity.
+    new = r2.F1_X02_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
