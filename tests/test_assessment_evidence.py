@@ -21,7 +21,7 @@ from scipy.linalg import expm
 from lunar_od import LEGACY_INTERPOLATED_STATION_METHOD, RangeRatePhysicsConfig, solve_two_way_light_time
 from lunar_od.dmc import DMCOptions, dmc_process_noise
 from lunar_od.dynamics import propagate_augmented_state, propagate_state
-from lunar_od.filters import _interp_pass_values
+from lunar_od.filters import _interp_pass_transforms, _interp_pass_values
 from lunar_od.force_contract import ForceExecutionSpec, ForceModelContract
 from lunar_od.lunar_frames import nearest_rotation_at_time
 from lunar_od.scenarios import _ukf_default_initial_covariance
@@ -56,7 +56,7 @@ def _interpolated_station_error(grid_step_s: float) -> tuple[float, float]:
     t_grid = np.arange(0.0, 1800.0 + grid_step_s, grid_step_s)
     xforms = np.array([_earth_sxform(t) for t in t_grid])
     t_mid = t_grid[:-1] + 0.5 * grid_step_s
-    interp = _interp_pass_values(t_grid, xforms, t_mid)
+    interp = _interp_pass_transforms(t_grid, xforms, t_mid)
     station_itrf = np.array([6.378e6, 0.0, 0.0])
     ortho = max(np.linalg.norm(x[:3, :3] @ x[:3, :3].T - np.eye(3)) for x in interp)
     station_err = max(
@@ -72,11 +72,51 @@ def test_control_linear_transform_interpolation_exact_on_nodes():
     np.testing.assert_array_equal(_interp_pass_values(t_grid, xforms, t_grid), xforms)
 
 
-@pytest.mark.xfail(strict=True, reason="MEAS-04: linear interpolation of the 6x6 transform is not a rotation")
-def test_meas04_ukf_interpolated_station_transform_is_orthonormal_and_mm_accurate():
-    ortho, station_err = _interpolated_station_error(90.0)
+def test_control_rotation_transform_interpolation_exact_on_nodes():
+    t_grid = np.arange(0.0, 600.0, 90.0)
+    xforms = np.array([_earth_sxform(t) for t in t_grid])
+    np.testing.assert_array_equal(_interp_pass_transforms(t_grid, xforms, t_grid), xforms)
+
+
+# MEAS-04 closed by WP1.1: the UKF/EKF resample the transform with _interp_pass_transforms.
+@pytest.mark.parametrize("grid_step_s", [60.0, 90.0, 240.0])
+def test_meas04_ukf_interpolated_station_transform_is_orthonormal_and_mm_accurate(grid_step_s):
+    ortho, station_err = _interpolated_station_error(grid_step_s)
     assert ortho < 1e-12
     assert station_err < 1e-3
+
+
+def test_meas04_ukf_interpolated_transform_rate_block_matches_sxform():
+    t_grid = np.arange(0.0, 1800.0 + 90.0, 90.0)
+    xforms = np.array([_earth_sxform(t) for t in t_grid])
+    t_mid = t_grid[:-1] + 45.0
+    station_itrf = np.array([6.378e6, 0.0, 0.0, 0.0, 0.0, 0.0])
+    for x, t in zip(_interp_pass_transforms(t_grid, xforms, t_mid), t_mid):
+        got = np.linalg.solve(x, station_itrf)
+        want = np.linalg.solve(_earth_sxform(t), station_itrf)
+        assert np.linalg.norm(got[:3] - want[:3]) < 1e-3
+        assert np.linalg.norm(got[3:] - want[3:]) < 1e-6
+
+
+def test_meas04_rotation_interpolation_against_spice_sxform():
+    """Real J2000->ITRF93 (precession, nutation, polar motion) on 60 s and 240 s grids."""
+    spice = pytest.importorskip("spiceypy")
+    from lunar_od.spice_loader import load_spice_kernels
+    try:
+        load_spice_kernels()
+    except Exception as exc:  # pragma: no cover - kernel-less environments
+        pytest.skip(f"SPICE kernels unavailable: {exc}")
+    et0 = spice.str2et("2027-03-08T00:00:00")  # inside the loaded Earth BPC
+    station_itrf = np.array([-2.3533e6, -4.6416e6, 3.6762e6, 0.0, 0.0, 0.0])
+    for step in (60.0, 240.0):
+        t_grid = np.arange(0.0, 1800.0 + step, step)
+        xforms = np.array([spice.sxform("J2000", "ITRF93", et0 + t) for t in t_grid])
+        t_mid = t_grid[:-1] + 0.5 * step
+        for x, t in zip(_interp_pass_transforms(t_grid, xforms, t_mid), t_mid):
+            want = np.linalg.solve(spice.sxform("J2000", "ITRF93", et0 + t), station_itrf)
+            got = np.linalg.solve(x, station_itrf)
+            assert np.linalg.norm(got[:3] - want[:3]) < 1e-3
+            assert np.linalg.norm(got[3:] - want[3:]) < 1e-6
 
 
 # --- DYN-05: nearest-sample lunar orientation makes the force a step function ---

@@ -594,6 +594,20 @@ F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256 = {
         "ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6",
 }
 
+# F1 WP1.1 re-freeze (owner-authorized V&V programme, 2026-10-31; assessment MEAS-04).
+# The SR-UKF/EKF counted-Doppler local histories resampled the Earth state and the
+# 6x6 J2000->ITRF93 transform element-wise linearly; the transform was not a
+# rotation between nodes (15-244 m station error at a 60-240 s grid midpoint).
+# filters.py now uses the batch path's cubic-Hermite Earth state and a
+# rotation-preserving transform interpolation (_interp_pass_transforms).
+#
+#   lunar_od/filters.py  05f201df... -> 2cb440a8...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "2cb440a8accb5b5ed11a013cca57056834805ecb550f3c3b601eb8c230829a02",
+}
+
 
 
 
@@ -629,6 +643,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
         return F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_WP1_1_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:
