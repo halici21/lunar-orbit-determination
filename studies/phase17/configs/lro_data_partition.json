@@ -1,0 +1,25 @@
+{
+  "schema": "lunar_od.lro_data_partition.v1",
+  "created": "2026-10-31",
+  "work_package": "WP0.4 (independent assessment RD-02, REQ-DATA-001/002)",
+  "archive": "lro_data/trk/lro_no_01 (LRO USN UTDF, day directories YYYYDDD)",
+  "development": {
+    "days": ["2009260", "2009261", "2009262", "2009263", "2009285"],
+    "use": "fit, model selection, tuning, editing rules and diagnostics (F1-F3). Results on these days are not independent validation."
+  },
+  "holdout": {
+    "days": ["2009264", "2009265", "2009266", "2009267"],
+    "status": "sealed",
+    "use": "one-time frozen evaluation (WP5.4) only, after F1-F4; the pipeline commit SHA, model, editing, priors and solver are fixed in a predeclaration before the data are downloaded or read",
+    "unseal": {
+      "environment_variable": "LUNAR_OD_LRO_HOLDOUT_UNSEAL",
+      "required_value": null,
+      "rule": "required_value stays null until the WP5.4 predeclaration is committed; it is then set to that predeclaration's path, in the same commit"
+    }
+  },
+  "excluded": {
+    "days": ["2009268"],
+    "reason": "MOI-2 manoeuvre 2009-268/269 (lro_data/sff/fdf25_moi2_2009268_2009269_01)"
+  },
+  "rule": "A predeclaration names its tuning days and its scoring days from 'development'; the same day is never used for both (amendment log, WP0.2)."
+}

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -28,6 +29,7 @@ from scipy.linalg import expm
 from .dynamics import dynamics_jacobian_a_matrix, f3body_moon
 
 DMC_SIZE = 3
+_SIGMA_REFERENCE_MPS2 = 1e-6
 
 
 @dataclass(frozen=True)
@@ -36,22 +38,104 @@ class DMCOptions:
 
     sigma_mps2: float
     tau_s: float
+    # WP4.8b: ``axes="rtn"`` makes the acceleration C(r, v) w with C = [R T N]
+    # (R = r/|r|, N = r x v/|r x v|, T = N x R); ``sigma_axes_mps2`` gives one steady-state
+    # sigma per axis (R, T, N or x, y, z) and replaces ``sigma_mps2``.
+    axes: Literal["inertial", "rtn"] = "inertial"
+    sigma_axes_mps2: tuple[float, float, float] | None = None
 
     def __post_init__(self) -> None:
         if not (self.sigma_mps2 >= 0.0 and np.isfinite(self.sigma_mps2)):
             raise ValueError("sigma_mps2 must be finite and non-negative.")
         if not (self.tau_s > 0.0 and np.isfinite(self.tau_s)):
             raise ValueError("tau_s must be finite and positive.")
+        if self.axes not in ("inertial", "rtn"):
+            raise ValueError("axes must be 'inertial' or 'rtn'.")
+        if self.sigma_axes_mps2 is not None:
+            sig = np.asarray(self.sigma_axes_mps2, dtype=float)
+            if sig.shape != (3,) or not np.all(np.isfinite(sig)) or np.any(sig < 0.0):
+                raise ValueError("sigma_axes_mps2 must be three finite non-negative values.")
 
 
-def dmc_process_noise(options: DMCOptions, dt_s: float) -> np.ndarray:
-    """Exact discrete process noise of [r, v, w] for the Gauss-Markov model (van Loan, 9x9).
+def _skew(a: np.ndarray) -> np.ndarray:
+    return np.array([[0.0, -a[2], a[1]], [a[2], 0.0, -a[0]], [-a[1], a[0], 0.0]])
+
+
+def rtn_acceleration_and_jacobian(
+    r: ArrayLike, v: ArrayLike, w_rtn: ArrayLike
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """a = C(r, v) w with C = [R T N]; returns (a, da/dr, da/dv)."""
+    r = np.asarray(r, dtype=float)
+    v = np.asarray(v, dtype=float)
+    w = np.asarray(w_rtn, dtype=float)
+    r_norm = np.linalg.norm(r)
+    r_hat = r / r_norm
+    h = np.cross(r, v)
+    h_norm = np.linalg.norm(h)
+    n_hat = h / h_norm
+    t_hat = np.cross(n_hat, r_hat)
+    eye = np.eye(3)
+    d_rhat_dr = (eye - np.outer(r_hat, r_hat)) / r_norm
+    p_n = (eye - np.outer(n_hat, n_hat)) / h_norm
+    d_nhat_dr = p_n @ (-_skew(v))                    # dh/dr = -[v]x
+    d_nhat_dv = p_n @ _skew(r)                       # dh/dv = [r]x
+    # d(N x R) = -[R]x dN + [N]x dR
+    d_that_dr = -_skew(r_hat) @ d_nhat_dr + _skew(n_hat) @ d_rhat_dr
+    d_that_dv = -_skew(r_hat) @ d_nhat_dv
+    a = w[0] * r_hat + w[1] * t_hat + w[2] * n_hat
+    j_r = w[0] * d_rhat_dr + w[1] * d_that_dr + w[2] * d_nhat_dr
+    j_v = w[1] * d_that_dv + w[2] * d_nhat_dv
+    return a, j_r, j_v
+
+
+def _rtn_basis(r: np.ndarray, v: np.ndarray) -> np.ndarray:
+    r_hat = r / np.linalg.norm(r)
+    h = np.cross(r, v)
+    n_hat = h / np.linalg.norm(h)
+    return np.column_stack([r_hat, np.cross(n_hat, r_hat), n_hat])
+
+
+#: Above this beta*dt the closed form replaces van Loan, whose -A block grows as exp(+beta*dt).
+_DMC_CLOSED_FORM_MIN_BETA_DT = 1.0
+
+
+def dmc_process_noise(options: DMCOptions, dt_s: float, *, state6: ArrayLike | None = None) -> np.ndarray:
+    """Exact discrete process noise of [r, v, w] for the Gauss-Markov model (9x9).
+
+    With ``axes="rtn"`` (``state6`` required) w is in RTN coordinates; the r and v
+    blocks are rotated to the inertial frame with C at ``state6`` (held over the step).
 
     The kinematic coupling r' = v, v' = w is exact; the gravity gradient is left
     out of Q, as is standard (its effect over one step is second order).
+
+    Short steps use van Loan's matrix exponential. Its -A block grows as
+    exp(beta*dt), losing precision near beta*dt ~ 30 and overflowing past ~700
+    (assessment EST-09), so longer steps use the closed-form integrals of
+    Phi(s) G q G^T Phi(s)^T, which contain only exp(-beta*dt).
     """
+    if options.axes == "rtn" and state6 is None:
+        raise ValueError("RTN DMC process noise needs the state (state6).")
+    # WP4.8b: Q is linear in sigma^2, and van Loan's accuracy depends on the size of
+    # the Qc block against A (2.8e-9 relative at sigma = 1 m/s^2 and beta*dt = 1), so Q
+    # is evaluated at a well-scaled reference sigma and scaled per axis.
+    sig = (np.full(3, options.sigma_mps2) if options.sigma_axes_mps2 is None
+           else np.asarray(options.sigma_axes_mps2, dtype=float))
+    reference = _gauss_markov_q(DMCOptions(_SIGMA_REFERENCE_MPS2, options.tau_s), dt_s)
+    scale = np.tile(sig / _SIGMA_REFERENCE_MPS2, 3)
+    q = scale[:, None] * reference * scale[None, :]
+    if options.axes == "rtn":
+        x = np.asarray(state6, dtype=float).reshape(-1)
+        rot = np.eye(9)
+        rot[0:3, 0:3] = rot[3:6, 3:6] = _rtn_basis(x[:3], x[3:6])
+        q = rot @ q @ rot.T
+    return 0.5 * (q + q.T)
+
+
+def _gauss_markov_q(options: DMCOptions, dt_s: float) -> np.ndarray:
     dt = abs(float(dt_s))
     beta = 1.0 / options.tau_s
+    if beta * dt > _DMC_CLOSED_FORM_MIN_BETA_DT:
+        return _dmc_process_noise_closed_form(options.sigma_mps2, beta, dt)
     a = np.zeros((9, 9))
     a[0:3, 3:6] = np.eye(3)
     a[3:6, 6:9] = np.eye(3)
@@ -66,6 +150,23 @@ def dmc_process_noise(options: DMCOptions, dt_s: float) -> np.ndarray:
     phi = e[9:, 9:].T
     q = phi @ e[:9, 9:]
     return 0.5 * (q + q.T)
+
+
+def _dmc_process_noise_closed_form(sigma_mps2: float, beta: float, dt: float) -> np.ndarray:
+    """Per-axis integrals of g_i(s) g_j(s), g = [(beta s - 1 + e^{-beta s}) / beta^2, (1 - e^{-beta s}) / beta, e^{-beta s}]."""
+    x = beta * dt
+    e1 = np.exp(-x)
+    e2 = np.exp(-2.0 * x)
+    i_rr = (x**3 / 3.0 - x**2 + x + 0.5 - 0.5 * e2 - 2.0 * x * e1) / beta**5
+    i_rv = (0.5 * x**2 - x + 0.5 - e1 + x * e1 + 0.5 * e2) / beta**4
+    i_rw = (0.5 * (1.0 - e2) - x * e1) / beta**3
+    i_vv = (x - 2.0 * (1.0 - e1) + 0.5 * (1.0 - e2)) / beta**3
+    i_vw = ((1.0 - e1) - 0.5 * (1.0 - e2)) / beta**2
+    i_ww = 0.5 * (1.0 - e2) / beta
+    per_axis = 2.0 * sigma_mps2**2 * beta * np.array([[i_rr, i_rv, i_rw],
+                                                      [i_rv, i_vv, i_vw],
+                                                      [i_rw, i_vw, i_ww]])
+    return np.kron(per_axis, np.eye(3))
 
 
 def propagate_dmc_state(
@@ -95,6 +196,7 @@ def propagate_dmc_state(
         raise ValueError("state9 must be [r(3), v(3), w(3)].")
     beta = 1.0 / options.tau_s
     force = dict(j2_moon=j2_moon, srp=srp)
+    rtn = options.axes == "rtn"
 
     def rhs(t, y):
         r_e = np.asarray(get_earth_pos(float(t)), dtype=float).reshape(-1)[:3]
@@ -103,13 +205,22 @@ def propagate_dmc_state(
         dx = f3body_moon(x6, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, r_e, r_s, **force)
         out = np.empty_like(y)
         out[:3] = dx[:3]
-        out[3:6] = dx[3:6] + y[6:9]
+        if rtn:
+            accel, j_r, j_v = rtn_acceleration_and_jacobian(y[:3], y[3:6], y[6:9])
+        else:
+            accel = y[6:9]
+        out[3:6] = dx[3:6] + accel
         out[6:9] = -beta * y[6:9]
         if stm:
             a9 = np.zeros((9, 9))
             a9[:6, :6] = dynamics_jacobian_a_matrix(x6, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                                                     r_e, r_s, **force)
-            a9[3:6, 6:9] = np.eye(3)
+            if rtn:
+                a9[3:6, 0:3] += j_r
+                a9[3:6, 3:6] += j_v
+                a9[3:6, 6:9] = _rtn_basis(y[:3], y[3:6])
+            else:
+                a9[3:6, 6:9] = np.eye(3)
             a9[6:9, 6:9] = -beta * np.eye(3)
             phi = y[9:].reshape(9, 9, order="F")
             out[9:] = (a9 @ phi).reshape(-1, order="F")

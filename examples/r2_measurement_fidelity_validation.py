@@ -437,6 +437,163 @@ PHASE_D2_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256 = {'lunar_od/dynamics.py': 'ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3', 'lunar_od/ephemeris.py': 'bbf60e29558c35ce9cbba00524d48a963cecccaf7ed4ff39dc1d96c68e6dca12', 'lunar_od/radiometrics.py': 'aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1', 'lunar_od/relativistic_light_time.py': '8fbf76d6c3bbd6156ab255b8a4aa8aa6a08186e252855e74848e1768b5081ee6', 'lunar_od/__init__.py': '2e7023732ce7ef6675ebb003db239ecfc3cbb0b9af343fe8c25456e572f87af5', 'lunar_od/filters.py': '05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba', 'lunar_od/scenarios.py': 'b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2', 'lunar_od/media.py': '0c0a6e7d106467354e9f7d19dbf9399796d4488c7938399a8d6c5ae887033b3f', 'lunar_od/estimators.py': 'c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf', 'lunar_od/force_contract.py': '536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a', 'lunar_od/observability.py': '6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956', 'lunar_od/reporting.py': 'ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8', 'lunar_od/scenario_config.py': '6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c', 'examples/run_scenario_config.py': '1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da', 'desktop_app/controllers/analysis_controller.py': 'a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0'}
 
+# Phase F2 G4e-R re-freeze (owner-authorized 2026-10-31, independent assessment
+# TST-09).  PR #61 (a8f1bef, 2026-10-27) changed lunar_od/dynamics.py after the
+# numerical-core identity without adding one, so main failed this gate.  The
+# change is confined to _shadow_contact_check, the fail-closed guard on pre-pass
+# shadow cuts: a cut is now accepted when it lies within 1e-3 s of a contact on
+# the final trajectory (residual / contact-function rate), or within the old
+# 1e-9 rad angle (the only test at a grazing tangent).  Integration, forces and
+# STM are unchanged; only which pre-pass cuts raise RuntimeError differs.
+#
+#   old (numerical core, 71e088f)  ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3
+#   new (Phase F2 G4e-R, a8f1bef)  b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+#
+# All earlier tables are left untouched as truthful historical records.
+PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
+}
+
+# Programme WP4.1 re-freeze (owner-authorized 2026-10-31 for the independent-
+# assessment programme; EST-01/02/03).  The three SRIF estimators now score the
+# incumbent and every trial on one propagation path (the 6-state one, at the
+# iteration's tolerance) and, for two-way range, on the MAP objective the QR step
+# minimises; a rejected step is halved along its own direction (at most 10
+# times) and, when no trial descends at the caller's tolerance, the incumbent is
+# certified by the Gauss-Newton decrement (Converged / NoDescent) instead of
+# recomputing the identical step until max_iter.  The step itself, the prior
+# rows, the posterior and BLS-LM are unchanged.
+#
+#   old (numerical core)  c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf
+#   new (WP4.1)           028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c",
+}
+
+# F4 WP4.2 (owner-authorized re-freeze for the independent-assessment programme;
+# EST-04/05).  In the six BLS-LM/SRIF loops the cost-stability and step-norm
+# tests no longer declare convergence: they nominate the point, switch the
+# propagation to the caller's tolerance, and the next iteration declares
+# Converged/J-Stab only if the re-linearised Gauss-Newton decrement is <= 0.1
+# (posterior-sigma units); otherwise iteration resumes.  The LM/QR step, the
+# lambda schedule, the priors and the posterior are unchanged.
+#
+#   old (WP4.1)  028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c
+#   new (WP4.2)  c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353",
+}
+
+# F4 WP4.3 (owner-authorized re-freeze for the independent-assessment programme;
+# EST-06/07).  The six-state batch posteriors (position/range-rate BLS-LM and
+# SRIF, two-way six-state branches) take their covariance from a QR of the
+# whitened, scaled design (_square_root_covariance_from_design) instead of
+# clipping the information eigenvalues at max*1e-14 in physical units; BLS-LM
+# and SRIF test and report one column-equilibrated normal-equivalent condition
+# number against SINGULAR_CONDITION_LIMIT = 1e15, and the normal-matrix LM step
+# solves the Jacobi-equilibrated system.
+#
+#   old (WP4.2)  c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353
+#   new (WP4.3)  eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6",
+}
+
+# F4 WP4.3b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-18).  Observability rank, condition number and weakest direction come from the
+# column-equilibrated design (an explicit rank_tol keeps its absolute meaning on the
+# raw singular values); the bias decision measures each bias's conditional
+# information against its own unconditional information (unit-free) instead of
+# against the strongest bias, and the state-block pseudo-inverse is equilibrated.
+#
+#   old (numerical core)  6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956
+#   new (WP4.3b)          cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/observability.py":
+        "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440",
+}
+
+# F4 WP4.4a (owner-authorized re-freeze for the independent-assessment programme;
+# EST-11/12).  The unscented mean is formed as X0 + sum w_i (X_i - X0) (no offset
+# cancellation at Wm0 = -1e6); _cholesky_psd factors a positive-definite matrix as
+# it is and applies jitter only after a failed factorization, relative to each
+# diagonal (Jacobi-equilibrated); _ensure_psd floors the equilibrated eigenvalues.
+#
+#   old (numerical core)  05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba
+#   new (WP4.4a)          e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac",
+}
+
+
+# F4 WP4.4b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-13).  A frozen state is a Schmidt-Kalman consider state (x_c, P_cc kept at
+# the prediction, P_xc updated); the regularisation pseudo-measurement is applied
+# on the first update only.
+#
+#   old (WP4.4a)          e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac
+#   new (WP4.4b)          6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38",
+}
+
+
+# F4 WP4.8c (owner-authorized re-freeze for the independent-assessment programme;
+# EST-21).  run_lunar_ukf gains dmc=DMCOptions: the Gauss-Markov empirical
+# acceleration as state elements 6:9, propagated per sigma point, Q from
+# dmc_process_noise, measurements on the state without w.
+#
+#   old (WP4.4b)          6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38
+#   new (WP4.8c)          1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec",
+}
+
+
+# F4 WP4.2b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-08).  Opt-in damping_schedule="nielsen" for position/range-rate BLS-LM: lambda
+# from the gain ratio (Nielsen 1999) and More's running-max damping matrix
+# diag(A^T A + P); _lm_step / _lm_step_square_root accept an explicit damping
+# diagonal.  The default "fixed" schedule is unchanged.
+#
+#   old (WP4.3)           eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6
+#   new (WP4.2b)          c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936",
+}
+
+
+# F4 WP4.5b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-15).  Opt-in measurement_correlation_time_s for position/range-rate BLS-LM:
+# residuals and design are Prais-Winsten whitened per station and component
+# (_gauss_markov_whitening), the whitened rows carry unit weight and the posterior
+# comes from the whitened design.  Unset, the estimators are unchanged.
+#
+#   old (WP4.2b)          c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936
+#   new (WP4.5b)          ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6",
+}
+
 
 
 
@@ -454,6 +611,26 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_3B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
+        return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:
         return NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_D2_REFROZEN_CURRENT_TREE_SHA256:

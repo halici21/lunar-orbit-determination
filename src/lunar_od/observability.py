@@ -111,10 +111,21 @@ def decide_bias_state_handling(
     f_xx = fisher[:dynamic_state_size, :dynamic_state_size]
     f_xb = fisher[:dynamic_state_size, dynamic_state_size:]
     f_bb = fisher[dynamic_state_size:, dynamic_state_size:]
-    conditional = _symmetrize(f_bb - f_xb.T @ np.linalg.pinv(f_xx) @ f_xb)
+    # WP4.3b (EST-18): the pseudo-inverse is taken on the Jacobi-equilibrated state block,
+    # so its cut-off no longer depends on the metre / metre-per-second bookkeeping.
+    d_x = np.sqrt(np.clip(np.diag(f_xx), 0.0, None))
+    d_x[d_x == 0.0] = 1.0
+    f_xx_inv = np.linalg.pinv(f_xx / d_x[:, None] / d_x[None, :]) / d_x[:, None] / d_x[None, :]
+    conditional = _symmetrize(f_bb - f_xb.T @ f_xx_inv @ f_xb)
     information = np.clip(np.diag(conditional), 0.0, None)
-    scale = max(float(np.max(information)), np.finfo(float).tiny)
-    relative = information / scale
+    # WP4.3b (EST-18): each bias is measured against its OWN unconditional information --
+    # the fraction that survives decorrelation from the dynamic state -- instead of
+    # against the strongest bias, which mixed metres and radians in station_full mode
+    # and so froze or kept a bias depending on its unit.  The fraction is unit-free;
+    # a bias the data never see (unconditional information 0) scores 0.
+    own = np.clip(np.diag(f_bb), 0.0, None)
+    relative = np.divide(information, own, out=np.zeros_like(information), where=own > 0.0)
+    relative = np.clip(relative, 0.0, 1.0)
 
     active = []
     regularized = []
@@ -470,15 +481,33 @@ def summarize_weighted_jacobian(
     eigenvalues = eigenvalues[order]
     eigenvectors = eigenvectors[:, order]
 
-    tol = _rank_tolerance(singular_values, h_white.shape, rank_tol)
-    rank = int(np.sum(singular_values > tol))
+    # WP4.3b (EST-18): rank, condition number and weakest direction come from the
+    # column-equilibrated design, so they no longer depend on the units of the
+    # parameters (m, m/s, rad, bias and K scales).  singular_values and
+    # information_eigenvalues stay the raw spectrum.  An explicit rank_tol keeps its
+    # historical meaning: an absolute cut on the raw singular values.
     num_parameters = int(h_white.shape[1])
-    if rank < num_parameters or singular_values.size == 0:
+    if rank_tol is None:
+        col = np.linalg.norm(h_white, axis=0)
+        col[col == 0.0] = 1.0
+        rank_values = np.linalg.svd(h_white / col, compute_uv=False)
+    else:
+        rank_values = singular_values
+    tol = _rank_tolerance(rank_values, h_white.shape, rank_tol)
+    rank = int(np.sum(rank_values > tol))
+    if rank < num_parameters or rank_values.size == 0:
         condition_number = float("inf")
     else:
-        condition_number = float(singular_values[0] / singular_values[-1])
+        condition_number = float(rank_values[0] / rank_values[-1])
 
-    weakest_direction = eigenvectors[:, 0].copy() if eigenvectors.size else np.zeros(num_parameters)
+    if fisher.size:
+        d_f = np.sqrt(np.clip(np.diag(fisher), 0.0, None))
+        d_f[d_f == 0.0] = 1.0
+        _, eq_vectors = np.linalg.eigh(fisher / d_f[:, None] / d_f[None, :])
+        weakest_direction = eq_vectors[:, 0] / d_f
+        weakest_direction = weakest_direction / np.linalg.norm(weakest_direction)
+    else:
+        weakest_direction = np.zeros(num_parameters)
     return ObservabilityResult(
         measurement_type=measurement_type,
         num_observations=int(num_observations),
