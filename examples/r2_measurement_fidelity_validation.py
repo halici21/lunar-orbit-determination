@@ -536,6 +536,21 @@ F4_WP4_4A_REFROZEN_CURRENT_TREE_SHA256 = {
         "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac",
 }
 
+# F1 WP1.7 (owner-authorized re-freeze for the independent-assessment programme;
+# DYN-12/CFG-07).  scenario_lunar_gravity_model labels the loaded model with the
+# configured explicit PA realization; the stale "gradient not implemented" refusal
+# of BLS/SRIF with harmonics is removed (the runner guard still refuses harmonics);
+# the schema admits only False for enable_lunar_harmonics / enable_earth_j2.
+#
+#   old (numerical core)  6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c
+#   new (WP1.7)           29ea1dde9f950ab2998ecb5bb43bea79c712a71032b5b3d3015f6b8f5139b068
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_7_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenario_config.py":
+        "29ea1dde9f950ab2998ecb5bb43bea79c712a71032b5b3d3015f6b8f5139b068",
+}
+
+
 
 # F4 WP4.4b (owner-authorized re-freeze for the independent-assessment programme;
 # EST-13).  A frozen state is a Schmidt-Kalman consider state (x_c, P_cc kept at
@@ -726,6 +741,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_WP1_7_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_7_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
         return BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256:
