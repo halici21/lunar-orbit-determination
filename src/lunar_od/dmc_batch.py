@@ -11,9 +11,12 @@ epoch.  ``w0`` carries the prior ``N(0, sigma^2)`` of the Gauss-Markov steady st
 Two solvers share one objective, one damping schedule and the WP4.2 certificate:
 ``method="normal"`` solves the damped normal equations (BLS-LM, :func:`_lm_step`),
 ``method="square_root"`` the same system by QR without forming them
-(:func:`_lm_step_square_root`, the SRIF-form solve).  Position observations only;
-the measurement partials are mapped through the receive-epoch STM, so
-``jacobian_model="implicit_light_time"`` is refused.
+(:func:`_lm_step_square_root`, the SRIF-form solve).  Position observations
+(:func:`estimate_position_dmc_batch`) and instantaneous range-rate observations
+(:func:`estimate_range_rate_dmc_batch`, WP4.8e); the measurement partials are mapped
+through the receive-epoch STM, so ``jacobian_model="implicit_light_time"`` and the
+counted-Doppler range-rate physics (whose partials integrate over the count interval)
+are refused.
 """
 
 from __future__ import annotations
@@ -34,17 +37,43 @@ from .estimators import (
     _limit_step,
     _position_residual_from_h,
     _position_weight_diagonal,
+    _range_rate_residual_from_h,
+    _range_rate_weight_diagonal,
     _square_root_covariance_from_design,
     _stationarity_certified,
     _weighted_map_cost,
 )
-from .measurements import PassGeometry, compute_position_residuals_analytic
+from .measurements import (
+    PassGeometry,
+    compute_position_residuals_analytic,
+    compute_range_rate_residuals_analytic,
+)
+from .radiometrics import range_rate_physics_config
 
 N_STATE = 6 + DMC_SIZE
 _SOLVERS = {"normal": _lm_step, "square_root": _lm_step_square_root}
+# measurement type -> (weights, local residual and partials, residual vector, components, time column)
+_MEASUREMENTS = {
+    "position": (_position_weight_diagonal, compute_position_residuals_analytic, _position_residual_from_h, 3, 5),
+    "range_rate": (_range_rate_weight_diagonal, compute_range_rate_residuals_analytic,
+                   _range_rate_residual_from_h, 4, 6),
+}
 
 
-def estimate_position_dmc_batch(
+def estimate_position_dmc_batch(*args, **kwargs) -> tuple[np.ndarray, str, EstimatorStats]:
+    """Position-only batch fit of ``[r0, v0, w0]``; arguments as :func:`_estimate_dmc_batch`."""
+    return _estimate_dmc_batch("position", *args, **kwargs)
+
+
+def estimate_range_rate_dmc_batch(*args, **kwargs) -> tuple[np.ndarray, str, EstimatorStats]:
+    """WP4.8e: the same fit on instantaneous range-rate observations (``obs_data`` rows
+    ``[t, range, range_rate, az, el, station, time index]``); arguments as
+    :func:`_estimate_dmc_batch`.  Counted-Doppler physics is refused."""
+    return _estimate_dmc_batch("range_rate", *args, **kwargs)
+
+
+def _estimate_dmc_batch(
+    measurement_type: str,
     t_pass_s: ArrayLike,
     obs_data: ArrayLike,
     x_nominal0: ArrayLike,
@@ -70,7 +99,7 @@ def estimate_position_dmc_batch(
     damping_schedule: str = "fixed",
     measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
-    """Position-only batch fit of ``[r0, v0, w0]`` with a Gauss-Markov empirical acceleration.
+    """Batch fit of ``[r0, v0, w0]`` with a Gauss-Markov empirical acceleration.
 
     ``x_nominal0`` is the 9-element initial guess (prior mean of ``w0`` is 0; the prior
     mean of ``r0, v0`` is the guess itself when ``state_prior_covariance`` (6x6) is given,
@@ -82,8 +111,15 @@ def estimate_position_dmc_batch(
     if method not in _SOLVERS:
         raise ValueError(f"method must be one of {tuple(_SOLVERS)}, got {method!r}.")
     if getattr(pass_geo, "jacobian_model", "analytic_exact_geometric") == "implicit_light_time":
-        raise ValueError("estimate_position_dmc_batch maps partials at the receive epoch; "
+        raise ValueError("the DMC batch maps partials at the receive epoch; "
                          "jacobian_model='implicit_light_time' is not supported.")
+    weights_of, local_model, residual_vector, components, time_col = _MEASUREMENTS[measurement_type]
+    if pass_geo.measurement_type != measurement_type:
+        raise ValueError(f"pass_geo.measurement_type is {pass_geo.measurement_type!r}, not {measurement_type!r}.")
+    if (measurement_type == "range_rate"
+            and range_rate_physics_config(pass_geo.range_rate_physics).mode != "geometric_instantaneous"):
+        raise ValueError("the DMC batch supports instantaneous range-rate only; counted-Doppler partials "
+                         "integrate over the count interval and are not mapped through the DMC STM.")
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -107,8 +143,8 @@ def estimate_position_dmc_batch(
     # bookkeeping units: m, m/s, and the DMC sigma for w (the solves equilibrate anyway)
     scale = np.diag(np.concatenate([np.full(3, 1e3), np.ones(3), sigma_w]))
     prior_inv_scaled = scale.T @ prior_inv @ scale
-    w_diag = _position_weight_diagonal(obs_data, pass_geo)
-    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, 3)
+    w_diag = weights_of(obs_data, pass_geo)
+    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, components)
     if whitening is not None:
         w_diag = np.ones_like(w_diag)          # the whitened rows carry unit weight
     white = (lambda v: v) if whitening is None else whitening
@@ -120,16 +156,17 @@ def estimate_position_dmc_batch(
                                    srp=srp, stm=stm)
 
     def residual_of(hist):
-        _, h_nom, h_tilde = compute_position_residuals_analytic(hist[:, :6], obs_data, pass_geo)
-        return white(_position_residual_from_h(obs_data, h_nom)), h_tilde
+        _, h_nom, h_tilde = local_model(hist[:, :6], obs_data, pass_geo)
+        return white(residual_vector(obs_data, h_nom)), h_tilde
 
     def linearize(x):
         hist = propagate(x, True)
         residual, h_tilde = residual_of(hist)
         h = np.zeros((h_tilde.shape[0], N_STATE))
         for k in range(obs_data.shape[0]):
-            phi = hist[int(obs_data[k, 5]) - 1, N_STATE:].reshape(N_STATE, N_STATE, order="F")
-            h[3 * k:3 * k + 3] = h_tilde[3 * k:3 * k + 3] @ phi[:6, :]
+            phi = hist[int(obs_data[k, time_col]) - 1, N_STATE:].reshape(N_STATE, N_STATE, order="F")
+            rows = slice(components * k, components * (k + 1))
+            h[rows] = h_tilde[rows] @ phi[:6, :]
         return white(h), residual
 
     def cost_of(x, residual):
