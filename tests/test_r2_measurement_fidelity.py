@@ -947,7 +947,7 @@ def test_r2_historical_gate_reports_unreachable_commit_rather_than_passing():
     assert "R2 historical provenance unavailable" in str(excinfo.value)
 
 
-def _force_contract(j2_moon: float):
+def _force_contract(j2_moon: float, **gms):
     config = scenario_config_from_mapping(
         {
             "name": "r2-test",
@@ -958,14 +958,22 @@ def _force_contract(j2_moon: float):
             "j2_moon": j2_moon,
         }
     )
-    return force_model_contract_from_scenario_config(config)
+    return force_model_contract_from_scenario_config(config, **gms)
 
 
 def test_r0b_fingerprints_schema_and_r1_readiness_are_frozen():
     zero = _force_contract(0.0)
     lunar_j2 = _force_contract(float(J2_MOON_UNNORMALIZED))
-    assert zero.force_model_fingerprint() == campaign.FROZEN_ZERO_J2_FINGERPRINT
-    assert lunar_j2.force_model_fingerprint() == campaign.FROZEN_LUNAR_J2_FINGERPRINT
+    assert zero.force_model_fingerprint() == campaign.F1_WP1_2_ZERO_J2_FINGERPRINT
+    assert lunar_j2.force_model_fingerprint() == campaign.F1_WP1_2_LUNAR_J2_FINGERPRINT
+    # The R0B-era fingerprints remain reproducible from the DE431 GMs (WP1.2).
+    historical = campaign.DE431_LITERAL_GMS_M3S2
+    assert _force_contract(0.0, **historical).force_model_fingerprint() == (
+        campaign.FROZEN_ZERO_J2_FINGERPRINT
+    )
+    assert _force_contract(float(J2_MOON_UNNORMALIZED), **historical).force_model_fingerprint() == (
+        campaign.FROZEN_LUNAR_J2_FINGERPRINT
+    )
     assert FORCE_CONTRACT_SCHEMA_VERSION == "r0b.force-model-contract.v1"
     payload = lunar_j2.to_canonical_payload()
     assert payload["consumer_capabilities"]["posterior_covariance"] == "verified"

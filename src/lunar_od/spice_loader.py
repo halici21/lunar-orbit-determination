@@ -39,6 +39,14 @@ PLANETARY_EPHEMERIS_KERNELS = {
     "DE421": "de421.bsp",
 }
 DEFAULT_PLANETARY_EPHEMERIS = "DE440"
+
+#: WP1.2 (DYN-01, CFG-04): the GM kernel of each planetary-ephemeris generation.
+#: DE440 runs with DE440's GMs; the DE421 profile keeps gm_de431, which every
+#: DE421-era record (and the MATLAB snapshot fixture) was computed with.
+GM_KERNELS = {
+    "DE440": "gm_de440.tpc",
+    "DE421": "gm_de431.tpc.txt",
+}
 PLANETARY_EPHEMERIS_ENV = "LUNAR_OD_PLANETARY_EPHEMERIS"
 
 #: ORDER IS LOAD-BEARING, not cosmetic. Both ``moon_de440_220930.txt`` and
@@ -63,7 +71,7 @@ _KERNEL_TEMPLATE = (
     "moon_080317.tf.txt",
     "earth_2025_250826_2125_predict.bpc",
     "moon_pa_de421_1900-2050.bpc",
-    "gm_de431.tpc.txt",
+    "@GM@",
     "pck00010.tpc.txt",
 )
 
@@ -82,8 +90,9 @@ def planetary_ephemeris(ephemeris: str | None = None) -> str:
 
 def required_kernels(ephemeris: str | None = None) -> tuple[str, ...]:
     """The required kernel list with the selected planetary ephemeris."""
-    bsp = PLANETARY_EPHEMERIS_KERNELS[planetary_ephemeris(ephemeris)]
-    return tuple(bsp if k == "@PLANETARY_EPHEMERIS@" else k for k in _KERNEL_TEMPLATE)
+    name = planetary_ephemeris(ephemeris)
+    slots = {"@PLANETARY_EPHEMERIS@": PLANETARY_EPHEMERIS_KERNELS[name], "@GM@": GM_KERNELS[name]}
+    return tuple(slots.get(k, k) for k in _KERNEL_TEMPLATE)
 
 
 #: The required kernel list as resolved at import (default or environment).

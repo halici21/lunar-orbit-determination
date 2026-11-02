@@ -2478,8 +2478,11 @@
     },
     "lunar_od/constants.py": {
       "path": "src/lunar_od/constants.py",
-      "original_sha256": "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
-      "byte_preserved": true
+      "original_sha256": "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede"
+      ]
     },
     "lunar_od/delta_dor.py": {
       "path": "src/lunar_od/delta_dor.py",
@@ -2802,13 +2805,14 @@
     },
     "examples/run_scenario_config.py": {
       "path": "examples/run_scenario_config.py",
-      "original_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+      "original_sha256": "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed"
+        "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
+        "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da"
       ],
-      "refrozen_from_sha256": "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained."
     },
     "examples/r1_covariance_observability_validation.py": {
       "path": "examples/r1_covariance_observability_validation.py",
@@ -2817,13 +2821,14 @@
     },
     "desktop_app/controllers/analysis_controller.py": {
       "path": "desktop_app/controllers/analysis_controller.py",
-      "original_sha256": "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0",
+      "original_sha256": "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33"
+        "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33",
+        "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0"
       ],
-      "refrozen_from_sha256": "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained."
     },
     "docs/station-layout_2026-10-15.md": {
       "path": "docs/development/station-layout_2026-10-15.md",

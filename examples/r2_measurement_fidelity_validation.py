@@ -130,6 +130,20 @@ FROZEN_ZERO_J2_FINGERPRINT = (
 FROZEN_LUNAR_J2_FINGERPRINT = (
     "sha256:11d33466c53e4c4a48cb8f72984ad1740e81de26ef342b4ecd106a30a7ddb52d"
 )
+# F1 WP1.2 re-freeze: the force contract's default GMs moved from gm_de431 to
+# gm_de440 (DYN-01).  The historical fingerprints above stay reproducible from
+# the DE431 literals (DE431_LITERAL_GMS_M3S2); the gate checks these current ones.
+DE431_LITERAL_GMS_M3S2 = {
+    "mu_moon_m3_s2": 4902.800066163796e9,
+    "mu_earth_m3_s2": 398600.4354360959e9,
+    "mu_sun_m3_s2": 132712440041.9393e9,
+}
+F1_WP1_2_ZERO_J2_FINGERPRINT = (
+    "sha256:48d53e37c295a5e32989673dac7db8e3530be93cb66c3e6a2fdefd8bbc216c66"
+)
+F1_WP1_2_LUNAR_J2_FINGERPRINT = (
+    "sha256:a8ab569c4653aad321211e17cb19f127fb4e4713957aafeb0188615acf4273a7"
+)
 
 PLOT_CONTRACT = (
     {
@@ -437,6 +451,23 @@ PHASE_D2_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256 = {'lunar_od/dynamics.py': 'ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3', 'lunar_od/ephemeris.py': 'bbf60e29558c35ce9cbba00524d48a963cecccaf7ed4ff39dc1d96c68e6dca12', 'lunar_od/radiometrics.py': 'aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1', 'lunar_od/relativistic_light_time.py': '8fbf76d6c3bbd6156ab255b8a4aa8aa6a08186e252855e74848e1768b5081ee6', 'lunar_od/__init__.py': '2e7023732ce7ef6675ebb003db239ecfc3cbb0b9af343fe8c25456e572f87af5', 'lunar_od/filters.py': '05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba', 'lunar_od/scenarios.py': 'b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2', 'lunar_od/media.py': '0c0a6e7d106467354e9f7d19dbf9399796d4488c7938399a8d6c5ae887033b3f', 'lunar_od/estimators.py': 'c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf', 'lunar_od/force_contract.py': '536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a', 'lunar_od/observability.py': '6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956', 'lunar_od/reporting.py': 'ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8', 'lunar_od/scenario_config.py': '6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c', 'examples/run_scenario_config.py': '1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da', 'desktop_app/controllers/analysis_controller.py': 'a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0'}
 
+# F1 WP1.2 (owner-authorized re-freeze for the independent-assessment programme;
+# DYN-01/CFG-04).  The scenario runner and the desktop analysis controller take
+# Moon/Earth/Sun GM from ephemeris_generation.gravitational_parameters() (the
+# DE440 profile's gm_de440.tpc values) instead of the DE431-era snapshot fixture.
+#
+#   run_scenario_config.py  old (numerical core) 1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da
+#                           new (WP1.2)          7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2
+#   analysis_controller.py  old (numerical core) a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0
+#                           new (WP1.2)          5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "examples/run_scenario_config.py":
+        "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
+    "desktop_app/controllers/analysis_controller.py":
+        "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
+}
+
 
 
 
@@ -454,6 +485,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_WP1_2_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:
         return NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_D2_REFROZEN_CURRENT_TREE_SHA256:
@@ -2070,8 +2103,8 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
     zero = contract(0.0)
     lunar_j2 = contract(float(J2_MOON_UNNORMALIZED))
     for item, expected, actual in (
-        ("zero_j2_fingerprint", FROZEN_ZERO_J2_FINGERPRINT, zero.force_model_fingerprint()),
-        ("lunar_j2_fingerprint", FROZEN_LUNAR_J2_FINGERPRINT, lunar_j2.force_model_fingerprint()),
+        ("zero_j2_fingerprint", F1_WP1_2_ZERO_J2_FINGERPRINT, zero.force_model_fingerprint()),
+        ("lunar_j2_fingerprint", F1_WP1_2_LUNAR_J2_FINGERPRINT, lunar_j2.force_model_fingerprint()),
         ("force_contract_schema", "r0b.force-model-contract.v1", FORCE_CONTRACT_SCHEMA_VERSION),
     ):
         rows.append(
