@@ -191,7 +191,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | CFG-09 | O | Masaüstü tek tohumu gürültü ve soğuk başlangıç için kullanıyor; "prescribed" yay modu görünürlük segmentasyonunu değiştiriyor; ön ayar açıklamaları yanlış |
 | CFG-10 | O | CLI çıktıları commit/config hash/tohum/kernel/paket sürümü kaydetmiyor (benchmark kaydediyor). **Kapatıldı (WP1.6):** her koşu `<name>_run_provenance.json` yazar (commit, config SHA-256, tohumlar, kernel + SHA-256, efemeris kimliği, paket sürümleri) |
 | CFG-11 | O | Üç sayılan Doppler uygulaması, iki efemeris interpolatörü, altı `C_LIGHT` tanımı — yetkili olan belgelenmemiş |
-| CFG-12 | D | Depoda 48 MB çalışma sonucu, 15 MB docs ikilisi, arşiv WIP kopyaları; numba için numpy üst sınırı yok; pyproject extras yok |
+| CFG-12 | D | Depoda 48 MB çalışma sonucu, 15 MB docs ikilisi, arşiv WIP kopyaları; numba için numpy üst sınırı yok; pyproject extras yok. **WP7.6:** numpy üst sınırı iddiası düzeltildi (numba 0.65.1 kendi `numpy<2.5`, `llvmlite<0.48` sınırını taşıyor; `pip check` temiz); pyproject extras (accelerated, desktop, dev, docs) eklendi ve `tests/test_packaging_extras.py` requirements profilleriyle eşitliğini ve Windows pinlerinin aralık içinde olduğunu denetliyor. Hash'li kilit dosyası ve Linux pin seti açık |
 
 ### 2.6 Test ve V&V süreci (TST)
 
