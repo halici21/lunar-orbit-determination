@@ -618,8 +618,13 @@ def estimate_position_bls_lm(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    damping_schedule: str = "fixed",
 ) -> tuple[np.ndarray, str, EstimatorStats]:
-    """Position-only batch least-squares with Levenberg-Marquardt damping."""
+    """Position-only batch least-squares with Levenberg-Marquardt damping.
+
+    ``damping_schedule``: ``"fixed"`` (historical) or ``"nielsen"`` (gain-ratio
+    lambda and More damping matrix, WP4.2b); see ``LM_DAMPING_SCHEDULES``.
+    """
     propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
@@ -646,7 +651,7 @@ def estimate_position_bls_lm(
     stop_reason = "MaxIter"
     termination_detail = ""
     gn_decrement = float("nan")
-    lambda_damping = float(lambda0)
+    damping = _LMDamping(lambda0, damping_schedule)
     pending_convergence = None
     caller_tolerance = propagation_profile is not None
     last_step = np.zeros(na)
@@ -708,7 +713,8 @@ def estimate_position_bls_lm(
             scale,
             prior_inv_scaled,
             prior_rhs_scaled,
-            lambda_damping,
+            damping.value,
+            damping.damping_diag(h_initial, w_diag, scale, prior_inv_scaled),
         )
         if singular:
             stop_reason = "Singular"
@@ -734,10 +740,12 @@ def estimate_position_bls_lm(
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            damping.accepted(current_cost - candidate_cost, _predicted_decrease(
+                h_initial, residual, w_diag, step, x_nominal - x_prior,
+                prior_inv if has_explicit_prior else None))
             x_nominal = x_candidate
             x_best = x_nominal.copy()
             best_cost = candidate_cost
-            lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
             if relative_improvement < tol_cost_stability or np.linalg.norm(step) < tol_step_norm:
                 # WP4.2: nominate only; certified at the caller's tolerance next iteration.
@@ -745,8 +753,8 @@ def estimate_position_bls_lm(
                 caller_tolerance = True
         else:
             x_nominal = x_best.copy()
-            lambda_damping *= 10.0
-            if lambda_damping > 1e12:
+            damping.rejected()
+            if damping.exhausted:
                 # Phase 17-HARDEN-D27: certify at the caller's tolerance.
                 if (_atol_r, _atol_a) != (rtol, atol):
                     h_initial, residual = _linearize(x_best, rtol, atol)
@@ -827,8 +835,12 @@ def estimate_range_rate_bls_lm(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    damping_schedule: str = "fixed",
 ) -> tuple[np.ndarray, str, EstimatorStats]:
-    """Range-rate batch least-squares with LM damping and optional outlier rejection."""
+    """Range-rate batch least-squares with LM damping and optional outlier rejection.
+
+    ``damping_schedule`` as in :func:`estimate_position_bls_lm` (WP4.2b).
+    """
     propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
@@ -854,7 +866,7 @@ def estimate_range_rate_bls_lm(
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
-    lambda_damping = float(lambda0)
+    damping = _LMDamping(lambda0, damping_schedule)
     pending_convergence = None
     caller_tolerance = propagation_profile is not None
     last_step = np.zeros(na)
@@ -943,7 +955,8 @@ def estimate_range_rate_bls_lm(
             scale,
             prior_inv_scaled,
             prior_rhs_scaled,
-            lambda_damping,
+            damping.value,
+            damping.damping_diag(h_initial, w_curr_diag, scale, prior_inv_scaled),
         )
         if singular:
             stop_reason = "Singular"
@@ -969,10 +982,12 @@ def estimate_range_rate_bls_lm(
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            damping.accepted(current_cost - candidate_cost, _predicted_decrease(
+                h_initial, residual, w_curr_diag, step, x_nominal - x_prior,
+                prior_inv if has_explicit_prior else None))
             x_nominal = x_candidate
             x_best = x_nominal.copy()
             best_cost = candidate_cost
-            lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
             min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
             cost_stable = relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration
@@ -982,8 +997,8 @@ def estimate_range_rate_bls_lm(
                 caller_tolerance = True
         else:
             x_nominal = x_best.copy()
-            lambda_damping *= 10.0
-            if lambda_damping > 1e12:
+            damping.rejected()
+            if damping.exhausted:
                 # Phase 17-HARDEN-D27: certify at the caller's tolerance.
                 if (_atol_r, _atol_a) != (rtol, atol):
                     h_initial_state, residual = _linearize(x_best, rtol, atol)
@@ -1808,15 +1823,17 @@ def _lm_step(
     prior_inv_scaled: np.ndarray,
     prior_rhs_scaled: np.ndarray,
     lambda_damping: float,
+    damping_diag: np.ndarray | None = None,
 ) -> tuple[np.ndarray, float, int, bool]:
     h_scaled = h_initial @ scale
     weighted_h = h_scaled * w_diag[:, None]
     atwa = h_scaled.T @ weighted_h
     atwb = h_scaled.T @ (w_diag * residual) + prior_rhs_scaled
-    damping_diag = np.diag(np.diag(atwa))
-    if not np.any(np.diag(damping_diag)):
-        damping_diag = np.eye(atwa.shape[0])
-    normal_matrix = atwa + lambda_damping * damping_diag + prior_inv_scaled
+    # WP4.2b: ``damping_diag`` (scaled units) replaces diag(A^T A) when given
+    damping_matrix = np.diag(np.diag(atwa) if damping_diag is None else np.asarray(damping_diag, dtype=float))
+    if not np.any(np.diag(damping_matrix)):
+        damping_matrix = np.eye(atwa.shape[0])
+    normal_matrix = atwa + lambda_damping * damping_matrix + prior_inv_scaled
     condition_number, rank = _equilibrated_condition(normal_matrix, normal=True)
     if not np.all(np.isfinite(normal_matrix)) or condition_number > SINGULAR_CONDITION_LIMIT:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
@@ -1838,6 +1855,7 @@ def _lm_step_square_root(
     prior_inv_scaled: np.ndarray,
     prior_rhs_scaled: np.ndarray,
     lambda_damping: float,
+    damping_diag: np.ndarray | None = None,
 ) -> tuple[np.ndarray, float, int, bool]:
     """The SAME damped LM step as :func:`_lm_step`, solved without the normal matrix.
 
@@ -1868,7 +1886,7 @@ def _lm_step_square_root(
     a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
     b = np.sqrt(w_diag) * residual
     n = a.shape[1]
-    d = np.einsum("ij,ij->j", a, a)
+    d = np.einsum("ij,ij->j", a, a) if damping_diag is None else np.asarray(damping_diag, dtype=float)
     if not np.any(d):
         d = np.ones(n)
     rows, rhs = [a, np.diag(np.sqrt(lambda_damping * d))], [b, np.zeros(n)]
@@ -1890,6 +1908,61 @@ def _lm_step_square_root(
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
     step_bar = np.linalg.solve(r, q.T @ np.concatenate(rhs)) / col
     return scale @ step_bar, condition_number, rank, False
+
+
+#: WP4.2b (EST-08): Levenberg-Marquardt damping schedules.  ``"fixed"`` is the
+#: historical schedule (lambda / 5 after an accepted step, x 10 after a rejected
+#: one, damping matrix diag(A^T A)): it ignores how well the linear model
+#: predicted the gain, and a column carried only by the prior is not damped.
+#: ``"nielsen"`` updates lambda from the gain ratio rho = actual / predicted
+#: decrease of the scored objective (Nielsen 1999; Madsen, Nielsen & Tingleff
+#: 2004, eq. 3.16), and damps with More's (1978) D = running maximum of
+#: diag(A^T A + P), so each parameter is damped on the scale of all the
+#: information it carries.  The objective, step acceptance and the WP4.2
+#: certificate are the same for both schedules.
+LM_DAMPING_SCHEDULES = ("fixed", "nielsen")
+LM_LAMBDA_FLOOR = 1e-12
+LM_LAMBDA_LIMIT = 1e12
+
+
+class _LMDamping:
+    """lambda and the damping matrix of one BLS-LM solve (WP4.2b)."""
+
+    def __init__(self, lambda0: float, schedule: str):
+        if schedule not in LM_DAMPING_SCHEDULES:
+            raise ValueError(f"damping_schedule must be one of {LM_DAMPING_SCHEDULES}, got {schedule!r}.")
+        self.value = float(lambda0)
+        self.schedule = schedule
+        self._nu = 2.0
+        self._diag = None
+
+    def damping_diag(self, h_initial, w_diag, scale, prior_inv_scaled):
+        """More's D for ``"nielsen"``; ``None`` (the step's own diag(A^T A)) for ``"fixed"``."""
+        if self.schedule == "fixed":
+            return None
+        a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
+        d = np.einsum("ij,ij->j", a, a) + np.diag(prior_inv_scaled)
+        self._diag = d if self._diag is None else np.maximum(self._diag, d)
+        return self._diag
+
+    def accepted(self, actual_decrease: float, predicted_decrease: float) -> None:
+        if self.schedule == "fixed":
+            self.value = max(self.value / 5.0, LM_LAMBDA_FLOOR)
+            return
+        rho = actual_decrease / predicted_decrease if predicted_decrease > 0.0 else 0.0
+        self.value = max(self.value * max(1.0 / 3.0, 1.0 - (2.0 * rho - 1.0) ** 3), LM_LAMBDA_FLOOR)
+        self._nu = 2.0
+
+    def rejected(self) -> None:
+        if self.schedule == "fixed":
+            self.value *= 10.0
+            return
+        self.value *= self._nu
+        self._nu *= 2.0
+
+    @property
+    def exhausted(self) -> bool:
+        return self.value > LM_LAMBDA_LIMIT
 
 
 #: Phase 17-HARDEN-D27 stationarity threshold on the Gauss-Newton decrement

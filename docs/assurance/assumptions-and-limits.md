@@ -50,3 +50,8 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     yayılım adımı dt'den bağımsız her adıma eklenir. Ölçüm aralığı ya da yayılım adımı değişince
     birim zamandaki gürültü değişir; Q taraması ve ayarlanmış Q değerleri yalnız ayarlandıkları
     örnekleme düzeninde geçerlidir. dt'ye bağlı SNC/DMC modeli seçimli olarak kullanılabilir.
+
+14. BLS-LM varsayılan sönümleme takvimi **"fixed"** kalır (λ/5, ×10, D = diag(AᵀA); EST-08):
+    dondurulmuş sonuçlar ve kapılar bu takvimle üretildi. Kazanç oranlı Nielsen/Moré takvimi
+    `damping_schedule="nielsen"` ile seçilir (WP4.2b); aynı minimuma daha az iterasyonla ulaşır.
+    Varsayılanın değiştirilmesi sahip kararıdır.

@@ -26,8 +26,10 @@ from numpy.typing import ArrayLike
 from .dmc import DMC_SIZE, DMCOptions, propagate_dmc_state
 from .estimators import (
     EstimatorStats,
+    _LMDamping,
     _lm_step,
     _lm_step_square_root,
+    _predicted_decrease,
     _limit_step,
     _position_residual_from_h,
     _position_weight_diagonal,
@@ -64,6 +66,7 @@ def estimate_position_dmc_batch(
     j2_moon: float = 0.0,
     srp=None,
     return_posterior: bool = False,
+    damping_schedule: str = "fixed",
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Position-only batch fit of ``[r0, v0, w0]`` with a Gauss-Markov empirical acceleration.
 
@@ -71,6 +74,7 @@ def estimate_position_dmc_batch(
     mean of ``r0, v0`` is the guess itself when ``state_prior_covariance`` (6x6) is given,
     otherwise ``r0, v0`` are data-only).  Returns ``(x_best, status, stats)`` like
     :func:`estimate_position_bls_lm`; ``stats.posterior_covariance`` is 9x9.
+    ``damping_schedule`` as in :func:`estimate_position_bls_lm` (WP4.2b).
     """
     if method not in _SOLVERS:
         raise ValueError(f"method must be one of {tuple(_SOLVERS)}, got {method!r}.")
@@ -127,7 +131,7 @@ def estimate_position_dmc_batch(
     x_best = x_nominal.copy()
     status, detail = "MaxIter", ""
     gn_decrement = float("nan")
-    lambda_damping = float(lambda0)
+    damping = _LMDamping(lambda0, damping_schedule)
     pending = None
     last_step = np.zeros(N_STATE)
     condition_number, rank = float("nan"), 0
@@ -146,7 +150,8 @@ def estimate_position_dmc_batch(
                 break
             pending = None
         step, condition_number, rank, singular = solve(
-            h, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled, lambda_damping)
+            h, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled, damping.value,
+            damping.damping_diag(h, w_diag, scale, prior_inv_scaled))
         if singular:
             status = "Singular"
             break
@@ -157,16 +162,17 @@ def estimate_position_dmc_batch(
         candidate_cost = cost_of(x_candidate, candidate_residual)
         if candidate_cost < current_cost:
             improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            damping.accepted(current_cost - candidate_cost, _predicted_decrease(
+                h, residual, w_diag, step, x_nominal - x_prior, prior_inv))
             x_nominal = x_candidate
             x_best = x_nominal.copy()
             best_cost = candidate_cost
-            lambda_damping = max(lambda_damping / 5.0, 1e-12)
             if improvement < tol_cost_stability or np.linalg.norm(step) < tol_step_norm:
                 pending = ("J-Stab", "COST_STABLE") if improvement < tol_cost_stability else ("Converged", "STEP_NORM")
         else:
             x_nominal = x_best.copy()
-            lambda_damping *= 10.0
-            if lambda_damping > 1e12:
+            damping.rejected()
+            if damping.exhausted:
                 certified, gn_decrement = _stationarity_certified(
                     h, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled)
                 status, detail = (("Converged", "STATIONARY_AT_DAMPING_LIMIT") if certified

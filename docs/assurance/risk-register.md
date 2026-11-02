@@ -18,7 +18,7 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 | R-10 | Tekrarlanamayan koşular (tohum yok, kernel kaydı yok, masaüstü farklı ayarlar) | CFG-01…04,10 | 4 | 3 | 12 | WP1.6 | open |
 | R-11 | Efemeris/GM/çerçeve nesil karışımı | DYN-01/02, CFG-04 | 5 | 3 | 15 | F1 | open |
 | R-12 | Kuvvet parmak izi farklı fiziği eşit gösterir → parite iddiaları geçersiz | DYN-10/11 | 3 | 4 | 12 | WP1.5 | open |
-| R-13 | Yakınsama gevşek toleransta ilan ediliyor; durma kriterleri birime bağlı | EST-04/05 | 4 | 3 | 12 | F4 | mitigating (WP4.2: EST-04 kapatıldı; ilan birimsiz GN azalmasıyla onaylanıyor; EST-08 açık) |
+| R-13 | Yakınsama gevşek toleransta ilan ediliyor; durma kriterleri birime bağlı | EST-04/05 | 4 | 3 | 12 | F4 | mitigating (WP4.2: EST-04 kapatıldı; ilan birimsiz GN azalmasıyla onaylanıyor; EST-08 seçimli Nielsen/Moré ile kısmi, WP4.2b) |
 | R-14 | DMC Q taşması geçiş boşluklarında | EST-09 | 3 | 4 | 12 | F4 (F3'ten önce!) | closed (WP0.2: kapalı form; WP4.8a: bağımsız 60 basamaklı kehanet) |
 | R-15 | İstasyon zinciri predict BPC, EOP yok; zamanla bozulan doğruluk | MEAS-06 | 3 | 4 | 12 | WP2.4 | open |
 | R-16 | Gereksinim/izlenebilirlik yok → "NASA/ESA seviyesi" iddiası denetlenemez | TST-08 | 5 | 2 | 10 | WP0.3 | open |

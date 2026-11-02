@@ -565,6 +565,21 @@ F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F4 WP4.2b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-08).  Opt-in damping_schedule="nielsen" for position/range-rate BLS-LM: lambda
+# from the gain ratio (Nielsen 1999) and More's running-max damping matrix
+# diag(A^T A + P); _lm_step / _lm_step_square_root accept an explicit damping
+# diagonal.  The default "fixed" schedule is unchanged.
+#
+#   old (WP4.3)           eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6
+#   new (WP4.2b)          c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936",
+}
+
+
 
 
 
@@ -581,6 +596,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_4B_REFROZEN_CURRENT_TREE_SHA256:
