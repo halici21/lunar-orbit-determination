@@ -2488,8 +2488,11 @@
     },
     "lunar_od/diagnostics.py": {
       "path": "src/lunar_od/diagnostics.py",
-      "original_sha256": "e5f2e07ba1056b5e27d040966136b6f497c26e86a21f21e176cf3f7e4dd49324",
-      "byte_preserved": true
+      "original_sha256": "56b109e651264c070b16e4a0523e0881da49985736dec913b2d850d0cbaac477",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "e5f2e07ba1056b5e27d040966136b6f497c26e86a21f21e176cf3f7e4dd49324"
+      ]
     },
     "lunar_od/dynamics.py": {
       "path": "src/lunar_od/dynamics.py",
