@@ -1,0 +1,18 @@
+{
+ "phase": "Phase F3d - re-qualify F3 / F3b (sigma > 0 DMC smoother) with accurate local transitions",
+ "written": "2026-11-01, after C6 found the defect (phase_c6_lunar_radiation_survey.md section 6) and before any F3d number",
+ "defect": "phase_f3_core.transition() forms each sub-step transition as Phi(t_b) Phi(t_a)^-1 from F3's finite-difference Phi(t, t0). cond(Phi) reaches 8.5e11 by the arc end; the local 20 s transitions depart from symplectic by 1.8e-4 at 5.6 h, 0.07 at 1.2 d and 0.6-0.8 after 2.3 d. The deterministic state propagation telescopes (the product of the transitions is exactly Phi(t) Phi(t0)^-1), so sigma = 0 is self-consistent and equals the batch; with sigma > 0 the DMC process noise and the w -> x coupling injected mid-arc are mapped through wrong local dynamics",
+ "fix": "local transitions Phi(t_b, t_a) by RK4 integration of d/dt Phi = A(t) Phi from I with steps <= 1 s, A = [[0, I], [G, 0]], G linearly interpolated from the full gravity gradient (Moon point mass + GL1800F N = 300 in MOON_PA_DE440 + Earth and Sun) cached by C6 at 1 s nodes along F3's reference trajectory (lro_data/f3_cache/c6_gradients.npy). The constants column stays S(t_b) - Phi(t_b, t_a) S(t_a) with F3's cached S; the w coupling, Q, local measurement rows, priors, epochs and everything else are F3's unchanged. Implemented by substituting phase_f3_core.transition in a new driver; no F3 file is edited",
+ "steps": {
+  "1": "G_PHI: the product of the accurate local transitions over the 20 s grid, Phi_acc(t), against F3's FD Phi(t): per column, max over the fit arc of |Phi_acc - Phi_FD| / max|Phi_FD column| (states and velocities separately)",
+  "2": "F3's sweep (sigma 0, 1e-9, 3e-9, 1e-8, 3e-8; tau 1800 s) with the accurate transitions; F3's predeclared G1, selection rule, H1, H2 and decision rule applied unchanged (G0 is a property of the cached reference and is unchanged)",
+  "3": "F3b's split at the new sigma* with the accurate transitions (propagate_from uses the substituted transition); F3b's G_F3 compares against the F3d sweep's own chi2; F3b's G_ADD, hypotheses and decision rule unchanged; G_LIN is not re-run (it does not depend on the transitions)"
+ },
+ "gates": {
+  "G_LOC": "unit test: the local transition reproduces the closed-form oscillator transition to 1e-10 relative",
+  "G_PHI": "every column of Phi_acc agrees with Phi_FD to <= 1e-3 of the column's max over the fit arc (260-262). FAIL means F3's / F2p's linearisation basis and the true dynamics differ and the sigma = 0 control may change; it is reported and step 2's G1 decides",
+  "G1": "F3's own G1 on the sigma = 0 run of step 2"
+ },
+ "decision_rule": "G_LOC or G1 FAIL -> F3D_NOT_QUALIFIED. Otherwise F3D_F3_STANDS if the recomputed F3 decision equals F3_NO_DMC_GAIN, sigma* equals 1e-9 and sigma*'s 263 chi2 is within 20 % of 3 642.6; else F3D_F3_REVISED with the recomputed values replacing F3's. F3b's decision is reported alongside (F3B_MIXED stands or is revised by the same comparison)",
+ "outputs": {"script": "studies/phase17/scripts/phase_f3d_local_transition_requalification.py", "results": "studies/phase17/results/phase_f3d_local_transition_requalification.json", "report": "studies/phase17/reports/phase_f3d_local_transition_requalification.md"}
+}

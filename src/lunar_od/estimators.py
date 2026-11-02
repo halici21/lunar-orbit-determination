@@ -24,6 +24,7 @@ from .dynamics import (
     propagate_state_with_k_sensitivity,
 )
 from .geometry import wrap_to_pi
+from .noise_models import _gauss_markov_links
 from .measurements import (
     PassGeometry,
     compute_position_residuals_analytic,
@@ -144,14 +145,31 @@ def estimate_position_srif(
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
+    termination_detail = ""
+    gn_decrement = float("nan")
+    caller_tolerance = propagation_profile is not None
+    pending_convergence = None
     last_step = np.zeros(6)
     last_condition_number = float("nan")
     last_rank = 0
 
+    def _scored_cost(x_state, r_tol, a_tol):
+        # WP4.1 (EST-01): incumbent and every trial are scored on this one path.
+        x_hist_trial = propagate_state(
+            t_pass_s, x_state[:nx], mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=r_tol, atol=a_tol, j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
+        )
+        _, h_trial, _ = compute_position_residuals_analytic(x_hist_trial, obs_data, pass_geo)
+        h_trial_aug = _apply_position_bias(
+            h_trial, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
+        return _weighted_map_cost(_position_residual_from_h(obs_data, h_trial_aug), w_diag,
+            x_state, x_prior, prior_sqrt_info if has_explicit_prior else None)
+
     for iteration in range(1, max_iter + 1):
         x_dyn_nominal = x_nominal[:nx]
         b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
 
         x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
         x_aug_hist = propagate_augmented_state(
@@ -171,8 +189,7 @@ def estimate_position_srif(
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
         h_nom_aug = _apply_position_bias(h_nom, obs_data, b_nominal, bias_cfg)
         residual = _position_residual_from_h(obs_data, h_nom_aug)
-        current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
-            prior_sqrt_info if has_explicit_prior else None)
+        current_cost = _scored_cost(x_nominal, _atol_r, _atol_a)
 
         if iteration == 1:
             best_cost = current_cost
@@ -187,6 +204,15 @@ def estimate_position_srif(
         else:
             h_initial = h_initial_state
 
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_diag, scale, *_objective_prior_terms(
+                    scale, prior_sqrt_info if has_explicit_prior else None, x_prior - x_nominal))
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         h_scaled = h_initial @ scale
         weighted_h = h_scaled * w_sqrt[:, None]
         weighted_r = residual * w_sqrt
@@ -200,10 +226,9 @@ def estimate_position_srif(
         _, r_qr = np.linalg.qr(combined, mode="reduced")
         r_hat = r_qr[:na, :na]
         z_hat = r_qr[:na, na]
-        last_condition_number = float(np.linalg.cond(r_hat))
-        last_rank = int(np.linalg.matrix_rank(r_hat))
+        last_condition_number, last_rank = _equilibrated_condition(r_hat, normal=False)
 
-        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > SINGULAR_CONDITION_LIMIT:
             stop_reason = "Singular"
             break
 
@@ -214,41 +239,37 @@ def estimate_position_srif(
             step *= 20000.0 / pos_step_norm
         last_step = step
 
-        x_candidate = x_nominal + step
-        x_dyn_candidate = x_candidate[:nx]
-        b_candidate = x_candidate[nx:] if nb else np.zeros(0)
-        x_hist_candidate = propagate_state(
-            t_pass_s, x_dyn_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-            get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
-        )
-        _, h_candidate, _ = compute_position_residuals_analytic(x_hist_candidate, obs_data, pass_geo)
-        h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
-        residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
-            prior_sqrt_info if has_explicit_prior else None)
-
-        if candidate_cost < current_cost:
+        accepted, candidate_cost, halvings = _srif_backtrack(
+            lambda s: _scored_cost(x_nominal + s, _atol_r, _atol_a), step, current_cost)
+        if accepted is not None:
+            step = last_step = accepted
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
-            x_nominal = x_candidate
+            x_nominal = x_nominal + step
             x_best = x_nominal.copy()
             best_cost = candidate_cost
 
-            if relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            # A halved step's small gain says nothing about convergence.
+            if halvings == 0 and (relative_improvement < tol_cost_stability
+                                  or np.linalg.norm(step) < tol_step_norm):
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
+            if not caller_tolerance:
+                caller_tolerance = True
+                continue
+            stop_reason, termination_detail, gn_decrement = _srif_exhaustion_status(
+                h_initial, residual, w_diag, scale,
+                prior_sqrt_info if has_explicit_prior else None, x_prior - x_nominal)
+            break
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, prior_sqrt_info, has_explicit_prior)
-        posterior_information = _position_posterior_information(
+        posterior_information, posterior_design = _position_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -264,9 +285,13 @@ def estimate_position_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_diag, post_prior_inv, scale)
         posterior_sqrt_information = _position_posterior_sqrt_information(
             t_pass_s,
             obs_data,
@@ -296,6 +321,8 @@ def estimate_position_srif(
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
         posterior_sqrt_information=posterior_sqrt_information,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 
@@ -361,6 +388,10 @@ def estimate_range_rate_srif(
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
+    termination_detail = ""
+    gn_decrement = float("nan")
+    caller_tolerance = propagation_profile is not None
+    pending_convergence = None
     last_step = np.zeros(6)
     last_condition_number = float("nan")
     last_rank = 0
@@ -369,10 +400,23 @@ def estimate_range_rate_srif(
     max_rejected_components = 0
     min_active_weight_fraction = 1.0
 
+    def _scored_cost(x_state, weights, r_tol, a_tol):
+        # WP4.1 (EST-01): incumbent and every trial are scored on this one path.
+        x_hist_trial = propagate_state(
+            t_pass_s, x_state[:nx], mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=r_tol, atol=a_tol, j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
+        )
+        _, h_trial = compute_range_rate_residuals(x_hist_trial, obs_data, pass_geo)
+        h_trial_aug = _apply_range_rate_bias(
+            h_trial, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
+        return _weighted_map_cost(_range_rate_residual_from_h(obs_data, h_trial_aug), weights,
+            x_state, x_prior, prior_sqrt_info if has_explicit_prior else None)
+
     for iteration in range(1, max_iter + 1):
         x_dyn_nominal = x_nominal[:nx]
         b_nominal = x_nominal[nx:] if nb else np.zeros(0)
-        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
         x_aug0 = np.concatenate([x_dyn_nominal, _IDENTITY_6_COL])
         x_aug_hist = propagate_augmented_state(
             t_pass_s,
@@ -415,8 +459,7 @@ def estimate_range_rate_srif(
         w_sqrt = np.sqrt(w_curr_diag)
         max_rejected_components = max(max_rejected_components, last_rejected_components)
         min_active_weight_fraction = min(min_active_weight_fraction, last_active_weight_fraction)
-        current_cost = _weighted_map_cost(residual, w_curr_diag, x_nominal, x_prior,
-            prior_sqrt_info if has_explicit_prior else None)
+        current_cost = _scored_cost(x_nominal, w_curr_diag, _atol_r, _atol_a)
 
         if iteration == 1:
             best_cost = current_cost
@@ -427,6 +470,15 @@ def estimate_range_rate_srif(
         else:
             h_initial = h_initial_state
 
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, *_objective_prior_terms(
+                    scale, prior_sqrt_info if has_explicit_prior else None, x_prior - x_nominal))
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         h_scaled = h_initial @ scale
         weighted_h = h_scaled * w_sqrt[:, None]
         weighted_r = residual * w_sqrt
@@ -440,10 +492,9 @@ def estimate_range_rate_srif(
         _, r_qr = np.linalg.qr(combined, mode="reduced")
         r_hat = r_qr[:na, :na]
         z_hat = r_qr[:na, na]
-        last_condition_number = float(np.linalg.cond(r_hat))
-        last_rank = int(np.linalg.matrix_rank(r_hat))
+        last_condition_number, last_rank = _equilibrated_condition(r_hat, normal=False)
 
-        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > SINGULAR_CONDITION_LIMIT:
             stop_reason = "Singular"
             break
 
@@ -454,41 +505,37 @@ def estimate_range_rate_srif(
             step *= 20000.0 / pos_step_norm
         last_step = step
 
-        x_candidate = x_nominal + step
-        x_dyn_candidate = x_candidate[:nx]
-        b_candidate = x_candidate[nx:] if nb else np.zeros(0)
-        x_hist_candidate = propagate_state(
-            t_pass_s, x_dyn_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-            get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
-        )
-        _, h_candidate = compute_range_rate_residuals(x_hist_candidate, obs_data, pass_geo)
-        h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
-        residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
-        candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
-            prior_sqrt_info if has_explicit_prior else None)
-
-        if candidate_cost < current_cost:
+        accepted, candidate_cost, halvings = _srif_backtrack(
+            lambda s: _scored_cost(x_nominal + s, w_curr_diag, _atol_r, _atol_a), step, current_cost)
+        if accepted is not None:
+            step = last_step = accepted
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
-            x_nominal = x_candidate
+            x_nominal = x_nominal + step
             x_best = x_nominal.copy()
             best_cost = candidate_cost
 
-            if relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            # A halved step's small gain says nothing about convergence.
+            if halvings == 0 and (relative_improvement < tol_cost_stability
+                                  or np.linalg.norm(step) < tol_step_norm):
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
+            if not caller_tolerance:
+                caller_tolerance = True
+                continue
+            stop_reason, termination_detail, gn_decrement = _srif_exhaustion_status(
+                h_initial, residual, w_curr_diag, scale,
+                prior_sqrt_info if has_explicit_prior else None, x_prior - x_nominal)
+            break
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, prior_sqrt_info, has_explicit_prior)
-        posterior_information = _range_rate_posterior_information(
+        posterior_information, posterior_design = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -504,9 +551,13 @@ def estimate_range_rate_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_curr_diag, post_prior_inv, scale)
         posterior_sqrt_information = _range_rate_posterior_sqrt_information(
             t_pass_s,
             obs_data,
@@ -538,6 +589,8 @@ def estimate_range_rate_srif(
         posterior_information=posterior_information,
         posterior_covariance=posterior_covariance,
         posterior_sqrt_information=posterior_sqrt_information,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
 
@@ -566,8 +619,17 @@ def estimate_position_bls_lm(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    damping_schedule: str = "fixed",
+    measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
-    """Position-only batch least-squares with Levenberg-Marquardt damping."""
+    """Position-only batch least-squares with Levenberg-Marquardt damping.
+
+    ``damping_schedule``: ``"fixed"`` (historical) or ``"nielsen"`` (gain-ratio
+    lambda and More damping matrix, WP4.2b); see ``LM_DAMPING_SCHEDULES``.
+    ``measurement_correlation_time_s`` (WP4.5b): each residual component of each
+    station is weighted as Gauss-Markov noise with this time constant (Prais-Winsten
+    whitening, :func:`_gauss_markov_whitening`); ``None`` keeps white weighting.
+    """
     propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
@@ -588,13 +650,18 @@ def estimate_position_bls_lm(
         prior_sqrt_information,
     )
     w_diag = _position_weight_diagonal(obs_data, pass_geo)
+    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, 3)
+    if whitening is not None:
+        w_diag = np.ones_like(w_diag)          # the whitened rows carry unit weight
 
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
     termination_detail = ""
     gn_decrement = float("nan")
-    lambda_damping = float(lambda0)
+    damping = _LMDamping(lambda0, damping_schedule)
+    pending_convergence = None
+    caller_tolerance = propagation_profile is not None
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
@@ -625,10 +692,10 @@ def estimate_position_bls_lm(
             h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
         else:
             h_initial = h_initial_state
-        return h_initial, residual
+        return _whiten(whitening, h_initial), _whiten(whitening, residual)
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
         current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
@@ -639,6 +706,14 @@ def estimate_position_bls_lm(
 
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
                             else np.zeros(na))
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_diag, scale, prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled)
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
@@ -646,7 +721,8 @@ def estimate_position_bls_lm(
             scale,
             prior_inv_scaled,
             prior_rhs_scaled,
-            lambda_damping,
+            damping.value,
+            damping.damping_diag(h_initial, w_diag, scale, prior_inv_scaled),
         )
         if singular:
             stop_reason = "Singular"
@@ -666,27 +742,27 @@ def estimate_position_bls_lm(
         )
         _, h_candidate, _ = compute_position_residuals_analytic(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
-        residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
+        residual_candidate = _whiten(whitening, _position_residual_from_h(obs_data, h_candidate_aug))
         candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            damping.accepted(current_cost - candidate_cost, _predicted_decrease(
+                h_initial, residual, w_diag, step, x_nominal - x_prior,
+                prior_inv if has_explicit_prior else None))
             x_nominal = x_candidate
             x_best = x_nominal.copy()
             best_cost = candidate_cost
-            lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
-            if relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            if relative_improvement < tol_cost_stability or np.linalg.norm(step) < tol_step_norm:
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
-            lambda_damping *= 10.0
-            if lambda_damping > 1e12:
+            damping.rejected()
+            if damping.exhausted:
                 # Phase 17-HARDEN-D27: certify at the caller's tolerance.
                 if (_atol_r, _atol_a) != (rtol, atol):
                     h_initial, residual = _linearize(x_best, rtol, atol)
@@ -701,7 +777,7 @@ def estimate_position_bls_lm(
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, None, has_explicit_prior)
-        posterior_information = _position_posterior_information(
+        posterior_information, posterior_design = _position_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -717,9 +793,16 @@ def estimate_position_bls_lm(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        if whitening is not None:
+            posterior_design = whitening(posterior_design)
+            posterior_information = _symmetrize(posterior_design.T @ posterior_design + post_prior_inv)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_diag, post_prior_inv, scale)
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -763,8 +846,15 @@ def estimate_range_rate_bls_lm(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    damping_schedule: str = "fixed",
+    measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
-    """Range-rate batch least-squares with LM damping and optional outlier rejection."""
+    """Range-rate batch least-squares with LM damping and optional outlier rejection.
+
+    ``damping_schedule`` and ``measurement_correlation_time_s`` as in
+    :func:`estimate_position_bls_lm` (WP4.2b, WP4.5b); the latter excludes
+    ``robust_outlier_rejection``, whose sigma test is per component.
+    """
     propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
@@ -785,12 +875,19 @@ def estimate_range_rate_bls_lm(
         prior_sqrt_information,
     )
     w_diag = _range_rate_weight_diagonal(obs_data, pass_geo)
+    if measurement_correlation_time_s is not None and robust_outlier_rejection:
+        raise ValueError("measurement_correlation_time_s cannot be combined with robust_outlier_rejection.")
+    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, 4)
+    if whitening is not None:
+        w_diag = np.ones_like(w_diag)          # the whitened rows carry unit weight
     w_curr_diag = w_diag.copy()
 
     x_best = x_nominal.copy()
     best_cost = np.inf
     stop_reason = "MaxIter"
-    lambda_damping = float(lambda0)
+    damping = _LMDamping(lambda0, damping_schedule)
+    pending_convergence = None
+    caller_tolerance = propagation_profile is not None
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
@@ -833,10 +930,11 @@ def estimate_range_rate_bls_lm(
         )
         h_nom_aug = _apply_range_rate_bias(
             h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
-        return h_initial_state, _range_rate_residual_from_h(obs_data, h_nom_aug)
+        return (_whiten(whitening, h_initial_state),
+                _whiten(whitening, _range_rate_residual_from_h(obs_data, h_nom_aug)))
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = (rtol, atol) if propagation_profile is not None else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
         h_initial_state, residual = _linearize(x_nominal, _atol_r, _atol_a)
         w_curr_diag, last_rejected_components, last_active_weight_fraction = _robust_weight_diagonal(
             w_diag,
@@ -856,12 +954,21 @@ def estimate_range_rate_bls_lm(
             x_best = x_nominal.copy()
 
         if nb:
-            h_initial = np.hstack([h_initial_state, _range_rate_bias_jacobian(obs_data, bias_cfg)])
+            h_initial = np.hstack([h_initial_state,
+                                   _whiten(whitening, _range_rate_bias_jacobian(obs_data, bias_cfg))])
         else:
             h_initial = h_initial_state
 
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior - x_nominal) if has_explicit_prior
                             else np.zeros(na))
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, prior_inv_scaled if has_explicit_prior else None, prior_rhs_scaled)
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         step, last_condition_number, last_rank, singular = _lm_step(
             h_initial,
             residual,
@@ -869,7 +976,8 @@ def estimate_range_rate_bls_lm(
             scale,
             prior_inv_scaled,
             prior_rhs_scaled,
-            lambda_damping,
+            damping.value,
+            damping.damping_diag(h_initial, w_curr_diag, scale, prior_inv_scaled),
         )
         if singular:
             stop_reason = "Singular"
@@ -889,32 +997,34 @@ def estimate_range_rate_bls_lm(
         )
         _, h_candidate = compute_range_rate_residuals(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
-        residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
+        residual_candidate = _whiten(whitening, _range_rate_residual_from_h(obs_data, h_candidate_aug))
         candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
 
         if candidate_cost < current_cost:
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            damping.accepted(current_cost - candidate_cost, _predicted_decrease(
+                h_initial, residual, w_curr_diag, step, x_nominal - x_prior,
+                prior_inv if has_explicit_prior else None))
             x_nominal = x_candidate
             x_best = x_nominal.copy()
             best_cost = candidate_cost
-            lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
             min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
-            if relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            cost_stable = relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration
+            if cost_stable or np.linalg.norm(step) < tol_step_norm:
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if cost_stable else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
-            lambda_damping *= 10.0
-            if lambda_damping > 1e12:
+            damping.rejected()
+            if damping.exhausted:
                 # Phase 17-HARDEN-D27: certify at the caller's tolerance.
                 if (_atol_r, _atol_a) != (rtol, atol):
                     h_initial_state, residual = _linearize(x_best, rtol, atol)
-                    h_initial = (np.hstack([h_initial_state, _range_rate_bias_jacobian(obs_data, bias_cfg)])
+                    h_initial = (np.hstack([h_initial_state,
+                                            _whiten(whitening, _range_rate_bias_jacobian(obs_data, bias_cfg))])
                                  if nb else h_initial_state)
                 stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
                     h_initial, residual, w_curr_diag, scale,
@@ -927,7 +1037,7 @@ def estimate_range_rate_bls_lm(
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
         post_prior_inv, post_prior_sqrt = _posterior_prior_terms(
             prior_inv, None, has_explicit_prior)
-        posterior_information = _range_rate_posterior_information(
+        posterior_information, posterior_design = _range_rate_posterior_information(
             t_pass_s,
             obs_data,
             x_best[:nx],
@@ -943,9 +1053,16 @@ def estimate_range_rate_bls_lm(
             rtol,
             atol,
             j2_moon=j2_moon,
+            return_design=True,
             **model_options(srp, propagation_profile),
         )
-        posterior_covariance = _safe_covariance_from_information(posterior_information)
+        if whitening is not None:
+            posterior_design = whitening(posterior_design)
+            posterior_information = _symmetrize(posterior_design.T @ posterior_design + post_prior_inv)
+        # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
+        # information eigenvalues at max*1e-14 in physical units.
+        posterior_covariance, _ = _square_root_covariance_from_design(
+            posterior_design, w_curr_diag, post_prior_inv, scale)
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -962,6 +1079,49 @@ def estimate_range_rate_bls_lm(
         gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
+
+
+def _gauss_markov_whitening(obs_data, w_diag, tau, components):
+    """WP4.5b (EST-15): O(n) Prais-Winsten whitening for Gauss-Markov measurement noise.
+
+    Each residual component of each station is a first-order Gauss-Markov process in
+    time with correlation exp(-dt / tau) and the station sigma as its stationary sigma
+    (before WP4.5b such noise could be generated, but every estimator weighted it as
+    white).  Returns a function for a residual vector or a design matrix in residual
+    order: rows divided by sigma, then each row minus rho times the previous row of the
+    same series, scaled by 1 / sqrt(1 - rho^2) -- :func:`gauss_markov_whitening_matrix`
+    applied without forming it, so |L r|^2 = r^T Sigma^-1 r and the whitened rows carry
+    unit weight.  ``None`` when ``tau`` is ``None``.
+    """
+    if tau is None:
+        return None
+    if not (np.isfinite(tau) and tau > 0.0):
+        raise ValueError("measurement_correlation_time_s must be finite and positive.")
+    obs = np.asarray(obs_data, dtype=float)
+    station_col = 4 if components == 3 else 5
+    times = np.repeat(obs[:, 0], components)
+    groups = (np.repeat(obs[:, station_col].astype(int), components) * components
+              + np.tile(np.arange(components), obs.shape[0]))
+    rho, prev = _gauss_markov_links(times, groups, tau)
+    rows = np.flatnonzero(prev >= 0)
+    link = prev[rows]
+    scale = 1.0 / np.sqrt(1.0 - rho[rows] ** 2)
+    coupling = rho[rows] * scale
+    inv_sigma = np.sqrt(np.asarray(w_diag, dtype=float))
+
+    def whiten(values):
+        v = np.asarray(values, dtype=float)
+        col = (slice(None),) + (None,) * (v.ndim - 1)
+        u = v * inv_sigma[col]
+        out = u.copy()
+        out[rows] = u[rows] * scale[col] - coupling[col] * u[link]
+        return out
+
+    return whiten
+
+
+def _whiten(whitening, values):
+    return values if whitening is None else whitening(values)
 
 
 def _weighted_map_cost(residual, weights, state, prior_mean, prior_sqrt_information=None):
@@ -1073,6 +1233,7 @@ def _position_posterior_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    return_design: bool = False,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1094,7 +1255,9 @@ def _position_posterior_information(
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _position_bias_jacobian(obs_data, bias_cfg)])
-    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    information = _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    # WP4.3: the design lets the caller take the covariance by QR (no eigenvalue clip).
+    return (information, h_initial) if return_design else information
 
 
 def _range_rate_nominal_and_initial_jacobian(
@@ -1315,6 +1478,7 @@ def _range_rate_posterior_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    return_design: bool = False,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1348,7 +1512,9 @@ def _range_rate_posterior_information(
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
-    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    information = _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    # WP4.3: the design lets the caller take the covariance by QR (no eigenvalue clip).
+    return (information, h_initial) if return_design else information
 
 
 def _position_posterior_sqrt_information(
@@ -1681,6 +1847,38 @@ def _square_root_covariance_from_design(
     return _symmetrize(covariance), sqrt_information
 
 
+# WP4.3 (EST-07).  Before WP4.3 BLS-LM called a step singular when the normal matrix,
+# formed in bookkeeping units (1e6 m, 1e3 m/s, bias/K scales), had cond > 1e15, while
+# SRIF tested cond(R) > 1e14 -- i.e. a normal-equivalent 1e28 -- in the same units, and
+# stats.condition_number reported the two different quantities under one name.  Every
+# batch estimator now measures the condition of the column-equilibrated system as a
+# normal-equivalent number (cond(R_eq)**2, or cond of the Jacobi-equilibrated normal
+# matrix, identical in exact arithmetic), so the test is invariant to the units and the
+# same for every estimator.  The 1e15 limit is HARDEN-BLS1's (_lm_step_square_root).
+SINGULAR_CONDITION_LIMIT = 1e15
+
+
+def _equilibrated_condition(matrix: np.ndarray, *, normal: bool) -> tuple[float, int]:
+    """(normal-equivalent condition number, numerical rank) after column equilibration.
+
+    ``normal=True``: ``matrix`` is a symmetric normal matrix, equilibrated by its
+    diagonal.  ``normal=False``: ``matrix`` is a factor or design (R, or [A; ...]),
+    equilibrated by its column norms; the condition number is squared.
+    """
+    m = np.asarray(matrix, dtype=float)
+    if not np.all(np.isfinite(m)):
+        return float("inf"), 0
+    if normal:
+        d = np.sqrt(np.abs(np.diag(m)))
+        d[d == 0.0] = 1.0
+        eq = m / d[:, None] / d[None, :]
+        return float(np.linalg.cond(eq)), int(np.linalg.matrix_rank(eq, hermitian=True))
+    col = np.linalg.norm(m, axis=0)
+    col[col == 0.0] = 1.0
+    eq = m / col
+    return float(np.linalg.cond(eq)) ** 2, int(np.linalg.matrix_rank(eq))
+
+
 def _symmetrize(matrix: np.ndarray) -> np.ndarray:
     return 0.5 * (matrix + matrix.T)
 
@@ -1693,21 +1891,25 @@ def _lm_step(
     prior_inv_scaled: np.ndarray,
     prior_rhs_scaled: np.ndarray,
     lambda_damping: float,
+    damping_diag: np.ndarray | None = None,
 ) -> tuple[np.ndarray, float, int, bool]:
     h_scaled = h_initial @ scale
     weighted_h = h_scaled * w_diag[:, None]
     atwa = h_scaled.T @ weighted_h
     atwb = h_scaled.T @ (w_diag * residual) + prior_rhs_scaled
-    damping_diag = np.diag(np.diag(atwa))
-    if not np.any(np.diag(damping_diag)):
-        damping_diag = np.eye(atwa.shape[0])
-    normal_matrix = atwa + lambda_damping * damping_diag + prior_inv_scaled
-    condition_number = float(np.linalg.cond(normal_matrix))
-    rank = int(np.linalg.matrix_rank(normal_matrix))
-    if not np.all(np.isfinite(normal_matrix)) or condition_number > 1e15:
+    # WP4.2b: ``damping_diag`` (scaled units) replaces diag(A^T A) when given
+    damping_matrix = np.diag(np.diag(atwa) if damping_diag is None else np.asarray(damping_diag, dtype=float))
+    if not np.any(np.diag(damping_matrix)):
+        damping_matrix = np.eye(atwa.shape[0])
+    normal_matrix = atwa + lambda_damping * damping_matrix + prior_inv_scaled
+    condition_number, rank = _equilibrated_condition(normal_matrix, normal=True)
+    if not np.all(np.isfinite(normal_matrix)) or condition_number > SINGULAR_CONDITION_LIMIT:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
+    # WP4.3: solve the Jacobi-equilibrated system the condition test was made on.
+    d = np.sqrt(np.abs(np.diag(normal_matrix)))
+    d[d == 0.0] = 1.0
     try:
-        step_bar = np.linalg.solve(normal_matrix, atwb)
+        step_bar = np.linalg.solve(normal_matrix / d[:, None] / d[None, :], atwb / d) / d
     except np.linalg.LinAlgError:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
     return scale @ step_bar, condition_number, rank, False
@@ -1721,6 +1923,7 @@ def _lm_step_square_root(
     prior_inv_scaled: np.ndarray,
     prior_rhs_scaled: np.ndarray,
     lambda_damping: float,
+    damping_diag: np.ndarray | None = None,
 ) -> tuple[np.ndarray, float, int, bool]:
     """The SAME damped LM step as :func:`_lm_step`, solved without the normal matrix.
 
@@ -1751,7 +1954,7 @@ def _lm_step_square_root(
     a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
     b = np.sqrt(w_diag) * residual
     n = a.shape[1]
-    d = np.einsum("ij,ij->j", a, a)
+    d = np.einsum("ij,ij->j", a, a) if damping_diag is None else np.asarray(damping_diag, dtype=float)
     if not np.any(d):
         d = np.ones(n)
     rows, rhs = [a, np.diag(np.sqrt(lambda_damping * d))], [b, np.zeros(n)]
@@ -1769,10 +1972,65 @@ def _lm_step_square_root(
     q, r = np.linalg.qr(stacked / col)
     condition_number = float(np.linalg.cond(r)) ** 2
     rank = int(np.linalg.matrix_rank(r))
-    if not np.isfinite(condition_number) or condition_number > 1e15:
+    if not np.isfinite(condition_number) or condition_number > SINGULAR_CONDITION_LIMIT:
         return np.zeros(h_initial.shape[1]), condition_number, rank, True
     step_bar = np.linalg.solve(r, q.T @ np.concatenate(rhs)) / col
     return scale @ step_bar, condition_number, rank, False
+
+
+#: WP4.2b (EST-08): Levenberg-Marquardt damping schedules.  ``"fixed"`` is the
+#: historical schedule (lambda / 5 after an accepted step, x 10 after a rejected
+#: one, damping matrix diag(A^T A)): it ignores how well the linear model
+#: predicted the gain, and a column carried only by the prior is not damped.
+#: ``"nielsen"`` updates lambda from the gain ratio rho = actual / predicted
+#: decrease of the scored objective (Nielsen 1999; Madsen, Nielsen & Tingleff
+#: 2004, eq. 3.16), and damps with More's (1978) D = running maximum of
+#: diag(A^T A + P), so each parameter is damped on the scale of all the
+#: information it carries.  The objective, step acceptance and the WP4.2
+#: certificate are the same for both schedules.
+LM_DAMPING_SCHEDULES = ("fixed", "nielsen")
+LM_LAMBDA_FLOOR = 1e-12
+LM_LAMBDA_LIMIT = 1e12
+
+
+class _LMDamping:
+    """lambda and the damping matrix of one BLS-LM solve (WP4.2b)."""
+
+    def __init__(self, lambda0: float, schedule: str):
+        if schedule not in LM_DAMPING_SCHEDULES:
+            raise ValueError(f"damping_schedule must be one of {LM_DAMPING_SCHEDULES}, got {schedule!r}.")
+        self.value = float(lambda0)
+        self.schedule = schedule
+        self._nu = 2.0
+        self._diag = None
+
+    def damping_diag(self, h_initial, w_diag, scale, prior_inv_scaled):
+        """More's D for ``"nielsen"``; ``None`` (the step's own diag(A^T A)) for ``"fixed"``."""
+        if self.schedule == "fixed":
+            return None
+        a = (h_initial @ scale) * np.sqrt(w_diag)[:, None]
+        d = np.einsum("ij,ij->j", a, a) + np.diag(prior_inv_scaled)
+        self._diag = d if self._diag is None else np.maximum(self._diag, d)
+        return self._diag
+
+    def accepted(self, actual_decrease: float, predicted_decrease: float) -> None:
+        if self.schedule == "fixed":
+            self.value = max(self.value / 5.0, LM_LAMBDA_FLOOR)
+            return
+        rho = actual_decrease / predicted_decrease if predicted_decrease > 0.0 else 0.0
+        self.value = max(self.value * max(1.0 / 3.0, 1.0 - (2.0 * rho - 1.0) ** 3), LM_LAMBDA_FLOOR)
+        self._nu = 2.0
+
+    def rejected(self) -> None:
+        if self.schedule == "fixed":
+            self.value *= 10.0
+            return
+        self.value *= self._nu
+        self._nu *= 2.0
+
+    @property
+    def exhausted(self) -> bool:
+        return self.value > LM_LAMBDA_LIMIT
 
 
 #: Phase 17-HARDEN-D27 stationarity threshold on the Gauss-Newton decrement
@@ -1863,6 +2121,75 @@ def _damping_exhaustion_status(*decrement_args) -> tuple[str, str, float]:
     if np.isfinite(decrement) and decrement <= STATIONARITY_DECREMENT_TOL:
         return "Converged", "STATIONARY_AT_DAMPING_LIMIT", decrement
     return "DampingLimit", "LAMBDA_HARD_LIMIT", decrement
+
+
+#: WP4.1 (EST-03): a rejected SRIF step is halved along its own QR direction at
+#: most this many times (1/1024 of the full step) before the incumbent is
+#: certified stationary or declared stalled.
+SRIF_MAX_STEP_HALVINGS = 10
+
+
+def _srif_backtrack(score, step: np.ndarray, current_cost: float) -> tuple[np.ndarray | None, float, int]:
+    """First of ``step, step/2, ...`` whose scored cost is below ``current_cost``.
+
+    WP4.1.  Returns ``(step, cost, halvings)``, or ``(None, inf, halvings)`` when
+    every trial is rejected.  Before WP4.1 a rejected SRIF step reset to the
+    incumbent and recomputed the identical step until ``max_iter``.
+    """
+    trial = np.asarray(step, dtype=float)
+    for halvings in range(SRIF_MAX_STEP_HALVINGS + 1):
+        cost = score(trial)
+        if cost < current_cost:
+            return trial, cost, halvings
+        trial = 0.5 * trial
+    return None, float("inf"), SRIF_MAX_STEP_HALVINGS
+
+
+def _srif_exhaustion_status(
+    h_initial: np.ndarray,
+    residual: np.ndarray,
+    w_diag: np.ndarray,
+    scale: np.ndarray,
+    objective_prior_sqrt: np.ndarray | None,
+    prior_offset: np.ndarray | None,
+) -> tuple[str, str, float]:
+    """Status of an SRIF solve whose line search found no descent at the caller's tolerance.
+
+    WP4.1, the SRIF counterpart of :func:`_damping_exhaustion_status`: at a
+    minimiser every trial is rejected once the remaining gain is below the
+    objective's integration noise, so the incumbent is certified by the undamped
+    Gauss-Newton decrement of the SCORED objective.  ``objective_prior_sqrt`` is
+    the square root of that objective's prior term (``None`` for data only) and
+    ``prior_offset`` the prior mean minus the incumbent, both in solve units.
+    """
+    certified, decrement = _stationarity_certified(
+        h_initial, residual, w_diag, scale, *_objective_prior_terms(scale, objective_prior_sqrt, prior_offset))
+    if certified:
+        return "Converged", "STATIONARY_AT_LINE_SEARCH_LIMIT", decrement
+    return "NoDescent", "LINE_SEARCH_EXHAUSTED", decrement
+
+
+def _objective_prior_terms(scale, objective_prior_sqrt, prior_offset):
+    """``(prior_inv_scaled, prior_rhs_scaled)`` of a square-root prior for the decrement; ``(None, None)`` if absent."""
+    if objective_prior_sqrt is None:
+        return None, None
+    information = objective_prior_sqrt.T @ objective_prior_sqrt
+    return scale.T @ information @ scale, scale.T @ information @ prior_offset
+
+
+def _stationarity_certified(*decrement_args) -> tuple[bool, float]:
+    """WP4.2 (EST-04/05): the unit-free convergence certificate.
+
+    ``True`` when the undamped Gauss-Newton decrement (:func:`_gauss_newton_decrement`,
+    same arguments) is within ``STATIONARITY_DECREMENT_TOL`` posterior sigma.  The
+    historical triggers -- relative cost change below ``tol_cost_stability`` or a
+    step norm below ``tol_step_norm`` -- mix metres, m/s and bias units and fire on
+    any heavily damped step; they now only nominate the accepted point, which is
+    re-linearised at the caller's tolerance and declared converged only if this
+    certificate holds there.
+    """
+    decrement = _gauss_newton_decrement(*decrement_args)
+    return bool(np.isfinite(decrement) and decrement <= STATIONARITY_DECREMENT_TOL), decrement
 
 
 def _limit_step(step: np.ndarray, *, pos_limit_m: float) -> np.ndarray:
@@ -2297,6 +2624,7 @@ def _two_way_range_posterior_information(
     srp=None,
     harmonic_kwargs: dict | None = None,
     propagation_kwargs: dict | None = None,
+    return_design: bool = False,
 ) -> np.ndarray:
     """(6,6) posterior information at the converged state.
 
@@ -2322,7 +2650,9 @@ def _two_way_range_posterior_information(
         **_posterior_dynamics_kwargs(srp, harmonic_kwargs, propagation_kwargs),
     )
     _, h_initial = _two_way_nominal_and_jacobian(obs_data, pass_geo, x_aug_hist)
-    return _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    information = _symmetrize(h_initial.T @ (w_diag[:, None] * h_initial) + prior_inv)
+    # WP4.3: the design lets the caller take the covariance by QR (no eigenvalue clip).
+    return (information, h_initial) if return_design else information
 
 
 def _two_way_range_posterior_information_with_k(
@@ -2555,6 +2885,8 @@ def estimate_two_way_range_bls_lm(
     stop_reason = "MaxIter"
     termination_detail = "MAX_ITER"
     lambda_damping = float(lambda0)
+    pending_convergence = None
+    caller_tolerance = False
     last_step = np.zeros(na)
     last_condition_number = float("nan")
     last_rank = 0
@@ -2649,8 +2981,8 @@ def estimate_two_way_range_bls_lm(
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-        if propagation_profile is not None:
-            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard
+        if propagation_profile is not None or caller_tolerance:
+            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard (WP4.2: also once nominated)
         if solve_for_k_srp:
             # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
             # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
@@ -2716,6 +3048,14 @@ def estimate_two_way_range_bls_lm(
                           else x_nominal)
         prior_rhs_scaled = (scale.T @ prior_inv @ (x_prior_full - x_current_full)
                             if prior_active else np.zeros(na))
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, prior_inv_scaled if prior_active else None, prior_rhs_scaled)
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         step, last_condition_number, last_rank, singular = _step_fn(
             h_initial, residual, w_curr_diag, scale, prior_inv_scaled,
             prior_rhs_scaled, lambda_damping,
@@ -2834,14 +3174,11 @@ def estimate_two_way_range_bls_lm(
             lambda_damping = max(lambda_damping / 5.0, 1e-12)
 
             min_cost_stability_iteration = 3 if robust_outlier_rejection else 1
-            if relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration:
-                stop_reason = "J-Stab"
-                termination_detail = "COST_STABLE"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                termination_detail = "STEP_NORM"
-                break
+            cost_stable = relative_improvement < tol_cost_stability and iteration >= min_cost_stability_iteration
+            if cost_stable or np.linalg.norm(step) < tol_step_norm:
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if cost_stable else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             k_current = k_best
@@ -2909,7 +3246,7 @@ def estimate_two_way_range_bls_lm(
                 posterior_design, w_curr_diag, post_prior_inv, scale
             )
         else:
-            posterior_information = _two_way_range_posterior_information(
+            posterior_information, posterior_design = _two_way_range_posterior_information(
                 t_pass_s,
                 obs_data,
                 x_best,
@@ -2927,8 +3264,11 @@ def estimate_two_way_range_bls_lm(
                 srp=srp,                   # Phase 17-HARDEN-D25: the solve's own
                 harmonic_kwargs=_harm,     # dynamics contract (fixed SRP, field)
                 propagation_kwargs=_prop,
+                return_design=True,
             )
-            posterior_covariance = _safe_covariance_from_information(posterior_information)
+            # WP4.3 (EST-06): QR of the design, as the K branch above.
+            posterior_covariance, _ = _square_root_covariance_from_design(
+                posterior_design, w_curr_diag, post_prior_inv, scale)
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3097,10 +3437,32 @@ def estimate_two_way_range_srif(
             return srp
         return replace(srp, k_srp_m2_per_kg=k_state if k_state is not None else srp.k_srp_m2_per_kg)
 
+    termination_detail = ""
+    gn_decrement = float("nan")
+    caller_tolerance = propagation_profile is not None   # Phase D2: the F4 guard
+    pending_convergence = None
+    scored_prior = has_explicit_prior or solve_for_k_srp
+    x_prior_full = np.concatenate([x_prior, [k_prior_mean]]) if solve_for_k_srp else x_prior
+
+    def _scored_cost(x_state, k_state, weights, r_tol, a_tol):
+        # WP4.1: incumbent and every trial are scored on this one path (EST-01), and
+        # on the objective the QR step minimises -- data plus the prior rows behind
+        # z_bar -- not on the data alone (EST-02).
+        x_hist_trial = propagate_state(
+            t_pass_s, x_state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=r_tol, atol=a_tol, j2_moon=j2_moon,
+            srp=_active_srp(k_state), **_prop,
+        )
+        residual_trial, _ = _two_way_residuals(x_hist_trial, obs_data, pass_geo)
+        cost = float(np.dot(weights * residual_trial, residual_trial))
+        if scored_prior:
+            x_full = np.concatenate([x_state, [k_state]]) if solve_for_k_srp else x_state
+            whitened = prior_rhs_sqrt @ (x_full - x_prior_full)
+            cost += float(np.dot(whitened, whitened))
+        return cost
+
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-        if propagation_profile is not None:
-            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard
+        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
         if solve_for_k_srp:
             x_aug_hist = propagate_state_with_k_sensitivity(
                 t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
@@ -3141,31 +3503,33 @@ def estimate_two_way_range_srif(
         w_sqrt = np.sqrt(w_curr_diag)
         max_rejected_components = max(max_rejected_components, rejected)
         min_active_weight_fraction = min(min_active_weight_fraction, active_fraction)
-        current_cost = float(np.dot(w_curr_diag * residual, residual))
-        if propagation_profile is not None:
-            # Phase D2: score the incumbent on the candidate's propagator.
-            x_hist_current = propagate_state(
-                t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-                get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-                srp=_active_srp(k_current), **_prop,
-            )
-            residual_current, _ = _two_way_residuals(x_hist_current, obs_data, pass_geo)
-            current_cost = float(np.dot(w_curr_diag * residual_current, residual_current))
+        # Phase D2 scored the incumbent on the candidate's propagator only under a
+        # propagation profile; WP4.1 does so always.
+        current_cost = _scored_cost(x_nominal, k_current, w_curr_diag, _atol_r, _atol_a)
 
         if iteration == 1:
             best_cost = current_cost
             x_best = x_nominal.copy()
             k_best = k_current
 
+        x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
+                          else x_nominal)
+        # WP4.2: a nominated point is declared only if certified at the caller's tolerance.
+        if pending_convergence is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h_initial, residual, w_curr_diag, scale, *_objective_prior_terms(
+                    scale, prior_rhs_sqrt if scored_prior else None, x_prior_full - x_current_full))
+            if certified:
+                stop_reason, termination_detail = pending_convergence
+                break
+            pending_convergence = None
         h_scaled = h_initial @ scale
         weighted_h = h_scaled * w_sqrt[:, None]
         weighted_r = residual * w_sqrt
-        x_prior_full = (np.concatenate([x_prior, [k_prior_mean]]) if solve_for_k_srp
-                        else x_prior)
         x_current_full = (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp
                           else x_nominal)
         z_bar = (prior_rhs_sqrt @ (x_prior_full - x_current_full)
-                 if (has_explicit_prior or solve_for_k_srp) else np.zeros(na))
+                 if scored_prior else np.zeros(na))
         combined = np.vstack(
             [
                 np.column_stack([r_bar, z_bar]),
@@ -3175,10 +3539,9 @@ def estimate_two_way_range_srif(
         _, r_qr = np.linalg.qr(combined, mode="reduced")
         r_hat = r_qr[:na, :na]
         z_hat = r_qr[:na, na]
-        last_condition_number = float(np.linalg.cond(r_hat))
-        last_rank = int(np.linalg.matrix_rank(r_hat))
+        last_condition_number, last_rank = _equilibrated_condition(r_hat, normal=False)
 
-        if not np.all(np.isfinite(r_hat)) or last_condition_number > 1e14:
+        if not np.all(np.isfinite(r_hat)) or last_condition_number > SINGULAR_CONDITION_LIMIT:
             stop_reason = "Singular"
             break
 
@@ -3205,40 +3568,38 @@ def estimate_two_way_range_srif(
                 negative_k_rejections += 1
         last_step = step
 
-        x_candidate = x_nominal + step[:6]
-        k_candidate = k_current + step[6] if solve_for_k_srp else None
-        if solve_for_k_srp:
-            hist_srp = replace(srp, k_srp_m2_per_kg=k_candidate)
-        else:
-            hist_srp = srp
-        x_hist_candidate = propagate_state(
-            t_pass_s, x_candidate, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
-            get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-            srp=hist_srp, **_prop,
-        )
-        residual_candidate, _ = _two_way_residuals(
-            x_hist_candidate, obs_data, pass_geo
-        )
-        candidate_cost = float(np.dot(w_curr_diag * residual_candidate, residual_candidate))
-
-        if candidate_cost < current_cost:
+        # Halving along the step keeps K >= 0: both k_current and k_current + step[6] are.
+        accepted, candidate_cost, halvings = _srif_backtrack(
+            lambda s: _scored_cost(x_nominal + s[:6], k_current + s[6] if solve_for_k_srp else k_current,
+                                   w_curr_diag, _atol_r, _atol_a),
+            step, current_cost)
+        if accepted is not None:
+            step = last_step = accepted
             relative_improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
-            x_nominal = x_candidate
+            x_nominal = x_nominal + step[:6]
             if solve_for_k_srp:
-                k_current = k_candidate
+                k_current = k_current + step[6]
             x_best = x_nominal.copy()
             k_best = k_current
             best_cost = candidate_cost
 
-            if relative_improvement < tol_cost_stability:
-                stop_reason = "J-Stab"
-                break
-            if np.linalg.norm(step) < tol_step_norm:
-                stop_reason = "Converged"
-                break
+            # A halved step's small gain says nothing about convergence.
+            if halvings == 0 and (relative_improvement < tol_cost_stability
+                                  or np.linalg.norm(step) < tol_step_norm):
+                # WP4.2: nominate only; certified at the caller's tolerance next iteration.
+                pending_convergence = ("J-Stab", "COST_STABLE") if relative_improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+                caller_tolerance = True
         else:
             x_nominal = x_best.copy()
             k_current = k_best
+            if not caller_tolerance:
+                caller_tolerance = True
+                continue
+            stop_reason, termination_detail, gn_decrement = _srif_exhaustion_status(
+                h_initial, residual, w_curr_diag, scale,
+                prior_rhs_sqrt if scored_prior else None,
+                x_prior_full - (np.concatenate([x_nominal, [k_current]]) if solve_for_k_srp else x_nominal))
+            break
 
     posterior_information, posterior_covariance, posterior_sqrt_information = (None, None, None)
     if return_posterior:
@@ -3268,7 +3629,7 @@ def estimate_two_way_range_srif(
         else:
             # Phase 17-HARDEN-D28: data-only objective unless a prior was supplied.
             post_prior_inv, _ = _posterior_prior_terms(prior_inv, None, has_explicit_prior)
-            posterior_information = _two_way_range_posterior_information(
+            posterior_information, posterior_design = _two_way_range_posterior_information(
                 t_pass_s,
                 obs_data,
                 x_best,
@@ -3285,9 +3646,12 @@ def estimate_two_way_range_srif(
                 j2_moon,
                 srp=srp,                   # Phase 17-HARDEN-D25: the solve's fixed SRP
                 propagation_kwargs=_prop,
+                return_design=True,
             )
-            posterior_covariance = _safe_covariance_from_information(posterior_information)
-            k_sqrt_information = None
+            # WP4.3 (EST-06): the six-state path now takes the same design QR as the
+            # K path, for the covariance and the sqrt-information alike.
+            posterior_covariance, k_sqrt_information = _square_root_covariance_from_design(
+                posterior_design, w_curr_diag, post_prior_inv, scale)
         # Phase 17-R1COV.  _sqrt_information_from_information applies the SAME
         # eigenvalue floor and then factors the already-floored matrix, so on
         # the K path it is a square root OF the defect (measured 90-99.6%
@@ -3315,5 +3679,7 @@ def estimate_two_way_range_srif(
         k_srp_estimate=k_best if solve_for_k_srp else None,
         k_srp_prior_status="QUALIFICATION_PRIOR" if solve_for_k_srp else None,
         k_srp_negative_step_rejections=negative_k_rejections,
+        termination_detail=termination_detail,
+        gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats

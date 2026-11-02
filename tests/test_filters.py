@@ -6,6 +6,7 @@ from unittest import mock
 import numpy as np
 
 import lunar_od.filters as filters_module
+import lunar_od.radiometrics as radiometrics_module
 from lunar_od import (
     C_LIGHT_MPS,
     HistoryDomainError,
@@ -67,18 +68,20 @@ class FilterTests(unittest.TestCase):
         )
         local_t, _, earth_pos, earth_vel, xforms = result
 
-        np.testing.assert_array_equal(
-            earth_pos,
-            filters_module._interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, local_t),
-        )
-        np.testing.assert_array_equal(
-            earth_vel,
-            filters_module._interp_pass_values(pass_geo.t_s, pass_geo.earth_vel_mci_mps, local_t),
-        )
+        # WP1.1 (MEAS-04): Earth is the batch path's cubic Hermite, the transform a rotation.
+        hermite = np.array([
+            radiometrics_module._interp_state(
+                pass_geo.t_s, np.hstack([pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps]), t)
+            for t in local_t
+        ])
+        np.testing.assert_array_equal(earth_pos, hermite[:, :3])
+        np.testing.assert_array_equal(earth_vel, hermite[:, 3:6])
         np.testing.assert_array_equal(
             xforms,
-            filters_module._interp_pass_values(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, local_t),
+            filters_module._interp_pass_transforms(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, local_t),
         )
+        for x in xforms:
+            np.testing.assert_allclose(x[:3, :3] @ x[:3, :3].T, np.eye(3), atol=1e-12)
 
         obs_row = np.array([150.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0])
         measurement = _range_rate_measurement_from_state(
@@ -256,7 +259,8 @@ class FilterTests(unittest.TestCase):
                 with (
                     mock.patch.object(filters_module, "_taylor3_local_state_history") as taylor,
                     mock.patch.object(filters_module, "_propagate_local_state_history") as ode,
-                    mock.patch.object(filters_module, "_interp_pass_values") as resample,
+                    mock.patch.object(filters_module, "_interp_pass_earth_state") as resample,
+                    mock.patch.object(filters_module, "_interp_pass_transforms") as resample_xform,
                 ):
                     with self.assertRaises(HistoryDomainError):
                         _call_two_way_local_histories(
@@ -269,6 +273,7 @@ class FilterTests(unittest.TestCase):
                 taylor.assert_not_called()
                 ode.assert_not_called()
                 resample.assert_not_called()
+                resample_xform.assert_not_called()
 
     def test_ukf_history_domain_error_is_not_convergence_or_row_skip(self):
         pass_geo, state_mid, sample_body = _ukf_history_domain_case()

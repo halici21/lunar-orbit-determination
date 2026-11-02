@@ -1248,10 +1248,13 @@ class MeasurementTests(unittest.TestCase):
         )
         np.testing.assert_array_equal(clean_default, clean_local)
 
-    def test_position_stellar_ssb_larger_and_range_preserved(self):
-        """SPICE-like +S: the SSB observer velocity yields an angular correction
-        of order |v_earth_ssb|/c (~1e-4 rad) -- much larger than local-MCI -- while
-        range is preserved (the correction is a pure rotation)."""
+    def test_position_stellar_ssb_matches_local_mci_and_range_preserved(self):
+        """SPICE-like +S: with the Moon-centred light-time LOS re-expressed in the
+        SSB frame (WP1.10, MEAS-02), the SSB observer velocity yields the same
+        apparent direction as local-MCI up to second order in v/c, and range is
+        preserved (the correction is a pure rotation). Before WP1.10 this test
+        required the SSB shift to be ~1e-4 rad, i.e. it pinned the Moon's SSB
+        velocity being counted twice."""
         from lunar_od.geometry import wrap_to_pi
 
         fx = self._position_light_time_fixture()
@@ -1275,11 +1278,11 @@ class MeasurementTests(unittest.TestCase):
         loc_max = float(np.max(ang_shift(clean_loc, clean_cn)))
         ssb_max = float(np.max(ang_shift(clean_ssb, clean_cn)))
 
-        # SSB correction is substantially larger (|v_ssb| ~ 30 km/s vs ~1 km/s MCI)
-        self.assertGreater(ssb_max, 5.0 * loc_max)
-        # ...and of order |v_earth_ssb|/c ~ 1e-4 rad, below the sin_phi <= v/c ceiling
-        self.assertGreater(ssb_max, 1e-5)
-        self.assertLess(ssb_max, 1.2e-4)
+        # Both corrections are of order |v_obs_rel_moon|/c ~ 1e-6..1e-5 rad and
+        # agree to second order, (30 km/s / c)^2 ~ 1e-8 rad.
+        self.assertGreater(loc_max, 1e-7)
+        self.assertLess(ssb_max, 1e-4)
+        self.assertLess(float(np.max(ang_shift(clean_ssb, clean_loc))), 2e-8)
 
         # range preserved by the pure rotation (both models)
         self.assertLess(float(np.max(np.abs(clean_ssb[:, 1] - clean_cn[:, 1]))), 1e-3)

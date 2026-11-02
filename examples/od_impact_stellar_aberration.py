@@ -103,7 +103,10 @@ def assess(d, model):
     state = d["state"]
     x_true0 = state[0].copy()
     pg_on, clean = _gen(d, model)                  # truth measurements (with +S)
-    pg_off = dataclasses.replace(pg_on, apply_stellar_aberration=False)
+    # The aberrated measurement_model_profile re-enables +S on its own, so the
+    # model-OFF geometry must also drop to the plain light-time profile.
+    pg_off = dataclasses.replace(pg_on, apply_stellar_aberration=False,
+                                 measurement_model_profile="one_way_light_time")
 
     # measurement-level systematic bias: truth vs model-off prediction at truth
     bias = _channel_residuals(state, clean, pg_off)     # (n,3)
@@ -188,8 +191,8 @@ def write_report(results):
         L.append(f"| `{r['model']}` | {r['ang_bias_med_as']:.2f} / {r['ang_bias_max_as']:.2f} "
                  f"| {r['range_bias_max_m']:.2e} | {r['ratio_ang_med']:.2f} / {r['ratio_ang_max']:.2f} |")
     L.append("\nRange is unaffected (stellar aberration is a pure rotation). The "
-             "az/el bias is the omitted aberration; for `spice_ssb` it exceeds the "
-             "DSN angular noise floor, for `local_mci` it sits below it.\n")
+             "az/el bias is the omitted aberration, compared with each station's "
+             "angular noise in the last column.\n")
 
     L.append("## 2. Orbit-determination outcome (off vs on)\n")
     L.append("| frame | run | pos err [m] | vel err [m/s] | post-fit RMS "
@@ -212,29 +215,30 @@ def write_report(results):
     L.append("## 3. Conclusion\n")
     ssb = next((r for r in results if r["model"] == "spice_ssb"), results[0])
     loc = next((r for r in results if r["model"] == "local_mci"), None)
-    L.append("**Case A — measurable OD impact (for the physically-correct SSB "
-             "frame).**\n")
     ssb_sigma_ratio = ssb["pe_off"] / ssb["formal_pos_sigma"] if ssb["formal_pos_sigma"] else float("nan")
-    L.append(f"With the SPICE-faithful `spice_ssb` model, omitting stellar "
-             f"aberration biases the angular measurements by ~{ssb['ang_bias_max_as']:.0f}″ "
-             f"(≈{ssb['ratio_ang_max']:.1f}× the DSN angular noise) and shifts the "
-             f"recovered state by **{ssb['pe_off']:.0f} m / {ssb['ve_off']:.2f} m/s** — "
-             f"above the {ssb['formal_pos_sigma']:.0f} m formal 1σ of this weakly-observed "
-             f"single arc (≈{ssb_sigma_ratio:.1f}σ). Modelling it recovers the truth to "
-             f"{ssb['pe_on']:.3f} m. The effect is real because the ~11″ "
-             "Earth-barycentric aberration, acting over the ~384 000 km Earth-Moon "
-             "lever arm, maps to a kilometre-scale transverse position error that the "
-             "range channel cannot absorb.\n")
+    L.append(f"Omitting stellar aberration biases the angular measurements by "
+             f"~{ssb['ang_bias_max_as']:.1f}″ (≈{ssb['ratio_ang_max']:.2f}× the DSN angular "
+             f"noise) and moves the recovered state by {ssb['pe_off']:.0f} m / "
+             f"{ssb['ve_off']:.2f} m/s (≈{ssb_sigma_ratio:.2f}σ of the "
+             f"{ssb['formal_pos_sigma']:.0f} m formal 1σ of this weakly-observed single "
+             f"arc). Modelling it recovers the truth to {ssb['pe_on']:.3f} m.\n")
     if loc is not None:
-        L.append(f"With the cheaper `local_mci` model the bias is only "
-                 f"~{loc['ang_bias_max_as']:.1f}″ (≈{loc['ratio_ang_max']:.1f}× the DSN "
-                 f"noise) and the state impact is {loc['pe_off']:.0f} m — about an order "
-                 "of magnitude smaller, since `local_mci` omits the dominant barycentric "
-                 "term (confirming the Task A cross-validation: the two frames differ by "
-                 "the Moon's barycentric aberration). For this arc that offset is below "
-                 "the formal 1σ, i.e. **Case B** (negligible) — but a systematic bias is "
-                 "coherent across all measurements and does not average down like random "
-                 "noise, so it can still matter in a better-observed, multi-arc scenario.\n")
+        L.append(f"The two velocity frames now agree (`local_mci` bias "
+                 f"~{loc['ang_bias_max_as']:.1f}″, state impact {loc['pe_off']:.0f} m): the "
+                 "Moon-centred light-time line of sight already carries the first-order "
+                 "aberration of the Moon's barycentric motion, so the SSB model must "
+                 "re-express that line of sight in the SSB frame before applying the "
+                 "SSB observer velocity. Both frames reproduce an independent SPICE CN+S "
+                 "computation to ~1 mas (`tests/test_stellar_aberration_vv.py` section 11). "
+                 "A systematic bias is coherent across all measurements and does not "
+                 "average down like random noise, so it can still matter in a "
+                 "better-observed, multi-arc scenario.\n")
+    L.append("**Erratum (WP1.10, assessment MEAS-02).** Earlier versions of this "
+             "report found an ~11″ `spice_ssb` bias and a 5.3 km state shift and called "
+             "the SSB frame the physically-correct one. That result came from a model "
+             "defect: `spice_ssb` applied the SSB observer velocity to the Moon-centred "
+             "light-time line of sight, counting the Moon's ~30 km/s barycentric "
+             "velocity twice (18.4″ against SPICE CN+S).\n")
     L.append("Range observables are unaffected in every case (pure rotation), so "
              "the impact is confined to the angular channels and the orbit "
              "geometry they constrain.\n")

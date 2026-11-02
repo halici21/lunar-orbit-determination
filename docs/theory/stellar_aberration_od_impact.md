@@ -10,30 +10,30 @@ Identical position-only (range/az/el) BLS-LM orbit determination on the same SPI
 
 | frame | az/el bias (median / max) [arcsec] | range bias [m] | bias/σ_angle (median / max) |
 |---|---:|---:|---:|
-| `spice_ssb` | 11.22 / 11.32 | 5.96e-08 | 1.85 / 3.10 |
+| `spice_ssb` | 0.76 / 0.81 | 1.79e-07 | 0.13 / 0.23 |
 | `local_mci` | 0.76 / 0.81 | 5.96e-08 | 0.13 / 0.23 |
 
-Range is unaffected (stellar aberration is a pure rotation). The az/el bias is the omitted aberration; for `spice_ssb` it exceeds the DSN angular noise floor, for `local_mci` it sits below it.
+Range is unaffected (stellar aberration is a pure rotation). The az/el bias is the omitted aberration, compared with each station's angular noise in the last column.
 
 ## 2. Orbit-determination outcome (off vs on)
 
 | frame | run | pos err [m] | vel err [m/s] | post-fit RMS (range[m] / az[″] / el[″]) | iters | final cost | cond |
 |---|---|---:|---:|---|---:|---:|---:|
-| `spice_ssb` | ON (modelled) | 0.000 | 0.0000 | 6.02e-06 / 0.000 / 0.000 | 21 | 8.58e-15 | 1.02e+02 |
-| `spice_ssb` | OFF (omitted) | 5340.0 | 2.4348 | 9.21e+01 / 4.610 / 6.829 | 15 | 4.34e+01 | 4.61e+06 |
-| `local_mci` | ON (modelled) | 0.000 | 0.0000 | 5.81e-06 / 0.000 / 0.000 | 17 | 8.03e-15 | 1.02e+02 |
-| `local_mci` | OFF (omitted) | 360.0 | 0.1825 | 6.34e+00 / 0.235 / 0.516 | 14 | 2.33e-01 | 4.60e+06 |
+| `spice_ssb` | ON (modelled) | 0.000 | 0.0000 | 6.51e-06 / 0.000 / 0.000 | 25 | 8.51e-12 | 8.95e+01 |
+| `spice_ssb` | OFF (omitted) | 357.1 | 0.1856 | 6.40e+00 / 0.233 / 0.515 | 15 | 1.94e-01 | 4.89e+06 |
+| `local_mci` | ON (modelled) | 0.000 | 0.0000 | 6.49e-06 / 0.000 / 0.000 | 19 | 6.91e-15 | 8.95e+01 |
+| `local_mci` | OFF (omitted) | 357.1 | 0.1856 | 6.40e+00 / 0.233 / 0.515 | 15 | 1.94e-01 | 4.89e+06 |
 
-- `spice_ssb`: formal 1σ position (ON posterior) = 1943.16 m; omitting the correction moves the estimate by 5340 m / 2.43 m/s.
-- `local_mci`: formal 1σ position (ON posterior) = 1943.16 m; omitting the correction moves the estimate by 360 m / 0.18 m/s.
+- `spice_ssb`: formal 1σ position (ON posterior) = 2603.46 m; omitting the correction moves the estimate by 357 m / 0.19 m/s.
+- `local_mci`: formal 1σ position (ON posterior) = 2603.36 m; omitting the correction moves the estimate by 357 m / 0.19 m/s.
 
 ## 3. Conclusion
 
-**Case A — measurable OD impact (for the physically-correct SSB frame).**
+Omitting stellar aberration biases the angular measurements by ~0.8″ (≈0.23× the DSN angular noise) and moves the recovered state by 357 m / 0.19 m/s (≈0.14σ of the 2603 m formal 1σ of this weakly-observed single arc). Modelling it recovers the truth to 0.000 m.
 
-With the SPICE-faithful `spice_ssb` model, omitting stellar aberration biases the angular measurements by ~11″ (≈3.1× the DSN angular noise) and shifts the recovered state by **5340 m / 2.43 m/s** — above the 1943 m formal 1σ of this weakly-observed single arc (≈2.7σ). Modelling it recovers the truth to 0.000 m. The effect is real because the ~11″ Earth-barycentric aberration, acting over the ~384 000 km Earth-Moon lever arm, maps to a kilometre-scale transverse position error that the range channel cannot absorb.
+The two velocity frames now agree (`local_mci` bias ~0.8″, state impact 357 m): the Moon-centred light-time line of sight already carries the first-order aberration of the Moon's barycentric motion, so the SSB model must re-express that line of sight in the SSB frame before applying the SSB observer velocity. Both frames reproduce an independent SPICE CN+S computation to ~1 mas (`tests/test_stellar_aberration_vv.py` section 11). A systematic bias is coherent across all measurements and does not average down like random noise, so it can still matter in a better-observed, multi-arc scenario.
 
-With the cheaper `local_mci` model the bias is only ~0.8″ (≈0.2× the DSN noise) and the state impact is 360 m — about an order of magnitude smaller, since `local_mci` omits the dominant barycentric term (confirming the Task A cross-validation: the two frames differ by the Moon's barycentric aberration). For this arc that offset is below the formal 1σ, i.e. **Case B** (negligible) — but a systematic bias is coherent across all measurements and does not average down like random noise, so it can still matter in a better-observed, multi-arc scenario.
+**Erratum (WP1.10, assessment MEAS-02).** Earlier versions of this report found an ~11″ `spice_ssb` bias and a 5.3 km state shift and called the SSB frame the physically-correct one. That result came from a model defect: `spice_ssb` applied the SSB observer velocity to the Moon-centred light-time line of sight, counting the Moon's ~30 km/s barycentric velocity twice (18.4″ against SPICE CN+S).
 
 Range observables are unaffected in every case (pure rotation), so the impact is confined to the angular channels and the orbit geometry they constrain.
 
