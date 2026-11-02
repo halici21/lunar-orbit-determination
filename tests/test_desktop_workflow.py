@@ -75,6 +75,23 @@ def test_cold_start_seed_is_independent_of_the_noise_seed():
     assert cold_start_seed_for(7) == cold_start_seed_for(7)
 
 
+def test_job_saved_before_x11_replays_with_its_recorded_seeds(tmp_path):
+    """A pre-X-11 job (cold-start seed == form seed) still validates and runs with
+    the seeds it recorded; any other seed edit is still rejected."""
+    import scenario_job
+
+    model = ScenarioModel(name="legacy_seed", duration_days=.05, random_seed=5)
+    path, _, _ = prepare_desktop_job(model, tmp_path)
+    job = json.loads(path.read_text(encoding="utf-8"))
+    job["options"]["cold_start_seed"] = 5
+    path.write_text(json.dumps(job), encoding="utf-8")
+    assert scenario_job.main([str(path), "--dry-run"]) == 0
+    job["options"]["cold_start_seed"] = 6
+    path.write_text(json.dumps(job), encoding="utf-8")
+    with pytest.raises(ValueError):
+        scenario_job.main([str(path), "--dry-run"])
+
+
 def test_form_translation_and_saved_inputs(tmp_path):
     model = ScenarioModel(name="exact", duration_days=.5, random_seed=0, noise_enabled=True,
         state_step_s=123, bls_damping_init=.04, ukf_alpha=.6, max_arcs=2, output_dir="chosen")

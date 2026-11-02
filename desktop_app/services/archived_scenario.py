@@ -10,7 +10,7 @@ from typing import get_args, get_type_hints
 
 from models.scenario_model import ScenarioModel
 from services.run_archive import local_reference
-from services.scenario_execution import execution_payload
+from services.scenario_execution import execution_payload, reconcile_saved_options
 from services.tracking_results import load_tracking_results, ResultLoadError, LoadCancelled
 
 
@@ -65,7 +65,8 @@ def load_archived_scenario(result_path, cancel=lambda: False):
     saved_config = job.get("config")
     if not isinstance(saved_config, dict) or not isinstance(saved_config.get("output_dir"), str):
         raise ResultLoadError("Kaydedilmiş koşu yapılandırması eksik.")
-    if {k: v for k, v in saved_config.items() if k != "output_dir"} != config or job.get("options") != options:
+    options = reconcile_saved_options(options, job.get("options"))
+    if {k: v for k, v in saved_config.items() if k != "output_dir"} != config or options is None:
         raise ResultLoadError("Kayıtlı form, yapılandırma ve zamanlama ayarları uyuşmuyor.")
     effective = read_verified(local_reference(folder, manifest.get("config_file")))
     if cancel():
