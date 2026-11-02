@@ -51,7 +51,7 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     birim zamandaki gürültü değişir; Q taraması ve ayarlanmış Q değerleri yalnız ayarlandıkları
     örnekleme düzeninde geçerlidir. dt'ye bağlı SNC/DMC modeli seçimli olarak kullanılabilir.
 
-14. BLS-LM varsayılan sönümleme takvimi **"fixed"** kalır (λ/5, ×10, D = diag(AᵀA); EST-08):
+14. BLS-LM varsayılan sönümleme takvimi **"fixed"** kalır (sahip kararı 2026-11-02, EST-08; λ/5, ×10, D = diag(AᵀA)):
     dondurulmuş sonuçlar ve kapılar bu takvimle üretildi. Kazanç oranlı Nielsen/Moré takvimi
     `damping_schedule="nielsen"` ile seçilir (WP4.2b); aynı minimuma daha az iterasyonla ulaşır.
-    Varsayılanın değiştirilmesi sahip kararıdır.
+    Nielsen seçimli kalır; dondurulmuş sonuçlar yeniden üretilmez.
