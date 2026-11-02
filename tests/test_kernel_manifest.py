@@ -59,8 +59,9 @@ def test_load_spice_kernels_refuses_a_changed_kernel_before_furnishing(tmp_path,
         real = spice_loader.required_kernel_paths()
     except FileNotFoundError as exc:
         pytest.skip(f"SPICE kernels unavailable: {exc}")
-    gm = tmp_path / "gm_de431.tpc.txt"
-    shutil.copyfile(next(p for p in real if p.name == gm.name), gm)
+    source = next(p for p in real if p.name.startswith("gm_"))
+    gm = tmp_path / source.name
+    shutil.copyfile(source, gm)
     gm.write_bytes(gm.read_bytes() + b"\n")
     edited = [gm if p.name == gm.name else p for p in real]
     monkeypatch.setattr(spice_loader, "required_kernel_paths", lambda *args, **kwargs: edited)
@@ -68,7 +69,7 @@ def test_load_spice_kernels_refuses_a_changed_kernel_before_furnishing(tmp_path,
     furnished = []
     monkeypatch.setattr(spice, "furnsh", furnished.append)
     monkeypatch.setattr(spice, "kclear", lambda: None)
-    with pytest.raises(KM.KernelIntegrityError, match="gm_de431.tpc.txt"):
+    with pytest.raises(KM.KernelIntegrityError, match=gm.name):
         spice_loader.load_spice_kernels()
     assert furnished == []
     assert spice_loader.load_spice_kernels(verify=False) == edited
