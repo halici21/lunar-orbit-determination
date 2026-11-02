@@ -230,6 +230,27 @@ class LunarHarmonicsForceContract:
     rotation_cadence_s: float | None
     rotation_margin_s: float | None
     status: ForceElementStatus = ForceElementStatus.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY
+    # X-12 (REQ-DYN-004): how the body rotation between grid samples is evaluated.
+    # WP1.3 moved the sampled path from the nearest sample to geodesic
+    # interpolation with no fingerprint change; this field makes the mode part of
+    # the identity.  None (omitted from the payload) only for disabled harmonics,
+    # so the frozen no-harmonics fingerprints are unchanged.
+    rotation_mode: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.enabled and self.rotation_mode not in LUNAR_ROTATION_MODES:
+            raise ForceContractError(
+                f"enabled lunar harmonics need rotation_mode in {LUNAR_ROTATION_MODES}, "
+                f"got {self.rotation_mode!r}."
+            )
+        if not self.enabled and self.rotation_mode is not None:
+            raise ForceContractError("disabled lunar harmonics carry no rotation_mode.")
+
+
+# Values of LunarHarmonicsForceContract.rotation_mode.
+LUNAR_ROTATION_SAMPLED_GEODESIC = "sampled_grid_geodesic_interpolation"
+LUNAR_ROTATION_DIRECT_EXACT_EPOCH = "direct_exact_epoch_moon_pa_de440"
+LUNAR_ROTATION_MODES = (LUNAR_ROTATION_SAMPLED_GEODESIC, LUNAR_ROTATION_DIRECT_EXACT_EPOCH)
 
 
 @dataclass(frozen=True)
@@ -378,6 +399,9 @@ def _normalize(value: Any) -> Any:
             if not (isinstance(value, ForceModelContract)
                     and field.name in ('solar_radiation_pressure', 'ephemeris_execution')
                     and getattr(value, field.name) is None)
+            and not (isinstance(value, LunarHarmonicsForceContract)
+                     and field.name == 'rotation_mode'
+                     and value.rotation_mode is None)
         }
     if isinstance(value, Mapping):
         normalized: dict[str, Any] = {}

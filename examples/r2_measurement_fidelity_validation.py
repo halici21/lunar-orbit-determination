@@ -792,6 +792,19 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F1 X-12 (independent-assessment programme; REQ-DYN-004).  The lunar-harmonics
+# force contract records how the body rotation is evaluated between grid samples
+# (rotation_mode).  The field is omitted for disabled harmonics, so the frozen
+# zero-J2 / lunar-J2 fingerprints are unchanged.
+#
+#   lunar_od/force_contract.py  old (consolidation)  60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0
+#                               new (X-12)           3aa7e6d7a719a63e842543652dedbf7b9e17431f3022089dc259479c17afd3f0
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_X12_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/force_contract.py":
+        "3aa7e6d7a719a63e842543652dedbf7b9e17431f3022089dc259479c17afd3f0",
+}
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -804,6 +817,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_X12_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_X12_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
