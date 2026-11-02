@@ -1543,3 +1543,74 @@ Decision inputs:
    candidates are a second LOLA SPK release, or a GRGM1200A-based LRO orbit. Predeclare it before use.
 3. Not recommended: estimating C_N/S_N in the production LRO fits on the strength of this result. The required size
    is non-physical, and it moves K.
+
+### 17.12 F2u — F2t's V0 window fits against an independent orbit (FDF definitive)
+
+F2t next step 2 (owner request 2026-11-01).
+
+- Predeclaration: `studies/phase17/configs/phase_f2u_independent_reference_predeclaration.json` (`59db8a5`),
+  committed before the FDF orbit was downloaded or read.
+- Script: `studies/phase17/scripts/phase_f2u_independent_reference.py`.
+- Parts: `studies/phase17/results/phase_f2u_parts/`. Result: `studies/phase17/results/phase_f2u_independent_reference.json`.
+- Reference: NAIF `lrorg_2009169_2010001_v01.bsp`, the LRO project's FDF definitive orbit merged from daily files.
+  SHA-256 `16257cc4…72fa`, under `lro_data/spk/`, not committed. It is the only orbit other than LOLA's that covers
+  2009-09. The LOLA node has no other release and no GRGM1200A/B reprocessing of this period.
+
+Analysis only: no production code, no data/weight/bias/measurement change, F2r/F2s/F2s-1/F2t classifications unchanged.
+
+#### Step A0/A (descriptive)
+
+- **Segments:** FDF is stored as daily segments in Moon-centred J2000, with boundaries at 00:00 UTC. Four windows
+  contain one: B00, B18, B24 and C72.
+- **LOLA − FDF:** 40–130 m along-track and 15–350 m cross-track per window, largely once-per-rev. The largest are on
+  09-18: B24 97 m, B30 263 m and B36 354 m N RMS.
+
+#### Step B as computed: **F2U_UNRESOLVED** (seam check: MIXED, SEAM_SENSITIVE)
+
+| window | seam | fit vs FDF R / T / N (m) | status | K (m²/kg) | F2t vs LOLA N (m) |
+|---|---|---|---|---|---|
+| B00 | 17 00:00 | 6.26 / 14.07 / 25.61 | MaxIter | 0.0 | 2.03 |
+| B06 | – | 1.29 / 1.78 / 1.80 | STATIONARY | 0.0104 | 2.01 |
+| B12 | – | 1.25 / 1.26 / 1.82 | STATIONARY | 0.0 | 1.82 |
+| B18 | 18 00:00 | 1.29 / 1.09 / 1.72 | STATIONARY | 0.0049 | 1.58 |
+| B24 | 18 00:00 | 5.00 / 22.51 / 86.76 | STATIONARY | 0.118 | 1.48 |
+| B30 | – | 5.05 / 28.21 / 161.41 | STATIONARY | 1.61 | 1.34 |
+| B36 | – | 1.22 / 1.90 / 1.13 | MaxIter | 0.0 | 1.69 |
+| C60 | – | 1.50 / 0.83 / 1.20 | STATIONARY | 0.0143 | 0.07 |
+| C72 | 20 00:00 | 1.27 / 2.00 / 2.38 | STATIONARY | 0.0162 | 0.48 |
+
+Decision inputs:
+
+- 7 of 9 fits STATIONARY, so not INCONCLUSIVE.
+- c_F = 1.79 m (median of C60 and C72) > E_L = 1.41 m → **F2U_UNRESOLVED**.
+- For the record: m_F = 1.82 m, E_F = 0.03 m, 3 of 7 B windows high.
+- Seam check (B00, B18, B24 and C72 removed, leaving C60 as the only control):
+  - c_F = 1.20, m_F = 1.81, E_F = 0.61 m (0.43 E_L), 1 high window.
+  - → MIXED. The class changes, so **SEAM_SENSITIVE**.
+
+#### Reading
+
+1. **FDF cannot settle F2t's question.** Our dynamics fit FDF to 1.1–1.8 m N in its clean windows, on control days as
+   well as on 09-17/18. That floor is as large as the 1.4 m LOLA excess being tested.
+2. **What the clean windows show** (B06, B12, B36, C60, all seam-free; descriptive):
+   - FDF's N level on 09-17/18 (1.13–1.82 m) is not clearly above its control level (1.20 m).
+   - With LOLA, the same windows were 1.69–2.03 m against 0.07 m.
+   - So FDF does not reproduce LOLA's sharp 09-17/18 versus 09-19/20 contrast. But one control and FDF's floor are too
+     little to call that H_LOLA_SPECIFIC.
+3. **FDF itself is not clean on 09-18.**
+   - B24 and B30 fit only to 87 and 161 m N. B30 contains no daily seam.
+   - The fits push K to its bounds (0 or 1.6 m²/kg) to absorb this.
+   - B00 (seam at 3 min) and B36 hit MaxIter.
+   - The FDF orbit of 2009-09 is an operational product with a weaker process. It carries both seams and
+     day-specific defects at the 10–300 m level.
+4. F2t's reading is unchanged: the 09-17/18 cross-track misfit is more likely a feature of the LOLA solution than a
+   force, but it is not proven. No available reference can prove it at the 1 m level.
+
+#### Next steps
+
+1. **Close the reference line.** No independent orbit of 2009-09 is accurate to ~1 m. Further probes of 09-17/18
+   cost hours per window and cannot change the class.
+2. For Phase C force-model work against LOLA, use the 09-19/20 span only, as stated in §17.11. Treat 09-17/18 LOLA
+   positions as reference-limited at ~2 m N.
+3. Shard notes: workers were lost twice (a BrokenProcessPool, and the session closing). Every window was fitted to
+   completion once, and those fits are the ones reported.
