@@ -110,13 +110,12 @@ class _TrackWorker(QThread):
         self.progress.emit("Örnek başlangıç durumu okunuyor…")
         fixture   = json.loads(FIXTURE.read_text(encoding="utf-8"))
         initial   = fixture["initial_state"]
-        constants = fixture["constants"]
         epoch_utc = fixture["epoch_utc"]
 
         x0      = np.asarray(initial["state_mci_j2000_m_mps"], dtype=float)
-        mu_moon = float(initial["mu_moon_m3_s2"])
-        mu_earth = float(np.asarray(constants["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
-        mu_sun   = float(np.asarray(constants["mu_sun_km3_s2"]).reshape(-1)[0] * 1e9)
+        # WP1.2: GMs of the selected ephemeris generation (snapshot gm_de431 only under DE421)
+        from lunar_od.ephemeris_generation import gravitational_parameters
+        mu_moon, mu_earth, mu_sun = gravitational_parameters()
         r_moon   = float(initial["r_moon_mean_m"])
 
         t_eval  = np.arange(0.0, self.duration_days * 86400.0 + _SAMPLE_STEP_S, _SAMPLE_STEP_S)
