@@ -43,6 +43,9 @@ from lunar_od import (  # noqa: E402
 )
 from lunar_od.force_contract import scenario_result_force_fields  # noqa: E402
 from lunar_od.reporting import write_force_model_manifest, write_numerical_profile_manifest  # noqa: E402
+from lunar_od.force_contract import ephemeris_execution_contract  # noqa: E402
+from lunar_od.ephemeris import MoonCenteredEphemeris  # noqa: E402
+from lunar_od.run_provenance import furnished_kernels, run_provenance_record, write_run_provenance  # noqa: E402
 from lunar_od.thesis_matrix import (  # noqa: E402
     THESIS_COLD_START_SIGMA_POS_M,
     THESIS_COLD_START_SIGMA_VEL_MPS,
@@ -168,6 +171,17 @@ def run_configured_scenario(
         estimator_spec, _estimator_runtime, context="run_configured_scenario estimator binding"
     )
 
+    # WP1.6 (CFG-02): explicit keyword seeds (desktop, campaigns) win; otherwise
+    # the scenario file's seeds are used, so a JSON file defines its noise draw.
+    if measurement_seed is None:
+        measurement_seed = config.measurement_seed
+    if cold_start_seed is None:
+        cold_start_seed = config.cold_start_seed
+    effective_cold_start_seed = (
+        int(cold_start_seed)
+        if cold_start_seed is not None
+        else thesis_seed_for(config.network, config.measurement_type)
+    )
     t_eval_s = np.arange(0.0, config.duration_h * 3600.0 + config.sample_step_s, config.sample_step_s)
     options = desktop_options or {}
     ephem_step = options.get("ephemeris_step_s", THESIS_EPHEMERIS_STEP_S)
@@ -259,11 +273,7 @@ def run_configured_scenario(
             len(arcs),
             THESIS_COLD_START_SIGMA_POS_M * float(cold_start_scale),
             THESIS_COLD_START_SIGMA_VEL_MPS * float(cold_start_scale),
-            seed=(
-                int(cold_start_seed)
-                if cold_start_seed is not None
-                else thesis_seed_for(config.network, config.measurement_type)
-            ),
+            seed=effective_cold_start_seed,
         )
         ukf_transform_config, ukf_adaptive_config = scenario_ukf_configs(config)
         scenario_result = run_batch_arc_sequence(
@@ -282,7 +292,10 @@ def run_configured_scenario(
             label=config.name,
             process_noise_covariance=config.ukf_acceleration_psd_m2_s3,
             max_iter=config.max_iter,
-            **({"bls_lambda0": config.bls_lambda0, "tol_cost_stability": config.tol_cost_stability} if desktop_options is not None else {}),
+            # WP1.6 (CFG-05): the JSON values are honoured on every path (the
+            # ScenarioConfig defaults equal the run_batch_arc_sequence defaults).
+            bls_lambda0=config.bls_lambda0,
+            tol_cost_stability=config.tol_cost_stability,
             rtol=config.rtol,
             atol=config.atol,
             ukf_transform_config=ukf_transform_config,
@@ -293,6 +306,8 @@ def run_configured_scenario(
             ukf_bias_freeze_relative_information=config.ukf_bias_freeze_relative_information,
             ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
             ukf_bias_regularization_std=config.ukf_bias_regularization_std,
+            ukf_initial_state_sigma=(THESIS_COLD_START_SIGMA_POS_M * float(cold_start_scale),
+                                     THESIS_COLD_START_SIGMA_VEL_MPS * float(cold_start_scale)),
             j2_moon=_estimator_runtime["j2_moon"],
             **model_options(_estimator_runtime.get('srp'), config.propagation_profile),
         )
@@ -313,11 +328,39 @@ def run_configured_scenario(
         write_numerical_profile_manifest(
             truth_numerical_metadata(_truth_runtime.get('srp'),config.propagation_profile,config.rtol,config.atol),
             final_result,manifest_output_dir/f'{config.name}_numerical_profile.json')
+        # WP1.6 (CFG-04/CFG-10): one provenance record per run, written while
+        # the kernel pool is still furnished.
+        write_run_provenance(
+            run_provenance_record(
+                config,
+                measurement_seed=None if measurement_seed is None else int(measurement_seed),
+                cold_start_seed=effective_cold_start_seed,
+                kernels=furnished_kernels(),
+                ephemeris_identities={
+                    "truth": _ephemeris_identity(ephemeris),
+                    "estimator": _ephemeris_identity(estimator_ephemeris),
+                },
+                run_options={
+                    "ephemeris_step_s": float(ephem_step),
+                    "cold_start_scale": float(cold_start_scale),
+                    "desktop_options": dict(options),
+                    "epoch_utc": epoch_utc,
+                },
+            ),
+            manifest_output_dir / f"{config.name}_run_provenance.json",
+        )
         if artifact_callback is not None:
             artifact_callback(final_result, arcs, t_eval_s, truth, epoch_utc)
         return final_result
     finally:
         spice.kclear()
+
+
+def _ephemeris_identity(ephemeris):
+    """Sampled-ephemeris identity for the run provenance (DYN-10/CFG-04)."""
+    if isinstance(ephemeris, MoonCenteredEphemeris):
+        return ephemeris_execution_contract(ephemeris)
+    return {"provider": f"unrecorded:{type(ephemeris).__name__}"}
 
 
 def _with_estimator_ephemeris(arc, ephemeris):

@@ -1,0 +1,49 @@
+{
+ "phase": "Phase F2u - is F2t's 09-17/18 cross-track misfit specific to the LOLA reference? The F2t V0 window fits repeated against an independently processed LRO orbit",
+ "written": "2026-11-01, after F2t (d9b7919, SPREAD + EMP_ABSORBS) and before the independent reference has been downloaded or read; owner request: F2t next step 2 (independent reference)",
+ "known_beforehand": [
+  "F2t V0 (12 h windows, C_N/S_N fixed at E2's values) against LOLA: N RMS 2.03, 2.01, 1.82, 1.58, 1.48, 1.34, 1.69 m in the seven B windows (09-17/18); 0.07, 0.48 m in the two C windows (09-19/20); median B 1.69 m, median C 0.28 m, so the LOLA excess E_L = 1.69 - 0.28 = 1.41 m",
+  "F2t V1: absorbing it needs C_N 1.8..2.7e-7 m/s^2 on 09-17/18 (3..6 x the whole SRP acceleration), ~0 on 09-19/20",
+  "only one LOLA-team orbit covers 2009-09: LRO_NO_01_GRGM900C_L600 (the one used so far); the LOLA node (imbrium.mit.edu/LRORS/DATA/SPK) has no other release and no GRGM1200A/B reprocessing of this period (listing checked 2026-11-01)",
+  "the only other orbit over these days is the LRO project's operational definitive ephemeris on NAIF: lrorg_2009169_2010001_v01.bsp (15 MB; daily FDF definitive files fdf29_* merged 'as is'; no gravity model or accuracy stated in spkinfo.txt; per PDS Geosciences produced without LOLA data)",
+  "independence is in processing only: FDF and LOLA use the same DSN/USN tracking but different software, gravity field, arc lengths and empirical parameterization; FDF's own daily-file seams are expected",
+  "nothing of the FDF orbit has been read or plotted for this period"
+ ],
+ "reference": {
+  "file": "lrorg_2009169_2010001_v01.bsp from https://naif.jpl.nasa.gov/pub/naif/pds/data/lro-l-spice-6-v1.0/lrosp_1000/data/spk/, stored under lro_data/spk/ (not committed); its SHA-256 recorded in the result",
+  "use": "loaded after the LOLA SPK so spkezr(LRO, J2000, NONE, MOON) returns FDF; nothing else changes",
+  "seams": "FDF segment boundaries inside 09-16 23:57 .. 09-20 11:57 are listed from the SPK's segment table before any fit (descriptive step A0) and recorded"
+ },
+ "step_A_direct_difference": {
+  "what": "LOLA minus FDF position in LOLA's R, T, N every 60 s over the nine F2t windows; per window: RMS R/T/N and the once-per-rev N amplitude (least squares N = c + a cos u + b sin u, u = argument of latitude from LOLA)",
+  "role": "descriptive only, no class"
+ },
+ "step_B_fits": {
+  "windows": "the nine F2t windows unchanged (B: F0 + 0, 6, ..., 36 h; C: F0 + 60, 72 h; 12 h each; F0 = 2009-09-16 23:57:02 UTC)",
+  "fit": "F2t V0 unchanged except the reference: epoch = window start, FDF positions every 60 s, 1 m weight, start = FDF state at the window start with E2's K and C_T/S_T, C_N/S_N fixed at E2's values, priors F2H on K, C_T, S_T, LM, stop on GN decrement < 1e-3 chi^2 or 10 iterations; GL1800F N=300, DE440, MOON_PA_DE440, rtol/atol 1e-12/1e-13",
+  "metric": "fit RMS of position minus FDF in FDF's R, T, N (N primary)",
+  "no_V1": "the C_N/S_N-free variant is not repeated"
+ },
+ "decision": {
+  "definitions": "N_F(w) = step-B N RMS of window w; c_F = median N_F over the two C windows; m_F = median N_F over the seven B windows; E_F = m_F - c_F; E_L = 1.41 m (LOLA, from F2t)",
+  "F2U_INCONCLUSIVE": "more than half of the nine fits do not reach the stopping rule",
+  "F2U_UNRESOLVED": "c_F > E_L (FDF does not fit cleanly enough on the control days for a 1.41 m excess to be visible), checked first after INCONCLUSIVE",
+  "H_SHARED": "E_F >= 0.5 x E_L and at least 5 of the 7 B windows have N_F >= max(2 x c_F, 1.0 m): the excess is in both references -> not LOLA-specific; points at dynamics/force on 09-17/18",
+  "H_LOLA_SPECIFIC": "E_F <= 0.25 x E_L: FDF does not show the excess -> F2t's misfit is specific to the LOLA solution",
+  "MIXED": "otherwise",
+  "seam_flag": "the class is recomputed with every window that contains an FDF segment boundary removed (if at least one B and one C window remain); if the class changes, SEAM_SENSITIVE is reported next to the class"
+ },
+ "limitations_stated_in_advance": [
+  "FDF is an operational solution with a pre-GRAIL-era process; its own errors may be time-local, so H_SHARED would show the misfit is not only LOLA's, not that a force is real",
+  "the fit-to-FDF level also carries the gravity-field difference between FDF's model and GL1800F N=300; the classification uses the B-minus-C excess, not the level, for this reason",
+  "same tracking data underlie both references: a tracking-data feature on 09-17/18 common to both would read as H_SHARED"
+ ],
+ "not_changed": "no production code; no data, weight, bias or measurement-model change; F2r/F2s/F2s-1/F2t classifications not rewritten; nothing tuned on day 263; LOLA remains the default reference elsewhere",
+ "git": "branch phase-f1-lro-residuals, push per the owner's standing approval; main not touched; the FDF SPK is not committed",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2u_independent_reference.py (reuses phase_f2s_lola_arc_structure.fit_window via phase_f2t windows)",
+  "parts": "studies/phase17/results/phase_f2u_parts/",
+  "results": "studies/phase17/results/phase_f2u_independent_reference.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.12"
+ }
+}

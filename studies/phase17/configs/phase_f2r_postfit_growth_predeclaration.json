@@ -1,0 +1,58 @@
+{
+ "phase": "Phase F2r - post-fit orbit-error growth against LOLA: dynamics root-cause isolation (owner brief 'Phase E-D1', renamed F2r because Phase E is the speed-optimization phase of the roadmap)",
+ "written": "2026-10-30, after F2q (992e476, 1c00023) and before any F2r number",
+ "known_beforehand": [
+  "F2p vs LOLA RIC RMS: fit arc 2.00 / 9.92 / 12.26 m, 263 1.88 / 5.05 / 2.90 m (F2p result file)",
+  "F2q: F2p - LOLA counted-Doppler pass means +2.6 ... +3.8 mm/s on 260..262, then +0.57, -0.29, -0.93, -2.53, -3.68 mm/s on 263 (post-hoc table, report 17.8)",
+  "LOLA SPK lro_no_01_grgm900c_l600.bsp comment: GEODYN POD with GRGM900C truncated at degree 600, DE421, panel SRP model with self-shadowing, a constant along-track empirical acceleration per ~2.5 d arc, arcs tapered over 8-12 h overlaps; stated accuracy ~10 m total position and < 1 m radial; Moon-centred J2000 segment, type 13, 5 s states",
+  "SPK coverage 2009-09-15 21:00 .. 2009-09-25 15:35 UTC is one maneuver-free interval: the first listed maneuver after MOI is the dH of 2009-09-25 15:45",
+  "F1 smoke test (12 h, N=100, default K): LOLA's initial state propagated with our dynamics drifted 266 m from LOLA",
+  "Our path: DE440 planetary ephemeris, MOON_PA_DE440 gravity frame, GL1800F N = 300, DOP853 with shadow-event segmentation, rtol/atol 1e-12/1e-13, TDB (ET) seconds throughout, LOLA read with spkezr(-85, J2000, NONE, MOON)",
+  "Baseline-relative values below have not been computed"
+ ],
+ "F2q_status": "F2Q_PREDECLARED_OUTCOME = H_PASS is unchanged; its design was non-discriminating (report 17.8). F2r is motivated by F2q's post-hoc result and does not reclassify F2q",
+ "definitions": {
+  "orbit_and_arc": "F2p's solution (results/phase_f2p_lro_three_day_arc_edited.json): epoch state, K, C_T, S_T (C_N, S_N pinned), fit on 2009-260..262, prediction day 263",
+  "fit_interval_F": "first to last fit-day range/Doppler measurement time (TDB)",
+  "fit_end_epoch": "last fit-day measurement time",
+  "prediction_interval_P": "first to last 263 measurement time (~14..25 h after fit end)",
+  "sampling": "60 s grid over F and P",
+  "difference": "Delta(t) = estimate - LOLA, position and velocity, projected on LOLA's own R (r/|r|), N (r x v / |r x v|), T = N x R",
+  "baseline": "b = mean of Delta over F, per component",
+  "growth": "g(t) = Delta(t) - b",
+  "primary_metric": "G_T = RMS over P of g_T (along-track); reported alongside G_R, G_N and the velocity counterparts G_vR, G_vT, G_vN, and the mean of g over P",
+  "shape": "linear and quadratic least-squares fits of g_T(t) on [fit end, end of P]; sign and curvature reported",
+  "doppler_projection": "d(t) = Delta_v . u, u = unit vector Earth centre -> LRO (Moon-centred positions; ~1 deg from any station line of sight); baseline-relative d(t) - mean_F(d)",
+  "doppler_projection_check": "pass-window mean of d for F2p vs LOLA against F2q's 21 F2p - LOLA pass-mean differences; PASS if their RMS difference <= 0.5 mm/s (the per-pass robust scatter of F2o, 0.37-0.86 mm/s)"
+ },
+ "reference_floor": "LOLA's stated accuracy (~10 m total, < 1 m radial). A growth whose 263 size is below it is reported as within the reference accuracy: it cannot be called our defect from the LOLA comparison alone. The dynamics-consistency test E2 does not depend on this floor, because it asks whether our dynamics can follow LOLA's trajectory at all",
+ "experiments_in_order": {
+  "E0_baseline": "F2p's parameters, rtol 1e-12: Delta, b, g, G, shape, Doppler projection and its check",
+  "E1_integrator": "same parameters at rtol/atol 1e-13/1e-14 (same force model, shadow-event segmentation). Contribution = change in G_T and in the mean of g_T over P. Negligible if below 5 % of G_T(E0) and below 0.1 m",
+  "time_scale": "no run: the F2 path uses ET (TDB) seconds for both our propagation and the SPK. The bound for a TT-seconds mix-up is the 4-day change of TDB - TT (<= 1.7 ms amplitude, annual) times the 1.6 km/s orbital speed; reported as a bound",
+  "maneuvers": "closed by the SPK comment (no maneuver in the arc); no run",
+  "E2_fit_to_LOLA": "our dynamics (E0's) fitted to LOLA positions over F: estimate epoch state, K, C_T, S_T; C_N, S_N pinned and K/empirical priors as in F2p (F2H priors); 60 s samples, 1 m weight; start from F2p's values; Gauss-Newton/LM with the F2 FD partials; stop on the relative rule (decrement < 1e-3 chi^2) or 10 iterations. Then propagate to P and compute G against LOLA",
+  "E2_decision": "share_dyn = G_T(E2) / G_T(E0). share_dyn <= 0.25: growth is not in the dynamics relative to LOLA -> E2b; share_dyn >= 0.75: dynamics-dominated -> E3, E4; in between: MIXED, run both",
+  "E2b_state_vs_parameters": "two propagations: F2p's epoch state with E2's K/C_T/S_T, and E2's epoch state with F2p's K/C_T/S_T; G_T of each splits the growth between the fit-end state and the extrapolated dynamic parameters (nonlinear; interaction reported)",
+  "E3_ephemeris_frame": "E2 repeated with LOLA's conventions: DE421 planetary ephemeris and the MOON_PA_DE421 gravity frame (nothing else changed). Contribution = G_T(E2) - G_T(E3)",
+  "E4_gravity": "E2 repeated with GRGM1200L (GSFC GRAIL, the family of LOLA's GRGM900C) at N = 300 in the same frame as E2, so only the harmonic content changes. Contribution = G_T(E2) - G_T(E4)",
+  "E5_srp_shadow": "the panel SRP model LOLA used is not implemented, so SRP model form is reported as not testable with existing implementations; the numerical side of shadow crossings is covered by E1. K itself is estimated in E2, never set by hand"
+ },
+ "explanatory_criteria": "a candidate explains growth when it (1) reduces G_T by at least half of the share it is tested against, (2) the removed growth has the sign and shape of g_T(E0) (correlation over P >= 0.8), (3) is of the observed order of magnitude, (4) acts on g, not on the baseline b, (5) reduces the Doppler projection growth in the same proportion (within a factor 2), and (6) is supported by the integrator check or an independent oracle where one exists",
+ "classification": {
+  "E_DYNAMICS_ROOT_CAUSE_IDENTIFIED": "one tested candidate meets criteria 1-5 and accounts for >= 75 % of G_T(E0)",
+  "E_DYNAMICS_ROOT_CAUSE_PARTIALLY_IDENTIFIED": "a candidate meets 1-5 but accounts for 25-75 %",
+  "E_INITIAL_STATE_DOMINATED": "E2 share_dyn <= 0.25 and E2b assigns most of the growth to the epoch state (the extrapolated parameters reported separately; if they dominate, the label is E_INITIAL_STATE_DOMINATED with 'parameters' as the stated sub-cause)",
+  "E_MULTIPLE_COMPARABLE_CONTRIBUTORS": "two or more candidates each between 25 and 75 % and together >= 75 %",
+  "E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT": "share_dyn > 0.25 and the tested candidates together explain < 25 % of it",
+  "E_INCONCLUSIVE": "only if a validation step fails (Doppler projection check, integrator convergence, E2 fit not converging)",
+  "confidence_note": "every outcome is stated together with whether G_T(E0) is below LOLA's stated accuracy"
+ },
+ "not_changed": "no production code; no data editing, pass selection, weights, Doppler bias or measurement-model change; no constant, coefficient or parameter set by hand; F2k..F2q results unchanged",
+ "git": "branch phase-f1-lro-residuals; commits pushed to that branch as for every F2 phase (owner's standing approval); main is not touched",
+ "outputs": {
+  "script": "studies/phase17/scripts/phase_f2r_postfit_growth.py",
+  "results": "studies/phase17/results/phase_f2r_postfit_growth.json",
+  "report": "studies/phase17/reports/phase_f2_lro_od.md section 17.9"
+ }
+}

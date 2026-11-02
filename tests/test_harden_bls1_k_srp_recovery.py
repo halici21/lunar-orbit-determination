@@ -82,8 +82,8 @@ def test_square_root_step_solves_the_same_damped_system(with_prior):
 def test_square_root_step_is_free_of_the_bookkeeping_units():
     """The production structure: a K column nearly in the span of the state columns
     (the weak direction) and range-like unit spreads (pos ~1, vel ~1e4, K ~2e4).
-    In the production bookkeeping units the old normal-matrix solve calls the
-    small-lambda step singular; the square-root solve does not, two unit choices give
+    In the production bookkeeping units the old normal-matrix solve called the
+    small-lambda step singular (until WP4.3); the square-root solve does not, two unit choices give
     the same physical step, and lambda -> 0 recovers Gauss-Newton."""
     rng = np.random.default_rng(5)
     m = 200
@@ -95,9 +95,13 @@ def test_square_root_step_is_free_of_the_bookkeeping_units():
     s1 = np.diag([1e6, 1e6, 1e6, 1e3, 1e3, 1e3, 1e-2])       # the production bookkeeping units
     s2 = np.diag([1.0, 1.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-5])
     lam = 1e-14
-    _, cond_old, _, sing_old = E._lm_step(h, r, w, s1, z, zr, lam)
-    assert sing_old and cond_old > 1e15                      # the BLS1 defect, reproduced
+    d_normal, cond_normal, _, sing_normal = E._lm_step(h, r, w, s1, z, zr, lam)
     d1, cond1, _, sing1 = E._lm_step_square_root(h, r, w, s1, z, zr, lam)
+    # WP4.3 (EST-07): the normal-matrix step now tests and solves the equilibrated system,
+    # so the BLS1 defect (singular at cond > 1e15 in bookkeeping units) is gone there too:
+    # same condition number and, to normal-equation accuracy, the same step.
+    assert not sing_normal and cond_normal == pytest.approx(cond1, rel=1e-6)
+    assert np.allclose(d_normal, d1, rtol=1e-6, atol=0.0)
     d2, _, _, sing2 = E._lm_step_square_root(h, r, w, s2, z, zr, lam)
     assert not sing1 and not sing2 and cond1 < 1e9           # the problem's own conditioning
     assert np.allclose(d1, d2, rtol=1e-10, atol=0.0)

@@ -321,7 +321,7 @@ def run_lunar_ekf(
                     get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp,
                 )[-1, :]
                 q_step = np.zeros((nx, nx))
-                q_step[:n_dyn, :n_dyn] = dmc_process_noise(dmc, target_t - current_t)
+                q_step[:n_dyn, :n_dyn] = dmc_process_noise(dmc, target_t - current_t, state6=centre[:6])
             phi[:n_dyn, :n_dyn] = aug[n_dyn:n_dyn + n_dyn * n_dyn].reshape(n_dyn, n_dyn, order="F")
             # f(x) about the linearization centre: exact when the centre is the filter state itself
             x_prop[:n_dyn] = aug[:n_dyn] + phi[:n_dyn, :n_dyn] @ (x[:n_dyn] - centre[:n_dyn])

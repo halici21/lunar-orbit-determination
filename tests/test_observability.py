@@ -370,6 +370,8 @@ class ObservabilityTests(unittest.TestCase):
         weighted = np.zeros((6, 6))
         weighted[:3, :3] = np.eye(3)
         weighted[3, 3] = 1.0
+        # WP4.3b: "weak" means nearly in the span of the state, not small in its unit.
+        weighted[0, 4] = 1.0
         weighted[4, 4] = 1e-3
         from lunar_od import summarize_weighted_jacobian
 

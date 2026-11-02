@@ -28,6 +28,15 @@ historical provenance requirements. See the [complete verification record](../va
 for setup, tiers, historical counts and qualification boundaries. Long campaigns
 remain explicit manual runs rather than default CI jobs.
 
+## Independent assessment and assurance
+
+The [2026-10-31 independent assessment](../validation/independent-assessment-2026-10-31.md)
+(in Turkish) reviews physics, cross-module consistency, standards conformance and
+risk; its findings marked T are reproduced by
+[evidence tests](../../tests/test_assessment_evidence.py). Intended use,
+requirements, the verification matrix, the risk register and the phased V&V
+programme are under [assurance](../assurance/README.md).
+
 ## Documentation and release
 
 ```powershell

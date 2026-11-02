@@ -1071,7 +1071,12 @@ def solve_two_way_light_time(
         )
         new_downlink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps)
         new_t2 = receive_time_s - new_downlink_lt
-        downlink_update_residual_s = abs(new_t2 - t2)
+        # F1 WP1.4 (MEAS-03): the iterate movement is measured on the LOCAL
+        # light time, as solve_two_way_range_events does (Q1-F08). With
+        # receive_time_s fixed, |dt2| == |dtau_d| in exact arithmetic; the
+        # epoch form quantises to ulp(t) and stalls once the arc start epoch
+        # exceeds ~2^17 s. Tolerance UNCHANGED.
+        downlink_update_residual_s = abs(new_downlink_lt - downlink_lt)
         if downlink_update_residual_s <= cfg.light_time_tolerance_s:
             t2 = new_t2
             downlink_lt = new_downlink_lt
@@ -1088,7 +1093,10 @@ def solve_two_way_light_time(
         event_label="downlink",
         consumer="solve_two_way_light_time",
     )
-    t1 = t2 - cfg.transponder_delay_s - downlink_lt
+    # The uplink iterate starts from the downlink light time; carried locally
+    # so the update test below never differences two large epochs.
+    uplink_lt = downlink_lt
+    t1 = t2 - cfg.transponder_delay_s - uplink_lt
     uplink_converged = False
     uplink_update_residual_s = float("inf")
     for uplink_iter in range(1, cfg.light_time_max_iter + 1):
@@ -1104,23 +1112,29 @@ def solve_two_way_light_time(
             event_label="uplink",
             consumer="solve_two_way_light_time",
         )
-        uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
-        new_t1 = t2 - cfg.transponder_delay_s - uplink_lt
-        uplink_update_residual_s = abs(new_t1 - t1)
+        new_uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
+        new_t1 = t2 - cfg.transponder_delay_s - new_uplink_lt
+        # F1 WP1.4 (MEAS-03): local light-time update, as for the downlink;
+        # t2 is fixed inside this loop.
+        uplink_update_residual_s = abs(new_uplink_lt - uplink_lt)
+        t1 = new_t1
+        uplink_lt = new_uplink_lt
         if uplink_update_residual_s <= cfg.light_time_tolerance_s:
-            t1 = new_t1
             uplink_converged = True
             break
-        t1 = new_t1
-    else:
-        uplink_lt = float(np.linalg.norm(sc_t2_state[:3] - station_tx_state[:3]) / cfg.light_speed_mps)
 
     # FA-03A per-leg equation residuals, evaluated fresh at the returned
     # events: the spacecraft state at the final t2 was re-interpolated above;
     # the uplink station is re-queried at the final t1 (the loop's last
     # station_tx_state can lag t1 by one update).
+    # F1 WP1.4 (MEAS-03): each leg's interval is the AUTHORITATIVE LOCAL light
+    # time the events were constructed from (t2 = t3 - tau_d,
+    # t1 = t2 - delta_0 - tau_u), not the interval re-derived from two rounded
+    # epochs, whose ulp(t)/2 granularity exceeds the 1e-11 s equation tolerance
+    # for t >= 2^17 s (Q1-F01 in solve_two_way_range_events). Equations and
+    # tolerances UNCHANGED.
     downlink_equation_residual_s = abs(
-        (receive_time_s - t2)
+        downlink_lt
         - float(
             np.linalg.norm(sc_t2_state[:3] - station_rx_state[:3]) / cfg.light_speed_mps
         )
@@ -1138,7 +1152,7 @@ def solve_two_way_light_time(
         consumer="solve_two_way_light_time",
     )
     uplink_equation_residual_s = abs(
-        (t2 - cfg.transponder_delay_s - t1)
+        uplink_lt
         - float(
             np.linalg.norm(sc_t2_state[:3] - station_tx_final[:3]) / cfg.light_speed_mps
         )

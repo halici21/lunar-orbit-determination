@@ -79,6 +79,30 @@ class ConvergenceDiagnostics:
     converged_by_stationarity: bool = False
 
 
+@dataclass(frozen=True)
+class AverageConsistencyDiagnostics:
+    """Average NEES/NIS against its two-sided chi-square interval (WP4.6, EST-16)."""
+    count: int
+    dimension: int
+    mean: float
+    lower: float
+    upper: float
+    confidence: float
+    within_interval: bool
+    excluded: int
+
+
+@dataclass(frozen=True)
+class LjungBoxDiagnostics:
+    """Ljung-Box portmanteau whiteness test of one scalar sequence (WP4.6, EST-16)."""
+    count: int
+    max_lag: int
+    statistic: float
+    dof: int
+    p_value: float
+    autocorrelations: np.ndarray
+
+
 def analyze_convergence(
     stop_reason: str,
     *,
@@ -251,6 +275,114 @@ def analyze_innovation_whiteness(
         mean_abs_lag1_autocorrelation=float(np.mean(finite)) if finite.size else float("nan"),
         max_abs_lag1_autocorrelation=float(np.max(finite)) if finite.size else float("nan"),
     )
+
+
+def chi_square_average_interval(
+    dimension: int, count: int, *, confidence: float = 0.95
+) -> tuple[float, float]:
+    """Two-sided interval for the average of ``count`` independent chi-square(``dimension``) statistics.
+
+    WP4.6 (EST-16).  ``count * mean ~ chi2(count * dimension)`` (Bar-Shalom, Li &
+    Kirubarajan 2001, s5.4), so the bounds on the AVERAGE NEES/NIS are
+    ``chi2.ppf([a/2, 1 - a/2], count * dimension) / count`` with ``a = 1 - confidence``.
+    """
+    from scipy.stats import chi2
+
+    if dimension < 1 or count < 1:
+        raise ValueError("dimension and count must be positive.")
+    if not 0.0 < confidence < 1.0:
+        raise ValueError("confidence must lie in (0, 1).")
+    alpha = 1.0 - float(confidence)
+    dof = int(dimension) * int(count)
+    return float(chi2.ppf(alpha / 2.0, dof) / count), float(chi2.ppf(1.0 - alpha / 2.0, dof) / count)
+
+
+def analyze_average_consistency(
+    statistics: ArrayLike,
+    dimension: int,
+    *,
+    confidence: float = 0.95,
+    accepted: ArrayLike | None = None,
+) -> AverageConsistencyDiagnostics:
+    """Average NEES/NIS (ANEES/ANIS) against its two-sided chi-square interval.
+
+    ``statistics`` are per-trial (NEES across Monte Carlo runs) or per-update
+    (NIS along one filter run) quadratic forms of dimension ``dimension``.
+    ``accepted`` (optional boolean mask) excludes gated/rejected updates, whose
+    NIS is not chi-square distributed by construction (EST-16: the mean NIS
+    used to include them).  Per-update NIS along one run is only an interval
+    test under whiteness; check it with :func:`ljung_box_test`.
+    """
+    values = np.asarray(statistics, dtype=float).reshape(-1)
+    keep = np.isfinite(values)
+    if accepted is not None:
+        mask = np.asarray(accepted, dtype=bool).reshape(-1)
+        if mask.shape != values.shape:
+            raise ValueError("accepted must match statistics shape.")
+        keep &= mask
+    used = values[keep]
+    if used.size == 0:
+        raise ValueError("no accepted finite statistics.")
+    lower, upper = chi_square_average_interval(int(dimension), int(used.size), confidence=confidence)
+    mean = float(np.mean(used))
+    return AverageConsistencyDiagnostics(
+        count=int(used.size),
+        dimension=int(dimension),
+        mean=mean,
+        lower=lower,
+        upper=upper,
+        confidence=float(confidence),
+        within_interval=bool(lower <= mean <= upper),
+        excluded=int(values.size - used.size),
+    )
+
+
+def ljung_box_test(values: ArrayLike, *, max_lag: int | None = None, fitted_parameters: int = 0) -> LjungBoxDiagnostics:
+    """Ljung-Box test of whiteness for one scalar, time-ordered, whitened sequence.
+
+    WP4.6 (EST-16).  Q = n (n + 2) sum_{k=1..h} rho_k^2 / (n - k) ~ chi2(h - p)
+    under whiteness (Ljung & Box 1978).  ``max_lag`` defaults to
+    ``min(10, n // 5)``; ``fitted_parameters`` (p) is subtracted from the
+    degrees of freedom.  Pass ONE channel at a time: an interleaved
+    [range, az, el] vector mixes channels into fake lags.
+    """
+    from scipy.stats import chi2
+
+    x = np.asarray(values, dtype=float).reshape(-1)
+    x = x[np.isfinite(x)]
+    n = int(x.size)
+    h = int(max_lag) if max_lag is not None else min(10, n // 5)
+    dof = h - int(fitted_parameters)
+    if h < 1 or n <= h + 1 or dof < 1:
+        raise ValueError("sequence too short for the requested lags.")
+    centered = x - float(np.mean(x))
+    denom = float(np.dot(centered, centered))
+    if denom <= np.finfo(float).eps:
+        raise ValueError("sequence has zero variance.")
+    rho = np.array([float(np.dot(centered[:-k], centered[k:])) / denom for k in range(1, h + 1)])
+    q = float(n * (n + 2) * np.sum(rho**2 / (n - np.arange(1, h + 1))))
+    return LjungBoxDiagnostics(
+        count=n,
+        max_lag=h,
+        statistic=q,
+        dof=dof,
+        p_value=float(chi2.sf(q, dof)),
+        autocorrelations=rho,
+    )
+
+
+def channel_lag1_autocorrelation(residuals: ArrayLike, num_channels: int) -> np.ndarray:
+    """Lag-1 autocorrelation per measurement channel of an epoch-major residual vector.
+
+    WP4.6 (EST-16).  ``analyze_residuals`` reports lag-1 of the flattened vector,
+    which for [range, az, el] rows correlates range with azimuth, not epoch k
+    with k + 1.  This reshapes to (epochs, channels) and correlates in time.
+    """
+    flat = np.asarray(residuals, dtype=float).reshape(-1)
+    if num_channels < 1 or flat.size % num_channels:
+        raise ValueError("residual length must be a multiple of num_channels.")
+    table = flat.reshape(-1, num_channels)
+    return np.array([_lag1_autocorrelation(table[:, c]) for c in range(num_channels)], dtype=float)
 
 
 def analyze_boundary_jumps(previous_values: ArrayLike, next_values: ArrayLike) -> BoundaryJumpDiagnostics:

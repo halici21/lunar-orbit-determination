@@ -69,14 +69,34 @@ CampaignTrialFunction = Callable[
 ProgressFunction = Callable[[int, int, str, int], None]
 
 
-def make_trial_specs(num_trials: int, base_seed: int = 0) -> tuple[MonteCarloTrialSpec, ...]:
-    """Create deterministic one-based trial specs."""
+SEED_SCHEMES = ("seed_sequence", "legacy_offset")
+
+
+def make_trial_specs(
+    num_trials: int, base_seed: int = 0, *, seed_scheme: str = "seed_sequence"
+) -> tuple[MonteCarloTrialSpec, ...]:
+    """Create deterministic one-based trial specs.
+
+    WP4.7 (EST-20): trial k's seed is the 64-bit state of SeedSequence([base_seed, k]),
+    so runs with different base seeds share no trial stream.  The former
+    ``base_seed + k - 1`` made base seeds 100 and 101 share all trials but one; it is
+    kept as ``seed_scheme="legacy_offset"`` to reproduce archived campaigns.
+    """
     if num_trials < 0:
         raise ValueError("num_trials must be non-negative.")
+    _validate_seed_scheme(seed_scheme)
     seed0 = int(base_seed)
-    modulus = 2**32 - 1
+    if seed_scheme == "legacy_offset":
+        modulus = 2**32 - 1
+        return tuple(
+            MonteCarloTrialSpec(trial_id=trial_id, seed=(seed0 + trial_id - 1) % modulus)
+            for trial_id in range(1, num_trials + 1)
+        )
     return tuple(
-        MonteCarloTrialSpec(trial_id=trial_id, seed=(seed0 + trial_id - 1) % modulus)
+        MonteCarloTrialSpec(
+            trial_id=trial_id,
+            seed=int(np.random.SeedSequence([seed0, trial_id]).generate_state(1, np.uint64)[0]),
+        )
         for trial_id in range(1, num_trials + 1)
     )
 
@@ -87,10 +107,11 @@ def run_monte_carlo_trials(
     *,
     base_seed: int = 0,
     continue_on_error: bool = False,
+    seed_scheme: str = "seed_sequence",
 ) -> tuple[MonteCarloTrialResult, ...]:
     """Run a seeded trial callback and collect metric rows."""
     results: list[MonteCarloTrialResult] = []
-    for spec in make_trial_specs(num_trials, base_seed):
+    for spec in make_trial_specs(num_trials, base_seed, seed_scheme=seed_scheme):
         rng = np.random.default_rng(spec.seed)
         try:
             raw_result = trial_fn(spec, rng)
@@ -119,8 +140,13 @@ def run_monte_carlo_campaign(
     max_workers: int = 1,
     continue_on_error: bool = False,
     progress_fn: ProgressFunction | None = None,
+    seed_scheme: str = "seed_sequence",
 ) -> tuple[MonteCarloCaseResult, ...]:
     """Run a deterministic case-by-trial grid, optionally in parallel.
+
+    WP4.7 (EST-20): every case's trial k gets the same seed (common random numbers),
+    so a case-to-case difference is a paired comparison.  ``seed_scheme=
+    "legacy_offset"`` restores the former per-case seed blocks.
 
     Thread workers are used because campaign callbacks commonly call NumPy and
     SciPy routines that release the GIL, while avoiding process pickling limits
@@ -128,11 +154,18 @@ def run_monte_carlo_campaign(
     """
     cases = tuple(cases)
     _validate_campaign(cases, num_trials, max_workers)
-    jobs = [
-        (case_idx, case, spec)
-        for case_idx, case in enumerate(cases)
-        for spec in make_trial_specs(num_trials, _case_seed_base(base_seed, case_idx, num_trials))
-    ]
+    _validate_seed_scheme(seed_scheme)
+    if seed_scheme == "legacy_offset":
+        jobs = [
+            (case_idx, case, spec)
+            for case_idx, case in enumerate(cases)
+            for spec in make_trial_specs(
+                num_trials, _case_seed_base(base_seed, case_idx, num_trials), seed_scheme="legacy_offset"
+            )
+        ]
+    else:
+        common = make_trial_specs(num_trials, base_seed)
+        jobs = [(case_idx, case, spec) for case_idx, case in enumerate(cases) for spec in common]
     total = len(jobs)
     completed = 0
     collected: dict[tuple[int, int], MonteCarloTrialResult] = {}
@@ -307,6 +340,11 @@ def _validate_campaign(cases: Sequence[MonteCarloCase], num_trials: int, max_wor
     labels = [case.label for case in cases]
     if len(labels) != len(set(labels)):
         raise ValueError("Monte Carlo case labels must be unique.")
+
+
+def _validate_seed_scheme(seed_scheme: str) -> None:
+    if seed_scheme not in SEED_SCHEMES:
+        raise ValueError(f"seed_scheme must be one of {SEED_SCHEMES}, got {seed_scheme!r}.")
 
 
 def _case_seed_base(base_seed: int, case_idx: int, num_trials: int) -> int:
