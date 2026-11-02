@@ -165,3 +165,37 @@ satırını güncellememişti).
    ölçülerek), X-11 masaüstü varsayılanlarının kütüphaneyle hizalanması, X-12 dönüş modu hash'i.
 3. #100 ve #101 birleşince X-03 kapanır ve X-04 ilerler; ikisi arasında bir satırlık
    çözümleyici çakışması beklenir.
+
+## Ek — 2026-11-03 gece ilerlemesi ve ajan kararları
+
+Yukarıdaki kapı sonuçları hesaplandığı gibi kalır; bu ek yalnız sonraki işleri kaydeder.
+Sahip 2026-11-03 gecesi "sabah dokuza kadar herhangi bir kararı bana sorma, sen devam et" dedi.
+Aşağıdaki **ajan kararları** bu yetkiyle verildi ve **sahip onayı bekliyor**. Her biri ayrı PR'dır;
+reddedilen PR kapatılır.
+
+| X | Durum | PR | Not |
+|---|---|---|---|
+| X-01 | **PR'da kapalı** | [#107](https://github.com/halici21/lunar-orbit-determination/pull/107) | senaryo `lunar_gravity_frame` varsayılanı `MOON_PA_DE440`; harmonik kapalıyken etkisiz olduğu için sayısal değişim yok; eski masaüstü arşivleri açılmaya devam ediyor |
+| X-02 | **PR'da kapalı** | [#103](https://github.com/halici21/lunar-orbit-determination/pull/103) | sahip kararı (2026-11-02); MOON_PA_DE440 kutbu + GRGM1200A; eski model bit-bit seçilebilir; 2602 test / 0 hata |
+| X-03 | **kapalı** | #100 (birleşti) | — |
+| X-04 | **kısmi, karar verildi** | [#101](https://github.com/halici21/lunar-orbit-determination/pull/101) | aşağıdaki karar 1; MEAS-05 açık |
+| X-11 | **PR'da kapalı** | [#104](https://github.com/halici21/lunar-orbit-determination/pull/104) | rtol/atol/efemeris adımı/λ0 kütüphaneden; bağımsız soğuk başlangıç tohumu; eski job.json'lar kayıtlı tohumlarla çalışıyor |
+| X-12 | **PR'da kapalı** | [#106](https://github.com/halici21/lunar-orbit-determination/pull/106) | harmonik `rotation_mode` parmak izinde; donmuş harmoniksiz parmak izleri değişmedi |
+
+**Ajan kararı 1 — X-04, profil paritesi reddi varsayılan olmasın (isteğe bağlı kalsın).**
+Gerçek değer (truth) yörüngesinin tahminciden daha sıkı bir sayısal profille üretilmesi kasıtlı
+ve standart bir uygulamadır. Varsayılan ret bu uygulamayı yasaklar ve mevcut bütün senaryo
+koşularını kırar. Adil karşılaştırmanın asıl koşulu, karşılaştırılan tahmincilerin (BLS-LM / SRIF /
+SR-UKF) aynı profili paylaşmasıdır. #101 bunu `shared_profile` ve `profile_differences` olarak her
+manifeste yazıyor; ret isteyen çağıran açıkça açabiliyor. Kalan X-04 işi MEAS-05'tir (UKF hızlı
+sigma yayıcısının doğrusal efemerisi); bu, F2/F4'te Hermite efemerisle kapatılacak.
+
+**Ajan kararı 2 — G3 referansı yeniden kürate edildi** ([#105](https://github.com/halici21/lunar-orbit-determination/pull/105)).
+Aynı plan temiz main'de (`4d8819a`) yeniden koşuldu. BLS-LM ile SRIF artık tohum başına ±1 mm
+içinde ve SRIF 32/32 sonlanıyor. G3 FAIL'i bu raporda hesaplandığı gibi kalır; #105 yalnız bir
+sonraki kapının referansını değiştirir.
+
+**F1 hükmü (güncel):** F1 kalemlerinin hepsi ya main'de kapalı ya da açık bir PR'da kapalı. Tek
+istisna X-04'ün MEAS-05 parçasıdır. #101, #103, #104, #105, #106 ve #107 birleşince F1 kapısı
+G3 referansı yenilenmiş olarak yeniden koşulmalıdır (yeni ön-kayıtla). Programın bir sonraki fazı
+F2'dir: WP2.1, üretim yolunda SSB ışık zamanı + Shapiro (MEAS-01, R-01).
