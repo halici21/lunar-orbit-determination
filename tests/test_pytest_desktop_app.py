@@ -67,7 +67,7 @@ def test_run_monitor_preset_keeps_extra_args_in_command_preview():
 # left REAL so the shared Earth-J2 validator actually runs (F3).
 # ---------------------------------------------------------------------------
 
-from lunar_od.constants import J2_MOON_UNNORMALIZED  # noqa: E402
+from lunar_od.constants import J2_MOON_GRAIL_UNNORMALIZED  # noqa: E402
 import lunar_od.scenario_config as _scenario_config_mod  # noqa: E402
 
 
@@ -224,14 +224,14 @@ def test_f1_real_worker_qsettings_resolves_and_forwards_lunar_j2():
     _app()
     ac = _analysis_controller()
     worker = ac._AnalysisWorker(
-        _spec("bls_lm"), _base_params(j2_moon=J2_MOON_UNNORMALIZED)
+        _spec("bls_lm"), _base_params(j2_moon=J2_MOON_GRAIL_UNNORMALIZED)
     )
     with _patched_worker_env() as spies:
         worker._do_run()  # must NOT raise NameError: name 'QSettings' is not defined
     assert spies["truth"].call_count == 1
-    assert spies["truth"].call_args.kwargs["j2_moon"] == J2_MOON_UNNORMALIZED
+    assert spies["truth"].call_args.kwargs["j2_moon"] == J2_MOON_GRAIL_UNNORMALIZED
     assert spies["batch"].call_count == 1
-    assert spies["batch"].call_args.kwargs["j2_moon"] == J2_MOON_UNNORMALIZED
+    assert spies["batch"].call_args.kwargs["j2_moon"] == J2_MOON_GRAIL_UNNORMALIZED
 
 
 def test_f2_desktop_earth_j2_zero_propagation():
@@ -279,12 +279,12 @@ def test_f4_real_worker_lunar_j2_parity_truth_and_dispatch():
     _app()
     ac = _analysis_controller()
     worker = ac._AnalysisWorker(
-        _spec("ukf"), _base_params(j2_moon=J2_MOON_UNNORMALIZED)
+        _spec("ukf"), _base_params(j2_moon=J2_MOON_GRAIL_UNNORMALIZED)
     )
     with _patched_worker_env() as spies:
         worker._do_run()
-    assert spies["truth"].call_args.kwargs["j2_moon"] == J2_MOON_UNNORMALIZED
-    assert spies["batch"].call_args.kwargs["j2_moon"] == J2_MOON_UNNORMALIZED
+    assert spies["truth"].call_args.kwargs["j2_moon"] == J2_MOON_GRAIL_UNNORMALIZED
+    assert spies["batch"].call_args.kwargs["j2_moon"] == J2_MOON_GRAIL_UNNORMALIZED
 
 
 def test_f5_common_truth_propagated_once_after_preflight():
@@ -329,7 +329,7 @@ def test_f6_zero_j2_default_path_unchanged():
 # R0B-F1 (V04) — real desktop worker force-model provenance
 # ---------------------------------------------------------------------------
 
-from lunar_od.constants import J2_MOON_UNNORMALIZED as _J2_MOON  # noqa: E402
+from lunar_od.constants import J2_MOON_GRAIL_UNNORMALIZED as _J2_MOON  # noqa: E402
 from lunar_od.scenario_config import (  # noqa: E402
     force_execution_spec_from_scenario_config,
     scenario_config_from_mapping,

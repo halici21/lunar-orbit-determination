@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections.abc import Callable, Mapping, Sequence
@@ -203,7 +204,9 @@ def run_monte_carlo_campaign(
     else:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(execute, case_idx, case, spec): (case_idx, case, spec)
+                # copy_context: a worker thread would otherwise see the default
+                # context (lunar J2 model selection, lunar_j2_model.py).
+                executor.submit(contextvars.copy_context().run, execute, case_idx, case, spec): (case_idx, case, spec)
                 for case_idx, case, spec in jobs
             }
             for future in as_completed(futures):

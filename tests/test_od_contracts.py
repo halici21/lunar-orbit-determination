@@ -11,6 +11,7 @@ import numpy as np
 import lunar_od.radiometrics as radiometrics_module
 import lunar_od.two_way_range as two_way_range_module
 from examples import r2_measurement_fidelity_validation as campaign_module
+from lunar_od.lunar_j2_model import use_lunar_j2_model
 from lunar_od.constants import J2_MOON_UNNORMALIZED
 from lunar_od.force_contract import (
     FORCE_CONTRACT_SCHEMA_VERSION,
@@ -531,10 +532,10 @@ class R3CompatibilityUnchangedOutsideTheMeasurementModel(unittest.TestCase):
         self.assertEqual(
             self._contract(0.0).force_model_fingerprint(), self.ZERO_J2_FINGERPRINT
         )
-        self.assertEqual(
-            self._contract(float(J2_MOON_UNNORMALIZED)).force_model_fingerprint(),
-            self.LUNAR_J2_FINGERPRINT,
-        )
+        # F1 X-02: the P17 lunar-J2 identity is the legacy mean-pole model.
+        with use_lunar_j2_model("iau_mean_pole_legacy"):
+            legacy = self._contract(float(J2_MOON_UNNORMALIZED)).force_model_fingerprint()
+        self.assertEqual(legacy, self.LUNAR_J2_FINGERPRINT)
         self.assertEqual(FORCE_CONTRACT_SCHEMA_VERSION, "r0b.force-model-contract.v1")
 
     def test_p17_readiness_and_fail_closed_roles_are_unchanged(self):

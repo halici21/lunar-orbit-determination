@@ -38,6 +38,16 @@ from lunar_od.two_way_range import (
     solve_two_way_range_events,
     two_way_range_from_solution,
 )
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this Phase 17 module's frozen numbers (module fixtures included) are
+    the legacy mean-pole J2; the default model is covered by test_moon_orientation_wp1_3."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 pytest.importorskip("spiceypy")
 

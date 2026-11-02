@@ -17,13 +17,17 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir.
 4. **Kuvvet parmak izi** yürütülen efemeris kernel'ini, interpolasyonunu ve Ay dönüş modunu
    kapsamaz; "force parity PASS" bu eksenlerde eşitlik kanıtı değildir.
-5. **Varsayılan Ay J2 terimi** IAU sabit ortalama kutbunu kullanır; bu kutup MOON_PA_DE440
-   figür ekseninden 1.47–1.62° uzaktadır (DYN-03). 160 km'de fark J2 ivmesinin %2.0'ı
-   (7.5e-6 m/s², SRP'nin ~500 katı). (J2, R) çifti GRAIL GRGM1200A'nın (C̄20, R_ref) çiftinden
-   J2·R² olarak 4.7e-4 yüksektir (DYN-04). Dondurulmuş J2 tabanları bu varsayılanla üretildiği için
-   değiştirilmedi; doğru kutuplu derece-2 alan harmonik yolda DIRECT modda (nmax=2,
-   `harmonic_epoch_et0`) kullanılabilir. Izgaralı harmonik yolda Ay yönelimi WP1.3'ten beri
-   SLERP ile süreklidir (DYN-05 kapandı).
+5. **Varsayılan Ay J2 terimi** (X-02, sahip kararı 2026-11-02) tam epoch'taki MOON_PA_DE440
+   kutbu etrafındadır ve GRAIL GRGM1200A (C̄20, R_ref = 1738 km) çiftini kullanır
+   (`J2_MOON_GRAIL_UNNORMALIZED`, `R_MOON_GRAIL_REF_M`). Kutup her sağ taraf çağrısında
+   `pxform` ile alınır; hızlı UKF sigma yayıcısı aralık ortasındaki kutbu kullanır (1 günde
+   2.2e-4 rad sürüklenme). Model yayın epoch'unu ister: `lunar_j2_epoch_et0`, harmonik epoch ya da
+   efemeris nesnesinin `et0_s`'i; epoch yoksa ya da eski katsayı verilirse hata verir.
+   Eski IAU sabit ortalama kutup modeli (`J2_MOON_UNNORMALIZED`, `R_MOON_M`; figür ekseninden
+   1.47–1.62°, DYN-03; J2·R² 4.7e-4 yüksek, DYN-04) `lunar_j2_model="iau_mean_pole_legacy"` ya da
+   `use_lunar_j2_model(...)` ile bit-bit aynı seçilebilir; 2026-11-02 öncesi dondurulmuş J2
+   tabanları bu modelle yeniden üretilir (R0B `FROZEN_LUNAR_J2_FINGERPRINT` dahil). Izgaralı
+   harmonik yolda Ay yönelimi WP1.3'ten beri SLERP ile süreklidir (DYN-05 kapandı).
 
 ## Uzun yaylar
 

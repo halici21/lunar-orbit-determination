@@ -33,6 +33,17 @@ from lunar_od import (
 )
 from pathlib import Path
 import json
+import pytest
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"

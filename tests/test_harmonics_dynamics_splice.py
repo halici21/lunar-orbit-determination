@@ -35,6 +35,17 @@ from lunar_od.gravity_harmonics import (
     SphericalHarmonicGravityModel,
     cbar_n0_from_unnormalized_jn,
 )
+import pytest
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 MU_M, MU_E, MU_S = MU_MOON_M3S2, MU_EARTH_M3S2, MU_SUN_M3S2
 J2, J2_E = J2_MOON_UNNORMALIZED, J2_EARTH_UNNORMALIZED

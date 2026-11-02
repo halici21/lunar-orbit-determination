@@ -9,6 +9,16 @@ from lunar_od.dmc import DMCOptions, dmc_process_noise, propagate_dmc_state
 from lunar_od.dynamics import propagate_state
 from lunar_od.ekf import run_lunar_ekf, run_lunar_iterated_smoother
 from tests.test_ekf_smoother import MU_MOON, _add_noise, _arc, _earth, _sun
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 MU_EARTH = 3.986004418e14
 J2_MOON = 2.03e-4

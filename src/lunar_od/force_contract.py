@@ -25,10 +25,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Mapping
+
+from .lunar_j2_model import active_lunar_j2_model, check_lunar_j2_model
 
 __all__ = [
     "FORCE_CONTRACT_SCHEMA_VERSION",
@@ -123,6 +125,8 @@ class OrientationPolicy(str, Enum):
     NOT_APPLICABLE = "not_applicable"
     # Constant IAU 2006 lunar mean pole (RA0 269.9949 deg, Dec0 66.5392 deg).
     CONSTANT_IAU2006_MOON_MEAN_POLE = "constant_iau2006_moon_mean_pole"
+    # MOON_PA_DE440 figure axis at the exact epoch (X-02, default since 2026-11-02).
+    EXACT_EPOCH_MOON_PA_DE440_POLE = "exact_epoch_moon_pa_de440_pole"
     # Identity J2000 -> Earth body-fixed: experimental direct-trajectory
     # approximation only; NOT an IERS-compliant Earth orientation.
     EXPERIMENTAL_IDENTITY_J2000_TO_EARTH_BODY_FIXED = (
@@ -469,6 +473,12 @@ def consumer_capabilities_for(
     return capability_map({role: ConsumerReadiness.VERIFIED for role in ConsumerRole})
 
 
+_LUNAR_J2_ORIENTATION = {
+    "grail_pa_de440": OrientationPolicy.EXACT_EPOCH_MOON_PA_DE440_POLE,
+    "iau_mean_pole_legacy": OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE,
+}
+
+
 @dataclass(frozen=True)
 class ForceExecutionSpec:
     """Single source of one executed force model: runtime args AND contract.
@@ -496,6 +506,14 @@ class ForceExecutionSpec:
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris"
     solar_radiation_pressure: SolarRadiationPressureForceContract | None = None
     ephemeris_execution: EphemerisExecutionContract | None = None
+    #: Lunar J2 model executed (``lunar_j2_model.LUNAR_J2_MODELS``). Defaults to
+    #: the model active when the spec is built, which is the one an omitted
+    #: propagator argument resolves to; the reference radius above must be
+    #: that model's pair.
+    lunar_j2_model: str = field(default_factory=active_lunar_j2_model)
+
+    def __post_init__(self):
+        check_lunar_j2_model(self.lunar_j2_model)
 
     @property
     def lunar_j2_on(self) -> bool:
@@ -556,7 +574,7 @@ class ForceExecutionSpec:
                     float(self.lunar_j2_reference_radius_m) if lunar_j2_on else 0.0
                 ),
                 orientation_policy=(
-                    OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE
+                    _LUNAR_J2_ORIENTATION[self.lunar_j2_model]
                     if lunar_j2_on
                     else OrientationPolicy.NOT_APPLICABLE
                 ),

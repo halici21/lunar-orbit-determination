@@ -962,10 +962,17 @@ def _force_contract(j2_moon: float):
 
 
 def test_r0b_fingerprints_schema_and_r1_readiness_are_frozen():
+    from lunar_od.constants import J2_MOON_GRAIL_UNNORMALIZED
+    from lunar_od.lunar_j2_model import use_lunar_j2_model
+
     zero = _force_contract(0.0)
-    lunar_j2 = _force_contract(float(J2_MOON_UNNORMALIZED))
+    # F1 X-02: the R0B identity is the legacy mean-pole model, recomputed under it.
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        legacy = _force_contract(float(J2_MOON_UNNORMALIZED))
+    lunar_j2 = _force_contract(float(J2_MOON_GRAIL_UNNORMALIZED))
     assert zero.force_model_fingerprint() == campaign.FROZEN_ZERO_J2_FINGERPRINT
-    assert lunar_j2.force_model_fingerprint() == campaign.FROZEN_LUNAR_J2_FINGERPRINT
+    assert legacy.force_model_fingerprint() == campaign.FROZEN_LUNAR_J2_FINGERPRINT
+    assert lunar_j2.force_model_fingerprint() == campaign.FROZEN_LUNAR_J2_GRAIL_PA_FINGERPRINT
     assert FORCE_CONTRACT_SCHEMA_VERSION == "r0b.force-model-contract.v1"
     payload = lunar_j2.to_canonical_payload()
     assert payload["consumer_capabilities"]["posterior_covariance"] == "verified"

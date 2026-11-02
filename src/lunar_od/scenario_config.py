@@ -19,8 +19,8 @@ from .constants import (
     MU_MOON_M3S2,
     MU_SUN_M3S2,
     R_EARTH_J2_REF_M,
-    R_MOON_M,
 )
+from .lunar_j2_model import LUNAR_J2_REFERENCE_RADIUS_M, active_lunar_j2_model
 from .force_contract import (
     ConsumerRole,
     ForceContractError,
@@ -855,7 +855,10 @@ def force_execution_spec_from_scenario_config(
         enable_earth_j2=bool(config.enable_earth_j2),
         earth_j2_mode=str(config.earth_j2_mode),
         lunar_harmonics=_lunar_harmonics_force_contract(config),
-        lunar_j2_reference_radius_m=float(R_MOON_M),
+        # X-02: the active lunar J2 model (default MOON_PA_DE440 pole with the
+        # GRGM1200A pair) and that model's reference radius.
+        lunar_j2_reference_radius_m=float(LUNAR_J2_REFERENCE_RADIUS_M[active_lunar_j2_model()]),
+        lunar_j2_model=active_lunar_j2_model(),
         earth_j2_coefficient=float(J2_EARTH_UNNORMALIZED),
         earth_j2_reference_radius_m=float(R_EARTH_J2_REF_M),
         force_ephemeris_policy=str(force_ephemeris_policy),
