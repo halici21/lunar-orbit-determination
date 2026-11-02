@@ -27,6 +27,7 @@ from .dmc import DMC_SIZE, DMCOptions, propagate_dmc_state
 from .estimators import (
     EstimatorStats,
     _LMDamping,
+    _gauss_markov_whitening,
     _lm_step,
     _lm_step_square_root,
     _predicted_decrease,
@@ -67,6 +68,7 @@ def estimate_position_dmc_batch(
     srp=None,
     return_posterior: bool = False,
     damping_schedule: str = "fixed",
+    measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Position-only batch fit of ``[r0, v0, w0]`` with a Gauss-Markov empirical acceleration.
 
@@ -74,7 +76,8 @@ def estimate_position_dmc_batch(
     mean of ``r0, v0`` is the guess itself when ``state_prior_covariance`` (6x6) is given,
     otherwise ``r0, v0`` are data-only).  Returns ``(x_best, status, stats)`` like
     :func:`estimate_position_bls_lm`; ``stats.posterior_covariance`` is 9x9.
-    ``damping_schedule`` as in :func:`estimate_position_bls_lm` (WP4.2b).
+    ``damping_schedule`` and ``measurement_correlation_time_s`` as in
+    :func:`estimate_position_bls_lm` (WP4.2b, WP4.5b).
     """
     if method not in _SOLVERS:
         raise ValueError(f"method must be one of {tuple(_SOLVERS)}, got {method!r}.")
@@ -105,6 +108,10 @@ def estimate_position_dmc_batch(
     scale = np.diag(np.concatenate([np.full(3, 1e3), np.ones(3), sigma_w]))
     prior_inv_scaled = scale.T @ prior_inv @ scale
     w_diag = _position_weight_diagonal(obs_data, pass_geo)
+    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, 3)
+    if whitening is not None:
+        w_diag = np.ones_like(w_diag)          # the whitened rows carry unit weight
+    white = (lambda v: v) if whitening is None else whitening
     solve = _SOLVERS[method]
 
     def propagate(x, stm):
@@ -114,7 +121,7 @@ def estimate_position_dmc_batch(
 
     def residual_of(hist):
         _, h_nom, h_tilde = compute_position_residuals_analytic(hist[:, :6], obs_data, pass_geo)
-        return _position_residual_from_h(obs_data, h_nom), h_tilde
+        return white(_position_residual_from_h(obs_data, h_nom)), h_tilde
 
     def linearize(x):
         hist = propagate(x, True)
@@ -123,7 +130,7 @@ def estimate_position_dmc_batch(
         for k in range(obs_data.shape[0]):
             phi = hist[int(obs_data[k, 5]) - 1, N_STATE:].reshape(N_STATE, N_STATE, order="F")
             h[3 * k:3 * k + 3] = h_tilde[3 * k:3 * k + 3] @ phi[:6, :]
-        return h, residual
+        return white(h), residual
 
     def cost_of(x, residual):
         return _weighted_map_cost(residual, w_diag, x, x_prior, prior_sqrt)

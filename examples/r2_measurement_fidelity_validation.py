@@ -580,6 +580,21 @@ F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F4 WP4.5b (owner-authorized re-freeze for the independent-assessment programme;
+# EST-15).  Opt-in measurement_correlation_time_s for position/range-rate BLS-LM:
+# residuals and design are Prais-Winsten whitened per station and component
+# (_gauss_markov_whitening), the whitened rows carry unit weight and the posterior
+# comes from the whitened design.  Unset, the estimators are unchanged.
+#
+#   old (WP4.2b)          c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936
+#   new (WP4.5b)          ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/estimators.py":
+        "ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6",
+}
+
+
 
 
 
@@ -596,6 +611,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256:
+        return F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_8C_REFROZEN_CURRENT_TREE_SHA256:

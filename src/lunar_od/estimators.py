@@ -24,6 +24,7 @@ from .dynamics import (
     propagate_state_with_k_sensitivity,
 )
 from .geometry import wrap_to_pi
+from .noise_models import _gauss_markov_links
 from .measurements import (
     PassGeometry,
     compute_position_residuals_analytic,
@@ -619,11 +620,15 @@ def estimate_position_bls_lm(
     srp=None,
     propagation_profile=None,
     damping_schedule: str = "fixed",
+    measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Position-only batch least-squares with Levenberg-Marquardt damping.
 
     ``damping_schedule``: ``"fixed"`` (historical) or ``"nielsen"`` (gain-ratio
     lambda and More damping matrix, WP4.2b); see ``LM_DAMPING_SCHEDULES``.
+    ``measurement_correlation_time_s`` (WP4.5b): each residual component of each
+    station is weighted as Gauss-Markov noise with this time constant (Prais-Winsten
+    whitening, :func:`_gauss_markov_whitening`); ``None`` keeps white weighting.
     """
     propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
@@ -645,6 +650,9 @@ def estimate_position_bls_lm(
         prior_sqrt_information,
     )
     w_diag = _position_weight_diagonal(obs_data, pass_geo)
+    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, 3)
+    if whitening is not None:
+        w_diag = np.ones_like(w_diag)          # the whitened rows carry unit weight
 
     x_best = x_nominal.copy()
     best_cost = np.inf
@@ -684,7 +692,7 @@ def estimate_position_bls_lm(
             h_initial = np.hstack([h_initial_state, _position_bias_jacobian(obs_data, bias_cfg)])
         else:
             h_initial = h_initial_state
-        return h_initial, residual
+        return _whiten(whitening, h_initial), _whiten(whitening, residual)
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
@@ -734,7 +742,7 @@ def estimate_position_bls_lm(
         )
         _, h_candidate, _ = compute_position_residuals_analytic(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
-        residual_candidate = _position_residual_from_h(obs_data, h_candidate_aug)
+        residual_candidate = _whiten(whitening, _position_residual_from_h(obs_data, h_candidate_aug))
         candidate_cost = _weighted_map_cost(residual_candidate, w_diag, x_candidate, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
 
@@ -788,6 +796,9 @@ def estimate_position_bls_lm(
             return_design=True,
             **model_options(srp, propagation_profile),
         )
+        if whitening is not None:
+            posterior_design = whitening(posterior_design)
+            posterior_information = _symmetrize(posterior_design.T @ posterior_design + post_prior_inv)
         # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
         # information eigenvalues at max*1e-14 in physical units.
         posterior_covariance, _ = _square_root_covariance_from_design(
@@ -836,10 +847,13 @@ def estimate_range_rate_bls_lm(
     srp=None,
     propagation_profile=None,
     damping_schedule: str = "fixed",
+    measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Range-rate batch least-squares with LM damping and optional outlier rejection.
 
-    ``damping_schedule`` as in :func:`estimate_position_bls_lm` (WP4.2b).
+    ``damping_schedule`` and ``measurement_correlation_time_s`` as in
+    :func:`estimate_position_bls_lm` (WP4.2b, WP4.5b); the latter excludes
+    ``robust_outlier_rejection``, whose sigma test is per component.
     """
     propagation_profile = resolve_profile(srp, propagation_profile)
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
@@ -861,6 +875,11 @@ def estimate_range_rate_bls_lm(
         prior_sqrt_information,
     )
     w_diag = _range_rate_weight_diagonal(obs_data, pass_geo)
+    if measurement_correlation_time_s is not None and robust_outlier_rejection:
+        raise ValueError("measurement_correlation_time_s cannot be combined with robust_outlier_rejection.")
+    whitening = _gauss_markov_whitening(obs_data, w_diag, measurement_correlation_time_s, 4)
+    if whitening is not None:
+        w_diag = np.ones_like(w_diag)          # the whitened rows carry unit weight
     w_curr_diag = w_diag.copy()
 
     x_best = x_nominal.copy()
@@ -911,7 +930,8 @@ def estimate_range_rate_bls_lm(
         )
         h_nom_aug = _apply_range_rate_bias(
             h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
-        return h_initial_state, _range_rate_residual_from_h(obs_data, h_nom_aug)
+        return (_whiten(whitening, h_initial_state),
+                _whiten(whitening, _range_rate_residual_from_h(obs_data, h_nom_aug)))
 
     for iteration in range(1, max_iter + 1):
         _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
@@ -934,7 +954,8 @@ def estimate_range_rate_bls_lm(
             x_best = x_nominal.copy()
 
         if nb:
-            h_initial = np.hstack([h_initial_state, _range_rate_bias_jacobian(obs_data, bias_cfg)])
+            h_initial = np.hstack([h_initial_state,
+                                   _whiten(whitening, _range_rate_bias_jacobian(obs_data, bias_cfg))])
         else:
             h_initial = h_initial_state
 
@@ -976,7 +997,7 @@ def estimate_range_rate_bls_lm(
         )
         _, h_candidate = compute_range_rate_residuals(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
-        residual_candidate = _range_rate_residual_from_h(obs_data, h_candidate_aug)
+        residual_candidate = _whiten(whitening, _range_rate_residual_from_h(obs_data, h_candidate_aug))
         candidate_cost = _weighted_map_cost(residual_candidate, w_curr_diag, x_candidate, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
 
@@ -1002,7 +1023,8 @@ def estimate_range_rate_bls_lm(
                 # Phase 17-HARDEN-D27: certify at the caller's tolerance.
                 if (_atol_r, _atol_a) != (rtol, atol):
                     h_initial_state, residual = _linearize(x_best, rtol, atol)
-                    h_initial = (np.hstack([h_initial_state, _range_rate_bias_jacobian(obs_data, bias_cfg)])
+                    h_initial = (np.hstack([h_initial_state,
+                                            _whiten(whitening, _range_rate_bias_jacobian(obs_data, bias_cfg))])
                                  if nb else h_initial_state)
                 stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
                     h_initial, residual, w_curr_diag, scale,
@@ -1034,6 +1056,9 @@ def estimate_range_rate_bls_lm(
             return_design=True,
             **model_options(srp, propagation_profile),
         )
+        if whitening is not None:
+            posterior_design = whitening(posterior_design)
+            posterior_information = _symmetrize(posterior_design.T @ posterior_design + post_prior_inv)
         # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
         # information eigenvalues at max*1e-14 in physical units.
         posterior_covariance, _ = _square_root_covariance_from_design(
@@ -1054,6 +1079,49 @@ def estimate_range_rate_bls_lm(
         gauss_newton_decrement=gn_decrement,
     )
     return x_best, stop_reason, stats
+
+
+def _gauss_markov_whitening(obs_data, w_diag, tau, components):
+    """WP4.5b (EST-15): O(n) Prais-Winsten whitening for Gauss-Markov measurement noise.
+
+    Each residual component of each station is a first-order Gauss-Markov process in
+    time with correlation exp(-dt / tau) and the station sigma as its stationary sigma
+    (before WP4.5b such noise could be generated, but every estimator weighted it as
+    white).  Returns a function for a residual vector or a design matrix in residual
+    order: rows divided by sigma, then each row minus rho times the previous row of the
+    same series, scaled by 1 / sqrt(1 - rho^2) -- :func:`gauss_markov_whitening_matrix`
+    applied without forming it, so |L r|^2 = r^T Sigma^-1 r and the whitened rows carry
+    unit weight.  ``None`` when ``tau`` is ``None``.
+    """
+    if tau is None:
+        return None
+    if not (np.isfinite(tau) and tau > 0.0):
+        raise ValueError("measurement_correlation_time_s must be finite and positive.")
+    obs = np.asarray(obs_data, dtype=float)
+    station_col = 4 if components == 3 else 5
+    times = np.repeat(obs[:, 0], components)
+    groups = (np.repeat(obs[:, station_col].astype(int), components) * components
+              + np.tile(np.arange(components), obs.shape[0]))
+    rho, prev = _gauss_markov_links(times, groups, tau)
+    rows = np.flatnonzero(prev >= 0)
+    link = prev[rows]
+    scale = 1.0 / np.sqrt(1.0 - rho[rows] ** 2)
+    coupling = rho[rows] * scale
+    inv_sigma = np.sqrt(np.asarray(w_diag, dtype=float))
+
+    def whiten(values):
+        v = np.asarray(values, dtype=float)
+        col = (slice(None),) + (None,) * (v.ndim - 1)
+        u = v * inv_sigma[col]
+        out = u.copy()
+        out[rows] = u[rows] * scale[col] - coupling[col] * u[link]
+        return out
+
+    return whiten
+
+
+def _whiten(whitening, values):
+    return values if whitening is None else whitening(values)
 
 
 def _weighted_map_cost(residual, weights, state, prior_mean, prior_sqrt_information=None):
