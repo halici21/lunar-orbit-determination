@@ -823,3 +823,78 @@ class R4FourEventDerivativeQualification(unittest.TestCase):
             self.assertLessEqual(later, earlier * 2.0)
         self.assertGreater(curve[0] / curve[-1], 1e3)
         self.assertLess(curve[-1], 1e-6)
+
+
+class CountedDopplerLongArcConvergence(unittest.TestCase):
+    """F1 WP1.4 (MEAS-03): the round-trip solver converges at any epoch.
+
+    The same local geometry is evaluated on grids starting at 0 s and at
+    3e5 s / 2.5e6 s. Before WP1.4 the convergence tests differenced absolute
+    epochs and stalled at ulp(t), so most of these calls raised
+    RoundTripLightTimeConvergenceError. Every call must now succeed and agree
+    with the zero-epoch reference to within binary64 representation:
+
+    * epochs: the receive epochs t_mid +/- Tc/2 and the transponder epoch t2
+      at each endpoint carry up to ulp(T)/2 each, together at most
+      2 * |v| * ulp(T) / Tc in the m/s-equivalent observable;
+    * light times: each of the four round-trip light times (two endpoints, two
+      observables) carries up to ~ulp(tau_rt), i.e. c * ulp(tau_rt) / (2 Tc)
+      per value. This term is epoch-independent and present at T = 0 as well.
+    """
+
+    START_EPOCHS_S = (3.0e5, 2.5e6)
+    SAMPLES = 1000
+    COUNT_INTERVAL_S = 60.0
+    SPEED_BOUND_MPS = 1700.0
+
+    def test_counted_doppler_converges_on_long_arcs(self):
+        local = np.arange(-600.0, 600.001, 10.0)
+        states = _radial_cubic_states(local, x0=3.844e8, v0=1600.0, a=-0.05, j=1.0e-4)
+        self.assertLess(float(np.max(np.abs(states[:, 3]))), self.SPEED_BOUND_MPS)
+        n = local.size
+        zeros = np.zeros((n, 3))
+        frames = _identity_frame(n)
+        cfg = RangeRatePhysicsConfig(
+            mode="two_way_counted_doppler",
+            count_interval_s=self.COUNT_INTERVAL_S,
+            station_state_method=LEGACY_INTERPOLATED_STATION_METHOD,
+        )
+        round_trip_s = 2.0 * float(np.max(states[:, 0])) / C_LIGHT
+        mids = np.random.default_rng(20261031).uniform(-400.0, 400.0, self.SAMPLES)
+        reference = np.array([
+            two_way_counted_doppler_observable(m, _Station(), local, states, zeros, zeros, frames, cfg)
+            for m in mids
+        ])
+        for start_s in self.START_EPOCHS_S:
+            with self.subTest(start_s=start_s):
+                observed = np.array([
+                    two_way_counted_doppler_observable(
+                        start_s + m, _Station(), start_s + local, states, zeros, zeros, frames, cfg
+                    )
+                    for m in mids
+                ])
+                epoch_term = 2.0 * self.SPEED_BOUND_MPS * np.spacing(start_s + 600.0) / self.COUNT_INTERVAL_S
+                light_time_term = 4.0 * C_LIGHT * np.spacing(round_trip_s) / (2.0 * self.COUNT_INTERVAL_S)
+                bound = epoch_term + light_time_term
+                self.assertLessEqual(float(np.max(np.abs(observed - reference))), bound)
+
+
+    def test_wp1_4_radiometrics_refreeze_is_additive(self):
+        """radiometrics.py moved only through the additive F1 WP1.4 identity;
+        the numerical-core record it supersedes is untouched."""
+        import hashlib
+        import sys
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        examples = str(root / "examples")
+        if examples not in sys.path:
+            sys.path.insert(0, examples)
+        import r2_measurement_fidelity_validation as r2
+
+        path = "lunar_od/radiometrics.py"
+        self.assertTrue(r2.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("aea6ad1c"))
+        new = r2.F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256[path]
+        self.assertEqual(r2.expected_current_tree_sha256(path), new)
+        actual = hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest()
+        self.assertEqual(actual, new)
