@@ -14,7 +14,7 @@ hashes remain byte-identical.
 The supplied P1 tips resolved exactly, except that the WIP hash in the prompt
 was a unique 39-character prefix of the actual 40-character object ending in
 `f7d`; this was not input drift.  A clean worktree was created from `main` at
-`C:\Users\erayh\Documents\Python\Grad\python_port_phase17_canonical`.
+`<workspace>\python_port_phase17_canonical`.
 `main` was not checked out or modified.
 
 ## History integration

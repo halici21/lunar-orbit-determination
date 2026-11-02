@@ -1,0 +1,547 @@
+{
+  "base_commit": "02fdc366d69fd327f58e03e0147d35347e168b4b",
+  "scope": {
+    "base_commit": "02fdc366d69fd327f58e03e0147d35347e168b4b",
+    "changed_methods": [
+      "_OrbitDesigner._animate_preview"
+    ],
+    "entire_controller_matches_after_removing_three_guard_lines": true,
+    "protected_source_hashes": {
+      "_network": "7e7d5d23050ec835958aa538be3eace83e43e702738eeb7b0dc42177c363896c",
+      "_dominant_color": "ac83c658fff4a96d6f6f1b1edaadbe14d6b4ec2bf7db8b95e22c291fa3fb78f8",
+      "_visible_station_names": "df7d52b95a88782ff2dde7bd8fa75e073bcf36406dd71eb37f459a3841afb4fd",
+      "_TrackWorker": "3a8d39b420beb7abe5bd3dc51bd99e77488ef5cac8c2d13e76cdcda0ef0b4e71",
+      "_draw_moon_bg": "2c3f180cbc39e478a433b75d2b3d753a6836a3b600eebdbee3dd67b31af4034f",
+      "_pass_boundaries": "c9a229189385a6803baed6d1bc89f0c69e107cba1f6ae0af36e95bdcdf829709",
+      "_ground_track_runs": "624ecf7477f95619e4c51a709c7d44e64e716bb515efbd0f67f8820f8f159706",
+      "_build_static_figure": "e184a5c93fe08c3da71afeb8b6229eba1188e020252eee871a0440e0ae15b7d7",
+      "_net_label": "3808bf3e506b6c7b1c947216e2b91625c2cd2775049a2f8214a985c27594bdc2",
+      "_solve_kepler": "7c82f600847563a6154d5eaba8349f329326d64b52614b5ded585a3dc1062430",
+      "_keplerian_ground_track": "e08dff3555a20bd4812bb02503f7ef1a61ad8488385e5075815582d685c49aa9",
+      "_draw_orbit_preview": "de79c4550865740182ba4d2e9ec21ad07d88367cecdaafe2dc5c2d102324a493",
+      "_orbit_basis": "5413e96c2ee36c4eea9696ebec0a6abc5da17905502615b9722bba7dd4902014",
+      "_keplerian_orbit_xyz": "8a46cc346da0bfb39b9eff7bd6d8cc85297a52af774541f82655538cf05f4606",
+      "_orbit_metrics": "2e86d66fcb3a25cb5bb53592eb30fe0f9b06f0a94a60ac2e67d89e0cfcdca44c",
+      "_orbit_axis_limit": "6c7131d035243fd3d55add6d04979f6475e6a38cd5891077177d7f08b6838af5",
+      "_draw_moon_sphere": "0aadde5619122053b07f9f7a6692b3a8a8db3114a799c32e18fe819fa112cb7d",
+      "_configure_orbit_axis": "72b0dbbc10b32a1da6eb85d431d11fab5f423e96838b1e69ce7d530bceaf00fd",
+      "_CurrentTabWidget.minimumSizeHint": "d2a097d4c9ed8e4f35169d6596e98ccfffcff7af07830b0c885415af89d0c7b6",
+      "_CurrentTabWidget.sizeHint": "ac2414afd83df34ded9e4f1744d14bde4cc94901c883ee278789a69d2fd5e6f3",
+      "_OrbitDesigner.__init__": "fc125f635aad141f2418e2d3cb47f75d5404cff1cf450dc1add20d8831e0f49d",
+      "_OrbitDesigner._build": "a7b180e0584ed1b941261eb49e2869ed4e4b49a330b494b98f05b4cc7bf6c6f2",
+      "_OrbitDesigner._adapt_layout": "3d563b56392622e869085277526543334164d9ca6581767b62edcb4b09d07941",
+      "_OrbitDesigner.minimumSizeHint": "ee61c755f0de94bba805b7e8a1c7adc9b9299776896e7f96b2f1aefe0f7c391b",
+      "_OrbitDesigner._get_elements": "76e6e66797fe9689812c7435aede90dc9e70cb7ed413c23beeed22585cd6245d",
+      "_OrbitDesigner._update_preview": "7e504496f2f12f7a100395d09088da14a55cb4dc84ceaf1fa2b79f582645b2e7",
+      "_OrbitDesigner._init_preview_canvas": "7bb5e7570a849490c48aeca96d1b5206dc5249f2fd655e49e3c42deca19487f9",
+      "_OrbitDesigner._redraw_preview": "92399b06420f9014f3e4621cc82e0c119d35904d7b23b688e9baec07bae935e4",
+      "_OrbitDesigner._set_preview_target": "55d3e97537e039fe2aff1de36e7597ca3bad53236ada8e6874eec8d1dd4c5d55",
+      "_OrbitDesigner.showEvent": "0368e55f0dab074986fe96d8924603c708d4ebf468625e65aba5829174b4e6ef",
+      "_OrbitDesigner.hideEvent": "52753bed338228a05036755429880b480eb7e40b9b87781f9b21874dd866b547",
+      "_OrbitDesigner._generate_track": "137fdf4f3eb6e2f7f501eb51a8a982e2ccc86be8984c1eac4eab12ba3a4e6f09",
+      "GroundTrackController.__init__": "72b18969619f2645bbf7f49ef2777c037d732f180d31c2291ccfe5a709b291cf",
+      "GroundTrackController.resizeEvent": "3fee49d490f2c33eec0639979708d3c5aef5d3ef77b0f66adfe0cd0129335299",
+      "GroundTrackController._adapt_layout": "525677809ffd362ffb350183b26a3d186a44f29a7115131fbad7e84c5d0b6752",
+      "GroundTrackController.minimumSizeHint": "ee61c755f0de94bba805b7e8a1c7adc9b9299776896e7f96b2f1aefe0f7c391b",
+      "GroundTrackController._setup": "85d91d47f8f8f73c5dc5c0b2700ba54a7609ddec34be671faafda2c206e3c298",
+      "GroundTrackController.eventFilter": "b363d776e13a9f4c21c7c8829ad633fedc4ad664f26ba2b41bb91694377290c3",
+      "GroundTrackController._reveal_keyboard_focus": "65dd426e7a9254d444560e4b843fba6bfd801c8506793fe1d969618af2248194",
+      "GroundTrackController._build_model_notes": "044a9102e9adfc62e0ebad0d04acc0bc3eae1f46088ff5cefc94bb90764024dc",
+      "GroundTrackController._input_snapshot": "7136dad480c37898b2da0beb963670eb6b6d2ec6d9a07c59d3797e4a46f65185",
+      "GroundTrackController._set_busy": "1e7e378b8b101d245582b0ae01a62d31a6b316233d60df1d8319cc1e74b55aae",
+      "GroundTrackController._inputs_changed": "f6620ae91e10a382a749602bb04b20734bcfe543e3eb485577d91d723b561b99",
+      "GroundTrackController._refresh_result_context": "b8dfb89649b7396f55db83a841e1ce041dd06c397191374826fafc3fcd178cc6",
+      "GroundTrackController._build_log_panel": "05486fc8bbf663f4045915d96037a4f952ee44e15350b37ba87926217225108f",
+      "GroundTrackController._log": "543162988b4fd6da4ed92424589671d2f210f8ba76e3e519f5659ac20e490a35",
+      "GroundTrackController._build_export_buttons": "431069f1af3b679f4d0583b1db433b508fea6b667615dddc5baca5f6987c4fa7",
+      "GroundTrackController.on_shown": "772ab4b6696fc5a0dda9f8de208da39ca23e939abea8b36cab19d2550012e89a",
+      "GroundTrackController._sync_duration_from_settings": "0de8dff33e606c9e715631282ec0ad2d50876f819385533efa0a6cf7bafdffe4",
+      "GroundTrackController._build_checkboxes": "97ca981e2bc576c45a6aacb5867f7897cbf98da955f50112277df6223048296f",
+      "GroundTrackController._select_all": "ac8c4524681d3489bcb6b7fd7386005efe7a6480f22d02e49c6e8e1ff59a5ead",
+      "GroundTrackController._deselect_all": "7a1c0f4d9f9c3d0f565d765c571c68856e3552c2ef33f3e4d2ef4d4a654fb069",
+      "GroundTrackController._compute": "6defdc21e6ab389856b8a08f1c03a0ee7de68ad7a32d888a0ee19f0a8abc34fc",
+      "GroundTrackController._on_progress": "2df0911709a27809ea3db1883e4cdf60ed1fb8cf3561c7c6d78be4d0dcda59cf",
+      "GroundTrackController._on_data": "daeac11a37564f655062445dd6b78d9345882665d8bccce211953d99c578d1e7",
+      "GroundTrackController._install_result": "48711ab9e6f1a20b8cd1f65ce227c8d3e2ce81ead012f78ca739734b46ebc31e",
+      "GroundTrackController._on_fail": "95b44169e18e9e5967eaedeb9f2d586d8ba4e65da7dc8825df0ee5f53f6a7ba5",
+      "GroundTrackController._pause_playback": "caad5864924489605b71e7015800894f60689f363716e17792ec7cd4f88b79b4",
+      "GroundTrackController.hideEvent": "325b405a87c074a15219472f2db37ad2c184d1a1ac60b33fdcced2d78a759837",
+      "GroundTrackController.shutdown": "4bd6317be8a69ada1f3df49ee20fe0b342a991f2a3e372e6910c7f225979287c",
+      "GroundTrackController._on_tab_changed": "485ed370d1f0799aba55171c05d9a55c99da1ff32e8e7f4f7512460bd6c4c3bd",
+      "GroundTrackController._play_pause": "97684cc7c190a8c9eb243275472489f34031057daddd5251a30c5ecefe8e4ca5",
+      "GroundTrackController._reset_anim": "b150257feac58ad4a3135f83b4323a085fcafacd7148074c0624f79b907cf702",
+      "GroundTrackController._anim_step": "756fd414cf64d0e09e6fe9892d954e4ea351bd23df13cd9670e552e827425e5b",
+      "GroundTrackController._set_canvas": "40c4cfe7c2b5398805f7f63c8065c4011789f22b121c98c34ed9b5fc191ec0dc",
+      "GroundTrackController._init_placeholder": "b80829dc00102eb03775eee19a7a0147a2593ef489c1e389ff1e6b6f8910774d",
+      "GroundTrackController._set_status": "425a4cf61a3ab2370bce5a63400678b628dd0f4ee89a4b93e5c5dd9fb73a4917",
+      "GroundTrackController._export_png": "4a05c61c7697655ad5e8adbadad849054ef0ee7ed9a14bc29fbbdaa149ef69f8",
+      "GroundTrackController._export_csv": "ee0b90f9786bbcefe4b45fcca35416e5f46b34bed500c86a2b92f71a1dc1aa55",
+      "GroundTrackController._add_orbit_designer_tab": "569d1b498100d5cf515a2b8b28df8a13177fd322b1d1c5da5419c8251f1e4a6f",
+      "GroundTrackController._show_keplerian_track": "ce918f23049ab222120c75fce40607fe2104155b10614959efa57003f6d14ec8",
+      "_show_error_dialog": "72323b0fc7aac146965082c1985f274b22d51a5dce7b48563ff33e2cc1a9867f"
+    },
+    "protected_segments": 72,
+    "controller_sha256": "3f56ec5d292550722cec17048edc008265b92e531f566f1a3c9701aca21ae9b0"
+  },
+  "local_checks": {
+    "targeted": {
+      "tests": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "named_cases": 67,
+      "duration_s": 70.684,
+      "sha256": "32dcac7cd32b290bf419075cd7bb55ba4e8b7abe270b1f3ba8102295859a3e20"
+    },
+    "public": {
+      "tests": 389,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "named_cases": 389,
+      "duration_s": 128.519,
+      "sha256": "8d24b0ae57f85457058096d89b6f7ea21a6eccf85d1ecfa27a8e73e4fd794660"
+    },
+    "full": {
+      "tests": 2055,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 29,
+      "named_cases": 1909,
+      "duration_s": 1941.063,
+      "sha256": "0fcb15372bffc83d16b5c9531af16a8cd4f66b7eeb1bb7676a5b68ca1b047aad"
+    }
+  },
+  "gates": [
+    {
+      "name": "public",
+      "returncode": 0,
+      "started": "2026-10-22T21:47:09.444289+00:00",
+      "duration_s": 131.267011
+    },
+    {
+      "name": "full",
+      "returncode": 0,
+      "started": "2026-10-23T10:23:03.543779+00:00",
+      "duration_s": 1966.92038
+    },
+    {
+      "name": "dependencies",
+      "returncode": 0,
+      "started": "2026-10-23T10:55:50.465106+00:00",
+      "duration_s": 3.080941
+    },
+    {
+      "name": "repository",
+      "returncode": 0,
+      "started": "2026-10-23T10:55:53.546843+00:00",
+      "duration_s": 8.869851
+    },
+    {
+      "name": "whitespace",
+      "returncode": 0,
+      "started": "2026-10-23T10:56:02.417574+00:00",
+      "duration_s": 0.102433
+    }
+  ],
+  "native_before_after": [
+    {
+      "palette": "modern",
+      "window": [
+        1480,
+        1000
+      ],
+      "position": "top",
+      "canvas_clipped": false,
+      "before_draws": 26,
+      "after_draws": 14,
+      "before_draw_fraction": 0.9313,
+      "after_draw_fraction": 0.9555,
+      "before_heartbeat": {
+        "n": 28,
+        "median_ms": 79.457,
+        "p95_ms": 105.322
+      },
+      "after_heartbeat": {
+        "n": 16,
+        "median_ms": 116.002,
+        "p95_ms": 408.836
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "modern",
+      "window": [
+        910,
+        465
+      ],
+      "position": "top",
+      "canvas_clipped": true,
+      "before_draws": 28,
+      "after_draws": 0,
+      "before_draw_fraction": 0.8708,
+      "after_draw_fraction": 0.0,
+      "before_heartbeat": {
+        "n": 49,
+        "median_ms": 68.794,
+        "p95_ms": 79.026
+      },
+      "after_heartbeat": {
+        "n": 109,
+        "median_ms": 15.828,
+        "p95_ms": 31.308
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "modern",
+      "window": [
+        910,
+        465
+      ],
+      "position": "bottom",
+      "canvas_clipped": false,
+      "before_draws": 28,
+      "after_draws": 19,
+      "before_draw_fraction": 0.9038,
+      "after_draw_fraction": 0.9612,
+      "before_heartbeat": {
+        "n": 41,
+        "median_ms": 69.357,
+        "p95_ms": 85.038
+      },
+      "after_heartbeat": {
+        "n": 21,
+        "median_ms": 110.47,
+        "p95_ms": 130.585
+      },
+      "fixed_camera_changed_pixels": 43683
+    },
+    {
+      "palette": "modern",
+      "window": [
+        760,
+        420
+      ],
+      "position": "top",
+      "canvas_clipped": true,
+      "before_draws": 27,
+      "after_draws": 0,
+      "before_draw_fraction": 0.8987,
+      "after_draw_fraction": 0.0,
+      "before_heartbeat": {
+        "n": 41,
+        "median_ms": 68.747,
+        "p95_ms": 88.308
+      },
+      "after_heartbeat": {
+        "n": 110,
+        "median_ms": 15.722,
+        "p95_ms": 31.088
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "modern",
+      "window": [
+        760,
+        420
+      ],
+      "position": "bottom",
+      "canvas_clipped": false,
+      "before_draws": 26,
+      "after_draws": 22,
+      "before_draw_fraction": 0.9412,
+      "after_draw_fraction": 0.9639,
+      "before_heartbeat": {
+        "n": 32,
+        "median_ms": 72.413,
+        "p95_ms": 93.691
+      },
+      "after_heartbeat": {
+        "n": 24,
+        "median_ms": 87.35,
+        "p95_ms": 126.399
+      },
+      "fixed_camera_changed_pixels": 36178
+    },
+    {
+      "palette": "modern",
+      "window": [
+        1480,
+        1000
+      ],
+      "position": "top",
+      "canvas_clipped": false,
+      "before_draws": 26,
+      "after_draws": 17,
+      "before_draw_fraction": 0.9528,
+      "after_draw_fraction": 0.9557,
+      "before_heartbeat": {
+        "n": 28,
+        "median_ms": 78.583,
+        "p95_ms": 90.662
+      },
+      "after_heartbeat": {
+        "n": 19,
+        "median_ms": 126.299,
+        "p95_ms": 152.417
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "orchid",
+      "window": [
+        1480,
+        1000
+      ],
+      "position": "top",
+      "canvas_clipped": false,
+      "before_draws": 26,
+      "after_draws": 17,
+      "before_draw_fraction": 0.9235,
+      "after_draw_fraction": 0.9569,
+      "before_heartbeat": {
+        "n": 32,
+        "median_ms": 76.735,
+        "p95_ms": 109.641
+      },
+      "after_heartbeat": {
+        "n": 19,
+        "median_ms": 122.499,
+        "p95_ms": 191.106
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "orchid",
+      "window": [
+        910,
+        465
+      ],
+      "position": "top",
+      "canvas_clipped": true,
+      "before_draws": 27,
+      "after_draws": 0,
+      "before_draw_fraction": 0.8512,
+      "after_draw_fraction": 0.0,
+      "before_heartbeat": {
+        "n": 49,
+        "median_ms": 66.638,
+        "p95_ms": 78.308
+      },
+      "after_heartbeat": {
+        "n": 109,
+        "median_ms": 15.901,
+        "p95_ms": 31.208
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "orchid",
+      "window": [
+        910,
+        465
+      ],
+      "position": "bottom",
+      "canvas_clipped": false,
+      "before_draws": 28,
+      "after_draws": 19,
+      "before_draw_fraction": 0.8955,
+      "after_draw_fraction": 0.9608,
+      "before_heartbeat": {
+        "n": 42,
+        "median_ms": 69.668,
+        "p95_ms": 86.051
+      },
+      "after_heartbeat": {
+        "n": 21,
+        "median_ms": 112.746,
+        "p95_ms": 121.205
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "orchid",
+      "window": [
+        760,
+        420
+      ],
+      "position": "top",
+      "canvas_clipped": true,
+      "before_draws": 28,
+      "after_draws": 0,
+      "before_draw_fraction": 0.9056,
+      "after_draw_fraction": 0.0,
+      "before_heartbeat": {
+        "n": 40,
+        "median_ms": 70.595,
+        "p95_ms": 87.802
+      },
+      "after_heartbeat": {
+        "n": 109,
+        "median_ms": 15.615,
+        "p95_ms": 31.176
+      },
+      "fixed_camera_changed_pixels": 0
+    },
+    {
+      "palette": "orchid",
+      "window": [
+        760,
+        420
+      ],
+      "position": "bottom",
+      "canvas_clipped": false,
+      "before_draws": 28,
+      "after_draws": 19,
+      "before_draw_fraction": 0.8723,
+      "after_draw_fraction": 0.9615,
+      "before_heartbeat": {
+        "n": 49,
+        "median_ms": 67.846,
+        "p95_ms": 76.067
+      },
+      "after_heartbeat": {
+        "n": 21,
+        "median_ms": 111.689,
+        "p95_ms": 116.667
+      },
+      "fixed_camera_changed_pixels": 40348
+    },
+    {
+      "palette": "orchid",
+      "window": [
+        1480,
+        1000
+      ],
+      "position": "top",
+      "canvas_clipped": false,
+      "before_draws": 26,
+      "after_draws": 18,
+      "before_draw_fraction": 0.9465,
+      "after_draw_fraction": 0.9545,
+      "before_heartbeat": {
+        "n": 30,
+        "median_ms": 76.87,
+        "p95_ms": 98.392
+      },
+      "after_heartbeat": {
+        "n": 20,
+        "median_ms": 120.638,
+        "p95_ms": 133.97
+      },
+      "fixed_camera_changed_pixels": 0
+    }
+  ],
+  "visual_review": {
+    "palettes": [
+      "Modern",
+      "Orchid"
+    ],
+    "windows": [
+      [
+        1480,
+        1000
+      ],
+      [
+        910,
+        465
+      ],
+      [
+        760,
+        420
+      ]
+    ],
+    "deferred_deletions_delivered": true,
+    "reviewed": true,
+    "uniform_pixel_identity_not_claimed": true
+  },
+  "prior_reference_replay": {
+    "reference_commit": "3b2a746",
+    "analytical_csv_sha256": {
+      "modern": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      },
+      "orchid": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      }
+    },
+    "spice_source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+    "spice_samples": 361,
+    "native_state_cases": 18
+  },
+  "saved_solver_run": {
+    "run_id": "f9bead3db6734e05b69bdea9d1c61d27",
+    "states": 145,
+    "arc_solutions": 4,
+    "stations": 4,
+    "measurement_windows": 12,
+    "frame": "J2000",
+    "role": "truth",
+    "animation_before_t_s": 21600.0,
+    "animation_after_t_s": 25800.0,
+    "original_source_hashes_unchanged": true,
+    "small_window_controls_reachable": true,
+    "station_picker_selection": "Madrid DSN",
+    "narrow_plots_stacked": true,
+    "horizontal_scroll_maximum": 0,
+    "loaded_run_status": "Yüklü koşu · İşlem tamamlandı · 0/4 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok.",
+    "first_run_guidance_verified": true,
+    "loaded_messages_clear_initial_guidance": true,
+    "details_button_enabled": true,
+    "operational_success": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "legacy": {
+    "runs": [
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke_copy",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "archive_iteration_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "desktop_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_prescribed_ukf_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 1/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      },
+      {
+        "name": "native_workflow_smoke",
+        "status": "Yüklü koşu · İşlem tamamlandı · 0/1 yay kaydı başarılı\nYakınsama: kaynakta ayrı bir doğrulama alanı yok."
+      }
+    ],
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "limits": [
+    "Single Windows offscreen Qt/Fusion environment; short samples are not platform-wide speed guarantees.",
+    "Visible 3-D redraw remains expensive; this change only skips fully clipped camera frames.",
+    "Timer remains at 66 ms; it keeps polling visibility while clipped.",
+    "No modal painting, native high-DPI, portable release, or scientific accuracy qualification."
+  ],
+  "hosted_ci": "Required checks plus Release qualification before protected merge; exact merged-main checks and downloaded JUnit saved outside Git."
+}

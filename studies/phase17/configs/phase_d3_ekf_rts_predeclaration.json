@@ -1,0 +1,28 @@
+{
+ "phase": "Phase D3 - extended Kalman filter and Rauch-Tung-Striebel smoother beside the SR-UKF and BLS-LM",
+ "written": "2026-10-30, before any D3 comparison number was computed (only the unit tests of tests/test_ekf_smoother.py had run)",
+ "authorisation": "owner chose the smoother + EKF track on 2026-10-30 ('smoother + EKF ... basla'); no frozen file is edited: the EKF lives in the new module src/lunar_od/ekf.py",
+ "design": {
+  "ekf": "run_lunar_ekf in src/lunar_od/ekf.py. Same inputs as run_lunar_ukf. The measurement function, measurement noise, residual (angle wrapping), bias-state layout and process-noise coercion/discretisation are the UKF's own helpers from filters.py. Time update: mean by propagate_augmented_state, covariance Phi P Phi^T + Q (Q added after propagation, as in the UKF). Measurement Jacobian: central difference of the shared measurement function (steps 1 m, 1e-3 m/s, 1 for bias states). Joseph-form update.",
+  "smoother": "rts_smooth: fixed-interval RTS over the stored filtered/predicted states, covariances and STMs; gain C_k = P_k|k Phi^T (P_k+1|k)^-1 by a linear solve.",
+  "not_in_scope": "K_SRP solve-for, state freezing, adaptive Q/R, robust updates, iterated EKF, two-way range (the UKF does not support it either), scenario-config and desktop wiring"
+ },
+ "configuration": {
+  "arc": "synthetic, the SR-UKF test fixture extended to one hour: lunar orbit at 100 km altitude, Moon point mass only (mu_earth = mu_sun = 0), observation epochs every 60 s from 0 to 3600 s, three synthetic stations (lat/lon 0/0, 0/90, 45/-30), identity Earth-fixed frame, Earth at the Moon centre; truth by propagate_augmented_state at rtol 1e-12 / atol 1e-13",
+  "measurements": ["position (range 1 m, az/el 1e-5 rad)", "range_rate (range 1 m, range-rate 1e-4 m/s, az/el 1e-5 rad)"],
+  "noise": "zero-mean Gaussian at the station sigmas; one realisation per seed shared by all estimators",
+  "prior": "x_guess = truth(0) + N(0, P0), P0 = diag(sigma_r^2 I3, sigma_v^2 I3); the same x_guess and P0 for every estimator; BLS-LM gets P0 as prior_covariance",
+  "prior_scales": {"S20m": [20.0, 0.02], "S2km": [2000.0, 2.0], "S20km": [20000.0, 20.0]},
+  "seeds": "50 per (measurement, prior scale): numpy default_rng([20261030, measurement_index, scale_index, seed])",
+  "estimators": "EKF (final epoch), SR-UKF alpha 0.35 (final epoch), EKF+RTS (first epoch), BLS-LM with prior (first epoch, max_iter 60, return_posterior); all at rtol 1e-12 / atol 1e-13, process noise none"
+ },
+ "gates": {
+  "G1_linear_oracle": "tests/test_ekf_smoother.py: on a linear-Gaussian model the RTS smoother equals the stacked batch MAP solution (states <= 1e-8, covariances rtol 1e-8) with and without process noise, and the filter's last state equals the MAP last state",
+  "G2_invariance": "no existing source file changes; the full pytest suite has no new failure",
+  "G3_linear_regime_agreement": "S20m, both measurements, every seed: |x_EKF - x_UKF| <= 0.1 sigma_UKF per component at the final epoch, and |x_RTS - x_BLS| <= 0.1 sigma_BLS per component at the first epoch",
+  "G4_consistency": "S20m, both measurements: the mean NEES over 50 seeds of EKF, SR-UKF, EKF+RTS and BLS-LM each lies in [4.39, 7.61] (6 +- 3.29 sqrt(12/50), the 99.9% band of the mean of 50 chi-square(6))"
+ },
+ "reported_not_gated": "S2km and S20km: position and velocity RMS error, mean NEES, mean NIS, failures (exceptions, non-finite), per estimator; runtime per estimator; the expectation, not a gate, is that the single-pass EKF and RTS lose consistency first as the prior grows, the SR-UKF later, and the iterated BLS-LM not at all",
+ "decision_rule": "D3_QUALIFIED if G1-G4 all PASS; otherwise D3_NOT_QUALIFIED with each failure reported as computed",
+ "outputs": {"report": "studies/phase17/reports/phase_d3_ekf_rts_smoother.md", "results": "studies/phase17/results/phase_d3_ekf_rts_comparison.json", "script": "studies/phase17/scripts/phase_d3_ekf_rts_comparison.py"}
+}

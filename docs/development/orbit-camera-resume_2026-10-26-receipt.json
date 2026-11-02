@@ -1,0 +1,712 @@
+{
+  "base": "27ff6599c7ee6db1deeaba21c629f20d4f5a5e61",
+  "source_scope": {
+    "base": "27ff6599c7ee6db1deeaba21c629f20d4f5a5e61",
+    "source_file": "desktop_app/controllers/ground_track_controller.py",
+    "changed_methods": [
+      "_OrbitDesigner._build",
+      "_OrbitDesigner._animate_preview"
+    ],
+    "other_methods_unchanged": 78,
+    "science_source_diff": ""
+  },
+  "baseline_failure": {
+    "totals": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0
+    },
+    "named_cases": 2,
+    "sha256": "f4df43dec5f78e253d8f4e67709a45e3a37415c47a5a7b38f0237ff4cd90ea1a"
+  },
+  "tests": {
+    "targeted": {
+      "totals": {
+        "tests": 73,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 73
+      },
+      "named_cases": 73,
+      "sha256": "5b95678e9cdd615bcf70d95b41aff2c50f5286856fd4cf290abc3d4f7c3f7277"
+    },
+    "isolation": {
+      "totals": {
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 15
+      },
+      "named_cases": 15,
+      "sha256": "81286318b02389675b9d5102555391e9508327ce840f87585b1b26327177242b"
+    },
+    "public": {
+      "totals": {
+        "tests": 398,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 398
+      },
+      "named_cases": 398,
+      "sha256": "aee10b28d994e0e4b46f621fc788e7470cde1aad328d8cdb0f6a9fc03b3a4d7e"
+    },
+    "full": {
+      "totals": {
+        "tests": 2102,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 29,
+        "passed": 2073
+      },
+      "named_cases": 1956,
+      "sha256": "d6b3b3e1012e826425081f88ceb12dd18d3584edfade94ec1161eb91a51cbe8e"
+    }
+  },
+  "gates": [
+    {
+      "name": "public",
+      "returncode": 0,
+      "started": "2026-10-25T21:02:28.209950+00:00",
+      "duration_s": 189.463529
+    },
+    {
+      "name": "full",
+      "returncode": 0,
+      "started": "2026-10-25T21:05:37.674512+00:00",
+      "duration_s": 1023.874787
+    },
+    {
+      "name": "dependencies",
+      "returncode": 0,
+      "started": "2026-10-25T21:22:41.550145+00:00",
+      "duration_s": 1.668965
+    },
+    {
+      "name": "repository",
+      "returncode": 0,
+      "started": "2026-10-25T21:22:43.220053+00:00",
+      "duration_s": 6.44441
+    },
+    {
+      "name": "whitespace",
+      "returncode": 0,
+      "started": "2026-10-25T21:22:49.665402+00:00",
+      "duration_s": 0.098155
+    }
+  ],
+  "native_gates": [
+    {
+      "name": "gece-camera",
+      "returncode": 0
+    },
+    {
+      "name": "gece-native",
+      "returncode": 0
+    },
+    {
+      "name": "modern-camera",
+      "returncode": 0
+    },
+    {
+      "name": "modern-native",
+      "returncode": 0
+    },
+    {
+      "name": "orchid-camera",
+      "returncode": 0
+    },
+    {
+      "name": "orchid-native",
+      "returncode": 0
+    },
+    {
+      "name": "mission-review",
+      "returncode": 0
+    },
+    {
+      "name": "legacy",
+      "returncode": 0
+    }
+  ],
+  "camera_checks": {
+    "gece": {
+      "states": 4,
+      "paused_full_draws": [
+        0,
+        0
+      ],
+      "resume": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "old_pose": [
+            25,
+            2.4,
+            0
+          ],
+          "first_resumed_pose": [
+            13,
+            75.4,
+            17
+          ],
+          "wrap_pose": [
+            -11,
+            1.3999999999999773,
+            -8
+          ],
+          "actual_timer_keeps_elevation_and_roll": true,
+          "preview_image": "gece-resume-1480-preview.png",
+          "control_image": "gece-resume-1480-control.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "old_pose": [
+            25,
+            2.4,
+            0
+          ],
+          "first_resumed_pose": [
+            13,
+            75.4,
+            17
+          ],
+          "wrap_pose": [
+            -11,
+            1.3999999999999773,
+            -8
+          ],
+          "actual_timer_keeps_elevation_and_roll": true,
+          "preview_image": "gece-resume-760-preview.png",
+          "control_image": "gece-resume-760-control.png"
+        }
+      ],
+      "module_isolation_verified": true
+    },
+    "modern": {
+      "states": 4,
+      "paused_full_draws": [
+        0,
+        0
+      ],
+      "resume": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "old_pose": [
+            25,
+            2.4,
+            0
+          ],
+          "first_resumed_pose": [
+            13,
+            75.4,
+            17
+          ],
+          "wrap_pose": [
+            -11,
+            1.3999999999999773,
+            -8
+          ],
+          "actual_timer_keeps_elevation_and_roll": true,
+          "preview_image": "modern-resume-1480-preview.png",
+          "control_image": "modern-resume-1480-control.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "old_pose": [
+            25,
+            2.4,
+            0
+          ],
+          "first_resumed_pose": [
+            13,
+            75.4,
+            17
+          ],
+          "wrap_pose": [
+            -11,
+            1.3999999999999773,
+            -8
+          ],
+          "actual_timer_keeps_elevation_and_roll": true,
+          "preview_image": "modern-resume-760-preview.png",
+          "control_image": "modern-resume-760-control.png"
+        }
+      ],
+      "module_isolation_verified": true
+    },
+    "orchid": {
+      "states": 4,
+      "paused_full_draws": [
+        0,
+        0
+      ],
+      "resume": [
+        {
+          "window": [
+            1480,
+            1000
+          ],
+          "old_pose": [
+            25,
+            2.4,
+            0
+          ],
+          "first_resumed_pose": [
+            13,
+            75.4,
+            17
+          ],
+          "wrap_pose": [
+            -11,
+            1.3999999999999773,
+            -8
+          ],
+          "actual_timer_keeps_elevation_and_roll": true,
+          "preview_image": "orchid-resume-1480-preview.png",
+          "control_image": "orchid-resume-1480-control.png"
+        },
+        {
+          "window": [
+            760,
+            420
+          ],
+          "old_pose": [
+            25,
+            2.4,
+            0
+          ],
+          "first_resumed_pose": [
+            13,
+            75.4,
+            17
+          ],
+          "wrap_pose": [
+            -11,
+            1.3999999999999773,
+            -8
+          ],
+          "actual_timer_keeps_elevation_and_roll": true,
+          "preview_image": "orchid-resume-760-preview.png",
+          "control_image": "orchid-resume-760-control.png"
+        }
+      ],
+      "module_isolation_verified": true
+    }
+  },
+  "preview_checks": {
+    "gece": {
+      "cases": [
+        {
+          "state": "initial",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "initial",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "initial",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "rejected",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "rejected",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "rejected",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        }
+      ],
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      },
+      "rejected_orbit_retains_result": true,
+      "spice_source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "spice_samples": 361,
+      "spice_csv_identical": true,
+      "pending_spice_blocks_analytic_generation": true,
+      "analytic_source_and_visibility_preserved": true
+    },
+    "modern": {
+      "cases": [
+        {
+          "state": "initial",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "initial",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "initial",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "rejected",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "rejected",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "rejected",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        }
+      ],
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      },
+      "rejected_orbit_retains_result": true,
+      "spice_source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "spice_samples": 361,
+      "spice_csv_identical": true,
+      "pending_spice_blocks_analytic_generation": true,
+      "analytic_source_and_visibility_preserved": true
+    },
+    "orchid": {
+      "cases": [
+        {
+          "state": "initial",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "initial",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "initial",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "rejected",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "rejected",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "rejected",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            1480,
+            1000
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 799
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            910,
+            465
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        },
+        {
+          "state": "pending-spice",
+          "window": [
+            760,
+            420
+          ],
+          "labels_fit": true,
+          "controls_reachable": true,
+          "hscroll": 0,
+          "inner_scroll": 0,
+          "canvas_height": 437
+        }
+      ],
+      "analytical_csv_sha256": {
+        "0.0": "2f1cbdb371b6a070df16388efefb7a4dff459cf3950b4eb9b2abbe117244b285",
+        "0.05": "14fcb07b453faaa96f69b0412d7d9b2380e5f41690ec89765977baf6033d3ed6"
+      },
+      "rejected_orbit_retains_result": true,
+      "spice_source_sha256": "f9f0f1a605f71bc6cbd3eecad291e1310b69a1316afc8a1c53fd943f7483bb0a",
+      "spice_samples": 361,
+      "spice_csv_identical": true,
+      "pending_spice_blocks_analytic_generation": true,
+      "analytic_source_and_visibility_preserved": true
+    }
+  },
+  "recorded_output": {
+    "recorded_states": 145,
+    "stations": 4,
+    "measurement_sample_windows": 12,
+    "playback_before_s": 21600.0,
+    "playback_after_s": 25800.0,
+    "source_hashes_unchanged": true,
+    "shared_station_and_threshold_transfer": true
+  },
+  "legacy": {
+    "runs": 8,
+    "verified_source_files": 48,
+    "all_sources_unchanged": true
+  },
+  "limitations": [
+    "Qt/Fusion offscreen; public view_init sets inspection angles. Windows mouse gestures and high DPI are not qualified.",
+    "Recorded solver output uses synthetic observations, not spacecraft telemetry; 12 measurement-sample windows are not full visibility intervals.",
+    "No fresh SPICE propagation or long campaign. Historical numeric CSV references are compared byte-for-byte.",
+    "Hosted PR and exact merged-main CI evidence is kept outside Git after this commit."
+  ],
+  "selected_assets": [
+    {
+      "path": "assets/orbit-camera-resume-wide_2026-10-26.png",
+      "source": "modern-resume-1480-preview.png",
+      "sha256": "eb34b6b8442cd99e9969ff4c51509190ab90645e735f5803d59322be45899416"
+    },
+    {
+      "path": "assets/orbit-camera-resume-small_2026-10-26.png",
+      "source": "orchid-resume-760-control.png",
+      "sha256": "ded195d5937f3f8b1def8b912ca2a8de749d907334b7c4b129885462d1315fb9"
+    }
+  ]
+}

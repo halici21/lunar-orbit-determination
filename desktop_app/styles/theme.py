@@ -1,7 +1,11 @@
-"""Compatibility color tokens, fonts and matplotlib style for native pages.
+"""Colour tokens, fonts and matplotlib style for native pages.
 
 Import this module anywhere you need palette values:
-    from styles.theme import C, FONT, MPL_DARK, ACCENT, NET_COLORS
+    from styles.theme import C, FONT, MPL_DARK, NET_COLORS
+
+The values below are the Modern light palette. ``styles.appearance`` swaps
+in the palette chosen in Ayarlar before any page is built; widget looks are
+defined once in ``styles.workspace_light``.
 """
 from __future__ import annotations
 
@@ -12,56 +16,46 @@ from __future__ import annotations
 class C:
     """All palette colours in one namespace."""
 
-    # Background layers (darkest → lightest)
-    BG_DEEP    = "#080c18"   # main window / figure background
-    BG_SIDEBAR = "#080e1e"   # sidebar + footer
-    BG_PLOT    = "#0a1428"   # matplotlib axes background
-    BG_PANEL   = "#0f1932"   # panels, legend fill
-    BG_CARD    = "#101d37"   # metric card fill
-    BG_HOVER   = "#0d1a31"   # nav button hover
-    BG_ACTIVE  = "#162038"   # nav button active/pressed state
+    # Backgrounds
+    BG_DEEP    = "#FFFFFF"   # page and figure background
+    BG_SIDEBAR = "#F4F3EE"   # sidebar + footer
+    BG_PLOT    = "#FFFFFF"   # matplotlib axes background
+    BG_PANEL   = "#F4F3EE"   # panels, headers, legend fill
+    BG_CARD    = "#FFFFFF"
+    BG_HOVER   = "#EDEBE5"   # hover
+    BG_ACTIVE  = "#F3E4E1"   # selection / pressed
+    BG_FIELD   = "#FFFFFF"   # inputs, logs and other editable fields
+    LAND       = "#F4F3EE"   # land masses on station maps
+    DARK       = False       # True for the night palette (plots pick light-on-dark marks)
 
-    # Border / grid layers
-    BORDER_FAINT  = "#111e30"  # very faint grid lines
-    BORDER_POLAR  = "#172840"  # polar circle hint
-    BORDER_MAIN   = "#1a2842"  # default borders + grid
-    BORDER_CARD   = "#1d3150"  # metric card border
-    BORDER_TROPIC = "#1e3050"  # tropic dashed hint
-    BORDER_MID    = "#2a3d5a"  # legend edge, secondary borders
-    BORDER_EQUATOR = "#2a4060" # equator line
+    # Borders and grid lines
+    BORDER_FAINT  = "#ECEAE4"
+    BORDER_POLAR  = "#DAD8D0"
+    BORDER_MAIN   = "#DAD8D0"  # default borders + grid
+    BORDER_CARD   = "#DAD8D0"
+    BORDER_TROPIC = "#DAD8D0"
+    BORDER_MID    = "#B9B6AD"  # legend edge, secondary borders
+    BORDER_EQUATOR = "#B9B6AD"
 
-    # Nav accent (active sidebar left border)
-    NAV_ACTIVE = "#4facfe"
-    NAV_ACTIVE_FG = "#00d4ff"
+    # Accent (primary buttons, active sidebar item, focus)
+    NAV_ACTIVE = "#B83A2E"
+    NAV_ACTIVE_FG = "#B83A2E"
+    ON_ACCENT = "#FFFFFF"
 
     # Text
-    TEXT_MUTED    = "#8090aa"  # subtitles, labels, tick labels
-    TEXT_TICK     = "#4a5a7a"  # axis tick marks
-    TEXT_SECONDARY = "#c8d8e8" # secondary text, legend items
-    TEXT_PRIMARY  = "#e8edf5"  # headings, important text
+    TEXT_MUTED    = "#55524C"  # subtitles, captions, tick labels
+    TEXT_TICK     = "#55524C"
+    TEXT_SECONDARY = "#55524C"
+    TEXT_PRIMARY  = "#151515"
 
-    # Semantic accent colours
-    BLUE   = "#4facfe"   # info / DSN
-    CYAN   = "#00d4ff"   # highlight / ITU
-    GREEN  = "#43e97b"   # success / good precision
-    YELLOW = "#f6d365"   # warning / coarse precision
-    RED    = "#f5576c"   # error / fail
-    ORANGE = "#f97316"   # secondary warning
-    PURPLE = "#a78bfa"   # RUS network / misc
-
-
-# ---------------------------------------------------------------------------
-# Named accent palette  (used by MetricCard and anywhere a "colour name" is needed)
-# ---------------------------------------------------------------------------
-ACCENT: dict[str, str] = {
-    "blue":   C.BLUE,
-    "cyan":   C.CYAN,
-    "green":  C.GREEN,
-    "yellow": C.YELLOW,
-    "red":    C.RED,
-    "orange": C.ORANGE,
-    "purple": C.PURPLE,
-}
+    # Semantic colours (also the station network colours)
+    BLUE   = "#2C5A7A"   # DSN
+    CYAN   = "#046262"   # ISRO
+    GREEN  = "#38623D"   # success / KGS
+    YELLOW = "#805C10"   # warning / ESA
+    RED    = "#A32622"   # error / ITU
+    ORANGE = "#92531D"
+    PURPLE = "#784C98"   # RUS
 
 # ---------------------------------------------------------------------------
 # Ground-station network colours
@@ -90,7 +84,7 @@ class FONT:
 
 
 # ---------------------------------------------------------------------------
-# Matplotlib rc_context dict for all dark figures
+# Matplotlib rc_context dict for all figures (name kept for existing callers)
 # ---------------------------------------------------------------------------
 MPL_DARK: dict = {
     "figure.facecolor":  C.BG_DEEP,
@@ -113,6 +107,6 @@ MPL_DARK: dict = {
 # Convenience: bar chart series colours in order
 BAR_COLORS = [C.BLUE, C.GREEN, C.YELLOW, C.RED, C.PURPLE, C.ORANGE, C.CYAN]
 
-# Preserve legacy tokens while defaulting all new windows to Modern.
+# Apply the default palette through the same path a saved choice uses.
 from styles.appearance import apply_palette
-apply_palette("modern")
+apply_palette()

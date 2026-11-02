@@ -12,41 +12,17 @@
    <property name="rightMargin"><number>20</number></property>
    <property name="bottomMargin"><number>16</number></property>
    <item>
-    <widget class="QGroupBox" name="scriptGroup">
-     <property name="title"><string>Script Selection</string></property>
-     <layout class="QVBoxLayout" name="scriptGroupLayout">
+    <widget class="QGroupBox" name="jobGroup">
+     <property name="title"><string>Koşu</string></property>
+     <layout class="QVBoxLayout" name="jobGroupLayout">
       <property name="spacing"><number>10</number></property>
       <property name="leftMargin"><number>12</number></property>
       <property name="topMargin"><number>8</number></property>
       <property name="rightMargin"><number>12</number></property>
       <property name="bottomMargin"><number>12</number></property>
       <item>
-       <layout class="QHBoxLayout" name="scriptSelectRow">
-        <property name="spacing"><number>8</number></property>
-        <item>
-         <widget class="QComboBox" name="scriptCombo">
-          <property name="toolTip"><string>Choose which example script to run</string></property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="startBtn">
-          <property name="text"><string>Run</string></property>
-          <property name="minimumWidth"><number>100</number></property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="cancelBtn">
-          <property name="text"><string>Cancel</string></property>
-          <property name="enabled"><bool>false</bool></property>
-          <property name="minimumWidth"><number>90</number></property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QLabel" name="commandPreviewLabel">
-        <property name="text"><string></string></property>
-        <property name="styleSheet"><string>QLabel { color: #8090aa; font-family: Consolas; font-size: 11px; }</string></property>
+       <widget class="QLabel" name="jobLabel">
+        <property name="text"><string>Henüz koşu yok — Senaryo sayfasında "Koşuyu başlat"a basın.</string></property>
         <property name="wordWrap"><bool>true</bool></property>
        </widget>
       </item>
@@ -56,36 +32,40 @@
         <item>
          <widget class="QLabel" name="statusDot">
           <property name="text"><string>&#9679;</string></property>
-          <property name="styleSheet"><string>QLabel { color: #2a3d5a; font-size: 16px; }</string></property>
           <property name="maximumWidth"><number>20</number></property>
          </widget>
         </item>
         <item>
          <widget class="QLabel" name="statusLabel">
-          <property name="text"><string>Idle</string></property>
-          <property name="styleSheet"><string>QLabel { color: #8090aa; }</string></property>
+          <property name="text"><string>Hazır</string></property>
          </widget>
         </item>
         <item>
-         <spacer>
+         <widget class="QLabel" name="elapsedLabel">
+          <property name="text"><string></string></property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="statusSpacer">
           <property name="orientation"><enum>Qt::Horizontal</enum></property>
           <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="elapsedLabel">
-          <property name="text"><string></string></property>
-          <property name="styleSheet"><string>QLabel { color: #8090aa; font-family: Consolas; font-size: 12px; }</string></property>
+         <widget class="QPushButton" name="cancelBtn">
+          <property name="text"><string>İptal et</string></property>
+          <property name="enabled"><bool>false</bool></property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="clearLogBtn">
-          <property name="text"><string>Clear log</string></property>
+         <widget class="QPushButton" name="openConsoleBtn">
+          <property name="text"><string>Sonucu aç</string></property>
+          <property name="enabled"><bool>false</bool></property>
          </widget>
         </item>
         <item>
          <widget class="QPushButton" name="openOutputBtn">
-          <property name="text"><string>Open output folder</string></property>
+          <property name="text"><string>Çıktı klasörü</string></property>
           <property name="enabled"><bool>false</bool></property>
          </widget>
         </item>
@@ -101,12 +81,34 @@
         <property name="maximumHeight"><number>6</number></property>
        </widget>
       </item>
+      <item>
+       <layout class="QHBoxLayout" name="optionRow">
+        <item>
+         <widget class="QCheckBox" name="autoConsoleCheck">
+          <property name="text"><string>Bitince sonucu Sonuçlar sayfasında aç</string></property>
+          <property name="checked"><bool>true</bool></property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="optionSpacer">
+          <property name="orientation"><enum>Qt::Horizontal</enum></property>
+          <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="commandPreviewLabel">
+          <property name="text"><string></string></property>
+          <property name="wordWrap"><bool>true</bool></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
      </layout>
     </widget>
    </item>
    <item>
     <widget class="QGroupBox" name="consoleGroup">
-     <property name="title"><string>Output</string></property>
+     <property name="title"><string>Günlük</string></property>
      <layout class="QVBoxLayout" name="consoleGroupLayout">
       <property name="leftMargin"><number>4</number></property>
       <property name="topMargin"><number>8</number></property>
@@ -116,6 +118,21 @@
        <widget class="QWidget" name="consolePlaceholder">
         <property name="minimumHeight"><number>200</number></property>
        </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="logRow">
+        <item>
+         <spacer name="logSpacer">
+          <property name="orientation"><enum>Qt::Horizontal</enum></property>
+          <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="clearLogBtn">
+          <property name="text"><string>Günlüğü temizle</string></property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>

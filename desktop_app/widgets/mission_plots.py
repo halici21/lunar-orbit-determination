@@ -87,8 +87,8 @@ class StationWorldMap(QWidget):
         self._base.fill(QColor(C.BG_DEEP))
         p = QPainter(self._base)
         p.setRenderHint(QPainter.Antialiasing)
-        p.setPen(QPen(QColor(C.BORDER_MAIN), .7))
-        p.setBrush(QColor(C.BG_PANEL))
+        p.setPen(QPen(QColor(C.BORDER_MID), .7))
+        p.setBrush(QColor(C.LAND))
         for ring in self.rings:
             path = QPainterPath()
             for index, (lon, lat, *_) in enumerate(ring):
@@ -188,7 +188,7 @@ class MissionGantt(QWidget):
 
     def empty_message(self):
         if self.result is None:
-            return "Ölçüm çizelgesini görmek için bir koşu açın.\nKoşu aç ile arşivden seçim yapabilir veya Yeni senaryo ile başlayabilirsiniz."
+            return "Ölçüm çizelgesini görmek için bir koşu açın.\nArşivden bir koşu açın veya Senaryo sayfasından yeni bir koşu başlatın."
         if not self.geometry:
             return "Bu koşuda istasyon ölçüm zamanları kaydedilmemiş.\nGörünürlük hesabını açabilir veya yeni bir senaryo çalıştırabilirsiniz.\nEski yay başlangıç/sonları temas süresi olarak gösterilmez."
         return ""

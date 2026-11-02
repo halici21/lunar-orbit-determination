@@ -30,6 +30,9 @@ def draw_land(ax, *, land_color: str = _LAND_FACE,
         geo = json.loads(_GEOJSON.read_bytes())
         ax.set_facecolor(ocean_color)
 
+        # One compound path for all rings: a single artist adds and draws far
+        # faster than ~290 separate patches (first page open, every redraw).
+        vertices, codes = [], []
         for feature in geo["features"]:
             geom = feature["geometry"]
             gtype = geom["type"]
@@ -45,18 +48,15 @@ def draw_land(ax, *, land_color: str = _LAND_FACE,
                         continue
                     # GeoJSON rings are closed (last pt == first pt); n points, n codes
                     n = len(pts)
-                    codes = (
-                        [MPath.MOVETO]
-                        + [MPath.LINETO] * (n - 2)
-                        + [MPath.CLOSEPOLY]
-                    )
-                    patch = PathPatch(
-                        MPath(pts[:, :2], codes),
-                        facecolor=land_color,
-                        edgecolor=edge_color,
-                        linewidth=0.4,
-                        zorder=1,
-                    )
-                    ax.add_patch(patch)
+                    vertices.append(pts[:, :2])
+                    codes.extend([MPath.MOVETO] + [MPath.LINETO] * (n - 2) + [MPath.CLOSEPOLY])
+        if vertices:
+            ax.add_patch(PathPatch(
+                MPath(np.concatenate(vertices), codes),
+                facecolor=land_color,
+                edgecolor=edge_color,
+                linewidth=0.4,
+                zorder=1,
+            ))
     except Exception:
         ax.set_facecolor(ocean_color)

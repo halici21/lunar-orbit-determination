@@ -17,6 +17,7 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import phase_f2_lro_od as M  # noqa: E402
+M.use_historical_numerics()  # merge of main (G4e-R/TRF): keep the numerics of this phase's records
 import phase_f2j_g1_diagnostic as G  # noqa: E402
 
 OUT = HERE.parent / "results" / "phase_f2j_g1_propagation_jitter.json"

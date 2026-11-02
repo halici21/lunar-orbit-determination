@@ -13,6 +13,7 @@
 ```
 STATUS     C4I_NOT_QUALIFIED as computed: G5 FAIL (2 fixture-behaviour tests); G1 G2 G3 G4 G6 PASS
 PROPOSED   pin the two fixture tests to DE421 like the record tests (owner adjudication, s4)
+OUTCOME    adjudication ACCEPTED by the owner 2026-10-25 -> C4I_QUALIFIED; both modules pinned to DE421 (PR #55)
 DEFAULT    production planetary ephemeris is now DE440; DE421 selectable (ephemeris="DE421" or
            LUNAR_OD_PLANETARY_EPHEMERIS=DE421) and reproduces every pre-C4-I record bit for bit
 DEFERRED   the D2 PropagationProfile default flip (D2 adjudications open; 3-10x runtime; Phase E first)

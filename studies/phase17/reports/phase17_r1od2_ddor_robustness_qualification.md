@@ -151,7 +151,7 @@ Every statement is tagged. `D2_LITERATURE_CONTRACT_GATE = PASS`.
 | `START_BRANCH` | `feature/phase17-r-k-srp-estimation` |
 | `START_HEAD` / `START_TREE` | `a4304fc35a27b212fcab1eaf6f936e3d45fe56c2` / `b6f5d9ef114ede86f029e2ed081d48447a391639` |
 | `MAIN_HEAD` = `ORIGIN_MAIN_HEAD` | `fea476f81dad07b3914e53eab709e10fa6e9d10b` (unchanged) |
-| `ACTIVE_WORKTREE` | `C:/Users/erayh/Documents/Python/lunar-orbit-determination/python_port_phase17r0` |
+| `ACTIVE_WORKTREE` | `<workspace>/python_port_phase17r0` |
 | `WORKTREE_STATUS` | clean apart from the two untracked R1O-D orphan scripts, which were not run, modified or committed |
 
 `D2_INPUT_GATE = PASS`.

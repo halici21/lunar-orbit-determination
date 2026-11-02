@@ -18,6 +18,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lunar_od.propagation_contract import model_options, truth_numerical_metadata
+from lunar_od.scenario_config import force_runtime_kwargs
 
 from lunar_od import (  # noqa: E402
     VisibilityConfig,
@@ -40,7 +42,7 @@ from lunar_od import (  # noqa: E402
     write_scenario_summary_csv,
 )
 from lunar_od.force_contract import scenario_result_force_fields  # noqa: E402
-from lunar_od.reporting import write_force_model_manifest  # noqa: E402
+from lunar_od.reporting import write_force_model_manifest, write_numerical_profile_manifest  # noqa: E402
 from lunar_od.thesis_matrix import (  # noqa: E402
     THESIS_COLD_START_SIGMA_POS_M,
     THESIS_COLD_START_SIGMA_VEL_MPS,
@@ -159,18 +161,8 @@ def run_configured_scenario(
         estimator_spec=estimator_spec,
         context="run_configured_scenario Stage B force-model binding",
     )
-    _truth_runtime = {
-        "mu_moon_m3_s2": mu_moon,
-        "mu_earth_m3_s2": mu_earth,
-        "mu_sun_m3_s2": mu_sun,
-        "j2_moon": float(truth_spec.j2_moon),
-    }
-    _estimator_runtime = {
-        "mu_moon_m3_s2": mu_moon,
-        "mu_earth_m3_s2": mu_earth,
-        "mu_sun_m3_s2": mu_sun,
-        "j2_moon": float(estimator_spec.j2_moon),
-    }
+    _truth_runtime = force_runtime_kwargs(truth_spec)
+    _estimator_runtime = force_runtime_kwargs(estimator_spec)
     bind_spec_to_runtime(truth_spec, _truth_runtime, context="run_configured_scenario truth binding")
     bind_spec_to_runtime(
         estimator_spec, _estimator_runtime, context="run_configured_scenario estimator binding"
@@ -207,6 +199,7 @@ def run_configured_scenario(
             rtol=config.rtol,
             atol=config.atol,
             j2_moon=_truth_runtime["j2_moon"],
+            **model_options(_truth_runtime.get('srp'), config.propagation_profile),
         )
         visibility_config = VisibilityConfig(
             r_moon_mean_m=float(initial["r_moon_mean_m"]),
@@ -301,6 +294,7 @@ def run_configured_scenario(
             ukf_bias_regularize_relative_information=config.ukf_bias_regularize_relative_information,
             ukf_bias_regularization_std=config.ukf_bias_regularization_std,
             j2_moon=_estimator_runtime["j2_moon"],
+            **model_options(_estimator_runtime.get('srp'), config.propagation_profile),
         )
         # Persist the canonical side manifest into the scenario output bundle and
         # attach the SAME provenance (fingerprints, manifest SHA from the actual
@@ -316,6 +310,9 @@ def run_configured_scenario(
                 f"({written_sha} vs {force_parity.manifest_sha256})."
             )
         final_result = replace(scenario_result, **scenario_result_force_fields(force_parity))
+        write_numerical_profile_manifest(
+            truth_numerical_metadata(_truth_runtime.get('srp'),config.propagation_profile,config.rtol,config.atol),
+            final_result,manifest_output_dir/f'{config.name}_numerical_profile.json')
         if artifact_callback is not None:
             artifact_callback(final_result, arcs, t_eval_s, truth, epoch_utc)
         return final_result

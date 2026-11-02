@@ -124,7 +124,7 @@ with the line of sight rotated by 71°–83°. That projection happens to be mor
 
 | field | value |
 |---|---|
-| `ACTIVE_WORKTREE` | `C:/Users/erayh/Documents/Python/lunar-orbit-determination/python_port_phase17r0` |
+| `ACTIVE_WORKTREE` | `<workspace>/python_port_phase17r0` |
 | `START_BRANCH` | `feature/phase17-r-k-srp-estimation` |
 | `START_HEAD` | `40bc1533fb3056b626b3132bbd71a153456c16da` ("chore(repo): audit and clean local repository artifacts") |
 | `START_TREE` | `121fe64ffb5b35399bd16c7427d0d3f7f0f42c56` |
@@ -840,7 +840,7 @@ FINAL_HEAD   = (the FXR documentation commit; see git log)
 FINAL_TREE   = (that commit's tree)
 MAIN_HEAD        = fea476f81dad07b3914e53eab709e10fa6e9d10b
 ORIGIN_MAIN_HEAD = fea476f81dad07b3914e53eab709e10fa6e9d10b
-ACTIVE_WORKTREE  = C:/Users/erayh/Documents/Python/lunar-orbit-determination/python_port_phase17r0
+ACTIVE_WORKTREE  = <workspace>/python_port_phase17r0
 
 FXR_INPUT_GATE          = PASS
 GRAPHIFY_VERSION        = graphify 0.9.65

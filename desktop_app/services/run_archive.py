@@ -29,6 +29,8 @@ class ArchiveEntry:
     options: dict
     notes: tuple[str, ...]
     derived_from: dict = field(default_factory=dict)
+    job_schema: str = ""  # "lunar-od-desktop-job-v1" when Senaryo produced the run
+    source: str = ""      # which archive source folder listed it
 
 
 def read_json(path):
@@ -96,7 +98,7 @@ def scan_run_archive(folder, cancel=lambda: False, *, count_cache=None, missing_
         stem = path.name.removesuffix("_arc_solutions.csv" if batch else "_ukf_updates.csv")
         metadata, config, options, notes, derived = {}, {}, {}, [], {}
         run_id, status, count = "—", "incomplete" if batch else "legacy", 0
-        size, created = 0, "Bilinmiyor"
+        size, created, job_schema = 0, "Bilinmiyor", ""
         try:
             stat = path.stat()
             size = stat.st_size
@@ -122,6 +124,7 @@ def scan_run_archive(folder, cancel=lambda: False, *, count_cache=None, missing_
                     config = read_json(local_reference(path.parent, metadata["config_file"]))
                 if metadata.get("job_file"):
                     job = read_json(local_reference(path.parent, metadata["job_file"]))
+                    job_schema = job.get("schema") if isinstance(job.get("schema"), str) else ""
                     run_id = job.get("run_id", "—")
                     options = job.get("options", {})
                     lineage = job.get("derived_from")
@@ -136,12 +139,16 @@ def scan_run_archive(folder, cancel=lambda: False, *, count_cache=None, missing_
                     completion_path = path.parent / "completed.json"
                     if completion_path.is_file():
                         completed = read_json(completion_path)
+                        # One job may publish several result files (the tutorial writes
+                        # two seeds); each is complete when the record lists it.
+                        artifacts = completed.get("artifacts")
+                        listed = (completed.get("result_path"), *(artifacts if isinstance(artifacts, list) else ()))
+                        recorded = [Path(p) for p in listed if isinstance(p, str) and Path(p).name == path.name]
                         if (completed.get("schema") != "lunar-od-completed-job-v1"
-                                or completed.get("run_id") != run_id
-                                or Path(completed.get("result_path", "")).name != path.name):
+                                or completed.get("run_id") != run_id or not recorded):
                             raise ResultLoadError("Tamamlanma kaydı bu koşuyla uyuşmuyor.")
                         status = "completed"
-                        if Path(completed["result_path"]).resolve() != path:
+                        if recorded[0].resolve() != path:
                             notes.append("Koşu klasörü taşınmış; tamamlanma kaydı eski yolu içeriyor.")
                     else:
                         status = "incomplete"
@@ -160,5 +167,5 @@ def scan_run_archive(folder, cancel=lambda: False, *, count_cache=None, missing_
             str(metadata.get("estimator_type") or config.get("estimator_type") or ("ukf" if not batch else "Bilinmiyor")),
             str(config.get("measurement_type", "Bilinmiyor")), str(config.get("network", "Bilinmiyor")),
             metadata.get("seed"), "arc_solution" if batch else "ukf_update", status, count, size,
-            metadata, config, options, tuple(notes), derived))
+            metadata, config, options, tuple(notes), derived, job_schema))
     return tuple(sorted(entries, key=lambda e: (e.created_at, str(e.path)), reverse=True))

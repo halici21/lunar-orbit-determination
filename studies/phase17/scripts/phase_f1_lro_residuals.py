@@ -24,6 +24,8 @@ UPLINK_HZ = 2271.125e6 * 221.0 / 240.0
 DOWNLINK_HZ = 2271.125e6
 PASS_GAP_S = 600.0
 GRID_S = 10.0
+#: Station states free of ulp(et0) epoch quantisation (2026-10-27 G4e root cause); False = historical records.
+EXACT_EPOCH_STATIONS = True
 
 #: lrors_arch_sis Appendix A, WGS-84 geodetic (deg, min, sec), height [m].
 STATIONS = {
@@ -109,14 +111,29 @@ class Setup:
         self.coverage_ok = bool(self.et0 + t_lo >= lo and self.et0 + t_hi <= hi)
 
     def _station(self, r):
+        """Moon-centred J2000 station state at ``et0 + t``, free of epoch quantisation.
+
+        ``et0 + t`` rounds to ulp(et0) ~ 6e-8 s (2009). SPICE is read at the rounded epoch and the state is moved
+        by its own velocity x the exact rounding error (Fast2Sum, |et0| >= |t|), as in
+        :func:`lunar_od.relativistic_light_time.exact_epoch_station_state`. Without it the station steps by up to
+        ~1e-4 m whenever a light-time event crosses an ulp(et) boundary (G4e: a 1.7e-6 m/s counted-Doppler jump).
+        ``EXACT_EPOCH_STATIONS = False`` restores the quantised provider used by the historical F1/F2 records.
+        """
         import spiceypy as spice
         et0 = self.et0
+        exact = EXACT_EPOCH_STATIONS
 
         def state(t_s: float) -> np.ndarray:
-            et = et0 + float(t_s)
+            t = float(t_s)
+            et = et0 + t
             x = np.asarray(spice.sxform("ITRF93", "J2000", et), dtype=float)
             earth = np.asarray(spice.spkezr("EARTH", et, "J2000", "NONE", "MOON")[0], dtype=float) * 1e3
-            return x @ np.concatenate([r, np.zeros(3)]) + earth
+            s = x @ np.concatenate([r, np.zeros(3)]) + earth
+            if exact:
+                rounding = t - (et - et0)
+                if rounding:
+                    s[:3] += s[3:6] * rounding
+            return s
         return state
 
 

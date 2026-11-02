@@ -33,6 +33,7 @@ import math
 import unittest
 
 import numpy as np
+import pytest as _pytest_c4i
 
 from lunar_od.config import Station
 from lunar_od.radiometrics import _interp_state
@@ -40,6 +41,11 @@ from lunar_od.two_way_range import (
     compute_two_way_range_residuals,
     generate_two_way_range_measurements,
 )
+
+
+# Phase C4-I (owner-accepted 2026-10-25): the exact-optimum case is a DE421-frozen
+# fixture (on DE440 a 9.3e-10 m rounding-level step is accepted), so the module runs on DE421.
+pytestmark = _pytest_c4i.mark.usefixtures("de421_ephemeris")
 
 
 def _spice_status() -> tuple[bool, str]:

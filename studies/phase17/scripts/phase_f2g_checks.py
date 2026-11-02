@@ -23,7 +23,8 @@ def main():
     t0 = time.time()
     d = json.loads((HERE.parent / "results" / "phase_f2d_lro_od_range_doppler.json").read_text(encoding="utf-8"))
     r = d["runs"]["N200_-"]
-    pb = F2.Problem(300, doppler=True, days=F2.F2E_FIT_DAYS, n_emp=4)
+    # Historical gate: legacy tolerances and step, so fd_history matches this oracle (superseded by G4e-R).
+    pb = F2.Problem(300, doppler=True, days=F2.F2E_FIT_DAYS, n_emp=4, numerics=F2._numerics_for_backend("legacy"))
     x0, k = np.array(r["x0"]), float(r["k_srp"])
     prod = pb.propagate(x0, k, sensitivity=False)                       # production propagate_state
     study = pb.propagate(x0, k, sensitivity=False, emp=np.zeros(4))     # study path, empirical = 0
@@ -54,8 +55,8 @@ def main():
     out = dict(G0=dict(PASS=g0, max_abs_diff_m=g0_max, rows=int(prod.shape[0])),
                G4e=dict(PASS=worst <= 1e-3, range_column_rel_err=col_r, doppler_column_rel_err=col_d, max=worst,
                         range_partial_norms=[float(np.linalg.norm(fd_r[:, j])) for j in range(4)]),
-               elapsed_s=time.time() - t0)
-    OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
+               numerical_identity=F2.numerical_identity(), elapsed_s=time.time() - t0)
+    F2._write_result(OUT, json.dumps(out, indent=1), encoding="utf-8")
     print(json.dumps(out, indent=1))
 
 

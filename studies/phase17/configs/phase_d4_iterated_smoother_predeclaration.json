@@ -1,0 +1,19 @@
+{
+ "phase": "Phase D4 - iterated EKF + RTS smoother (damped Gauss-Newton by sequential passes)",
+ "written": "2026-10-30, after the implementation and a development smoke run of seed 0 of each of the six D3 cells (iterated smoother Converged in 1-3 iterations, within 0.0005 sigma of BLS-LM); no other seed had been run",
+ "motivation": "D3 (phase_d3_ekf_rts_smoother.md): the single-pass EKF and RTS lose consistency from a 2 km prior (mean NEES 1e3-1e9) while the iterated BLS-LM stays consistent",
+ "design": {
+  "linearised_pass": "run_lunar_ekf gains linearization= (one state per observation): dynamics are expanded as f(x_bar_k-1) + Phi(x_bar_k-1)(x - x_bar_k-1) and the measurement as h(x_bar_k) + H(x_bar_k)(x - x_bar_k). linearization=None is the D3 EKF; the only arithmetic change on that path adds Phi @ 0 and H @ 0",
+  "iteration": "run_lunar_iterated_smoother: pass 0 = D3 EKF+RTS. Without process noise each next linearization is the trajectory propagated from the smoothed first-epoch state, accepted only if the MAP cost (prior + whitened measurement residuals) decreases, halving the step up to 10 times. With process noise the next linearization is the smoothed sequence (iterated extended Kalman smoother), no line search. Stop when the largest step is below 1e-3 smoothed sigma; status Converged / MaxIter (20) / NoDescent"
+ },
+ "configuration": "D3's exactly: the same script setup, arcs, measurements, prior scales S20m/S2km/S20km, 50 seeds per cell with the same seed streams, rtol 1e-12 / atol 1e-13, no process noise; BLS-LM with prior is the reference",
+ "gates": {
+  "G1_d3_invariance": "rerunning the D3 comparison on the D4 code reproduces every D3 number of results/phase_d3_ekf_rts_comparison.json except elapsed times (EKF, EKF+RTS, SR-UKF and BLS states, sigmas, errors, NEES, NIS, statuses)",
+  "G2_bls_agreement": "every cell, every seed: iterated smoother status Converged and |x_IS - x_BLS| <= 0.1 sigma_BLS per component at the first epoch",
+  "G3_consistency": "every cell: mean NEES of the iterated smoother over 50 seeds in [4.39, 7.61]",
+  "G4_process_noise_path": "tests/test_ekf_smoother.py: on the D3 position global-bias fixture with process noise the iterated smoother ends Converged with the bias within the D3 test bounds"
+ },
+ "reported_not_gated": "iterations and line-search halvings per cell; runtime of the iterated smoother vs BLS-LM",
+ "decision_rule": "D4_QUALIFIED if G1-G4 all PASS; otherwise D4_NOT_QUALIFIED with each failure reported as computed",
+ "outputs": {"report": "studies/phase17/reports/phase_d4_iterated_smoother.md", "results": "studies/phase17/results/phase_d4_iterated_smoother.json", "script": "studies/phase17/scripts/phase_d4_iterated_smoother.py"}
+}

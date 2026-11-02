@@ -42,6 +42,7 @@ __all__ = [
     "LunarJ2ForceContract",
     "EarthJ2ForceContract",
     "LunarHarmonicsForceContract",
+    "SolarRadiationPressureForceContract",
     "ForceModelContract",
     "lunar_j2_enabled",
     "capability_map",
@@ -65,6 +66,7 @@ __all__ = [
 
 
 FORCE_CONTRACT_SCHEMA_VERSION = "r0b.force-model-contract.v1"
+SRP_FORCE_CONTRACT_SCHEMA_VERSION = "r0b.force-model-contract.v2"
 
 
 class ForceContractError(ValueError):
@@ -92,6 +94,7 @@ class ConsumerReadiness(str, Enum):
     """
 
     VERIFIED = "verified"
+    PENDING_COMMON_PROFILE_VALIDATION = "pending_common_profile_validation"
     PENDING_R1 = "pending_r1"
     EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY = "experimental_direct_trajectory_only"
     UNSUPPORTED = "unsupported"
@@ -226,6 +229,33 @@ class LunarHarmonicsForceContract:
 
 
 @dataclass(frozen=True)
+class SolarRadiationPressureForceContract:
+    """Cannonball SRP and its actual geometric and pressure constants."""
+    k_srp_m2_per_kg: float
+    shadow_model: str
+    occulting_body_radius_m: float
+    solar_pressure_1au_n_m2: float
+    astronomical_unit_m: float
+    solar_radius_m: float
+
+    def __post_init__(self):
+        for name in ('k_srp_m2_per_kg','occulting_body_radius_m',
+                     'solar_pressure_1au_n_m2','astronomical_unit_m','solar_radius_m'):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ForceContractError(f'Finite SRP force primitive required: {name}.')
+            if value < 0 or (name != 'k_srp_m2_per_kg' and value == 0):
+                raise ForceContractError(f'Invalid SRP force primitive: {name}.')
+            object.__setattr__(self, name, float(value))
+        if self.shadow_model not in ('CONICAL_PENUMBRA', 'NO_SHADOW'):
+            raise ForceContractError('Unknown SRP shadow model.')
+
+    def runtime_payload(self):
+        return dict(enabled=True, k_srp_m2_per_kg=self.k_srp_m2_per_kg,
+            shadow_model=self.shadow_model,occulting_body_radius_m=self.occulting_body_radius_m)
+
+
+@dataclass(frozen=True)
 class ForceModelContract:
     """Immutable, hashable-by-content description of one evaluated force model."""
 
@@ -238,8 +268,11 @@ class ForceModelContract:
     lunar_harmonics: LunarHarmonicsForceContract
     force_ephemeris_policy: str
     consumer_capabilities: Mapping[ConsumerRole, ConsumerReadiness]
+    solar_radiation_pressure: SolarRadiationPressureForceContract | None = None
 
     def __post_init__(self) -> None:
+        if self.solar_radiation_pressure is not None and self.schema_version != SRP_FORCE_CONTRACT_SCHEMA_VERSION:
+            raise ForceContractError('An active SRP contract requires the v2 schema.')
         object.__setattr__(
             self, "consumer_capabilities", capability_map(self.consumer_capabilities)
         )
@@ -290,6 +323,9 @@ def _normalize(value: Any) -> Any:
         return {
             field.name: _normalize(getattr(value, field.name))
             for field in fields(value)
+            if not (isinstance(value, ForceModelContract)
+                    and field.name == 'solar_radiation_pressure'
+                    and value.solar_radiation_pressure is None)
         }
     if isinstance(value, Mapping):
         normalized: dict[str, Any] = {}
@@ -406,6 +442,7 @@ class ForceExecutionSpec:
     earth_j2_coefficient: float
     earth_j2_reference_radius_m: float
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris"
+    solar_radiation_pressure: SolarRadiationPressureForceContract | None = None
 
     @property
     def lunar_j2_on(self) -> bool:
@@ -415,8 +452,10 @@ class ForceExecutionSpec:
     def harmonics_on(self) -> bool:
         return bool(self.lunar_harmonics.enabled)
 
-    def propagation_kwargs(self) -> dict[str, float]:
-        """Force primitives that must reach the propagator for this spec."""
+    def propagation_kwargs(self, *, gravity_only=False) -> dict[str, float]:
+        """Gravity primitives; SRP specs require the checked runtime adapter."""
+        if self.solar_radiation_pressure is not None and not gravity_only:
+            raise ForceContractError('An SRP-enabled spec requires force_runtime_kwargs; gravity-only kwargs would omit SRP.')
         return {
             "mu_moon_m3_s2": float(self.mu_moon_m3_s2),
             "mu_earth_m3_s2": float(self.mu_earth_m3_s2),
@@ -428,7 +467,7 @@ class ForceExecutionSpec:
         lunar_j2_on = self.lunar_j2_on
         earth_j2_on = bool(self.enable_earth_j2)
         return ForceModelContract(
-            schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
+            schema_version=SRP_FORCE_CONTRACT_SCHEMA_VERSION if self.solar_radiation_pressure else FORCE_CONTRACT_SCHEMA_VERSION,
             lunar_point_mass=PointMassForceContract(
                 enabled=True,
                 body="moon",
@@ -476,12 +515,22 @@ class ForceExecutionSpec:
             ),
             lunar_harmonics=self.lunar_harmonics,
             force_ephemeris_policy=str(self.force_ephemeris_policy),
-            consumer_capabilities=consumer_capabilities_for(
-                lunar_j2_on=lunar_j2_on,
-                earth_j2_on=earth_j2_on,
-                harmonics_on=self.harmonics_on,
-            ),
+            consumer_capabilities=self.consumer_capabilities(),
+            solar_radiation_pressure=self.solar_radiation_pressure,
         )
+
+    def consumer_capabilities(self):
+        capabilities = dict(consumer_capabilities_for(
+                lunar_j2_on=self.lunar_j2_on,
+                earth_j2_on=bool(self.enable_earth_j2),
+                harmonics_on=self.harmonics_on,
+            ))
+        if self.solar_radiation_pressure is not None:
+            for role, status in capabilities.items():
+                if status is ConsumerReadiness.VERIFIED:
+                    capabilities[role] = ConsumerReadiness.PENDING_COMMON_PROFILE_VALIDATION
+            capabilities[ConsumerRole.UKF_FAST_SIGMA] = ConsumerReadiness.UNSUPPORTED
+        return capability_map(capabilities)
 
     def fingerprint(self) -> str:
         return force_model_fingerprint(self.contract())
@@ -499,7 +548,7 @@ def bind_spec_to_runtime(
     values actually handed to the propagator (R0B-V01). Raises a controlled
     binding error on any difference.
     """
-    expected = spec.propagation_kwargs()
+    expected = spec.propagation_kwargs(gravity_only=True)
     for key, spec_value in expected.items():
         runtime_value = float(runtime_kwargs[key])
         # exact float equality (bit-level), NOT approximate
@@ -512,6 +561,14 @@ def bind_spec_to_runtime(
                 f"({runtime_value!r}) does not exactly equal the fingerprinted "
                 f"spec value ({spec_value!r})."
             )
+    runtime_srp = runtime_kwargs.get('srp')
+    if spec.solar_radiation_pressure is None:
+        if runtime_srp is not None and getattr(runtime_srp, 'enabled', True):
+            raise ForceContractError(f'{context}: active runtime SRP is absent from the force contract.')
+    else:
+        for key, value in spec.solar_radiation_pressure.runtime_payload().items():
+            if runtime_srp is None or getattr(runtime_srp, key, None) != value:
+                raise ForceContractError(f'{context}: SRP primitive {key!r} differs from the force contract.')
 
 
 # ---------------------------------------------------------------------------
@@ -584,10 +641,10 @@ class ForceModelParityDecision:
         return json.loads(self.manifest_bytes.decode("utf-8"))
 
 
-def _unsupported_estimator_roles(contract: ForceModelContract) -> list[ConsumerRole]:
+def _unsupported_estimator_roles(contract: ForceModelContract, roles=None) -> list[ConsumerRole]:
     return [
         role
-        for role in ESTIMATOR_CONSUMER_ROLES
+        for role in (ESTIMATOR_CONSUMER_ROLES if roles is None else roles)
         if contract.consumer_capabilities[role] is ConsumerReadiness.UNSUPPORTED
     ]
 
@@ -598,6 +655,7 @@ def evaluate_force_model_parity(
     policy: ForceModelMismatchPolicy | None = None,
     *,
     context: str = "force-model parity preflight",
+    estimator_roles=None,
 ) -> ForceModelParityDecision:
     """Compare truth/estimator force models before anything is propagated.
 
@@ -610,7 +668,14 @@ def evaluate_force_model_parity(
        non-empty reason.
     """
     policy = policy or ForceModelMismatchPolicy()
-    unsupported = _unsupported_estimator_roles(estimator_contract)
+    if estimator_roles is not None:
+        estimator_roles = tuple(estimator_roles)
+    if estimator_roles is not None and (
+        ConsumerRole.ESTIMATOR_STATE not in estimator_roles
+        or any(not isinstance(r, ConsumerRole) or r not in ESTIMATOR_CONSUMER_ROLES for r in estimator_roles)
+    ):
+        raise ForceContractError('Estimator roles must include ESTIMATOR_STATE and contain only estimator consumer roles.')
+    unsupported = _unsupported_estimator_roles(estimator_contract, estimator_roles)
     if unsupported:
         raise ForceModelParityError(
             f"{context}: the estimator force model is unsupported for role(s) "
@@ -634,7 +699,7 @@ def evaluate_force_model_parity(
     )
     manifest_bytes = manifest_canonical_bytes(manifest)
     return ForceModelParityDecision(
-        schema_version=FORCE_CONTRACT_SCHEMA_VERSION,
+        schema_version=manifest['schema_version'],
         truth_fingerprint=truth_fingerprint,
         estimator_fingerprint=estimator_fingerprint,
         match=match,
@@ -667,7 +732,9 @@ def force_model_manifest(
     if match is None:
         match = truth_section["fingerprint"] == estimator_section["fingerprint"]
     return {
-        "schema_version": FORCE_CONTRACT_SCHEMA_VERSION,
+        "schema_version": SRP_FORCE_CONTRACT_SCHEMA_VERSION if (
+            truth_contract.solar_radiation_pressure or estimator_contract.solar_radiation_pressure
+        ) else FORCE_CONTRACT_SCHEMA_VERSION,
         "truth": truth_section,
         "estimator": estimator_section,
         "match": bool(match),

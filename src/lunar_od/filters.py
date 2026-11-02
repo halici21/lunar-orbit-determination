@@ -11,7 +11,8 @@ from typing import Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
-from .dynamics import dynamics_jacobian_a_matrix, f3body_moon, propagate_augmented_state, propagate_state
+from .dynamics import PropagationProfile, dynamics_jacobian_a_matrix, f3body_moon, propagate_augmented_state, propagate_state
+from .propagation_contract import resolve_profile, numerical_metadata
 
 _IDENTITY_6_COL: np.ndarray = np.eye(6).reshape(-1, order="F")
 from .geometry import ecef2razel_sez, wrap_to_pi
@@ -176,6 +177,7 @@ class LunarUKFResult:
     final_state: np.ndarray
     final_covariance: np.ndarray
     performance: UKFPerformanceDiagnostics
+    numerical_profile: dict | None = None
 
 
 def assess_ukf_operational_stability(
@@ -793,6 +795,7 @@ def run_lunar_ukf(
     j2_moon: float = 0.0,
     srp=None,
     solve_for_k_srp: bool = False,
+    propagation_profile=None,
 ) -> LunarUKFResult:
     """Run a sequential UKF over one prepared lunar OD arc.
 
@@ -827,6 +830,10 @@ def run_lunar_ukf(
       for K sensitivity (Phase 17A-R).
     """
     start_time = perf_counter()
+    propagation_profile = resolve_profile(srp, propagation_profile)
+    if fast_sigma_propagator is not None and propagation_profile is not None:
+        raise ValueError('An external fast sigma provider cannot verify the requested propagation profile or SRP.')
+    propagation_kwargs = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
     measurement_type = (measurement_type or pass_geo.measurement_type).lower()
     if measurement_type == "two_way_range":
         raise ValueError(
@@ -956,7 +963,7 @@ def run_lunar_ukf(
     for obs_idx in order:
         row = obs[obs_idx, :]
         target_t = float(row[0])
-        is_time_advance = not np.isclose(current_t, target_t)
+        is_time_advance = current_t != target_t
         if is_time_advance and epoch_accepted_nis:
             q_scale = adapt_process_noise_scale(
                 q_scale,
@@ -975,7 +982,7 @@ def run_lunar_ukf(
             nonlocal unique_dynamic_propagations
             nonlocal dynamic_propagation_cache_hits
             process_function_evaluations += 1
-            if np.isclose(t0, t1):
+            if t0 == t1:
                 return x.copy()
             if fast_sigma_propagator is not None:
                 unique_dynamic_propagations += 1
@@ -1019,13 +1026,14 @@ def run_lunar_ukf(
                 atol=atol,
                 j2_moon=j2_moon,
                 srp=point_srp,
+                **propagation_kwargs,
             )[-1, :]
             unique_dynamic_propagations += 1
             propagation_cache[key] = propagated_dyn
             return np.concatenate([propagated_dyn, x[6:]])
 
         def _stm_fn(x6: np.ndarray, _t0: float = current_t, _t1: float = target_t) -> np.ndarray:
-            if np.isclose(_t0, _t1):
+            if _t0 == _t1:
                 return np.concatenate([x6.copy(), _IDENTITY_6_COL])
             x_aug0 = np.concatenate([x6, _IDENTITY_6_COL])
             return propagate_augmented_state(
@@ -1034,6 +1042,8 @@ def run_lunar_ukf(
                 get_earth_pos, get_sun_pos,
                 rtol=rtol, atol=atol,
                 j2_moon=j2_moon,
+                srp=srp,
+                **propagation_kwargs,
             )[-1, :]
 
         if covariance_form == "square_root":
@@ -1065,6 +1075,8 @@ def run_lunar_ukf(
             rtol,
             atol,
             bias_cfg,
+            j2_moon=j2_moon, srp=srp, solve_for_k_srp=solve_for_k_srp,
+            propagation_profile=propagation_profile,
         )
         measurement_function_evaluations += int(sigma_x.shape[0])
         if covariance_form == "square_root":
@@ -1135,6 +1147,10 @@ def run_lunar_ukf(
     )
     predicted_history = np.asarray(predicted_measurements, dtype=float).reshape(len(predicted_measurements), measurement_dim)
     return LunarUKFResult(
+        numerical_profile=numerical_metadata(srp,propagation_profile,rtol,atol,
+            fast_sigma=fast_sigma_propagator is not None,adaptive_tolerances=False,
+            local_state_model=range_rate_physics_config(pass_geo.range_rate_physics).local_state_model
+                if measurement_type == 'range_rate' else 'not_applicable'),
         t_update_s=np.asarray(t_updates, dtype=float),
         obs_indices=np.asarray(obs_indices, dtype=int),
         state_estimates=state_estimates,
@@ -1671,12 +1687,15 @@ def _measurement_context(
     rtol: float,
     atol: float,
     bias_cfg: dict,
+    *, j2_moon: float = 0.0, srp=None, solve_for_k_srp: bool = False,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, np.ndarray, MeasurementFunction, int, dict[str, int]]:
     physical_cache: dict[bytes, np.ndarray] = {}
     stats = {"evaluations": 0, "cache_hits": 0}
 
     def cached_physical_measurement(x: np.ndarray) -> np.ndarray:
-        key = np.ascontiguousarray(np.asarray(x, dtype=float).reshape(-1)[:6]).tobytes()
+        dynamic_size = 7 if solve_for_k_srp else 6
+        key = np.ascontiguousarray(np.asarray(x, dtype=float).reshape(-1)[:dynamic_size]).tobytes()
         if key in physical_cache:
             stats["cache_hits"] += 1
             return physical_cache[key]
@@ -1695,6 +1714,9 @@ def _measurement_context(
                 get_sun_pos,
                 rtol,
                 atol,
+                j2_moon=j2_moon,
+                srp=replace(srp, k_srp_m2_per_kg=float(x[6])) if solve_for_k_srp else srp,
+                propagation_profile=propagation_profile,
             )
         physical_cache[key] = value
         return value
@@ -1738,6 +1760,7 @@ def _range_rate_measurement_from_state(
     rtol: float,
     atol: float,
     bias_cfg: dict | None = None,
+    *, j2_moon: float = 0.0, srp=None, propagation_profile=None,
 ) -> np.ndarray:
     station_id = int(obs_row[5]) - 1
     time_idx = int(obs_row[6]) - 1
@@ -1777,6 +1800,7 @@ def _range_rate_measurement_from_state(
             atol,
             rr_physics.local_state_model,
             rr_physics=rr_physics,
+            j2_moon=j2_moon, srp=srp, propagation_profile=propagation_profile,
         )
     if companion_geometry == "instantaneous":
         az_rad, el_rad, _ = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
@@ -1856,6 +1880,7 @@ def _two_way_local_histories(
     atol: float,
     local_state_model: str = "ode",
     rr_physics: RangeRatePhysicsConfig | None = None,
+    *, j2_moon: float = 0.0, srp=None, propagation_profile=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     half_count = 0.5 * count_interval_s
     raw_count_start_s = receive_mid_time_s - half_count
@@ -1932,7 +1957,11 @@ def _two_way_local_histories(
     if normalized_start_s != requested_start_s or normalized_end_s != requested_end_s:
         source_lookup_t = np.clip(local_t, normalized_start_s, normalized_end_s)
 
-    if local_state_model == "taylor3":
+    # A single Taylor polynomial cannot represent an illumination contact.
+    # Preserve the requested forces by using the event-aware ODE history for
+    # shadowed SRP, rather than silently using a shadow-free local model.
+    shadowed_srp = srp is not None and srp.enabled and srp.shadow_model == "CONICAL_PENUMBRA"
+    if local_state_model == "taylor3" and not shadowed_srp:
         local_state = _taylor3_local_state_history(
             local_t,
             receive_mid_time_s,
@@ -1942,6 +1971,7 @@ def _two_way_local_histories(
             mu_sun_m3_s2,
             get_earth_pos,
             get_sun_pos,
+            j2_moon=j2_moon, srp=srp,
         )
     else:
         local_state = _propagate_local_state_history(
@@ -1955,6 +1985,7 @@ def _two_way_local_histories(
             get_sun_pos,
             rtol,
             atol,
+            j2_moon=j2_moon, srp=srp, propagation_profile=propagation_profile,
         )
 
     local_earth_pos = _interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, source_lookup_t)
@@ -1972,28 +2003,22 @@ def _taylor3_local_state_history(
     mu_sun_m3_s2: float,
     get_earth_pos: Callable[[float], ArrayLike],
     get_sun_pos: Callable[[float], ArrayLike],
+    *, j2_moon: float = 0.0, srp=None,
 ) -> np.ndarray:
     local_t = np.asarray(local_t_s, dtype=float).reshape(-1)
     state_mid = np.asarray(state_mid_mci, dtype=float).reshape(6)
-    earth_pos = np.asarray(get_earth_pos(float(mid_time_s)), dtype=float).reshape(-1, 3)[0]
-    sun_pos = np.asarray(get_sun_pos(float(mid_time_s)), dtype=float).reshape(-1, 3)[0]
-    acceleration = f3body_moon(
-        state_mid,
-        mu_moon_m3_s2,
-        mu_earth_m3_s2,
-        mu_sun_m3_s2,
-        earth_pos,
-        sun_pos,
-    )[3:6]
-    jacobian = dynamics_jacobian_a_matrix(
-        state_mid,
-        mu_moon_m3_s2,
-        mu_earth_m3_s2,
-        mu_sun_m3_s2,
-        earth_pos,
-        sun_pos,
-    )
-    jerk = jacobian[3:6, 0:3] @ state_mid[3:6]
+    def acceleration_at(t, state):
+        earth = np.asarray(get_earth_pos(float(t)), dtype=float).reshape(-1, 3)[0]
+        sun = np.asarray(get_sun_pos(float(t)), dtype=float).reshape(-1, 3)[0]
+        return f3body_moon(state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                          earth, sun, j2_moon=j2_moon, srp=srp)[3:6]
+    acceleration = acceleration_at(mid_time_s, state_mid)
+    # Total derivative includes motion of Earth/Sun as well as the spacecraft.
+    # Difference the same force law, never a Jacobian with fewer force terms.
+    h = .01
+    flow = np.r_[state_mid[3:6], acceleration]
+    jerk = (acceleration_at(mid_time_s+h, state_mid+h*flow)
+            - acceleration_at(mid_time_s-h, state_mid-h*flow))/(2*h)
     dt = (local_t - float(mid_time_s)).reshape(-1, 1)
     state_history = np.zeros((local_t.size, 6), dtype=float)
     state_history[:, :3] = (
@@ -2017,12 +2042,18 @@ def _propagate_local_state_history(
     get_sun_pos: Callable[[float], ArrayLike],
     rtol: float,
     atol: float,
+    *, j2_moon: float = 0.0, srp=None, propagation_profile=None,
 ) -> np.ndarray:
     local_t = np.asarray(local_t_s, dtype=float).reshape(-1)
     state_mid = np.asarray(state_mid_mci, dtype=float).reshape(6)
+    if propagation_profile is None and srp is not None and srp.enabled:
+        propagation_profile = PropagationProfile()
+    propagation_kwargs = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
     state_history = np.zeros((local_t.size, 6), dtype=float)
     before_idx = np.where(local_t < mid_time_s)[0]
-    mid_idx = np.where(np.isclose(local_t, mid_time_s))[0]
+    # Epoch equality is exact: a relative tolerance grows with the scenario
+    # origin and used to overwrite already propagated pre-midpoint samples.
+    mid_idx = np.where(local_t == mid_time_s)[0]
     after_idx = np.where(local_t > mid_time_s)[0]
 
     if before_idx.size:
@@ -2037,6 +2068,7 @@ def _propagate_local_state_history(
             get_sun_pos,
             rtol=rtol,
             atol=atol,
+            j2_moon=j2_moon, srp=srp, **propagation_kwargs,
         )
         state_history[before_idx, :] = backward_history[1:, :][::-1, :]
     if mid_idx.size:
@@ -2053,6 +2085,7 @@ def _propagate_local_state_history(
             get_sun_pos,
             rtol=rtol,
             atol=atol,
+            j2_moon=j2_moon, srp=srp, **propagation_kwargs,
         )
         state_history[after_idx, :] = forward_history[1:, :]
     return state_history

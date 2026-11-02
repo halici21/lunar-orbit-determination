@@ -403,6 +403,10 @@ Prediction range RMS per pass: 9.3 m at 14.3 h after the fit end, rising to 14.6
 itself carries about 1e-3 relative noise. The range columns of the same parameters agree to 1e-6, and the Doppler
 partial is the difference of two range partials. Proposed adjudication: oracle floor; accept.
 
+> **2026-10-27 addendum:** this adjudication is withdrawn. The FAIL had a real cause: station epoch quantisation
+> (a 1.66e-6 m/s jump in one Doppler row). G4e also never tested dx/dp, and the F2g FD columns were 4–76 % off at
+> rtol 1e-10. See [G4e-R](phase_f2_g4er_root_cause_and_requalification.md). The record above is kept as computed.
+
 ### S1 against F2f (same start, same data, N = 300)
 
 | | F2f | **F2g** |
@@ -1614,3 +1618,21 @@ Decision inputs:
    positions as reference-limited at ~2 m N.
 3. Shard notes: workers were lost twice (a BrokenProcessPool, and the session closing). Every window was fitted to
    completion once, and those fits are the ones reported.
+
+## 18. Merge of main (G4e-R fixes, bounded TRF) into this branch, 2026-10-30
+
+`main` now carries the G4e-R numerical fixes and the bounded TRF solver (PR #61,
+`phase_f2_g4er_refit_comparison.md`). The F2 script defaults to TRF on the qualified numerics.
+- The F2j-F2q records above are unchanged. They were produced before the merge, and their
+  `numerical_identity` names the code of that time.
+- `--f2j`, `--f2k` and `--f2p` take `--solver legacy` to rerun as recorded: legacy LM, relative GN
+  stationarity test, checkpoint under `outputs/numerical-core/legacy/`. Without it they run on TRF.
+  Their results go to `outputs/numerical-core/<solver>/`, so the records are never overwritten.
+- The F2j-F2q diagnostic scripts call `use_historical_numerics()` on import: legacy numerics, 20 s grid,
+  quantised station epochs.
+- A rerun after the merge has not been compared with the records. The merge also brings the
+  `dynamics.py` shadow-guard change, so bitwise reproduction is not claimed.
+- F2r-F2u (§17.9-§17.12) were computed on this branch before the merge (2026-10-31..11-02), on the same
+  pre-merge numerics as F2j-F2q. Their scripts (`phase_f2r_postfit_growth.py`, `phase_f2s_*.py`,
+  `phase_f2t_short_windows.py`, `phase_f2u_independent_reference.py`) call `use_historical_numerics()` on
+  import as well. The same caveat applies: no post-merge rerun has been compared with their records.

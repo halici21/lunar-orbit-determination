@@ -38,8 +38,9 @@ def main(workers: int = 8):
                jacobian_identical=bool(np.array_equal(h_s, h_p)),
                max_abs_residual_diff=float(np.max(np.abs(res_s - res_p))),
                max_abs_jacobian_diff=float(np.max(np.abs(h_s - h_p))),
+               numerical_identity=F2.numerical_identity(),
                serial_s=t_serial, parallel_s=t_parallel, speedup=t_serial / t_parallel)
-    OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    F2._write_result(OUT, json.dumps(out, indent=1), encoding="utf-8")
     print(json.dumps(out, indent=1))
 
 

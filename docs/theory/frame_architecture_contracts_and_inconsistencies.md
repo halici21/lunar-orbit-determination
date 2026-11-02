@@ -112,7 +112,7 @@ in any production measurement path. The confirmed defects are epoch/physics
 
 | Item | Value |
 |---|---|
-| Worktree | `C:/Users/erayh/Documents/Python/Grad/python_port_measurement_fix` |
+| Worktree | `<workspace>/python_port_measurement_fix` |
 | Branch | `fix/measurement-model-safety` |
 | HEAD | `eb92461f781c3fccd39012e3a02cd6ace64d893b` |
 | Working tree | clean before and after the baseline test run |
@@ -144,7 +144,7 @@ the **main** worktree via the out-of-repo `pytest.ini` `pythonpath`; the two
 |---|---|
 | Repository code and docs at `eb92461` | authoritative; all file:line citations refer to it |
 | Existing test suite | executed (Section 2.2); coverage mapped in Appendix D |
-| `measurement_models_physics_derivatives_and_gaps_AUDIT_REFERENCE.md` (repo-external copy at `C:/Users/erayh/Documents/Python/Grad/`) | **uncommitted documentation reference copied from the main worktree** — not part of the production repository, not an authoritative committed document; every frame-relevant claim adopted from it was independently re-verified against the committed code |
+| `measurement_models_physics_derivatives_and_gaps_AUDIT_REFERENCE.md` (repo-external copy at `<workspace>/`) | **uncommitted documentation reference copied from the main worktree** — not part of the production repository, not an authoritative committed document; every frame-relevant claim adopted from it was independently re-verified against the committed code |
 | `docs/research/LUNAR_OD_MEASUREMENT_PHYSICS_AND_FRAME_STATUS_README.md` | tracked at `eb92461` (176 lines); committed doc source |
 | NAIF / IERS contracts | Appendix E, with per-source contract mapping |
 
@@ -797,12 +797,12 @@ remediation phase.
 | Severity | MEDIUM |
 | Difficulty | EASY-MEDIUM |
 | Status | confirmed; re-verified with new empirical evidence on 2026-07-13 |
-| Actual behavior | `pytest.ini` lives at `C:\Users\erayh\Documents\Python\Grad\` (outside both repositories) with `testpaths = python_port/tests` and `pythonpath = python_port, python_port/desktop_app`; this file is picked up as `rootdir`/`configfile` from *either* worktree, so `import lunar_od` inside a pytest session can bind to the **main** worktree package even when pytest is invoked from `python_port_measurement_fix` |
+| Actual behavior | `pytest.ini` lives at `<workspace>\` (outside both repositories) with `testpaths = python_port/tests` and `pythonpath = python_port, python_port/desktop_app`; this file is picked up as `rootdir`/`configfile` from *either* worktree, so `import lunar_od` inside a pytest session can bind to the **main** worktree package even when pytest is invoked from `python_port_measurement_fix` |
 | Root cause (2026-07-13 finding) | `_pytest/config/__init__.py: Config._configure_python_path` runs `for path in reversed(getini("pythonpath")): sys.path.insert(0, str(path))` during pytest startup, unconditionally, for every pytest invocation that has this `pytest.ini` as its config file. It is not a togglable plugin (`-p no:pythonpath` has no effect — verified, see below); it is core `Config` behavior triggered directly by the presence of the `pythonpath` ini key. |
 | Import-provenance commands (as specified) | `python -c "import lunar_od; print(lunar_od.__file__)"` and `python -c "import sys; print('\n'.join(sys.path))"` |
-| Expected path | `C:\Users\erayh\Documents\Python\Grad\python_port_measurement_fix\lunar_od\__init__.py` |
+| Expected path | `<workspace>\python_port_measurement_fix\lunar_od\__init__.py` |
 | Plain-`python -c` result (outside pytest) | **correct** — resolves to the isolated worktree, because `sys.path[0] == ''` (CWD) for `-c`/interactive invocations and pytest's `pythonpath` insertion never runs |
-| Actual pytest-session result (verified empirically) | **wrong** — `lunar_od.__file__` resolves to `C:\Users\erayh\Documents\Python\Grad\python_port\lunar_od\__init__.py` (the **main** worktree); `sys.path[:3]` inside the pytest session is `['...\\python_port', '...\\python_port\\desktop_app', '']` — the ini-configured main-worktree path sits ahead of the CWD entry |
+| Actual pytest-session result (verified empirically) | **wrong** — `lunar_od.__file__` resolves to `<workspace>\python_port\lunar_od\__init__.py` (the **main** worktree); `sys.path[:3]` inside the pytest session is `['...\\python_port', '...\\python_port\\desktop_app', '']` — the ini-configured main-worktree path sits ahead of the CWD entry |
 | Tested candidate fix: bare `PYTHONPATH` env var pointing at the isolated worktree | **does not fix it** — empirically verified; the env var's entries land *after* the ini-inserted `python_port` paths in `sys.path` (interpreter-startup insertion happens before pytest's own `Config._configure_python_path` runs, and the latter still inserts at index 0), so `import lunar_od` still resolves to the main worktree. This corrects the audit's original recommendation, which assumed a plain `PYTHONPATH` would suffice. |
 | Tested candidate fix: `-p no:pythonpath` | **does not fix it** — empirically verified; there is no plugin named `pythonpath` to disable (see root cause above), so this flag is a silent no-op |
 | Working fix (verified 2026-07-13) | `python -m pytest ... --override-ini=pythonpath=` — a per-invocation command-line override of the ini key to an empty value, with **no file edit and no environment variable**. Verified: with this flag, `sys.path[0] == ''` (CWD) and `lunar_od.__file__` correctly resolves inside `python_port_measurement_fix`. This is the "equivalent repository-local test invocation" referred to in the audit's forward-looking guidance. |

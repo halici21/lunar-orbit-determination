@@ -981,11 +981,11 @@ Every non-pass classified, per §56:
 The FA-06 failure did not appear in the targeted battery because that battery did not include
 `test_measurement_model_safety_diagnostics.py`. It was investigated rather than assumed
 pre-existing. Its mechanism is the root-`pytest.ini` trap: pytest resolved `rootdir` to the
-*workspace* root `C:\Users\erayh\Documents\Python\Grad` and picked up that directory's `pytest.ini`,
+*workspace* root `<workspace>` and picked up that directory's `pytest.ini`,
 which injects the **sibling worktree** `python_port` and `python_port/desktop_app` onto
 `pythonpath`. The test's own diagnostic output confirms the important part — its first assertion
 passes, and `lunar_od.__file__` resolves to
-`C:\Users\erayh\Documents\Python\Grad\python_port_phase17r0\lunar_od\__init__.py`. The correct
+`<workspace>\python_port_phase17r0\lunar_od\__init__.py`. The correct
 package was imported from the correct worktree; only the `getini("pythonpath") == []` assertion
 fails. No scientific result in this phase is affected.
 

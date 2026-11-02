@@ -328,8 +328,8 @@ this observable. The counted-Doppler path above is unchanged.
 
 ## 14. Measured local validation results (2026-07-11, Windows)
 
-Environment: Windows 11, Python 3.13.12 (`C:\Users\erayh\miniforge3\python.exe`),
-spiceypy 8.1.0, `LUNAR_OD_KERNEL_DIR=C:\Users\erayh\Documents\mice\kernels`.
+Environment: Windows 11, Python 3.13.12 (`<python>`),
+spiceypy 8.1.0, `LUNAR_OD_KERNEL_DIR=<kernel-dir>`.
 Raw output: `frame_audit_run.log` (repository root, regenerated on this date).
 All values below are measured on this machine with real kernels — none are
 preflight/sandbox estimates.

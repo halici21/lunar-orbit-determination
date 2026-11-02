@@ -276,8 +276,8 @@ def run_fd(spec) -> dict:
         for i in dd["idx"]:
             st = R.delta_dor_station_time(float(dd["rows"].t_used[i]), dd["a"], dd["b"], sc_aug, eph, model,
                                           sites=dd["sites"])
-            an["ddor"].append(R.delta_dor_partial(st.solution, sc_aug))
-            ca, cb = R.delta_dor_clock_partials(st.solution)
+            an["ddor"].append(R.delta_dor_partial(st, sc_aug))
+            ca, cb = R.delta_dor_clock_partials(st)
             cl["ddor_a"].append(ca)
             cl["ddor_b"].append(cb)
     an = {kk: np.asarray(v, float).reshape(-1, 7) for kk, v in an.items() if len(v)}

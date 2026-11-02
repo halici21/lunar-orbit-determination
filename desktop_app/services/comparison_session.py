@@ -8,7 +8,16 @@ from pathlib import Path
 
 from services.tracking_results import load_tracking_results, LoadCancelled, ResultLoadError
 
-TABS = ("charts", "pairs", "statistics", "differences", "sources", "notes")
+# Tabs as shown, in order. Saved views may still name "sources": that tab was
+# folded into "differences" (settings and source files share one tab).
+TABS = ("charts", "pairs", "statistics", "differences", "notes")
+_FOLDED_TABS = {"sources": "differences"}
+
+
+def view_tab(view):
+    """The shown tab a validated view selects, mapping folded tab names."""
+    tab = view.get("tab", "charts")
+    return _FOLDED_TABS.get(tab, tab)
 
 
 def validate_view(view):
@@ -21,7 +30,7 @@ def validate_view(view):
     for key in ("linear", "paired_only"):
         if type(view.get(key, False)) is not bool:
             raise ResultLoadError(f"Görünümde {key} boolean olmalı.")
-    if view.get("tab", "charts") not in TABS:
+    if view.get("tab", "charts") not in TABS and view.get("tab") not in _FOLDED_TABS:
         raise ResultLoadError("Görünüm sekmesi geçersiz.")
     interval = view.get("time_range")
     if interval is not None and (not isinstance(interval, (list, tuple)) or len(interval) != 2

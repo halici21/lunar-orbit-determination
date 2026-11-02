@@ -78,7 +78,7 @@
           <property name="bottomMargin"><number>10</number></property>
           <item>
            <widget class="QLabel" name="footerNativeLabel">
-            <property name="text"><string>Native app · no web server</string></property>
+            <property name="text"><string>Yerel çalışma alanı</string></property>
            </widget>
           </item>
           <item>

@@ -81,9 +81,12 @@ physics work and a newer workflow document; these are not activated in main.
 Snapshots carry file hashes and base commits. The phase17r0 patch was verified
 with git apply --reverse --check against its source working tree.
 
-Old branch tips are kept as annotated tags:
-branch-history/2026-10-10/<original-branch-name>.
-Restoring a historical branch: git switch -c <new-branch> <tag>.
+Old branch tips were kept as annotated tags,
+branch-history/2026-10-10/<original-branch-name>, until 2026-10-25. Every tagged
+commit is in main's history, so the tags were then retired; each tag's name, commit
+and message is recorded in [retired_tags_2026-10-25.json](retired_tags_2026-10-25.json),
+and branch_audit.json keeps the branch tips.
+Restoring a historical branch: git switch -c <new-branch> <commit>.
 Restore pending work in a separate checkout at the recorded base commit, apply
 changes.patch, then copy the corresponding untracked files.
 

@@ -5,7 +5,7 @@ import importlib
 from pathlib import Path
 
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QLabel, QPushButton, QFrame,
+    QMainWindow, QWidget, QLabel, QPushButton, QFrame, QHBoxLayout,
     QSizePolicy, QProgressBar, QVBoxLayout, QButtonGroup, QShortcut, QScrollArea, QStackedWidget,
 )
 from PyQt5.QtCore import Qt, QSettings, QSize, QTimer
@@ -17,98 +17,101 @@ from styles.theme import C, FONT
 DESKTOP_DIR = Path(__file__).resolve().parent
 UI_PATH = DESKTOP_DIR / "ui" / "main_window.ui"
 
-# (page_id, sidebar_label, hint_text)
+# (page_id, sidebar_label, hint_text) — the workflow order, one page per task.
 _PRIMARY_NAV = [
-    ("mission", "Görev görünümü", "Yörünge, Dünya istasyonları ve ölçüm zamanlarını birlikte izle"),
-    ("scenario", "Senaryo", "Ayarları hazırla veya arşivden bir koşuyu temel al"),
-    ("run_monitor", "Çalıştır", "Çalışan işi ve kayıtlarını izle"),
-    ("console", "Sonuçlar", "Grafikler, kayıtlar ve koşu ayrıntıları"),
-    ("archive", "Arşiv", "Kaydedilmiş koşuları bul ve yeniden kullan"),
-    ("comparison", "Karşılaştırma", "İki koşunun kayıtlarını ve ayarlarını karşılaştır"),
-    ("stations", "İstasyonlar", "Dünya haritası, koordinatlar ve ağ kataloğu"),
-    ("visibility", "Temas planı", "SPICE ile istasyon görünürlüğü ve Gantt hesabı"),
-    ("ground_track", "Yüzey izi", "Ay yüzeyindeki iz ve yörünge tasarım önizlemesi"),
+    ("scenario", "Senaryo", "Koşu ayarlarını hazırla ve başlat"),
+    ("run_monitor", "Çalıştır", "Çalışan koşuyu ve günlüğünü izle"),
+    ("console", "Sonuçlar", "Açık koşunun yörüngesi, grafikleri ve kayıtları"),
+    ("archive", "Arşiv", "Kaydedilmiş koşuları bul, aç ve karşılaştır"),
+    ("stations", "İstasyonlar", "Yer istasyonu kataloğu ve ağlar"),
+    ("visibility", "Görünürlük", "Temas planı, Ay yüzey izi ve yörünge tasarımı"),
 ]
-_ADVANCED = [
-    ("dashboard", "Genel bakış", "Araştırma özeti"),
-    ("results", "Dosya tarayıcı", "Diğer CSV ve görsel dosyalar"),
-    ("dynamics", "Dinamik", "Kuvvet modeli ve yayılım"),
-    ("measurements", "Ölçümler", "Gürültü, bias ve Doppler"),
-    ("estimators", "Kestiriciler", "BLS / SRIF / UKF ayarları"),
-    ("analysis", "Analiz", "Kestirici incelemesi"),
-]
+_SETTINGS_NAV = ("settings", "Ayarlar", "Python ortamı, SPICE dosyaları ve görünüm")
 
-_NAV = _PRIMARY_NAV + _ADVANCED + [("settings", "Ayarlar", "Uygulama ayarları")]
+_NAV = _PRIMARY_NAV + [_SETTINGS_NAV]
+
+# Pages without a sidebar entry live inside a sidebar page; they highlight it.
+_NAV_PARENT = {"comparison": "archive"}
 
 _TITLES: dict[str, tuple[str, str]] = {
-    "mission": ("Görev görünümü", "Kayıtlı yörüngeyi oynatın; istasyonları ve ölçüm aralıklarını aynı zamanda inceleyin."),
-    "console": ("Sonuçlar", "Kayıtlı grafikler, koşu ayarları ve kaynak ilişkileri"),
-    "archive": ("Koşu arşivi", "Gerçek koşular, ayarlar ve tamamlanma kayıtları"),
-    "dashboard":   ("Mission Dashboard",   "Lunar OD research overview"),
-    "results":     ("Results Browser",     "Browse CSV tables and PNG plots"),
-    "run_monitor": ("Çalıştır", "İşlem durumu, canlı günlük ve çıktı dosyaları"),
-    "comparison":  ("Koşu karşılaştırması", "Kaydedilmiş değerler, tam epok eşleşmeleri ve ayar farkları"),
-    "summary_comparison": ("Diğer CSV özetleri", "Eski özet CSV araçları"),
-    "scenario": ("Senaryo", "Ölçüm türü, istasyon ağı, süre ve kestiriciyi seçin; etkin ayarları kaydedip yeni bir sayısal koşu başlatın."),
-    "dynamics":    ("Dinamik model", "Kuvvet modeli, SPICE dosyaları ve yayılım ayarları. Çalıştırılacak etkin yapılandırmayı Senaryo sayfasında doğrulayın."),
-    "measurements":("Ölçüm modeli", "Menzil, menzil hızı ve konum ölçümleri; gürültü ve bias ayarlarını inceleyin."),
-    "estimators":  ("Kestiriciler", "BLS ölçüm grubunu birlikte çözer; UKF sırayla günceller; SRIF bilgi matrisiyle çalışır. Ayarların etkin karşılığını Senaryo sayfasında kontrol edin."),
-    "stations":    ("İstasyonlar", "Dünya üzerindeki konumları ve ağ kataloğunu inceleyin. Özel istasyonlar katalogda saklanır; yeni koşunun ağı Senaryo sayfasında seçilir."),
-    "visibility":  ("Temas planı", "Seçilen istasyonlar için bağımsız görünürlük hesabı yapın. Gantt geometrik görünürlük örneklerini gösterir; kayıtlı koşunun ölçüm takvimi değildir."),
-    "analysis":     ("Estimator Analysis",  "BLS-LM vs UKF comparison — observable type, start mode, α/β/κ sensitivity"),
-    "ground_track": ("Ay yüzey izi", "Uzay aracının Ay üzerindeki izdüşümünü inceleyin. Yörünge tasarım önizlemesi Kepler modelidir; kayıtlı sonuçlardan ayrıdır."),
-    "settings":     ("Ayarlar", "Python ortamını ve SPICE dosyalarını kontrol edin. Hazırlık denetimi hesaplamayı başlatmadan eksikleri gösterir."),
+    "scenario": ("Senaryo", "Ölçüm türünü, istasyon ağını, süreyi ve kestiriciyi seçip koşuyu başlatın."),
+    "run_monitor": ("Çalıştır", "Çalışan koşunun durumu ve günlüğü."),
+    "console": ("Sonuçlar", "Açık koşunun yörüngesi, hata grafikleri ve kayıtları."),
+
+    "archive": ("Arşiv", "Kaydedilmiş koşular. İki koşu seçerek karşılaştırabilirsiniz."),
+    "comparison": ("Arşiv · Karşılaştırma", "İki koşunun ortak epoklardaki farkları ve ayar farkları."),
+    "stations": ("İstasyonlar", "Yer istasyonu kataloğu: konumlar ve ölçüm doğrulukları. Özel istasyon ekleyip düzenleyebilirsiniz."),
+    "visibility": ("Görünürlük", "Örnek yörünge için istasyon temas planı, Ay yüzey izi ve yörünge tasarımı."),
+
+    "settings": ("Ayarlar", "Python ortamı, SPICE dosyaları, sonuç klasörü ve renk paleti."),
 }
 
 
 # ---------------------------------------------------------------------------
 class _NavButton(QPushButton):
-    """Sidebar navigation button — single line, compact height, tooltip for hint."""
+    """Sidebar item drawn like the sunumatik category list.
 
-    # Template for the button rule — placeholders filled per-check in _refresh_style.
-    # Braces for CSS selectors are doubled so str.format() treats them as literals.
-    _TPL = (
-        "QPushButton {{"
-        " background:transparent; border:none;"
-        " border-left:2px solid {border};"
-        " border-radius:0; padding:8px 14px 8px 16px;"
-        " text-align:left; color:{fg}; font-size:" + str(FONT.SIZE_SM) + "px;"
-        " font-weight:{fw}; }}"
-    )
-    # Hover rule is fully resolved — no .format() placeholders needed.
-    _HOVER = (
-        f"QPushButton:hover {{ background:{C.BG_HOVER}; border-left-color:{C.BORDER_MID}; color:{C.TEXT_PRIMARY}; }}"
-    )
+    The workflow step number sits in a muted mono column (it is also the Alt+N
+    shortcut); the active item gets the accent bar and full-strength text.
+    """
 
-    def __init__(self, label: str, hint: str, parent=None) -> None:
-        super().__init__(parent)
+    def __init__(self, label: str, hint: str, number: int | None = None, parent=None) -> None:
+        super().__init__(label, parent)
         self._label = label
+        self._number = number
         self.setCheckable(True)
         self.setFlat(True)
         self.setAutoExclusive(True)
-        self.setMinimumHeight(38)
+        self.setMinimumHeight(36)
+        self.setCursor(Qt.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.setToolTip(hint)
-        self.toggled.connect(self._refresh_style)
-        self._refresh_style()
+        self.setToolTip(hint + (f" · Alt+{number}" if number else ""))
+        self.setAccessibleName(label)
+        self.setStyleSheet("QPushButton { border:0; background:transparent; }")
 
     def _refresh_style(self) -> None:
-        checked = self.isChecked()
-        sheet = self._TPL.format(
-            border=C.NAV_ACTIVE if checked else "transparent",
-            fg=C.TEXT_PRIMARY if checked else C.TEXT_MUTED,
-            fw="600" if checked else "normal",
-        ) + self._HOVER
-        self.setStyleSheet(sheet)
-        self.setText(self._label)
+        self.update()
 
-    def nextCheckState(self) -> None:
-        super().nextCheckState()
-        self._refresh_style()
+    def paintEvent(self, event) -> None:
+        from PyQt5.QtGui import QPainter, QColor, QFont
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        r = self.rect()
+        checked, hover = self.isChecked(), self.underMouse()
+        if checked or hover:
+            p.fillRect(r.adjusted(8, 2, -8, -2), QColor(C.BG_ACTIVE if checked else C.BG_HOVER))
+        if checked:
+            p.fillRect(r.x(), r.y() + 8, 2, r.height() - 16, QColor(C.NAV_ACTIVE))
+        if self.hasFocus() and not checked:
+            p.setPen(QColor(C.NAV_ACTIVE))
+            p.drawRect(r.adjusted(8, 2, -9, -3))
+        x = 22
+        if self._number is not None:
+            mono = QFont("Cascadia Mono")
+            mono.setStyleHint(QFont.Monospace)
+            mono.setPixelSize(11)
+            p.setFont(mono)
+            p.setPen(QColor(C.NAV_ACTIVE if checked else C.TEXT_MUTED))
+            p.drawText(r.adjusted(x, 0, 0, 0), Qt.AlignVCenter | Qt.AlignLeft, f"{self._number:02d}")
+            x += 26
+        font = QFont("Segoe UI Variable Text")
+        font.setPixelSize(13)
+        font.setWeight(QFont.DemiBold if checked else QFont.Normal)
+        p.setFont(font)
+        p.setPen(QColor(C.TEXT_PRIMARY if checked or hover else C.TEXT_SECONDARY))
+        p.drawText(r.adjusted(x, 0, -12, 0), Qt.AlignVCenter | Qt.AlignLeft, self._label)
+
+    def enterEvent(self, event) -> None:
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self.update()
+        super().leaveEvent(event)
 
     def setChecked(self, checked: bool) -> None:
         super().setChecked(checked)
-        self._refresh_style()
+        self.update()
 
 
 # ---------------------------------------------------------------------------
@@ -139,12 +142,19 @@ class MainWindow(QMainWindow):
         self.pageScroll = QScrollArea()
         self.pageScroll.setWidgetResizable(True)
         self.pageScroll.setFrameShape(QFrame.NoFrame)
+        # Keep the scrollbar gutter: a page that appears/disappears the bar would
+        # change every page's width by its thickness and force plot redraws.
+        self.pageScroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.pageScroll.setAccessibleName("Çalışma alanı; taşan içerik kaydırılabilir")
         original_stack = self.pageStack
         parent_layout = original_stack.parentWidget().layout()
         parent_layout.replaceWidget(original_stack, self.pageScroll)
         self.pageStack = _VisiblePageStack()
         self.pageStack.setObjectName("pageStack")
+        # Detach now: deferred deletion only runs in the event loop, and until then the
+        # unused .ui stack would sit over the page header.
+        original_stack.hide()
+        original_stack.setParent(None)
         original_stack.deleteLater()
         self.pageStack.setMinimumWidth(960)
         self.pageScroll.setWidget(self.pageStack)
@@ -155,7 +165,7 @@ class MainWindow(QMainWindow):
         from services.workspace_session import read_session
         self._workspace_session = read_session(self._settings)
         self._restored_pages = set()
-        self._active_page = "mission"
+        self._active_page = "scenario"
         self._latest_result = None
         self._nav_btns: dict[str, _NavButton] = {}
         self._pages: dict[str, QWidget] = {}
@@ -170,11 +180,8 @@ class MainWindow(QMainWindow):
         tutorial_action = tutorial_menu.addAction("Verisiz sentetik eğitimi başlat")
         tutorial_action.triggered.connect(self.start_tutorial)
         self._restore_geometry()
-        active = self._workspace_session.get("active", "mission")
-        self.navigate(active if active in ("mission", "console", "comparison", "archive") else "mission")
-        if self._active_page == "mission" and isinstance(self._workspace_session.get("console"), dict):
-            from services.workspace_session import restore_page
-            restore_page(self, "console", self._ensure_page("console"))
+        active = self._workspace_session.get("active", "scenario")
+        self.navigate(active if active in ("console", "comparison", "archive") else "scenario")
         self._startup_timer = QTimer(self)
         self._startup_timer.setSingleShot(True)
         self._startup_timer.timeout.connect(self.environment.refresh)
@@ -187,78 +194,94 @@ class MainWindow(QMainWindow):
         from styles.workspace_light import workspace_stylesheet
         self.setStyleSheet(workspace_stylesheet())
         self.setWindowTitle("Lunar OD · Çalışma alanı")
-        self.sidebarFrame.setFixedWidth(192)
+        self.sidebarFrame.setFixedWidth(208)
         self.sidebarFrame.setStyleSheet(
             f"QFrame#sidebarFrame {{background:{C.BG_SIDEBAR}; border-right:1px solid {C.BORDER_MAIN};}}")
         for widget in (self.brandFrame, self.navWidget, self.footerFrame):
             widget.setStyleSheet(f"background:{C.BG_SIDEBAR};")
         self.navScrollArea.setStyleSheet(f"QScrollArea {{background:{C.BG_SIDEBAR}; border:0;}}")
-        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:20px; font-weight:500;")
+        # Brand: a small accent monogram beside the name, as on sunumatik.
+        self.brandFrame.setMinimumHeight(76)
+        self.brandFrame.setMaximumHeight(76)
+        brand = self.brandFrame.layout()
+        brand.setContentsMargins(20, 18, 16, 12)
+        brand.removeWidget(self.brandTitleLabel)
+        brand_row = QHBoxLayout()
+        brand_row.setSpacing(10)
+        monogram = QLabel("OD")
+        monogram.setObjectName("brandMonogram")
+        monogram.setFixedSize(28, 28)
+        monogram.setAlignment(Qt.AlignCenter)
+        monogram.setStyleSheet(f"background:{C.NAV_ACTIVE}; color:{C.ON_ACCENT}; border-radius:7px;"
+                               " font-size:11px; font-weight:800; letter-spacing:0.5px;")
+        brand_row.addWidget(monogram)
+        text_col = QVBoxLayout()
+        text_col.setSpacing(0)
+        text_col.addWidget(self.brandTitleLabel)
+        brand.removeWidget(self.brandSubLabel)
+        text_col.addWidget(self.brandSubLabel)
+        brand_row.addLayout(text_col, 1)
+        brand.insertLayout(0, brand_row)
+        self.brandTitleLabel.setText("Lunar OD")
+        self.brandTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:15px; font-weight:600;")
         self.brandSubLabel.setText("Yörünge belirleme")
         self.brandSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+        self.footerNativeLabel.setText("Yerel çalışma alanı")
         self.footerNativeLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
-        self.footerVerLabel.setText("Araştırma çalışma alanı")
-        self.footerVerLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:11px;")
+        self.footerVerLabel.hide()
         self.pageHeaderFrame.setStyleSheet(
             f"QFrame#pageHeaderFrame {{background:{C.BG_DEEP}; border-bottom:1px solid {C.BORDER_MAIN};}}")
-        self.pageTitleLabel.setStyleSheet(f"color:{C.TEXT_PRIMARY}; font-size:19px; font-weight:500;")
+        header = self.pageHeaderFrame.layout()
+        header.setContentsMargins(32, 20, 32, 16)
+        header.setSpacing(4)
+        self.pageTitleLabel.setStyleSheet(
+            f"color:{C.TEXT_PRIMARY}; font-family:'Segoe UI Variable Display','Segoe UI'; font-size:21px;"
+            " font-weight:600; letter-spacing:-0.2px;")
         self.pageHeaderFrame.setMaximumHeight(16777215)
-        self.pageHeaderFrame.setMinimumHeight(72)
+        self.pageHeaderFrame.setMinimumHeight(84)
         self.pageHeaderFrame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.pageSubLabel.setTextFormat(Qt.PlainText)
         self.pageSubLabel.setWordWrap(True)
-        self.pageSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:12px;")
+        self.pageSubLabel.setStyleSheet(f"color:{C.TEXT_MUTED}; font-size:13px;")
         self.pageSubLabel.show()
 
     def _build_nav(self) -> None:
         layout = self.navLayout
         self._nav_group = QButtonGroup(self)
         self._nav_group.setExclusive(True)
-        def add_button(item, target):
+        def add_button(item, target, number=None):
             page_id, label, hint = item
-            btn = _NavButton(label, hint)
+            btn = _NavButton(label, hint, number)
             btn.setAutoExclusive(False)
             self._nav_group.addButton(btn)
             btn.clicked.connect(lambda _checked, pid=page_id: self.navigate(pid))
             target.addWidget(btn)
             self._nav_btns[page_id] = btn
-        label = QLabel("ÇALIŞMA ALANI")
-        label.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:14px 16px 6px; font-size:11px;")
+        label = QLabel("İŞ AKIŞI")
+        label.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:16px 22px 8px; font-size:11px;"
+                            " font-weight:600; letter-spacing:1px;")
         layout.addWidget(label)
         for number, item in enumerate(_PRIMARY_NAV, 1):
-            add_button(item, layout)
+            add_button(item, layout, number)
             shortcut = QShortcut(QKeySequence(f"Alt+{number}"), self)
             shortcut.activated.connect(lambda pid=item[0]: self.navigate(pid))
-        self.advanced_toggle = QPushButton("Gelişmiş araçlar  ›")
-        self.advanced_toggle.setCheckable(True)
-        self.advanced_toggle.setStyleSheet(f"text-align:left; padding:12px 16px; color:{C.TEXT_MUTED}; border:0; background:transparent;")
-        layout.addWidget(self.advanced_toggle)
-        self.advanced_panel = QWidget()
-        advanced_layout = QVBoxLayout(self.advanced_panel)
-        advanced_layout.setContentsMargins(10, 0, 0, 0)
-        advanced_layout.setSpacing(0)
-        for item in _ADVANCED:
-            add_button(item, advanced_layout)
-        layout.addWidget(self.advanced_panel)
-        self.advanced_panel.hide()
-        self.advanced_toggle.toggled.connect(self._toggle_advanced)
         layout.addStretch()
-        add_button(("settings", "Ayarlar", "Dosya yolları ve uygulama ayarları"), layout)
-
-    def _toggle_advanced(self, expanded):
-        self.advanced_panel.setVisible(expanded)
-        self.advanced_toggle.setText("Gelişmiş araçlar  ⌄" if expanded else "Gelişmiş araçlar  ›")
+        add_button(_SETTINGS_NAV, layout)
 
     def _build_status_bar(self) -> None:
         sb = self.statusBar
-        sb.setFixedHeight(26)
+        sb.setFixedHeight(28)
+        sb.setSizeGripEnabled(False)
         self._status_lbl = QLabel("Hazır")
         self._status_lbl.setStyleSheet(f"color:{C.TEXT_MUTED}; padding:0 8px;")
         sb.addWidget(self._status_lbl)
         self.environment_button = QPushButton("Ortam · kontrol bekleniyor")
         self.environment_button.setFlat(True)
         self.environment_button.setFixedHeight(22)
-        self.environment_button.setStyleSheet("QPushButton {padding:0 8px; min-height:18px; font-size:11px; border:none;}")
+        self.environment_button.setStyleSheet(
+            f"QPushButton {{padding:0 10px; min-height:18px; font-size:11px; font-weight:normal; border:none;"
+            f" color:{C.TEXT_MUTED}; background:transparent;}}"
+            f"QPushButton:hover {{color:{C.TEXT_PRIMARY};}}")
         self.environment_button.setToolTip("Ortam ve SPICE kernel raporunu aç")
         self.environment_button.clicked.connect(lambda: self.navigate("settings"))
         sb.addPermanentWidget(self.environment_button)
@@ -289,22 +312,14 @@ class MainWindow(QMainWindow):
         """Register pages; expensive modules are imported on first navigation."""
         sys.path.insert(0, str(DESKTOP_DIR))
         self._page_factories = {
-            "mission": ("controllers.mission_controller", "MissionController"),
             "console": ("controllers.tracking_console_controller", "TrackingConsoleController"),
             "archive": ("controllers.run_archive_controller", "RunArchiveController"),
-            "dashboard": ("controllers.dashboard_controller", "DashboardController"),
-            "results": ("controllers.results_browser_controller", "ResultsBrowserController"),
             "run_monitor": ("controllers.run_monitor_controller", "RunMonitorController"),
             "comparison": ("controllers.recorded_comparison_controller", "RecordedComparisonController"),
-            "summary_comparison": ("controllers.comparison_controller", "ComparisonController"),
             "scenario": ("controllers.scenario_builder_controller", "ScenarioBuilderController"),
             "stations": ("controllers.stations_controller", "StationsController"),
-            "visibility": ("controllers.visibility_controller", "VisibilityController"),
-            "analysis": ("controllers.analysis_controller", "AnalysisController"),
-            "ground_track": ("controllers.ground_track_controller", "GroundTrackController"),
-            **{page: ("controllers.system_pages_controller", cls) for page, cls in (
-                ("dynamics", "DynamicsController"), ("measurements", "MeasurementsController"),
-                ("estimators", "EstimatorsController"), ("settings", "SettingsController"))},
+            "visibility": ("controllers.visibility_workspace_controller", "VisibilityWorkspaceController"),
+            "settings": ("controllers.system_pages_controller", "SettingsController"),
         }
 
     def _ensure_page(self, page_id: str) -> QWidget | None:
@@ -321,9 +336,14 @@ class MainWindow(QMainWindow):
             widget = self._error_page(page_id, exc)
         if page_id == "console" and hasattr(widget, "resultLoaded"):
             widget.resultLoaded.connect(self._on_result_loaded)
-            widget.loadFailed.connect(self._on_mission_load_failed)
-        if page_id == "mission" and self._latest_result and hasattr(widget, "set_result"):
-            widget.set_result(*self._latest_result)
+            widget.loadFailed.connect(self._on_overview_load_failed)
+            try:
+                from controllers.mission_controller import MissionController
+                widget.set_overview(MissionController(widget))
+            except Exception as exc:
+                widget.set_overview(self._error_page("console", exc))
+        from styles.workspace_light import polish_page
+        polish_page(widget)
         widget._workspace_size_policy = widget.sizePolicy()
         self._pages[page_id] = widget
         self.pageStack.addWidget(widget)
@@ -356,11 +376,21 @@ class MainWindow(QMainWindow):
     # Navigation
     # ------------------------------------------------------------------
     def navigate(self, page_id: str) -> None:
+        if page_id == "mission":  # The overview is the first tab of Sonuçlar.
+            self.navigate("console")
+            console = self._pages.get("console")
+            if hasattr(console, "show_overview"):
+                console.show_overview()
+            return
+        if page_id == "ground_track":  # Ay yüzey izi is the second tab of Görünürlük.
+            self.navigate("visibility")
+            workspace = self._pages.get("visibility")
+            if hasattr(workspace, "show_tab"):
+                workspace.show_tab(1)
+            return
         page = self._ensure_page(page_id)
         if page is None:
             return
-        if page_id in {item[0] for item in _ADVANCED}:
-            self.advanced_toggle.setChecked(True)
         self._active_page = page_id
         for other in self._pages.values():
             other.setSizePolicy(other._workspace_size_policy if other is page else
@@ -368,7 +398,9 @@ class MainWindow(QMainWindow):
         self.pageStack.setCurrentWidget(page)
         # Mission plots, catalogue and visibility panels can stack; other forms retain
         # their existing scrollable minimum width.
-        self.pageStack.setMinimumWidth(540 if page_id in {"mission", "stations", "visibility", "ground_track"} else 960)
+        # Single-column pages reflow down to laptop widths; the wide archive and
+        # comparison tables keep a horizontal scroll instead of crushing columns.
+        self.pageStack.setMinimumWidth(960 if page_id in {"archive", "comparison"} else 540)
         self.pageStack.updateGeometry()
         self.pageScroll.verticalScrollBar().setValue(0)
         self.pageScroll.horizontalScrollBar().setValue(0)
@@ -378,8 +410,9 @@ class MainWindow(QMainWindow):
         self.pageTitleLabel.setText(title)
         self.pageSubLabel.setText(sub)
 
+        highlighted = _NAV_PARENT.get(page_id, page_id)
         for pid, btn in self._nav_btns.items():
-            btn.setChecked(pid == page_id)
+            btn.setChecked(pid == highlighted)
 
         if hasattr(page, "on_shown"):
             page.on_shown()
@@ -388,23 +421,6 @@ class MainWindow(QMainWindow):
 
     def _fade_in(self, page: QWidget) -> None:
         pass  # page switch via QStackedWidget is instant; no animation needed
-
-    def navigate_and_run(
-        self,
-        script_path: str,
-        extra_args: list[str] | None = None,
-        auto_start: bool = False,
-    ) -> None:
-        self.navigate("run_monitor")
-        page = self._pages.get("run_monitor")
-        if page and hasattr(page, "preset_script"):
-            page.preset_script(script_path, extra_args=extra_args, auto_start=auto_start)
-
-    def open_in_results_browser(self, path: "Path") -> None:
-        self.navigate("results")
-        page = self._pages.get("results")
-        if page and hasattr(page, "show_file"):
-            page.show_file(path)
 
     def open_in_result_console(self, path: "Path") -> None:
         self.navigate("console")
@@ -420,30 +436,33 @@ class MainWindow(QMainWindow):
             console.details_toggle.setChecked(True)
             console.inspector_tabs.setCurrentIndex(0)
 
+    def overview(self):
+        """The Sonuçlar overview tab (orbit, station map, Gantt), once created."""
+        return getattr(self._pages.get("console"), "overview", None)
+
     def _on_result_loaded(self, result):
         console = self._pages.get("console")
-        self._latest_result = (result, getattr(console, "loaded_details", {}))
-        mission = self._pages.get("mission")
-        if mission and hasattr(mission, "set_result"):
-            mission.set_result(*self._latest_result)
+        overview = self.overview()
+        if hasattr(overview, "set_result"):
+            overview.set_result(result, getattr(console, "loaded_details", {}))
 
-    def _on_mission_load_failed(self, message):
-        mission = self._pages.get("mission")
-        if mission and hasattr(mission, "run_label"):
-            previous = f"{mission.result.name} korunuyor. " if mission.result else ""
-            mission.run_label.setText(previous + "Koşu açılamadı: " + message + " · Arşivden tekrar seçin.")
+    def _on_overview_load_failed(self, message):
+        overview = self.overview()
+        if hasattr(overview, "run_label"):
+            previous = f"{overview.result.name} korunuyor. " if overview.result else ""
+            overview.run_label.setText(previous + "Koşu açılamadı: " + message + " · Arşivden tekrar seçin.")
 
     def open_in_mission(self, path):
         if path.is_dir():
             self.open_in_result_console(path)  # Multiple-run folders need the visible picker.
             return
-        console = self._ensure_page("console")
         self.navigate("mission")
-        mission = self._pages.get("mission")
-        if hasattr(mission, "run_label"):
-            mission.run_label.setText("Koşu yükleniyor… Önceki görüntü yeni kaynak doğrulanana kadar korunur.")
+        console = self._pages.get("console")
+        overview = self.overview()
+        if hasattr(overview, "run_label"):
+            overview.run_label.setText("Koşu yükleniyor… Önceki görüntü yeni kaynak doğrulanana kadar korunur.")
         if hasattr(console, "open_result"):
-            console.open_folder(path) if path.is_dir() else console.open_result(path)
+            console.open_result(path)
 
     def start_tutorial(self) -> None:
         """Start a data-free educational run through the normal process monitor."""

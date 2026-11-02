@@ -35,13 +35,13 @@ sys.path.insert(0, str(HERE))
 warnings.simplefilter("ignore")
 
 import lunar_od.estimators as E  # noqa: E402  (this worktree's lunar_od first)
+from lunar_od.project_paths import campaign_root  # noqa: E402
 import phase17_kp2_campaign as P  # noqa: E402
 import phase17_kp2_core as K2  # noqa: E402
 
 OUT = P.ARTIFACTS / "phase17_d25_qualification.json"
 BLS1 = P.ARTIFACTS / "phase17_bls1_qualification.json"
-STAGE_F = Path("C:/Users/erayh/Documents/Python/lunar-orbit-determination/od_covariance_campaign/05_reports/"
-               "stage_f_n20_raw.json")
+STAGE_F = campaign_root() / "05_reports" / "stage_f_n20_raw.json"
 FD_TOL = dict(rtol=1e-13, atol=1e-14)
 FD_STEPS = np.array([1.0, 1.0, 1.0, 1e-3, 1e-3, 1e-3, 1e-4])
 

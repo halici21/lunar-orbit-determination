@@ -93,7 +93,7 @@ may additionally require external data described in [data/README.md](data/README
 src/lunar_od/           importable scientific library
 tests/                  unit, integration, regression and science checks
 examples/               runnable examples and retained compatibility drivers
-studies/phase17/        scripts, configs, reports, results and provenance
+studies/                research studies: Phase 17 campaign and roadmap phases C1–F2
 docs/                   theory, validation, research and development guidance
 desktop_app/            native application (separate from the library)
 tools/                  setup, verification and maintenance utilities
@@ -102,10 +102,14 @@ data/                   external-data policy (large data are not bundled)
 archive/                immutable historical preservation material
 requirements/          optional, development, docs and pinned Windows profiles
 legacy/                earlier Tkinter and HTTP interfaces
+.claude/                AI coding-assistant project instructions and skills (not used at runtime)
 ```
 
+`.claude/` and `.graphifyignore` configure the AI coding assistant and its dependency graph
+used during development; the library, tests and desktop app do not read them.
+
 See the [architecture and artifact policy](docs/development/repository-layout.md)
-and [Phase 17 guide](studies/phase17/README.md) for reproduction and historical
+and [research studies guide](studies/README.md) for reproduction and historical
 path resolution. Local generated runs go to ignored `results/` or `outputs/`.
 
 The root `requirements.txt` remains the standard core dependency file.
@@ -138,6 +142,13 @@ Passing tests, UI checks, or process completion do not establish operational
 navigation accuracy or estimator convergence. This project has no claim of
 flight qualification or real-mission validation. External tool comparisons
 qualify only their documented assumptions.
+
+The production planetary ephemeris is **DE440** since roadmap phase C4-I; results
+recorded earlier used DE421, which remains selectable with
+`LUNAR_OD_PLANETARY_EPHEMERIS=DE421` and reproduces them bit for bit. The measurement
+and dynamics upgrades of phases C1–D2 and the first real LRO tracking studies (F1–F2)
+are summarised in the [changelog](docs/changelog.md); the
+[research studies guide](studies/README.md) lists every phase report and its outcome.
 
 For current scientific conclusions, superseded results and known defects, start
 with the [authoritative Phase 17 status](studies/phase17/reports/phase17_authoritative_status.md)

@@ -52,6 +52,17 @@ def force_model_manifest_sha256(manifest) -> str:
     return manifest_sha256(manifest)
 
 
+def write_numerical_profile_manifest(truth_profile, scenario: ScenarioResult, output_path) -> Path:
+    """Persist effective profiles separately from physical force fingerprints.
+
+    This records numerical execution, not the still separate full input-data
+    and runtime manifest. Missing estimator provenance stays explicitly null.
+    """
+    return write_force_model_manifest(dict(schema_version='numerical-profile-manifest.v1',
+        force_manifest_sha256=scenario.force_contract_manifest_sha256,
+        truth=truth_profile,estimator=scenario.numerical_profile),output_path)
+
+
 def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path) -> Path:
     """Write per-arc scenario metrics to CSV."""
     output_path = Path(output_path)

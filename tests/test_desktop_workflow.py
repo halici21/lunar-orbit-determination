@@ -187,11 +187,11 @@ def test_qprocess_keeps_ui_alive_and_flushes_last_line(app, tmp_path):
 def test_qprocess_failed_start_restores_monitor(app, tmp_path):
     monitor = RunMonitorController()
     try:
-        monitor.startBtn.setEnabled(False)
         monitor._worker.run(str(tmp_path / "missing.exe"), [])
         wait(app, lambda: monitor._last_exit_code is not None)
         assert monitor._last_exit_code == -1
-        assert monitor.startBtn.isEnabled()
+        assert not monitor.cancelBtn.isEnabled()
+        assert monitor.statusLabel.text() == "Hata (çıkış kodu -1)"
         assert not monitor.openConsoleBtn.isEnabled()
     finally:
         monitor.close()
@@ -200,11 +200,11 @@ def test_qprocess_failed_start_restores_monitor(app, tmp_path):
 def test_preset_cannot_replace_running_job(app, tmp_path):
     monitor = RunMonitorController()
     monitor.preset_script("old.py", extra_args=["old.json"])
-    previous = monitor._override_command
+    previous = monitor._command
     try:
         monitor._worker.run(sys.executable, ["-c", "import time; time.sleep(3)"])
         monitor.preset_script("new.py", extra_args=["new.json"])
-        assert monitor._override_command == previous
+        assert monitor._command == previous
         monitor._cancel()
         wait(app, lambda: monitor._last_exit_code is not None)
         assert not monitor.openConsoleBtn.isEnabled()

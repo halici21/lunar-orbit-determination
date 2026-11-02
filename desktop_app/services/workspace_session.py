@@ -64,7 +64,8 @@ def restore_console_view(page, view):
         for index in page.visible_indices:
             if page.result.updates[index]["update_id"] == selected:
                 page.select_index(index); break
-    page.view_tabs.setCurrentIndex(1 if view.get("tab") == 1 else 0)
+    tab = view.get("tab")
+    page.view_tabs.setCurrentIndex(tab if type(tab) is int and 0 <= tab < page.view_tabs.count() else 0)
     page.details_toggle.setChecked(view.get("details") is True)
     page.filters_toggle.setChecked(view.get("filters") is True)
 
@@ -95,6 +96,7 @@ def restore_page(window, name, page):
         paths = saved.get("paths")
         if not isinstance(paths,list) or len(paths)!=2 or not all(isinstance(p,str) for p in paths):
             return
+
         try:
             view = validate_view(saved.get("view"))
         except ValueError:
@@ -119,7 +121,7 @@ def restore_page(window, name, page):
 def save_session(window):
     data = dict(window._workspace_session)
     data["schema"] = 1
-    data["active"] = window._active_page if window._active_page in ("mission","console","comparison","archive") else "mission"
+    data["active"] = window._active_page if window._active_page in ("console","comparison","archive") else "scenario"
     for name,page in window._pages.items():
         if name == "console" and getattr(page, "result", None) is not None:
             data[name] = capture_console(page)

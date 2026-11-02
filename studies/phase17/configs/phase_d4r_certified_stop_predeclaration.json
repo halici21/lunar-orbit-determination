@@ -1,0 +1,16 @@
+{
+ "phase": "Phase D4-R - iterated smoother with the certified-stationarity stop of the F2 TRF solver",
+ "written": "2026-10-30, after the D4 run (commit before this file); D4 stays G2 FAIL as computed",
+ "finding_from_d4": "range_rate S20m seeds 4, 9, 10 end NoDescent: the rejected Gauss-Newton steps are 0.0019-0.0023 smoothed sigma (above tol_sigma 1e-3), every halving raises the MAP cost by 1.2e-5 to 3.1e-5 chi2, larger than the decrease such a step can give (~5e-6). The stop rule asked for more precision than the cost evaluation has. The three solutions are within 0.0005 sigma of BLS-LM",
+ "change": "run_lunar_iterated_smoother, process-noise-free path only: before the line search compute the Gauss-Newton decrement g = d^T P_s0^-1 d of the step d = x_s0 - x_bar0 (the cost decrease the linearised problem predicts, chi2 units). Stop as Converged when g <= stationarity_chi2 = 0.01, the bound of the F2 TRF certified stop (solve_bounded stop_when_stationary, Delta chi2 <= 0.01), or when the step is below tol_sigma as before. No other change; the process-noise path and every D4 parameter are unchanged",
+ "configuration": "D4's exactly (D3 arcs, cells and seed streams)",
+ "gates": {
+  "G1_d3_invariance": "as D4: the D3 record is reproduced, times excluded",
+  "G2_bls_agreement": "as D4: every cell, every seed Converged and |x_IS - x_BLS| <= 0.1 sigma_BLS",
+  "G3_consistency": "as D4: mean NEES in [4.39, 7.61] in every cell",
+  "G4_process_noise_path": "as D4: tests/test_ekf_smoother.py",
+  "G5_stop_is_certified": "every Converged run records its final GN decrement and it is <= 0.01 chi2 (or the step was below 1e-3 sigma)"
+ },
+ "decision_rule": "D4R_QUALIFIED if G1-G5 all PASS; otherwise D4R_NOT_QUALIFIED with each failure reported as computed",
+ "outputs": {"report": "studies/phase17/reports/phase_d4_iterated_smoother.md (D4 and D4-R together)", "results": "studies/phase17/results/phase_d4r_iterated_smoother.json"}
+}

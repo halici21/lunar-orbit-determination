@@ -6,6 +6,9 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Literal
 
+from .propagation_contract import model_options, propagator_options, resolve_profile
+from .propagation_contract import numerical_metadata
+
 import numpy as np
 from numpy.typing import ArrayLike
 
@@ -216,6 +219,7 @@ class ScenarioResult:
     observability_singular_value_max: float = float("nan")
     observability_finite: bool = False
     derivative_validation_profile: str = ""
+    numerical_profile: dict | None = None
 
     @property
     def counted_doppler_model_version(self) -> str:
@@ -562,6 +566,8 @@ def run_srif_arc_sequence(
     robust_outlier_rejection: bool = False,
     process_noise_covariance: ArrayLike | None = None,
     parallel: bool = False,
+    srp=None,
+    propagation_profile=None,
 ) -> ScenarioResult:
     """Run SRIF over prepared arcs with cold, hot, covariance-formal, or sqrt-formal handoff."""
     return run_batch_arc_sequence(
@@ -585,6 +591,7 @@ def run_srif_arc_sequence(
         robust_outlier_rejection=robust_outlier_rejection,
         process_noise_covariance=process_noise_covariance,
         parallel=parallel,
+        **model_options(srp, propagation_profile),
     )
 
 
@@ -620,6 +627,7 @@ def _run_arc_worker(args: tuple) -> "ArcResult":
         ukf_bias_regularize_relative_information=kwargs["ukf_bias_regularize_relative_information"],
         ukf_bias_regularization_std=kwargs["ukf_bias_regularization_std"],
         j2_moon=kwargs["j2_moon"],
+        **model_options(kwargs.get('srp'), kwargs.get('propagation_profile')),
     ).arc_results[0]
 
 
@@ -656,10 +664,13 @@ def run_batch_arc_sequence(
     ephemeris=None,
     j2_moon: float = 0.0,
     parallel: bool = False,
+    srp=None,
+    propagation_profile=None,
 ) -> ScenarioResult:
     """Run BLS/LM, SRIF, or UKF over prepared arcs with cold, hot, or formal starts."""
+    propagation_profile = resolve_profile(srp, propagation_profile)
     _fast_sigma = None
-    if ephemeris is not None and estimator_type == "ukf":
+    if ephemeris is not None and estimator_type == "ukf" and propagation_profile is None:
         _fast_sigma = make_fast_sigma_propagator(
             ephemeris, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             j2_moon=j2_moon,
@@ -730,12 +741,14 @@ def run_batch_arc_sequence(
             "ukf_bias_regularize_relative_information": ukf_bias_regularize_relative_information,
             "ukf_bias_regularization_std": ukf_bias_regularization_std,
             "j2_moon": j2_moon,
+            "srp": srp,
+            "propagation_profile": propagation_profile,
         }
         _tasks = [
             (arc, {**_base_kwargs, "cold_pert": np.asarray(cold_start_bank[arc_idx], dtype=float).reshape(6)})
             for arc_idx, arc in enumerate(arcs)
         ]
-        with ProcessPoolExecutor(max_workers=_os.cpu_count()) as _pool:
+        with ProcessPoolExecutor(max_workers=min(len(_tasks) or 1, _os.cpu_count() or 1, 61)) as _pool:
             _par_results = list(_pool.map(_run_arc_worker, _tasks))
         _rr_physics = RangeRatePhysicsConfig()
         if arcs and measurement_type == "range_rate":
@@ -747,6 +760,10 @@ def run_batch_arc_sequence(
             measurement_type,
         )
         return ScenarioResult(
+            numerical_profile=numerical_metadata(srp,propagation_profile,rtol,atol,
+                local_state_model=range_rate_physics_config(arcs[0].pass_geo.range_rate_physics).local_state_model
+                    if arcs and measurement_type == 'range_rate' else 'not_applicable',
+                adaptive_tolerances=estimator_type != 'ukf'),
             label=label,
             measurement_type=measurement_type,
             start_mode=start_mode,
@@ -807,6 +824,7 @@ def run_batch_arc_sequence(
             **_history_domain_fields,
             **_r1_numerical_provenance_fields(
                 _par_results,
+                common_profile=propagation_profile is not None,
                 estimator_type=estimator_type,
                 observability_summaries=(),
             ),
@@ -834,6 +852,7 @@ def run_batch_arc_sequence(
                     rtol=rtol,
                     atol=atol,
                     j2_moon=j2_moon,
+                    **model_options(srp, propagation_profile),
                 )
             else:
                 x_dyn0 = _propagate_hot_start(
@@ -848,6 +867,7 @@ def run_batch_arc_sequence(
                     rtol=rtol,
                     atol=atol,
                     j2_moon=j2_moon,
+                    **model_options(srp, propagation_profile),
                 )
             b0 = previous_estimate[6:] if previous_estimate.size > 6 else bias0
         elif start_mode == "sqrt_formal" and previous_estimate is not None and previous_t0 is not None:
@@ -866,6 +886,7 @@ def run_batch_arc_sequence(
                     rtol=rtol,
                     atol=atol,
                     j2_moon=j2_moon,
+                    **model_options(srp, propagation_profile),
                 )
             else:
                 x_dyn0 = _propagate_hot_start(
@@ -880,6 +901,7 @@ def run_batch_arc_sequence(
                     rtol=rtol,
                     atol=atol,
                     j2_moon=j2_moon,
+                    **model_options(srp, propagation_profile),
                 )
             b0 = previous_estimate[6:] if previous_estimate.size > 6 else bias0
         elif start_mode == "hot" and previous_estimate is not None and previous_t0 is not None:
@@ -895,6 +917,7 @@ def run_batch_arc_sequence(
                 rtol=rtol,
                 atol=atol,
                 j2_moon=j2_moon,
+                **model_options(srp, propagation_profile),
             )
             b0 = previous_estimate[6:] if previous_estimate.size > 6 else bias0
         else:
@@ -936,6 +959,7 @@ def run_batch_arc_sequence(
                     rtol=rtol,
                     atol=atol,
                     j2_moon=j2_moon,
+                    **model_options(srp, propagation_profile),
                 )
                 observability_summaries.append(observability)
                 decision = decide_bias_state_handling(
@@ -973,6 +997,7 @@ def run_batch_arc_sequence(
                 atol=atol,
                 fast_sigma_propagator=_fast_sigma,
                 j2_moon=j2_moon,
+                **model_options(srp, propagation_profile),
             )
             x_est = ukf_result.final_state.copy()
             stop_reason = "Converged" if np.all(ukf_result.accepted_updates) else "Gated"
@@ -1052,6 +1077,7 @@ def run_batch_arc_sequence(
                 prior_covariance=None if start_mode == "sqrt_formal" else prior_covariance,
                 prior_sqrt_information=prior_sqrt_information,
                 return_posterior=needs_posterior_handoff,
+                **model_options(srp, propagation_profile),
             )
             ukf_mean_nis = float("nan")
             ukf_max_nis = float("nan")
@@ -1105,6 +1131,7 @@ def run_batch_arc_sequence(
                 prior_covariance=None if start_mode == "sqrt_formal" else prior_covariance,
                 prior_sqrt_information=prior_sqrt_information,
                 return_posterior=needs_posterior_handoff,
+                **model_options(srp, propagation_profile),
             )
             ukf_mean_nis = float("nan")
             ukf_max_nis = float("nan")
@@ -1154,6 +1181,7 @@ def run_batch_arc_sequence(
                 prior_covariance=None if start_mode == "sqrt_formal" else prior_covariance,
                 prior_sqrt_information=prior_sqrt_information,
                 return_posterior=needs_posterior_handoff,
+                **model_options(srp, propagation_profile),
             )
             ukf_mean_nis = float("nan")
             ukf_max_nis = float("nan")
@@ -1254,6 +1282,10 @@ def run_batch_arc_sequence(
     )
 
     return ScenarioResult(
+        numerical_profile=numerical_metadata(srp,propagation_profile,rtol,atol,fast_sigma=_fast_sigma is not None,
+            local_state_model=range_rate_physics_config(arcs[0].pass_geo.range_rate_physics).local_state_model
+                if arcs and measurement_type == 'range_rate' else 'not_applicable',
+            adaptive_tolerances=estimator_type != 'ukf'),
         label=label,
         measurement_type=measurement_type,
         start_mode=start_mode,
@@ -1312,6 +1344,7 @@ def run_batch_arc_sequence(
         **history_domain_fields,
         **_r1_numerical_provenance_fields(
             results,
+            common_profile=propagation_profile is not None,
             estimator_type=estimator_type,
             observability_summaries=observability_summaries,
         ),
@@ -1323,6 +1356,7 @@ def _r1_numerical_provenance_fields(
     *,
     estimator_type: EstimatorType,
     observability_summaries: Sequence[object],
+    common_profile: bool = False,
 ) -> dict[str, object]:
     covariance_arrays = [
         np.asarray(result.posterior_covariance, dtype=float)
@@ -1386,7 +1420,7 @@ def _r1_numerical_provenance_fields(
         "observability_singular_value_min": observability_singular_min,
         "observability_singular_value_max": observability_singular_max,
         "observability_finite": observability_finite,
-        "derivative_validation_profile": "r1.fd-sweep.v1",
+        "derivative_validation_profile": 'pending_common_profile_derivative_qualification' if common_profile else 'r1.fd-sweep.v1',
     }
 
 
@@ -1446,8 +1480,10 @@ def _propagate_hot_start(
     rtol: float,
     atol: float,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> np.ndarray:
-    if np.isclose(t_prev_s, t_next_s):
+    if t_prev_s == t_next_s:
         return x_prev.copy()
     return propagate_state(
         [t_prev_s, t_next_s],
@@ -1460,6 +1496,7 @@ def _propagate_hot_start(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )[-1, :]
 
 
@@ -1478,9 +1515,11 @@ def _propagate_formal_handoff(
     rtol: float,
     atol: float,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, np.ndarray]:
     p_prev = _symmetrize(np.asarray(p_prev, dtype=float))
-    if np.isclose(t_prev_s, t_next_s):
+    if t_prev_s == t_next_s:
         p_next = p_prev.copy()
         if process_noise_covariance is not None:
             p_next = _add_process_noise(p_next, process_noise_covariance)
@@ -1498,6 +1537,7 @@ def _propagate_formal_handoff(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
+        **propagator_options(srp, propagation_profile),
     )
     phi = x_aug[-1, 6:].reshape((6, 6), order="F")
     transition = np.eye(p_prev.shape[0], dtype=float)
@@ -1523,12 +1563,14 @@ def _propagate_sqrt_information_handoff(
     rtol: float,
     atol: float,
     j2_moon: float = 0.0,
+    srp=None,
+    propagation_profile=None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     r_prev = np.asarray(r_prev, dtype=float)
     if r_prev.ndim != 2 or r_prev.shape[0] != r_prev.shape[1] or r_prev.shape[0] < 6:
         raise ValueError("sqrt information handoff factor must be square with at least 6 states.")
 
-    if np.isclose(t_prev_s, t_next_s):
+    if t_prev_s == t_next_s:
         x_next = x_prev.copy()
         transition = np.eye(r_prev.shape[0], dtype=float)
     else:
@@ -1544,6 +1586,7 @@ def _propagate_sqrt_information_handoff(
             rtol=rtol,
             atol=atol,
             j2_moon=j2_moon,
+            **propagator_options(srp, propagation_profile),
         )
         phi = x_aug[-1, 6:].reshape((6, 6), order="F")
         transition = np.eye(r_prev.shape[0], dtype=float)
