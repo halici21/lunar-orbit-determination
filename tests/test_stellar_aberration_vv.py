@@ -4,9 +4,9 @@ Each test maps 1:1 to a section of the stellar-aberration V&V test plan. The
 geometric unit tests (plan sections 2-6) exercise ``apply_stellar_aberration``
 directly and need no SPICE kernels; the operational tests (sections 1, 7-10) use
 the committed SPICE snapshot fixture and skip when the fixture or kernels are
-unavailable. Section 11 (SPICE CN/CN+S cross-validation) is planned future work;
-the closest in-repo evidence is the abcorr='LT' cross-check used while building
-the light-time layer.
+unavailable. Section 11 cross-validates both aberration models against an
+independent SSB-frame CN+S computation (SSB light-time iteration + SPICE
+``stelab``); it closed assessment MEAS-02 (WP1.10).
 """
 
 import json
@@ -252,7 +252,10 @@ class StellarAberrationFixtureVV(unittest.TestCase):
 
     def test_s7_lunar_operational_range_invariant_angles_shift(self):
         """Section 7: realistic Earth-station -> lunar-orbiter geometry. Range is
-        invariant; az/el shift is 1e-6..1e-4 rad depending on the velocity frame."""
+        invariant; the az/el shift from CN is ~1e-6 rad and the same in both
+        velocity frames once the SSB model re-expresses the Moon-centred light-time
+        LOS in the SSB frame (WP1.10). Before that fix the SSB model counted the
+        Moon's ~30 km/s SSB velocity twice (shift ~1e-4 rad, MEAS-02)."""
         _, cn = self._gen(apply_light_time=True)
         _, loc = self._gen(
             apply_light_time=True, apply_stellar_aberration=True,
@@ -268,12 +271,66 @@ class StellarAberrationFixtureVV(unittest.TestCase):
 
         loc_shift = float(np.max(_azel_separation(loc, cn)))
         ssb_shift = float(np.max(_azel_separation(ssb, cn)))
-        # local-MCI: ~1e-6 rad; SSB: ~1e-4 rad; SSB strictly larger
         self.assertGreater(loc_shift, 1e-7)
         self.assertLess(loc_shift, 1e-4)
-        self.assertGreater(ssb_shift, 1e-5)
-        self.assertLess(ssb_shift, 1.2e-4)
-        self.assertGreater(ssb_shift, 5.0 * loc_shift)
+        self.assertGreater(ssb_shift, 1e-7)
+        self.assertLess(ssb_shift, 1e-4)
+        # Both frames reproduce CN+S to first order in v/c; they may differ only
+        # at second order, (30 km/s / c)^2 ~ 1e-8 rad.
+        self.assertLess(float(np.max(_azel_separation(ssb, loc))), 2e-8)
+
+    def test_s11_both_models_match_independent_spice_cn_plus_s(self):
+        """Section 11 (MEAS-02): generated apparent az/el vs an independent CN+S.
+
+        Oracle: spacecraft SSB position = SPICE Moon SSB state + the MCI history at
+        the transmit time; one-way light time iterated in the SSB frame against
+        the station's SSB position at receive time; SPICE ``stelab`` with the
+        station's SSB velocity. Tolerance 0.1 mas-scale bound 5e-8 rad: the model
+        neglects only second-order (v/c)^2 terms and the Moon's SSB acceleration
+        over the ~1.3 s light time.
+        """
+        import spiceypy as spice
+
+        from lunar_od.geometry import ecef2razel_sez
+        from lunar_od.radiometrics import interp_state_history
+
+        _, loc = self._gen(
+            apply_light_time=True, apply_stellar_aberration=True,
+            stellar_aberration_model="local_mci",
+        )
+        _, ssb = self._gen(
+            apply_light_time=True, apply_stellar_aberration=True,
+            stellar_aberration_model="spice_ssb",
+        )
+        load_spice_kernels()
+        try:
+            rows = np.unique(np.linspace(0, loc.shape[0] - 1, 25).astype(int))
+            worst = {"local_mci": 0.0, "spice_ssb": 0.0}
+            for i in rows:
+                t_rx = float(loc[i, 0])
+                station = self._stations[int(loc[i, 4]) - 1]
+                et_rx = float(self._et) + t_rx
+                xform = np.asarray(spice.sxform("J2000", "ITRF93", et_rx), dtype=float)
+                earth_ssb = np.asarray(spice.spkezr("EARTH", et_rx, "J2000", "NONE", "SSB")[0]) * 1e3
+                station_rel = np.linalg.solve(xform, np.r_[station.r_ecef_m, 0.0, 0.0, 0.0])
+                observer_pos = earth_ssb[:3] + station_rel[:3]
+                observer_vel = earth_ssb[3:] + station_rel[3:]
+                tau = 0.0
+                for _ in range(8):
+                    moon_ssb = np.asarray(spice.spkpos("MOON", et_rx - tau, "J2000", "NONE", "SSB")[0]) * 1e3
+                    sc_ssb = moon_ssb + interp_state_history(self._t_pass, self._state, t_rx - tau)[:3]
+                    tau = float(np.linalg.norm(sc_ssb - observer_pos)) / C_LIGHT
+                los = sc_ssb - observer_pos
+                apparent = np.asarray(spice.stelab(los / np.linalg.norm(los), observer_vel / 1000.0))
+                az0, el0, _ = ecef2razel_sez(xform[:3, :3] @ apparent, station.lat_rad, station.lon_rad)
+                oracle = np.array([[0.0, 0.0, az0, el0]])
+                for name, obs in (("local_mci", loc), ("spice_ssb", ssb)):
+                    sep = float(_azel_separation(obs[i:i + 1, :4], oracle)[0])
+                    worst[name] = max(worst[name], sep)
+        finally:
+            spice.kclear()
+        self.assertLess(worst["local_mci"], 5e-8, worst)
+        self.assertLess(worst["spice_ssb"], 5e-8, worst)
 
     def test_s8_noiseless_residual_consistency(self):
         """Section 8: noiseless +S measurements predicted with the same model

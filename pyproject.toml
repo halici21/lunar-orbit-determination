@@ -13,6 +13,22 @@ license-files = ["LICENSE", "LICENSES/ERFA.txt", "LICENSES/pyTMD.txt"]
 authors = [{name = "Cemil Eray Halıcı"}]
 dynamic = ["dependencies"]
 
+# Optional profiles mirror requirements/*.txt and desktop_app/requirements_desktop.txt
+# (tests/test_packaging_extras.py keeps them equal); exact validated pins stay in
+# requirements/windows.txt.
+[project.optional-dependencies]
+accelerated = ["numba>=0.61"]
+desktop = [
+    "PyQt5>=5.15",
+    "PyQt5-Qt5>=5.15",
+    "PyQt5-sip>=12.11",
+    "pandas>=1.5",
+    "matplotlib>=3.6",
+    "pyqtgraph>=0.13",
+]
+dev = ["pytest>=8", "pytest-qt>=4.4"]
+docs = ["mkdocs==1.6.1"]
+
 [project.urls]
 Documentation = "https://halici21.github.io/lunar-orbit-determination/"
 Repository = "https://github.com/halici21/lunar-orbit-determination"

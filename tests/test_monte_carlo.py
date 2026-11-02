@@ -18,7 +18,7 @@ from lunar_od import (
 
 class MonteCarloTests(unittest.TestCase):
     def test_trial_specs_are_one_based_and_seeded(self):
-        specs = make_trial_specs(4, base_seed=100)
+        specs = make_trial_specs(4, base_seed=100, seed_scheme="legacy_offset")
 
         self.assertEqual([spec.trial_id for spec in specs], [1, 2, 3, 4])
         self.assertEqual([spec.seed for spec in specs], [100, 101, 102, 103])
@@ -33,8 +33,8 @@ class MonteCarloTests(unittest.TestCase):
                 "metadata": {"case": "demo"},
             }
 
-        first = run_monte_carlo_trials(5, trial, base_seed=42)
-        second = run_monte_carlo_trials(5, trial, base_seed=42)
+        first = run_monte_carlo_trials(5, trial, base_seed=42, seed_scheme="legacy_offset")
+        second = run_monte_carlo_trials(5, trial, base_seed=42, seed_scheme="legacy_offset")
 
         self.assertEqual([result.seed for result in first], [42, 43, 44, 45, 46])
         self.assertEqual([result.metrics for result in first], [result.metrics for result in second])
@@ -99,8 +99,10 @@ class MonteCarloTests(unittest.TestCase):
                 "trial_copy": float(spec.trial_id),
             }
 
-        serial = run_monte_carlo_campaign(cases, 6, trial, base_seed=100, max_workers=1)
-        parallel = run_monte_carlo_campaign(cases, 6, trial, base_seed=100, max_workers=3)
+        serial = run_monte_carlo_campaign(cases, 6, trial, base_seed=100, max_workers=1,
+                                          seed_scheme="legacy_offset")
+        parallel = run_monte_carlo_campaign(cases, 6, trial, base_seed=100, max_workers=3,
+                                            seed_scheme="legacy_offset")
 
         self.assertEqual(
             [[result.metrics for result in case.trials] for case in serial],

@@ -67,6 +67,10 @@ __all__ = [
 
 FORCE_CONTRACT_SCHEMA_VERSION = "r0b.force-model-contract.v1"
 SRP_FORCE_CONTRACT_SCHEMA_VERSION = "r0b.force-model-contract.v2"
+#: v3 (assessment DYN-10/DYN-11, WP1.5): adds the executed ephemeris identity and
+#: hashes disabled Earth J2 as "not_applicable". v1/v2 fingerprints are unchanged.
+EPHEMERIS_FORCE_CONTRACT_SCHEMA_VERSION = "r0b.force-model-contract.v3"
+NOT_APPLICABLE = "not_applicable"
 
 
 class ForceContractError(ValueError):
@@ -256,6 +260,50 @@ class SolarRadiationPressureForceContract:
 
 
 @dataclass(frozen=True)
+class EphemerisExecutionContract:
+    """Identity of the Earth/Sun ephemeris a propagation actually executed (DYN-10).
+
+    ``samples_sha256`` hashes the sampled grid and the Earth/Sun samples
+    themselves, so a different kernel, epoch, grid or deterministic
+    perturbation changes the fingerprint even when the kernel name does not.
+    """
+
+    provider: str
+    planetary_spk: tuple[str, ...]
+    samples_sha256: str
+    sample_count: int
+    grid_step_s: float | None
+    et0_s: float | None
+    earth_interpolation: str
+    sun_interpolation: str
+    extrapolation_margin_s: float
+
+
+def ephemeris_execution_contract(ephemeris, *, planetary_spk=()) -> EphemerisExecutionContract:
+    """Build the identity of a ``MoonCenteredEphemeris`` (duck-typed; no numpy import here)."""
+    digest = hashlib.sha256()
+    for name in ("t_ephem_s", "earth_pos_m", "earth_vel_mps", "sun_pos_m"):
+        array = getattr(ephemeris, name)
+        digest.update(name.encode("ascii"))
+        digest.update(str(tuple(array.shape)).encode("ascii"))
+        digest.update(array.astype("<f8").tobytes(order="C"))
+    t = [float(v) for v in ephemeris.t_ephem_s]
+    steps = sorted({round(b - a, 9) for a, b in zip(t, t[1:])})
+    et0 = getattr(ephemeris, "et0_s", None)
+    return EphemerisExecutionContract(
+        provider="moon_centered_sampled_ephemeris",
+        planetary_spk=tuple(str(s) for s in planetary_spk),
+        samples_sha256=digest.hexdigest(),
+        sample_count=len(t),
+        grid_step_s=steps[0] if len(steps) == 1 else None,
+        et0_s=None if et0 is None else float(et0),
+        earth_interpolation=str(ephemeris.earth_interpolation),
+        sun_interpolation="pchip",
+        extrapolation_margin_s=float(ephemeris.extrapolation_margin_s),
+    )
+
+
+@dataclass(frozen=True)
 class ForceModelContract:
     """Immutable, hashable-by-content description of one evaluated force model."""
 
@@ -269,10 +317,14 @@ class ForceModelContract:
     force_ephemeris_policy: str
     consumer_capabilities: Mapping[ConsumerRole, ConsumerReadiness]
     solar_radiation_pressure: SolarRadiationPressureForceContract | None = None
+    ephemeris_execution: EphemerisExecutionContract | None = None
 
     def __post_init__(self) -> None:
-        if self.solar_radiation_pressure is not None and self.schema_version != SRP_FORCE_CONTRACT_SCHEMA_VERSION:
-            raise ForceContractError('An active SRP contract requires the v2 schema.')
+        if self.ephemeris_execution is not None and self.schema_version != EPHEMERIS_FORCE_CONTRACT_SCHEMA_VERSION:
+            raise ForceContractError('An ephemeris execution identity requires the v3 schema.')
+        if self.solar_radiation_pressure is not None and self.schema_version not in (
+                SRP_FORCE_CONTRACT_SCHEMA_VERSION, EPHEMERIS_FORCE_CONTRACT_SCHEMA_VERSION):
+            raise ForceContractError('An active SRP contract requires the v2 or v3 schema.')
         object.__setattr__(
             self, "consumer_capabilities", capability_map(self.consumer_capabilities)
         )
@@ -324,8 +376,8 @@ def _normalize(value: Any) -> Any:
             field.name: _normalize(getattr(value, field.name))
             for field in fields(value)
             if not (isinstance(value, ForceModelContract)
-                    and field.name == 'solar_radiation_pressure'
-                    and value.solar_radiation_pressure is None)
+                    and field.name in ('solar_radiation_pressure', 'ephemeris_execution')
+                    and getattr(value, field.name) is None)
         }
     if isinstance(value, Mapping):
         normalized: dict[str, Any] = {}
@@ -443,6 +495,7 @@ class ForceExecutionSpec:
     earth_j2_reference_radius_m: float
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris"
     solar_radiation_pressure: SolarRadiationPressureForceContract | None = None
+    ephemeris_execution: EphemerisExecutionContract | None = None
 
     @property
     def lunar_j2_on(self) -> bool:
@@ -466,8 +519,18 @@ class ForceExecutionSpec:
     def contract(self) -> ForceModelContract:
         lunar_j2_on = self.lunar_j2_on
         earth_j2_on = bool(self.enable_earth_j2)
+        v3 = self.ephemeris_execution is not None
+        if v3:
+            schema_version = EPHEMERIS_FORCE_CONTRACT_SCHEMA_VERSION
+        elif self.solar_radiation_pressure:
+            schema_version = SRP_FORCE_CONTRACT_SCHEMA_VERSION
+        else:
+            schema_version = FORCE_CONTRACT_SCHEMA_VERSION
+        # v1/v2 keep hashing the configured Earth J2 mode even when off (historical
+        # fingerprints); v3 hashes a disabled term as not_applicable (DYN-11).
+        earth_j2_mode = str(self.earth_j2_mode) if (earth_j2_on or not v3) else NOT_APPLICABLE
         return ForceModelContract(
-            schema_version=SRP_FORCE_CONTRACT_SCHEMA_VERSION if self.solar_radiation_pressure else FORCE_CONTRACT_SCHEMA_VERSION,
+            schema_version=schema_version,
             lunar_point_mass=PointMassForceContract(
                 enabled=True,
                 body="moon",
@@ -501,7 +564,7 @@ class ForceExecutionSpec:
             ),
             earth_j2=EarthJ2ForceContract(
                 enabled=earth_j2_on,
-                mode=str(self.earth_j2_mode),
+                mode=earth_j2_mode,
                 coefficient=float(self.earth_j2_coefficient) if earth_j2_on else 0.0,
                 reference_radius_m=(
                     float(self.earth_j2_reference_radius_m) if earth_j2_on else 0.0
@@ -517,6 +580,7 @@ class ForceExecutionSpec:
             force_ephemeris_policy=str(self.force_ephemeris_policy),
             consumer_capabilities=self.consumer_capabilities(),
             solar_radiation_pressure=self.solar_radiation_pressure,
+            ephemeris_execution=self.ephemeris_execution,
         )
 
     def consumer_capabilities(self):
@@ -561,6 +625,12 @@ def bind_spec_to_runtime(
                 f"({runtime_value!r}) does not exactly equal the fingerprinted "
                 f"spec value ({spec_value!r})."
             )
+    # DYN-11: Earth J2 has no runtime primitive in the propagator kwargs, so a spec
+    # that declares it cannot be bound to what executes.
+    if spec.enable_earth_j2:
+        raise ForceContractError(
+            f"{context}: Earth J2 is declared but the propagator receives no Earth J2 primitive; "
+            "it cannot be bound to the executed physics.")
     runtime_srp = runtime_kwargs.get('srp')
     if spec.solar_radiation_pressure is None:
         if runtime_srp is not None and getattr(runtime_srp, 'enabled', True):

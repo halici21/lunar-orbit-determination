@@ -173,10 +173,13 @@ class HarmonicsOnValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "count lunar J2\\s*twice|J2\\s*twice"):
             scenario_config_from_mapping(_on_payload(j2_moon=2.0330530e-4))
 
-    # 16 -- STM guard ------------------------------------------------------------
+    # 16 -- STM estimators still refused, now by the accurate runner guard ---------
+    # WP1.7: the old "gradient not implemented" reason was stale (the analytic Pines
+    # gradient exists); batch estimators are refused because the runner does not
+    # execute harmonics at all.
     def test_stm_estimators_rejected(self):
         for estimator in ("bls_lm", "srif"):
-            with self.assertRaisesRegex(ValueError, "STM-based estimators"):
+            with self.assertRaisesRegex(ValueError, "not yet consumed"):
                 scenario_config_from_mapping(_on_payload(estimator_type=estimator))
 
     # 17 -- temporary not-yet-consumed guard (UKF path) ---------------------------

@@ -11,6 +11,7 @@ from typing import Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
+from .dmc import DMC_SIZE, DMCOptions, dmc_process_noise, propagate_dmc_state
 from .dynamics import PropagationProfile, dynamics_jacobian_a_matrix, f3body_moon, propagate_augmented_state, propagate_state
 from .propagation_contract import resolve_profile, numerical_metadata
 
@@ -21,6 +22,7 @@ from .measurements import PassGeometry, _range_rate_companion_observable, normal
 from .radiometrics import (
     RangeRatePhysicsConfig,
     _clock_corrected_receive_time,
+    _interp_state,
     instantaneous_geometric_range_rate,
     range_rate_physics_config,
     two_way_counted_doppler_observable,
@@ -796,8 +798,14 @@ def run_lunar_ukf(
     srp=None,
     solve_for_k_srp: bool = False,
     propagation_profile=None,
+    dmc: DMCOptions | None = None,
 ) -> LunarUKFResult:
     """Run a sequential UKF over one prepared lunar OD arc.
+
+    WP4.8c (EST-21): ``dmc`` adds the Gauss-Markov empirical acceleration ``w`` of
+    ``dmc.py`` as state elements 6:9 (state ``[r, v, w, biases]``); every sigma point
+    propagates under its own ``w`` and ``dmc_process_noise`` supplies the process noise
+    (``process_noise`` must then be None).  Measurements see the state without ``w``.
 
     The first 6 elements are the dynamic lunar state. Optional trailing bias
     states follow the BLS/SRIF conventions: global_full, station_angles, or
@@ -864,6 +872,14 @@ def run_lunar_ukf(
                 "solve_for_k_srp requires the unscented (sigma-point) process "
                 "path; use_stm_linearization bypasses it."
             )
+    if dmc is not None:
+        if process_noise is not None:
+            raise ValueError("dmc= supplies the process noise; process_noise must be None.")
+        if solve_for_k_srp or fast_sigma_propagator is not None or use_stm_linearization:
+            raise ValueError("dmc= is not combined with solve_for_k_srp, fast_sigma_propagator "
+                             "or use_stm_linearization.")
+        if propagation_profile is not None:
+            raise ValueError("dmc= propagates with DOP853 at rtol/atol; propagation_profile is not supported.")
     # FA-01 runtime defense-in-depth: one check per arc, before any sigma-point
     # work, covering callers that bypass scenario-config validation.
     validate_ukf_measurement_support(
@@ -889,6 +905,8 @@ def run_lunar_ukf(
     if x0.size < 6:
         raise ValueError("x0_mci must contain at least the 6 dynamic state elements.")
     nx = x0.size
+    if dmc is not None and nx < 6 + DMC_SIZE:
+        raise ValueError("dmc= requires x0_mci = [r, v, w(3), biases...].")
     if solve_for_k_srp:
         if nx != 7:
             raise ValueError(
@@ -910,7 +928,7 @@ def run_lunar_ukf(
     # K occupies index 6 but is not a measurement-bias state; size the bias
     # config off the dynamics+bias portion only (nx-1), so bias_mode=None
     # still resolves to "none" instead of raising on the extra dimension.
-    nx_for_bias = nx - 1 if solve_for_k_srp else nx
+    nx_for_bias = nx - 1 if solve_for_k_srp else (nx - DMC_SIZE if dmc is not None else nx)
     bias_cfg = _resolve_ukf_bias_config(measurement_type, nx_for_bias, len(pass_geo.stations), bias_mode)
 
     if solve_for_k_srp:
@@ -970,11 +988,15 @@ def run_lunar_ukf(
                 float(np.mean(epoch_accepted_nis)),
                 measurement_dim,
                 adaptive,
-                enabled=q is not None,
+                enabled=q is not None or dmc is not None,
             )
             epoch_accepted_nis = []
         dt_s = abs(target_t - current_t)
         q_step = _discretize_process_noise(q, dt_s, nx, process_noise_model) if is_time_advance else None
+        if dmc is not None and is_time_advance:
+            mean = sqrt_state.x if covariance_form == "square_root" else state.x
+            q_step = np.zeros((nx, nx))
+            q_step[:6 + DMC_SIZE, :6 + DMC_SIZE] = dmc_process_noise(dmc, target_t - current_t, state6=mean[:6])
         propagation_cache: dict[bytes, np.ndarray] = {}
 
         def process_fn(x: np.ndarray, t0: float = current_t, t1: float = target_t) -> np.ndarray:
@@ -984,6 +1006,19 @@ def run_lunar_ukf(
             process_function_evaluations += 1
             if t0 == t1:
                 return x.copy()
+            if dmc is not None:
+                n_dyn = 6 + DMC_SIZE
+                key = np.ascontiguousarray(x[:n_dyn]).tobytes()
+                if key in propagation_cache:
+                    dynamic_propagation_cache_hits += 1
+                    return np.concatenate([propagation_cache[key], x[n_dyn:]])
+                propagated_dyn = propagate_dmc_state(
+                    [t0, t1], x[:n_dyn], dmc, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                    get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon, srp=srp, stm=False,
+                )[-1, :]
+                unique_dynamic_propagations += 1
+                propagation_cache[key] = propagated_dyn
+                return np.concatenate([propagated_dyn, x[n_dyn:]])
             if fast_sigma_propagator is not None:
                 unique_dynamic_propagations += 1
                 return np.concatenate([fast_sigma_propagator(t0, t1, x[:6]), x[6:]])
@@ -1078,6 +1113,8 @@ def run_lunar_ukf(
             j2_moon=j2_moon, srp=srp, solve_for_k_srp=solve_for_k_srp,
             propagation_profile=propagation_profile,
         )
+        if dmc is not None:
+            measurement_fn = _without_dmc_state(measurement_fn)
         measurement_function_evaluations += int(sigma_x.shape[0])
         if covariance_form == "square_root":
             sqrt_state, diagnostics = square_root_ukf_update(
@@ -1120,6 +1157,10 @@ def run_lunar_ukf(
                     state.x.copy(),
                     _cholesky_psd(state.p, (config or UnscentedTransformConfig()).jitter),
                 )
+            # WP4.4b (EST-13): the regularisation pseudo-measurement is prior information
+            # about the initial mean; applied after every update it counted N times.
+            regularization = {}
+            constraints_active = bool(frozen_indices)
         unique_measurement_model_evaluations += measurement_stats["evaluations"]
         measurement_model_cache_hits += measurement_stats["cache_hits"]
         current_t = target_t
@@ -1182,6 +1223,12 @@ def run_lunar_ukf(
     )
 
 
+def _without_dmc_state(measurement_fn: Callable[[np.ndarray], np.ndarray]) -> Callable[[np.ndarray], np.ndarray]:
+    def wrapped(x: np.ndarray) -> np.ndarray:
+        return measurement_fn(np.concatenate([x[:6], x[6 + DMC_SIZE:]]))
+    return wrapped
+
+
 def _residual(value: np.ndarray, reference: np.ndarray, residual_fn: ResidualFunction | None) -> np.ndarray:
     if residual_fn is None:
         return np.asarray(value, dtype=float) - np.asarray(reference, dtype=float)
@@ -1224,10 +1271,15 @@ def _apply_state_constraints(
         x += gain * (prior_mean[idx] - x[idx])
         p -= np.outer(covariance_column, covariance_column) / max(innovation_variance, jitter)
         p = _symmetrize(p)
-    for idx in frozen_indices:
-        x[idx] = predicted.x[idx]
-        p[idx, :] = predicted.p[idx, :]
-        p[:, idx] = predicted.p[:, idx]
+    # WP4.4b (EST-13): a frozen state is a Schmidt-Kalman consider state -- its gain
+    # rows are zero.  With K_c = 0 the Joseph form leaves x_c and P_cc at their
+    # predicted values and gives the estimated block and the cross-covariance P_xc
+    # exactly as the full update did; resetting P_xc to the prediction (as before)
+    # discarded the correlation the update had learnt.
+    frozen_list = list(frozen_indices)
+    if frozen_list:
+        x[frozen_list] = predicted.x[frozen_list]
+        p[np.ix_(frozen_list, frozen_list)] = predicted.p[np.ix_(frozen_list, frozen_list)]
     return UKFState(x=x, p=_ensure_psd(p, jitter))
 
 
@@ -1338,7 +1390,9 @@ def _unscented_mean(
     residual_fn: ResidualFunction | None,
 ) -> np.ndarray:
     if residual_fn is None:
-        return weights @ points
+        # WP4.4a (EST-11): X0 + sum w_i (X_i - X0).  sum w_i X_i on ~1e6 m states with
+        # Wm0 = -1e6 (alpha 1e-3) cancelled to 3e-5 m; the deviations carry no offset.
+        return points[0] + weights @ (points - points[0])
 
     mean = np.asarray(points[0], dtype=float).copy()
     for _ in range(20):
@@ -1419,27 +1473,47 @@ def _cholupdate_lower(lower: np.ndarray, vector: ArrayLike, *, sign: int) -> np.
     return result
 
 
+def _jacobi_scale(matrix: np.ndarray) -> np.ndarray:
+    """sqrt of the diagonal (1 where it is not positive): the matrix's own units."""
+    d = np.sqrt(np.clip(np.diag(matrix), 0.0, None))
+    d[d == 0.0] = 1.0
+    return d
+
+
 def _cholesky_psd(matrix: np.ndarray, jitter: float) -> np.ndarray:
+    # WP4.4a (EST-12): jitter was an ABSOLUTE 1e-12 added to every diagonal, doubling a
+    # 1e-12 rad^2 angle variance.  A positive-definite matrix is now factored as it is;
+    # only a failed factorization gets jitter, relative to each diagonal (in the
+    # Jacobi-equilibrated matrix), so no state is regularised in another's units.
     matrix = _symmetrize(matrix)
+    d = _jacobi_scale(matrix)
+    equilibrated = matrix / d[:, None] / d[None, :]
     eye = np.eye(matrix.shape[0], dtype=float)
+    try:
+        return d[:, None] * np.linalg.cholesky(equilibrated)
+    except np.linalg.LinAlgError:
+        pass
     attempt = jitter
     for _ in range(8):
         try:
-            return np.linalg.cholesky(matrix + attempt * eye)
+            return d[:, None] * np.linalg.cholesky(equilibrated + attempt * eye)
         except np.linalg.LinAlgError:
             attempt *= 10.0
-    vals, vecs = np.linalg.eigh(matrix)
+    vals, vecs = np.linalg.eigh(equilibrated)
     vals = np.clip(vals, attempt, None)
-    return vecs @ np.diag(np.sqrt(vals))
+    return d[:, None] * (vecs @ np.diag(np.sqrt(vals)))
 
 
 def _ensure_psd(matrix: np.ndarray, jitter: float) -> np.ndarray:
+    # WP4.4a (EST-12): the eigenvalue floor is relative, in the Jacobi-equilibrated matrix.
     matrix = _symmetrize(matrix)
-    vals, vecs = np.linalg.eigh(matrix)
+    d = _jacobi_scale(matrix)
+    equilibrated = matrix / d[:, None] / d[None, :]
+    vals, vecs = np.linalg.eigh(equilibrated)
     if np.min(vals) >= jitter:
         return matrix
     vals = np.clip(vals, jitter, None)
-    return _symmetrize((vecs * vals) @ vecs.T)
+    return _symmetrize(d[:, None] * ((vecs * vals) @ vecs.T) * d[None, :])
 
 
 def normalized_innovation_squared(innovation: ArrayLike, innovation_covariance: ArrayLike) -> float:
@@ -1805,9 +1879,10 @@ def _range_rate_measurement_from_state(
     if companion_geometry == "instantaneous":
         az_rad, el_rad, _ = ecef2razel_sez(rho_ecef, station.lat_rad, station.lon_rad)
     else:
-        local_t, local_state, local_earth_pos, _local_earth_vel, local_xforms = local_histories
-        earth_rx = _interp_pass_values(local_t, local_earth_pos, np.array([float(obs_row[0])]))[0]
-        xform_rx = _interp_pass_values(local_t, local_xforms, np.array([float(obs_row[0])]))[0]
+        local_t, local_state, local_earth_pos, local_earth_vel, local_xforms = local_histories
+        t_rx = np.array([float(obs_row[0])])
+        earth_rx = _interp_pass_earth_state(local_t, local_earth_pos, local_earth_vel, t_rx)[0][0]
+        xform_rx = _interp_pass_transforms(local_t, local_xforms, t_rx)[0]
         range_m, az_rad, el_rad = _range_rate_companion_observable(
             float(obs_row[0]),
             station,
@@ -1988,9 +2063,12 @@ def _two_way_local_histories(
             j2_moon=j2_moon, srp=srp, propagation_profile=propagation_profile,
         )
 
-    local_earth_pos = _interp_pass_values(pass_geo.t_s, pass_geo.earth_pos_mci_m, source_lookup_t)
-    local_earth_vel = _interp_pass_values(pass_geo.t_s, pass_geo.earth_vel_mci_mps, source_lookup_t)
-    local_xforms = _interp_pass_values(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, source_lookup_t)
+    # WP1.1 (MEAS-04): the same cubic-Hermite Earth state as the batch counted-Doppler path, and a
+    # rotation-preserving transform instead of element-wise linear interpolation.
+    local_earth_pos, local_earth_vel = _interp_pass_earth_state(
+        pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps, source_lookup_t
+    )
+    local_xforms = _interp_pass_transforms(pass_geo.t_s, pass_geo.x_j2000_to_itrf93, source_lookup_t)
     return local_t, local_state, local_earth_pos, local_earth_vel, local_xforms
 
 
@@ -2091,16 +2169,10 @@ def _propagate_local_state_history(
     return state_history
 
 
-def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: ArrayLike) -> np.ndarray:
-    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
-    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
-    array = np.asarray(values, dtype=float)
-    original_shape = array.shape[1:]
-    flat = array.reshape(source_t.size, -1)
-    out = np.empty((target_t.size, flat.shape[1]), dtype=float)
-    # Phase 17-HARDEN-D19: the only production caller (_two_way_local_histories)
-    # normalizes its lookup interval onto closed support first, so the edge
-    # extrapolation below is reached only within the two-ULP representation
+def _require_pass_support(source_t: np.ndarray, target_t: np.ndarray, consumer: str) -> None:
+    # Phase 17-HARDEN-D19: the production callers (_two_way_local_histories)
+    # normalize their lookup interval onto closed support first, so edge
+    # extrapolation is reached only within the two-ULP representation
     # allowance; any farther (or non-finite) target raises.
     for target in target_t[~((target_t >= source_t[0]) & (target_t <= source_t[-1]))]:
         require_supported_epoch(
@@ -2109,8 +2181,67 @@ def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: Ar
             float(source_t[-1]),
             history_name="ukf_pass_history",
             model_context="ukf_pass_interpolation",
-            consumer="filters._interp_pass_values",
+            consumer=consumer,
         )
+
+
+def _interp_pass_earth_state(
+    source_t_s: ArrayLike, earth_pos: ArrayLike, earth_vel: ArrayLike, target_t_s: ArrayLike
+) -> tuple[np.ndarray, np.ndarray]:
+    """Cubic-Hermite Earth position and velocity, the batch counted-Doppler interpolation (HARDEN-D23)."""
+    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
+    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
+    _require_pass_support(source_t, target_t, "filters._interp_pass_earth_state")
+    history = np.hstack([np.asarray(earth_pos, dtype=float), np.asarray(earth_vel, dtype=float)])
+    out = np.array([_interp_state(source_t, history, float(t)) for t in target_t]).reshape(target_t.size, 6)
+    return out[:, :3], out[:, 3:6]
+
+
+def _interp_pass_transforms(source_t_s: ArrayLike, xforms: ArrayLike, target_t_s: ArrayLike) -> np.ndarray:
+    """Interpolate 6x6 J2000->ITRF93 state transforms [[R, 0], [dR, R]] as rotations.
+
+    R follows the constant-rate rotation between the bracketing samples (geodesic
+    interpolation, so it stays orthonormal); dR = W R with W = dR R^T, the
+    skew-symmetric rate matrix, interpolated linearly. Grid samples are returned
+    exactly. Element-wise linear interpolation is not a rotation between nodes
+    (assessment MEAS-04: 15-244 m of station position at a 60-240 s midpoint).
+    """
+    from scipy.spatial.transform import Rotation
+
+    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
+    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
+    x = np.asarray(xforms, dtype=float).reshape(source_t.size, 6, 6)
+    _require_pass_support(source_t, target_t, "filters._interp_pass_transforms")
+    out = np.empty((target_t.size, 6, 6), dtype=float)
+    for k, t in enumerate(target_t):
+        node = np.flatnonzero(source_t == t)
+        if node.size:
+            out[k] = x[node[0]]
+            continue
+        i1 = int(np.clip(np.searchsorted(source_t, t, side="right"), 1, source_t.size - 1))
+        i0 = i1 - 1
+        s = (t - source_t[i0]) / (source_t[i1] - source_t[i0])
+        r0, r1 = x[i0, :3, :3], x[i1, :3, :3]
+        step = Rotation.from_matrix(r1 @ r0.T).as_rotvec()
+        r = Rotation.from_rotvec(s * step).as_matrix() @ r0
+        w = (1.0 - s) * (x[i0, 3:6, :3] @ r0.T) + s * (x[i1, 3:6, :3] @ r1.T)
+        w = 0.5 * (w - w.T)
+        out[k] = 0.0
+        out[k, :3, :3] = r
+        out[k, 3:6, 3:6] = r
+        out[k, 3:6, :3] = w @ r
+    return out
+
+
+def _interp_pass_values(source_t_s: ArrayLike, values: ArrayLike, target_t_s: ArrayLike) -> np.ndarray:
+    """Element-wise linear interpolation of pass histories (not for rotations; see _interp_pass_transforms)."""
+    source_t = np.asarray(source_t_s, dtype=float).reshape(-1)
+    target_t = np.asarray(target_t_s, dtype=float).reshape(-1)
+    array = np.asarray(values, dtype=float)
+    original_shape = array.shape[1:]
+    flat = array.reshape(source_t.size, -1)
+    out = np.empty((target_t.size, flat.shape[1]), dtype=float)
+    _require_pass_support(source_t, target_t, "filters._interp_pass_values")
     left_mask = target_t < source_t[0]
     right_mask = target_t > source_t[-1]
     for col in range(flat.shape[1]):

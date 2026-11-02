@@ -1,0 +1,35 @@
+{
+ "phase": "Phase C7 - remaining dynamics candidates on the real LRO arc: lunar solid tide (k2, k3), Moon 1PN (Schwarzschild), Venus and Jupiter third body - linear effect-size survey",
+ "written": "2026-11-01, after C6 / F3d and before any C7 code or number",
+ "motivation": "The roadmap's Phase C dynamics list (relativistic 1PN, lunar solid tide k2, Venus and Jupiter, albedo/IR, box-wing SRP) is untested except albedo/IR (C6: does not explain F2p's K_SRP excess). F2's force model has none of these. The GL1800F label (python_port/data/gravity/gl1800f/jggrx_1800f_sha.lbl lines 31-34) states that the degree-2 and -3 coefficients do NOT include the permanent tide and gives k2 = 0.024223, k3 = 0.0163, so a GL1800F user must add the full tide; F2 does not. At 50 km the degree-2 Earth tide is of order 1e-7 m/s^2, several times the SRP",
+ "models": {
+  "tide": "elastic (no lag) induced potential of the Moon for each raising body j in {Earth, Sun} and degree n in {2 (k2 = 0.024223), 3 (k3 = 0.0163)}: U = k_n mu_j R^(2n+1) / (d_j^(n+1) r^(n+1)) P_n(cos theta), cos theta = r_hat . d_hat_j, R = 1738.0 km (GL1800F reference radius); a = grad U = k_n mu_j R^(2n+1) / d_j^(n+1) * r^-(n+2) [-(n+1) P_n(c) r_hat + P_n'(c) (d_hat - c r_hat)]",
+  "pn": "Moon Schwarzschild term (IERS 2010 eq. 10.12, central body only): a = mu / (c^2 r^3) [(4 mu / r - v^2) r + 4 (r . v) v]",
+  "planets": "indirect third-body point masses Venus (299) and Jupiter barycentre (5), Moon-centred: a = mu_j [(d_j - r)/|d_j - r|^3 - d_j/|d_j|^3]",
+  "inputs": "Earth, Sun, Venus, Jupiter positions wrt the Moon from SPICE spkpos (J2000, NONE) on F3's 20 s grid, linearly interpolated to the RK4 nodes; GM from the loaded kernels (bodvrd) as F2 does; mu_moon from GL1800F"
+ },
+ "linear_method": "as C6 run 3 (A3 + A4): forced variational columns along F3's cached F2p trajectory, forcing exact at every RK4 sub-step node, full N = 300 gravity gradient from C6's cache (lro_data/f3_cache/c6_gradients.npy); rows hx @ column; linearised batch about F2p with F3's priors (fit 260-262, predict 263). One column per candidate at its nominal (physical) size",
+ "experiments": {
+  "E0": "F2p (no candidate)",
+  "E_TIDE": "tide (Earth + Sun, k2 + k3) fixed at nominal, 15 parameters re-solved",
+  "E_PN": "1PN fixed",
+  "E_PLANETS": "Venus + Jupiter fixed",
+  "E_ALL": "all three fixed"
+ },
+ "scores": "as C6: fit / 263 range and Doppler RMS, 263 chi2, share = (chi2_E0 - chi2_X) / (chi2_E0 - 3642.61), solved K_SRP, C_T, S_T; acceleration RMS / max / RIC split per candidate; column max position over 260-263",
+ "gates": {
+  "G_UNIT": "unit tests: tide acceleration equals a central finite difference of U to 1e-6 relative for n = 2 and 3; 1PN term radial for a circular orbit (r . v = 0) with magnitude mu/(c^2 r^2)(4 mu/r - v^2) to 1e-12; third-body term equals the closed form at a test point",
+  "G_QUAD": "the forced-column method reproduces the cached C_T column to <= 1e-3 of its max over the fit arc (C6 run 3 method; K column is not used here because its 1.07e-3 residual is the known omitted SRP gradient)",
+  "G_E0": "E0 reproduces F3's sigma = 0 263 chi2 69 899.79 to 1e-6 relative",
+  "G_SIZE": "per candidate: column max position over 260-263 <= 200 m (linear validity, F3b G_LIN); a candidate failing G_SIZE is NOT_QUALIFIED for the linear survey and goes to a nonlinear refit (C7-I)"
+ },
+ "hypotheses": {
+  "H_TIDE": "E_TIDE share >= 0.3 or E_TIDE lowers K_SRP by >= 0.03 m^2/kg",
+  "H_PN": "E_PN share magnitude >= 0.05 (material at all)",
+  "H_PLANETS": "E_PLANETS share magnitude >= 0.05"
+ },
+ "decision_rule": "per candidate: G_UNIT, G_QUAD or G_E0 FAIL -> C7_NOT_QUALIFIED for all; G_SIZE FAIL -> that candidate C7_<X>_NONLINEAR_NEEDED; otherwise TIDE: H_TIDE -> C7_TIDE_MATERIAL else C7_TIDE_IMMATERIAL; PN and PLANETS: hypothesis true -> MATERIAL else IMMATERIAL",
+ "reading_rule": "a MATERIAL or NONLINEAR_NEEDED candidate goes to an implementation step (study-level force term in F2's propagation + nonlinear refit, own predeclaration); IMMATERIAL candidates are closed for this arc",
+ "limitations_stated_in_advance": "linear about F2p; elastic tide without lag or frequency dependence; the C6/F3d 1 % gradient-model gap applies to the columns (G_QUAD bounds it at the C_T column)",
+ "outputs": {"model": "studies/phase17/scripts/phase_c7_dynamics_candidates.py", "script": "studies/phase17/scripts/phase_c7_dynamics_candidates_survey.py", "tests": "tests/test_phase_c7_dynamics_candidates.py", "results": "studies/phase17/results/phase_c7_dynamics_candidates_survey.json", "report": "studies/phase17/reports/phase_c7_dynamics_candidates_survey.md"}
+}
