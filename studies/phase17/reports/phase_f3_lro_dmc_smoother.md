@@ -22,6 +22,8 @@ FINDING    the result is split. Against the 263 tracking data the sigma* smoothe
            (range 5.21 -> 1.04 m, Doppler 5.61 -> 1.72 mm/s, Doppler mean -4.76 -> +0.62 mm/s). Against the
            LOLA orbit it is worse along-track on 263 and on the fit arc, better cross-track on 263. Larger
            sigma make everything worse except the fit-day range residual (over-fitting: range NIS 0.19 at 3e-8).
+F3B        F3B_MIXED (section 7): the gain = end-of-fit state + K / S_T re-split, jointly
+F3C        F3C_SHORT_ARC_PARTIAL (section 8): 261-262 batch, no DMC, recovers share 0.625 (263 chi2 28 494)
 ```
 
 ## 1. Setup
@@ -192,3 +194,55 @@ Hypotheses as computed: H_STATE (share ≥ 0.8) not met, H_CONST (share ≥ 0.8)
    short batch arc reproduces σ*'s gain, the 3-day arc's force-model inconsistency is confirmed as the limit and
    the LOLA disagreement becomes the open question. Needs its own predeclaration; one fit is about 2–6 h.
 2. Phase C dynamics (box-wing SRP, albedo / IR) remain the route to a force model that holds over three days.
+
+## 8. F3c — short-arc batch fits predicting 263 (no DMC)
+
+- **Predeclaration:** `configs/phase_f3c_short_arc_batch_predeclaration.json` (`f632b15`). **Code:** `scripts/phase_f3c_short_arc_batch.py` (`fcbff23`).
+- **Results:**
+  - `results/phase_f3c_short_arc_batch.json` (merged)
+  - `_A.json` and `_B.json` (parts)
+- **Method:** F2p's recipe on a shorter fit arc. A fits 262 only; B fits 261–262. Both start from F2p's own trajectory at the variant epoch.
+- **Run note:** both runs were killed twice by a session logoff. Each time they were restarted from their resumable checkpoints, so the numbers are unaffected.
+
+### Gates and decision (as computed)
+
+| variant | G1 | G3 | G_START | status | iterations | fit range / Doppler | 263 range / Doppler (RMS) | 263 mean range / Doppler | 263 χ² | share |
+|---|---|---|---|---|---|---|---|---|---|---|
+| F2p (260–262) | | | | | | 1.030 m / 2.04 mm/s | 5.21 m / 5.61 mm/s | | 69 981 | 0 |
+| A (262) | PASS | PASS | PASS | STATIONARY | 12 | 0.542 m / 1.37 mm/s | 9.11 m / 7.11 mm/s | +7.07 m / +5.84 mm/s | 191 480 | −1.83 |
+| **B (261–262)** | PASS | PASS | PASS | STATIONARY | 11 | 0.766 m / 2.02 mm/s | **3.30 m / 3.68 mm/s** | +1.34 m / −2.81 mm/s | **28 494** | **0.625** |
+| σ* smoother (F3) | | | | | | | 1.04 m / 1.72 mm/s | | 3 643 | 1 |
+
+H_SHORT (≥ 0.8) is not met; H_PARTIAL (0.3 ≤ share < 0.8) is met. **Decision: F3C_SHORT_ARC_PARTIAL** (best variant B).
+
+Constants (formal σ):
+
+| variant | K_SRP (m²/kg) | C_T (m/s²) | S_T (m/s²) |
+|---|---|---|---|
+| F2p | 0.0745 | −1.9e-8 | 2.55e-7 |
+| A | 0.0205 ± 0.0024 | −5.6e-8 ± 2.8e-9 | 2.3e-8 ± 8.7e-9 |
+| B | 0.0701 ± 0.0005 | −1.7e-8 ± 4.0e-10 | 2.35e-7 ± 2.5e-9 |
+
+RIC RMS against LOLA, scoring only (m):
+
+| variant | 263 | fit arc |
+|---|---|---|
+| A | 2.60 / 16.75 / 4.15 | 2.36 / 6.99 / 3.77 |
+| B | 1.97 / 4.21 / 7.44 | 2.04 / 7.30 / 4.74 |
+
+### Reading
+
+1. **A two-day arc recovers about 60 % of σ*'s gain without DMC; one day is worse than three.**
+   - On one day, the K prior (0.010 ± 0.005) and the short span pull K to 0.021. The along-track error then grows to 16.7 m on 263. This limitation was stated in the predeclaration.
+   - On two days, K returns to F2p's level (0.070), and the prediction improves 2.5× in χ².
+
+   Arc length is therefore part of the story, but not the whole: B still falls well short of σ* (28 494 against 3 643).
+2. **B lands where C7's linear tide experiment does.** C7's E_TIDE (F2p's 3-day arc plus the missing lunar solid tide, linear) predicts 263 at 3.22 m / 3.68 mm/s, χ² 27 460. B gets 3.30 m / 3.68 mm/s, χ² 28 494, without the tide but on a shorter arc.
+   - This fits the C7 finding: an unmodelled roughly once-per-day force (the Earth-raised tide) is what the 3-day single-model batch cannot carry, and shortening the arc partly hides it.
+   - B keeps F2p's large K and S_T, while the tide removes half of them. B therefore hides the defect without curing it.
+   - C7-I, the nonlinear refit with the tide, decides which reading holds.
+3. B improves cross-track against LOLA on 263 (4.21 m against A's 16.75 m). Its normal component (7.44 m) is the worst of the three, the same 263 normal growth F2r reported.
+
+### Next step
+
+C7-I (PR #74): F2p's 3-day recipe with the lunar tide in the propagation. If its 263 χ² reaches B's level or better with K near 0.04, the 3-day arc is no longer the limit; the force model was.

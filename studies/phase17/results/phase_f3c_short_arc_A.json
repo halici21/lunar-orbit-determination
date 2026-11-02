@@ -1,0 +1,536 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_f3c_short_arc_batch_predeclaration.json",
+ "variant": "A",
+ "fit_days": [
+  "trk/lro_no_01/2009262"
+ ],
+ "predict_days": [
+  "trk/lro_no_01/2009263"
+ ],
+ "G_START": {
+  "PASS": true,
+  "node_error_m": 0.0,
+  "leave_one_out_error_m": 0.01933196639852343
+ },
+ "priors": {
+  "6": [
+   0.01,
+   0.005
+  ],
+  "7": [
+   489.1605710824553,
+   3.0
+  ],
+  "8": [
+   476.89111818207635,
+   3.0
+  ],
+  "9": [
+   474.5091541284396,
+   3.0
+  ],
+  "11": [
+   0.0,
+   1e-08
+  ],
+  "12": [
+   0.0,
+   1e-08
+  ],
+  "13": [
+   0.0,
+   1e-11
+  ],
+  "14": [
+   0.0,
+   1e-11
+  ]
+ },
+ "rtol_atol": [
+  1e-12,
+  1e-13
+ ],
+ "doppler_edits": [
+  [
+   103,
+   "2009-09-17T00:32:15+00:00"
+  ],
+  [
+   103,
+   "2009-09-17T07:35:25+00:00"
+  ],
+  [
+   103,
+   "2009-09-18T04:16:25+00:00"
+  ],
+  [
+   103,
+   "2009-09-18T06:05:25+00:00"
+  ],
+  [
+   103,
+   "2009-09-18T06:09:45+00:00"
+  ],
+  [
+   103,
+   "2009-09-18T06:26:05+00:00"
+  ],
+  [
+   103,
+   "2009-09-18T08:31:55+00:00"
+  ],
+  [
+   103,
+   "2009-09-20T11:03:15+00:00"
+  ],
+  [
+   103,
+   "2009-09-20T11:04:25+00:00"
+  ],
+  [
+   103,
+   "2009-09-20T11:07:35+00:00"
+  ],
+  [
+   103,
+   "2009-09-20T11:08:05+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T02:54:25+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T02:57:05+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:01:15+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:04:15+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:19:25+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:24:45+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:29:25+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:31:25+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:31:40+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:31:45+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:32:25+00:00"
+  ],
+  [
+   105,
+   "2009-09-19T03:34:45+00:00"
+  ]
+ ],
+ "nmax": 300,
+ "run": {
+  "nmax": 300,
+  "sign": 1.0,
+  "status": "STATIONARY",
+  "iterations": 12,
+  "history": [
+   {
+    "iteration": 1,
+    "cost": 2364.363581327135,
+    "rms_m": 0.6357482378141115,
+    "lam": 0.0001,
+    "pos_step_m": 0.7160848907153308,
+    "doppler_rms_mmps": 1.3570640535447471
+   },
+   {
+    "iteration": 2,
+    "cost": 2138.067515560843,
+    "rms_m": 0.570322142000635,
+    "lam": 1e-05,
+    "pos_step_m": 1.4717839430440016,
+    "doppler_rms_mmps": 1.3414137844064657
+   },
+   {
+    "iteration": 3,
+    "cost": 2115.29468110163,
+    "rms_m": 0.5543585627337816,
+    "lam": 1.0000000000000002e-06,
+    "pos_step_m": 0.6718659395051212,
+    "doppler_rms_mmps": 1.3537997067231151
+   },
+   {
+    "iteration": 4,
+    "cost": 2109.937337816423,
+    "rms_m": 0.5442878904775674,
+    "lam": 1.0000000000000002e-07,
+    "pos_step_m": 0.45499168612812213,
+    "doppler_rms_mmps": 1.366634977963492
+   },
+   {
+    "iteration": 5,
+    "cost": 2108.334861203808,
+    "rms_m": 0.5422795661682069,
+    "lam": 1.0000000000000002e-08,
+    "pos_step_m": 1.8860343209615549,
+    "doppler_rms_mmps": 1.368813259042274
+   },
+   {
+    "iteration": 6,
+    "cost": 2107.3620878566558,
+    "rms_m": 0.5419861622250823,
+    "lam": 1.0000000000000003e-09,
+    "pos_step_m": 2.7592009385830765,
+    "doppler_rms_mmps": 1.3685706699523037
+   },
+   {
+    "iteration": 7,
+    "cost": 2107.3470606993415,
+    "rms_m": 0.5419788178480978,
+    "lam": 1e-09,
+    "pos_step_m": 0.437319693762965,
+    "doppler_rms_mmps": 1.3684438848240847
+   },
+   {
+    "iteration": 8,
+    "cost": 2107.3318146667984,
+    "rms_m": 0.5419652939072583,
+    "lam": 1e-09,
+    "pos_step_m": 0.028053047254160704,
+    "doppler_rms_mmps": 1.3684563325314028
+   },
+   {
+    "iteration": 9,
+    "cost": 2107.329349452651,
+    "rms_m": 0.542037786580168,
+    "lam": 1e-07,
+    "pos_step_m": 0.0011460389547443257,
+    "doppler_rms_mmps": 1.368483694222191
+   },
+   {
+    "iteration": 10,
+    "cost": 2107.3274214991825,
+    "rms_m": 0.5419762660618402,
+    "lam": 1e-08,
+    "pos_step_m": 0.001905383242465054,
+    "doppler_rms_mmps": 1.3684739021145444
+   },
+   {
+    "iteration": 11,
+    "cost": 2107.3248716360604,
+    "rms_m": 0.5419732248235093,
+    "lam": 1000.0,
+    "pos_step_m": 4.850348742085462e-10,
+    "doppler_rms_mmps": 1.368477430649306
+   },
+   {
+    "iteration": 12,
+    "cost": 2107.3248716360604,
+    "rms_m": 0.5419732248235093,
+    "lam": 10000000000.0,
+    "pos_step_m": null,
+    "doppler_rms_mmps": 1.368477430649306
+   }
+  ],
+  "doppler_bias_mmps": -7.74793792602605,
+  "doppler_bias_sigma_mmps": 0.04683884969312229,
+  "doppler_postfit_rms_mmps": 1.368477430649306,
+  "n_doppler": 2681,
+  "solver": "legacy",
+  "numerical_identity": {
+   "src\\lunar_od\\__init__.py": "2e7023732ce7ef6675ebb003db239ecfc3cbb0b9af343fe8c25456e572f87af5",
+   "src\\lunar_od\\_erfa_dtdb_table.py": "53d5f8dffceea2b04de86a4a227175d953ff1f44d3284ccae333dec56d0a16e2",
+   "src\\lunar_od\\accelerated.py": "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+   "src\\lunar_od\\adaptive_tuning.py": "708bddb864509872a87802c9c38abe09c8bb71aa3a112ce5b036d0347295ff4f",
+   "src\\lunar_od\\bounded_least_squares.py": "566bc992d3c8d779054f73ac3fc0d2a144d4709e1245a6a06355dcfa61a4eb22",
+   "src\\lunar_od\\config.py": "fc5d180941fd6acc9b6630232a2d23d2c3c81b9855c43b85e61ad84dcb1a0a4e",
+   "src\\lunar_od\\consider_covariance.py": "245d121c2655fdd059cd3e784283c38971b04cd61e7da6d66a6f9ea131b18a83",
+   "src\\lunar_od\\constants.py": "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
+   "src\\lunar_od\\delta_dor.py": "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b",
+   "src\\lunar_od\\diagnostics.py": "e5f2e07ba1056b5e27d040966136b6f497c26e86a21f21e176cf3f7e4dd49324",
+   "src\\lunar_od\\dmc.py": "a57120400223836f2d632b42ddbdba5e18e4e329c9df1fa8d7b8212a1446a148",
+   "src\\lunar_od\\dynamics.py": "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
+   "src\\lunar_od\\ekf.py": "47bea0b3c5df1fb6de49266d6eb8f7491c4bb6e9b4d632875dcfd0115a9d8161",
+   "src\\lunar_od\\ekf_partials.py": "578052028bb6c8b3fab7d075dd8e397473ac386c84679eeafc209db43279a488",
+   "src\\lunar_od\\ephemeris.py": "bbf60e29558c35ce9cbba00524d48a963cecccaf7ed4ff39dc1d96c68e6dca12",
+   "src\\lunar_od\\estimators.py": "c6491f651c9e191f8214ff665e141cd22b7dd803b8e153cec9664d1bab98f7cf",
+   "src\\lunar_od\\filters.py": "05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba",
+   "src\\lunar_od\\force_contract.py": "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
+   "src\\lunar_od\\force_models.py": "c1412fe22ac7bed580ca3fa1ffaa7a794cc508b0f0a985a10106f36d6a7d2389",
+   "src\\lunar_od\\geometry.py": "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf",
+   "src\\lunar_od\\gravity_harmonics.py": "6695a1127d90a65f02831df81ffb889904fc05178c9045f8f96c2bbb3045feb9",
+   "src\\lunar_od\\gravity_model_loader.py": "8c4d1708a6545b37c434cac23a388399c0372f8a7bb6f838a951b6f2af543e48",
+   "src\\lunar_od\\history_domain.py": "97195d4685bfd051aaa0f411e57b0dd8172d41f7fa38fdaf6cc02ce27e4a36c7",
+   "src\\lunar_od\\lunar_frames.py": "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4",
+   "src\\lunar_od\\lunar_landmark_optical.py": "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36",
+   "src\\lunar_od\\measurement_contracts.py": "f0e625a2577ea242c9aa57b74dc435fb1330973cda849e13871585418a73764a",
+   "src\\lunar_od\\measurement_ingestion.py": "61ee6920a0c82006656ac48fa1a59b9c02508132df6d6249acfe75984ff16979",
+   "src\\lunar_od\\measurements.py": "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
+   "src\\lunar_od\\media.py": "0c0a6e7d106467354e9f7d19dbf9399796d4488c7938399a8d6c5ae887033b3f",
+   "src\\lunar_od\\media_partials.py": "4adcf0c0f4ffac1881b4020d6845c13349cb19b99a5742c3a09e4182c2c7ebe4",
+   "src\\lunar_od\\monte_carlo.py": "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
+   "src\\lunar_od\\noise_models.py": "440b679adaab7b3aca702bfbc2b62c39b28a19968ec64cd220127be9bbf694bb",
+   "src\\lunar_od\\observability.py": "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956",
+   "src\\lunar_od\\orbit.py": "bd8a4a8780068bbf662759a03bb1fdc825b46fb6e41e558b77af6face692e0a0",
+   "src\\lunar_od\\project_paths.py": "d388335c1923f15438a82c7c09825c352d9fb161feb6b8949fd1f2410fb9869b",
+   "src\\lunar_od\\propagation_contract.py": "4eb3e92c70907b149f30e2f0146d0dfaa0ca76f8f734c3c2e664b3f725c052b8",
+   "src\\lunar_od\\q_tuning.py": "3ee6ea0788af2f5468107f0742450e884b20e2905732aad99792497f9eca27d2",
+   "src\\lunar_od\\radiometrics.py": "aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1",
+   "src\\lunar_od\\relativistic_light_time.py": "8fbf76d6c3bbd6156ab255b8a4aa8aa6a08186e252855e74848e1768b5081ee6",
+   "src\\lunar_od\\reporting.py": "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8",
+   "src\\lunar_od\\scenario_config.py": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+   "src\\lunar_od\\scenarios.py": "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
+   "src\\lunar_od\\solid_tide.py": "9305c0b1e598b2b07e82d592d8605f7e90d2a0525d212dcf31c7899b103fa697",
+   "src\\lunar_od\\spice_loader.py": "36d42620aa19ea563dcb85bf860297e21c5e61eca910be8f033d16fe1bc5b289",
+   "src\\lunar_od\\srp.py": "9f9986d2a66a264b8eb6acba18e5a1e865718995f7f600ce98f08b3e95a6335a",
+   "src\\lunar_od\\station_frames.py": "b808f0518063c4b4e6059fec6bb5cc134cc253e06f8b39bd5029e9f0028a6639",
+   "src\\lunar_od\\station_time.py": "33d9feec8e5137fb5d0e7700c8781cfcf3990a2d5dfdb18e38969e4713ff4918",
+   "src\\lunar_od\\thesis_matrix.py": "e9437f7d57c746057910927f063bfa9b0def75a22382f007befd68408fd3e3ea",
+   "src\\lunar_od\\two_way_counted_doppler.py": "f499038b57f1cd6a1c3f1696aafc0e3ef951234d89f91706c8dcad2109b759dc",
+   "src\\lunar_od\\two_way_counted_doppler_reference.py": "8e21b3346470ab2d21d96e7d543575c804e25e27f4d4f49d6e6d7f5deb5eb2fa",
+   "src\\lunar_od\\two_way_range.py": "bddff533c4a1773ba80dd8f96cbb6933baa516b40c0e71f82bb56c927880a995",
+   "src\\lunar_od\\utdf.py": "5a20392c4ce60973acd5eb8c6b6c3156820acc6309dbbea30fea16368c8ab6af",
+   "src\\lunar_od\\visibility.py": "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a",
+   "studies\\phase17\\scripts\\phase_f2_lro_od.py": "c659ed08dba156e96a69710b611eb6939c63e79d86313d6411c7a36f60b50405",
+   "studies\\phase17\\scripts\\phase_f2g_checks.py": "e04125b24cb1554de86f77c33e05c77249f0a5d64007c88b04c4465f428babbf",
+   "studies\\phase17\\scripts\\phase_f2_g4er_checks.py": "665f8c80bd69003ded56da04a3a675cefe326d9324ace0843cb020d58608a9b2",
+   "studies\\phase17\\scripts\\phase_f1_lro_residuals.py": "30261bc8e9ec0cf8e36ce3ff62a0c35f8c63e8614ab6828f2fbede1441e47286",
+   "studies\\phase17\\scripts\\phase_f1c_lro_doppler.py": "44037d2da9f22800fdd73e8bd24511388f2affb86efdfe1cbe713beb497d177f"
+  },
+  "numerical_variant": "historical_legacy",
+  "numerical_profile": {
+   "grid_s": 20.0,
+   "rtol": 1e-12,
+   "atol": 1e-13,
+   "emp_fd_step": 1e-09,
+   "fd_steps": [
+    10.0,
+    10.0,
+    10.0,
+    0.01,
+    0.01,
+    0.01,
+    0.001
+   ],
+   "exact_epoch_stations": false,
+   "method": "DOP853",
+   "shadow_events": true,
+   "earth_interpolation": "hermite"
+  },
+  "numerical_diagnostics": null,
+  "final_linearization": null,
+  "prior_semantics": "conditional_calibration_same_tracking_day",
+  "prior_definitions": {
+   "6": {
+    "mean": 0.01,
+    "sigma": 0.005
+   },
+   "7": {
+    "mean": 489.1605710824553,
+    "sigma": 3.0
+   },
+   "8": {
+    "mean": 476.89111818207635,
+    "sigma": 3.0
+   },
+   "9": {
+    "mean": 474.5091541284396,
+    "sigma": 3.0
+   },
+   "11": {
+    "mean": 0.0,
+    "sigma": 1e-08
+   },
+   "12": {
+    "mean": 0.0,
+    "sigma": 1e-08
+   },
+   "13": {
+    "mean": 0.0,
+    "sigma": 1e-11
+   },
+   "14": {
+    "mean": 0.0,
+    "sigma": 1e-11
+   }
+  },
+  "postfit_rms_m": 0.5419732248235093,
+  "per_pass": [
+   {
+    "pad": 103,
+    "n": 448,
+    "rms_m": 0.4157451123254409,
+    "mean_m": 0.08331555221016222
+   },
+   {
+    "pad": 103,
+    "n": 452,
+    "rms_m": 0.43511970026698843,
+    "mean_m": 0.20812219123268458
+   },
+   {
+    "pad": 103,
+    "n": 450,
+    "rms_m": 0.5091784922047137,
+    "mean_m": -0.2933808645662877
+   },
+   {
+    "pad": 105,
+    "n": 443,
+    "rms_m": 0.4692974204550469,
+    "mean_m": -0.0010622753998024664
+   },
+   {
+    "pad": 126,
+    "n": 469,
+    "rms_m": 0.6960759629294331,
+    "mean_m": 0.4416024869715111
+   },
+   {
+    "pad": 126,
+    "n": 475,
+    "rms_m": 0.6480195914955691,
+    "mean_m": -0.4368007227927338
+   }
+  ],
+  "x0": [
+   244691.7445279298,
+   741887.8965283761,
+   -1595055.8568267792,
+   1630.640127215745,
+   143.47182460432703,
+   315.49316287178243
+  ],
+  "k_srp": 0.02053930806689239,
+  "k_srp_sigma": 0.0023807633917986007,
+  "biases_m": {
+   "103": 483.5300218098419,
+   "105": 472.6560891610449,
+   "126": 471.1772804276245
+  },
+  "empirical_mps2": {
+   "C_T": -5.6336252465451516e-08,
+   "S_T": 2.2901833647983502e-08,
+   "C_N": 6.566703056482349e-15,
+   "S_N": -1.3571158697621463e-14
+  },
+  "empirical_sigma_mps2": {
+   "C_T": 2.8000397391637207e-09,
+   "S_T": 8.73738949792577e-09,
+   "C_N": 9.999999984099903e-12,
+   "S_N": 9.999999953875961e-12
+  },
+  "bias_sigma_m": {
+   "103": 0.18776330557524146,
+   "105": 0.23200227674450716,
+   "126": 0.14539776691305403
+  },
+  "x0_minus_reference": [
+   -13.453589714685222,
+   2.1916413041763008,
+   0.6641055108048022,
+   0.002206614016813546,
+   0.007019663428735612,
+   -0.005715955091659453
+  ],
+  "ric_rms_m": [
+   2.3583249043913517,
+   6.9881212823796055,
+   3.7747591480187563
+  ],
+  "ric_max_m": [
+   4.227278062739119,
+   12.726920473455381,
+   5.926639412702481
+  ],
+  "total_rms_m": 8.285188111169868,
+  "total_max_m": 13.445863804498192,
+  "prediction": {
+   "n_range": 2008,
+   "n_doppler": 1954,
+   "range_rms_m": 9.11401624905408,
+   "range_mean_m": 7.072793516670612,
+   "doppler_rms_mmps": 7.108658596971676,
+   "doppler_mean_mmps": 5.837438340011632,
+   "passes": [
+    {
+     "pad": 103,
+     "n": 451,
+     "hours_after_fit_end": 14.291666665368961,
+     "range_mean_m": 7.5420546086054765,
+     "range_rms_m": 8.672229504927484
+    },
+    {
+     "pad": 103,
+     "n": 435,
+     "hours_after_fit_end": 16.216666664975673,
+     "range_mean_m": 8.00700761491314,
+     "range_rms_m": 9.547030632941398
+    },
+    {
+     "pad": 103,
+     "n": 451,
+     "hours_after_fit_end": 18.05694444240536,
+     "range_mean_m": 7.919391497516139,
+     "range_rms_m": 9.789412588554278
+    },
+    {
+     "pad": 103,
+     "n": 1,
+     "hours_after_fit_end": 20.33611110874538,
+     "range_mean_m": 4.9968817598564215,
+     "range_rms_m": 4.9968817598564215
+    },
+    {
+     "pad": 103,
+     "n": 1,
+     "hours_after_fit_end": 20.75416666425767,
+     "range_mean_m": 20.762838042472083,
+     "range_rms_m": 20.762838042472083
+    },
+    {
+     "pad": 103,
+     "n": 225,
+     "hours_after_fit_end": 21.83333333083865,
+     "range_mean_m": 4.228376888064158,
+     "range_rms_m": 5.053350545680989
+    },
+    {
+     "pad": 126,
+     "n": 444,
+     "hours_after_fit_end": 23.73333333136394,
+     "range_mean_m": 6.236180980877837,
+     "range_rms_m": 9.93286351437297
+    }
+   ],
+   "ric_rms_m": [
+    2.6027863938526186,
+    16.74969627838714,
+    4.149590411966939
+   ],
+   "ric_max_m": [
+    4.66552315693675,
+    27.195615223962598,
+    6.607356202167772
+   ]
+  },
+  "elapsed_s": 21768.40829515457
+ },
+ "wall_s": 3956.5829112529755
+}
