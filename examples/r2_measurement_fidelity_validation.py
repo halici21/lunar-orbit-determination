@@ -460,12 +460,18 @@ NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256 = {'lunar_od/dynamics.py': 'ea6f6322
 #                           new (WP1.2)          7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2
 #   analysis_controller.py  old (numerical core) a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0
 #                           new (WP1.2)          5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8
+#   scenario_config.py      old (numerical core) 6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c
+#                           new (WP1.2)          c3c82845a20b3c9fe70fea4ae5a5347862c9a9f5f0c942693d16540448036865
+#     (force-contract GM defaults are the DE440 values; the legacy MU_*_M3S2 names
+#     keep gm_de431 so frozen Phase 17 baselines stay reproducible)
 #     filtered-checkout (core.autocrlf=true) representation, as every table above
 F1_WP1_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "examples/run_scenario_config.py":
         "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
     "desktop_app/controllers/analysis_controller.py":
         "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
+    "lunar_od/scenario_config.py":
+        "c3c82845a20b3c9fe70fea4ae5a5347862c9a9f5f0c942693d16540448036865",
 }
 
 

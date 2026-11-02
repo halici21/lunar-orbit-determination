@@ -15,9 +15,9 @@ from .propagation_contract import resolve_profile
 from .constants import (
     AU_M, R_SUN_M, SOLAR_PRESSURE_1AU_N_M2,
     J2_EARTH_UNNORMALIZED,
-    MU_EARTH_M3S2,
-    MU_MOON_M3S2,
-    MU_SUN_M3S2,
+    MU_EARTH_DE440_M3S2,
+    MU_MOON_DE440_M3S2,
+    MU_SUN_DE440_M3S2,
     R_EARTH_J2_REF_M,
     R_MOON_M,
 )
@@ -803,9 +803,9 @@ def force_runtime_kwargs(spec):
 def force_execution_spec_from_scenario_config(
     config: ScenarioConfig,
     *,
-    mu_moon_m3_s2: float = MU_MOON_M3S2,
-    mu_earth_m3_s2: float = MU_EARTH_M3S2,
-    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    mu_moon_m3_s2: float = MU_MOON_DE440_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_DE440_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_DE440_M3S2,
     j2_moon: float | None = None,
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
 ) -> ForceExecutionSpec:
@@ -836,9 +836,9 @@ def force_execution_spec_from_scenario_config(
 def force_model_contract_from_scenario_config(
     config: ScenarioConfig,
     *,
-    mu_moon_m3_s2: float = MU_MOON_M3S2,
-    mu_earth_m3_s2: float = MU_EARTH_M3S2,
-    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    mu_moon_m3_s2: float = MU_MOON_DE440_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_DE440_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_DE440_M3S2,
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
 ) -> ForceModelContract:
     """Derive the immutable force contract implied by ``config``.
@@ -941,9 +941,9 @@ def scenario_force_model_configuration_preflight(
 def scenario_force_model_preflight(
     config: ScenarioConfig,
     *,
-    mu_moon_m3_s2: float = MU_MOON_M3S2,
-    mu_earth_m3_s2: float = MU_EARTH_M3S2,
-    mu_sun_m3_s2: float = MU_SUN_M3S2,
+    mu_moon_m3_s2: float = MU_MOON_DE440_M3S2,
+    mu_earth_m3_s2: float = MU_EARTH_DE440_M3S2,
+    mu_sun_m3_s2: float = MU_SUN_DE440_M3S2,
     truth_spec: ForceExecutionSpec | None = None,
     estimator_spec: ForceExecutionSpec | None = None,
     context: str = "scenario force-model preflight",

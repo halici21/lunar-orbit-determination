@@ -2478,10 +2478,13 @@
     },
     "lunar_od/constants.py": {
       "path": "src/lunar_od/constants.py",
-      "original_sha256": "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e",
+      "original_sha256": "699b34173eb2ad8a46c24395bb4a8b90727b4faa729e900255f87519736ee9fd",
       "byte_preserved": true,
+      "refrozen_from_sha256": "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e",
+      "note": "Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
-        "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede"
+        "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
+        "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e"
       ]
     },
     "lunar_od/delta_dor.py": {
@@ -2744,13 +2747,14 @@
     },
     "lunar_od/scenario_config.py": {
       "path": "src/lunar_od/scenario_config.py",
-      "original_sha256": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+      "original_sha256": "c3c82845a20b3c9fe70fea4ae5a5347862c9a9f5f0c942693d16540448036865",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6"
+        "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
+        "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c"
       ],
-      "refrozen_from_sha256": "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained."
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",

@@ -49,8 +49,10 @@ def test_constants_match_the_generation_gm_kernel(ephemeris):
     assert GRAVITATIONAL_PARAMETERS[ephemeris] == pytest.approx(kernel, rel=1e-15, abs=0.0)
 
 
-def test_default_constants_are_de440_and_the_de421_profile_reproduces_the_snapshot():
-    assert (constants.MU_MOON_M3S2, constants.MU_EARTH_M3S2, constants.MU_SUN_M3S2) == GRAVITATIONAL_PARAMETERS["DE440"]
+def test_default_generation_is_de440_and_the_de421_profile_reproduces_the_snapshot(monkeypatch):
+    monkeypatch.delenv("LUNAR_OD_PLANETARY_EPHEMERIS", raising=False)
+    assert gravitational_parameters() == GRAVITATIONAL_PARAMETERS["DE440"] == (
+        constants.MU_MOON_DE440_M3S2, constants.MU_EARTH_DE440_M3S2, constants.MU_SUN_DE440_M3S2)
     fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
     snapshot = (float(fixture["initial_state"]["mu_moon_m3_s2"]),
                 float(fixture["constants"]["mu_earth_km3_s2"][0] if isinstance(fixture["constants"]["mu_earth_km3_s2"], list)
@@ -60,6 +62,8 @@ def test_default_constants_are_de440_and_the_de421_profile_reproduces_the_snapsh
     assert gravitational_parameters("DE421") == snapshot             # bit for bit
     rel = abs(GRAVITATIONAL_PARAMETERS["DE440"][0] - snapshot[0]) / snapshot[0]
     assert rel == pytest.approx(1.0666e-8, rel=1e-3)                  # the X-01 GM(Moon) gap
+    # The legacy names keep gm_de431 so frozen Phase 17 baselines stay reproducible.
+    assert constants.MU_MOON_M3S2 == snapshot[0]
 
 
 def test_mixed_generation_is_rejected(monkeypatch):

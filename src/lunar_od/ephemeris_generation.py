@@ -14,17 +14,17 @@ import math
 
 from .constants import (
     MU_EARTH_DE431_M3S2,
-    MU_EARTH_M3S2,
+    MU_EARTH_DE440_M3S2,
     MU_MOON_DE431_M3S2,
-    MU_MOON_M3S2,
+    MU_MOON_DE440_M3S2,
     MU_SUN_DE431_M3S2,
-    MU_SUN_M3S2,
+    MU_SUN_DE440_M3S2,
 )
 from .spice_loader import planetary_ephemeris
 
 #: (GM Moon, GM Earth, GM Sun) in m^3/s^2 for each planetary-ephemeris generation.
 GRAVITATIONAL_PARAMETERS = {
-    "DE440": (MU_MOON_M3S2, MU_EARTH_M3S2, MU_SUN_M3S2),
+    "DE440": (MU_MOON_DE440_M3S2, MU_EARTH_DE440_M3S2, MU_SUN_DE440_M3S2),
     "DE421": (MU_MOON_DE431_M3S2, MU_EARTH_DE431_M3S2, MU_SUN_DE431_M3S2),
 }
 
