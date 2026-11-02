@@ -101,8 +101,9 @@ def main_diff():
 def main_fit_all(workers):
     _, spans = R.problem()
     i, n = (map(int, sys.argv[sys.argv.index("--shard") + 1].split("/")) if "--shard" in sys.argv else (0, 1))
+    only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     for k, w in enumerate(v0_windows(spans["F"][0])):
-        if k % n == i and not (S.PARTS / f"{w['name']}.json").exists():
+        if (w["name"] == only if only else k % n == i) and not (S.PARTS / f"{w['name']}.json").exists():
             S.fit_window(w, workers)
 
 
