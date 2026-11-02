@@ -698,9 +698,20 @@ F1_WP1_9_REFROZEN_CURRENT_TREE_SHA256 = {
         "9a909719ed105b49129fd9d8bd2c7860b9c6474b948b28f4d4224a17057822eb",
 }
 
-
-
-
+# Branch consolidation re-freeze (owner-requested 2026-11-02: every open branch
+# merged into main).  Two files were changed independently on separate branches
+# that were each re-frozen on their own; the merged file is the union of those
+# already-authorized changes and has a new identity.  No new edits.
+#
+#   lunar_od/filters.py              WP4.8c 1825f75a... + WP1.1 2cb440a8... -> 3e79c72e...
+#   examples/run_scenario_config.py  WP1.6 749a09c2... + WP1.9 9a909719... -> 35a0741f...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/filters.py":
+        "3e79c72efbca37b494bfa0bb9f16c2e491713e5939480368dac12fbd7327f42d",
+    "examples/run_scenario_config.py":
+        "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea",
+}
 
 
 def current_source_path(relative_path: str) -> str:
@@ -715,6 +726,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
+        return BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256:
         return F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F4_WP4_2B_REFROZEN_CURRENT_TREE_SHA256:

@@ -2539,17 +2539,19 @@
     },
     "lunar_od/filters.py": {
       "path": "src/lunar_od/filters.py",
-      "original_sha256": "1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec",
+      "original_sha256": "3e79c72efbca37b494bfa0bb9f16c2e491713e5939480368dac12fbd7327f42d",
       "byte_preserved": true,
-      "refrozen_from_sha256": "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.4a (independent-assessment programme, EST-11/12): deviation-form unscented mean; unit-free on-demand jitter; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.4b: filters.py Schmidt consider states + regularisation once (EST-13); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.8c: filters.py UKF DMC (EST-21); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.1 (MEAS-04, owner-authorized): UKF counted-Doppler Earth/rotation histories are rotation-preserving instead of linearly interpolated; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.4a (independent-assessment programme, EST-11/12): deviation-form unscented mean; unit-free on-demand jitter; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.4b: filters.py Schmidt consider states + regularisation once (EST-13); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.8c: filters.py UKF DMC (EST-21); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.1 (MEAS-04, owner-authorized): UKF counted-Doppler Earth/rotation histories are rotation-preserving instead of linearly interpolated; all previous identities and historical scientific results retained. Re-frozen 2026-11-02 for the owner-requested branch consolidation: the separately re-frozen WP4.8c and WP1.1 changes merged into one file (no new edits); both branch identities retained in refrozen_history_sha256.",
       "refrozen_history_sha256": [
         "1e5f9ca98616ef0c83260691254a4c58eda99c1396d84fea097a7fbeeeca7ee0",
         "d92d9975a7ef5ab49ee6723904261a8210643d19a5c55a2069ece6de38d8aa42",
         "83b25c55ac8459926790dad09e9d189cd3b6d4a293aab1bcbd2dc66b200856ec",
         "05f201dfc11967c0322013c688589a9e27e7a8b3be8a6be53c474c3bbad961ba",
         "e4218aba0f96e0954ae98c314462380a0c24e9f6895374ea4d446a6dabadcaac",
-        "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38"
+        "6664312a818fce813cd60027716d45ac8795672f4e3873660eda8bb88a9e4c38",
+        "1825f75a7d13a89f675a99a2c1718ddb412ff1e1e966cfdceddc07740f01c9ec",
+        "2cb440a8accb5b5ed11a013cca57056834805ecb550f3c3b601eb8c230829a02"
       ]
     },
     "lunar_od/force_contract.py": {
@@ -2830,14 +2832,16 @@
     },
     "examples/run_scenario_config.py": {
       "path": "examples/run_scenario_config.py",
-      "original_sha256": "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
+      "original_sha256": "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
-        "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da"
+        "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
+        "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
+        "9a909719ed105b49129fd9d8bd2c7860b9c6474b948b28f4d4224a17057822eb"
       ],
-      "refrozen_from_sha256": "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-02 for the owner-requested branch consolidation: the separately re-frozen WP1.6 and WP1.9 changes merged into one file (no new edits); both branch identities retained in refrozen_history_sha256."
     },
     "examples/r1_covariance_observability_validation.py": {
       "path": "examples/r1_covariance_observability_validation.py",
