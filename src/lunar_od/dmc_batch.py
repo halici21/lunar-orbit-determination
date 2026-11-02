@@ -1,0 +1,192 @@
+"""Batch least squares with dynamic model compensation (WP4.8d, EST-21).
+
+A batch fit has no process noise, so the Gauss-Markov empirical acceleration of
+``dmc.py`` enters it the standard way (Tapley, Schutz & Born 2004, section 4.9): the
+estimated parameters are the epoch state ``[r0, v0, w0]``, ``w`` decays
+deterministically as ``w(t) = w0 exp(-t / tau)`` (in inertial or RTN axes), and the
+9x9 STM of :func:`propagate_dmc_state` maps the local measurement partials to the
+epoch.  ``w0`` carries the prior ``N(0, sigma^2)`` of the Gauss-Markov steady state
+(per axis with ``sigma_axes_mps2``); ``r0, v0`` carry only the caller's prior, if any.
+
+Two solvers share one objective, one damping schedule and the WP4.2 certificate:
+``method="normal"`` solves the damped normal equations (BLS-LM, :func:`_lm_step`),
+``method="square_root"`` the same system by QR without forming them
+(:func:`_lm_step_square_root`, the SRIF-form solve).  Position observations only;
+the measurement partials are mapped through the receive-epoch STM, so
+``jacobian_model="implicit_light_time"`` is refused.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+
+import numpy as np
+from numpy.typing import ArrayLike
+
+from .dmc import DMC_SIZE, DMCOptions, propagate_dmc_state
+from .estimators import (
+    EstimatorStats,
+    _lm_step,
+    _lm_step_square_root,
+    _limit_step,
+    _position_residual_from_h,
+    _position_weight_diagonal,
+    _square_root_covariance_from_design,
+    _stationarity_certified,
+    _weighted_map_cost,
+)
+from .measurements import PassGeometry, compute_position_residuals_analytic
+
+N_STATE = 6 + DMC_SIZE
+_SOLVERS = {"normal": _lm_step, "square_root": _lm_step_square_root}
+
+
+def estimate_position_dmc_batch(
+    t_pass_s: ArrayLike,
+    obs_data: ArrayLike,
+    x_nominal0: ArrayLike,
+    pass_geo: PassGeometry,
+    mu_moon_m3_s2: float,
+    mu_earth_m3_s2: float,
+    mu_sun_m3_s2: float,
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    dmc: DMCOptions,
+    *,
+    method: str = "normal",
+    state_prior_covariance: ArrayLike | None = None,
+    max_iter: int = 60,
+    tol_step_norm: float = 1e-8,
+    tol_cost_stability: float = 1e-8,
+    lambda0: float = 1e-2,
+    rtol: float = 1e-11,
+    atol: float = 1e-12,
+    j2_moon: float = 0.0,
+    srp=None,
+    return_posterior: bool = False,
+) -> tuple[np.ndarray, str, EstimatorStats]:
+    """Position-only batch fit of ``[r0, v0, w0]`` with a Gauss-Markov empirical acceleration.
+
+    ``x_nominal0`` is the 9-element initial guess (prior mean of ``w0`` is 0; the prior
+    mean of ``r0, v0`` is the guess itself when ``state_prior_covariance`` (6x6) is given,
+    otherwise ``r0, v0`` are data-only).  Returns ``(x_best, status, stats)`` like
+    :func:`estimate_position_bls_lm`; ``stats.posterior_covariance`` is 9x9.
+    """
+    if method not in _SOLVERS:
+        raise ValueError(f"method must be one of {tuple(_SOLVERS)}, got {method!r}.")
+    if getattr(pass_geo, "jacobian_model", "analytic_exact_geometric") == "implicit_light_time":
+        raise ValueError("estimate_position_dmc_batch maps partials at the receive epoch; "
+                         "jacobian_model='implicit_light_time' is not supported.")
+    t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
+    obs_data = np.asarray(obs_data, dtype=float)
+    x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
+    if x_nominal.size != N_STATE:
+        raise ValueError("x_nominal0 must be [r0(3), v0(3), w0(3)].")
+
+    sigma_w = (np.full(3, dmc.sigma_mps2) if dmc.sigma_axes_mps2 is None
+               else np.asarray(dmc.sigma_axes_mps2, dtype=float))
+    if np.any(sigma_w <= 0.0):
+        raise ValueError("every DMC axis needs a positive sigma: it is the prior of w0.")
+    prior_inv = np.zeros((N_STATE, N_STATE))
+    prior_inv[6:, 6:] = np.diag(1.0 / sigma_w**2)
+    x_prior = np.concatenate([x_nominal[:6], np.zeros(DMC_SIZE)])
+    if state_prior_covariance is not None:
+        p6 = np.asarray(state_prior_covariance, dtype=float)
+        if p6.shape != (6, 6):
+            raise ValueError("state_prior_covariance must be 6x6 (r0, v0).")
+        prior_inv[:6, :6] = np.linalg.inv(p6)
+    ev, vec = np.linalg.eigh(0.5 * (prior_inv + prior_inv.T))
+    prior_sqrt = np.sqrt(np.clip(ev, 0.0, None))[:, None] * vec.T
+    # bookkeeping units: m, m/s, and the DMC sigma for w (the solves equilibrate anyway)
+    scale = np.diag(np.concatenate([np.full(3, 1e3), np.ones(3), sigma_w]))
+    prior_inv_scaled = scale.T @ prior_inv @ scale
+    w_diag = _position_weight_diagonal(obs_data, pass_geo)
+    solve = _SOLVERS[method]
+
+    def propagate(x, stm):
+        return propagate_dmc_state(t_pass_s, x, dmc, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                                   get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+                                   srp=srp, stm=stm)
+
+    def residual_of(hist):
+        _, h_nom, h_tilde = compute_position_residuals_analytic(hist[:, :6], obs_data, pass_geo)
+        return _position_residual_from_h(obs_data, h_nom), h_tilde
+
+    def linearize(x):
+        hist = propagate(x, True)
+        residual, h_tilde = residual_of(hist)
+        h = np.zeros((h_tilde.shape[0], N_STATE))
+        for k in range(obs_data.shape[0]):
+            phi = hist[int(obs_data[k, 5]) - 1, N_STATE:].reshape(N_STATE, N_STATE, order="F")
+            h[3 * k:3 * k + 3] = h_tilde[3 * k:3 * k + 3] @ phi[:6, :]
+        return h, residual
+
+    def cost_of(x, residual):
+        return _weighted_map_cost(residual, w_diag, x, x_prior, prior_sqrt)
+
+    x_best = x_nominal.copy()
+    status, detail = "MaxIter", ""
+    gn_decrement = float("nan")
+    lambda_damping = float(lambda0)
+    pending = None
+    last_step = np.zeros(N_STATE)
+    condition_number, rank = float("nan"), 0
+    best_cost = np.inf
+    for iteration in range(1, max_iter + 1):
+        h, residual = linearize(x_nominal)
+        current_cost = cost_of(x_nominal, residual)
+        if iteration == 1:
+            best_cost = current_cost
+        prior_rhs_scaled = scale.T @ prior_inv @ (x_prior - x_nominal)
+        if pending is not None:
+            certified, gn_decrement = _stationarity_certified(
+                h, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled)
+            if certified:
+                status, detail = pending
+                break
+            pending = None
+        step, condition_number, rank, singular = solve(
+            h, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled, lambda_damping)
+        if singular:
+            status = "Singular"
+            break
+        step = _limit_step(step, pos_limit_m=20000.0)
+        last_step = step
+        x_candidate = x_nominal + step
+        candidate_residual, _ = residual_of(propagate(x_candidate, False))
+        candidate_cost = cost_of(x_candidate, candidate_residual)
+        if candidate_cost < current_cost:
+            improvement = abs(current_cost - candidate_cost) / max(current_cost, np.finfo(float).eps)
+            x_nominal = x_candidate
+            x_best = x_nominal.copy()
+            best_cost = candidate_cost
+            lambda_damping = max(lambda_damping / 5.0, 1e-12)
+            if improvement < tol_cost_stability or np.linalg.norm(step) < tol_step_norm:
+                pending = ("J-Stab", "COST_STABLE") if improvement < tol_cost_stability else ("Converged", "STEP_NORM")
+        else:
+            x_nominal = x_best.copy()
+            lambda_damping *= 10.0
+            if lambda_damping > 1e12:
+                certified, gn_decrement = _stationarity_certified(
+                    h, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled)
+                status, detail = (("Converged", "STATIONARY_AT_DAMPING_LIMIT") if certified
+                                  else ("DampingLimit", "LAMBDA_HARD_LIMIT"))
+                break
+
+    posterior_covariance = None
+    if return_posterior:
+        h_best, _ = linearize(x_best)
+        posterior_covariance, _ = _square_root_covariance_from_design(h_best, w_diag, prior_inv, scale)
+
+    stats = EstimatorStats(
+        iterations=iteration,
+        final_cost=best_cost,
+        position_step_norm_m=float(np.linalg.norm(last_step[:3])),
+        velocity_step_norm_mps=float(np.linalg.norm(last_step[3:6])),
+        condition_number=condition_number,
+        rank=rank,
+        posterior_covariance=posterior_covariance,
+        termination_detail=detail,
+        gauss_newton_decrement=gn_decrement,
+    )
+    return x_best, status, stats
