@@ -8,7 +8,7 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 
 1. **Aynı-model gidiş-dönüş tutarsızlıkları gizler.** Gerçek değer ve tahminci aynı basitleştirilmiş
    modeli paylaştığında X-01 (efemeris/GM/çerçeve nesli), X-02 (Ay J2 kutbu), X-07 (Ay merkezli ışık
-   zamanı), X-08 (aberasyon çerçevesi) ve X-09 (istasyon zinciri) birbirini götürür. Sentetik doğruluk
+   zamanı) ve X-09 (istasyon zinciri) birbirini götürür (X-08 aberasyon çerçevesi WP1.10'da kapatıldı). Sentetik doğruluk
    sayıları gerçek veri doğruluğu değildir.
 2. **Tahminci karşılaştırmaları** şu farkları içerir: UKF hızlı yayıcıda
    RK4 + doğrusal efemeris (X-04, MEAS-05), UKF P0 ile enjekte başlangıç hatası uyumsuzluğu (X-10), BLS ve SRIF'in

@@ -119,7 +119,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | ID | Ö | Bulgu | Konum | Büyüklük |
 |---|---|---|---|---|
 | MEAS-01 ✔ | K | Üretim ışık zamanı Ay merkezli Newton, Shapiro yok. SSB yolu yalnız `two_way_light_time_ssb` profilli iki yönlü menzilde ve bu profil `scenario_config`'de izinli değil | `relativistic_light_time.py`, `scenario_config.py:79-84`, `estimators.py:2171` | 2YM +1.9–2.5 m; Doppler −68…+87 µm/s; 1YM 14–19 km; ΔDOR 97 µrad; Güneş Shapiro 7.3–7.8 m |
-| MEAS-02 ✔ | K | `spice_ssb` aberasyon: Ay merkezli ışık zamanı + SSB gözlemci hızı → çerçeve karışımı; belgedeki "~11″ SSB bias" muhtemelen bu artefakt | `measurements.py:1503-1561,1404,1354`; `docs/theory/stellar_aberration_od_impact.md` | ~11–20″ açı |
+| MEAS-02 ✔ | K | `spice_ssb` aberasyon: Ay merkezli ışık zamanı + SSB gözlemci hızı → çerçeve karışımı; belgedeki "~11″ SSB bias" muhtemelen bu artefakt **Doğrulandı ve kapatıldı (WP1.10):** bağımsız SPICE CN+S kehanetine karşı `spice_ssb` 18.4″ sapıyordu (Ay'ın ~30 km/s SSB hızı iki kez sayılıyordu), `local_mci` ~1 mas. Düzeltme: Ay merkezli ışık zamanı LOS'u SSB çerçevesine normalize(u − v_ay/c) ile taşınır; iki model de ~1 mas. Etki belgesi yeniden üretildi (yanlış ~11″/5.3 km sonucu düzeltildi) | `measurements.py:1503-1561,1404,1354`; `docs/theory/stellar_aberration_od_impact.md` | ~11–20″ açı |
 | MEAS-03 ✔T | B | Sayılan Doppler tek-sekme çözücüsü yakınsamayı epoch farkıyla (`abs(new_t2 - t2)`, `(receive_time_s - t2) - ρ/c`) test ediyor → t ≳ 2^17 s'de ulp sınırı; `converged=False`, üretimde `RoundTripLightTimeConvergenceError` | `radiometrics.py:1074,1109,1122-1145` | 2.5e6 s'de 200 noktanın 12'si yakınsıyor (§0) |
 | MEAS-04 ✔T (kapandı, WP1.1) | B | SR-UKF/EKF sayılan Doppler: Dünya konum/hız ve 6×6 J2000→ITRF93 **doğrusal** interpolasyon (ortonormal değil); batch Hermite. Test bunu bit-bit sabitliyor | `filters.py:1991-1993,2118`; `tests/test_filters.py:50-80` | D23'e göre ~1.7e-3 m/s; dönüşümde ek |
 | MEAS-05 (açık; WP1.1 dokunmadı) | O | UKF hızlı sigma yayıcısı Dünya/Güneş'i doğrusal interpolasyonla alıyor | `accelerated.make_lerp_vec3`, `dynamics.py:1363` | ~120 m (600 s), ~4 km (3600 s) Dünya konumu |
@@ -222,7 +222,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | X-05 | Batch Doppler (Hermite Dünya) | UKF/EKF (doğrusal Dünya + doğrusal dönüşüm) | ~1.7e-3 m/s | **Evet** | MEAS-04 |
 | X-06 | SRIF mevcut maliyet (42-durum) | SRIF aday maliyeti (6-durum, önselsiz) | 1–7 m yörünge, **kapatıldı (WP4.1)** | **Evet** | EST-01/02 |
 | X-07 | İki yönlü menzil (SSB+Shapiro+medya seçeneği) | Doppler/ΔDOR/tek yönlü (yalnız Ay merkezli) | m / 10 µm/s | Hayır | MEAS-01 |
-| X-08 | `spice_ssb` aberasyon (SSB hızı) | Işık zamanı (Ay merkezli) | ~11–20″ | Hayır | MEAS-02 |
+| X-08 | `spice_ssb` aberasyon (SSB hızı) | Işık zamanı (Ay merkezli) | 18.4″ (ölçüldü) → ~1 mas, **kapatıldı (WP1.10)** | Hayır | MEAS-02 |
 | X-09 | SSB yolu istasyon (ITRF2020+gelgit+topo TDB) | Varsayılan (ITRF93 predict) | 0.2–0.3 m | Hayır | MEAS-06 |
 | X-10 | UKF P0 | Enjekte edilen soğuk başlangıç hatası | 1.8× / 3.3× | **Evet** | EST-19 |
 | X-11 | Masaüstü (rtol 1e-8, 3600 s) | Kütüphane/tez (1e-10/1e-11, 600 s) | m | **Evet** | CFG-01 |
