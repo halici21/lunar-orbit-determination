@@ -644,6 +644,43 @@ F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256 = {
         "57f2bea2f3949f069300164d37866c198c6ad078ae4e92c1ad0b2d21cd91eaaa",
 }
 
+# F1 WP1.5 re-freeze (owner-authorized V&V programme, 2026-10-31; assessment
+# DYN-10/DYN-11). The force fingerprint did not cover the executed ephemeris, so
+# different Earth/Sun samples hashed equal. force_contract.py adds an optional
+# EphemerisExecutionContract (schema v3; v1/v2 payloads and fingerprints are
+# unchanged), hashes disabled Earth J2 as not_applicable under v3, and refuses
+# to bind a spec that declares Earth J2. scenario_config.py passes the optional
+# identity through force_execution_spec_from_scenario_config.
+#
+#   lunar_od/force_contract.py   536096e3... -> 60c72036...
+#   lunar_od/scenario_config.py  6c95d615... -> 45bb408d...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/force_contract.py":
+        "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
+    "lunar_od/scenario_config.py":
+        "45bb408dee3e9a3a47a548aa6ee24501b7232d79c032abc4915bfcda4cba88a9",
+}
+
+# F1 WP1.6 re-freeze (owner-authorized V&V programme, 2026-11-01; assessment
+# CFG-02/CFG-04/CFG-05/CFG-10). A scenario JSON now fully defines its run:
+# scenario_config.py adds measurement_seed/cold_start_seed and the JSON loader
+# refuses unknown keys and unseeded noise; run_scenario_config.py takes the
+# seeds from the config, always honours bls_lambda0/tol_cost_stability (their
+# defaults equal the run_batch_arc_sequence defaults) and writes
+# <name>_run_provenance.json (source revision, config hash, seeds, furnished
+# kernels with SHA-256, sampled ephemeris identities, package versions).
+#
+#   lunar_od/scenario_config.py      45bb408d... -> 5da4b353...
+#   examples/run_scenario_config.py  1bf731a3... -> 749a09c2...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_6_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenario_config.py":
+        "5da4b353b1c1dd0dc8d3a6ef1debb58fabceab263757b6e1d5c5db912b11d4f6",
+    "examples/run_scenario_config.py":
+        "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
+}
+
 
 
 
@@ -685,6 +722,10 @@ def expected_current_tree_sha256(relative_path: str) -> str:
         return F1_WP1_10_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_4_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_WP1_6_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_6_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:
