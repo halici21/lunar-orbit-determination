@@ -1,0 +1,14 @@
+{
+ "G_OFF": {
+  "PASS": true,
+  "max_abs_difference": 0.0
+ },
+ "G_LIN": {
+  "PASS": true,
+  "max_position_difference_m": 0.22608021647592763,
+  "linear_column_max_m": 47.520905179385245,
+  "limit_m": 0.950418103587705,
+  "nonlinear_max_m": 47.58604381024342
+ },
+ "wall_s": 1675.8244557380676
+}
