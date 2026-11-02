@@ -681,6 +681,23 @@ F1_WP1_6_REFROZEN_CURRENT_TREE_SHA256 = {
         "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
 }
 
+# F1 WP1.9 re-freeze (owner-authorized V&V programme, 2026-10-31; assessment EST-19).
+# The UKF default initial covariance was 100 m / 0.1 m/s while the campaigns inject a
+# 180 m / 0.03 m/s cold-start error.  scenarios.py now defaults it to the injected
+# thesis sigma and takes ``ukf_initial_state_sigma``; the CLI bridge passes the
+# cold-start sigma scaled by ``cold_start_scale``.  Only UKF runs without a prior
+# covariance change; BLS/SRIF are untouched.
+#
+#   lunar_od/scenarios.py            b6398d53... -> 472f5307...
+#   examples/run_scenario_config.py  1bf731a3... -> 9a909719...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_9_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenarios.py":
+        "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
+    "examples/run_scenario_config.py":
+        "9a909719ed105b49129fd9d8bd2c7860b9c6474b948b28f4d4224a17057822eb",
+}
+
 
 
 
@@ -726,6 +743,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
         return F1_WP1_6_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_5_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_WP1_9_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_9_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256:
         return PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256:

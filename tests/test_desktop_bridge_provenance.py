@@ -25,8 +25,8 @@ def test_refreeze_keeps_the_historical_record_and_protects_approved_bytes():
     assert campaign.DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256[BRIDGE] == _filtered_sha256(APPROVED_COMMIT)
     # The numerical-core correction is the later additive identity of the bridge.
     assert campaign.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[BRIDGE] == _filtered_sha256(NUMERICAL_CORE_COMMIT)
-    # WP1.6 (scenario reproducibility) is the newest authorized identity of the bridge.
-    assert campaign.expected_current_tree_sha256(BRIDGE) == campaign.F1_WP1_6_REFROZEN_CURRENT_TREE_SHA256[BRIDGE]
+    # The 2026-11-02 branch consolidation (WP1.6 + WP1.9 together) is the current identity.
+    assert campaign.expected_current_tree_sha256(BRIDGE) == campaign.BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256[BRIDGE]
     assert campaign.expected_current_tree_sha256(BRIDGE) == hashlib.sha256((ROOT / BRIDGE).read_bytes()).hexdigest()
 
 

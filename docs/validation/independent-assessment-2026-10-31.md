@@ -29,7 +29,7 @@ bir kontrol testi vardır.
 | MEAS-04 | UKF yerel J2000→ITRF93 dönüşümü ortonormal ve mm doğru | PASS (WP1.1 kapattı; gerçek sxform karşısında 60/240 s ızgarada < 1 mm) — önceki XFAIL | ızgara ortasında ‖RRᵀ−I‖ = 6.8e-6 / 1.5e-5 / 1.1e-4; istasyon konum hatası 15 / 34 / 244 m (60 / 90 / 240 s ızgara) |
 | DYN-05 | Ay yönelimi ızgara ortasında sürekli | XFAIL | 60 s ızgarada sıçrama 1.6e-4 rad (= ω·cadence) |
 | EST-09 | DMC Q uzun boşlukta sonlu, PSD ve doğru | PASS (WP0.2; βdt > 1 için kapalı form) | alt-adımlı referansa göre bağıl hata: dt/τ=10 → 1.2e-12; 30 → 8.7e-5; 144 → 7.8e42 (en küçük özdeğer −3.1e37) |
-| EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | XFAIL | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
+| EST-19 | UKF P0 enjekte edilen soğuk başlangıç σ'sı ile aynı | PASS (WP1.9 kapattı) | P0 100 m / 0.1 m/s; enjekte 180 m / 0.03 m/s |
 | EST-01 | 6-durum ve 42-durum yayılım yolları estimator toleransında < 1 mm | XFAIL **Kapatıldı (WP4.1):** mevcut nokta ve tüm denemeler aynı 6-durum yolunda, aynı toleransta puanlanıyor. | 4 saatlik 100 km yörüngede en büyük konum farkı: 0.041 m (rtol 1e-11), 0.214 m (1e-10), 2.95 m (1e-8) |
 | DYN-10 | Kuvvet kimliği efemeris kernel'i ve interpolasyonunu içerir | PASS (WP1.5) | v3 şeması `EphemerisExecutionContract` ekler (SPK adları, örnek SHA-256, ızgara adımı, interpolasyon); v1/v2 parmak izleri değişmedi. Üretim koşucularına bağlama WP1.6'da |
 
@@ -155,7 +155,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | EST-16 | O | ANEES/ANIS χ² aralıkları yok; adaptif R'de NIS aşağı yanlı; artık lag-1 iç içe [ρ,az,el] vektöründe; adaptif ayarda truth başlangıç durumuna yayınlanıyor; ortalama NIS reddedilenleri içeriyor **WP4.6 (kısmi):** `lunar_od.diagnostics` iki taraflı χ² ANEES/ANIS aralıkları, reddedilen güncellemeleri dışlayan ortalama NIS, Ljung–Box ve kanal bazında gecikme-1 otokorelasyonu sağlıyor (Bar-Shalom örneği ve Monte Carlo kalibrasyonuyla test edildi); filtre/senaryo raporlarına bağlanması ve adaptif R yanlılığı açık | `diagnostics.py:202`, `adaptive_tuning.py:316,387`, `filters.py:594` |
 | EST-17 | O | Batch ayıklama: a priori σ, sert 3σ, %30 "ya hep ya hiç" | `estimators.py:1876-1900` |
 | EST-18 ✔T | O | Gözlemlenebilirlik koşul/rank/zayıf yön ölçeklenmemiş Jacobian'dan; bias dondurma kararı birime bağlı. **Kapatıldı (WP4.3b):** rank/koşul/zayıf yön sütun-dengelenmiş tasarımdan; bias kararı her bias'ın kendi bilgisinin durumdan ayrıştıktan sonra kalan (birimsiz) oranıyla; eskiden yalnız birim değişikliği kararı değiştiriyordu | `observability.py:114,467` |
-| EST-19 ✔T | B | UKF P0 (100 m / 0.1 m/s) enjekte edilen soğuk başlangıç hatasıyla (180 m / 0.03 m/s) uyumsuz → NEES ve BLS–UKF karşılaştırması bozuk | `scenarios.py:1434`, `thesis_matrix.py:40-41` |
+| EST-19 ✔T (kapandı, WP1.9) | B | UKF P0 (100 m / 0.1 m/s) enjekte edilen soğuk başlangıç hatasıyla (180 m / 0.03 m/s) uyumsuz → NEES ve BLS–UKF karşılaştırması bozuk | `scenarios.py:1434`, `thesis_matrix.py:40-41` |
 | EST-20 ✔T | D | Monte Carlo tohumları durum başına farklı (ortak rastgele sayı yok), kampanyalar arası çakışma. **Kapatıldı (WP4.7):** tohum `SeedSequence([taban, deneme])`, durumlar ortak tohum; eski şema `seed_scheme="legacy_offset"` ile | `monte_carlo.py:79,312` |
 | EST-21 | D | DMC yalnız EKF'de; UKF ışık zamanlı/iki yönlü gözlemleri reddediyor → karşılaştırma yalnız geometrik gözlemlerde. **Kısmi (WP4.8b/c/d):** RTN eksenli DMC ve eksen başına σ; SR-UKF'de DMC (WP4.8c, doğrusal rejimde EKF-DMC'ye 1.5e-6σ); konum gözlemli batch DMC (WP4.8d, `dmc_batch.py`: normal denklem ve QR çözümü, w0 önseli N(0,σ²)); anlık range-rate batch DMC (WP4.8e, `estimate_range_rate_dmc_batch`); sayılan Doppler/iki yönlü batch DMC ve UKF'nin ışık zamanlı/iki yönlü gözlem desteği açık | `filters.py:733-768` |
 
@@ -224,7 +224,7 @@ CRLF bağımlılığı açık (WP0.5'in kalan kısmı). Re-freeze sonrası tam r
 | X-07 | İki yönlü menzil (SSB+Shapiro+medya seçeneği) | Doppler/ΔDOR/tek yönlü (yalnız Ay merkezli) | m / 10 µm/s | Hayır | MEAS-01 |
 | X-08 | `spice_ssb` aberasyon (SSB hızı) | Işık zamanı (Ay merkezli) | 18.4″ (ölçüldü) → ~1 mas, **kapatıldı (WP1.10)** | Hayır | MEAS-02 |
 | X-09 | SSB yolu istasyon (ITRF2020+gelgit+topo TDB) | Varsayılan (ITRF93 predict) | 0.2–0.3 m | Hayır | MEAS-06 |
-| X-10 | UKF P0 | Enjekte edilen soğuk başlangıç hatası | 1.8× / 3.3× | **Evet** | EST-19 |
+| X-10 | UKF P0 | Enjekte edilen soğuk başlangıç hatası | 1.8× / 3.3× | **Evet** | EST-19 (kapandı) |
 | X-11 | Masaüstü (rtol 1e-8, 3600 s) | Kütüphane/tez (1e-10/1e-11, 600 s) | m | **Evet** | CFG-01 |
 | X-12 | Kuvvet parmak izi | Gerçek yürütülen efemeris/dönüş | eşit hash farklı fizik | — | DYN-10 |
 | X-13 | Gravite yükleyici etiketi | STM çerçeve kontrolü | çalışmıyor | — | DYN-12 |
