@@ -361,12 +361,18 @@ def _validate(raw: dict, source: str) -> None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+#: Frame labels the loader accepts (WP1.7): the generic alias, kept as the default
+#: so existing callers are unchanged, and the two explicit PA realizations.
+LOADER_FRAMES = ("MOON_PA", "MOON_PA_DE421", "MOON_PA_DE440")
+
+
 def load_lunar_gravity_model(
     path: os.PathLike[str] | str,
     nmax: int | None = None,
     mmax: int | None = None,
     *,
     fmt: str = "auto",
+    frame: str = "MOON_PA",
 ) -> SphericalHarmonicGravityModel:
     """Load a lunar spherical-harmonic model file into canonical form.
 
@@ -378,11 +384,19 @@ def load_lunar_gravity_model(
         emitted above degree 128 -- usually you want a truncation).
     fmt : ``"auto"`` (by extension, content sniff as fallback), ``"shadr"``
         or ``"gfc"``.
+    frame : body-fixed frame label of the coefficients.  WP1.7 (DYN-12): the
+        default generic ``"MOON_PA"`` does not name a realization, so the STM
+        path refuses it (:func:`lunar_od.dynamics.require_explicit_pa_realization`);
+        pass ``"MOON_PA_DE421"`` or ``"MOON_PA_DE440"`` to state the one the
+        coefficients were solved in.  Coefficient files do not record it.
 
     Returns the model with the FILE's own GM and reference radius (SI) and
     fully-normalized coefficients; provenance (sha256, format, native
     normalization, declared degree, truncation) is in ``model.metadata``.
     """
+    frame = str(frame).strip().upper()
+    if frame not in LOADER_FRAMES:
+        raise ValueError(f"frame must be one of {LOADER_FRAMES}; got {frame!r}.")
     file_path = Path(path)
     raw_bytes = file_path.read_bytes()
     sha256 = hashlib.sha256(raw_bytes).hexdigest()
@@ -440,7 +454,7 @@ def load_lunar_gravity_model(
         sbar=sbar,
         nmax=nmax_eff,
         mmax=mmax_eff,
-        frame="MOON_PA",
+        frame=frame,
         metadata=metadata,
     )
 
