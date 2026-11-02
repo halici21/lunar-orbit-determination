@@ -212,7 +212,8 @@ def scenario_config_schema() -> dict[str, Any]:
             "srp": {"type": ["object", "null"], "default": None},
             "propagation_profile": {"type": ["object", "null"], "default": None},
             "noise": {"type": "boolean", "default": False},
-            "enable_earth_j2": {"type": "boolean", "default": False},
+            # WP1.7 (CFG-07): True is rejected on the official OD path
+            "enable_earth_j2": {"type": "boolean", "default": False, "enum": [False]},
             "earth_j2_mode": {"enum": list(ALLOWED_EARTH_J2_MODES), "default": "indirect"},
             "bias_mode": {"enum": [None, "global", "station_angles", "station_full"], "default": None},
             "range_rate_physics": {
@@ -284,7 +285,8 @@ def scenario_config_schema() -> dict[str, Any]:
             "ukf_bias_regularize_relative_information": {"type": "number", "default": 1e-5},
             "ukf_bias_regularization_std": {"type": "number", "default": 1.0},
             "output_dir": {"type": "string", "default": "python_port/results"},
-            "enable_lunar_harmonics": {"type": "boolean", "default": False},
+            # WP1.7 (CFG-07): the scenario runner does not execute harmonics; True is rejected
+            "enable_lunar_harmonics": {"type": "boolean", "default": False, "enum": [False]},
             "lunar_gravity_model_path": {"type": ["string", "null"], "default": None},
             "lunar_gravity_nmax": {"type": ["integer", "null"], "default": None},
             "lunar_gravity_mmax": {"type": ["integer", "null"], "default": None},
@@ -711,6 +713,8 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
         path,
         nmax=config.lunar_gravity_nmax,
         mmax=config.lunar_gravity_mmax,
+        # WP1.7: label the model with the configured explicit PA realization
+        frame=config.lunar_gravity_frame,
     )
     # Mirror of the propagation-time double-count guard for callers that
     # construct ScenarioConfig directly (bypassing scenario_config_from_mapping).
@@ -1171,11 +1175,6 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
             raise ValueError(
                 "enable_lunar_harmonics=True with j2_moon != 0 would count lunar J2 "
                 "twice; set j2_moon=0 (the model's C20 term already contains it)."
-            )
-        if config.estimator_type in ("bls_lm", "srif"):
-            raise ValueError(
-                "lunar harmonics gradient not implemented; STM-based estimators "
-                "cannot use harmonics — use estimator_type='ukf' or disable lunar harmonics."
             )
         # TEMPORARY Phase 13B2a guard (removed in Phase 13B2b): the scenario
         # runner does not consume these fields yet; accepting the config would
