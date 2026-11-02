@@ -507,11 +507,13 @@ class R3ProviderProtocolCompatibility(unittest.TestCase):
 class R3CompatibilityUnchangedOutsideTheMeasurementModel(unittest.TestCase):
     """R3-P17: a measurement-model update never moves the force contract."""
 
+    # F1 WP1.2: re-frozen for the gm_de440 default GMs (were 9b93897a545d... /
+    # 11d33466c53e... with gm_de431; that pair is still checked in the R2 gate test).
     ZERO_J2_FINGERPRINT = (
-        "sha256:9b93897a545d0d2f1cb2b5329ce6be79051fef97e1529bff3bea565c4c31418d"
+        "sha256:48d53e37c295a5e32989673dac7db8e3530be93cb66c3e6a2fdefd8bbc216c66"
     )
     LUNAR_J2_FINGERPRINT = (
-        "sha256:11d33466c53e4c4a48cb8f72984ad1740e81de26ef342b4ecd106a30a7ddb52d"
+        "sha256:a8ab569c4653aad321211e17cb19f127fb4e4713957aafeb0188615acf4273a7"
     )
 
     def _contract(self, j2_moon):
