@@ -23,7 +23,7 @@ from lunar_od.dmc import DMCOptions, dmc_process_noise
 from lunar_od.dynamics import propagate_augmented_state, propagate_state
 from lunar_od.filters import _interp_pass_transforms, _interp_pass_values
 from lunar_od.force_contract import ForceExecutionSpec, ForceModelContract
-from lunar_od.lunar_frames import nearest_rotation_at_time
+from lunar_od.lunar_frames import interpolated_rotation_at_time, nearest_rotation_at_time
 from lunar_od.scenarios import _ukf_default_initial_covariance
 from lunar_od.thesis_matrix import THESIS_COLD_START_SIGMA_POS_M, THESIS_COLD_START_SIGMA_VEL_MPS
 
@@ -135,12 +135,12 @@ def test_control_nearest_rotation_returns_grid_sample():
     np.testing.assert_array_equal(nearest_rotation_at_time(rotations, t_grid, 120.0), rotations[2])
 
 
-@pytest.mark.xfail(strict=True, reason="DYN-05: orientation jumps by omega*cadence at every grid midpoint")
 def test_dyn05_lunar_orientation_continuous_across_grid_midpoint():
+    # Fixed by WP1.3: the dynamics grid path now uses the geodesic interpolation.
     t_grid, rotations = _moon_rotation_grid(60.0)
     mid = 90.0
-    before = nearest_rotation_at_time(rotations, t_grid, mid - 1e-6)
-    after = nearest_rotation_at_time(rotations, t_grid, mid + 1e-6)
+    before = interpolated_rotation_at_time(rotations, t_grid, mid - 1e-6)
+    after = interpolated_rotation_at_time(rotations, t_grid, mid + 1e-6)
     assert _rotation_angle(before, after) < 1e-9
 
 
