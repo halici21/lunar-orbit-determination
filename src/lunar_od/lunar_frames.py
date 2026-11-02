@@ -68,6 +68,7 @@ from .spice_loader import load_spice_kernels
 __all__ = [
     "sample_moon_pa_rotations",
     "nearest_rotation_at_time",
+    "interpolated_rotation_at_time",
     "validate_rotation_matrix",
 ]
 
@@ -187,6 +188,68 @@ def nearest_rotation_at_time(
         )
     idx = int(np.argmin(np.abs(grid - t)))   # first minimum -> lower index on tie
     return rotations[idx]
+
+
+def _rotation_vector(r: np.ndarray) -> np.ndarray:
+    """Axis-angle vector of a proper rotation with angle < pi (log map)."""
+    v = 0.5 * np.array([r[2, 1] - r[1, 2], r[0, 2] - r[2, 0], r[1, 0] - r[0, 1]])
+    s = float(np.linalg.norm(v))
+    angle = float(np.arctan2(s, 0.5 * (np.trace(r) - 1.0)))
+    if s == 0.0:
+        return np.zeros(3)
+    return v * (angle / s)
+
+
+def _rotation_from_vector(w: np.ndarray) -> np.ndarray:
+    """Rodrigues exponential map of an axis-angle vector."""
+    angle = float(np.linalg.norm(w))
+    if angle == 0.0:
+        return np.eye(3)
+    k = w / angle
+    kx = np.array([[0.0, -k[2], k[1]], [k[2], 0.0, -k[0]], [-k[1], k[0], 0.0]])
+    return np.eye(3) + np.sin(angle) * kx + (1.0 - np.cos(angle)) * (kx @ kx)
+
+
+def interpolated_rotation_at_time(
+    rotation_grid: np.ndarray,
+    t_grid_s: ArrayLike,
+    t_s: float,
+) -> np.ndarray:
+    """Continuous rotation lookup on a pre-sampled grid (WP1.3, DYN-05).
+
+    Geodesic (SLERP) interpolation between the two bracketing samples:
+    ``C(t) = exp(f * log(C1 C0^T)) C0`` with ``f = (t - t0) / (t1 - t0)``, i.e.
+    a constant angular velocity across the interval.  Unlike
+    :func:`nearest_rotation_at_time` the orientation, and so the harmonic
+    force, is continuous in time; at a grid epoch the sample is returned
+    exactly.  For the Moon on a 60 s grid the residual against SPICE is the
+    angular-acceleration term, ~1e-12 rad, versus ~1e-4 for the nearest sample.
+
+    Same validation and no-extrapolation contract as
+    :func:`nearest_rotation_at_time`.
+    """
+    grid = _as_time_grid(t_grid_s)
+    rotations = np.asarray(rotation_grid, dtype=float)
+    if rotations.ndim != 3 or rotations.shape[1:] != (3, 3):
+        raise ValueError("rotation_grid must have shape (N, 3, 3).")
+    if rotations.shape[0] != grid.size:
+        raise ValueError(
+            f"rotation_grid length {rotations.shape[0]} does not match "
+            f"t_grid_s length {grid.size}."
+        )
+    t = float(t_s)
+    if t < grid[0] or t > grid[-1]:
+        raise ValueError(
+            f"t_s={t} is outside the sampled rotation grid "
+            f"[{grid[0]}, {grid[-1]}] (no extrapolation)."
+        )
+    hi = int(np.searchsorted(grid, t, side="left"))
+    if grid[hi] == t:
+        return rotations[hi]
+    lo = hi - 1
+    c0, c1 = rotations[lo], rotations[hi]
+    fraction = (t - grid[lo]) / (grid[hi] - grid[lo])
+    return _rotation_from_vector(fraction * _rotation_vector(c1 @ c0.T)) @ c0
 
 
 def validate_rotation_matrix(c: ArrayLike, *, atol: float = 1e-10) -> None:

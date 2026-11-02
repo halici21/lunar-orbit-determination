@@ -129,9 +129,9 @@ class DirectRhsEpochContract(unittest.TestCase):
         def _boom(*a, **k):
             raise AssertionError("direct mode consulted the rotation grid")
 
-        orig = dyn.nearest_rotation_at_time
-        dyn.nearest_rotation_at_time = _boom
-        self.addCleanup(setattr, dyn, "nearest_rotation_at_time", orig)
+        orig = dyn.interpolated_rotation_at_time
+        dyn.interpolated_rotation_at_time = _boom
+        self.addCleanup(setattr, dyn, "interpolated_rotation_at_time", orig)
         dyn.propagate_state(
             np.array([0.0, 5.0]), self.x0, MU_MOON, 0.0, 0.0,
             _earth, _sun, harmonic_model=self.model, harmonic_epoch_et0=ET0,

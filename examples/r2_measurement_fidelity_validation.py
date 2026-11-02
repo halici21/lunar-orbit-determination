@@ -765,6 +765,19 @@ BRANCH_CONSOLIDATION_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
         "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea",
 }
 
+# F1 WP1.3 (owner-authorized re-freeze for the independent-assessment programme;
+# DYN-05).  The sampled-grid harmonic path interpolates the lunar orientation
+# geodesically (lunar_frames.interpolated_rotation_at_time) instead of taking the
+# nearest sample; the J2 mean-pole comment is corrected (DYN-03, quantified only).
+#
+#   old (consolidation)  b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0
+#   new (WP1.3)          6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
+}
+
 
 # PR #99 (F1 WP1.2) brought up to date with main on 2026-11-02, after the branch
 # consolidation (PR #97) and WP1.7 (PR #96).  run_scenario_config.py carries the
@@ -791,6 +804,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
         return WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_2_REFROZEN_CURRENT_TREE_SHA256:

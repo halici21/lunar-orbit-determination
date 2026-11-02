@@ -292,6 +292,8 @@ def test_f1_refreeze_is_additive_and_history_is_preserved():
     # The user-requested numerical-core correction is a later additive identity.
     assert r2.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ea6f6322")
     # Phase F2 G4e-R (PR #61 shadow-contact guard) re-frozen 2026-10-31 by the owner.
-    new = r2.PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert r2.PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[path].startswith("b19c2d80")
+    # F1 WP1.3 (continuous lunar orientation, DYN-05) is the current identity.
+    new = r2.F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
