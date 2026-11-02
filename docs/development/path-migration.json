@@ -2768,7 +2768,7 @@
     },
     "lunar_od/scenario_config.py": {
       "path": "src/lunar_od/scenario_config.py",
-      "original_sha256": "8ee6d8be6754a823f7bdcac30bf5b123d950c1cc22f668ffa5560546296c95ea",
+      "original_sha256": "50714882f3fb8b57ca458e491fd63e756493ad5a804df267055b964eaf5c179b",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
