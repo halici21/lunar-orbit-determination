@@ -68,3 +68,33 @@ def truth_numerical_metadata(srp, propagation_profile, rtol, atol):
         profile=PropagationProfile(method='DOP853',shadow_events=False)
     return numerical_metadata(srp,profile,rtol,atol,adaptive_tolerances=False,
                               local_state_model='not_applicable')
+
+
+# WP1.8 (DYN-14, X-04): fields that make two propagations the same numerical path.
+SHARED_PROFILE_FIELDS = ('method', 'shadow_events', 'rtol', 'atol', 'error_control')
+
+
+def numerical_profile_differences(truth_profile, estimator_profile):
+    """``{field: (truth, estimator)}`` for every :data:`SHARED_PROFILE_FIELDS` entry that differs.
+
+    A missing estimator profile (``None``) differs in every field.
+    """
+    estimator_profile = estimator_profile or {}
+    return {field: (truth_profile.get(field), estimator_profile.get(field))
+            for field in SHARED_PROFILE_FIELDS
+            if truth_profile.get(field) != estimator_profile.get(field)}
+
+
+def require_shared_numerical_profile(truth_profile, *estimator_profiles, mismatch_reason=None):
+    """Refuse a truth-vs-estimator comparison on different numerical paths.
+
+    Truth and every estimator must agree on :data:`SHARED_PROFILE_FIELDS`, or the
+    caller states why the difference is intended (``mismatch_reason``).  Returns
+    the per-estimator differences.
+    """
+    differences = [numerical_profile_differences(truth_profile, p) for p in estimator_profiles]
+    if any(differences) and not (mismatch_reason and str(mismatch_reason).strip()):
+        raise ValueError(
+            'truth and estimator propagate on different numerical profiles '
+            f'{differences}; pass one PropagationProfile to both, or state mismatch_reason.')
+    return differences
