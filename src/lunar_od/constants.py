@@ -27,14 +27,30 @@ from __future__ import annotations
 
 # ---------------------------------------------------------------------------
 # Gravitational parameters (GM), m^3/s^2
-# Source: SPICE gm_de431 (GM constants distributed with DE431); values match the
-# kernel pool exactly so they reproduce the current SPICE-based runtime numbers.
-# NOTE (Phase 2 scope): these are DEFINED here but the production runtime still
-# obtains GM from the SPICE pool; they are not yet wired into propagation.
+#
+# WP1.2 (DYN-01, X-01): the GMs belong to the planetary ephemeris they were fitted
+# with.  A run takes them from lunar_od.ephemeris_generation.gravitational_parameters(),
+# which pairs the default DE440 ephemeris with gm_de440.tpc (BODY301/399/10_GM = DE440
+# "ASTRO-VALUES"; Park et al. 2021) and the DE421 historical profile with gm_de431.
+#
+# MU_MOON_M3S2 / MU_EARTH_M3S2 / MU_SUN_M3S2 keep their historical gm_de431 values:
+# the Phase 17 study scripts and frozen baselines were computed with them and must
+# stay reproducible.  New production code uses gravitational_parameters().
 # ---------------------------------------------------------------------------
 MU_MOON_M3S2:  float = 4902.800066163796e9       # gm_de431  GM(Moon)  = 4902.800066163796 km^3/s^2
 MU_EARTH_M3S2: float = 398600.4354360959e9       # gm_de431  GM(Earth) = 398600.4354360959 km^3/s^2
 MU_SUN_M3S2:   float = 132712440041.9393e9       # gm_de431  GM(Sun)   = 132712440041.9393 km^3/s^2
+
+MU_MOON_DE440_M3S2:  float = 4902.8001184575496e9  # gm_de440  GM(Moon)  = 4902.8001184575496 km^3/s^2
+MU_EARTH_DE440_M3S2: float = 398600.43550702266e9  # gm_de440  GM(Earth) = 398600.43550702266 km^3/s^2
+MU_SUN_DE440_M3S2:   float = 132712440041.27942e9  # gm_de440  GM(Sun)   = 132712440041.27942 km^3/s^2
+
+# The DE421 profile's GMs: the doubles the snapshot runners computed.
+MU_MOON_DE431_M3S2:  float = 4902.800066163796e9   # gm_de431  GM(Moon)  = 4902.800066163796 km^3/s^2
+# Earth and Sun as km^3/s^2 * 1e9, the exact doubles the snapshot runners computed
+# (the e9 literal differs in the last bit for Earth), so the DE421 profile is bitwise.
+MU_EARTH_DE431_M3S2: float = 398600.4354360959 * 1e9   # gm_de431  GM(Earth) = 398600.4354360959 km^3/s^2
+MU_SUN_DE431_M3S2:   float = 132712440041.9393 * 1e9   # gm_de431  GM(Sun)   = 132712440041.9393 km^3/s^2
 
 # ---------------------------------------------------------------------------
 # Reference radii, metres

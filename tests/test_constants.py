@@ -67,12 +67,14 @@ def spice_pool():
     return spice
 
 
+# WP1.2: the default (DE440) kernel set furnishes gm_de440.tpc; the legacy
+# MU_*_M3S2 names keep their gm_de431 values for frozen baselines.
 @pytest.mark.parametrize("body, name", [
-    ("MOON", "MU_MOON_M3S2"),
-    ("EARTH", "MU_EARTH_M3S2"),
-    ("SUN", "MU_SUN_M3S2"),
+    ("MOON", "MU_MOON_DE440_M3S2"),
+    ("EARTH", "MU_EARTH_DE440_M3S2"),
+    ("SUN", "MU_SUN_DE440_M3S2"),
 ])
 def test_gm_equals_loaded_gm_kernel(spice_pool, body, name):
-    """The constants claim to match the furnished GM kernel exactly (km^3/s^2 -> m^3/s^2)."""
+    """The DE440 constants match the furnished GM kernel exactly (km^3/s^2 -> m^3/s^2)."""
     (gm_km3_s2,) = spice_pool.bodvrd(body, "GM", 1)[1]
     assert getattr(K, name) == pytest.approx(gm_km3_s2 * 1e9, rel=1e-15)

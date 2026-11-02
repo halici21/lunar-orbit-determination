@@ -128,16 +128,17 @@ def run_configured_scenario(
 
     fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
     initial = fixture["initial_state"]
-    constants = fixture["constants"]
     epoch_utc = fixture["epoch_utc"]
 
     x0_mci = np.asarray(initial["state_mci_j2000_m_mps"], dtype=float)
-    mu_moon = float(initial["mu_moon_m3_s2"])
-    mu_earth = float(np.asarray(constants["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
-    mu_sun = float(np.asarray(constants["mu_sun_km3_s2"]).reshape(-1)[0] * 1e9)
+    # WP1.2: GMs of the selected ephemeris generation, not the snapshot's gm_de431
+    # (identical to it under the DE421 historical profile).
+    from lunar_od.ephemeris_generation import gravitational_parameters
+
+    mu_moon, mu_earth, mu_sun = gravitational_parameters()
 
     # Stage B — effective runtime binding. Rebuild the truth/estimator specs
-    # from the EFFECTIVE fixture GM (not the default constants), finalize the
+    # from the EFFECTIVE generation GM (WP1.2; was the fixture's), finalize the
     # parity decision, and bit-bind each spec to the exact primitives handed to
     # the propagator. Runs after fixture read but before SPICE and any
     # propagation (R0B-V01).

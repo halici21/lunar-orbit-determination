@@ -194,9 +194,10 @@ class F1EffectiveGmBindingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, contextlib.ExitStack() as stack:
             h = _RunnerHarness(stack, tmp)
             runner.run_configured_scenario(config, manifest_dir=tmp)
-            fixture_earth = float(np.asarray(_FIXTURE["constants"]["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
-            fixture_moon = float(_FIXTURE["initial_state"]["mu_moon_m3_s2"])
-            fixture_sun = float(np.asarray(_FIXTURE["constants"]["mu_sun_km3_s2"]).reshape(-1)[0] * 1e9)
+            # WP1.2: the effective GMs are the selected generation's (DE440 by
+            # default), no longer the gm_de431 snapshot fixture.
+            from lunar_od.ephemeris_generation import gravitational_parameters
+            fixture_moon, fixture_earth, fixture_sun = gravitational_parameters()
             # truth propagator positional args: (t, x0, mu_moon, mu_earth, mu_sun, eph, ...)
             targs = h.truth_spy.call_args.args
             self.assertEqual(targs[2], fixture_moon)

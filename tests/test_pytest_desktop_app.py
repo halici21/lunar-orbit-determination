@@ -347,13 +347,6 @@ def _run_worker_capture_results(spec, base):
     return captured, spies
 
 
-def _fixture_earth_gm():
-    fixture = json.loads(
-        (Path(str(_analysis_controller().FIXTURE))).read_text(encoding="utf-8")
-    )
-    return float(np.asarray(fixture["constants"]["mu_earth_km3_s2"]).reshape(-1)[0] * 1e9)
-
-
 import json  # noqa: E402
 
 
@@ -391,7 +384,11 @@ def test_f5_real_desktop_nonzero_j2_matches_contract_fingerprint():
             if k in {"measurement_type", "start_mode", "network", "j2_moon"}},
          "name": "x", "estimator_type": "bls_lm"}
     )
-    spec = force_execution_spec_from_scenario_config(config, mu_earth_m3_s2=_fixture_earth_gm())
+    # WP1.2: the effective GMs are the selected generation's, not the snapshot fixture's.
+    from lunar_od.ephemeris_generation import gravitational_parameters
+    mu_moon, mu_earth, mu_sun = gravitational_parameters()
+    spec = force_execution_spec_from_scenario_config(
+        config, mu_moon_m3_s2=mu_moon, mu_earth_m3_s2=mu_earth, mu_sun_m3_s2=mu_sun)
     assert result.truth_force_fingerprint == spec.fingerprint()
     assert result.posterior_force_role_status == "verified"
     assert result.observability_force_role_status == "verified"
