@@ -191,10 +191,14 @@ def load_spice_kernels(
     kernel_dir: os.PathLike[str] | str | None = None,
     clear: bool = True,
     ephemeris: str | None = None,
+    verify: bool = True,
 ) -> list[Path]:
     """Load the required kernels with spiceypy and return the loaded paths.
 
     ``ephemeris`` selects the planetary ephemeris (see ``planetary_ephemeris``).
+    ``verify`` checks every kernel against ``lunar_od.kernel_manifest`` before
+    anything is furnished and raises ``KernelIntegrityError`` on an unknown or
+    changed file; ``verify=False`` is for deliberate experiments with other kernels.
     """
     try:
         import spiceypy as spice
@@ -205,6 +209,10 @@ def load_spice_kernels(
         ) from exc
 
     kernel_paths = required_kernel_paths(kernel_dir, ephemeris)
+    if verify:
+        from .kernel_manifest import verify_kernels
+
+        verify_kernels(kernel_paths)
 
     if clear:
         spice.kclear()

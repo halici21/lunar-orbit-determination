@@ -1,0 +1,172 @@
+{
+ "predeclaration": "studies/phase17/configs/phase_c6_lunar_radiation_survey_predeclaration.json",
+ "gates": {
+  "G_UNIT": "see tests/test_phase_c6_lunar_radiation.py (run before this script)",
+  "G_QUAD": false,
+  "G_E0": true,
+  "G_SIZE": true
+ },
+ "G_QUAD": {
+  "K": {
+   "max_position_difference": 117.25505971095696,
+   "column_max_position": 8602.25577644602,
+   "relative": 0.01363073393283829,
+   "PASS": false
+  },
+  "C_T": {
+   "max_position_difference": 77796985.96857563,
+   "column_max_position": 1077870756.2172613,
+   "relative": 0.07217654391292759,
+   "PASS": false
+  }
+ },
+ "G_E0": {
+  "chi2": 69899.78718084825,
+  "f3": 69899.78968941572,
+  "relative": 3.5888054639166e-08,
+  "PASS": true
+ },
+ "G_SIZE": {
+  "max_position_m": 22.46490283762053,
+  "PASS": true
+ },
+ "hypotheses_as_computed": {
+  "H_K": false,
+  "H_PRED": false,
+  "H_SCALE": false
+ },
+ "decision": "C6_NOT_QUALIFIED",
+ "k_drop_E1": 0.005765421471785298,
+ "k_lrp_nominal": 0.01,
+ "accelerations": {
+  "lrp_rms_mps2": 2.0633526903767666e-08,
+  "lrp_max_mps2": 4.1569957827835724e-08,
+  "lrp_ric_rms_mps2": [
+   2.0620167000637345e-08,
+   7.034551265880749e-10,
+   2.372682852995235e-10
+  ],
+  "lrp_ric_mean_mps2": [
+   1.3167592055448666e-08,
+   -6.813862155943363e-11,
+   1.6667003496245234e-10
+  ],
+  "srp_rms_sunlit_mps2": 4.510229945103806e-08,
+  "sunlit_fraction": 0.5745329527763363,
+  "ratio_lrp_to_srp_rms_sunlit": 0.6035469420907348
+ },
+ "experiments": {
+  "E0": {
+   "chi2_263": 69899.78718084825,
+   "chi2_fit": 14496.231072402872,
+   "residuals": {
+    "fit": {
+     "range_rms_m": 1.0303009671306553,
+     "doppler_rms_mmps": 2.035583226245738,
+     "range_mean_m": -0.00016262757474853852,
+     "doppler_mean_mmps": -2.7802792594849504e-12
+    },
+    "263": {
+     "range_rms_m": 5.209807790593471,
+     "doppler_rms_mmps": 5.614438174464683,
+     "range_mean_m": 1.305652371877694,
+     "doppler_mean_mmps": -4.7592601230414555
+    }
+   },
+   "share": 3.786106735920797e-08,
+   "k_srp": 0.07449746631746507,
+   "k_srp_sigma": 0.0001064859778462382,
+   "C_T": -1.9073619996462804e-08,
+   "C_T_sigma": 1.5367956284165216e-10,
+   "S_T": 2.546556606866793e-07,
+   "S_T_sigma": 8.935935456244247e-10,
+   "epoch_shift_m": 0.00632341638032823
+  },
+  "E1": {
+   "chi2_263": 73938.34047456042,
+   "chi2_fit": 14521.299688034884,
+   "residuals": {
+    "fit": {
+     "range_rms_m": 1.0314833266053367,
+     "doppler_rms_mmps": 2.0367378537440874,
+     "range_mean_m": -0.00016256109198247722,
+     "doppler_mean_mmps": -4.2526809760393455e-10
+    },
+    "263": {
+     "range_rms_m": 5.357234372941643,
+     "doppler_rms_mmps": 5.778019362986164,
+     "range_mean_m": 1.3128536535361786,
+     "doppler_mean_mmps": -4.9196504224146915
+    }
+   },
+   "share": -0.06095265327550661,
+   "k_srp": 0.06873204484567977,
+   "k_srp_sigma": 0.0001064859778462382,
+   "C_T": -1.6976393377100744e-08,
+   "C_T_sigma": 1.5367956284165216e-10,
+   "S_T": 2.2240915435893568e-07,
+   "S_T_sigma": 8.935935456244247e-10,
+   "epoch_shift_m": 0.3836484946388034
+  },
+  "E1b": {
+   "chi2_263": 73938.36802465169,
+   "chi2_fit": 14521.29949251005,
+   "residuals": {
+    "fit": {
+     "range_rms_m": 1.0314833132212848,
+     "doppler_rms_mmps": 2.036737853377205,
+     "range_mean_m": -0.00016256152547353703,
+     "doppler_mean_mmps": 2.2864469973867276e-09
+    },
+    "263": {
+     "range_rms_m": 5.357235302268932,
+     "doppler_rms_mmps": 5.778020701474574,
+     "range_mean_m": 1.3128534438029467,
+     "doppler_mean_mmps": -4.919650757908015
+    }
+   },
+   "share": -0.06095306908089081,
+   "k_srp": 0.0687320464028776,
+   "k_srp_sigma": 0.0001064859778462382,
+   "C_T": -1.697639348206479e-08,
+   "C_T_sigma": 1.5367956284165216e-10,
+   "S_T": 2.2240916089511574e-07,
+   "S_T_sigma": 8.935935456244247e-10,
+   "epoch_shift_m": 0.3836452819519968
+  },
+  "E2": {
+   "chi2_263": 100681.53349758565,
+   "chi2_fit": 14688.092602313442,
+   "residuals": {
+    "fit": {
+     "range_rms_m": 1.0391834100368738,
+     "doppler_rms_mmps": 2.0446789926016073,
+     "range_mean_m": -0.00016216424442335866,
+     "doppler_mean_mmps": -1.5459007480316e-11
+    },
+    "263": {
+     "range_rms_m": 6.245330889592025,
+     "doppler_rms_mmps": 6.765737088336309,
+     "range_mean_m": 1.3559845661722343,
+     "doppler_mean_mmps": -5.880282153259886
+    }
+   },
+   "share": -0.46457976075386365,
+   "k_srp": 0.03420098586936488,
+   "k_srp_sigma": 0.0016561183513502105,
+   "C_T": -4.4153939028777316e-09,
+   "C_T_sigma": 6.205137802507941e-10,
+   "S_T": 2.927392266475136e-08,
+   "S_T_sigma": 9.286739151981064e-09,
+   "epoch_shift_m": 2.64689168137848,
+   "lrp_scale": 6.989338185173644,
+   "lrp_scale_sigma": 0.28665577489152433,
+   "corr_scale_k": -0.9979307084357745
+  }
+ },
+ "lrp_column_max_position_m": {
+  "nominal": 22.46490283762053,
+  "albedo_0.19": 22.464896859828585
+ },
+ "wall_s": 128.23843121528625
+}

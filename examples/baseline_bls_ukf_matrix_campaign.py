@@ -178,6 +178,7 @@ def _run_scenario(args, experiment, arcs, cold_bank, start_mode: str, estimator_
         ukf_transform_config=UnscentedTransformConfig(alpha=0.35) if estimator_type == "ukf" else None,
         ukf_adaptive_config=_ukf_adaptive_config(args) if estimator_type == "ukf" else None,
         ukf_covariance_form="square_root",
+        ukf_initial_state_sigma=(args.cold_sigma_pos_m, args.cold_sigma_vel_mps),
     )
     return scenario, perf_counter() - start
 

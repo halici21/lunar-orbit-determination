@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import math
 import warnings
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from typing import Any
 from .dynamics import PropagationProfile
@@ -118,6 +118,11 @@ class ScenarioConfig:
     enable_earth_j2: bool = False
     earth_j2_mode: str = "indirect"
     noise: bool = False
+    # WP1.6 (CFG-02): the run's random streams belong to the scenario file. A
+    # JSON file with noise=true must name measurement_seed; cold_start_seed
+    # None keeps the thesis seed for the network/measurement pair.
+    measurement_seed: int | None = None
+    cold_start_seed: int | None = None
     bias_mode: str | None = None
     range_rate_physics: str = "geometric_instantaneous"
     count_interval_s: float = 60.0
@@ -194,6 +199,12 @@ class ScenarioConfig:
         return asdict(self)
 
 
+SCENARIO_CONFIG_FIELDS = frozenset(field.name for field in fields(ScenarioConfig))
+#: Fields added after desktop run archives existed; an archived effective config
+#: without them recorded the default (None).
+SCENARIO_CONFIG_FIELDS_ADDED_WP1_6 = ("measurement_seed", "cold_start_seed")
+
+
 def scenario_config_schema() -> dict[str, Any]:
     """Return a compact JSON-serializable schema description."""
     return {
@@ -212,7 +223,10 @@ def scenario_config_schema() -> dict[str, Any]:
             "srp": {"type": ["object", "null"], "default": None},
             "propagation_profile": {"type": ["object", "null"], "default": None},
             "noise": {"type": "boolean", "default": False},
-            "enable_earth_j2": {"type": "boolean", "default": False},
+            "measurement_seed": {"type": ["integer", "null"], "default": None},
+            "cold_start_seed": {"type": ["integer", "null"], "default": None},
+            # WP1.7 (CFG-07): True is rejected on the official OD path
+            "enable_earth_j2": {"type": "boolean", "default": False, "enum": [False]},
             "earth_j2_mode": {"enum": list(ALLOWED_EARTH_J2_MODES), "default": "indirect"},
             "bias_mode": {"enum": [None, "global", "station_angles", "station_full"], "default": None},
             "range_rate_physics": {
@@ -284,7 +298,8 @@ def scenario_config_schema() -> dict[str, Any]:
             "ukf_bias_regularize_relative_information": {"type": "number", "default": 1e-5},
             "ukf_bias_regularization_std": {"type": "number", "default": 1.0},
             "output_dir": {"type": "string", "default": "python_port/results"},
-            "enable_lunar_harmonics": {"type": "boolean", "default": False},
+            # WP1.7 (CFG-07): the scenario runner does not execute harmonics; True is rejected
+            "enable_lunar_harmonics": {"type": "boolean", "default": False, "enum": [False]},
             "lunar_gravity_model_path": {"type": ["string", "null"], "default": None},
             "lunar_gravity_nmax": {"type": ["integer", "null"], "default": None},
             "lunar_gravity_mmax": {"type": ["integer", "null"], "default": None},
@@ -310,7 +325,17 @@ def load_scenario_config_json(path) -> ScenarioConfig:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("Scenario config JSON must contain an object.")
-    return scenario_config_from_mapping(payload)
+    # WP1.6 (CFG-05/CFG-02): a scenario file must fully define its run. Keys the
+    # loader would silently ignore and unseeded noise are refused here.
+    unknown = sorted(set(payload) - SCENARIO_CONFIG_FIELDS)
+    if unknown:
+        raise ValueError(f"Unknown scenario config field(s) in {path.name}: {', '.join(unknown)}")
+    config = scenario_config_from_mapping(payload)
+    if config.noise and config.measurement_seed is None:
+        raise ValueError(
+            f"{path.name}: noise=true requires measurement_seed so the noise realization is reproducible."
+        )
+    return config
 
 
 def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
@@ -344,6 +369,8 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             "earth_j2_mode",
         ),
         noise=_boolean(payload.get("noise", False), "noise"),
+        measurement_seed=_optional_seed(payload.get("measurement_seed", None), "measurement_seed"),
+        cold_start_seed=_optional_seed(payload.get("cold_start_seed", None), "cold_start_seed"),
         bias_mode=_bias_mode(payload.get("bias_mode", None)),
         range_rate_physics=_range_rate_physics(payload.get("range_rate_physics", "geometric_instantaneous")),
         count_interval_s=_positive_float(payload.get("count_interval_s", 60.0), "count_interval_s"),
@@ -711,6 +738,8 @@ def scenario_lunar_gravity_model(config: ScenarioConfig) -> SphericalHarmonicGra
         path,
         nmax=config.lunar_gravity_nmax,
         mmax=config.lunar_gravity_mmax,
+        # WP1.7: label the model with the configured explicit PA realization
+        frame=config.lunar_gravity_frame,
     )
     # Mirror of the propagation-time double-count guard for callers that
     # construct ScenarioConfig directly (bypassing scenario_config_from_mapping).
@@ -808,6 +837,7 @@ def force_execution_spec_from_scenario_config(
     mu_sun_m3_s2: float = MU_SUN_DE440_M3S2,
     j2_moon: float | None = None,
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris",
+    ephemeris_execution=None,
 ) -> ForceExecutionSpec:
     """Build the executable force spec implied by ``config`` (R0B-F1).
 
@@ -830,6 +860,8 @@ def force_execution_spec_from_scenario_config(
         earth_j2_reference_radius_m=float(R_EARTH_J2_REF_M),
         force_ephemeris_policy=str(force_ephemeris_policy),
         solar_radiation_pressure=_srp_force_contract(config.srp),
+        # WP1.5 (DYN-10): when given, the v3 contract carries the executed ephemeris identity.
+        ephemeris_execution=ephemeris_execution,
     )
 
 
@@ -1172,11 +1204,6 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
                 "enable_lunar_harmonics=True with j2_moon != 0 would count lunar J2 "
                 "twice; set j2_moon=0 (the model's C20 term already contains it)."
             )
-        if config.estimator_type in ("bls_lm", "srif"):
-            raise ValueError(
-                "lunar harmonics gradient not implemented; STM-based estimators "
-                "cannot use harmonics — use estimator_type='ukf' or disable lunar harmonics."
-            )
         # TEMPORARY Phase 13B2a guard (removed in Phase 13B2b): the scenario
         # runner does not consume these fields yet; accepting the config would
         # silently propagate WITHOUT harmonics, which is worse than refusing.
@@ -1281,6 +1308,15 @@ def _optional_nonempty_string(value: Any, field_name: str) -> str | None:
     if value is None:
         return None
     return _as_nonempty_string(value, field_name)
+
+
+def _optional_seed(value: Any, field_name: str) -> int | None:
+    """A random seed is an exact non-negative integer; 1.5 or "7" never round."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"{field_name} must be a non-negative integer or null.")
+    return int(value)
 
 
 def _optional_bounded_int(value: Any, field_name: str, *, minimum: int) -> int | None:

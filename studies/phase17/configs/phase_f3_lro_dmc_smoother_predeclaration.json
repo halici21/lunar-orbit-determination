@@ -1,0 +1,25 @@
+{
+ "phase": "Phase F3 - Kalman filter / RTS smoother with dynamic model compensation on the real LRO arc (2009-260..262, prediction 263)",
+ "written": "2026-10-31, after reading the F2 code and records and before any F3 code or number. No F3 computation on LRO data had been run",
+ "motivation": "F2p (phase_f2_lro_od.md 17.7) is the reference batch fit: range 1.030 m, Doppler 2.035 mm/s post-fit, fit-arc RIC vs LOLA 2.00 / 9.92 / 12.26 m RMS, 263 prediction 1.88 / 5.05 / 2.90 m vs LOLA, range 5.21 m. F2q concluded that the remaining 263 Doppler offset is an along-track prediction error of the force model, not a data problem. D5/D5-R qualified DMC on synthetic data when its sigma matches the unmodelled acceleration level. F3 asks whether a DMC smoother on the same real data brings the orbit closer to LOLA on the fit arc and in the 263 prediction",
+ "method": {
+  "reference": "F2p's estimate (results/phase_f2p_lro_three_day_arc_edited.json, runs.S1): state, K_SRP, 3 range biases, Doppler bias, C_T, S_T, C_N, S_N. F2's Problem over days 260-263 (N = 300, Doppler, n_emp = 4, F2o edits) with F2p's numerics (historical: legacy grid 20 s, quantised station epochs, rtol / atol 1e-12 / 1e-13, emp FD step 1e-9). One residual(p, partials=True) gives the residuals of every 260-263 measurement at F2p and their partials, and the reference history with Phi and the K / empirical sensitivities on the grid",
+  "filter": "a linearised Kalman filter + RTS smoother on deviations from that reference (the D3 linearised pass, the D4 machinery with one linearisation; F2p is a batch stationary point, so one linearisation is the iterated smoother's first pass). State: [dr, dv (6), w (3), dK, d range biases (3), d Doppler bias, d C_T, d S_T, d C_N, d S_N]. Measurement rows use local partials H0_x Phi(t_i, t0)^-1 and the constant columns H0_c - H_loc S(t_i), with Phi and S from the reference history (cubic spline over the grid). Range sigma 1 m, Doppler sigma 2 mm/s (F2's weights). Priors on the constants are F2p's prior pseudo-observations, expressed as deviations from F2p; the epoch state gets a loose prior (10 km, 10 m/s), as F2's data-only state",
+  "dmc": "w is a first-order Gauss-Markov acceleration in J2000 (Moon-centred), tau = 1800 s; between epochs the 9x9 deviation transition is composed over grid sub-steps (Phi_xx from the reference, w coupling by the trapezoid rule) and Q accumulates the van Loan kinematic Q of lunar_od.dmc per sub-step. sigma = 0 is the no-DMC control",
+  "sweep": {"sigma_mps2": [0.0, 1e-9, 3e-9, 1e-8, 3e-8], "tau_s": 1800.0},
+  "epochs": "every fit-day measurement epoch (range t3, Doppler interval mid-time), plus the 60 s comparison epochs F2 uses for RIC on the fit arc and on 263; 263 measurements are not processed (prediction): their predicted residuals are r_ref - H dx at the smoothed state",
+  "selection_rule": "sigma* = the nonzero sigma with the lowest 263 prediction chi2 against the data (range / 1 m and Doppler / 2 mm/s); LOLA is used only for scoring, never for selection"
+ },
+ "gates": {
+  "G0_reference": "the reference residuals reproduce F2p: fit-day range and Doppler post-fit RMS within 1e-3 relative of 1.0304 m / 2.0354 mm/s; 263 range and Doppler prediction RMS within 0.01 m / 0.01 mm/s of 5.213 m / 5.618 mm/s; fit-arc and 263 RIC RMS vs LOLA within 0.01 m of F2p's",
+  "G1_control": "sigma = 0: the smoothed deviation of every state and parameter at the epoch is <= 0.05 of its formal sigma (F2p is stationary) and the smoothed fit-arc and 263 RIC vs LOLA equal F2p's within 0.05 m"
+ },
+ "hypotheses": {
+  "H1_fit_arc": "at sigma*, smoothed fit-arc along-track and cross-track RMS vs LOLA both <= 0.7 x F2p's (6.94 m, 8.58 m)",
+  "H2_prediction": "at sigma*, 263 along-track RMS vs LOLA <= 5.05 m and 263 range prediction RMS <= 5.21 m"
+ },
+ "reported_not_gated": "every sigma's fit-arc and 263 RIC, prediction chi2 and range / Doppler RMS, mean NIS by measurement type, the smoothed Doppler bias and its change (F2q: the bias absorbs ~3.3 mm/s of orbit difference), the estimated w along-track / cross-track / radial RMS, runtime",
+ "decision_rule": "G0 or G1 FAIL -> F3_SETUP_NOT_QUALIFIED (no hypothesis is read). Otherwise: H1 and H2 -> F3_DMC_IMPROVES; H1 only -> F3_DMC_FIT_ARC_ONLY; H2 only -> F3_DMC_PREDICTION_ONLY; neither -> F3_NO_DMC_GAIN",
+ "development_note": "the filter code is developed and unit-tested on synthetic data; the only LRO numbers seen before the full run are the G0 reference reproduction values, which are setup checks, not results",
+ "outputs": {"report": "studies/phase17/reports/phase_f3_lro_dmc_smoother.md", "results": "studies/phase17/results/phase_f3_lro_dmc_smoother.json", "script": "studies/phase17/scripts/phase_f3_lro_dmc_smoother.py"}
+}

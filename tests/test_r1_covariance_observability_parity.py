@@ -692,8 +692,10 @@ class R1PosteriorAndObservabilityParityTests(unittest.TestCase):
         )
         self.assertLess(rank_deficient.rank, rank_deficient.num_parameters)
         self.assertTrue(np.isinf(rank_deficient.condition_number))
+        # WP4.3b: diag([1, 1e-13]) is a unit change, not ill-conditioning (equilibrated
+        # cond 1); a nearly collinear pair is genuinely ill-conditioned in any units.
         large_finite = summarize_weighted_jacobian(
-            "position", 1, np.diag([1.0, 1.0e-13])
+            "position", 1, np.array([[1.0, 1.0], [1.0, 1.0 + 1.0e-13]])
         )
         self.assertTrue(np.isfinite(large_finite.condition_number))
         self.assertGreater(large_finite.condition_number, 1.0e12)
