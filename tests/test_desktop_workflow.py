@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 
 from models.scenario_model import ScenarioModel
-from services.scenario_execution import execution_payload, prepare_desktop_job, planned_segments
+from services.scenario_execution import cold_start_seed_for, execution_payload, prepare_desktop_job, planned_segments
 from services.scenario_artifacts import write_console_bundle, publish_completion
 from services.tracking_results import load_tracking_results
 from controllers.run_monitor_controller import RunMonitorController
@@ -52,6 +52,29 @@ def bundle(tmp_path, estimator="bls_lm"):
     return job, folder, run_id, path
 
 
+def test_desktop_effective_config_matches_library_defaults():
+    """X-11 / CFG-01: the settings the form does not show (integrator tolerances,
+    ephemeris grid step, initial LM damping) equal the library runner's defaults."""
+    import dataclasses
+    from lunar_od.scenario_config import ScenarioConfig
+    from lunar_od.thesis_matrix import THESIS_EPHEMERIS_STEP_S
+
+    config, options = execution_payload(ScenarioModel(name="defaults"))
+    library = {f.name: f.default for f in dataclasses.fields(ScenarioConfig)}
+    for key in ("rtol", "atol", "bls_lambda0", "max_iter"):
+        assert config[key] == library[key], key
+    # examples/run_scenario_config.py falls back to the thesis ephemeris step.
+    assert options["ephemeris_step_s"] == THESIS_EPHEMERIS_STEP_S
+
+
+def test_cold_start_seed_is_independent_of_the_noise_seed():
+    """CFG-09: one form seed, two independent streams; the noise seed is unchanged."""
+    seeds = [cold_start_seed_for(s) for s in range(50)]
+    assert len(set(seeds)) == 50
+    assert all(0 <= s < 2**32 and s != k for k, s in enumerate(seeds))
+    assert cold_start_seed_for(7) == cold_start_seed_for(7)
+
+
 def test_form_translation_and_saved_inputs(tmp_path):
     model = ScenarioModel(name="exact", duration_days=.5, random_seed=0, noise_enabled=True,
         state_step_s=123, bls_damping_init=.04, ukf_alpha=.6, max_arcs=2, output_dir="chosen")
@@ -61,7 +84,8 @@ def test_form_translation_and_saved_inputs(tmp_path):
     assert config["bls_lambda0"] == .04
     assert config["ukf_alpha"] == .6
     assert config["noise"] is True
-    assert options["measurement_seed"] == options["cold_start_seed"] == 0
+    assert options["measurement_seed"] == 0
+    assert options["cold_start_seed"] == cold_start_seed_for(0) != 0
     path, folder, run_id = prepare_desktop_job(model, tmp_path)
     saved = json.loads(path.read_text())
     assert saved["form"]["random_seed"] == 0
