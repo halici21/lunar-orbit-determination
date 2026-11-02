@@ -48,15 +48,21 @@ from .gravity_harmonics import (
     SphericalHarmonicGravityModel,
     spherical_harmonic_acceleration,
 )
-from .lunar_frames import moon_pa_de440_rotation_at_et, nearest_rotation_at_time
+from .lunar_frames import interpolated_rotation_at_time, moon_pa_de440_rotation_at_et
 from .spice_loader import require_moon_pa_de440
 
 # ---------------------------------------------------------------------------
 # J2 support — Moon's mean-pole rotation frame
 # ---------------------------------------------------------------------------
-# IAU 2006 mean pole: RA₀ = 269.9949°, Dec₀ = 66.5392°.  Since J2 is axially
-# symmetric a fixed (mean) pole rotation suffices; libration (~0.04°) produces
-# < 0.1 % error in the J2 acceleration for low lunar orbits.
+# IAU 2006 mean pole: RA₀ = 269.9949°, Dec₀ = 66.5392° (constant term only).
+# WP1.3 (DYN-03): this is NOT the lunar figure axis.  The MOON_PA_DE440 pole
+# sits 1.47°-1.62° from it over a nodal cycle (the IAU model's periodic terms,
+# up to 3.9° in RA and 1.5° in Dec, are omitted here), so the point-mass J2
+# acceleration direction is off by that angle, a few percent of the J2 term.
+# (J2_MOON_UNNORMALIZED, R_MOON_M) is also not GRAIL's (C20, R_ref) pair (DYN-04).
+# Exact-pole degree-2 gravity is available through the harmonic path in DIRECT
+# mode (GRAIL model, nmax=2, harmonic_epoch_et0); this default is kept so the
+# frozen J2 baselines stay reproducible (see tests/test_moon_orientation_wp1_3.py).
 # MOON_J2 / MOON_R_M are sourced from the centralized constants module and
 # re-exported here under their legacy names for backward compatibility.
 from .constants import (
@@ -968,7 +974,7 @@ def _build_state_rhs(
                 )
             if _rc is not None:
                 return _rc
-            return nearest_rotation_at_time(_rg, _rt, float(t_s))
+            return interpolated_rotation_at_time(_rg, _rt, float(t_s))
 
         if _FAST_DYNAMICS and _FAST_HARMONICS:
             _j2h = float(j2_moon)
@@ -1124,7 +1130,7 @@ def _propagate_augmented_with_harmonics(
             )
         if rot_const is not None:
             return rot_const
-        return nearest_rotation_at_time(rot_grid, rot_t, float(t_s))
+        return interpolated_rotation_at_time(rot_grid, rot_t, float(t_s))
 
     state_aug0_mci = np.asarray(state_aug0_mci, dtype=float).reshape(-1)
     if state_aug0_mci.size != 42:
@@ -1562,7 +1568,7 @@ def propagate_state_with_k_sensitivity(
             )
         if _rc is not None:
             return _rc
-        return nearest_rotation_at_time(_rg, _rt, float(t_s))
+        return interpolated_rotation_at_time(_rg, _rt, float(t_s))
 
     get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
 
