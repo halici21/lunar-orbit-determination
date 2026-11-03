@@ -36,5 +36,23 @@
     "G6_srif_parity": {
       "rule": "on the G1 data SRIF recovers the biases within 1 mm and its state agrees with BLS-LM within 1 cm; SRIF and BLS-LM posterior position sigmas agree within 1 percent"
     }
+  },
+  "scope_slice_2": "two_way_light_time_ssb with a nonzero fixed transponder delay d (delay-calibrated half-round-trip convention, as the Moon-centred M3 'fixed_coordinate_time' model): relativistic_light_time.solve_two_way takes transponder_delay_s; the uplink is received at the spacecraft at t2u = t2d - d (a local delay, never an epoch difference), the delay-calibrated range is 0.5 c (tau_down + tau_up)(1 - dD/dt) and the measured interval t3 - t1 = tau_down + d + tau_up sets the midpoint rate epoch; the event partials take the spacecraft position sensitivity and velocity at t2u for the uplink. _pass_context and the scenario loader accept d > 0 with this convention; the raw convention and barycentric counted Doppler with a delay still fail closed",
+  "gates_slice_2": {
+    "G7_zero_delay_identity": {
+      "rule": "transponder_delay_s=0 reproduces the slice-1 SSB ranges and Jacobian bitwise"
+    },
+    "G8_delay_effect_parity_with_M3": {
+      "rule": "on the G1 arc with d = 0.05 s, the per-row range change SSB(d) - SSB(0) agrees with the Moon-centred M3 change M3(d) - M3(0) within 1 mm, and the change exceeds 1 m on at least one row"
+    },
+    "G9_jacobian_fd": {
+      "rule": "the d = 0.05 s range Jacobian matches a central finite difference of the initial state (position step 1 m, velocity step 1e-3 m/s) within 1e-6 relative to the row norm"
+    },
+    "G10_bls_recovery": {
+      "rule": "BLS-LM on noise-free d = 0.05 s data with the matching model recovers position within 1 cm from the G2 offset; a model with d = 0 leaves an RMS residual above 0.5 m on the same data"
+    },
+    "G11_fail_closed": {
+      "rule": "the scenario loader accepts transponder_delay_s > 0 with two_way_light_time_ssb, still rejects the raw convention; barycentric counted Doppler with a delay still raises NotImplementedError"
+    }
   }
 }
