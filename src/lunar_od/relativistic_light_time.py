@@ -954,6 +954,18 @@ def two_way_range_nominal_and_initial_jacobian_ssb(obs_data, pass_geo, augmented
     return h_nom, h_x0
 
 
+def two_way_range_clock_columns_ssb(state_history_mci, obs_data, pass_geo) -> np.ndarray:
+    """d(two-way range)/d(receive time-tag offset) [m/s] per row under the pass's model (F2 WP2.3 slice 4, the
+    design column of a station time-tag bias); :func:`two_way_range_clock_partial` of each row's solution."""
+    obs = np.asarray(obs_data, dtype=float)
+    model, station_states, eph = _pass_context(pass_geo)
+    kw = pass_station_kwargs(pass_geo)
+    sc = SpacecraftHistory(pass_geo.t_s, np.asarray(state_history_mci, dtype=float)[:, :6])
+    return np.array([two_way_range_clock_partial(solve_two_way(float(obs[i, 0]), station_states[int(obs[i, 2]) - 1],
+                                                               sc, eph, model, **kw[int(obs[i, 2]) - 1]))
+                     for i in range(obs.shape[0])])
+
+
 def compute_two_way_range_residuals_ssb(state_history_mci, obs_data, pass_geo):
     """Observed-minus-computed two-way range [m] under the pass's model; the conventions of
     ``two_way_range.compute_two_way_range_residuals`` (including its 1e-7 m closure round-off suppression)."""

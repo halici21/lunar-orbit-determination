@@ -69,6 +69,14 @@
       "as_computed": "FAIL (0.088 m pass-mean residual; 676 m absorbed position error)",
       "new_rule": "station-mode fit position error > 10 m and post-fit RMS > 1000x the pass-mode fit",
       "status": "exploratory"
+    },
+    {
+      "gate": "G16",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (BLS position 0.81 m with the column fixed at the a-priori state)",
+      "new_rule": "design: the time-tag column is re-evaluated at every linearisation point; thresholds unchanged",
+      "status": "exploratory"
     }
   ],
   "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
@@ -133,5 +141,11 @@
     "G19_fail_closed": {
       "rule": "station_time_tag on a Moon-centred pass, with fewer than three rows on a station, with solve_for_k_srp or with robust_outlier_rejection is rejected"
     }
+  },
+  "results_slice_4": {
+    "G16": "PASS after the design amendment (BLS position 4.5 mm, tags 0.16 us, biases 0.12 mm; SRIF within the same gates)",
+    "G17": "PASS",
+    "G18": "PASS",
+    "G19": "PASS"
   }
 }

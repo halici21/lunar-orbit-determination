@@ -378,3 +378,104 @@ def test_pass_bias_mode_fails_closed(arc):
         _solve(arc, prepared, obs, bias_mode="pass_range", solve_for_k_srp=True)
     with pytest.raises(ValueError, match="robust_outlier_rejection"):
         _solve(arc, prepared, obs, bias_mode="pass_range", robust_outlier_rejection=True)
+
+
+# ---------------------------------------------------------------------------
+# Slice 4: per-station receive time-tag offset (bias_mode='station_time_tag').
+# ---------------------------------------------------------------------------
+CLOCK_OFFSETS_S = (1e-3, -2e-3)
+
+
+def _tagged_arc(arc, offsets, biases):
+    """Data generated with true clock offsets (exact receive tags t3 + b) plus range biases; the returned pass
+    geometry has the offsets removed, as the estimator must not know them."""
+    from dataclasses import replace
+
+    from lunar_od.relativistic_light_time import generate_two_way_range_measurements_ssb
+    from lunar_od.two_way_range import TwoWayRangeConfig
+
+    eph, t = arc["eph"], arc["t"]
+    obs, geo = generate_two_way_range_measurements_ssb(
+        t, arc["aug"][:, :6], STATIONS, np.ones((t.size, len(STATIONS)), dtype=bool), eph.earth_position,
+        eph.earth_velocity, arc["et0"], noise=False, config=TwoWayRangeConfig(),
+        station_clock_offsets_s=None if offsets is None else list(offsets))
+    meta = dict(geo.measurement_metadata)
+    meta.pop("station_clock_offsets_s", None)
+    geo = replace(geo, measurement_metadata=meta)
+    obs = np.array(obs, dtype=float, copy=True)
+    for sid, b in biases.items():
+        obs[obs[:, 2].astype(int) == sid, 1] += b
+    return geo, obs
+
+
+def _solve_geo(arc, geo, obs, estimator="bls", **kw):
+    from lunar_od.estimators import estimate_two_way_range_bls_lm, estimate_two_way_range_srif
+
+    fn = estimate_two_way_range_bls_lm if estimator == "bls" else estimate_two_way_range_srif
+    eph, gm = arc["eph"], arc["gm"]
+    return fn(arc["t"], obs, arc["x0"] + X_OFFSET, geo, *gm, eph.earth_position, eph.sun_position,
+              rtol=1e-12, atol=1e-13, **kw)
+
+
+def test_time_tags_range_biases_and_state_are_recovered(arc):
+    """G16: +1 ms / -2 ms clock offsets within 1 us, +7 / -4 m range biases within 1 mm, position < 1 cm.
+
+    Design amended after the result (exploratory): with the pre-registered column fixed at the a-priori state
+    the gate FAILED as computed (BLS position 0.81 m: the 0.49 mm column error is amplified ~1600x by the weak
+    time-tag geometry, posterior position sigma 0.9-2 km for 2 m range noise); the column is now re-evaluated
+    at every linearisation (4.5 mm). Thresholds unchanged."""
+    geo, obs = _tagged_arc(arc, CLOCK_OFFSETS_S, INJECTED)
+    for estimator in ("bls", "srif"):
+        x, status, stats = _solve_geo(arc, geo, obs, estimator, bias_mode="station_time_tag")
+        assert np.linalg.norm(x[:3] - arc["x0"][:3]) < 1e-2, (estimator, status, np.linalg.norm(x[:3] - arc["x0"][:3]))
+        for sid, b in INJECTED.items():
+            assert abs(stats.station_time_tag_biases_s[sid] - CLOCK_OFFSETS_S[sid - 1]) < 1e-6, (estimator, stats.station_time_tag_biases_s)
+            assert abs(stats.station_range_biases_m[sid] - b) < 1e-3, (estimator, stats.station_range_biases_m)
+
+
+def test_range_only_bias_model_misfits_time_tagged_data(arc):
+    """G17: bias_mode='station_range' -> position error > 10 m or post-fit RMS > 1000x the time-tag fit."""
+    from lunar_od.relativistic_light_time import compute_two_way_range_residuals_ssb
+
+    geo, obs = _tagged_arc(arc, CLOCK_OFFSETS_S, INJECTED)
+    sid = obs[:, 2].astype(int)
+
+    def post_fit(mode):
+        x, _status, stats = _solve_geo(arc, geo, obs, bias_mode=mode)
+        r = np.asarray(compute_two_way_range_residuals_ssb(arc["propagate"](x), obs, geo)[0], dtype=float)
+        r = r - np.array([stats.station_range_biases_m[s] for s in sid])
+        if stats.station_time_tag_biases_s is not None:
+            from lunar_od.relativistic_light_time import two_way_range_clock_columns_ssb
+            g = two_way_range_clock_columns_ssb(arc["propagate"](x), obs, geo)
+            r = r - g * np.array([stats.station_time_tag_biases_s[s] for s in sid])
+        return x, float(np.sqrt(np.mean(r ** 2)))
+
+    x_range, rms_range = post_fit("station_range")
+    _x_tag, rms_tag = post_fit("station_time_tag")
+    err = float(np.linalg.norm(x_range[:3] - arc["x0"][:3]))
+    assert err > 10.0 or rms_range > 1e3 * rms_tag, (err, rms_range, rms_tag)
+
+
+def test_time_tag_mode_is_an_identity_on_untagged_data(arc):
+    """G18: no clock offsets -> |time tag| < 1e-8 s and the state within 1 cm of the station_range solve."""
+    geo, obs = _tagged_arc(arc, None, INJECTED)
+    x_tag, status, stats = _solve_geo(arc, geo, obs, bias_mode="station_time_tag")
+    x_range, _s, _ = _solve_geo(arc, geo, obs, bias_mode="station_range")
+    assert max(abs(v) for v in stats.station_time_tag_biases_s.values()) < 1e-8, stats.station_time_tag_biases_s
+    assert np.linalg.norm(x_tag[:3] - x_range[:3]) < 1e-2, status
+
+
+def test_time_tag_mode_fails_closed(arc):
+    """G19: Moon-centred pass, < 3 rows on a station, K solve-for and robust rejection are rejected."""
+    from dataclasses import replace
+
+    geo, obs = _tagged_arc(arc, None, {})
+    with pytest.raises(ValueError, match="two_way_light_time_ssb"):
+        _solve_geo(arc, replace(geo, measurement_model_profile=None), obs, bias_mode="station_time_tag")
+    short = np.vstack([obs[obs[:, 2] == 1], obs[obs[:, 2] == 2][:2]])
+    with pytest.raises(ValueError, match="three rows per station"):
+        _solve_geo(arc, geo, short, bias_mode="station_time_tag")
+    with pytest.raises(ValueError, match="solve_for_k_srp"):
+        _solve_geo(arc, geo, obs, bias_mode="station_time_tag", solve_for_k_srp=True)
+    with pytest.raises(ValueError, match="robust_outlier_rejection"):
+        _solve_geo(arc, geo, obs, bias_mode="station_time_tag", robust_outlier_rejection=True)

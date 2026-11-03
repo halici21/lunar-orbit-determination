@@ -846,6 +846,9 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/scenario_config.py      4e44f2e5... -> 17e4be89...
 #   F2 WP2.3 slice 3 (per-pass range bias):
 #   lunar_od/estimators.py           fb706a81... -> 125340f7...
+#   F2 WP2.3 slice 4 (station time-tag bias):
+#   lunar_od/estimators.py           125340f7... -> 0282c735...
+#   lunar_od/relativistic_light_time.pyf067a54b... -> 567b58bb...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
@@ -860,9 +863,9 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/media.py":
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":
-        "125340f72e450f5964bc9f8a55d1430e9b5b2a19acfe5c58ee7c44cf08c4d7ef",
+        "0282c73501001d90d5bbc5502b68f2578a49e9d97851cfdc5f36f4463bdadaeb",
     "lunar_od/relativistic_light_time.py":
-        "f067a54b0a397d49ba5cc8e274dfd97aefa40ccd90b5975f4524c990e70df57a",
+        "567b58bbcf09274f6985b43eb8dfac9e7fa5d9f1b07561e3b6ac3d9cbf625bd2",
 }
 
 def current_source_path(relative_path: str) -> str:
