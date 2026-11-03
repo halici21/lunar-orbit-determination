@@ -1158,11 +1158,18 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
             "two_way_range_convention applies only to measurement_type='two_way_range'."
         )
     two_way_ssb = config.measurement_model_profile == "two_way_light_time_ssb"
-    if config.media_model != "none" and not two_way_ssb:
-        raise ValueError(
-            f"media_model={config.media_model!r} applies only to "
-            "measurement_model_profile='two_way_light_time_ssb' (F2 WP2.2 slice 1)."
-        )
+    if config.media_model != "none":
+        if not (two_way_ssb or config.measurement_type == "position"):
+            raise ValueError(
+                f"media_model={config.media_model!r} applies only to "
+                "measurement_model_profile='two_way_light_time_ssb' (F2 WP2.2 slice 1) "
+                "or measurement_type='position' (elevation refraction, slice 3)."
+            )
+        if config.estimator_type == "ukf":
+            raise ValueError(
+                f"media_model={config.media_model!r} is qualified for the batch "
+                "estimators only; the SR-UKF sigma-point observable has no media."
+            )
     if two_way_ssb:
         # F2 WP2.1 slice 2: the barycentric two-way range supports zero
         # transponder delay and the delay-calibrated convention only

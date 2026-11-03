@@ -318,14 +318,19 @@ def build_measurement_arcs(
 
     ``media_model`` (F2 WP2.2): 'default_climatology' adds the troposphere and
     ionosphere delay (:class:`lunar_od.media.MediaModel`) to the barycentric
-    two-way range; any other measurement route requires 'none'.
+    two-way range and the default radio elevation refraction to position
+    measurements; any other measurement route requires 'none'.
     """
     if media_model not in ("none", "default_climatology"):
         raise ValueError(f"media_model must be 'none' or 'default_climatology'; got {media_model!r}.")
     if media_model != "none" and not (
-        measurement_type == "two_way_range" and measurement_model_profile == "two_way_light_time_ssb"
+        measurement_type == "position"
+        or (measurement_type == "two_way_range" and measurement_model_profile == "two_way_light_time_ssb")
     ):
-        raise ValueError("media_model applies only to the 'two_way_light_time_ssb' two-way range profile.")
+        raise ValueError(
+            "media_model applies only to position measurements (elevation refraction) and the "
+            "'two_way_light_time_ssb' two-way range profile."
+        )
     t_sim_s = np.asarray(t_sim_s, dtype=float).reshape(-1)
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     seg_starts = np.asarray(seg_starts, dtype=int).reshape(-1)
@@ -372,6 +377,7 @@ def build_measurement_arcs(
                 stellar_aberration_model=stellar_aberration_model,
                 measurement_model_profile=measurement_model_profile,
                 jacobian_model=jacobian_model,
+                refraction=media_model != "none",
             )
         elif measurement_type == "range_rate":
             obs_data, pass_geo = generate_range_rate_measurements(

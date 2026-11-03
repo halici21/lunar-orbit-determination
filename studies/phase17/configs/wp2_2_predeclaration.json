@@ -62,5 +62,32 @@
     "G9_fail_closed": {
       "rule": "barycentric_dsn_media rejected with the UKF, the legacy station grid and non-Doppler modes"
     }
+  },
+  "scope_slice_3": "elevation refraction (MEAS-07) for the position observables: lunar_od.media.refraction_coefficients = port of SOFA iauRefco (radio branch, standard-atmosphere pressure at the station height, 10 C, 50 % relative humidity); apparent el = true el + A cot(el) + B cot^3(el), solved by fixed point; opt in with scenario media_model='default_climatology' for measurement_type='position' (BLS-LM/SRIF; the UKF fails closed); generation adds it, compute_position_residuals adds it, the analytic Jacobian scales the elevation row by d(el_app)/d(el)",
+  "gates_slice_3": {
+    "G10_refco_vs_erfa": {
+      "oracle": "pyerfa refco in agent-sandbox/c2-erfa-reference, fixture studies/phase17/results/wp2_2_erfa_refco.npz (pressure x temperature x humidity x wavelength grid)",
+      "tolerance_rel": 1e-12
+    },
+    "G11_refraction_magnitude": {
+      "rule": "refraction at 10 deg elevation, sea level standard atmosphere, radio: 4-8 arcmin (published radio refraction ~5-6 arcmin)",
+      "band_arcmin": [
+        4.0,
+        8.0
+      ]
+    },
+    "G12_jacobian_elevation_row": {
+      "rule": "d(el_app)/d(el) from the analytic factor vs central differences of the refraction map, |diff| < 1e-8"
+    },
+    "G13_bls_recovery_with_refraction": {
+      "rule": "noise-free BLS-LM on refracted position data (elevation >= 10 deg) recovers position < 1 cm; the unrefracted model at the truth misfits the elevation by RMS in band",
+      "band_rad": [
+        0.0001,
+        0.003
+      ]
+    },
+    "G14_fail_closed": {
+      "rule": "position media_model rejected with the UKF"
+    }
   }
 }

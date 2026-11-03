@@ -1589,8 +1589,13 @@ def generate_position_measurements(
     measurement_model_profile: str | None = None,
     jacobian_model: str | None = None,
     noise_seed: int | None = None,
+    refraction: bool = False,
 ) -> tuple[np.ndarray, PassGeometry, np.ndarray]:
     """Generate range/azimuth/elevation measurements.
+
+    ``refraction`` (F2 WP2.2): add the default radio elevation refraction
+    (:func:`lunar_od.media.default_radio_refraction_coefficients`) to the
+    elevation; the pass metadata carries it to the residuals and the Jacobian.
 
     ObsData follows MATLAB's convention:
     `[t, range, az, el, station_id_1based, time_index_1based, optional_arc_id]`.
@@ -1728,6 +1733,9 @@ def generate_position_measurements(
                 continue
             candidate_counter += 1
 
+            if refraction:
+                z_clean = np.array(z_clean, dtype=float)
+                z_clean[2] = _refracted_elevation(np.array([z_clean[2]]), (station,))[0][0]
             bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
             if bias_vec.size != 3:
                 bias_vec = np.zeros(3)
@@ -1768,6 +1776,8 @@ def generate_position_measurements(
         metadata["history_domain_all_candidates_dropped"] = bool(
             candidate_counter > 0 and obs_counter == 0
         )
+    if refraction:
+        metadata["refraction"] = dict(REFRACTION_METADATA)
     object.__setattr__(pass_geo, "measurement_metadata", metadata)
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
@@ -1816,12 +1826,47 @@ def compute_position_residuals(
             state_history_mci, obs_data, pass_geo, apply_stellar_aberration=use_stellar
         )
 
+    if _pass_refraction(pass_geo):
+        h_meas = np.array(h_meas, dtype=float)
+        h_meas[:, 2] = _refracted_elevation(h_meas[:, 2], _row_stations(pass_geo, obs_data))[0]
+
     diff_raw = obs_data[:, 1:4] - h_meas
     diff_raw[:, 1] = wrap_to_pi(diff_raw[:, 1])
     diff_raw[:, 2] = wrap_to_pi(diff_raw[:, 2])
     _zero_tiny_position_residuals(diff_raw)
     residuals = diff_raw.T.reshape(-1, order="F")
     return residuals, h_meas
+
+
+#: F2 WP2.2 slice 3: provenance of the elevation refraction stamped on position passes.
+REFRACTION_METADATA = {
+    "model": "sofa_refco_radio",
+    "pressure": "standard_atmosphere_at_station_height",
+    "temperature_c": 10.0,
+    "relative_humidity": 0.5,
+}
+
+
+def _pass_refraction(pass_geo) -> bool:
+    return bool((getattr(pass_geo, "measurement_metadata", None) or {}).get("refraction"))
+
+
+def _row_stations(pass_geo, obs_data):
+    return tuple(pass_geo.stations[int(i) - 1] for i in np.asarray(obs_data, dtype=float)[:, 4])
+
+
+def _refracted_elevation(true_el_rad, stations):
+    """(apparent elevation, d apparent / d true) per row, each with its station's default radio refraction."""
+    from .media import apparent_elevation, default_radio_refraction_coefficients
+
+    true_el = np.asarray(true_el_rad, dtype=float).reshape(-1)
+    app = np.empty_like(true_el)
+    slope = np.empty_like(true_el)
+    for i, (el, station) in enumerate(zip(true_el, stations)):
+        a, b = default_radio_refraction_coefficients(float(station.alt_m))
+        app_i, slope_i = apparent_elevation(el, a, b)
+        app[i], slope[i] = float(app_i), float(slope_i)
+    return app, slope
 
 
 def _instantaneous_range_rate_companion(
@@ -2257,6 +2302,10 @@ def compute_position_residuals_analytic(
     dsez_drmci  = np.einsum('nij,njk->nik', c_sez, R_j2k)           # (n_obs, 3, 3)
     dmeas_drmci = np.einsum('nij,njk->nik', d_meas_dsez, dsez_drmci) # (n_obs, 3, 3)
 
+    if _pass_refraction(pass_geo):
+        # F2 WP2.2: elevation row through the refraction map, d(el_app)/d(el_true).
+        el_true = np.arctan2(zenith, rho_h)
+        dmeas_drmci[:, 2, :] *= _refracted_elevation(el_true, _row_stations(pass_geo, obs_data))[1][:, None]
     h_tilde = np.zeros((3 * n_obs, 6), dtype=float)
     h_tilde[:, :3] = dmeas_drmci.reshape(3 * n_obs, 3)
 

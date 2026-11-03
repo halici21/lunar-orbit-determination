@@ -140,7 +140,8 @@ def test_scenario_accepts_media_on_the_barycentric_two_way_range():
 
 @pytest.mark.parametrize("overrides", [
     {"measurement_model_profile": "geometric_instantaneous"},
-    {"measurement_type": "position", "measurement_model_profile": "one_way_light_time_ssb"},
+    # slice 3 accepts position media (refraction) for the batch estimators only
+    {"measurement_type": "position", "measurement_model_profile": "geometric_instantaneous", "estimator_type": "ukf"},
     {"media_model": "dsn_calibration"},
 ])
 def test_scenario_rejects_unsupported_media(overrides):
@@ -154,7 +155,7 @@ def test_arc_builder_rejects_media_off_the_barycentric_route():
     from lunar_od.scenarios import build_measurement_arcs
 
     with pytest.raises(ValueError, match="media_model"):
-        build_measurement_arcs("position", np.arange(3.0), np.zeros((3, 6)), [0], [2], np.ones((3, 1), bool),
+        build_measurement_arcs("range_rate", np.arange(3.0), np.zeros((3, 6)), [0], [2], np.ones((3, 1), bool),
                                STATIONS[:1], None, None, 0.0, media_model="default_climatology")
 
 
@@ -253,3 +254,59 @@ def test_doppler_media_model_fails_closed():
                                       "measurement_type": "range_rate", "estimator_type": "ukf",
                                       "range_rate_physics": "two_way_counted_doppler",
                                       "counted_doppler_model": "barycentric_dsn_media"})
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: elevation refraction of the position observables.
+# ---------------------------------------------------------------------------
+REFCO = ROOT / "studies" / "phase17" / "results" / "wp2_2_erfa_refco.npz"
+
+
+def test_refraction_coefficients_match_erfa():
+    """G10: the SOFA iauRefco port against pyerfa on 900 (pressure, temperature, humidity, wavelength) points."""
+    from lunar_od.media import refraction_coefficients
+
+    rows = np.load(REFCO, allow_pickle=False)["refco"]
+    for phpa, tc, rh, wl, refa, refb in rows:
+        a, b = refraction_coefficients(phpa, tc, rh, wl)
+        assert abs(a - refa) <= 1e-12 * max(abs(refa), 1e-300)
+        assert abs(b - refb) <= 1e-12 * max(abs(refb), 1e-300)
+
+
+def test_default_radio_refraction_magnitude_and_slope():
+    """G11/G12: ~5-6 arcmin at 10 deg (sea level); the analytic slope matches central differences."""
+    from lunar_od.media import apparent_elevation, default_radio_refraction_coefficients
+
+    a, b = default_radio_refraction_coefficients(0.0)
+    el = np.radians(10.0)
+    app, slope = apparent_elevation(el, a, b)
+    assert 4.0 < np.degrees(app - el) * 60.0 < 8.0
+    for el in np.radians([10.0, 20.0, 45.0, 80.0]):
+        h = 1e-6
+        numeric = (apparent_elevation(el + h, a, b)[0] - apparent_elevation(el - h, a, b)[0]) / (2 * h)
+        assert abs(apparent_elevation(el, a, b)[1] - numeric) < 1e-8
+
+
+def test_refracted_position_bls_recovery_and_materiality(arc):
+    """G13: BLS-LM recovers the truth from refracted position data; the unrefracted model misfits elevation."""
+    from lunar_od.estimators import estimate_position_bls_lm
+    from lunar_od.measurements import compute_position_residuals
+    from lunar_od.scenarios import build_measurement_arcs
+
+    eph, t, gm = arc["eph"], arc["t"], arc["gm"]
+    truth = arc["aug"][:, :6]
+    vis = _elevation_mask(arc, truth)
+    prepared = build_measurement_arcs("position", t, truth, [0], [t.size - 1], vis, STATIONS,
+                                      eph.earth_position, eph.earth_velocity, arc["et0"], noise=False,
+                                      media_model="default_climatology")[0]
+    assert prepared.pass_geo.measurement_metadata["refraction"]["model"] == "sofa_refco_radio"
+    x_start = arc["x0"] + np.array([80.0, -60.0, 40.0, 0.02, -0.01, 0.015])
+    x_hat, status, _ = estimate_position_bls_lm(prepared.t_pass_s, prepared.obs_data, x_start, prepared.pass_geo,
+                                                *gm, eph.earth_position, eph.sun_position, rtol=1e-12, atol=1e-13)
+    assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) < 1e-2, status
+
+    plain = {k: v for k, v in prepared.pass_geo.measurement_metadata.items() if k != "refraction"}
+    residuals, _ = compute_position_residuals(truth, prepared.obs_data,
+                                              replace(prepared.pass_geo, measurement_metadata=plain))
+    el_misfit = np.asarray(residuals).reshape(-1, 3)[:, 2]
+    assert 1e-4 < float(np.sqrt(np.mean(el_misfit ** 2))) < 3e-3

@@ -2624,13 +2624,14 @@
     },
     "lunar_od/measurements.py": {
       "path": "src/lunar_od/measurements.py",
-      "original_sha256": "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
+      "original_sha256": "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
       "byte_preserved": true,
-      "refrozen_from_sha256": "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
-      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
+      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
-        "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810"
+        "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
+        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623"
       ]
     },
     "lunar_od/monte_carlo.py": {
@@ -2781,7 +2782,7 @@
     },
     "lunar_od/scenario_config.py": {
       "path": "src/lunar_od/scenario_config.py",
-      "original_sha256": "31e37141d63ba1f1f3776f9d55dfef0f2dc80d71d681778bb86418f26409decc",
+      "original_sha256": "4e44f2e5d77f0689509217abd98c12ad17305a5c10af6b602d795838da5fc5e7",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
@@ -2792,14 +2793,15 @@
         "4c62f4bf8c6d2f81eea8ce521080d54a9fba72690968b8c9caed8cc744bf4186",
         "a57cffef5056948cb7316f1a06c70860cd1e8a848a56851906d81d7e70f446e1",
         "8e716a8e4fb2c74ed003fe98d2ed82c38b26a32eb57c7b490ea1e14daa697598",
-        "f1b13e3370ac17fa3e5f678b44d8970b2bde467a78e60b6f193b45deee781282"
+        "f1b13e3370ac17fa3e5f678b44d8970b2bde467a78e60b6f193b45deee781282",
+        "31e37141d63ba1f1f3776f9d55dfef0f2dc80d71d681778bb86418f26409decc"
       ],
-      "refrozen_from_sha256": "f1b13e3370ac17fa3e5f678b44d8970b2bde467a78e60b6f193b45deee781282",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.7 (DYN-12/CFG-07): explicit PA label, stale guards; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-02 when PR #96 (WP1.7) was brought up to date with main after the branch consolidation (PR #97): the WP1.7 schema guard and the WP1.6 seed keys merged into one file (no new edits); both identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.7) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 2 counted Doppler media; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "31e37141d63ba1f1f3776f9d55dfef0f2dc80d71d681778bb86418f26409decc",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.7 (DYN-12/CFG-07): explicit PA label, stale guards; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-02 when PR #96 (WP1.7) was brought up to date with main after the branch consolidation (PR #97): the WP1.7 schema guard and the WP1.6 seed keys merged into one file (no new edits); both identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.7) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 2 counted Doppler media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained."
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
-      "original_sha256": "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
+      "original_sha256": "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
@@ -2807,10 +2809,11 @@
         "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
         "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
         "2a63e95a596e2003fd5915d6b2ebcd379c1bafef643bf3b68e1622941f5e6505",
-        "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b"
+        "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
+        "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d"
       ],
-      "refrozen_from_sha256": "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
-      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
+      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained."
     },
     "lunar_od/spice_loader.py": {
       "path": "src/lunar_od/spice_loader.py",

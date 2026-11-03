@@ -832,15 +832,24 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   slice 2 (counted_doppler_model='barycentric_dsn_media'):
 #   lunar_od/radiometrics.py         F2 WP2.1 e93cd6b1... -> be57948e...
 #   lunar_od/scenario_config.py      slice 1 f1b13e33... -> 31e37141...
+#   slice 3 (elevation refraction):
+#   lunar_od/measurements.py         -> b230a85c...
+#   lunar_od/media.py                -> 643e4770...
+#   lunar_od/scenarios.py            a6b22da3... -> 007ea51f...
+#   lunar_od/scenario_config.py      31e37141... -> 4e44f2e5...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
-        "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
+        "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
     "lunar_od/scenario_config.py":
-        "31e37141d63ba1f1f3776f9d55dfef0f2dc80d71d681778bb86418f26409decc",
+        "4e44f2e5d77f0689509217abd98c12ad17305a5c10af6b602d795838da5fc5e7",
     "examples/run_scenario_config.py":
         "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
     "lunar_od/radiometrics.py":
         "be57948e85674420dd92290f98472e70d51feec2b09b552e708357b0b3c1075b",
+    "lunar_od/measurements.py":
+        "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
+    "lunar_od/media.py":
+        "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
 }
 
 def current_source_path(relative_path: str) -> str:
