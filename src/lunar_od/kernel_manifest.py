@@ -55,6 +55,10 @@ KERNEL_MANIFEST: dict[str, tuple[str, str]] = {
     "earth_latest_high_prec.bpc": (
         "99ddb26ac25e1ddc0fd98083424801d9c648a342f01b033bf1695591cfae2ec5",
         NAIF_GENERIC + "pck/earth_latest_high_prec.bpc"),
+    # F2 WP2.4 slice 4: the qualification oracle of lunar_od.dsn_stations; never furnished by the default loader.
+    "earthstns_itrf93_260814.bsp": (
+        "007eb0aad5dd022c6d61bdbfb2395680bd1eb31c49a8637d0b0a1cfbea737c6b",
+        NAIF_GENERIC + "spk/stations/earthstns_itrf93_260814.bsp"),
     "moon_pa_de421_1900-2050.bpc": (
         "656f90616403d75a75f0cd6c8830fc5b44f8cb4facb5ccb8915e752b397520cf",
         NAIF_GENERIC + "pck/moon_pa_de421_1900-2050.bpc"),

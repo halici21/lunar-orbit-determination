@@ -131,5 +131,42 @@
     "G23_manifest_and_full_regression": {
       "rule": "KERNEL_MANIFEST records earthstns_itrf93_260814.bsp with SHA-256 007eb0aad5dd022c6d61bdbfb2395680bd1eb31c49a8637d0b0a1cfbea737c6b; the default loader does not furnish it; no protected file changes; full regression green"
     }
+  },
+  "results_slice_4": {
+    "G16": "PASS (first run): 1.9e-09 m, 2.1e-25 m/s",
+    "G17": "PASS (first run): 1.4e-09 m",
+    "G18": "PASS (first run): 5.9e-06 m (the 1 h freeze), 1.7e-09 m/s (the omitted plate velocity)",
+    "G19": "PASS (first run): 0.142 mm per day at most",
+    "G20": "PASS (first run): shifts 0.471 / 1.250 / 0.737 m; DSS-43 range 0.418 m, Doppler 54.2 um/s",
+    "G21": "PASS (first run): 1.2e-08 m; the agreement also confirms the values transcribed from memory",
+    "G22": "PASS (first run)",
+    "G23": "manifest and loader checks PASS (first run); full regression recorded when it finishes",
+    "diagnostic_rounded_scenario_stations": {
+      "Goldstone DSN": {
+        "antenna": "DSS-14",
+        "offset_km": 15.730542062202927,
+        "nearest_antenna": "DSS-13",
+        "nearest_offset_km": 6.031822517951278,
+        "two_way_range_change_m": 4264.135038985215,
+        "doppler_change_mps": 0.048418620564234516
+      },
+      "Madrid DSN": {
+        "antenna": "DSS-63",
+        "offset_km": 0.21886189686753169,
+        "nearest_antenna": "DSS-63",
+        "nearest_offset_km": 0.2188618968681005,
+        "two_way_range_change_m": 102.44005986206481,
+        "doppler_change_mps": 0.001075293737130778
+      },
+      "Canberra DSN": {
+        "antenna": "DSS-43",
+        "offset_km": 0.2918783768151112,
+        "nearest_antenna": "DSS-34",
+        "nearest_offset_km": 0.24708841413159716,
+        "two_way_range_change_m": 64.18668297465263,
+        "doppler_change_mps": 0.0020774710637851967
+      }
+    },
+    "diagnostic_note": "Computed after the gates, not gated: the rounded config.py stations sit 15.7 km (Goldstone, from DSS-14; 6.0 km from the nearest antenna), 0.22 km (Madrid) and 0.29 km (Canberra) from the antennas. Harmless for self-consistent synthetic data, unusable against real data. The assessment's CFG-08 wording (~1 km) understates Goldstone."
   }
 }

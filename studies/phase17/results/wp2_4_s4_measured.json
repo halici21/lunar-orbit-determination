@@ -1,0 +1,48 @@
+{
+ "G16": {
+  "position_m": 1.862645149230957e-09,
+  "velocity_mps": 2.0679515313825692e-25
+ },
+ "G17_m": 1.3969838619232178e-09,
+ "G18": {
+  "position_m": 5.899620070435812e-06,
+  "velocity_mps": 1.6630437317924823e-09
+ },
+ "G19_m_per_day": 0.00014162099953263593,
+ "G20_station_shift_m": {
+  "DSS-14": 0.4714758719340047,
+  "DSS-43": 1.249949443039978,
+  "DSS-63": 0.7365149978152812
+ },
+ "G20_DSS43": {
+  "range_m": 0.4175252031810497,
+  "doppler_mps": 5.416359138621374e-05
+ },
+ "G21_max_abs_m": 1.2301569346506724e-08,
+ "rounded_scenario_stations": {
+  "Goldstone DSN": {
+   "antenna": "DSS-14",
+   "offset_km": 15.730542062202927,
+   "nearest_antenna": "DSS-13",
+   "nearest_offset_km": 6.031822517951278,
+   "two_way_range_change_m": 4264.135038985215,
+   "doppler_change_mps": 0.048418620564234516
+  },
+  "Madrid DSN": {
+   "antenna": "DSS-63",
+   "offset_km": 0.21886189686753169,
+   "nearest_antenna": "DSS-63",
+   "nearest_offset_km": 0.2188618968681005,
+   "two_way_range_change_m": 102.44005986206481,
+   "doppler_change_mps": 0.001075293737130778
+  },
+  "Canberra DSN": {
+   "antenna": "DSS-43",
+   "offset_km": 0.2918783768151112,
+   "nearest_antenna": "DSS-34",
+   "nearest_offset_km": 0.24708841413159716,
+   "two_way_range_change_m": 64.18668297465263,
+   "doppler_change_mps": 0.0020774710637851967
+  }
+ }
+}
