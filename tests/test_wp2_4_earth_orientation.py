@@ -25,6 +25,24 @@ PREVIOUS = tuple(k for k in SL.required_kernels() if k != SL.EARTH_HIGH_PRECISIO
 FRAME_BASE = ("naif0012.tls.txt", "earth_assoc_itrf93.tf.txt")
 
 
+def _kernel_facts(name):
+    """(coverage start ET, coverage end ET, last datum ET, last datum UTC string) read from the kernel itself, so
+    the gates follow the pinned high-precision release (amendment 2026-11-03: kernel update)."""
+    spice.kclear()
+    spice.furnsh(str(KERNEL_DIR / "naif0012.tls.txt"))
+    path = str(KERNEL_DIR / name)
+    cover = spice.cell_double(2000)
+    spice.pckcov(path, SF.EARTH_ITRF93_PCK_BODY, cover)
+    start, end = spice.wnfetd(cover, 0)[0], spice.wnfetd(cover, spice.wncard(cover) - 1)[1]
+    utc = SF._last_datum_utc(path)
+    return start, end, float(spice.str2et(utc + " UTC")), utc
+
+
+HP_START, HP_END, HP_LAST, HP_LAST_UTC = _kernel_facts(SL.EARTH_HIGH_PRECISION_PCK)
+PR_START, _, PR_LAST, PR_LAST_UTC = _kernel_facts(SL.EARTH_PREDICT_PCK)
+DAY = 86400.0
+
+
 @pytest.fixture(autouse=True)
 def _restore_default_pool():
     yield
@@ -93,10 +111,13 @@ def test_default_profile_gains_measured_pre_2025_orientation():
 
 
 def test_measured_profile_gives_the_high_precision_kernel_priority():
-    """G3: inside [2000-01-02, 2026-04-18] = high-precision kernel alone; 2026-04-20..2027-06 = predict alone."""
+    """G3: inside the high-precision coverage = that kernel alone; after its end = the predict kernel alone."""
+    spice.kclear()
+    spice.furnsh(str(KERNEL_DIR / "naif0012.tls.txt"))
+    iso = lambda et: spice.et2utc(et, "ISOC", 0)  # noqa: E731
     inside = ["2000-01-02T00:00:00", "2010-09-20T00:00:00", "2025-06-01T00:00:00", "2025-10-01T00:00:00",
-              "2026-01-21T00:00:00", "2026-03-01T00:00:00", "2026-04-18T00:00:00"]
-    after = ["2026-04-20T00:00:00"] + _monthly(2026, 6, 13)
+              iso(HP_LAST), iso(HP_LAST + 30 * DAY), iso(HP_END - DAY)]
+    after = [iso(HP_END + DAY * k) for k in (1, 30, 90, 180, 365)]
     _furnish(FRAME_BASE + (SL.EARTH_HIGH_PRECISION_PCK,))
     oracle_inside = _rotations(inside)
     _furnish(FRAME_BASE + (SL.EARTH_PREDICT_PCK,))
@@ -113,18 +134,19 @@ def _prov(utc):
 def test_provenance_follows_the_kernel_spice_uses():
     """G4: last datum from the comments; kernel and measured flag per profile and epoch."""
     hp, pr = SL.EARTH_HIGH_PRECISION_PCK, SL.EARTH_PREDICT_PCK
+    assert PR_LAST_UTC == "2025 AUG 26 00:00:00"
     SL.load_spice_kernels()
-    expected = {"2020-06-01T00:00:00": (hp, True), "2025-06-01T00:00:00": (pr, True),
-                "2025-10-01T00:00:00": (pr, False)}
+    iso = lambda et: spice.et2utc(et, "ISOC", 0)  # noqa: E731
+    expected = {"2020-06-01T00:00:00": (hp, True), iso(PR_LAST - DAY): (pr, True), iso(PR_LAST + DAY): (pr, False)}
     for utc, (kernel, measured) in expected.items():
         p = _prov(utc)
         assert (p["kernel"], p["measured"]) == (kernel, measured), (utc, p)
-    assert _prov("2025-06-01T00:00:00")["last_datum_utc"] == "2025 AUG 26 00:00:00"
-    assert _prov("2020-06-01T00:00:00")["last_datum_utc"] == "2026 JAN 21 00:00:00"
+    assert _prov(iso(PR_LAST - DAY))["last_datum_utc"] == PR_LAST_UTC
+    assert _prov("2020-06-01T00:00:00")["last_datum_utc"] == HP_LAST_UTC
     assert _prov("1990-01-01T00:00:00")["kernel"] is None
     SL.load_spice_kernels(earth_orientation="MEASURED")
-    expected = {"2025-10-01T00:00:00": (hp, True), "2026-03-01T00:00:00": (hp, False),
-                "2026-06-01T00:00:00": (pr, False)}
+    expected = {iso(PR_LAST + DAY): (hp, True), iso(HP_LAST - DAY): (hp, True), iso(HP_LAST + DAY): (hp, False),
+                iso(HP_END + DAY): (pr, False)}
     for utc, (kernel, measured) in expected.items():
         p = _prov(utc)
         assert (p["kernel"], p["measured"]) == (kernel, measured), (utc, p)
@@ -134,9 +156,9 @@ def test_measured_orientation_requirement_fails_closed():
     """G5: predicted or uncovered epochs raise naming the epoch and kernel; measured ones pass; the old flag holds."""
     et = lambda utc: float(spice.str2et(utc))  # noqa: E731
     SL.load_spice_kernels()
-    SF.require_measured_earth_orientation([et("2010-09-20T00:00:00"), et("2025-06-01T00:00:00")])
+    SF.require_measured_earth_orientation([et("2010-09-20T00:00:00"), PR_LAST - DAY])
     with pytest.raises(SF.PredictedEarthOrientationError, match=SL.EARTH_PREDICT_PCK) as caught:
-        SF.require_measured_earth_orientation([et("2025-06-01T00:00:00"), et("2025-10-01T00:00:00")])
+        SF.require_measured_earth_orientation([PR_LAST - DAY, et("2025-10-01T00:00:00")])
     assert "2025-10-01" in str(caught.value)
     assert isinstance(caught.value, ValueError)
     with pytest.raises(SF.PredictedEarthOrientationError, match="no loaded Earth PCK"):
@@ -144,9 +166,9 @@ def test_measured_orientation_requirement_fails_closed():
     assert SF.is_predicted_earth_orientation(et("2027-03-08T00:00:00"))
     assert not SF.is_predicted_earth_orientation(et("2025-03-01T00:00:00"))
     SL.load_spice_kernels(earth_orientation="MEASURED")
-    SF.require_measured_earth_orientation(et("2025-10-01T00:00:00"))
+    SF.require_measured_earth_orientation([et("2025-10-01T00:00:00"), HP_LAST - DAY])
     with pytest.raises(SF.PredictedEarthOrientationError, match=SL.EARTH_HIGH_PRECISION_PCK):
-        SF.require_measured_earth_orientation(et("2026-03-01T00:00:00"))
+        SF.require_measured_earth_orientation(HP_LAST + DAY)
 
 
 # ---------------------------------------------------------------------------

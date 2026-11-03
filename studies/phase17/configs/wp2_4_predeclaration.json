@@ -89,5 +89,18 @@
     "G15_full_regression": {
       "rule": "full regression green"
     }
+  },
+  "results_slice_3": {
+    "G13": "PASS (first run)",
+    "G14": "PASS (first run)",
+    "G15": "pending",
+    "diagnostic_profile_offset_dss14_m_new_release": {
+      "2025-10-01": 6.186,
+      "2026-01-15": 20.025,
+      "2026-06-01": 42.575,
+      "2026-10-01": 56.928,
+      "2026-11-01": 68.958
+    },
+    "diagnostic_note": "PREDICT (NAIF 2025-08-26 predict kernel) vs MEASURED (IERS-measured through 2026-11-02): the predict kernel misplaces stations by up to 69 m at today's epochs. Synthetic runs are self-consistent; any real data or external comparison after 2025-08-26 must use MEASURED. NAIF's newer predict kernel earth_2026_260806_2126_predict.bpc exists but is not adopted (it would change every 2027 synthetic result; owner decision)."
   }
 }

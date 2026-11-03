@@ -62,7 +62,11 @@ PLANETARY_EPHEMERIS_ENV = "LUNAR_OD_PLANETARY_EPHEMERIS"
 #: Selection order: the explicit ``earth_orientation=`` argument, else ``LUNAR_OD_EARTH_ORIENTATION``, else
 #: ``DEFAULT_EARTH_ORIENTATION``. ``station_frames.earth_orientation_provenance`` reports which kernel serves an epoch.
 EARTH_PREDICT_PCK = "earth_2025_250826_2125_predict.bpc"
-EARTH_HIGH_PRECISION_PCK = "earth_latest_high_prec.bpc"
+#: The high-precision kernel by its VERSIONED NAIF name (coverage 2000-01-01..2027-01-29, last datum 2026-11-02,
+#: owner-approved download 2026-11-03), not the rolling ``earth_latest_high_prec.bpc``: NAIF refits the whole series
+#: in every release (3.8 mm at DSS-14 in 2010 between the 2026-01 and 2026-11 files), so a rolling name would change
+#: earlier results silently. A newer release is a deliberate change of this name and of the kernel manifest.
+EARTH_HIGH_PRECISION_PCK = "earth_000101_270128_261102.bpc"
 EARTH_ORIENTATION_KERNELS = {
     "PREDICT": (EARTH_HIGH_PRECISION_PCK, EARTH_PREDICT_PCK),
     "MEASURED": (EARTH_PREDICT_PCK, EARTH_HIGH_PRECISION_PCK),

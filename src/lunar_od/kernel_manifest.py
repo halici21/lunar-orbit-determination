@@ -45,8 +45,13 @@ KERNEL_MANIFEST: dict[str, tuple[str, str]] = {
     "earth_2025_250826_2125_predict.bpc": (
         "f5ed4d1f460dbcf40bf24f657ab9021718048e18fb723093bfd229066b4e3a49",
         NAIF_GENERIC + "pck/earth_2025_250826_2125_predict.bpc"),
-    # F2 WP2.4: NAIF's rolling high-precision Earth PCK (file earth_000101_260419_260121.bpc, last datum
-    # 2026-01-21); recorded 2026-11-03 from the local kernel. A newer download is a deliberate manifest change.
+    # F2 WP2.4: the high-precision Earth PCK of the Earth-orientation profiles (spice_loader), by its versioned
+    # NAIF name; last datum 2026-11-02, downloaded 2026-11-03 with the owner's approval.
+    "earth_000101_270128_261102.bpc": (
+        "feed146c1ba6fba13f1e579371d34b67f6c134612d158db27cec019892bca5ab",
+        NAIF_GENERIC + "pck/earth_000101_270128_261102.bpc"),
+    # The local copy of NAIF's rolling high-precision file (earth_000101_260419_260121.bpc, last datum 2026-01-21)
+    # that the F1/F2 LRO study scripts furnish by this name; recorded 2026-11-03 so their records stay traceable.
     "earth_latest_high_prec.bpc": (
         "99ddb26ac25e1ddc0fd98083424801d9c648a342f01b033bf1695591cfae2ec5",
         NAIF_GENERIC + "pck/earth_latest_high_prec.bpc"),

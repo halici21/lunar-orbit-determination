@@ -192,7 +192,7 @@ PowerShell'de:
 | de440.bsp | Gezegen efemerisi (DE421 profilinde de421.bsp) |
 | earth_assoc_itrf93.tf.txt | Dünya ITRF93 çerçevesi |
 | moon_080317.tf.txt | Ay çerçevesi |
-| earth_latest_high_prec.bpc | Ölçülmüş Dünya yönelimi (IERS EOP; 2000-2024 için, `MEASURED` profilinde önceliklidir) |
+| earth_000101_270128_261102.bpc | Ölçülmüş Dünya yönelimi (IERS EOP; 2000-2024 için, `MEASURED` profilinde önceliklidir) |
 | earth_2025_250826_2125_predict.bpc | Uzun dönem tahmini Dünya yönelimi (2025 sonrası, varsayılan `PREDICT` profilinde önceliklidir) |
 | moon_pa_de421_1900-2050.bpc | Ay principal-axis yönelimi |
 | gm_de440.tpc | Çekim sabitleri (DE421 profilinde gm_de431.tpc.txt) |
