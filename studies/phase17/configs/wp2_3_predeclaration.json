@@ -172,5 +172,35 @@
     "G22": "PASS (first run, no amendment)",
     "G23": "PASS (first run, no amendment)",
     "G24": "PASS (first run, no amendment)"
+  },
+  "scope_slice_6": "Ramp tables on the production path (MEAS-08): RangeRatePhysicsConfig.uplink_ramps, a tuple of radiometrics.StationUplinkRamp(station_name, epochs_et_s, frequencies_hz, rates_hz_per_s) with absolute SPICE ET epochs so that arcs with different et0 share one table; counted_doppler_ssb converts the table of the observing station to a pass-seconds rlt.UplinkRamp with reference_hz = uplink_frequency_hz, for the observable and the Jacobian alike, so generation, residuals, BLS-LM/SRIF and observability consume one model through the existing dispatch. Barycentric counted-Doppler models only; scenario field uplink_ramps (JSON list of objects), part of scenario_measurement_identity only when non-empty. Also fixes the latent defect found while reading: scenarios._resolve_range_rate_physics rebuilt the config field by field when count_interval_s was given and silently dropped station_state_method and counted_doppler_model (no scenario path passes count_interval_s, so no recorded result is affected). Out of scope: ramp file readers (TRK-2-34, F5/F6), transponder delay in counted Doppler, SR-UKF.",
+  "gates_slice_6": {
+    "G25_no_table_bitwise": {
+      "rule": "uplink_ramps empty (default): production observable and Jacobian equal rlt.counted_doppler without a ramp bitwise"
+    },
+    "G26_dispatch_parity": {
+      "rule": "with a table, production observable and Jacobian equal rlt.counted_doppler(uplink_ramp=ramp built with epochs et - et0) bitwise, per station with distinct tables; and agree within 1e-8 m/s with the same ramp written directly in pass seconds"
+    },
+    "G27_flat_table_bitwise": {
+      "rule": "a table with f = uplink_frequency_hz and zero rate reproduces the no-table observable and Jacobian bitwise"
+    },
+    "G28_production_partial_fd": {
+      "rule": "ramped production Jacobian vs central differences of re-propagated arcs (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G29_recovery": {
+      "rule": "BLS-LM and SRIF on noise-free ramped data generated through generate_range_rate_measurements: position < 3 cm and <= 1.5 x the no-table control on the same rows; velocity < 1e-5 m/s and <= 1.5 x control (the single-station geometry floor of WP2.2 G6, stated in advance)"
+    },
+    "G30_materiality": {
+      "rule": "constant 1 kHz offset table: data minus the no-table model equals -c x 1 kHz / (2 f_ref) on every row within 1e-3 relative"
+    },
+    "G31_scenario_route": {
+      "rule": "scenario mapping with uplink_ramps survives to_dict/from-mapping, reaches scenario_range_rate_physics_config; scenario_measurement_identity differs with a table and has no uplink_ramps key without one; the schema lists the field"
+    },
+    "G32_fail_closed": {
+      "rule": "ValueError for: table on a non-barycentric counted-Doppler model; duplicate station; non-increasing epochs, non-positive frequency or unequal lengths; unknown key in a scenario ramp object; ukf estimator; observing station without a table; table starting after the transmit epoch (the generator must raise, not drop the row as a history-domain miss)"
+    },
+    "G33_resolver_keeps_fields": {
+      "rule": "_resolve_range_rate_physics(cfg, count_interval_s) changes count_interval_s only: counted_doppler_model, station_state_method and uplink_ramps are preserved (fails before the fix)"
+    }
   }
 }
