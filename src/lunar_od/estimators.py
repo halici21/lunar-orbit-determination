@@ -84,6 +84,9 @@ class EstimatorStats:
     #: Phase 17-HARDEN-D30: steps the caller-tolerance score rejected but the
     #: tighter rescore accepted (two-way range BLS-LM only).
     acceptance_rescore_accepts: int = 0
+    #: F2 WP2.3: two-way range station biases [m] by 1-based station id
+    #: (bias_mode='station_range', BLS-LM); None otherwise.
+    station_range_biases_m: dict | None = None
 
 
 def estimate_position_srif(
@@ -2568,6 +2571,45 @@ def _two_way_range_residual_from_h(obs_data: np.ndarray, h_meas: np.ndarray) -> 
     return np.asarray(obs_data[:, 1], dtype=float) - np.asarray(h_meas, dtype=float).reshape(-1)
 
 
+#: F2 WP2.3 slice 1: the two-way range bias mode of estimate_two_way_range_bls_lm.
+TWO_WAY_RANGE_STATION_BIAS_MODE = "station_range"
+
+
+def _station_bias_projection(obs_data, weight_diag, residual, design=None):
+    """Variable projection of one constant range bias per station (F2 WP2.3).
+
+    The bias enters the range linearly with a constant design column, so its
+    weighted least-squares value for a given state is the weighted station mean
+    of the residual; removing that mean from the residual and from the design
+    rows is the exact Golub-Pereyra reduction.  Returns the reduced residual,
+    the reduced design (or None) and the bias by 1-based station id."""
+    sid = np.asarray(obs_data[:, 2], dtype=int)
+    r = np.array(residual, dtype=float).reshape(-1)
+    h = None if design is None else np.array(design, dtype=float)
+    biases = {}
+    for station in np.unique(sid):
+        rows = sid == station
+        w = np.asarray(weight_diag, dtype=float)[rows]
+        b = float(w @ r[rows] / w.sum())
+        biases[int(station)] = b
+        r[rows] -= b
+        if h is not None:
+            h[rows] -= (w @ h[rows]) / w.sum()
+    return r, h, biases
+
+
+def _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection) -> None:
+    if solve_for_k_srp:
+        raise ValueError("bias_mode='station_range' cannot be combined with solve_for_k_srp (F2 WP2.3 slice 1).")
+    if robust_outlier_rejection:
+        raise ValueError("bias_mode='station_range' does not support robust_outlier_rejection (F2 WP2.3 slice 1).")
+    sid, counts = np.unique(np.asarray(obs_data[:, 2], dtype=int), return_counts=True)
+    if np.any(counts < 2):
+        raise ValueError(
+            f"bias_mode='station_range' needs at least two rows per station; got counts {dict(zip(sid, counts))}."
+        )
+
+
 def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | None) -> None:
     if bias_mode is not None:
         raise ValueError(
@@ -2825,7 +2867,10 @@ def estimate_two_way_range_bls_lm(
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
-    _validate_two_way_range_solve_for(x_nominal, bias_mode)
+    station_bias = bias_mode == TWO_WAY_RANGE_STATION_BIAS_MODE
+    _validate_two_way_range_solve_for(x_nominal, None if station_bias else bias_mode)
+    if station_bias:
+        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection)
 
     if solve_for_k_srp:
         if srp is None or not srp.enabled:
@@ -2878,6 +2923,13 @@ def estimate_two_way_range_bls_lm(
     prior_inv_scaled = scale.T @ prior_inv @ scale
     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
     w_curr_diag = w_diag.copy()
+
+    def _bias_reduced(residual_vec, design=None):
+        """F2 WP2.3: station biases eliminated by variable projection (identity without bias_mode)."""
+        if not station_bias:
+            return residual_vec, design
+        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design)
+        return reduced, reduced_design
 
     x_best = x_nominal.copy()
     k_best = k_current
@@ -2945,7 +2997,7 @@ def estimate_two_way_range_bls_lm(
             srp=_active_srp(k_state), **_harm, **_prop,
         )
         res, _ = _two_way_residuals(hist, obs_data, pass_geo)
-        return np.asarray(res, dtype=float)
+        return _bias_reduced(np.asarray(res, dtype=float))[0]
 
     def _acceptance_cost(x_state, k_state, residual_vec, weight_diag):
         """Accept/reject scalar: the objective _lm_step actually minimises.
@@ -3024,6 +3076,7 @@ def estimate_two_way_range_bls_lm(
                 obs_data, pass_geo, x_aug_hist
             )
         residual = _two_way_range_residual_from_h(obs_data, h_nom)
+        residual, h_initial = _bias_reduced(residual, h_initial)
         w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
             w_diag,
             residual,
@@ -3202,6 +3255,7 @@ def estimate_two_way_range_bls_lm(
                         obs_data, pass_geo, x_aug_hist
                     )
                     residual = _two_way_range_residual_from_h(obs_data, h_nom)
+                    residual, h_initial = _bias_reduced(residual, h_initial)
                 stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
                     h_initial, residual, w_curr_diag, scale,
                     prior_inv_scaled if prior_active else None, prior_rhs_scaled,
@@ -3266,9 +3320,24 @@ def estimate_two_way_range_bls_lm(
                 propagation_kwargs=_prop,
                 return_design=True,
             )
+            if station_bias:
+                # F2 WP2.3: the reduced design gives the orbit-state marginal (Schur complement).
+                posterior_design = _bias_reduced(np.zeros(obs_data.shape[0]), posterior_design)[1]
+                posterior_information = _symmetrize(
+                    posterior_design.T @ (w_curr_diag[:, None] * posterior_design) + post_prior_inv)
             # WP4.3 (EST-06): QR of the design, as the K branch above.
             posterior_covariance, _ = _square_root_covariance_from_design(
                 posterior_design, w_curr_diag, post_prior_inv, scale)
+
+    station_biases = None
+    if station_bias:
+        hist_best = propagate_state(
+            t_pass_s, x_best, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+            srp=_active_srp(k_best), **_harm, **_prop,
+        )
+        raw, _ = _two_way_residuals(hist_best, obs_data, pass_geo)
+        station_biases = _station_bias_projection(obs_data, w_diag, raw)[2]
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3291,6 +3360,7 @@ def estimate_two_way_range_bls_lm(
         k_srp_bound_active_steps=bound_active_steps,
         gauss_newton_decrement=gn_decrement,
         acceptance_rescore_accepts=rescore_accepts,
+        station_range_biases_m=station_biases,
     )
     return x_best, stop_reason, stats
 
