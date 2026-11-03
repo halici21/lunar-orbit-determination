@@ -797,19 +797,21 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
 # constant, its cross-field rules and the dispatch (to the new module
 # counted_doppler_ssb.py, as the R4 four-event route does); scenarios.py and
 # scenario_config.py take the model-version label from radiometrics and add the
-# loader gate.  The default model is unchanged.
+# loader gates; slice 2 adds the scenario profile 'two_way_light_time_ssb'
+# (barycentric two-way range) and its arc-builder route.  The default model
+# is unchanged.
 #
 #   lunar_od/radiometrics.py     F1 WP1.4 -> e93cd6b1...
-#   lunar_od/scenarios.py        -> 2a63e95a...
-#   lunar_od/scenario_config.py  -> 4c62f4bf...
+#   lunar_od/scenarios.py        -> f9bf4f2f...
+#   lunar_od/scenario_config.py  -> a57cffef...
 #     filtered-checkout (core.autocrlf=true) representation, as every table above
 F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/radiometrics.py":
         "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
     "lunar_od/scenarios.py":
-        "2a63e95a596e2003fd5915d6b2ebcd379c1bafef643bf3b68e1622941f5e6505",
+        "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
     "lunar_od/scenario_config.py":
-        "4c62f4bf8c6d2f81eea8ce521080d54a9fba72690968b8c9caed8cc744bf4186",
+        "a57cffef5056948cb7316f1a06c70860cd1e8a848a56851906d81d7e70f446e1",
 }
 
 

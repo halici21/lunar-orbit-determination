@@ -42,7 +42,10 @@ from .radiometrics import (
     counted_doppler_model_version,
     range_rate_physics_config,
 )
-from .measurement_contracts import generate_two_way_range_measurements_checked
+from .measurement_contracts import (
+    generate_two_way_range_measurements_checked,
+    require_earth_provider_contract,
+)
 from .two_way_range import TwoWayRangeConfig
 
 #: Default UKF initial state sigma (position m, velocity m/s): the thesis cold-start error the
@@ -367,6 +370,25 @@ def build_measurement_arcs(
                 range_rate_physics=rr_physics,
                 companion_geometry=companion_geometry,
                 jacobian_model=jacobian_model,
+            )
+        elif measurement_type == "two_way_range" and measurement_model_profile == "two_way_light_time_ssb":
+            # F2 WP2.1 slice 2: barycentric DSN two-way range; the estimators
+            # dispatch on the profile the generator stamps on pass_geo.
+            from .relativistic_light_time import generate_two_way_range_measurements_ssb
+
+            require_earth_provider_contract(get_earth_pos, get_earth_vel, et0, t_pass_s)
+            obs_data, pass_geo = generate_two_way_range_measurements_ssb(
+                t_pass_s,
+                x_pass,
+                stations,
+                vis_pass,
+                get_earth_pos,
+                get_earth_vel,
+                et0,
+                noise=noise,
+                rng=rng,
+                arc_id=arc_number,
+                config=two_way_range,
             )
         elif measurement_type == "two_way_range":
             obs_data, pass_geo = generate_two_way_range_measurements_checked(

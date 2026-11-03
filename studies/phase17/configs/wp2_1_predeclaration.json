@@ -3,17 +3,48 @@
   "date": "2026-11-03",
   "source_of_predeclaration": "docs/assurance/vv-program.md F2 table (WP2.1 row, written 2026-10-31 before any WP2.1 code); this file formalises it for the first slice",
   "scope_slice_1": "two-way counted Doppler in the batch estimators (BLS-LM, SRIF) and observability, via RangeRatePhysicsConfig(counted_doppler_model='barycentric_dsn'); SR-UKF fails closed at the scenario loader",
-  "out_of_scope_slice_1": ["delta-DOR", "one-way range", "position observables", "SR-UKF", "media", "ramped uplink"],
+  "out_of_scope_slice_1": [
+    "delta-DOR",
+    "one-way range",
+    "position observables",
+    "SR-UKF",
+    "media",
+    "ramped uplink"
+  ],
   "physics": "relativistic_light_time.DSN_LIGHT_TIME_MODEL: SSB legs, Sun+Earth Shapiro (Moyer 8-38, gamma=1), TT interval",
   "default_behaviour": "unchanged; the new model is opt-in, so every frozen baseline stays bitwise",
   "gates": {
-    "G1_one_way_light_time_vs_spice_cn": {"oracle": "spkezr(..., 'CN', ...) light time, Moon centre -> Earth centre", "tolerance_s": 1e-12},
-    "G2_shapiro_vs_line_integral": {"oracle": "scipy.quad of 2GM/(c^3 r) along the straight leg", "tolerance_rel": 1e-10},
-    "G3_materiality": {"rule": "|barycentric - Moon-centred| < 2e-4 m/s and max > 1e-6 m/s (Phase C1: -68...+87 um/s)"},
-    "G4_jacobian_vs_central_differences": {"oracle": "re-propagated arcs", "tolerance": "max |diff| < 1e-6 * |row|"},
-    "G5_bls_recovery": {"rule": "noise-free BLS-LM from an 80 m / 0.02 m/s offset recovers position < 1 cm and velocity < 1e-5 m/s"},
-    "G6_model_mismatch_evidence": {"rule": "Moon-centred model at the truth misfits barycentric data with RMS > 1e-6 m/s"},
-    "G7_fail_closed": {"rule": "legacy station grid, hz output, clock drift, non-Doppler mode and UKF are rejected"}
+    "G1_one_way_light_time_vs_spice_cn": {
+      "oracle": "spkezr(..., 'CN', ...) light time, Moon centre -> Earth centre",
+      "tolerance_s": 1e-12
+    },
+    "G2_shapiro_vs_line_integral": {
+      "oracle": "scipy.quad of 2GM/(c^3 r) along the straight leg",
+      "tolerance_rel": 1e-10
+    },
+    "G3_materiality": {
+      "rule": "|barycentric - Moon-centred| < 2e-4 m/s and max > 1e-6 m/s (Phase C1: -68...+87 um/s)"
+    },
+    "G4_jacobian_vs_central_differences": {
+      "oracle": "re-propagated arcs",
+      "tolerance": "max |diff| < 1e-6 * |row|"
+    },
+    "G5_bls_recovery": {
+      "rule": "noise-free BLS-LM from an 80 m / 0.02 m/s offset recovers position < 1 cm and velocity < 1e-5 m/s"
+    },
+    "G6_model_mismatch_evidence": {
+      "rule": "Moon-centred model at the truth misfits barycentric data with RMS > 1e-6 m/s"
+    },
+    "G7_fail_closed": {
+      "rule": "legacy station grid, hz output, clock drift, non-Doppler mode and UKF are rejected"
+    },
+    "G8_two_way_scenario_route": {
+      "rule": "arc builder stamps the profile; noise-free BLS-LM recovers position < 1 cm; Moon-centred M3 misfit at the truth in the predeclared band; unsupported combinations rejected at load",
+      "band_m": [
+        0.5,
+        5.0
+      ]
+    }
   },
   "amendments": [
     {
@@ -29,7 +60,15 @@
       "change": "per-element rtol 1e-5 with 1 m / 1e-3 m/s steps -> row-norm tolerance with 10 m / 1e-2 m/s steps",
       "reason": "the FD estimate of the vz element moved as ~1/h (1e-4: 9.6e-6, 1e-3: 1.8e-6, 1e-2: 3.1e-7 absolute), i.e. re-propagation noise; the qualified Moon-centred Jacobian shows the same 1e-5 floor at these steps",
       "status": "exploratory for G4"
+    },
+    {
+      "gate": "G8",
+      "after_result": true,
+      "change": "Moon-centred misfit band 0.5-5 m -> 7-12.5 m, plus a decomposition check (Shapiro share 7.0-8.2 m)",
+      "reason": "measured 11.5-12.2 m. The predeclared band carried only the C1 frame term (1.9-2.5 m) and omitted the Sun Shapiro delay, which C1 itself lists (7.3-7.8 m). Independent estimate: Sun Shapiro 2GM/c^3 * r12/AU ~ 7.6 m + SSB-frame term <= (v_SSB/c)^2 rho ~ 4.1 m + TT interval 0.13 m + Earth Shapiro 0.04 m ~ 11.9 m",
+      "status": "exploratory for G8"
     }
   ],
-  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes"
+  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
+  "scope_slice_2": "barycentric two-way range selectable from a scenario: measurement_model_profile='two_way_light_time_ssb' (measurement_type='two_way_range', zero transponder delay, delay-calibrated convention, BLS-LM/SRIF) routes build_measurement_arcs to relativistic_light_time.generate_two_way_range_measurements_ssb; the estimators already dispatch on the stamped profile"
 }

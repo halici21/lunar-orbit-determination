@@ -179,3 +179,77 @@ def test_scenario_loader_rejects_barycentric_with_the_ukf():
                                       "measurement_type": "range_rate", "estimator_type": "ukf",
                                       "range_rate_physics": "two_way_counted_doppler",
                                       "counted_doppler_model": BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL})
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: barycentric two-way range selectable from a scenario
+# (measurement_model_profile='two_way_light_time_ssb').
+# ---------------------------------------------------------------------------
+def _two_way_payload(**overrides):
+    payload = {"name": "wp2_1_two_way", "measurement_type": "two_way_range", "estimator_type": "bls_lm",
+               "start_mode": "cold", "network": "multi", "measurement_model_profile": "two_way_light_time_ssb"}
+    payload.update(overrides)
+    return payload
+
+
+def test_scenario_accepts_the_barycentric_two_way_range_profile():
+    from lunar_od.scenario_config import scenario_config_from_mapping
+
+    config = scenario_config_from_mapping(_two_way_payload())
+    assert config.measurement_model_profile == "two_way_light_time_ssb"
+
+
+@pytest.mark.parametrize("overrides, match", [
+    ({"measurement_type": "position"}, "two_way_light_time_ssb"),
+    ({"measurement_type": "range_rate"}, "two_way_light_time_ssb"),
+    ({"transponder_delay_s": 1e-6}, "zero"),
+    ({"two_way_range_convention": "raw_half_round_trip"}, "delay_calibrated"),
+    ({"estimator_type": "ukf"}, "two_way_range"),
+])
+def test_scenario_rejects_unsupported_barycentric_two_way_range(overrides, match):
+    from lunar_od.scenario_config import scenario_config_from_mapping
+
+    with pytest.raises(ValueError, match=match):
+        scenario_config_from_mapping(_two_way_payload(**overrides))
+
+
+def test_scenario_arc_builder_routes_two_way_range_to_the_barycentric_model(arc):
+    from lunar_od.estimators import estimate_two_way_range_bls_lm
+    from lunar_od.scenarios import build_measurement_arcs
+    from lunar_od.two_way_range import TwoWayRangeConfig, compute_two_way_range_residuals
+
+    eph, t, gm = arc["eph"], arc["t"], arc["gm"]
+    truth = arc["aug"][:, :6]
+    arcs = build_measurement_arcs("two_way_range", t, truth, [0], [t.size - 1],
+                                  np.ones((t.size, len(STATIONS)), dtype=bool), STATIONS, eph.earth_position,
+                                  eph.earth_velocity, arc["et0"], noise=False,
+                                  measurement_model_profile="two_way_light_time_ssb",
+                                  two_way_range=TwoWayRangeConfig())
+    assert len(arcs) == 1
+    prepared = arcs[0]
+    assert prepared.pass_geo.measurement_model_profile == "two_way_light_time_ssb"
+
+    x_start = arc["x0"] + np.array([80.0, -60.0, 40.0, 0.02, -0.01, 0.015])
+    x_hat, status, _ = estimate_two_way_range_bls_lm(prepared.t_pass_s, prepared.obs_data, x_start,
+                                                     prepared.pass_geo, *gm, eph.earth_position,
+                                                     eph.sun_position, rtol=1e-12, atol=1e-13)
+    assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) < 1e-2, status
+
+    # The Moon-centred M3 model at the truth misfits the same data by the barycentric terms:
+    # Sun Shapiro ~ 2GM/c^3 * r12/AU ~ 7.6 m, the SSB-frame term <= (v_SSB/c)^2 * rho ~ 4.5 m,
+    # TT interval ~ 0.1 m and Earth Shapiro ~ 0.04 m.
+    moon_geo = replace(prepared.pass_geo, measurement_model_profile=None)
+    residuals, _ = compute_two_way_range_residuals(truth, prepared.obs_data, moon_geo)
+    assert 7.0 < float(np.mean(residuals)) < 12.5
+
+    # Decomposition: the Shapiro share equals the oracle-tested closed form within 0.6 m of 7.6 m.
+    from lunar_od import relativistic_light_time as rlt
+    no_shapiro = rlt.LightTimeModel(frame="SSB", interval_time_scale="TT")
+    _, stations, eph_b = rlt._pass_context(prepared.pass_geo)
+    kw = rlt.pass_station_kwargs(prepared.pass_geo)
+    sc = rlt.SpacecraftHistory(prepared.pass_geo.t_s, truth)
+    row = prepared.obs_data[prepared.obs_data.shape[0] // 2]
+    sid = int(row[2]) - 1
+    full = rlt.two_way_range_m(rlt.solve_two_way(row[0], stations[sid], sc, eph_b, rlt.DSN_LIGHT_TIME_MODEL, **kw[sid]))
+    bare = rlt.two_way_range_m(rlt.solve_two_way(row[0], stations[sid], sc, eph_b, no_shapiro, **kw[sid]))
+    assert 7.0 < full - bare < 8.2

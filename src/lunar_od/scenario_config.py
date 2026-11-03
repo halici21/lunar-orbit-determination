@@ -82,6 +82,9 @@ ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     "one_way_light_time",
     "one_way_light_time_aberrated_local_mci",
     "one_way_light_time_aberrated_spice_ssb",
+    # F2 WP2.1 slice 2: barycentric DSN two-way range (Phase C1-I model),
+    # measurement_type='two_way_range' only.
+    "two_way_light_time_ssb",
 )
 ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
 ALLOWED_JACOBIAN_MODELS = (
@@ -1142,7 +1145,29 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError(
             "two_way_range_convention applies only to measurement_type='two_way_range'."
         )
-    profile_controls_position = config.measurement_model_profile != "geometric_instantaneous"
+    two_way_ssb = config.measurement_model_profile == "two_way_light_time_ssb"
+    if two_way_ssb:
+        # F2 WP2.1 slice 2: the barycentric two-way range supports zero
+        # transponder delay and the delay-calibrated convention only
+        # (relativistic_light_time._pass_context); the UKF is rejected above.
+        if config.measurement_type != "two_way_range":
+            raise ValueError(
+                "measurement_model_profile='two_way_light_time_ssb' applies only to "
+                f"measurement_type='two_way_range'; got {config.measurement_type!r}."
+            )
+        if config.transponder_delay_s != 0.0:
+            raise ValueError(
+                "measurement_model_profile='two_way_light_time_ssb' supports zero "
+                "transponder delay only."
+            )
+        if config.two_way_range_convention != "delay_calibrated_half_round_trip":
+            raise ValueError(
+                "measurement_model_profile='two_way_light_time_ssb' supports "
+                "two_way_range_convention='delay_calibrated_half_round_trip' only."
+            )
+    profile_controls_position = (
+        config.measurement_model_profile != "geometric_instantaneous" and not two_way_ssb
+    )
     if profile_controls_position and config.measurement_type != "position":
         raise ValueError(
             "non-geometric measurement_model_profile applies only to measurement_type='position'; "

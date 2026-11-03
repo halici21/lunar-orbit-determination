@@ -72,6 +72,7 @@ class ScenarioConfigTests(unittest.TestCase):
                 "one_way_light_time",
                 "one_way_light_time_aberrated_local_mci",
                 "one_way_light_time_aberrated_spice_ssb",
+                "two_way_light_time_ssb",  # F2 WP2.1 slice 2
             ],
         )
         self.assertEqual(
