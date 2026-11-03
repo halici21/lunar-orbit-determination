@@ -118,5 +118,20 @@
     "G12": "PASS (BLS-LM and SRIF, every pass bias within 0.17 mm, position 0.25 mm)",
     "G14": "PASS",
     "G15": "PASS"
+  },
+  "scope_slice_4": "bias_mode='station_time_tag' (BLS-LM, SRIF; two_way_light_time_ssb only): per station a constant range bias and a receive time-tag offset b_t, the latter entering linearly through the column g = d(range)/d(t3) (relativistic_light_time.two_way_range_clock_partial), both eliminated by variable projection (a 2x2 weighted group solve). g is evaluated once per solve at the a-priori state (its change with the state, ~|delta rho_dot| x b_t, is neglected) and the linearisation in b_t neglects 0.5 rho_ddot b_t^2. Reported in EstimatorStats.station_range_biases_m and station_time_tag_biases_s by station id. RD-07 (time-tag offset)",
+  "gates_slice_4": {
+    "G16_time_tag_recovery": {
+      "rule": "noise-free SSB data generated with station clock offsets +1 ms / -2 ms and range biases +7 m / -4 m: BLS-LM and SRIF recover both time tags within 1 microsecond, both range biases within 1 mm and position within 1 cm from the G2 offset"
+    },
+    "G17_range_only_misfit": {
+      "rule": "the same data fitted with bias_mode='station_range': position error above 10 m or post-fit RMS above 1000x the station_time_tag fit"
+    },
+    "G18_identity_on_untagged_data": {
+      "rule": "on data without clock offsets (range biases +7 m / -4 m) the time tags are below 1e-8 s and the state within 1 cm of the station_range solve"
+    },
+    "G19_fail_closed": {
+      "rule": "station_time_tag on a Moon-centred pass, with fewer than three rows on a station, with solve_for_k_srp or with robust_outlier_rejection is rejected"
+    }
   }
 }
