@@ -366,6 +366,9 @@ class TwoWaySolution:
     interval_rate_curvature: float = 0.0  # d²(TDB-TT)/dt² at the rate epoch
     rate_at_midpoint: bool = False
     media_context: tuple | None = field(default=None, repr=False, compare=False)
+    #: F2 WP2.3 slice 2: fixed transponder delay [s] (coordinate time); the uplink
+    #: is received at t2u = t2d - delay. round_trip_s stays the light-time sum.
+    transponder_delay_s: float = 0.0
 
     @cached_property
     def media_leg_partials(self):
@@ -392,8 +395,12 @@ class TwoWaySolution:
 
 def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
                   model: LightTimeModel, *, site: "_station_time.Site | None" = None,
-                  clock_offset_s: float = 0.0, media=None, media_site=None) -> TwoWaySolution:
-    """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay, the R3/M3 production default).
+                  clock_offset_s: float = 0.0, media=None, media_site=None,
+                  transponder_delay_s: float = 0.0) -> TwoWaySolution:
+    """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay by default, the R3/M3 production default).
+
+    ``transponder_delay_s`` (F2 WP2.3 slice 2) is the M3 fixed coordinate-time delay: the uplink is received at
+    t2u = t2d - delay, a local offset (never an epoch difference); the delay-calibrated range excludes it.
 
     ``site`` (the station's :class:`lunar_od.station_time.Site`) is required by ``station_time='FULL_TOPOCENTRIC'``
     and ignored otherwise. ``clock_offset_s`` reads the receive tag as ``t3 + b`` (production convention); the
@@ -404,8 +411,12 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
     t3 = float(t3_s)
     if clock_offset_s:
         t3 = t3 + float(clock_offset_s)
+    delay = float(transponder_delay_s)
+    if not np.isfinite(delay) or delay < 0.0:
+        raise ValueError(f"transponder_delay_s must be finite and non-negative; got {transponder_delay_s!r}.")
     down = _leg(model, eph, t_rx=t3, rx_fixed=station_state(t3), tx_fn=sc.state, label="downlink")
-    up = _leg(model, eph, t_rx=down.t_tx_s, rx_fixed=sc.state(down.t_tx_s), tx_fn=station_state, label="uplink")
+    t2u = down.t_tx_s - delay if delay else down.t_tx_s
+    up = _leg(model, eph, t_rx=t2u, rx_fixed=sc.state(t2u), tx_fn=station_state, label="uplink")
     curvature = 0.0
     if model.interval_time_scale != "TT":
         rate = 0.0
@@ -413,7 +424,7 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         if site is None:
             raise ValueError("station_time='FULL_TOPOCENTRIC' needs the station's site.")
         # D_site(t3) - D_site(t1) = round trip x the rate at the interval midpoint (exact to ~1e-20 s)
-        mid = t3 - 0.5 * (down.light_time_s + up.light_time_s)
+        mid = t3 - 0.5 * (down.light_time_s + delay + up.light_time_s)
         rate = float(_station_time.tdb_minus_tt_rate(eph.et0_s, mid, site))
         # Difference the analytic rate in relative seconds, never large ET/TT
         # epochs. Independent C2 checks compare this 1 s stencil with 10 s.
@@ -424,6 +435,8 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         curvature = float((eph.tdb_minus_tt_rate(t3+1.) - eph.tdb_minus_tt_rate(t3-1.))/2.)
     interval = dict(interval_rate_curvature=curvature, rate_at_midpoint=model.full_station_time,
                     media_context=None if media is None else (media,media_site,eph.et0_s))
+    if delay:
+        interval["transponder_delay_s"] = delay
     if media is None:
         return TwoWaySolution(t3, down, up, rate, **interval)
     if media_site is None:
@@ -473,13 +486,15 @@ def _two_way_event_partials(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.nd
     los_d = d.rel / np.linalg.norm(d.rel)     # spacecraft -> station
     los_u = u.rel / np.linalg.norm(u.rel)     # station -> spacecraft
     v_sc, v_st1 = d.tx[3:6], u.tx[3:6]
+    # F2 WP2.3 slice 2: with a transponder delay the uplink ends at t2u = t2 - delay (dt2u = dt2).
+    m_u, v_sc_u = (sc.position_sensitivity(u.t_rx_s), u.rx[3:6]) if sol.transponder_delay_s else (m, v_sc)
     # d|r_rx - r_tx|/d r_tx = -los, /d r_rx = +los; Shapiro gradients add to the same position partials.
     dGd_dr2 = (los_d / c) - d.shapiro_grad_tx          # w.r.t. spacecraft position at t2 (transmitter of downlink)
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx         # spacecraft is the uplink receiver
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx          # station transmitter position at t1
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
-    g_x = np.vstack([dGd_dr2 @ m, dGu_dr2 @ m])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc_u) - u.shapiro_epoch_partial]])
+    g_x = np.vstack([dGd_dr2 @ m, dGu_dr2 @ m_u])
     dy = np.linalg.solve(g_y, -g_x)
     return dy
 
@@ -497,8 +512,9 @@ def _media_interval_state_partial(sol,sc,*,phase=False):
     dt1,dt2=_two_way_event_partials(sol,sc)
     d,u=sol.downlink,sol.uplink
     m=sc.position_sensitivity(d.t_tx_s)
+    m_u=sc.position_sensitivity(u.t_rx_s) if sol.transponder_delay_s else m
     los_down=m+d.tx[3:6,None]*dt2[None,:]
-    los_up=m+u.rx[3:6,None]*dt2[None,:]-u.tx[3:6,None]*dt1[None,:]
+    los_up=m_u+u.rx[3:6,None]*dt2[None,:]-u.tx[3:6,None]*dt1[None,:]
     name="phase" if phase else "group"
     return (getattr(down,name+"_los_gradient")@los_down
             +getattr(up,name+"_los_gradient")@los_up+getattr(up,name+"_time_rate")*dt1)
@@ -531,11 +547,12 @@ def _two_way_receive_partials(sol: TwoWaySolution) -> np.ndarray:
     los_d = d.rel / np.linalg.norm(d.rel)
     los_u = u.rel / np.linalg.norm(u.rel)
     v_sc, v_st1, v_st3 = d.tx[3:6], u.tx[3:6], d.rx[3:6]
+    v_sc_u = u.rx[3:6] if sol.transponder_delay_s else v_sc
     dGd_dr2 = (los_d / c) - d.shapiro_grad_tx
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc_u) - u.shapiro_epoch_partial]])
     g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3) - d.shapiro_epoch_partial, 0.0])
     dy = np.linalg.solve(g_y, -g_t3)
     return dy
@@ -802,15 +819,22 @@ def pass_station_kwargs(pass_geo) -> list[dict]:
         model = MediaModel.from_metadata(meta["media"])
         for kw, st in zip(out, stations):
             kw.update(media=model, media_site=MediaSite.from_station(st))
+    if getattr(pass_geo, "two_way_range", None) is not None:
+        from .two_way_range import two_way_range_config
+        delay = float(two_way_range_config(pass_geo.two_way_range).transponder_delay_s)
+        if delay:
+            # F2 WP2.3 slice 2: the pass's fixed transponder delay (two-way range only).
+            for kw in out:
+                kw["transponder_delay_s"] = delay
     return out
 
 
 def _pass_context(pass_geo):
     from .two_way_range import _station_state_providers_for_pass, two_way_range_config
     cfg = two_way_range_config(pass_geo.two_way_range)
-    if cfg.transponder_delay_s != 0.0 or cfg.convention != "delay_calibrated_half_round_trip":
-        raise NotImplementedError("the barycentric two-way range supports zero transponder delay and the "
-                                  "delay-calibrated half-round-trip convention only.")
+    if cfg.convention != "delay_calibrated_half_round_trip":
+        raise NotImplementedError("the barycentric two-way range supports the delay-calibrated "
+                                  "half-round-trip convention only (F2 WP2.3 slice 2 added the delay).")
     stations = [exact_epoch_station_state(lambda t, p=p: np.asarray(p.state(t), dtype=float), pass_geo.et0_s,
                                           pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps)
                 for p in _station_state_providers_for_pass(pass_geo)]

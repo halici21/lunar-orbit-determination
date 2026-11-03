@@ -841,11 +841,14 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/estimators.py           -> c2c25818...
 #   F2 WP2.3 slice 1b (SRIF station bias):
 #   lunar_od/estimators.py           c2c25818... -> fb706a81...
+#   F2 WP2.3 slice 2 (SSB transponder delay):
+#   lunar_od/relativistic_light_time.py-> f067a54b...
+#   lunar_od/scenario_config.py      4e44f2e5... -> 17e4be89...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
     "lunar_od/scenario_config.py":
-        "4e44f2e5d77f0689509217abd98c12ad17305a5c10af6b602d795838da5fc5e7",
+        "17e4be89e9aafbd7fd385be35cd655dc2b6380e0d4488e10b5ff202c303375cc",
     "examples/run_scenario_config.py":
         "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
     "lunar_od/radiometrics.py":
@@ -856,6 +859,8 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":
         "fb706a81e8e321bf78e0fcdba95d65efe532bf1c3f8a152f010702048a3dc0f4",
+    "lunar_od/relativistic_light_time.py":
+        "f067a54b0a397d49ba5cc8e274dfd97aefa40ccd90b5975f4524c990e70df57a",
 }
 
 def current_source_path(relative_path: str) -> str:

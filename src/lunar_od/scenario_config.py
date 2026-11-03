@@ -1171,19 +1171,15 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
                 "estimators only; the SR-UKF sigma-point observable has no media."
             )
     if two_way_ssb:
-        # F2 WP2.1 slice 2: the barycentric two-way range supports zero
-        # transponder delay and the delay-calibrated convention only
+        # F2 WP2.1 slice 2: the barycentric two-way range supports the
+        # delay-calibrated convention only (any fixed delay since WP2.3 slice 2)
         # (relativistic_light_time._pass_context); the UKF is rejected above.
         if config.measurement_type != "two_way_range":
             raise ValueError(
                 "measurement_model_profile='two_way_light_time_ssb' applies only to "
                 f"measurement_type='two_way_range'; got {config.measurement_type!r}."
             )
-        if config.transponder_delay_s != 0.0:
-            raise ValueError(
-                "measurement_model_profile='two_way_light_time_ssb' supports zero "
-                "transponder delay only."
-            )
+        # F2 WP2.3 slice 2: a fixed transponder delay is supported.
         if config.two_way_range_convention != "delay_calibrated_half_round_trip":
             raise ValueError(
                 "measurement_model_profile='two_way_light_time_ssb' supports "

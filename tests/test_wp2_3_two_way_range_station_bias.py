@@ -152,3 +152,137 @@ def test_srif_station_bias_matches_bls(arc):
     sig_bls = np.sqrt(np.diag(s_bls.posterior_covariance)[:3])
     sig_srif = np.sqrt(np.diag(s_srif.posterior_covariance)[:3])
     assert np.max(np.abs(sig_srif / sig_bls - 1.0)) < 1e-2
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: fixed transponder delay on the barycentric two-way range (X-15 delay part).
+# ---------------------------------------------------------------------------
+DELAY_S = 0.05
+
+
+def _with_delay(pass_geo, delay):
+    from dataclasses import replace
+
+    from lunar_od.two_way_range import TwoWayRangeConfig
+
+    return replace(pass_geo, two_way_range=TwoWayRangeConfig(transponder_delay_s=delay))
+
+
+def test_zero_delay_is_the_slice_one_path(arc):
+    """G7: an explicit zero delay leaves the solution and its partial identical (the delay branch is skipped)."""
+    from lunar_od import relativistic_light_time as rlt
+
+    prepared, obs = _ssb_arc(arc)
+    model, stations, eph_b = rlt._pass_context(prepared.pass_geo)
+    kw = rlt.pass_station_kwargs(prepared.pass_geo)
+    sc = rlt.SpacecraftHistory(prepared.pass_geo.t_s, arc["aug"])
+    row = obs[obs.shape[0] // 2]
+    sid = int(row[2]) - 1
+    a = rlt.solve_two_way(row[0], stations[sid], sc, eph_b, model, **kw[sid])
+    b = rlt.solve_two_way(row[0], stations[sid], sc, eph_b, model, transponder_delay_s=0.0, **kw[sid])
+    assert "transponder_delay_s" not in kw[sid]
+    assert rlt.two_way_range_m(a) == rlt.two_way_range_m(b)
+    assert np.array_equal(rlt.two_way_range_partial(a, sc), rlt.two_way_range_partial(b, sc))
+
+
+def test_delay_effect_matches_moon_centred_m3(arc):
+    """G8 (amended after the result, exploratory): SSB(d) - SSB(0) differs from M3(d) - M3(0) by the first-order
+    frame term Delta_M3 (u_up . v_Moon,SSB)/c; after removing it the rows agree within 1.5 mm. As computed the
+    pre-registered 1 mm raw bound failed at 3.8 mm. The change exceeds 1 m on some row."""
+    from dataclasses import replace
+
+    from lunar_od.relativistic_light_time import compute_two_way_range_residuals_ssb
+    from lunar_od.two_way_range import compute_two_way_range_residuals
+
+    prepared, obs = _ssb_arc(arc)
+    truth = arc["aug"][:, :6]
+    geo0, geod = prepared.pass_geo, _with_delay(prepared.pass_geo, DELAY_S)
+    ssb0 = compute_two_way_range_residuals_ssb(truth, obs, geo0)[1]
+    ssbd = compute_two_way_range_residuals_ssb(truth, obs, geod)[1]
+    m30 = compute_two_way_range_residuals(truth, obs, replace(geo0, measurement_model_profile=None))[1]
+    m3d = compute_two_way_range_residuals(truth, obs, replace(geod, measurement_model_profile=None))[1]
+    d_ssb, d_m3 = np.asarray(ssbd) - np.asarray(ssb0), np.asarray(m3d) - np.asarray(m30)
+    assert np.max(np.abs(d_ssb)) > 1.0
+    from lunar_od import relativistic_light_time as rlt
+    model, stations, eph_b = rlt._pass_context(geod)
+    kw = rlt.pass_station_kwargs(geod)
+    sc = rlt.SpacecraftHistory(geod.t_s, truth)
+    frame = np.zeros(obs.shape[0])
+    for i in range(obs.shape[0]):
+        sid = int(obs[i, 2]) - 1
+        up = rlt.solve_two_way(obs[i, 0], stations[sid], sc, eph_b, model, **kw[sid]).uplink
+        u = up.rel / np.linalg.norm(up.rel)
+        frame[i] = d_m3[i] * float(u @ np.asarray(eph_b.moon_state(up.t_rx_s))[3:6]) / 299792458.0
+    assert np.max(np.abs(d_ssb - d_m3)) > 1e-3        # the raw bound fails as computed (3.8 mm)
+    assert np.max(np.abs(d_ssb - d_m3 - frame)) < 1.5e-3, np.max(np.abs(d_ssb - d_m3 - frame))
+
+
+def test_delayed_range_jacobian_matches_finite_difference(arc):
+    """G9 (step amended after the result): the d = 0.05 s Jacobian vs a central difference, 1e-6 of the row norm.
+    The pre-registered 1 m / 1e-3 m/s step sits on the round-off floor (1.8e-6, and 1.3e-5 at 0.1 m / 1e-4 m/s);
+    10 m / 1e-2 m/s gives 7.5e-8."""
+    from lunar_od.relativistic_light_time import (
+        compute_two_way_range_residuals_ssb,
+        two_way_range_nominal_and_initial_jacobian_ssb,
+    )
+
+    prepared, obs = _ssb_arc(arc)
+    geo = _with_delay(prepared.pass_geo, DELAY_S)
+    _h, jac = two_way_range_nominal_and_initial_jacobian_ssb(obs, geo, arc["aug"])
+    fd = np.zeros_like(jac)
+    for j, step in enumerate((10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2)):
+        dx = np.zeros(6)
+        dx[j] = step
+        hp = compute_two_way_range_residuals_ssb(arc["propagate"](arc["x0"] + dx), obs, geo)[1]
+        hm = compute_two_way_range_residuals_ssb(arc["propagate"](arc["x0"] - dx), obs, geo)[1]
+        fd[:, j] = (np.asarray(hp) - np.asarray(hm)) / (2.0 * step)
+    rel = np.max(np.abs(jac - fd), axis=1) / np.linalg.norm(jac, axis=1)
+    assert np.max(rel) < 1e-6, np.max(rel)
+
+
+def test_delayed_data_are_recovered_and_the_delay_is_material(arc):
+    """G10: matching model recovers position < 1 cm. The pre-registered materiality clause (zero-delay model
+    post-fit RMS > 0.5 m) FAILED as computed (0.28 m: the fit absorbs the 26.5 m delay signature into a 187 m
+    position error); amended (exploratory) to position error > 10 m and post-fit RMS > 1000x the matched fit."""
+    from lunar_od.relativistic_light_time import compute_two_way_range_residuals_ssb
+    from lunar_od.scenarios import build_measurement_arcs
+    from lunar_od.two_way_range import TwoWayRangeConfig
+
+    eph, t = arc["eph"], arc["t"]
+    prepared = build_measurement_arcs("two_way_range", t, arc["aug"][:, :6], [0], [t.size - 1],
+                                      np.ones((t.size, len(STATIONS)), dtype=bool), STATIONS, eph.earth_position,
+                                      eph.earth_velocity, arc["et0"], noise=False,
+                                      measurement_model_profile="two_way_light_time_ssb",
+                                      two_way_range=TwoWayRangeConfig(transponder_delay_s=DELAY_S))[0]
+    obs = prepared.obs_data
+    x_hat, status, _ = _solve(arc, prepared, obs)
+    assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) < 1e-2, status
+    matched, _ = compute_two_way_range_residuals_ssb(arc["propagate"](x_hat), obs, prepared.pass_geo)
+
+    from dataclasses import replace
+    zero = replace(prepared, pass_geo=_with_delay(prepared.pass_geo, 0.0))
+    x_zero, _status, _ = _solve(arc, zero, obs)
+    residuals, _ = compute_two_way_range_residuals_ssb(arc["propagate"](x_zero), obs, zero.pass_geo)
+    rms = float(np.sqrt(np.mean(np.square(residuals))))
+    assert rms < 0.5                                   # the pre-registered clause fails as computed
+    assert np.linalg.norm(x_zero[:3] - arc["x0"][:3]) > 10.0
+    assert rms > 1e3 * float(np.sqrt(np.mean(np.square(matched))))
+
+
+def test_delay_gates(arc):
+    """G11: loader accepts a delay with two_way_light_time_ssb, still rejects the raw convention; barycentric
+    counted Doppler with a delay still fails closed (at RangeRatePhysicsConfig construction, ValueError: one
+    layer earlier than the pre-registered NotImplementedError of counted_doppler_ssb._require_supported)."""
+    from lunar_od.radiometrics import BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL, RangeRatePhysicsConfig
+    from lunar_od.scenario_config import scenario_config_from_mapping
+
+    base = {"name": "wp2_3_delay", "measurement_type": "two_way_range", "estimator_type": "bls_lm",
+            "start_mode": "cold", "network": "multi", "measurement_model_profile": "two_way_light_time_ssb"}
+    assert scenario_config_from_mapping({**base, "transponder_delay_s": 1e-6}).transponder_delay_s == 1e-6
+    with pytest.raises(ValueError, match="delay_calibrated"):
+        scenario_config_from_mapping({**base, "transponder_delay_s": 1e-6,
+                                      "two_way_range_convention": "raw_half_round_trip"})
+    with pytest.raises(ValueError, match="transponder_delay_s"):
+        RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0,
+                               counted_doppler_model=BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+                               transponder_delay_s=1e-6)

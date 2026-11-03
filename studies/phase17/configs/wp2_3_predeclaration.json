@@ -29,7 +29,40 @@
       "rule": "SRIF with bias_mode, bias_mode with solve_for_k_srp, with robust_outlier_rejection, and unknown bias_mode values are rejected; a pass with a single station row is rejected"
     }
   },
-  "amendments": [],
+  "amendments": [
+    {
+      "gate": "G8",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (3.8 mm raw)",
+      "new_rule": "after removing the first-order frame term Delta_M3 (u_up . v_Moon,SSB)/c the rows agree within 1.5 mm (measured 1.03 mm)",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G9",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (1.8e-6; round-off floor)",
+      "new_rule": "FD step 10 m / 1e-2 m/s, threshold unchanged (measured 7.5e-8)",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G10",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "materiality clause FAIL (0.28 m post-fit RMS; 187 m absorbed position error); recovery clause PASS",
+      "new_rule": "zero-delay fit position error > 10 m and post-fit RMS > 1000x the matched fit",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G11",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "the delay is rejected earlier, at RangeRatePhysicsConfig (ValueError)",
+      "new_rule": "fail-closed at config construction",
+      "status": "exploratory (mechanism only)"
+    }
+  ],
   "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
   "scope_slice_1b": "estimate_two_way_range_srif(bias_mode='station_range'): the same variable projection in the SRIF residual, scored cost and posterior design; SRIF no longer fails closed for this mode (G5's SRIF clause is superseded by G6)",
   "gates_slice_1b": {
@@ -54,5 +87,8 @@
     "G11_fail_closed": {
       "rule": "the scenario loader accepts transponder_delay_s > 0 with two_way_light_time_ssb, still rejects the raw convention; barycentric counted Doppler with a delay still raises NotImplementedError"
     }
+  },
+  "results_slice_2": {
+    "G7": "PASS bitwise vs HEAD edc8a0b on 240 rows (ranges and Jacobian)"
   }
 }

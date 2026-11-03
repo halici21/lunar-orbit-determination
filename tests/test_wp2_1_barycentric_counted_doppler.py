@@ -202,7 +202,6 @@ def test_scenario_accepts_the_barycentric_two_way_range_profile():
 @pytest.mark.parametrize("overrides, match", [
     ({"measurement_type": "position"}, "two_way_light_time_ssb"),
     ({"measurement_type": "range_rate"}, "two_way_light_time_ssb"),
-    ({"transponder_delay_s": 1e-6}, "zero"),
     ({"two_way_range_convention": "raw_half_round_trip"}, "delay_calibrated"),
     ({"estimator_type": "ukf"}, "two_way_range"),
 ])
