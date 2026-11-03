@@ -147,3 +147,86 @@ def test_measured_orientation_requirement_fails_closed():
     SF.require_measured_earth_orientation(et("2025-10-01T00:00:00"))
     with pytest.raises(SF.PredictedEarthOrientationError, match=SL.EARTH_HIGH_PRECISION_PCK):
         SF.require_measured_earth_orientation(et("2026-03-01T00:00:00"))
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: ScenarioConfig.earth_orientation, scenario runner and run provenance (G8-G11).
+# ---------------------------------------------------------------------------
+def test_scenario_earth_orientation_field(tmp_path):
+    """G8: default None; allowed values; unknown raises; JSON round trip; schema; archive registry; identity."""
+    import json
+
+    from lunar_od.scenario_config import (
+        SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES,
+        load_scenario_config_json,
+        scenario_config_from_mapping,
+        scenario_config_schema,
+        scenario_earth_orientation_profile,
+        scenario_measurement_identity,
+        write_normalized_scenario_config,
+    )
+
+    base = {"name": "eo", "measurement_type": "position", "estimator_type": "bls_lm", "start_mode": "cold",
+            "network": "single"}
+    default = scenario_config_from_mapping(base)
+    assert default.earth_orientation is None and scenario_earth_orientation_profile(default) is None
+    assert "earth_orientation" not in scenario_measurement_identity(default)
+    profiles = {"predict": "PREDICT", "measured": "MEASURED", "measured_only": "MEASURED"}
+    for value, profile in profiles.items():
+        cfg = scenario_config_from_mapping({**base, "earth_orientation": value})
+        assert scenario_earth_orientation_profile(cfg) == profile
+        assert scenario_measurement_identity(cfg)["earth_orientation"] == value
+        path = write_normalized_scenario_config(cfg, tmp_path / f"{value}.json")
+        assert load_scenario_config_json(path) == cfg
+        assert json.loads(path.read_text(encoding="utf-8"))["earth_orientation"] == value
+    with pytest.raises(ValueError, match="earth_orientation"):
+        scenario_config_from_mapping({**base, "earth_orientation": "MEASURED"})
+    assert scenario_config_schema()["properties"]["earth_orientation"]["enum"] == [None, *profiles]
+    assert SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES["earth_orientation"] is None
+
+
+def _e2e(tmp_path, name, **fields):
+    from tests.test_scenario_reproducibility_wp1_6 import _run_cli, _runner
+
+    return _run_cli(_runner(), tmp_path, name, noise=True, measurement_seed=20261103, cold_start_seed=5, **fields)
+
+
+def test_scenario_profiles_are_bitwise_identical_at_the_fixture_epoch(tmp_path):
+    """G9 + G11: unset / 'predict' / 'measured' give identical results at 2027 (the predict kernel serves there);
+    the provenance records the profile and the serving kernel at both span ends."""
+    from tests.test_scenario_reproducibility_wp1_6 import _RESULT_COLUMNS
+
+    row_u, prov_u = _e2e(tmp_path, "unset")
+    row_p, prov_p = _e2e(tmp_path, "predict", earth_orientation="predict")
+    row_m, prov_m = _e2e(tmp_path, "measured", earth_orientation="measured")
+    for key in _RESULT_COLUMNS:
+        assert row_u[key] == row_p[key] == row_m[key], key
+    files = [k["file"] for k in prov_m["spice_kernels"]]
+    assert files.index(SL.EARTH_PREDICT_PCK) < files.index(SL.EARTH_HIGH_PRECISION_PCK)
+    files = [k["file"] for k in prov_u["spice_kernels"]]
+    assert files.index(SL.EARTH_HIGH_PRECISION_PCK) < files.index(SL.EARTH_PREDICT_PCK)
+    for prov, profile, policy in ((prov_u, "PREDICT", None), (prov_p, "PREDICT", "predict"),
+                                  (prov_m, "MEASURED", "measured")):
+        block = prov["earth_orientation"]
+        assert (block["profile"], block["policy"]) == (profile, policy)
+        assert len(block["epochs"]) == 2
+        for epoch in block["epochs"]:
+            assert epoch["kernel"] == SL.EARTH_PREDICT_PCK
+            assert epoch["last_datum_utc"] == "2025 AUG 26 00:00:00"
+            assert epoch["measured"] is False
+
+
+def test_scenario_measured_only_fails_closed_at_a_predicted_epoch(tmp_path):
+    """G10: 'measured_only' at the 2027 fixture epoch raises before propagation, naming the predict kernel."""
+    from unittest import mock
+
+    from tests.test_scenario_reproducibility_wp1_6 import _runner, _write
+
+    runner = _runner()
+    out = tmp_path / "mo"
+    out.mkdir()
+    cfg = _write(out, name="eo_mo", duration_h=1.0, sample_step_s=600.0, max_iter=3, output_dir=str(out),
+                 earth_orientation="measured_only")
+    with mock.patch.object(runner, "propagate_truth_with_ephemeris", side_effect=AssertionError("propagated")):
+        with pytest.raises(SF.PredictedEarthOrientationError, match=SL.EARTH_PREDICT_PCK):
+            runner.main([str(cfg)])
