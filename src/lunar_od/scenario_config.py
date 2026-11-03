@@ -91,6 +91,9 @@ ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     "one_way_light_time_ssb_aberrated",
 )
 ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
+# F2 WP2.2 (MEAS-06): media delay of the barycentric two-way range
+# (lunar_od.media.MediaModel(); 'none' keeps every existing scenario unchanged).
+ALLOWED_MEDIA_MODELS = ("none", "default_climatology")
 ALLOWED_JACOBIAN_MODELS = (
     "analytic_exact_geometric",
     "analytic_first_order_light_time",
@@ -162,6 +165,7 @@ class ScenarioConfig:
     measurement_model_profile: str = "geometric_instantaneous"
     companion_geometry: str = "instantaneous"
     jacobian_model: str = "analytic_exact_geometric"
+    media_model: str = "none"
     ukf_alpha: float = 0.35
     ukf_beta: float = 2.0
     ukf_kappa: float = 0.0
@@ -276,6 +280,7 @@ def scenario_config_schema() -> dict[str, Any]:
                 "enum": list(ALLOWED_JACOBIAN_MODELS),
                 "default": "analytic_exact_geometric",
             },
+            "media_model": {"enum": list(ALLOWED_MEDIA_MODELS), "default": "none"},
             "ukf_alpha": {"type": "number", "default": 0.35},
             "ukf_beta": {"type": "number", "default": 2.0},
             "ukf_kappa": {"type": "number", "default": 0.0},
@@ -437,6 +442,7 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             ALLOWED_MEASUREMENT_MODEL_PROFILES,
             "measurement_model_profile",
         ),
+        media_model=_enum_value(payload.get("media_model", "none"), ALLOWED_MEDIA_MODELS, "media_model"),
         companion_geometry=_enum_value(
             payload.get("companion_geometry", "instantaneous"),
             ALLOWED_COMPANION_GEOMETRIES,
@@ -678,7 +684,9 @@ def scenario_measurement_identity(config):
         'station_clock_drift','clock_reference_time_s','transponder_delay_s',
         'two_way_range_convention','apply_light_time','apply_stellar_aberration',
         'stellar_aberration_model','measurement_model_profile','companion_geometry','jacobian_model')
-    return {name:payload[name] for name in names}
+    identity={name:payload[name] for name in names}
+    if payload.get('media_model','none')!='none':identity['media_model']=payload['media_model']
+    return identity
 
 
 def scenario_two_way_range_config(config: ScenarioConfig) -> "TwoWayRangeConfig":
@@ -1150,6 +1158,11 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
             "two_way_range_convention applies only to measurement_type='two_way_range'."
         )
     two_way_ssb = config.measurement_model_profile == "two_way_light_time_ssb"
+    if config.media_model != "none" and not two_way_ssb:
+        raise ValueError(
+            f"media_model={config.media_model!r} applies only to "
+            "measurement_model_profile='two_way_light_time_ssb' (F2 WP2.2 slice 1)."
+        )
     if two_way_ssb:
         # F2 WP2.1 slice 2: the barycentric two-way range supports zero
         # transponder delay and the delay-calibrated convention only

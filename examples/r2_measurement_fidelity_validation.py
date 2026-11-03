@@ -820,6 +820,24 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F2 WP2.2 slice 1 (MEAS-06): opt-in media delay (troposphere + ionosphere,
+# lunar_od.media.MediaModel) for the barycentric two-way range.  scenario_config.py
+# adds the field media_model ('none' default) and its gate; scenarios.py routes it
+# into relativistic_light_time.generate_two_way_range_measurements_ssb;
+# run_scenario_config.py passes the field.  Defaults are unchanged.
+#
+#   lunar_od/scenarios.py            F2 WP2.1 f9bf4f2f... -> a6b22da3...
+#   lunar_od/scenario_config.py      F2 WP2.1 8e716a8e... -> f1b13e33...
+#   examples/run_scenario_config.py  -> 1362c085...
+F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenarios.py":
+        "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
+    "lunar_od/scenario_config.py":
+        "f1b13e3370ac17fa3e5f678b44d8970b2bde467a78e60b6f193b45deee781282",
+    "examples/run_scenario_config.py":
+        "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
+}
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -832,6 +850,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256:
         return F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:

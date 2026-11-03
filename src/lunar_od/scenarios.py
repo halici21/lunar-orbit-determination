@@ -282,6 +282,12 @@ def make_cold_start_bank(
     )
 
 
+def _default_media_model():
+    from .media import MediaModel
+
+    return MediaModel()
+
+
 def build_measurement_arcs(
     measurement_type: MeasurementType,
     t_sim_s: ArrayLike,
@@ -306,8 +312,20 @@ def build_measurement_arcs(
     companion_geometry: str = "instantaneous",
     jacobian_model: str | None = None,
     two_way_range: TwoWayRangeConfig | None = None,
+    media_model: str = "none",
 ) -> tuple[PreparedArc, ...]:
-    """Build per-arc observation packages from visibility segmentation."""
+    """Build per-arc observation packages from visibility segmentation.
+
+    ``media_model`` (F2 WP2.2): 'default_climatology' adds the troposphere and
+    ionosphere delay (:class:`lunar_od.media.MediaModel`) to the barycentric
+    two-way range; any other measurement route requires 'none'.
+    """
+    if media_model not in ("none", "default_climatology"):
+        raise ValueError(f"media_model must be 'none' or 'default_climatology'; got {media_model!r}.")
+    if media_model != "none" and not (
+        measurement_type == "two_way_range" and measurement_model_profile == "two_way_light_time_ssb"
+    ):
+        raise ValueError("media_model applies only to the 'two_way_light_time_ssb' two-way range profile.")
     t_sim_s = np.asarray(t_sim_s, dtype=float).reshape(-1)
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     seg_starts = np.asarray(seg_starts, dtype=int).reshape(-1)
@@ -389,6 +407,7 @@ def build_measurement_arcs(
                 rng=rng,
                 arc_id=arc_number,
                 config=two_way_range,
+                media=None if media_model == "none" else _default_media_model(),
             )
         elif measurement_type == "two_way_range":
             obs_data, pass_geo = generate_two_way_range_measurements_checked(
