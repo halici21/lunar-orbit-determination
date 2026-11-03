@@ -84,8 +84,9 @@ class EstimatorStats:
     #: Phase 17-HARDEN-D30: steps the caller-tolerance score rejected but the
     #: tighter rescore accepted (two-way range BLS-LM only).
     acceptance_rescore_accepts: int = 0
-    #: F2 WP2.3: two-way range station biases [m] by 1-based station id
-    #: (bias_mode='station_range', BLS-LM); None otherwise.
+    #: F2 WP2.3: two-way range biases [m] by 1-based station id
+    #: (bias_mode='station_range') or by (station id, 1-based pass index)
+    #: (bias_mode='pass_range'); None otherwise.
     station_range_biases_m: dict | None = None
 
 
@@ -2573,41 +2574,62 @@ def _two_way_range_residual_from_h(obs_data: np.ndarray, h_meas: np.ndarray) -> 
 
 #: F2 WP2.3 slice 1: the two-way range bias mode of estimate_two_way_range_bls_lm.
 TWO_WAY_RANGE_STATION_BIAS_MODE = "station_range"
+#: F2 WP2.3 slice 3: one range bias per tracking pass.
+TWO_WAY_RANGE_PASS_BIAS_MODE = "pass_range"
+TWO_WAY_RANGE_BIAS_MODES = (TWO_WAY_RANGE_STATION_BIAS_MODE, TWO_WAY_RANGE_PASS_BIAS_MODE)
+#: A station's rows split into passes at time gaps above this [s] (bias_mode='pass_range').
+TWO_WAY_RANGE_PASS_GAP_S = 600.0
 
 
-def _station_bias_projection(obs_data, weight_diag, residual, design=None):
-    """Variable projection of one constant range bias per station (F2 WP2.3).
+def _bias_groups(obs_data, mode=TWO_WAY_RANGE_STATION_BIAS_MODE):
+    """Row masks of the bias groups: by 1-based station id, or by (station id, 1-based pass index)."""
+    sid = np.asarray(obs_data[:, 2], dtype=int)
+    groups = []
+    for station in np.unique(sid):
+        rows = np.flatnonzero(sid == station)
+        if mode == TWO_WAY_RANGE_STATION_BIAS_MODE:
+            groups.append((int(station), sid == station))
+            continue
+        rows = rows[np.argsort(np.asarray(obs_data[rows, 0], dtype=float), kind="stable")]
+        breaks = np.flatnonzero(np.diff(np.asarray(obs_data[rows, 0], dtype=float)) > TWO_WAY_RANGE_PASS_GAP_S) + 1
+        for k, chunk in enumerate(np.split(rows, breaks), start=1):
+            mask = np.zeros(sid.size, dtype=bool)
+            mask[chunk] = True
+            groups.append(((int(station), k), mask))
+    return groups
+
+
+def _station_bias_projection(obs_data, weight_diag, residual, design=None, mode=TWO_WAY_RANGE_STATION_BIAS_MODE):
+    """Variable projection of one constant range bias per station or pass (F2 WP2.3).
 
     The bias enters the range linearly with a constant design column, so its
-    weighted least-squares value for a given state is the weighted station mean
+    weighted least-squares value for a given state is the weighted group mean
     of the residual; removing that mean from the residual and from the design
     rows is the exact Golub-Pereyra reduction.  Returns the reduced residual,
-    the reduced design (or None) and the bias by 1-based station id."""
-    sid = np.asarray(obs_data[:, 2], dtype=int)
+    the reduced design (or None) and the bias by group key (see _bias_groups)."""
     r = np.array(residual, dtype=float).reshape(-1)
     h = None if design is None else np.array(design, dtype=float)
     biases = {}
-    for station in np.unique(sid):
-        rows = sid == station
+    for key, rows in _bias_groups(obs_data, mode):
         w = np.asarray(weight_diag, dtype=float)[rows]
         b = float(w @ r[rows] / w.sum())
-        biases[int(station)] = b
+        biases[key] = b
         r[rows] -= b
         if h is not None:
             h[rows] -= (w @ h[rows]) / w.sum()
     return r, h, biases
 
 
-def _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection) -> None:
+def _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection,
+                                         mode=TWO_WAY_RANGE_STATION_BIAS_MODE) -> None:
     if solve_for_k_srp:
-        raise ValueError("bias_mode='station_range' cannot be combined with solve_for_k_srp (F2 WP2.3 slice 1).")
+        raise ValueError(f"bias_mode={mode!r} cannot be combined with solve_for_k_srp (F2 WP2.3).")
     if robust_outlier_rejection:
-        raise ValueError("bias_mode='station_range' does not support robust_outlier_rejection (F2 WP2.3 slice 1).")
-    sid, counts = np.unique(np.asarray(obs_data[:, 2], dtype=int), return_counts=True)
-    if np.any(counts < 2):
-        raise ValueError(
-            f"bias_mode='station_range' needs at least two rows per station; got counts {dict(zip(sid, counts))}."
-        )
+        raise ValueError(f"bias_mode={mode!r} does not support robust_outlier_rejection (F2 WP2.3).")
+    counts = {key: int(rows.sum()) for key, rows in _bias_groups(obs_data, mode)}
+    if min(counts.values()) < 2:
+        unit = "station" if mode == TWO_WAY_RANGE_STATION_BIAS_MODE else "pass"
+        raise ValueError(f"bias_mode={mode!r} needs at least two rows per {unit}; got counts {counts}.")
 
 
 def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | None) -> None:
@@ -2867,10 +2889,10 @@ def estimate_two_way_range_bls_lm(
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
-    station_bias = bias_mode == TWO_WAY_RANGE_STATION_BIAS_MODE
+    station_bias = bias_mode in TWO_WAY_RANGE_BIAS_MODES
     _validate_two_way_range_solve_for(x_nominal, None if station_bias else bias_mode)
     if station_bias:
-        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection)
+        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection, bias_mode)
 
     if solve_for_k_srp:
         if srp is None or not srp.enabled:
@@ -2928,7 +2950,7 @@ def estimate_two_way_range_bls_lm(
         """F2 WP2.3: station biases eliminated by variable projection (identity without bias_mode)."""
         if not station_bias:
             return residual_vec, design
-        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design)
+        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design, bias_mode)
         return reduced, reduced_design
 
     x_best = x_nominal.copy()
@@ -3337,7 +3359,7 @@ def estimate_two_way_range_bls_lm(
             srp=_active_srp(k_best), **_harm, **_prop,
         )
         raw, _ = _two_way_residuals(hist_best, obs_data, pass_geo)
-        station_biases = _station_bias_projection(obs_data, w_diag, raw)[2]
+        station_biases = _station_bias_projection(obs_data, w_diag, raw, mode=bias_mode)[2]
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3421,10 +3443,10 @@ def estimate_two_way_range_srif(
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
-    station_bias = bias_mode == TWO_WAY_RANGE_STATION_BIAS_MODE
+    station_bias = bias_mode in TWO_WAY_RANGE_BIAS_MODES
     _validate_two_way_range_solve_for(x_nominal, None if station_bias else bias_mode)
     if station_bias:
-        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection)
+        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection, bias_mode)
 
     if solve_for_k_srp:
         if srp is None or not srp.enabled:
@@ -3496,7 +3518,7 @@ def estimate_two_way_range_srif(
         """F2 WP2.3 slice 1b: station biases eliminated by variable projection, as in BLS-LM."""
         if not station_bias:
             return residual_vec, design
-        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design)
+        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design, bias_mode)
         return reduced, reduced_design
 
     x_best = x_nominal.copy()
@@ -3759,7 +3781,7 @@ def estimate_two_way_range_srif(
             srp=_active_srp(k_best), **_prop,
         )
         raw, _ = _two_way_residuals(hist_best, obs_data, pass_geo)
-        station_biases = _station_bias_projection(obs_data, w_diag, raw)[2]
+        station_biases = _station_bias_projection(obs_data, w_diag, raw, mode=bias_mode)[2]
 
     stats = EstimatorStats(
         iterations=iteration,

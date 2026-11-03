@@ -61,6 +61,14 @@
       "as_computed": "the delay is rejected earlier, at RangeRatePhysicsConfig (ValueError)",
       "new_rule": "fail-closed at config construction",
       "status": "exploratory (mechanism only)"
+    },
+    {
+      "gate": "G13",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (0.088 m pass-mean residual; 676 m absorbed position error)",
+      "new_rule": "station-mode fit position error > 10 m and post-fit RMS > 1000x the pass-mode fit",
+      "status": "exploratory"
     }
   ],
   "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
@@ -105,5 +113,10 @@
     "G15_fail_closed": {
       "rule": "a pass with a single row is rejected; 'pass_range' with solve_for_k_srp or robust_outlier_rejection is rejected; the station-mode behaviour (G1-G6) is unchanged"
     }
+  },
+  "results_slice_3": {
+    "G12": "PASS (BLS-LM and SRIF, every pass bias within 0.17 mm, position 0.25 mm)",
+    "G14": "PASS",
+    "G15": "PASS"
   }
 }

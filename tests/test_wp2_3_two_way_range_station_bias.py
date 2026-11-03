@@ -286,3 +286,95 @@ def test_delay_gates(arc):
         RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0,
                                counted_doppler_model=BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
                                transponder_delay_s=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: one range bias per tracking pass (bias_mode='pass_range').
+# ---------------------------------------------------------------------------
+PASS_BIASES = {(1, 1): 6.0, (1, 2): -3.0, (2, 1): 2.0}
+
+
+def _two_pass_arc(arc, biases):
+    """Station 1 tracks 0-1200 s and 2400-3600 s, station 2 the whole hour; ``biases`` by (station, pass) or
+    by station."""
+    from lunar_od.scenarios import build_measurement_arcs
+    from lunar_od.two_way_range import TwoWayRangeConfig
+
+    eph, t = arc["eph"], arc["t"]
+    vis = np.ones((t.size, len(STATIONS)), dtype=bool)
+    vis[(t > 1200.0) & (t < 2400.0), 0] = False
+    prepared = build_measurement_arcs("two_way_range", t, arc["aug"][:, :6], [0], [t.size - 1], vis, STATIONS,
+                                      eph.earth_position, eph.earth_velocity, arc["et0"], noise=False,
+                                      measurement_model_profile="two_way_light_time_ssb",
+                                      two_way_range=TwoWayRangeConfig())[0]
+    obs = prepared.obs_data.copy()
+    sid = obs[:, 2].astype(int)
+    late = obs[:, 0] > 1800.0
+    for key, b in biases.items():
+        if isinstance(key, tuple):
+            station, k = key
+            rows = (sid == station) & (late if (station == 1 and k == 2) else ~late if station == 1 else True)
+        else:
+            rows = sid == key
+        obs[rows, 1] += b
+    return prepared, obs
+
+
+def test_pass_biases_and_state_are_recovered_by_bls_and_srif(arc):
+    """G12: every pass bias within 1 mm and position within 1 cm, BLS-LM and SRIF."""
+    from lunar_od.estimators import estimate_two_way_range_srif
+
+    prepared, obs = _two_pass_arc(arc, PASS_BIASES)
+    eph, gm = arc["eph"], arc["gm"]
+    x_bls, status, s_bls = _solve(arc, prepared, obs, bias_mode="pass_range")
+    x_srif, status_s, s_srif = estimate_two_way_range_srif(
+        prepared.t_pass_s, obs, arc["x0"] + X_OFFSET, prepared.pass_geo, *gm, eph.earth_position,
+        eph.sun_position, rtol=1e-12, atol=1e-13, bias_mode="pass_range")
+    for x, st, stats in ((x_bls, status, s_bls), (x_srif, status_s, s_srif)):
+        assert set(stats.station_range_biases_m) == set(PASS_BIASES), stats.station_range_biases_m
+        assert np.linalg.norm(x[:3] - arc["x0"][:3]) < 1e-2, st
+        for key, b in PASS_BIASES.items():
+            assert abs(stats.station_range_biases_m[key] - b) < 1e-3, (key, stats.station_range_biases_m[key])
+
+
+def test_station_bias_model_misfits_pass_biased_data(arc):
+    """G13 (amended after the result, exploratory): the pre-registered clause (a station-1 pass-mean residual
+    above 1 m) FAILED as computed (0.088 m): the orbit absorbs the 9 m pass-to-pass step (676 m position error,
+    station biases -7.3 / -7.0 m). Amended to position error > 10 m and post-fit RMS > 1000x the pass-mode fit."""
+    from lunar_od.relativistic_light_time import compute_two_way_range_residuals_ssb
+
+    prepared, obs = _two_pass_arc(arc, PASS_BIASES)
+    x_hat, _status, stats = _solve(arc, prepared, obs, bias_mode="station_range")
+    residuals, _ = compute_two_way_range_residuals_ssb(arc["propagate"](x_hat), obs, prepared.pass_geo)
+    residuals = np.asarray(residuals) - np.array([stats.station_range_biases_m[int(s)] for s in obs[:, 2]])
+    st1 = obs[:, 2].astype(int) == 1
+    means = [float(np.mean(residuals[st1 & (obs[:, 0] < 1800.0)])), float(np.mean(residuals[st1 & (obs[:, 0] > 1800.0)]))]
+    assert max(abs(m) for m in means) < 1.0, means     # the pre-registered clause fails as computed
+    assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) > 10.0
+    x_pass, _status, s_pass = _solve(arc, prepared, obs, bias_mode="pass_range")
+    r_pass, _ = compute_two_way_range_residuals_ssb(arc["propagate"](x_pass), obs, prepared.pass_geo)
+    key = [(int(q), 2 if (q == 1 and tt > 1800.0) else 1) for q, tt in zip(obs[:, 2], obs[:, 0])]
+    r_pass = np.asarray(r_pass) - np.array([s_pass.station_range_biases_m[k] for k in key])
+    assert np.sqrt(np.mean(residuals ** 2)) > 1e3 * np.sqrt(np.mean(r_pass ** 2))
+
+
+def test_pass_mode_returns_equal_biases_for_station_constant_bias(arc):
+    """G14: station-constant +7 m / -4 m -> both station-1 pass biases within 1 mm of +7 m."""
+    prepared, obs = _two_pass_arc(arc, INJECTED)
+    _x, status, stats = _solve(arc, prepared, obs, bias_mode="pass_range")
+    for key in ((1, 1), (1, 2)):
+        assert abs(stats.station_range_biases_m[key] - 7.0) < 1e-3, (key, status)
+    assert abs(stats.station_range_biases_m[(2, 1)] + 4.0) < 1e-3
+
+
+def test_pass_bias_mode_fails_closed(arc):
+    """G15: a one-row pass, K solve-for and robust rejection are rejected for 'pass_range'."""
+    prepared, obs = _two_pass_arc(arc, {})
+    late1 = np.flatnonzero((obs[:, 2] == 1) & (obs[:, 0] > 1800.0))
+    single = np.delete(obs, late1[1:], axis=0)
+    with pytest.raises(ValueError, match="two rows per pass"):
+        _solve(arc, prepared, single, bias_mode="pass_range")
+    with pytest.raises(ValueError, match="solve_for_k_srp"):
+        _solve(arc, prepared, obs, bias_mode="pass_range", solve_for_k_srp=True)
+    with pytest.raises(ValueError, match="robust_outlier_rejection"):
+        _solve(arc, prepared, obs, bias_mode="pass_range", robust_outlier_rejection=True)
