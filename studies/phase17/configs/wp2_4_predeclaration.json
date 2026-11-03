@@ -48,5 +48,24 @@
       "2026-03-01": 21.408
     },
     "diagnostic_note": "PREDICT vs MEASURED station position in J2000; up to 2026-01-21 the MEASURED value is IERS-measured, so the PREDICT profile misplaces stations by up to ~20 m in that window. Self-consistent synthetic runs are unaffected; real data and external comparisons there need MEASURED."
+  },
+  "scope_slice_2": "Scenario wiring: ScenarioConfig.earth_orientation (None default = the process default, i.e. load_spice_kernels() exactly as before; 'predict' | 'measured' | 'measured_only'). The runner loads the selected profile; 'measured_only' loads MEASURED and fails closed (PredictedEarthOrientationError) before any propagation when the scenario span [et0, et0 + duration] holds predicted or uncovered orientation. The run provenance gains an earth_orientation block (resolved profile, policy, provenance at span start and end). The field is registered in SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES (archives predating it ran with None) and enters scenario_measurement_identity when not None. Note fixed before results: the runner's epoch comes from fixtures/spice_snapshots.json (2027-03-02), beyond the high-precision kernel, so both profiles serve the predict kernel there; the measured-orientation effect is exercised by the slice-1 gates, not by a scenario run.",
+  "out_of_scope_slice_2": "the LRO real-data study scripts (they furnish the high-precision kernel themselves; F5 must use earth_orientation='MEASURED' + require_measured_earth_orientation); a configurable scenario epoch; desktop form controls",
+  "gates_slice_2": {
+    "G8_config_field": {
+      "rule": "default None; accepts predict/measured/measured_only, unknown raises ValueError; JSON round trip; schema lists it; SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES['earth_orientation'] is None; scenario_measurement_identity carries it only when not None"
+    },
+    "G9_default_and_profiles_bitwise": {
+      "rule": "end-to-end runner (1 h, 600 s, seeded noise): unset, 'predict' and 'measured' give bitwise identical result columns at the fixture epoch (predict kernel serves 2027 under both profiles); the furnished kernel list of 'measured' has the high-precision kernel after the predict kernel"
+    },
+    "G10_measured_only_fails_closed": {
+      "rule": "'measured_only' at the fixture epoch raises PredictedEarthOrientationError naming the predict kernel, before propagation"
+    },
+    "G11_run_provenance": {
+      "rule": "run provenance earth_orientation block: profile PREDICT (unset), MEASURED ('measured'); policy; span_start/span_end each with kernel earth_2025_250826_2125_predict.bpc, last_datum_utc 2025 AUG 26 00:00:00, measured false"
+    },
+    "G12_full_regression": {
+      "rule": "full regression green"
+    }
   }
 }
