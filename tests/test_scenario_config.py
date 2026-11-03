@@ -72,6 +72,9 @@ class ScenarioConfigTests(unittest.TestCase):
                 "one_way_light_time",
                 "one_way_light_time_aberrated_local_mci",
                 "one_way_light_time_aberrated_spice_ssb",
+                "two_way_light_time_ssb",  # F2 WP2.1 slice 2
+                "one_way_light_time_ssb",  # F2 WP2.1 slice 3
+                "one_way_light_time_ssb_aberrated",
             ],
         )
         self.assertEqual(
@@ -746,7 +749,9 @@ class R4CountedDopplerModelSelection(unittest.TestCase):
     def test_schema_publishes_the_enum_and_the_r3_default(self):
         schema = scenario_config_schema()["properties"]["counted_doppler_model"]
         self.assertEqual(
-            schema["enum"], ["single_bounce_exact_station", "four_event_delay"]
+            # F2 WP2.1 adds the opt-in barycentric DSN model; the default is unchanged.
+            schema["enum"],
+            ["single_bounce_exact_station", "four_event_delay", "barycentric_dsn", "barycentric_dsn_media"],
         )
         self.assertEqual(schema["default"], "single_bounce_exact_station")
 

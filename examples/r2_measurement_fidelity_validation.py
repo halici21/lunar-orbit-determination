@@ -792,6 +792,93 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F2 WP2.1 (MEAS-01, X-07): opt-in barycentric DSN counted Doppler
+# (counted_doppler_model='barycentric_dsn').  radiometrics.py adds the model
+# constant, its cross-field rules and the dispatch (to the new module
+# counted_doppler_ssb.py, as the R4 four-event route does); scenarios.py and
+# scenario_config.py take the model-version label from radiometrics and add the
+# loader gates; slice 2 adds the scenario profile 'two_way_light_time_ssb'
+# (barycentric two-way range) and its arc-builder route.  The default model
+# is unchanged.  Slice 3 adds the position profiles 'one_way_light_time_ssb'
+# and 'one_way_light_time_ssb_aberrated' (SSB one-way leg with Sun+Earth
+# Shapiro in measurements._apparent_position_observable) and their loader enum.
+#
+#   lunar_od/radiometrics.py     F1 WP1.4 -> e93cd6b1...
+#   lunar_od/scenarios.py        -> f9bf4f2f...
+#   lunar_od/scenario_config.py  -> a57cffef... -> 8e716a8e... (slice 3)
+#   lunar_od/measurements.py     -> b74614ce... (slice 3)
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/radiometrics.py":
+        "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
+    "lunar_od/scenarios.py":
+        "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
+    "lunar_od/scenario_config.py":
+        "8e716a8e4fb2c74ed003fe98d2ed82c38b26a32eb57c7b490ea1e14daa697598",
+    "lunar_od/measurements.py":
+        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
+}
+
+
+# F2 WP2.2 slice 1 (MEAS-06): opt-in media delay (troposphere + ionosphere,
+# lunar_od.media.MediaModel) for the barycentric two-way range.  scenario_config.py
+# adds the field media_model ('none' default) and its gate; scenarios.py routes it
+# into relativistic_light_time.generate_two_way_range_measurements_ssb;
+# run_scenario_config.py passes the field.  Defaults are unchanged.
+#
+#   lunar_od/scenarios.py            F2 WP2.1 f9bf4f2f... -> a6b22da3...
+#   lunar_od/scenario_config.py      F2 WP2.1 8e716a8e... -> f1b13e33...
+#   examples/run_scenario_config.py  -> 1362c085...
+#   slice 2 (counted_doppler_model='barycentric_dsn_media'):
+#   lunar_od/radiometrics.py         F2 WP2.1 e93cd6b1... -> be57948e...
+#   lunar_od/scenario_config.py      slice 1 f1b13e33... -> 31e37141...
+#   slice 3 (elevation refraction):
+#   lunar_od/measurements.py         -> b230a85c...
+#   lunar_od/media.py                -> 643e4770...
+#   lunar_od/scenarios.py            a6b22da3... -> 007ea51f...
+#   lunar_od/scenario_config.py      31e37141... -> 4e44f2e5...
+#   F2 WP2.3 slice 1 (two-way range station bias, variable projection):
+#   lunar_od/estimators.py           -> c2c25818...
+#   F2 WP2.3 slice 1b (SRIF station bias):
+#   lunar_od/estimators.py           c2c25818... -> fb706a81...
+#   F2 WP2.3 slice 2 (SSB transponder delay):
+#   lunar_od/relativistic_light_time.py-> f067a54b...
+#   lunar_od/scenario_config.py      4e44f2e5... -> 17e4be89...
+#   F2 WP2.3 slice 3 (per-pass range bias):
+#   lunar_od/estimators.py           fb706a81... -> 125340f7...
+#   F2 WP2.3 slice 4 (station time-tag bias):
+#   lunar_od/estimators.py           125340f7... -> 0282c735...
+#   lunar_od/relativistic_light_time.pyf067a54b... -> 567b58bb...
+#   F2 WP2.3 slice 5 (ramped uplink core):
+#   lunar_od/relativistic_light_time.py567b58bb... -> b66a658d...
+#   F2 WP2.3 slice 6 (ramp tables, resolver fix):
+#   lunar_od/radiometrics.py         be57948e... -> 3f5e5a4c...
+#   lunar_od/measurements.py         b230a85c... -> 5ce61154...
+#   lunar_od/scenarios.py            007ea51f... -> 1d1a1b03...
+#   F2 WP2.3 slice 7: barycentric counted-Doppler transponder delay:
+#   lunar_od/radiometrics.py         3f5e5a4c... -> 20978392...
+#   lunar_od/relativistic_light_time.pyb66a658d... -> 2499813e...
+#   F2 WP2.2 follow-up: archived desktop runs tolerate media_model (SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES):
+#   lunar_od/scenario_config.py      17e4be89... -> 566eb338...
+F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenarios.py":
+        "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
+    "lunar_od/scenario_config.py":
+        "566eb3388397cab0f568642aabe90cb70cd913b5ec2e18922d2cee9ed15f0428",
+    "examples/run_scenario_config.py":
+        "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
+    "lunar_od/radiometrics.py":
+        "2097839235edf7ef24ac3a6c32f422e840e69dbf8236b5f8410c1fb70f08b463",
+    "lunar_od/measurements.py":
+        "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
+    "lunar_od/media.py":
+        "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
+    "lunar_od/estimators.py":
+        "0282c73501001d90d5bbc5502b68f2578a49e9d97851cfdc5f36f4463bdadaeb",
+    "lunar_od/relativistic_light_time.py":
+        "2499813e0696f67c6c2a366703d976f56b1f16450922dd926a6e7994705c6993",
+}
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -804,6 +891,10 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:

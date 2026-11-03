@@ -84,6 +84,13 @@ class EstimatorStats:
     #: Phase 17-HARDEN-D30: steps the caller-tolerance score rejected but the
     #: tighter rescore accepted (two-way range BLS-LM only).
     acceptance_rescore_accepts: int = 0
+    #: F2 WP2.3: two-way range biases [m] by 1-based station id
+    #: (bias_mode='station_range') or by (station id, 1-based pass index)
+    #: (bias_mode='pass_range'); None otherwise.
+    station_range_biases_m: dict | None = None
+    #: F2 WP2.3 slice 4: receive time-tag offsets [s] by 1-based station id
+    #: (bias_mode='station_time_tag'); None otherwise.
+    station_time_tag_biases_s: dict | None = None
 
 
 def estimate_position_srif(
@@ -2568,6 +2575,90 @@ def _two_way_range_residual_from_h(obs_data: np.ndarray, h_meas: np.ndarray) -> 
     return np.asarray(obs_data[:, 1], dtype=float) - np.asarray(h_meas, dtype=float).reshape(-1)
 
 
+#: F2 WP2.3 slice 1: the two-way range bias mode of estimate_two_way_range_bls_lm.
+TWO_WAY_RANGE_STATION_BIAS_MODE = "station_range"
+#: F2 WP2.3 slice 3: one range bias per tracking pass.
+TWO_WAY_RANGE_PASS_BIAS_MODE = "pass_range"
+#: F2 WP2.3 slice 4: per station a range bias and a receive time-tag offset (barycentric passes only).
+TWO_WAY_RANGE_TIME_TAG_BIAS_MODE = "station_time_tag"
+TWO_WAY_RANGE_BIAS_MODES = (TWO_WAY_RANGE_STATION_BIAS_MODE, TWO_WAY_RANGE_PASS_BIAS_MODE,
+                            TWO_WAY_RANGE_TIME_TAG_BIAS_MODE)
+#: A station's rows split into passes at time gaps above this [s] (bias_mode='pass_range').
+TWO_WAY_RANGE_PASS_GAP_S = 600.0
+
+
+def _bias_groups(obs_data, mode=TWO_WAY_RANGE_STATION_BIAS_MODE):
+    """Row masks of the bias groups: by 1-based station id, or by (station id, 1-based pass index)."""
+    sid = np.asarray(obs_data[:, 2], dtype=int)
+    groups = []
+    for station in np.unique(sid):
+        rows = np.flatnonzero(sid == station)
+        if mode != TWO_WAY_RANGE_PASS_BIAS_MODE:
+            groups.append((int(station), sid == station))
+            continue
+        rows = rows[np.argsort(np.asarray(obs_data[rows, 0], dtype=float), kind="stable")]
+        breaks = np.flatnonzero(np.diff(np.asarray(obs_data[rows, 0], dtype=float)) > TWO_WAY_RANGE_PASS_GAP_S) + 1
+        for k, chunk in enumerate(np.split(rows, breaks), start=1):
+            mask = np.zeros(sid.size, dtype=bool)
+            mask[chunk] = True
+            groups.append(((int(station), k), mask))
+    return groups
+
+
+def _station_bias_projection(obs_data, weight_diag, residual, design=None, mode=TWO_WAY_RANGE_STATION_BIAS_MODE,
+                             columns=None):
+    """Variable projection of one constant range bias per station or pass (F2 WP2.3).
+
+    The bias enters the range linearly with a constant design column, so its
+    weighted least-squares value for a given state is the weighted group mean
+    of the residual; removing that mean from the residual and from the design
+    rows is the exact Golub-Pereyra reduction.  With ``columns`` (slice 4, the
+    time-tag column per row) each group has the two columns [1, g] and the
+    reduction is the weighted projection off their span.  Returns the reduced
+    residual, the reduced design (or None) and the bias by group key (see
+    _bias_groups): a float, or (range bias, time-tag offset) with ``columns``."""
+    r = np.array(residual, dtype=float).reshape(-1)
+    h = None if design is None else np.array(design, dtype=float)
+    biases = {}
+    for key, rows in _bias_groups(obs_data, mode):
+        w = np.asarray(weight_diag, dtype=float)[rows]
+        if columns is None:
+            b = float(w @ r[rows] / w.sum())
+            biases[key] = b
+            r[rows] -= b
+            if h is not None:
+                h[rows] -= (w @ h[rows]) / w.sum()
+            continue
+        basis = np.column_stack([np.ones(int(rows.sum())), np.asarray(columns, dtype=float)[rows]])
+        normal = basis.T @ (w[:, None] * basis)
+        coef = np.linalg.solve(normal, basis.T @ (w * r[rows]))
+        biases[key] = (float(coef[0]), float(coef[1]))
+        r[rows] -= basis @ coef
+        if h is not None:
+            h[rows] -= basis @ np.linalg.solve(normal, basis.T @ (w[:, None] * h[rows]))
+    return r, h, biases
+
+
+def _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection,
+                                         mode=TWO_WAY_RANGE_STATION_BIAS_MODE, pass_geo=None) -> None:
+    if mode == TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+        if getattr(pass_geo, "measurement_model_profile", None) != _TWO_WAY_SSB_PROFILE:
+            raise ValueError(f"bias_mode={mode!r} needs measurement_model_profile={_TWO_WAY_SSB_PROFILE!r} "
+                             "(the time-tag column is the barycentric clock partial).")
+        sid, counts = np.unique(np.asarray(obs_data[:, 2], dtype=int), return_counts=True)
+        if np.any(counts < 3):
+            raise ValueError(f"bias_mode={mode!r} needs at least three rows per station; got counts "
+                             f"{dict(zip(sid, counts))}.")
+    if solve_for_k_srp:
+        raise ValueError(f"bias_mode={mode!r} cannot be combined with solve_for_k_srp (F2 WP2.3).")
+    if robust_outlier_rejection:
+        raise ValueError(f"bias_mode={mode!r} does not support robust_outlier_rejection (F2 WP2.3).")
+    counts = {key: int(rows.sum()) for key, rows in _bias_groups(obs_data, mode)}
+    if min(counts.values()) < 2:
+        unit = "station" if mode == TWO_WAY_RANGE_STATION_BIAS_MODE else "pass"
+        raise ValueError(f"bias_mode={mode!r} needs at least two rows per {unit}; got counts {counts}.")
+
+
 def _validate_two_way_range_solve_for(x_nominal: np.ndarray, bias_mode: str | None) -> None:
     if bias_mode is not None:
         raise ValueError(
@@ -2825,7 +2916,11 @@ def estimate_two_way_range_bls_lm(
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
-    _validate_two_way_range_solve_for(x_nominal, bias_mode)
+    station_bias = bias_mode in TWO_WAY_RANGE_BIAS_MODES
+    _validate_two_way_range_solve_for(x_nominal, None if station_bias else bias_mode)
+    if station_bias:
+        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection, bias_mode,
+                                             pass_geo=pass_geo)
 
     if solve_for_k_srp:
         if srp is None or not srp.enabled:
@@ -2878,6 +2973,37 @@ def estimate_two_way_range_bls_lm(
     prior_inv_scaled = scale.T @ prior_inv @ scale
     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
     w_curr_diag = w_diag.copy()
+
+    def _bias_reduced(residual_vec, design=None):
+        """F2 WP2.3: station biases eliminated by variable projection (identity without bias_mode)."""
+        if not station_bias:
+            return residual_vec, design
+        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design, bias_mode,
+                                                               columns=_time_tag_columns())
+        return reduced, reduced_design
+
+    _tag_cache = []
+
+    def _refresh_time_tag_columns(state_history):
+        """F2 WP2.3 slice 4: re-evaluate the time-tag column at each linearisation point (variable projection)."""
+        if bias_mode == TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+            from .relativistic_light_time import two_way_range_clock_columns_ssb
+            _tag_cache[:] = [two_way_range_clock_columns_ssb(np.asarray(state_history)[:, :6], obs_data, pass_geo)]
+
+    def _time_tag_columns():
+        """F2 WP2.3 slice 4: the time-tag column at the latest linearisation point (first call: the a-priori
+        state); None without bias_mode='station_time_tag'."""
+        if bias_mode != TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+            return None
+        if not _tag_cache:
+            from .relativistic_light_time import two_way_range_clock_columns_ssb
+            hist0 = propagate_state(
+                t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+                srp=_active_srp(k_current), **_harm, **_prop,
+            )
+            _tag_cache.append(two_way_range_clock_columns_ssb(hist0, obs_data, pass_geo))
+        return _tag_cache[0]
 
     x_best = x_nominal.copy()
     k_best = k_current
@@ -2945,7 +3071,7 @@ def estimate_two_way_range_bls_lm(
             srp=_active_srp(k_state), **_harm, **_prop,
         )
         res, _ = _two_way_residuals(hist, obs_data, pass_geo)
-        return np.asarray(res, dtype=float)
+        return _bias_reduced(np.asarray(res, dtype=float))[0]
 
     def _acceptance_cost(x_state, k_state, residual_vec, weight_diag):
         """Accept/reject scalar: the objective _lm_step actually minimises.
@@ -3024,6 +3150,8 @@ def estimate_two_way_range_bls_lm(
                 obs_data, pass_geo, x_aug_hist
             )
         residual = _two_way_range_residual_from_h(obs_data, h_nom)
+        _refresh_time_tag_columns(x_aug_hist)
+        residual, h_initial = _bias_reduced(residual, h_initial)
         w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
             w_diag,
             residual,
@@ -3202,6 +3330,8 @@ def estimate_two_way_range_bls_lm(
                         obs_data, pass_geo, x_aug_hist
                     )
                     residual = _two_way_range_residual_from_h(obs_data, h_nom)
+                    _refresh_time_tag_columns(x_aug_hist)
+                    residual, h_initial = _bias_reduced(residual, h_initial)
                 stop_reason, termination_detail, gn_decrement = _damping_exhaustion_status(
                     h_initial, residual, w_curr_diag, scale,
                     prior_inv_scaled if prior_active else None, prior_rhs_scaled,
@@ -3266,9 +3396,29 @@ def estimate_two_way_range_bls_lm(
                 propagation_kwargs=_prop,
                 return_design=True,
             )
+            if station_bias:
+                # F2 WP2.3: the reduced design gives the orbit-state marginal (Schur complement).
+                posterior_design = _bias_reduced(np.zeros(obs_data.shape[0]), posterior_design)[1]
+                posterior_information = _symmetrize(
+                    posterior_design.T @ (w_curr_diag[:, None] * posterior_design) + post_prior_inv)
             # WP4.3 (EST-06): QR of the design, as the K branch above.
             posterior_covariance, _ = _square_root_covariance_from_design(
                 posterior_design, w_curr_diag, post_prior_inv, scale)
+
+    station_biases = None
+    time_tags = None
+    if station_bias:
+        hist_best = propagate_state(
+            t_pass_s, x_best, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+            srp=_active_srp(k_best), **_harm, **_prop,
+        )
+        raw, _ = _two_way_residuals(hist_best, obs_data, pass_geo)
+        station_biases = _station_bias_projection(obs_data, w_diag, raw, mode=bias_mode,
+                                                  columns=_time_tag_columns())[2]
+        if bias_mode == TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+            time_tags = {k: v[1] for k, v in station_biases.items()}
+            station_biases = {k: v[0] for k, v in station_biases.items()}
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3291,6 +3441,8 @@ def estimate_two_way_range_bls_lm(
         k_srp_bound_active_steps=bound_active_steps,
         gauss_newton_decrement=gn_decrement,
         acceptance_rescore_accepts=rescore_accepts,
+        station_range_biases_m=station_biases,
+        station_time_tag_biases_s=time_tags,
     )
     return x_best, stop_reason, stats
 
@@ -3351,7 +3503,11 @@ def estimate_two_way_range_srif(
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
-    _validate_two_way_range_solve_for(x_nominal, bias_mode)
+    station_bias = bias_mode in TWO_WAY_RANGE_BIAS_MODES
+    _validate_two_way_range_solve_for(x_nominal, None if station_bias else bias_mode)
+    if station_bias:
+        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection, bias_mode,
+                                             pass_geo=pass_geo)
 
     if solve_for_k_srp:
         if srp is None or not srp.enabled:
@@ -3419,6 +3575,37 @@ def estimate_two_way_range_srif(
     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
     w_curr_diag = w_diag.copy()
 
+    def _bias_reduced(residual_vec, design=None):
+        """F2 WP2.3 slice 1b: station biases eliminated by variable projection, as in BLS-LM."""
+        if not station_bias:
+            return residual_vec, design
+        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design, bias_mode,
+                                                               columns=_time_tag_columns())
+        return reduced, reduced_design
+
+    _tag_cache = []
+
+    def _refresh_time_tag_columns(state_history):
+        """F2 WP2.3 slice 4: re-evaluate the time-tag column at each linearisation point (variable projection)."""
+        if bias_mode == TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+            from .relativistic_light_time import two_way_range_clock_columns_ssb
+            _tag_cache[:] = [two_way_range_clock_columns_ssb(np.asarray(state_history)[:, :6], obs_data, pass_geo)]
+
+    def _time_tag_columns():
+        """F2 WP2.3 slice 4: the time-tag column at the latest linearisation point (first call: the a-priori
+        state); None without bias_mode='station_time_tag'."""
+        if bias_mode != TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+            return None
+        if not _tag_cache:
+            from .relativistic_light_time import two_way_range_clock_columns_ssb
+            hist0 = propagate_state(
+                t_pass_s, x_nominal, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+                get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+                srp=_active_srp(k_current), **_prop,
+            )
+            _tag_cache.append(two_way_range_clock_columns_ssb(hist0, obs_data, pass_geo))
+        return _tag_cache[0]
+
     x_best = x_nominal.copy()
     k_best = k_current
     best_cost = np.inf
@@ -3454,6 +3641,7 @@ def estimate_two_way_range_srif(
             srp=_active_srp(k_state), **_prop,
         )
         residual_trial, _ = _two_way_residuals(x_hist_trial, obs_data, pass_geo)
+        residual_trial = _bias_reduced(np.asarray(residual_trial, dtype=float))[0]
         cost = float(np.dot(weights * residual_trial, residual_trial))
         if scored_prior:
             x_full = np.concatenate([x_state, [k_state]]) if solve_for_k_srp else x_state
@@ -3492,6 +3680,8 @@ def estimate_two_way_range_srif(
                 obs_data, pass_geo, x_aug_hist
             )
         residual = _two_way_range_residual_from_h(obs_data, h_nom)
+        _refresh_time_tag_columns(x_aug_hist)
+        residual, h_initial = _bias_reduced(residual, h_initial)
         w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
             w_diag,
             residual,
@@ -3648,6 +3838,11 @@ def estimate_two_way_range_srif(
                 propagation_kwargs=_prop,
                 return_design=True,
             )
+            if station_bias:
+                # F2 WP2.3: the reduced design gives the orbit-state marginal (Schur complement).
+                posterior_design = _bias_reduced(np.zeros(obs_data.shape[0]), posterior_design)[1]
+                posterior_information = _symmetrize(
+                    posterior_design.T @ (w_curr_diag[:, None] * posterior_design) + post_prior_inv)
             # WP4.3 (EST-06): the six-state path now takes the same design QR as the
             # K path, for the covariance and the sqrt-information alike.
             posterior_covariance, k_sqrt_information = _square_root_covariance_from_design(
@@ -3663,6 +3858,21 @@ def estimate_two_way_range_srif(
             k_sqrt_information if k_sqrt_information is not None
             else _sqrt_information_from_information(posterior_information)
         )
+
+    station_biases = None
+    time_tags = None
+    if station_bias:
+        hist_best = propagate_state(
+            t_pass_s, x_best, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+            srp=_active_srp(k_best), **_prop,
+        )
+        raw, _ = _two_way_residuals(hist_best, obs_data, pass_geo)
+        station_biases = _station_bias_projection(obs_data, w_diag, raw, mode=bias_mode,
+                                                  columns=_time_tag_columns())[2]
+        if bias_mode == TWO_WAY_RANGE_TIME_TAG_BIAS_MODE:
+            time_tags = {k: v[1] for k, v in station_biases.items()}
+            station_biases = {k: v[0] for k, v in station_biases.items()}
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3681,5 +3891,7 @@ def estimate_two_way_range_srif(
         k_srp_negative_step_rejections=negative_k_rejections,
         termination_detail=termination_detail,
         gauss_newton_decrement=gn_decrement,
+        station_range_biases_m=station_biases,
+        station_time_tag_biases_s=time_tags,
     )
     return x_best, stop_reason, stats

@@ -47,6 +47,7 @@ from .radiometrics import (
     DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
     EXACT_EVENT_EPOCH_STATION_METHOD,
+    BARYCENTRIC_COUNTED_DOPPLER_MODELS,
     FOUR_EVENT_COUNTED_DOPPLER_MODEL,
     LEGACY_INTERPOLATED_STATION_METHOD,
     STATION_STATE_METHODS,
@@ -81,8 +82,18 @@ ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     "one_way_light_time",
     "one_way_light_time_aberrated_local_mci",
     "one_way_light_time_aberrated_spice_ssb",
+    # F2 WP2.1 slice 2: barycentric DSN two-way range (Phase C1-I model),
+    # measurement_type='two_way_range' only.
+    "two_way_light_time_ssb",
+    # F2 WP2.1 slice 3: barycentric one-way light time for the position
+    # observables (measurement_type='position', batch estimators only).
+    "one_way_light_time_ssb",
+    "one_way_light_time_ssb_aberrated",
 )
 ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
+# F2 WP2.2 (MEAS-06): media delay of the barycentric two-way range
+# (lunar_od.media.MediaModel(); 'none' keeps every existing scenario unchanged).
+ALLOWED_MEDIA_MODELS = ("none", "default_climatology")
 ALLOWED_JACOBIAN_MODELS = (
     "analytic_exact_geometric",
     "analytic_first_order_light_time",
@@ -154,6 +165,7 @@ class ScenarioConfig:
     measurement_model_profile: str = "geometric_instantaneous"
     companion_geometry: str = "instantaneous"
     jacobian_model: str = "analytic_exact_geometric"
+    media_model: str = "none"
     ukf_alpha: float = 0.35
     ukf_beta: float = 2.0
     ukf_kappa: float = 0.0
@@ -203,6 +215,14 @@ SCENARIO_CONFIG_FIELDS = frozenset(field.name for field in fields(ScenarioConfig
 #: Fields added after desktop run archives existed; an archived effective config
 #: without them recorded the default (None).
 SCENARIO_CONFIG_FIELDS_ADDED_WP1_6 = ("measurement_seed", "cold_start_seed")
+#: Every field added after desktop run archives existed, with the value an archive written before the field
+#: existed ran with. A recorded effective config without one of these keys is compared with that value; register
+#: each new ScenarioConfig field here, or reloading older archives fails.
+SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES = {
+    'measurement_seed': None,
+    'cold_start_seed': None,
+    'media_model': 'none',
+}
 
 
 def scenario_config_schema() -> dict[str, Any]:
@@ -268,6 +288,7 @@ def scenario_config_schema() -> dict[str, Any]:
                 "enum": list(ALLOWED_JACOBIAN_MODELS),
                 "default": "analytic_exact_geometric",
             },
+            "media_model": {"enum": list(ALLOWED_MEDIA_MODELS), "default": "none"},
             "ukf_alpha": {"type": "number", "default": 0.35},
             "ukf_beta": {"type": "number", "default": 2.0},
             "ukf_kappa": {"type": "number", "default": 0.0},
@@ -429,6 +450,7 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             ALLOWED_MEASUREMENT_MODEL_PROFILES,
             "measurement_model_profile",
         ),
+        media_model=_enum_value(payload.get("media_model", "none"), ALLOWED_MEDIA_MODELS, "media_model"),
         companion_geometry=_enum_value(
             payload.get("companion_geometry", "instantaneous"),
             ALLOWED_COMPANION_GEOMETRIES,
@@ -670,7 +692,9 @@ def scenario_measurement_identity(config):
         'station_clock_drift','clock_reference_time_s','transponder_delay_s',
         'two_way_range_convention','apply_light_time','apply_stellar_aberration',
         'stellar_aberration_model','measurement_model_profile','companion_geometry','jacobian_model')
-    return {name:payload[name] for name in names}
+    identity={name:payload[name] for name in names}
+    if payload.get('media_model','none')!='none':identity['media_model']=payload['media_model']
+    return identity
 
 
 def scenario_two_way_range_config(config: ScenarioConfig) -> "TwoWayRangeConfig":
@@ -1095,6 +1119,27 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
                 "(R4-FUTURE-UKF-FOUR-EVENT); use estimator_type='bls_lm' or "
                 "'srif', or counted_doppler_model='single_bounce_exact_station'."
             )
+    # F2 WP2.1 loader gate: the barycentric DSN counted-Doppler model is
+    # qualified for the batch estimators only; SR-UKF fails closed.
+    if config.counted_doppler_model in BARYCENTRIC_COUNTED_DOPPLER_MODELS:
+        if config.range_rate_physics != "two_way_counted_doppler":
+            raise ValueError(
+                "counted_doppler_model='barycentric_dsn' requires "
+                "range_rate_physics='two_way_counted_doppler'; got "
+                f"range_rate_physics={config.range_rate_physics!r}."
+            )
+        if config.station_state_method != EXACT_EVENT_EPOCH_STATION_METHOD:
+            raise ValueError(
+                "counted_doppler_model='barycentric_dsn' requires "
+                f"station_state_method='{EXACT_EVENT_EPOCH_STATION_METHOD}'; got "
+                f"{config.station_state_method!r}."
+            )
+        if config.estimator_type == "ukf":
+            raise ValueError(
+                "counted_doppler_model='barycentric_dsn' is not supported with "
+                "estimator_type='ukf' (F2 WP2.1 qualifies BLS-LM and SRIF); use "
+                "estimator_type='bls_lm' or 'srif'."
+            )
     # FA-01 loader gate: UKF position measurements only support the geometric
     # instantaneous profile (shared helper; also enforced at run_lunar_ukf).
     validate_ukf_measurement_support(
@@ -1120,7 +1165,37 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
         raise ValueError(
             "two_way_range_convention applies only to measurement_type='two_way_range'."
         )
-    profile_controls_position = config.measurement_model_profile != "geometric_instantaneous"
+    two_way_ssb = config.measurement_model_profile == "two_way_light_time_ssb"
+    if config.media_model != "none":
+        if not (two_way_ssb or config.measurement_type == "position"):
+            raise ValueError(
+                f"media_model={config.media_model!r} applies only to "
+                "measurement_model_profile='two_way_light_time_ssb' (F2 WP2.2 slice 1) "
+                "or measurement_type='position' (elevation refraction, slice 3)."
+            )
+        if config.estimator_type == "ukf":
+            raise ValueError(
+                f"media_model={config.media_model!r} is qualified for the batch "
+                "estimators only; the SR-UKF sigma-point observable has no media."
+            )
+    if two_way_ssb:
+        # F2 WP2.1 slice 2: the barycentric two-way range supports the
+        # delay-calibrated convention only (any fixed delay since WP2.3 slice 2)
+        # (relativistic_light_time._pass_context); the UKF is rejected above.
+        if config.measurement_type != "two_way_range":
+            raise ValueError(
+                "measurement_model_profile='two_way_light_time_ssb' applies only to "
+                f"measurement_type='two_way_range'; got {config.measurement_type!r}."
+            )
+        # F2 WP2.3 slice 2: a fixed transponder delay is supported.
+        if config.two_way_range_convention != "delay_calibrated_half_round_trip":
+            raise ValueError(
+                "measurement_model_profile='two_way_light_time_ssb' supports "
+                "two_way_range_convention='delay_calibrated_half_round_trip' only."
+            )
+    profile_controls_position = (
+        config.measurement_model_profile != "geometric_instantaneous" and not two_way_ssb
+    )
     if profile_controls_position and config.measurement_type != "position":
         raise ValueError(
             "non-geometric measurement_model_profile applies only to measurement_type='position'; "
