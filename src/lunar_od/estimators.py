@@ -3421,7 +3421,10 @@ def estimate_two_way_range_srif(
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
-    _validate_two_way_range_solve_for(x_nominal, bias_mode)
+    station_bias = bias_mode == TWO_WAY_RANGE_STATION_BIAS_MODE
+    _validate_two_way_range_solve_for(x_nominal, None if station_bias else bias_mode)
+    if station_bias:
+        _validate_two_way_range_station_bias(obs_data, solve_for_k_srp, robust_outlier_rejection)
 
     if solve_for_k_srp:
         if srp is None or not srp.enabled:
@@ -3489,6 +3492,13 @@ def estimate_two_way_range_srif(
     w_diag = _two_way_range_weight_diagonal(obs_data, pass_geo)
     w_curr_diag = w_diag.copy()
 
+    def _bias_reduced(residual_vec, design=None):
+        """F2 WP2.3 slice 1b: station biases eliminated by variable projection, as in BLS-LM."""
+        if not station_bias:
+            return residual_vec, design
+        reduced, reduced_design, _b = _station_bias_projection(obs_data, w_diag, residual_vec, design)
+        return reduced, reduced_design
+
     x_best = x_nominal.copy()
     k_best = k_current
     best_cost = np.inf
@@ -3524,6 +3534,7 @@ def estimate_two_way_range_srif(
             srp=_active_srp(k_state), **_prop,
         )
         residual_trial, _ = _two_way_residuals(x_hist_trial, obs_data, pass_geo)
+        residual_trial = _bias_reduced(np.asarray(residual_trial, dtype=float))[0]
         cost = float(np.dot(weights * residual_trial, residual_trial))
         if scored_prior:
             x_full = np.concatenate([x_state, [k_state]]) if solve_for_k_srp else x_state
@@ -3562,6 +3573,7 @@ def estimate_two_way_range_srif(
                 obs_data, pass_geo, x_aug_hist
             )
         residual = _two_way_range_residual_from_h(obs_data, h_nom)
+        residual, h_initial = _bias_reduced(residual, h_initial)
         w_curr_diag, rejected, active_fraction = _robust_weight_diagonal(
             w_diag,
             residual,
@@ -3718,6 +3730,11 @@ def estimate_two_way_range_srif(
                 propagation_kwargs=_prop,
                 return_design=True,
             )
+            if station_bias:
+                # F2 WP2.3: the reduced design gives the orbit-state marginal (Schur complement).
+                posterior_design = _bias_reduced(np.zeros(obs_data.shape[0]), posterior_design)[1]
+                posterior_information = _symmetrize(
+                    posterior_design.T @ (w_curr_diag[:, None] * posterior_design) + post_prior_inv)
             # WP4.3 (EST-06): the six-state path now takes the same design QR as the
             # K path, for the covariance and the sqrt-information alike.
             posterior_covariance, k_sqrt_information = _square_root_covariance_from_design(
@@ -3733,6 +3750,16 @@ def estimate_two_way_range_srif(
             k_sqrt_information if k_sqrt_information is not None
             else _sqrt_information_from_information(posterior_information)
         )
+
+    station_biases = None
+    if station_bias:
+        hist_best = propagate_state(
+            t_pass_s, x_best, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
+            get_earth_pos, get_sun_pos, rtol=rtol, atol=atol, j2_moon=j2_moon,
+            srp=_active_srp(k_best), **_prop,
+        )
+        raw, _ = _two_way_residuals(hist_best, obs_data, pass_geo)
+        station_biases = _station_bias_projection(obs_data, w_diag, raw)[2]
 
     stats = EstimatorStats(
         iterations=iteration,
@@ -3751,5 +3778,6 @@ def estimate_two_way_range_srif(
         k_srp_negative_step_rejections=negative_k_rejections,
         termination_detail=termination_detail,
         gauss_newton_decrement=gn_decrement,
+        station_range_biases_m=station_biases,
     )
     return x_best, stop_reason, stats

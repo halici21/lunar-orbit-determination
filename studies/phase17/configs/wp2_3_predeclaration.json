@@ -3,15 +3,38 @@
   "date": "2026-11-03",
   "source_of_predeclaration": "docs/assurance/vv-program.md F2 table (WP2.3 row); plan section 9 design 2026-11-03",
   "scope_slice_1": "estimate_two_way_range_bls_lm(bias_mode='station_range'): one constant range bias per station of the pass, data-only, eliminated exactly by variable projection (Golub-Pereyra; the bias enters linearly with a constant design column): residual and Jacobian rows of each station have their a-priori-weighted station mean removed, so the LM loop, its acceptance test and the posterior (the Schur-complement marginal of the orbit state) are unchanged in form. The bias estimates are reported in EstimatorStats.station_range_biases_m. Moon-centred and barycentric (two_way_light_time_ssb) passes alike",
-  "out_of_scope_slice_1": ["SRIF (fails closed; slice 1b)", "bias prior", "combination with K_SRP solve-for (fails closed)", "robust outlier rejection with bias (fails closed)", "per-pass bias", "time-tag bias"],
+  "out_of_scope_slice_1": [
+    "SRIF (fails closed; slice 1b)",
+    "bias prior",
+    "combination with K_SRP solve-for (fails closed)",
+    "robust outlier rejection with bias (fails closed)",
+    "per-pass bias",
+    "time-tag bias"
+  ],
   "default_behaviour": "unchanged (bias_mode=None)",
   "gates": {
-    "G1_bias_recovery": {"rule": "noise-free data with known biases +7 m (station 1) and -4 m (station 2): recovered biases within 1 mm"},
-    "G2_state_recovery": {"rule": "position < 1 cm from an 80 m / 0.02 m/s offset, on the same data"},
-    "G3_bias_free_model_misfit": {"rule": "the same data fitted without bias_mode leaves a station-mean residual within 2 m of the injected bias on at least one station (evidence the bias is material)"},
-    "G4_projection_identity": {"rule": "on unbiased data, bias_mode='station_range' returns biases < 1 mm and a state within 1 cm of the bias-free solve"},
-    "G5_fail_closed": {"rule": "SRIF with bias_mode, bias_mode with solve_for_k_srp, with robust_outlier_rejection, and unknown bias_mode values are rejected; a pass with a single station row is rejected"}
+    "G1_bias_recovery": {
+      "rule": "noise-free data with known biases +7 m (station 1) and -4 m (station 2): recovered biases within 1 mm"
+    },
+    "G2_state_recovery": {
+      "rule": "position < 1 cm from an 80 m / 0.02 m/s offset, on the same data"
+    },
+    "G3_bias_free_model_misfit": {
+      "rule": "the same data fitted without bias_mode leaves a station-mean residual within 2 m of the injected bias on at least one station (evidence the bias is material)"
+    },
+    "G4_projection_identity": {
+      "rule": "on unbiased data, bias_mode='station_range' returns biases < 1 mm and a state within 1 cm of the bias-free solve"
+    },
+    "G5_fail_closed": {
+      "rule": "SRIF with bias_mode, bias_mode with solve_for_k_srp, with robust_outlier_rejection, and unknown bias_mode values are rejected; a pass with a single station row is rejected"
+    }
   },
   "amendments": [],
-  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes"
+  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
+  "scope_slice_1b": "estimate_two_way_range_srif(bias_mode='station_range'): the same variable projection in the SRIF residual, scored cost and posterior design; SRIF no longer fails closed for this mode (G5's SRIF clause is superseded by G6)",
+  "gates_slice_1b": {
+    "G6_srif_parity": {
+      "rule": "on the G1 data SRIF recovers the biases within 1 mm and its state agrees with BLS-LM within 1 cm; SRIF and BLS-LM posterior position sigmas agree within 1 percent"
+    }
+  }
 }

@@ -839,6 +839,8 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/scenario_config.py      31e37141... -> 4e44f2e5...
 #   F2 WP2.3 slice 1 (two-way range station bias, variable projection):
 #   lunar_od/estimators.py           -> c2c25818...
+#   F2 WP2.3 slice 1b (SRIF station bias):
+#   lunar_od/estimators.py           c2c25818... -> fb706a81...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
@@ -853,7 +855,7 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/media.py":
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":
-        "c2c2581827fccae8c763e2bc113a3a436caef6dda90b6ba3a12c9672a93793af",
+        "fb706a81e8e321bf78e0fcdba95d65efe532bf1c3f8a152f010702048a3dc0f4",
 }
 
 def current_source_path(relative_path: str) -> str:

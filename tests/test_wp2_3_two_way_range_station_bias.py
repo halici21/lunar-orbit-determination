@@ -123,7 +123,7 @@ def test_station_bias_mode_fails_closed(arc):
     eph, gm = arc["eph"], arc["gm"]
     with pytest.raises(ValueError, match="bias_mode"):
         estimate_two_way_range_srif(prepared.t_pass_s, obs, arc["x0"], prepared.pass_geo, *gm, eph.earth_position,
-                                    eph.sun_position, bias_mode="station_range")
+                                    eph.sun_position, bias_mode="per_pass")
     with pytest.raises(ValueError, match="solve_for_k_srp"):
         _solve(arc, prepared, obs, bias_mode="station_range", solve_for_k_srp=True)
     with pytest.raises(ValueError, match="robust_outlier_rejection"):
@@ -133,3 +133,22 @@ def test_station_bias_mode_fails_closed(arc):
     single = np.vstack([obs[obs[:, 2] == 1], obs[obs[:, 2] == 2][:1]])
     with pytest.raises(ValueError, match="two rows per station"):
         _solve(arc, prepared, single, bias_mode="station_range")
+
+
+def test_srif_station_bias_matches_bls(arc):
+    """G6 (slice 1b): SRIF recovers the biases within 1 mm, its state agrees with BLS-LM within 1 cm and the
+    posterior position sigmas agree within 1 %."""
+    from lunar_od.estimators import estimate_two_way_range_srif
+
+    prepared, obs = _ssb_arc(arc, INJECTED)
+    eph, gm = arc["eph"], arc["gm"]
+    x_bls, _, s_bls = _solve(arc, prepared, obs, bias_mode="station_range", return_posterior=True)
+    x_srif, status, s_srif = estimate_two_way_range_srif(
+        prepared.t_pass_s, obs, arc["x0"] + X_OFFSET, prepared.pass_geo, *gm, eph.earth_position,
+        eph.sun_position, rtol=1e-12, atol=1e-13, bias_mode="station_range", return_posterior=True)
+    for sid, b in INJECTED.items():
+        assert abs(s_srif.station_range_biases_m[sid] - b) < 1e-3, status
+    assert np.linalg.norm(x_srif[:3] - x_bls[:3]) < 1e-2, status
+    sig_bls = np.sqrt(np.diag(s_bls.posterior_covariance)[:3])
+    sig_srif = np.sqrt(np.diag(s_srif.posterior_covariance)[:3])
+    assert np.max(np.abs(sig_srif / sig_bls - 1.0)) < 1e-2
