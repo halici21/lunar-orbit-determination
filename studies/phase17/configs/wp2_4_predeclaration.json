@@ -67,5 +67,27 @@
     "G12_full_regression": {
       "rule": "full regression green"
     }
+  },
+  "results_slice_2": {
+    "G8": "PASS (first run)",
+    "G9": "PASS (first run)",
+    "G10": "PASS (first run)",
+    "G11": "PASS (first run)",
+    "G12": "FAIL as computed: 2611 tests, 1 failure (test_desktop_bridge_provenance: the bridge's current identity is pinned to the newest re-freeze table, and slice 2 re-froze run_scenario_config.py). Fixed additively (3d04922: the older identity stays asserted, F2_WP2_4 is the current one), as #109 did for F2_WP2_2; the full re-run is the slice-3 regression."
+  },
+  "scope_slice_3": "Owner-approved (2026-11-03) update of the high-precision Earth PCK: spice_loader names the versioned NAIF release earth_000101_270128_261102.bpc (last datum 2026-11-02, coverage to 2027-01-29; SHA-256 feed146c...) instead of the rolling earth_latest_high_prec.bpc, whose local copy (last datum 2026-01-21) stays untouched for the LRO study scripts that furnish it by name and stays in the manifest. Reason for a versioned name, measured before this slice: NAIF refits the whole series per release (DSS-14 differs by up to 3.8 mm in 2009-2025 between the two releases, 2.1 m at 2026-03-01), so a rolling name would change earlier results silently.",
+  "amendments_slice_3": [
+    "G2-G5 of slice 1 hard-coded the old release's dates (last datum 2026-01-21, coverage end 2026-04-19). With the kernel change they are re-expressed from the pinned kernel's own metadata (pckcov coverage and the comment's last datum): G3 inside = up to coverage end - 1 day, after = coverage end + 1..365 days; G4/G5 epochs = last datum -/+ 1 day. Same rules, release-independent dates. The slice-1 results stay recorded against the old release. Not exploratory: the change follows a kernel update, not a seen gate value."
+  ],
+  "gates_slice_3": {
+    "G13_slice1_gates_on_new_release": {
+      "rule": "G1-G6 pass with the amended, kernel-derived epochs on the new release; G1 unchanged (the predict kernel serves 2025+ under PREDICT)"
+    },
+    "G14_versioned_name_and_manifest": {
+      "rule": "EARTH_HIGH_PRECISION_PCK == 'earth_000101_270128_261102.bpc'; manifest SHA feed146c1ba6fba13f1e579371d34b67f6c134612d158db27cec019892bca5ab; earth_latest_high_prec.bpc keeps its recorded SHA 99ddb26a... (untouched)"
+    },
+    "G15_full_regression": {
+      "rule": "full regression green"
+    }
   }
 }
