@@ -63,3 +63,13 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     dondurulmuş sonuçlar ve kapılar bu takvimle üretildi. Kazanç oranlı Nielsen/Moré takvimi
     `damping_schedule="nielsen"` ile seçilir (WP4.2b); aynı minimuma daha az iterasyonla ulaşır.
     Nielsen seçimli kalır; dondurulmuş sonuçlar yeniden üretilmez.
+
+## İstasyon konumları
+
+15. `config.py` istasyon tabloları yuvarlatılmıştır; "Goldstone DSN" DSS-14'ten 15.7 km, en yakın antenden 6.0 km,
+    "Madrid DSN" 0.22 km, "Canberra DSN" 0.29 km uzaktadır (WP2.4 dilim 4). Bu tablolar kendi içinde tutarlı sentetik
+    veri içindir; gerçek veride `lunar_od.dsn_stations.dsn_station` (DSN 810-005 301 Rev. P) kullanılır.
+16. `dsn_station` konumu verilen epoch'ta dondurur (`Station` statiktir): gün başına < 0.2 mm hata. Kaynağın beyan ettiği
+    mutlak doğruluk 0.1 m'ye kadardır (1σ). Levha hareketi 2027'de Goldstone 0.47 m, Canberra 1.25 m, Madrid 0.74 m birikir.
+17. Kutup gelgiti modellenmez: etkisi 1.2 mm, OD'de ≤ 0.004σ (Phase C3). Okyanus yüklemesi modellenmez ve ölçülmemiştir
+    (BLQ katsayıları gerekir). DSN dışı istasyonlar (LRO'nun USN sahaları, RD-09) bu kaynakta yoktur.

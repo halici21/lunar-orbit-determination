@@ -12,6 +12,9 @@ orientation misplaces a station by up to 0.33 m (1.4 sigma of OD), and that the 
 * :func:`predicted_earth_orientation_start_et` / :func:`is_predicted_earth_orientation` - whether an epoch lies
   in the predicted part of a loaded NAIF predict PCK (``earth_YYYY_YYMMDD_YYYY_predict.bpc``; YYMMDD is the
   creation date).
+* :func:`earth_orientation_provenance` / :func:`require_measured_earth_orientation` (F2 WP2.4) - which loaded
+  Earth PCK SPICE uses at an epoch (the last-loaded one that covers it) and whether that epoch lies on or before
+  the kernel's last measured EOP datum (its comment field ``UTC Epoch of last datum``); the second fails closed.
 """
 from __future__ import annotations
 
@@ -71,7 +74,78 @@ def predicted_earth_orientation_start_et() -> float | None:
 
 
 def is_predicted_earth_orientation(et_s: float) -> bool:
-    """True when ``et_s`` lies after the creation date of the loaded predict Earth PCK (real data needs final
-    EOP / a high-precision PCK covering the data epochs)."""
-    start = predicted_earth_orientation_start_et()
-    return start is not None and float(et_s) > start
+    """True when the Earth PCK SPICE uses at ``et_s`` holds predicted, not measured, orientation there (real data
+    needs final EOP / a high-precision PCK covering the data epochs). Through F2 WP2.4 this follows the kernel
+    actually used (:func:`earth_orientation_provenance`); before, it compared with the predict kernel's creation
+    date whatever kernel had priority. An epoch no loaded kernel covers is not reported as predicted."""
+    prov = earth_orientation_provenance(et_s)
+    return prov["kernel"] is not None and not prov["measured"]
+
+
+#: NAIF body code of the ITRF93 Earth orientation in binary PCKs.
+EARTH_ITRF93_PCK_BODY = 3000
+_LAST_DATUM = re.compile(r"UTC Epoch of last datum:\s*(\d{4} [A-Z]{3} \d{2} \d{2}:\d{2}:\d{2})", re.IGNORECASE)
+
+
+class PredictedEarthOrientationError(ValueError):
+    """An epoch's Earth orientation is predicted (or not covered) where measured orientation is required."""
+
+
+def _last_datum_utc(path: str) -> str | None:
+    import spiceypy as spice
+
+    handle = spice.dafopr(path)
+    try:
+        lines = spice.dafec(handle, 2000, 300)[1]
+    finally:
+        spice.dafcls(handle)
+    m = _LAST_DATUM.search("\n".join(lines))
+    return m.group(1) if m else None
+
+
+def _covers(path: str, et_s: float) -> bool:
+    import spiceypy as spice
+
+    cover = spice.cell_double(2000)
+    spice.pckcov(path, EARTH_ITRF93_PCK_BODY, cover)
+    return any(a <= et_s <= b for a, b in (spice.wnfetd(cover, i) for i in range(spice.wncard(cover))))
+
+
+def earth_orientation_provenance(et_s: float) -> dict:
+    """The loaded Earth PCK SPICE uses for ITRF93 at ``et_s`` and whether its orientation there is measured.
+
+    Binary PCKs are searched in reverse load order (the last-loaded covering file has priority in SPICE). Returns
+    ``kernel`` (file name, or None when no loaded kernel covers ``et_s``), ``path``, ``last_datum_utc`` /
+    ``last_datum_et`` (the kernel's last measured EOP datum, from its comments) and ``measured``
+    (``et_s <= last_datum_et``; False when the kernel records no last datum).
+    """
+    import spiceypy as spice
+
+    et = float(et_s)
+    for i in reversed(range(spice.ktotal("PCK"))):
+        path = spice.kdata(i, "PCK")[0]
+        if not path.lower().endswith(".bpc") or not _covers(path, et):
+            continue
+        utc = _last_datum_utc(path)
+        last_et = float(spice.str2et(utc + " UTC")) if utc else None
+        return {"kernel": Path(path).name, "path": path, "last_datum_utc": utc, "last_datum_et": last_et,
+                "measured": last_et is not None and et <= last_et}
+    return {"kernel": None, "path": None, "last_datum_utc": None, "last_datum_et": None, "measured": False}
+
+
+def require_measured_earth_orientation(et_values) -> None:
+    """Fail closed (:class:`PredictedEarthOrientationError`) unless every epoch's Earth orientation is measured.
+
+    Load the ``MEASURED`` profile (``spice_loader.load_spice_kernels(earth_orientation="MEASURED")``) and a
+    high-precision Earth PCK whose last datum follows the data to satisfy this for recent epochs."""
+    import spiceypy as spice
+
+    for et in np.atleast_1d(np.asarray(et_values, dtype=float)).ravel():
+        prov = earth_orientation_provenance(float(et))
+        if not prov["measured"]:
+            where = (f"kernel {prov['kernel']} holds predicted orientation after its last datum "
+                     f"{prov['last_datum_utc']} UTC") if prov["kernel"] else "no loaded Earth PCK covers it"
+            raise PredictedEarthOrientationError(
+                f"Earth orientation at {spice.et2utc(float(et), 'ISOC', 3)} TDB-ET is not measured: {where}. "
+                "Load a high-precision Earth PCK covering the data epochs with priority "
+                "(earth_orientation='MEASURED').")

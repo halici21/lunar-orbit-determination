@@ -96,6 +96,9 @@ ALLOWED_EARTH_J2_MODES = ("indirect", "direct")
 ALLOWED_LUNAR_GRAVITY_FRAMES = ("MOON_PA_DE421", "MOON_PA_DE440")
 ALLOWED_LUNAR_KERNEL_PROFILES = (None, "DE421", "DE440")
 _LUNAR_FRAME_TO_PROFILE = {"MOON_PA_DE421": "DE421", "MOON_PA_DE440": "DE440"}
+#: F2 WP2.4: Earth-orientation choice of a run (None = the process default, load_spice_kernels() unchanged).
+ALLOWED_EARTH_ORIENTATIONS = (None, "predict", "measured", "measured_only")
+_EARTH_ORIENTATION_PROFILE = {None: None, "predict": "PREDICT", "measured": "MEASURED", "measured_only": "MEASURED"}
 
 
 @dataclass(frozen=True)
@@ -194,6 +197,9 @@ class ScenarioConfig:
     # the run is permitted to do with it.
     allow_explicit_force_model_mismatch: bool = False
     force_model_mismatch_reason: str | None = None
+    # F2 WP2.4: the spice_loader Earth-orientation profile ('predict' / 'measured'); 'measured_only' also fails
+    # closed when the scenario span holds predicted orientation. None keeps the process default.
+    earth_orientation: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -203,6 +209,14 @@ SCENARIO_CONFIG_FIELDS = frozenset(field.name for field in fields(ScenarioConfig
 #: Fields added after desktop run archives existed; an archived effective config
 #: without them recorded the default (None).
 SCENARIO_CONFIG_FIELDS_ADDED_WP1_6 = ("measurement_seed", "cold_start_seed")
+#: Every field added after desktop run archives existed, with the value an archive written before the field
+#: existed ran with. A recorded effective config without one of these keys is compared with that value; register
+#: each new ScenarioConfig field here, or reloading older archives fails.
+SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES = {
+    "measurement_seed": None,
+    "cold_start_seed": None,
+    "earth_orientation": None,
+}
 
 
 def scenario_config_schema() -> dict[str, Any]:
@@ -315,6 +329,7 @@ def scenario_config_schema() -> dict[str, Any]:
             },
             "allow_explicit_force_model_mismatch": {"type": "boolean", "default": False},
             "force_model_mismatch_reason": {"type": ["string", "null"], "default": None},
+            "earth_orientation": {"enum": list(ALLOWED_EARTH_ORIENTATIONS), "default": None},
         },
     }
 
@@ -577,6 +592,9 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
         force_model_mismatch_reason=_optional_reason(
             payload.get("force_model_mismatch_reason", None)
         ),
+        earth_orientation=_enum_value(
+            payload.get("earth_orientation", None), ALLOWED_EARTH_ORIENTATIONS, "earth_orientation"
+        ),
     )
     _validate_cross_field_rules(config)
     return config
@@ -670,7 +688,14 @@ def scenario_measurement_identity(config):
         'station_clock_drift','clock_reference_time_s','transponder_delay_s',
         'two_way_range_convention','apply_light_time','apply_stellar_aberration',
         'stellar_aberration_model','measurement_model_profile','companion_geometry','jacobian_model')
-    return {name:payload[name] for name in names}
+    identity={name:payload[name] for name in names}
+    if payload.get('earth_orientation') is not None:identity['earth_orientation']=payload['earth_orientation']
+    return identity
+
+
+def scenario_earth_orientation_profile(config: ScenarioConfig) -> str | None:
+    """The spice_loader Earth-orientation profile of a run (None: the process default)."""
+    return _EARTH_ORIENTATION_PROFILE[config.earth_orientation]
 
 
 def scenario_two_way_range_config(config: ScenarioConfig) -> "TwoWayRangeConfig":
