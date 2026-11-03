@@ -93,7 +93,7 @@
   "results_slice_3": {
     "G13": "PASS (first run)",
     "G14": "PASS (first run)",
-    "G15": "pending",
+    "G15": "PASS: full regression 2611 tests, 0 failures, 33 skipped (also the full re-run for slice 2's G12)",
     "diagnostic_profile_offset_dss14_m_new_release": {
       "2025-10-01": 6.186,
       "2026-01-15": 20.025,
