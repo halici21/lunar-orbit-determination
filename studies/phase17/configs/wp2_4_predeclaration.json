@@ -140,7 +140,7 @@
     "G20": "PASS (first run): shifts 0.471 / 1.250 / 0.737 m; DSS-43 range 0.418 m, Doppler 54.2 um/s",
     "G21": "PASS (first run): 1.2e-08 m; the agreement also confirms the values transcribed from memory",
     "G22": "PASS (first run)",
-    "G23": "manifest and loader checks PASS (first run); full regression recorded when it finishes",
+    "G23": "PASS: manifest and loader checks first run; full regression 2620 tests, 0 failures, 33 skipped",
     "diagnostic_rounded_scenario_stations": {
       "Goldstone DSN": {
         "antenna": "DSS-14",
