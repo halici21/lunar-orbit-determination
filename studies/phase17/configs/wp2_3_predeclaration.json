@@ -206,5 +206,15 @@
     "G32_resolver_keeps_fields": {
       "rule": "_resolve_range_rate_physics(cfg, count_interval_s) changes count_interval_s only (counted_doppler_model, station_state_method, uplink_ramps preserved); fails before the fix"
     }
+  },
+  "results_slice_6": {
+    "G25": "PASS (first run)",
+    "G26": "PASS (first run)",
+    "G27": "PASS (first run)",
+    "G28": "PASS (first run)",
+    "G29": "PASS (first run)",
+    "G30": "PASS (first run)",
+    "G31": "PASS (first run)",
+    "G32": "FAIL before the fix as required (resolver returned single_bounce_exact_station for barycentric_dsn), PASS after"
   }
 }

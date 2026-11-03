@@ -85,6 +85,19 @@ def _media_kwargs(cfg, station) -> dict:
     return {"media": MediaModel(), "media_site": MediaSite.from_station(station)}
 
 
+def _ramp_kwargs(cfg, station, et0_s) -> dict:
+    """F2 WP2.3 slice 6: the station's uplink ramp, if the configuration carries one. Table epochs are absolute
+    ET (TDB seconds past J2000) and are moved to this pass's seconds (epoch - et0) here, so one table serves
+    every arc; a station without a table keeps the constant uplink (see metadata uplink_ramp_stations)."""
+    from dataclasses import replace
+
+    ramp = dict(getattr(cfg, "uplink_ramps", ())).get(station.name)
+    if ramp is None:
+        return {}
+    et0 = float(et0_s)
+    return {"uplink_ramp": replace(ramp, epochs_s=tuple(float(e) - et0 for e in ramp.epochs_s))}
+
+
 def barycentric_counted_doppler_observable(receive_mid_time_s, station, t_grid_s, state_history_mci,
                                            earth_pos_mci_m, earth_vel_mci_mps, cfg, *, et0_s=None) -> float:
     """Counted Doppler [m/s equivalent] under the DSN barycentric light-time model."""
@@ -92,7 +105,7 @@ def barycentric_counted_doppler_observable(receive_mid_time_s, station, t_grid_s
                                             earth_vel_mci_mps, et0_s, 6)
     value, _, _ = _rlt.counted_doppler(float(receive_mid_time_s), cfg.count_interval_s, station_state, sc, eph,
                                        LIGHT_TIME_MODEL, site=site, clock_offset_s=cfg.station_clock_offset_s,
-                                       **_media_kwargs(cfg, station))
+                                       **_media_kwargs(cfg, station), **_ramp_kwargs(cfg, station, et0_s))
     return float(value)
 
 
@@ -104,5 +117,6 @@ def barycentric_counted_doppler_initial_state_jacobian(receive_mid_time_s, stati
                                             earth_pos_mci_m, earth_vel_mci_mps, et0_s, 42)
     _, partial, _ = _rlt.counted_doppler(float(receive_mid_time_s), cfg.count_interval_s, station_state, sc, eph,
                                          LIGHT_TIME_MODEL, with_partial=True, site=site,
-                                         clock_offset_s=cfg.station_clock_offset_s, **_media_kwargs(cfg, station))
+                                         clock_offset_s=cfg.station_clock_offset_s, **_media_kwargs(cfg, station),
+                                         **_ramp_kwargs(cfg, station, et0_s))
     return np.asarray(partial, dtype=float).reshape(6)

@@ -573,22 +573,10 @@ def _resolve_range_rate_physics(
     cfg = range_rate_physics_config(range_rate_physics)
     if count_interval_s is None:
         return cfg
-    return RangeRatePhysicsConfig(
-        mode=cfg.mode,
-        count_interval_s=float(count_interval_s),
-        uplink_frequency_hz=cfg.uplink_frequency_hz,
-        turnaround_ratio=cfg.turnaround_ratio,
-        output_unit=cfg.output_unit,
-        light_speed_mps=cfg.light_speed_mps,
-        light_time_tolerance_s=cfg.light_time_tolerance_s,
-        light_time_max_iter=cfg.light_time_max_iter,
-        light_time_equation_tolerance_s=cfg.light_time_equation_tolerance_s,
-        local_state_model=cfg.local_state_model,
-        station_clock_offset_s=cfg.station_clock_offset_s,
-        station_clock_drift=cfg.station_clock_drift,
-        clock_reference_time_s=cfg.clock_reference_time_s,
-        transponder_delay_s=cfg.transponder_delay_s,
-    )
+    # F2 WP2.3 slice 6: replace only the count interval. The former field-by-field
+    # rebuild silently dropped station_state_method, counted_doppler_model and
+    # uplink_ramps back to their defaults.
+    return replace(cfg, count_interval_s=float(count_interval_s))
 
 
 def run_srif_arc_sequence(

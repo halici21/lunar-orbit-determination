@@ -109,6 +109,23 @@ EXACT_STATION_VELOCITY_MODEL = "exact_event_epoch_sxform"
 LEGACY_STATION_VELOCITY_MODEL = "interpolated_sxform_grid"
 
 
+def _validate_uplink_ramps(cfg) -> None:
+    """F2 WP2.3 slice 6: uplink_ramps is ((station name, UplinkRamp), ...) with unique names, barycentric only."""
+    from .relativistic_light_time import UplinkRamp
+
+    if cfg.mode != "two_way_counted_doppler" or cfg.counted_doppler_model not in BARYCENTRIC_COUNTED_DOPPLER_MODELS:
+        raise ValueError("uplink_ramps needs two_way_counted_doppler with a barycentric counted_doppler_model "
+                         f"{BARYCENTRIC_COUNTED_DOPPLER_MODELS}; got {cfg.counted_doppler_model!r}.")
+    names = []
+    for entry in cfg.uplink_ramps:
+        if not (isinstance(entry, tuple) and len(entry) == 2 and isinstance(entry[0], str)
+                and isinstance(entry[1], UplinkRamp)):
+            raise ValueError(f"uplink_ramps entries must be (station name, UplinkRamp) pairs; got {entry!r}.")
+        names.append(entry[0])
+    if len(set(names)) != len(names):
+        raise ValueError(f"uplink_ramps has duplicate station names: {names}.")
+
+
 @dataclass(frozen=True)
 class RangeRatePhysicsConfig:
     """Select the physics used for the second RR observable component.
@@ -146,6 +163,11 @@ class RangeRatePhysicsConfig:
     # accepted R3 single-bounce model; ``four_event_delay`` is explicit opt-in
     # and is the only model that may carry a nonzero transponder delay.
     counted_doppler_model: CountedDopplerModel = DEFAULT_COUNTED_DOPPLER_MODEL
+    # F2 WP2.3 slice 6: ramped uplink tables, ((station name, UplinkRamp), ...),
+    # epochs in absolute ET (TDB s past J2000); barycentric counted Doppler only.
+    # Kept last; the empty default leaves every
+    # existing configuration, metadata and result unchanged.
+    uplink_ramps: tuple = ()
 
     def __post_init__(self) -> None:
         normalized = _normalize_range_rate_mode(self.mode)
@@ -246,6 +268,8 @@ class RangeRatePhysicsConfig:
                     "counted_doppler_model='barycentric_dsn' supports the default "
                     f"value of {unsupported} only."
                 )
+        if self.uplink_ramps:
+            _validate_uplink_ramps(self)
         if (
             self.mode == "two_way_counted_doppler"
             and self.counted_doppler_model == SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL

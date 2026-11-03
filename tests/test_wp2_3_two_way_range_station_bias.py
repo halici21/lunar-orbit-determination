@@ -591,3 +591,178 @@ def test_ramp_fails_closed(arc):
                        reference_hz=F_REF_HZ)
     with pytest.raises(ValueError, match="positive"):
         rlt.UplinkRamp(epochs_s=(0.0,), frequencies_hz=(-1.0,), rates_hz_per_s=(0.0,), reference_hz=F_REF_HZ)
+
+
+# ---------------------------------------------------------------------------
+# Slice 6: ramp tables in the production counted-Doppler path (RangeRatePhysicsConfig.uplink_ramps,
+# table epochs in absolute ET). Range-rate rows: [t, range, rate, az, el, station id, ...].
+# ---------------------------------------------------------------------------
+RATE_COL, SID_COL = 2, 5
+
+
+def _bary_cfg(**kw):
+    from lunar_od.radiometrics import BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL, RangeRatePhysicsConfig
+
+    return RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=TC_S,
+                                  counted_doppler_model=BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL, **kw)
+
+
+def _local_ramp():
+    """The test ramp in pass seconds of the module arc."""
+    from lunar_od.relativistic_light_time import UplinkRamp
+
+    return UplinkRamp(epochs_s=(-100.0, 1200.0, 2400.0),
+                      frequencies_hz=(F_REF_HZ + 500.0, F_REF_HZ + 565.0, F_REF_HZ + 469.0),
+                      rates_hz_per_s=(0.05, -0.08, 0.03), reference_hz=F_REF_HZ)
+
+
+def _et_ramp(arc):
+    from dataclasses import replace
+
+    local = _local_ramp()
+    return replace(local, epochs_s=tuple(arc["et0"] + e for e in local.epochs_s))
+
+
+def _generate(arc, cfg):
+    from lunar_od.measurements import generate_range_rate_measurements
+
+    eph, t = arc["eph"], arc["t"]
+    return generate_range_rate_measurements(t, arc["aug"][:, :6], STATIONS,
+                                            np.ones((t.size, len(STATIONS)), dtype=bool), eph.earth_position,
+                                            eph.earth_velocity, arc["et0"], noise=False, arc_id=1,
+                                            range_rate_physics=cfg)
+
+
+def test_empty_ramp_table_is_the_default_path(arc):
+    """G25: uplink_ramps=() -> bitwise equal observations, no uplink_ramp_stations metadata."""
+    obs0, geo0 = _generate(arc, _bary_cfg())
+    obs1, geo1 = _generate(arc, _bary_cfg(uplink_ramps=()))
+    assert np.array_equal(obs0, obs1)
+    assert "uplink_ramp_stations" not in geo0.measurement_metadata
+    assert "uplink_ramp_stations" not in geo1.measurement_metadata
+
+
+def test_ramp_table_routes_per_station_and_records_provenance(arc):
+    """G26 + G29: Goldstone rows equal rlt.counted_doppler with its ramp (1e-12 m/s), Canberra rows bitwise
+    unramped; metadata uplink_ramp_stations == ('Goldstone',)."""
+    from lunar_od import counted_doppler_ssb as adapter
+    from lunar_od import relativistic_light_time as rlt
+
+    obs0, _ = _generate(arc, _bary_cfg())
+    obs, geo = _generate(arc, _bary_cfg(uplink_ramps=(("Goldstone", _et_ramp(arc)),)))
+    assert geo.measurement_metadata["uplink_ramp_stations"] == ("Goldstone",)
+    gold = obs[:, SID_COL].astype(int) == 1
+    assert gold.any() and (~gold).any()
+    assert np.array_equal(obs[~gold], obs0[~gold])
+    eph, t = arc["eph"], arc["t"]
+    station_state, sc, eph_b, site = adapter._context(_bary_cfg(), STATIONS[0], t, arc["aug"][:, :6],
+                                                      eph.earth_position(t), eph.earth_velocity(t), arc["et0"], 6)
+    rows = obs[gold]
+    for row in rows[:: max(1, rows.shape[0] // 12)]:
+        expected = rlt.counted_doppler(float(row[0]), TC_S, station_state, sc, eph_b, adapter.LIGHT_TIME_MODEL,
+                                       site=site, uplink_ramp=_local_ramp())[0]
+        assert abs(float(row[RATE_COL]) - expected) <= 1e-12, (row[0], row[RATE_COL], expected)
+
+
+def test_ramped_data_bls_srif_recovery_and_ramp_materiality(arc):
+    """G27: BLS-LM and SRIF with the ramped config recover position < 1 cm, velocity < 1e-5 m/s; the unramped
+    config at the truth misfits the Goldstone rows by > 1 m/s RMS."""
+    from dataclasses import replace
+
+    from lunar_od.estimators import estimate_range_rate_bls_lm, estimate_range_rate_srif
+    from lunar_od.measurements import compute_range_rate_residuals
+
+    eph, t, gm = arc["eph"], arc["t"], arc["gm"]
+    obs, geo = _generate(arc, _bary_cfg(uplink_ramps=(("Goldstone", _et_ramp(arc)),)))
+    for fn in (estimate_range_rate_bls_lm, estimate_range_rate_srif):
+        x_hat, status, _ = fn(t, obs, arc["x0"] + X_OFFSET, geo, *gm, eph.earth_position, eph.sun_position,
+                              rtol=1e-12, atol=1e-13)
+        assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) < 1e-2, (fn.__name__, status)
+        assert np.linalg.norm(x_hat[3:] - arc["x0"][3:]) < 1e-5, (fn.__name__, status)
+    _, h_flat = compute_range_rate_residuals(arc["aug"][:, :6], obs, replace(geo, range_rate_physics=_bary_cfg()))
+    gold = obs[:, SID_COL].astype(int) == 1
+    misfit = obs[gold, RATE_COL] - np.asarray(h_flat)[gold, 1]
+    assert np.sqrt(np.mean(misfit ** 2)) > 1.0, np.sqrt(np.mean(misfit ** 2))
+
+
+def test_ramp_table_fails_closed(arc):
+    """G28: non-barycentric model, malformed entry, duplicate names; a ramp not covering the transmit epochs."""
+    from lunar_od.radiometrics import RangeRatePhysicsConfig
+    from lunar_od.relativistic_light_time import UplinkRamp
+
+    ramp = _et_ramp(arc)
+    with pytest.raises(ValueError, match="barycentric"):
+        RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=TC_S,
+                               uplink_ramps=(("Goldstone", ramp),))
+    with pytest.raises(ValueError, match="pairs"):
+        _bary_cfg(uplink_ramps=(("Goldstone", 7.16e9),))
+    with pytest.raises(ValueError, match="duplicate"):
+        _bary_cfg(uplink_ramps=(("Goldstone", ramp), ("Goldstone", ramp)))
+    late = UplinkRamp(epochs_s=(arc["et0"] + 1000.0,), frequencies_hz=(F_REF_HZ,), rates_hz_per_s=(0.0,),
+                      reference_hz=F_REF_HZ)
+    with pytest.raises(ValueError, match="before it"):
+        _generate(arc, _bary_cfg(uplink_ramps=(("Goldstone", late),)))
+
+
+def test_ramped_production_jacobian_matches_finite_differences(arc):
+    """G30: radiometrics-dispatched ramped Jacobian vs central differences (10 m / 1e-2 m/s), 1e-6 of the norm."""
+    from lunar_od.radiometrics import (
+        two_way_counted_doppler_initial_state_jacobian,
+        two_way_counted_doppler_observable,
+    )
+
+    eph, t = arc["eph"], arc["t"]
+    cfg = _bary_cfg(uplink_ramps=(("Goldstone", _et_ramp(arc)),))
+    args = (eph.earth_position(t), eph.earth_velocity(t), np.zeros((t.size, 6, 6)))
+    jac = np.asarray(two_way_counted_doppler_initial_state_jacobian(
+        T_MID_S, STATIONS[0], t, arc["aug"], *args, cfg, et0_s=arc["et0"])).reshape(6)
+    fd = np.zeros(6)
+    for j, step in enumerate((10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2)):
+        dx = np.zeros(6)
+        dx[j] = step
+        vp = two_way_counted_doppler_observable(T_MID_S, STATIONS[0], t, arc["propagate"](arc["x0"] + dx), *args,
+                                                cfg, et0_s=arc["et0"])
+        vm = two_way_counted_doppler_observable(T_MID_S, STATIONS[0], t, arc["propagate"](arc["x0"] - dx), *args,
+                                                cfg, et0_s=arc["et0"])
+        fd[j] = (vp - vm) / (2.0 * step)
+    assert np.max(np.abs(jac - fd)) <= 1e-6 * np.linalg.norm(fd), (jac, fd)
+
+
+def test_et_ramp_table_is_independent_of_the_arc_epoch(arc):
+    """G31: one ET table, two passes whose et0 differ by 600 s, same absolute receive epoch -> within 1e-9 m/s."""
+    from lunar_od.ephemeris import sample_moon_centered_ephemeris
+    from lunar_od.radiometrics import two_way_counted_doppler_observable
+
+    cfg = _bary_cfg(uplink_ramps=(("Goldstone", _et_ramp(arc)),))
+    t, shift = arc["t"], 600.0
+    eph_a = arc["eph"]
+    eph_b = sample_moon_centered_ephemeris(arc["et0"] + shift, np.arange(-1200.0, 3600.0 + 1.0, 60.0))
+    hist = arc["aug"][:, :6]
+
+    def value(eph, et0, t_grid, t_mid):
+        return two_way_counted_doppler_observable(t_mid, STATIONS[0], t_grid, hist, eph.earth_position(t_grid),
+                                                  eph.earth_velocity(t_grid), np.zeros((t_grid.size, 6, 6)), cfg,
+                                                  et0_s=et0)
+
+    a = value(eph_a, arc["et0"], t, T_MID_S)
+    b = value(eph_b, arc["et0"] + shift, t - shift, T_MID_S - shift)
+    assert abs(a - b) <= 1e-9, (a, b)
+
+
+def test_range_rate_resolver_keeps_every_field_but_the_count_interval():
+    """G32: _resolve_range_rate_physics(cfg, count_interval_s) changes count_interval_s only."""
+    from lunar_od.radiometrics import LEGACY_INTERPOLATED_STATION_METHOD, RangeRatePhysicsConfig
+    from lunar_od.relativistic_light_time import UplinkRamp
+    from lunar_od.scenarios import _resolve_range_rate_physics
+
+    ramp = UplinkRamp(epochs_s=(0.0,), frequencies_hz=(F_REF_HZ,), rates_hz_per_s=(0.0,), reference_hz=F_REF_HZ)
+    cfg = _bary_cfg(uplink_ramps=(("Goldstone", ramp),))
+    out = _resolve_range_rate_physics(cfg, count_interval_s=30.0)
+    assert out.count_interval_s == 30.0
+    assert out.counted_doppler_model == cfg.counted_doppler_model
+    assert out.station_state_method == cfg.station_state_method
+    assert out.uplink_ramps == cfg.uplink_ramps
+    legacy = RangeRatePhysicsConfig(mode="two_way_counted_doppler",
+                                    station_state_method=LEGACY_INTERPOLATED_STATION_METHOD)
+    out_legacy = _resolve_range_rate_physics(legacy, count_interval_s=30.0)
+    assert out_legacy.station_state_method == LEGACY_INTERPOLATED_STATION_METHOD

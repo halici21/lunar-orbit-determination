@@ -851,17 +851,21 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/relativistic_light_time.pyf067a54b... -> 567b58bb...
 #   F2 WP2.3 slice 5 (ramped uplink core):
 #   lunar_od/relativistic_light_time.py567b58bb... -> b66a658d...
+#   F2 WP2.3 slice 6 (ramp tables, resolver fix):
+#   lunar_od/radiometrics.py         be57948e... -> 3f5e5a4c...
+#   lunar_od/measurements.py         b230a85c... -> 5ce61154...
+#   lunar_od/scenarios.py            007ea51f... -> 1d1a1b03...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
-        "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
+        "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
     "lunar_od/scenario_config.py":
         "17e4be89e9aafbd7fd385be35cd655dc2b6380e0d4488e10b5ff202c303375cc",
     "examples/run_scenario_config.py":
         "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
     "lunar_od/radiometrics.py":
-        "be57948e85674420dd92290f98472e70d51feec2b09b552e708357b0b3c1075b",
+        "3f5e5a4c9a32147b568340e3b09cf7bf8aeff875bc85bc6a0ecfe630eb2752e6",
     "lunar_od/measurements.py":
-        "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
+        "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
     "lunar_od/media.py":
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":

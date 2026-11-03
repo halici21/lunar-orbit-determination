@@ -412,6 +412,9 @@ def measurement_model_metadata(
         "ionosphere_model": "none",
         "solar_plasma_model": "none",
     }
+    if getattr(rr, "uplink_ramps", ()):
+        # F2 WP2.3 slice 6: provenance of ramped stations (absent without ramps).
+        metadata["uplink_ramp_stations"] = tuple(name for name, _ramp in rr.uplink_ramps)
     if use_light_time:
         metadata["spacecraft_position_epoch"] = "transmit"
         metadata["spacecraft_velocity_epoch"] = "transmit"

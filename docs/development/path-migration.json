@@ -2628,14 +2628,15 @@
     },
     "lunar_od/measurements.py": {
       "path": "src/lunar_od/measurements.py",
-      "original_sha256": "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
+      "original_sha256": "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
       "byte_preserved": true,
-      "refrozen_from_sha256": "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
-      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
+      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
         "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
-        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623"
+        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
+        "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d"
       ]
     },
     "lunar_od/monte_carlo.py": {
@@ -2682,16 +2683,17 @@
     },
     "lunar_od/radiometrics.py": {
       "path": "src/lunar_od/radiometrics.py",
-      "original_sha256": "be57948e85674420dd92290f98472e70d51feec2b09b552e708357b0b3c1075b",
+      "original_sha256": "3f5e5a4c9a32147b568340e3b09cf7bf8aeff875bc85bc6a0ecfe630eb2752e6",
       "byte_preserved": true,
-      "refrozen_from_sha256": "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-31 for V&V programme F1 WP1.4 (MEAS-03, owner-authorized): solve_two_way_light_time forms its update and equation residuals on local light times instead of absolute epoch differences, so it converges on long arcs; equations, tolerances and iterates unchanged (event epochs, light times and iteration counts bitwise identical on all existing solver tests). All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 2 counted Doppler media; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "be57948e85674420dd92290f98472e70d51feec2b09b552e708357b0b3c1075b",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-31 for V&V programme F1 WP1.4 (MEAS-03, owner-authorized): solve_two_way_light_time forms its update and equation residuals on local light times instead of absolute epoch differences, so it converges on long arcs; equations, tolerances and iterates unchanged (event epochs, light times and iteration counts bitwise identical on all existing solver tests). All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 2 counted Doppler media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
         "185cfe9ce04a57929a2a9974f3250b5b0d990fba664d2b18a98c492020d1173d",
         "aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1",
         "57f2bea2f3949f069300164d37866c198c6ad078ae4e92c1ad0b2d21cd91eaaa",
-        "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337"
+        "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
+        "be57948e85674420dd92290f98472e70d51feec2b09b552e708357b0b3c1075b"
       ]
     },
     "lunar_od/reference_config/__init__.py": {
@@ -2806,7 +2808,7 @@
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
-      "original_sha256": "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
+      "original_sha256": "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
@@ -2815,10 +2817,11 @@
         "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
         "2a63e95a596e2003fd5915d6b2ebcd379c1bafef643bf3b68e1622941f5e6505",
         "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
-        "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d"
+        "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
+        "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299"
       ],
-      "refrozen_from_sha256": "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
-      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
+      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained."
     },
     "lunar_od/spice_loader.py": {
       "path": "src/lunar_od/spice_loader.py",
