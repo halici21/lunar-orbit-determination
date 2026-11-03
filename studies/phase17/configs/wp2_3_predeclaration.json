@@ -77,6 +77,13 @@
       "as_computed": "FAIL (BLS position 0.81 m with the column fixed at the a-priori state)",
       "new_rule": "design: the time-tag column is re-evaluated at every linearisation point; thresholds unchanged",
       "status": "exploratory"
+    },
+    {
+      "gate": "slice 6 scope + G27/G30-G32",
+      "date": "2026-11-03",
+      "after_result": false,
+      "reason": "pre-result design review by a peer session (erayh-fd), whose own pre-registration 874865d (G25-G33, StationUplinkRamp/ET design) was superseded by 7a258ad before either ran; ET epochs, resolver fix, SRIF recovery, production Jacobian FD and arc-epoch independence adopted",
+      "status": "pre-registered (no result seen)"
     }
   ],
   "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
@@ -173,7 +180,7 @@
     "G23": "PASS (first run, no amendment)",
     "G24": "PASS (first run, no amendment)"
   },
-  "scope_slice_6": "Ramp tables in the production counted-Doppler path: RangeRatePhysicsConfig.uplink_ramps (last field, default ()), a tuple of (station name, relativistic_light_time.UplinkRamp) pairs, accepted only with a barycentric counted_doppler_model; the barycentric adapter (counted_doppler_ssb) passes the station's ramp to counted_doppler for generation, residuals and the Jacobian (BLS-LM, SRIF). Stations without a ramp keep the constant uplink. Pass metadata records uplink_ramp_stations only when ramps are set. Scenario-JSON ramp tables are out of scope (they come with real tracking data, F5/F6)",
+  "scope_slice_6": "Ramp tables in the production counted-Doppler path: RangeRatePhysicsConfig.uplink_ramps (last field, default ()), a tuple of (station name, relativistic_light_time.UplinkRamp) pairs, accepted only with a barycentric counted_doppler_model; the barycentric adapter (counted_doppler_ssb) passes the station's ramp to counted_doppler for generation, residuals and the Jacobian (BLS-LM, SRIF). Stations without a ramp keep the constant uplink. Pass metadata records uplink_ramp_stations only when ramps are set. Scenario-JSON ramp tables are out of scope (they come with real tracking data, F5/F6). PRE-RESULT AMENDMENT (before any slice-6 test ran, after a peer-session review): the table epochs are absolute ET (TDB seconds past J2000), converted per pass to pass seconds (epoch - et0) in the adapter, so arc-by-arc runs with different et0 share one table; scenarios._resolve_range_rate_physics keeps every field except count_interval_s (it rebuilt the config field by field and silently dropped counted_doppler_model, station_state_method and uplink_ramps). A station without a table keeps the constant uplink by design and is visible through uplink_ramp_stations",
   "gates_slice_6": {
     "G25_default_identity": {
       "rule": "with uplink_ramps=() the generated observations are bitwise equal to the config without the field, and the metadata has no uplink_ramp_stations key"
@@ -182,13 +189,22 @@
       "rule": "with a ramp on Goldstone only, each generated Goldstone row equals rlt.counted_doppler with that ramp within 1e-12 m/s and each Canberra row equals the unramped value bitwise"
     },
     "G27_bls_recovery_and_materiality": {
-      "rule": "BLS-LM on the noise-free ramped data with the ramped config recovers position < 1 cm and velocity < 1e-5 m/s from the G2 offset; the unramped config at the truth misfits the Goldstone rows by more than 1 m/s RMS"
+      "rule": "BLS-LM and SRIF on the noise-free ramped data with the ramped config recovers position < 1 cm and velocity < 1e-5 m/s from the G2 offset; the unramped config at the truth misfits the Goldstone rows by more than 1 m/s RMS"
     },
     "G28_fail_closed": {
       "rule": "uplink_ramps with a non-barycentric counted_doppler_model, a malformed entry or duplicate station names raise ValueError; a ramp not covering a count's transmit epochs raises ValueError at generation"
     },
     "G29_provenance": {
       "rule": "metadata uplink_ramp_stations == ('Goldstone',) when that ramp is set"
+    },
+    "G30_production_partial_fd": {
+      "rule": "the ramped production Jacobian (radiometrics dispatch) vs central differences of re-propagated arcs (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G31_arc_epoch_independence": {
+      "rule": "the same ET ramp table on two passes with different et0 gives, for the same absolute receive epoch, values within 1e-9 m/s"
+    },
+    "G32_resolver_keeps_fields": {
+      "rule": "_resolve_range_rate_physics(cfg, count_interval_s) changes count_interval_s only (counted_doppler_model, station_state_method, uplink_ramps preserved); fails before the fix"
     }
   }
 }
