@@ -858,11 +858,13 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   F2 WP2.3 slice 7: barycentric counted-Doppler transponder delay:
 #   lunar_od/radiometrics.py         3f5e5a4c... -> 20978392...
 #   lunar_od/relativistic_light_time.pyb66a658d... -> 2499813e...
+#   F2 WP2.2 follow-up: archived desktop runs tolerate media_model (SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES):
+#   lunar_od/scenario_config.py      17e4be89... -> 566eb338...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
     "lunar_od/scenario_config.py":
-        "17e4be89e9aafbd7fd385be35cd655dc2b6380e0d4488e10b5ff202c303375cc",
+        "566eb3388397cab0f568642aabe90cb70cd913b5ec2e18922d2cee9ed15f0428",
     "examples/run_scenario_config.py":
         "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
     "lunar_od/radiometrics.py":

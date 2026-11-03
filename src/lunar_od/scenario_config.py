@@ -215,6 +215,14 @@ SCENARIO_CONFIG_FIELDS = frozenset(field.name for field in fields(ScenarioConfig
 #: Fields added after desktop run archives existed; an archived effective config
 #: without them recorded the default (None).
 SCENARIO_CONFIG_FIELDS_ADDED_WP1_6 = ("measurement_seed", "cold_start_seed")
+#: Every field added after desktop run archives existed, with the value an archive written before the field
+#: existed ran with. A recorded effective config without one of these keys is compared with that value; register
+#: each new ScenarioConfig field here, or reloading older archives fails.
+SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES = {
+    'measurement_seed': None,
+    'cold_start_seed': None,
+    'media_model': 'none',
+}
 
 
 def scenario_config_schema() -> dict[str, Any]:
