@@ -253,3 +253,116 @@ def test_scenario_arc_builder_routes_two_way_range_to_the_barycentric_model(arc)
     full = rlt.two_way_range_m(rlt.solve_two_way(row[0], stations[sid], sc, eph_b, rlt.DSN_LIGHT_TIME_MODEL, **kw[sid]))
     bare = rlt.two_way_range_m(rlt.solve_two_way(row[0], stations[sid], sc, eph_b, no_shapiro, **kw[sid]))
     assert 7.0 < full - bare < 8.2
+
+
+# ---------------------------------------------------------------------------
+# Slice 3: barycentric one-way light time for the position observables
+# (measurement_model_profile='one_way_light_time_ssb' / '..._ssb_aberrated').
+# ---------------------------------------------------------------------------
+def _moon_centre_position_row(arc, profile, k=60):
+    """Generate one Goldstone row with the 'spacecraft' at the Moon centre, at grid index ``k``."""
+    from lunar_od.measurements import generate_position_measurements
+
+    t = arc["t"]
+    vis = np.zeros((t.size, 1), dtype=bool)
+    vis[k, 0] = True
+    _obs, pass_geo, clean = generate_position_measurements(
+        t, np.zeros((t.size, 6)), STATIONS[:1], vis, arc["eph"].earth_position, arc["eph"].earth_velocity,
+        arc["et0"], noise=False, measurement_model_profile=profile)
+    assert clean.shape[0] == 1
+    return clean[0], pass_geo
+
+
+@pytest.mark.parametrize("profile, abcorr", [("one_way_light_time_ssb", "CN"),
+                                             ("one_way_light_time_ssb_aberrated", "CN+S")])
+def test_ssb_position_observable_matches_spice(arc, profile, abcorr):
+    """G9/G10: range = c x (SPICE CN light time + Moyer 8-38 Sun/Earth Shapiro); az/el = SPICE apparent direction."""
+    from lunar_od.geometry import ecef2razel_sez, wrap_to_pi
+
+    spice = arc["spice"]
+    row, pass_geo = _moon_centre_position_row(arc, profile)
+    et_rx = arc["et0"] + row[0]
+    station = STATIONS[0]
+    obspos_km = np.asarray(station.r_ecef_m, dtype=float) / 1000.0
+    state, lt = spice.spkcpo("MOON", et_rx, "J2000", "OBSERVER", abcorr, obspos_km, "EARTH", "ITRF93")
+    rho_j2000 = np.asarray(state[:3]) * 1000.0
+    rot = np.asarray(spice.pxform("J2000", "ITRF93", et_rx))
+    az_ref, el_ref, _rng = ecef2razel_sez(rot @ rho_j2000, station.lat_rad, station.lon_rad)
+
+    # Shapiro closed form, geometry straight from SPICE (bodies at the receive epoch, as Moyer 8-38 uses).
+    r_tx = np.asarray(spice.spkpos("MOON", et_rx - lt, "J2000", "NONE", "SSB")[0]) * 1000.0
+    r_rx = (np.asarray(spice.spkpos("EARTH", et_rx, "J2000", "NONE", "SSB")[0]) * 1000.0
+            + np.asarray(spice.pxform("ITRF93", "J2000", et_rx)) @ (obspos_km * 1000.0))
+    r12 = np.linalg.norm(r_rx - r_tx)
+    shapiro = 0.0
+    for body in ("SUN", "EARTH"):
+        b = np.asarray(spice.spkpos(body, et_rx, "J2000", "NONE", "SSB")[0]) * 1000.0
+        r1, r2 = np.linalg.norm(r_tx - b), np.linalg.norm(r_rx - b)
+        gm = float(spice.bodvrd(body, "GM", 1)[1][0]) * 1e9
+        shapiro += 2.0 * gm / C ** 3 * np.log((r1 + r2 + r12) / (r1 + r2 - r12))
+    assert 7.0 < C * shapiro < 8.5          # the Sun term dominates (C1: 7.3-7.8 m)
+
+    if abcorr == "CN":
+        assert abs(row[1] - C * (lt + shapiro)) < 0.01
+    assert abs(wrap_to_pi(row[2] - az_ref)) < 1e-9
+    assert abs(row[3] - el_ref) < 1e-9
+    assert pass_geo.measurement_model_profile == profile
+
+
+def test_ssb_position_bls_recovers_truth_and_moon_centred_misfit(arc):
+    """G11/G12: BLS-LM recovers the truth from SSB position data; the Moon-centred profile misfits it."""
+    from lunar_od.estimators import estimate_position_bls_lm
+    from lunar_od.measurements import compute_position_residuals, generate_position_measurements
+
+    eph, t, gm = arc["eph"], arc["t"], arc["gm"]
+    truth = arc["aug"][:, :6]
+    vis = np.ones((t.size, len(STATIONS)), dtype=bool)
+    obs, pass_geo, _ = generate_position_measurements(t, truth, STATIONS, vis, eph.earth_position,
+                                                      eph.earth_velocity, arc["et0"], noise=False, arc_id=1,
+                                                      measurement_model_profile="one_way_light_time_ssb")
+    assert obs.shape[0] > 100
+    x_start = arc["x0"] + np.array([80.0, -60.0, 40.0, 0.02, -0.01, 0.015])
+    x_hat, status, _ = estimate_position_bls_lm(t, obs, x_start, pass_geo, *gm, eph.earth_position,
+                                                eph.sun_position, rtol=1e-12, atol=1e-13)
+    assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) < 1e-2, status
+
+    # G12 (amended after the result, see the predeclaration): the Moon-centred model treats the MCI frame as
+    # inertial, so it misses the Moon's SSB motion over the light time, -(v_Moon,SSB . u) tau (up to ~38 km,
+    # geometry dependent). The remainder is the slice-2 budget: Sun Shapiro ~7.6 m + second order ~4 m.
+    from lunar_od import relativistic_light_time as rlt
+
+    moon_geo = replace(pass_geo, measurement_model_profile="one_way_light_time")
+    residuals, _ = compute_position_residuals(truth, obs, moon_geo)
+    misfit = np.asarray(residuals).reshape(-1, 3)[:, 0]
+    bary = rlt.BarycentricEphemeris(arc["et0"])
+    first_order = np.empty(obs.shape[0])
+    for i, row in enumerate(obs):
+        k, station = int(row[5]) - 1, STATIONS[int(row[4]) - 1]
+        los = truth[k, :3] - (eph.earth_position(np.array([row[0]]))[0]
+                              + pass_geo.x_j2000_to_itrf93[k, :3, :3].T @ station.r_ecef_m)
+        first_order[i] = -(bary.moon_state(row[0])[3:6] @ los) / C
+    assert np.max(np.abs(misfit)) > 5000.0
+    assert np.max(np.abs(misfit - first_order)) < 15.0
+
+
+def _position_payload(**overrides):
+    payload = {"name": "wp2_1_position", "measurement_type": "position", "estimator_type": "bls_lm",
+               "start_mode": "cold", "network": "multi", "measurement_model_profile": "one_way_light_time_ssb"}
+    payload.update(overrides)
+    return payload
+
+
+@pytest.mark.parametrize("profile", ["one_way_light_time_ssb", "one_way_light_time_ssb_aberrated"])
+def test_scenario_accepts_the_ssb_position_profiles(profile):
+    from lunar_od.scenario_config import scenario_config_from_mapping
+
+    assert scenario_config_from_mapping(
+        _position_payload(measurement_model_profile=profile)).measurement_model_profile == profile
+
+
+@pytest.mark.parametrize("overrides", [{"measurement_type": "range_rate"}, {"estimator_type": "ukf"}])
+def test_scenario_rejects_unsupported_ssb_position_profiles(overrides):
+    from lunar_od.scenario_config import scenario_config_from_mapping
+
+    with pytest.raises(ValueError):
+        scenario_config_from_mapping(_position_payload(**overrides))

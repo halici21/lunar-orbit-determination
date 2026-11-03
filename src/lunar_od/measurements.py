@@ -39,8 +39,13 @@ MEASUREMENT_MODEL_PROFILES = (
     "one_way_light_time_aberrated_local_mci",
     "one_way_light_time_aberrated_spice_ssb",
     "two_way_counted_doppler",
+    # F2 WP2.1 slice 3 (MEAS-01): barycentric one-way light time (SSB leg, Sun
+    # and Earth Shapiro), plain or with SSB stellar aberration (SPICE CN+S).
+    "one_way_light_time_ssb",
+    "one_way_light_time_ssb_aberrated",
 )
-POSITION_MEASUREMENT_MODEL_PROFILES = MEASUREMENT_MODEL_PROFILES[:4]
+SSB_LIGHT_TIME_POSITION_PROFILES = MEASUREMENT_MODEL_PROFILES[5:7]
+POSITION_MEASUREMENT_MODEL_PROFILES = MEASUREMENT_MODEL_PROFILES[:4] + SSB_LIGHT_TIME_POSITION_PROFILES
 COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
 JACOBIAN_MODELS = (
     "analytic_exact_geometric",
@@ -201,6 +206,10 @@ def normalize_measurement_model_profile(
     if measurement_model_profile == "one_way_light_time_aberrated_local_mci":
         return measurement_model_profile, True, True, "local_mci"
     if measurement_model_profile == "one_way_light_time_aberrated_spice_ssb":
+        return measurement_model_profile, True, True, "spice_ssb"
+    if measurement_model_profile == "one_way_light_time_ssb":
+        return measurement_model_profile, True, False, stellar_aberration_model
+    if measurement_model_profile == "one_way_light_time_ssb_aberrated":
         return measurement_model_profile, True, True, "spice_ssb"
     return measurement_model_profile, apply_light_time, apply_stellar_aberration, stellar_aberration_model
 
@@ -1332,8 +1341,15 @@ def _apparent_position_observable(
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
     equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     observation_index: int | None = None,
+    ssb_et0_s: float | None = None,
 ) -> tuple[np.ndarray, float, float, int]:
     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
+
+    F2 WP2.1 slice 3: with ``ssb_et0_s`` (the SPICE ET of scenario t=0) the leg is
+    solved in the SSB frame with the Sun and Earth Shapiro delays
+    (``relativistic_light_time.DSN_LIGHT_TIME_MODEL``); the range is c x the
+    light time and the direction is the SSB leg vector (SPICE CN), so the SSB
+    aberration needs no frame re-expression.
 
     The spacecraft position is evaluated at the transmit time ``t_t = t_r - tau``;
     the Earth centre, station, and topocentric SEZ frame are evaluated at the
@@ -1379,6 +1395,13 @@ def _apparent_position_observable(
         consumer="_apparent_position_observable",
         observation_index=observation_index,
     )
+    if ssb_et0_s is not None:
+        return _ssb_apparent_position_observable(
+            receive_time_s, station, station_rel_state_j2000, earth_pos_mci_rx, x_rx,
+            state_lookup, float(ssb_et0_s),
+            observer_earth_vel_rx=observer_earth_vel_rx, apply_stellar=apply_stellar,
+            light_speed_mps=light_speed_mps,
+        )
     solution = solve_one_way_light_time(
         receive_time_s,
         station_mci_rx,
@@ -1434,6 +1457,37 @@ def _apparent_position_observable(
     return z, transmit_time_s, solution.light_time_s, int(solution.iterations)
 
 
+_SSB_EPHEMERIS_CACHE: dict = {}
+
+
+def _ssb_apparent_position_observable(
+    receive_time_s, station, station_rel_state_j2000, earth_pos_mci_rx, x_rx, state_lookup, et0_s,
+    *, observer_earth_vel_rx, apply_stellar, light_speed_mps,
+):
+    """SSB-leg branch of :func:`_apparent_position_observable` (F2 WP2.1 slice 3)."""
+    from . import relativistic_light_time as rlt
+
+    eph = _SSB_EPHEMERIS_CACHE.get(et0_s)
+    if eph is None:
+        eph = _SSB_EPHEMERIS_CACHE.setdefault(et0_s, rlt.BarycentricEphemeris(et0_s))
+    station_mci_rx = np.concatenate([earth_pos_mci_rx + station_rel_state_j2000[:3], np.zeros(3)])
+    t3 = float(receive_time_s)
+    leg = rlt._leg(rlt.DSN_LIGHT_TIME_MODEL, eph, t_rx=t3, rx_fixed=station_mci_rx,
+                   tx_fn=lambda t: np.asarray(state_lookup(t), dtype=float)[:6], label="one-way position")
+    rho_inertial = -np.asarray(leg.rel, dtype=float)          # station -> spacecraft, SSB frame
+    if apply_stellar:
+        if observer_earth_vel_rx is None:
+            raise ValueError("apply_stellar=True requires observer_earth_vel_rx.")
+        observer_vel_inertial = _observer_velocity_j2000_at_receive_epoch(
+            station, x_rx, observer_earth_vel_rx, station_relative_state_j2000=station_rel_state_j2000,
+        )
+        rho_inertial = apply_stellar_aberration(rho_inertial, observer_vel_inertial,
+                                                light_speed_mps=light_speed_mps)
+    az_rad, el_rad, _geometric = ecef2razel_sez(x_rx[:3, :3] @ rho_inertial, station.lat_rad, station.lon_rad)
+    range_m = float(light_speed_mps) * leg.light_time_s
+    return np.array([range_m, az_rad, el_rad], dtype=float), leg.t_tx_s, leg.light_time_s, 0
+
+
 def _apparent_position_rowwise(
     state_history_mci: np.ndarray,
     obs_data: np.ndarray,
@@ -1480,6 +1534,11 @@ def _apparent_position_rowwise(
         if (use_stellar and model == "spice_ssb")
         else None
     )
+    if profile in SSB_LIGHT_TIME_POSITION_PROFILES and getattr(pass_geo, "et0_s", None) is None:
+        raise ValueError(
+            f"measurement_model_profile={profile!r} requires pass_geo.et0_s "
+            "(regenerate with generate_position_measurements)."
+        )
     n_obs = obs_data.shape[0]
     h_meas = np.zeros((n_obs, 3), dtype=float)
     r_tx = np.zeros((n_obs, 3), dtype=float)
@@ -1500,6 +1559,7 @@ def _apparent_position_rowwise(
             apply_stellar=use_stellar,
             light_time_frame_velocity_rx=None if frame_vel is None else frame_vel[time_idx],
             observation_index=i,
+            ssb_et0_s=pass_geo.et0_s if profile in SSB_LIGHT_TIME_POSITION_PROFILES else None,
         )
         h_meas[i] = z
         r_tx[i] = _guarded_spacecraft_state_lookup(
@@ -1644,6 +1704,11 @@ def generate_position_measurements(
                             else None
                         ),
                         observation_index=candidate_counter,
+                        ssb_et0_s=(
+                            float(et0)
+                            if measurement_model_profile in SSB_LIGHT_TIME_POSITION_PROFILES
+                            else None
+                        ),
                     )
                 else:
                     rho_vec_ecef = r_sat_ecef - station.r_ecef_m
@@ -1693,6 +1758,7 @@ def generate_position_measurements(
         measurement_model_profile=measurement_model_profile,
         companion_geometry="instantaneous",
         jacobian_model=jacobian_model,
+        et0_s=float(et0) if measurement_model_profile in SSB_LIGHT_TIME_POSITION_PROFILES else None,
     )
     metadata = measurement_model_metadata(
         pass_geo, noise_enabled=noise, noise_seed=noise_seed

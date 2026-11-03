@@ -85,6 +85,10 @@ ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     # F2 WP2.1 slice 2: barycentric DSN two-way range (Phase C1-I model),
     # measurement_type='two_way_range' only.
     "two_way_light_time_ssb",
+    # F2 WP2.1 slice 3: barycentric one-way light time for the position
+    # observables (measurement_type='position', batch estimators only).
+    "one_way_light_time_ssb",
+    "one_way_light_time_ssb_aberrated",
 )
 ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
 ALLOWED_JACOBIAN_MODELS = (

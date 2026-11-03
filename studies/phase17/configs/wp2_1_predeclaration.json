@@ -67,8 +67,39 @@
       "change": "Moon-centred misfit band 0.5-5 m -> 7-12.5 m, plus a decomposition check (Shapiro share 7.0-8.2 m)",
       "reason": "measured 11.5-12.2 m. The predeclared band carried only the C1 frame term (1.9-2.5 m) and omitted the Sun Shapiro delay, which C1 itself lists (7.3-7.8 m). Independent estimate: Sun Shapiro 2GM/c^3 * r12/AU ~ 7.6 m + SSB-frame term <= (v_SSB/c)^2 rho ~ 4.1 m + TT interval 0.13 m + Earth Shapiro 0.04 m ~ 11.9 m",
       "status": "exploratory for G8"
+    },
+    {
+      "gate": "G12",
+      "after_result": true,
+      "change": "|mean range misfit| in 5-25 km -> per row |misfit - (-(v_Moon,SSB . u) tau)| < 15 m and max |misfit| > 5 km",
+      "reason": "measured -37.9 km, outside the band. The MEAS-01 table value (14-19 km) was one epoch's geometry; the term is the Moon's SSB velocity projected on the line of sight times the light time, ranging over about +-38 km with lunar phase. The first-order expression reproduces every row to 12.4 m, the slice-2 budget (Sun Shapiro 7.6 m + second-order SSB-frame term ~4 m)",
+      "status": "exploratory for G12"
     }
   ],
   "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
-  "scope_slice_2": "barycentric two-way range selectable from a scenario: measurement_model_profile='two_way_light_time_ssb' (measurement_type='two_way_range', zero transponder delay, delay-calibrated convention, BLS-LM/SRIF) routes build_measurement_arcs to relativistic_light_time.generate_two_way_range_measurements_ssb; the estimators already dispatch on the stamped profile"
+  "scope_slice_2": "barycentric two-way range selectable from a scenario: measurement_model_profile='two_way_light_time_ssb' (measurement_type='two_way_range', zero transponder delay, delay-calibrated convention, BLS-LM/SRIF) routes build_measurement_arcs to relativistic_light_time.generate_two_way_range_measurements_ssb; the estimators already dispatch on the stamped profile",
+  "scope_slice_3": "position observables (range/az/el): measurement_model_profile 'one_way_light_time_ssb' and 'one_way_light_time_ssb_aberrated' solve the one-way leg in the SSB frame with Sun+Earth Shapiro (relativistic_light_time._leg, DSN_LIGHT_TIME_MODEL); range = c*tau, direction = SSB leg vector (SPICE CN), aberrated with the SSB observer velocity (SPICE CN+S); BLS-LM/SRIF only; the Jacobian keeps the existing Moon-centred implicit form (O(v_SSB/c) ~ 1e-4 relative approximation, documented)",
+  "gates_slice_3": {
+    "G9_range_vs_spice_cn_plus_shapiro": {
+      "oracle": "c*spkcpo(MOON,'CN',station ITRF93) light time + Moyer 8-38 Sun and Earth Shapiro from spkpos geometry; spacecraft at the Moon centre",
+      "tolerance_m": 0.01
+    },
+    "G10_direction_vs_spice": {
+      "oracle": "az/el of spkcpo(...,'CN') and (...,'CN+S') rotated by pxform J2000->ITRF93",
+      "tolerance_rad": 1e-09
+    },
+    "G11_bls_recovery": {
+      "rule": "noise-free BLS-LM on SSB position data from an 80 m / 0.02 m/s offset recovers position < 1 cm"
+    },
+    "G12_moon_centred_misfit": {
+      "rule": "Moon-centred one_way_light_time at the truth misfits SSB range data; |mean range misfit| in the MEAS-01 band",
+      "band_m": [
+        5000.0,
+        25000.0
+      ]
+    },
+    "G13_fail_closed": {
+      "rule": "scenario loader accepts the profiles for position/BLS and rejects them for range_rate and UKF"
+    }
+  }
 }

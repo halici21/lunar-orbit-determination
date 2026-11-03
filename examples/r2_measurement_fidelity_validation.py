@@ -799,11 +799,14 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
 # scenario_config.py take the model-version label from radiometrics and add the
 # loader gates; slice 2 adds the scenario profile 'two_way_light_time_ssb'
 # (barycentric two-way range) and its arc-builder route.  The default model
-# is unchanged.
+# is unchanged.  Slice 3 adds the position profiles 'one_way_light_time_ssb'
+# and 'one_way_light_time_ssb_aberrated' (SSB one-way leg with Sun+Earth
+# Shapiro in measurements._apparent_position_observable) and their loader enum.
 #
 #   lunar_od/radiometrics.py     F1 WP1.4 -> e93cd6b1...
 #   lunar_od/scenarios.py        -> f9bf4f2f...
-#   lunar_od/scenario_config.py  -> a57cffef...
+#   lunar_od/scenario_config.py  -> a57cffef... -> 8e716a8e... (slice 3)
+#   lunar_od/measurements.py     -> b74614ce... (slice 3)
 #     filtered-checkout (core.autocrlf=true) representation, as every table above
 F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/radiometrics.py":
@@ -811,7 +814,9 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
     "lunar_od/scenario_config.py":
-        "a57cffef5056948cb7316f1a06c70860cd1e8a848a56851906d81d7e70f446e1",
+        "8e716a8e4fb2c74ed003fe98d2ed82c38b26a32eb57c7b490ea1e14daa697598",
+    "lunar_od/measurements.py":
+        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
 }
 
 
