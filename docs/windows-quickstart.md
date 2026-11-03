@@ -189,15 +189,18 @@ PowerShell'de:
 | naif0012.tls.txt | Artık saniyeler |
 | moon_de440_220930.txt | DE440 Ay principal-axis çerçevesi |
 | moon_pa_de440_200625.bpc | DE440 Ay principal-axis yönelimi |
-| de421.bsp | Gezegen efemerisi |
+| de440.bsp | Gezegen efemerisi (DE421 profilinde de421.bsp) |
 | earth_assoc_itrf93.tf.txt | Dünya ITRF93 çerçevesi |
 | moon_080317.tf.txt | Ay çerçevesi |
-| earth_2025_250826_2125_predict.bpc | Dünya yönelimi |
+| earth_latest_high_prec.bpc | Ölçülmüş Dünya yönelimi (IERS EOP; 2000-2024 için, `MEASURED` profilinde önceliklidir) |
+| earth_2025_250826_2125_predict.bpc | Uzun dönem tahmini Dünya yönelimi (2025 sonrası, varsayılan `PREDICT` profilinde önceliklidir) |
 | moon_pa_de421_1900-2050.bpc | Ay principal-axis yönelimi |
-| gm_de431.tpc.txt | Çekim sabitleri |
+| gm_de440.tpc | Çekim sabitleri (DE421 profilinde gm_de431.tpc.txt) |
 | pck00010.tpc.txt | Gezegen sabitleri |
 
 Liste, [güncel yükleyicideki](../src/lunar_od/spice_loader.py) REQUIRED_KERNELS sırasını izler.
+
+Dünya yönelimi profili `LUNAR_OD_EARTH_ORIENTATION` ortam değişkeniyle (`PREDICT` varsayılan, `MEASURED`) ya da `load_spice_kernels(earth_orientation=...)` ile seçilir. Gerçek veride `MEASURED` kullanılır ve `station_frames.require_measured_earth_orientation` tahmini yönelimi reddeder.
 DE440 çerçeve ve yönelim dosyaları birlikte gereklidir; iki Ay gerçekleşimini
 koruyan yükleme sırasını uygulamanın yükleyicisi yönetir.
 

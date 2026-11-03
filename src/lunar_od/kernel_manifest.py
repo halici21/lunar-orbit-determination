@@ -45,6 +45,11 @@ KERNEL_MANIFEST: dict[str, tuple[str, str]] = {
     "earth_2025_250826_2125_predict.bpc": (
         "f5ed4d1f460dbcf40bf24f657ab9021718048e18fb723093bfd229066b4e3a49",
         NAIF_GENERIC + "pck/earth_2025_250826_2125_predict.bpc"),
+    # F2 WP2.4: NAIF's rolling high-precision Earth PCK (file earth_000101_260419_260121.bpc, last datum
+    # 2026-01-21); recorded 2026-11-03 from the local kernel. A newer download is a deliberate manifest change.
+    "earth_latest_high_prec.bpc": (
+        "99ddb26ac25e1ddc0fd98083424801d9c648a342f01b033bf1695591cfae2ec5",
+        NAIF_GENERIC + "pck/earth_latest_high_prec.bpc"),
     "moon_pa_de421_1900-2050.bpc": (
         "656f90616403d75a75f0cd6c8830fc5b44f8cb4facb5ccb8915e752b397520cf",
         NAIF_GENERIC + "pck/moon_pa_de421_1900-2050.bpc"),
