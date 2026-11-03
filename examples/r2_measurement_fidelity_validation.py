@@ -849,6 +849,8 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   F2 WP2.3 slice 4 (station time-tag bias):
 #   lunar_od/estimators.py           125340f7... -> 0282c735...
 #   lunar_od/relativistic_light_time.pyf067a54b... -> 567b58bb...
+#   F2 WP2.3 slice 5 (ramped uplink core):
+#   lunar_od/relativistic_light_time.py567b58bb... -> b66a658d...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
@@ -865,7 +867,7 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/estimators.py":
         "0282c73501001d90d5bbc5502b68f2578a49e9d97851cfdc5f36f4463bdadaeb",
     "lunar_od/relativistic_light_time.py":
-        "567b58bbcf09274f6985b43eb8dfac9e7fa5d9f1b07561e3b6ac3d9cbf625bd2",
+        "b66a658d7fa978e259d0b2ab76b16d623f537ed1c3da0b749a0a423b6662bcd3",
 }
 
 def current_source_path(relative_path: str) -> str:

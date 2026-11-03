@@ -479,3 +479,115 @@ def test_time_tag_mode_fails_closed(arc):
         _solve_geo(arc, geo, obs, bias_mode="station_time_tag", solve_for_k_srp=True)
     with pytest.raises(ValueError, match="robust_outlier_rejection"):
         _solve_geo(arc, geo, obs, bias_mode="station_time_tag", robust_outlier_rejection=True)
+
+
+# ---------------------------------------------------------------------------
+# Slice 5: ramped uplink core (relativistic_light_time.UplinkRamp, counted_doppler(uplink_ramp=...)).
+# ---------------------------------------------------------------------------
+F_REF_HZ = 7.16e9
+T_MID_S = 1800.0
+TC_S = 60.0
+
+
+def _doppler_context(arc):
+    from lunar_od import relativistic_light_time as rlt
+
+    prepared, _obs = _ssb_arc(arc)
+    model, stations, eph_b = rlt._pass_context(prepared.pass_geo)
+    kw = rlt.pass_station_kwargs(prepared.pass_geo)[0]
+    return rlt, model, stations[0], eph_b, kw, prepared.pass_geo.t_s
+
+
+def _three_segment_ramp(rlt):
+    return rlt.UplinkRamp(epochs_s=(1700.0, 1785.0, 1810.0),
+                          frequencies_hz=(F_REF_HZ + 500.0, F_REF_HZ + 534.0, F_REF_HZ + 527.75),
+                          rates_hz_per_s=(0.4, -0.25, 0.1), reference_hz=F_REF_HZ)
+
+
+def test_constant_ramp_at_reference_is_the_unramped_count(arc):
+    """G20: f = f_ref, fdot = 0 -> value and partial bitwise equal to the unramped count."""
+    rlt, model, st, eph_b, kw, t_s = _doppler_context(arc)
+    sc = rlt.SpacecraftHistory(t_s, arc["aug"])
+    flat = rlt.UplinkRamp(epochs_s=(0.0,), frequencies_hz=(F_REF_HZ,), rates_hz_per_s=(0.0,), reference_hz=F_REF_HZ)
+    v0, p0, _ = rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, with_partial=True, **kw)
+    v1, p1, _ = rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, with_partial=True, uplink_ramp=flat, **kw)
+    assert v0 == v1
+    assert np.array_equal(p0, p1)
+
+
+def test_constant_frequency_offset_matches_the_closed_form(arc):
+    """G21: f_ref + 1 kHz -> change = -c/(2 f_ref Tc) * 1 kHz * (t1e - t1s) within 1e-12 relative."""
+    rlt, model, st, eph_b, kw, t_s = _doppler_context(arc)
+    sc = rlt.SpacecraftHistory(t_s, arc["aug"][:, :6])
+    off = rlt.UplinkRamp(epochs_s=(0.0,), frequencies_hz=(F_REF_HZ + 1e3,), rates_hz_per_s=(0.0,),
+                         reference_hz=F_REF_HZ)
+    v0, _, (a, b) = rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, **kw)
+    v1, _, _ = rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, uplink_ramp=off, **kw)
+    t1_span = TC_S - (b.round_trip_s - a.round_trip_s)
+    expected = -299792458.0 / (2.0 * F_REF_HZ * TC_S) * 1e3 * t1_span
+    assert abs((v1 - v0) - expected) <= 1e-12 * abs(expected), ((v1 - v0), expected)
+
+
+def test_ramp_correction_matches_receive_time_quadrature(arc):
+    """G22: three-segment ramp with breaks inside the count: correction vs an independent composite
+    Gauss-Legendre quadrature over receive time of (f_T(t1(t3)) - f_ref) dt1/dt3, within 1e-6 relative."""
+    rlt, model, st, eph_b, kw, t_s = _doppler_context(arc)
+    sc = rlt.SpacecraftHistory(t_s, arc["aug"][:, :6])
+    ramp = _three_segment_ramp(rlt)
+    v0, _, (a, b) = rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, **kw)
+    v1, _, _ = rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, uplink_ramp=ramp, **kw)
+    assert a.t1_s < 1785.0 < 1810.0 < b.t1_s
+
+    def round_trip(t3):
+        return rlt.solve_two_way(t3, st, sc, eph_b, model, **kw).round_trip_s
+
+    nodes, weights = np.polynomial.legendre.leggauss(4)
+    edges = np.linspace(T_MID_S - 0.5 * TC_S, T_MID_S + 0.5 * TC_S, 601)
+    h = 1e-3
+    total = 0.0
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        for x, w in zip(nodes, weights):
+            t3 = 0.5 * (hi - lo) * x + 0.5 * (hi + lo)
+            dt1_dt3 = 1.0 - (round_trip(t3 + h) - round_trip(t3 - h)) / (2.0 * h)
+            total += 0.5 * (hi - lo) * w * (ramp.frequency_hz(t3 - round_trip(t3)) - F_REF_HZ) * dt1_dt3
+    oracle = -299792458.0 / (2.0 * F_REF_HZ * TC_S) * total
+    assert abs((v1 - v0) - oracle) <= 1e-6 * abs(oracle), ((v1 - v0), oracle)
+
+
+def test_ramped_partials_match_finite_differences(arc):
+    """G23: ramped state partial vs central differences (10 m / 1e-2 m/s), 1e-6 of the row norm; the clock
+    partial vs a 1e-3 s central difference of the receive-tag offset (additional evidence)."""
+    rlt, model, st, eph_b, kw, t_s = _doppler_context(arc)
+    ramp = _three_segment_ramp(rlt)
+    sc_aug = rlt.SpacecraftHistory(t_s, arc["aug"])
+    _v, partial, _, clock = rlt.counted_doppler(T_MID_S, TC_S, st, sc_aug, eph_b, model, with_partial=True,
+                                                with_clock_partial=True, uplink_ramp=ramp, **kw)
+
+    def value(x0, offset=0.0):
+        sc = rlt.SpacecraftHistory(t_s, arc["propagate"](x0))
+        k = dict(kw, clock_offset_s=offset)
+        return rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, uplink_ramp=ramp, **k)[0]
+
+    fd = np.zeros(6)
+    for j, step in enumerate((10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2)):
+        dx = np.zeros(6)
+        dx[j] = step
+        fd[j] = (value(arc["x0"] + dx) - value(arc["x0"] - dx)) / (2.0 * step)
+    assert np.max(np.abs(np.asarray(partial).reshape(6) - fd)) <= 1e-6 * np.linalg.norm(fd), (partial, fd)
+    clock_fd = (value(arc["x0"], 1e-3) - value(arc["x0"], -1e-3)) / 2e-3
+    assert abs(clock - clock_fd) <= 1e-6 * max(abs(clock_fd), 1e-3), (clock, clock_fd)
+
+
+def test_ramp_fails_closed(arc):
+    """G24: a ramp starting after t1 of the count start; non-increasing epochs; a non-positive frequency."""
+    rlt, model, st, eph_b, kw, t_s = _doppler_context(arc)
+    sc = rlt.SpacecraftHistory(t_s, arc["aug"][:, :6])
+    late = rlt.UplinkRamp(epochs_s=(1790.0,), frequencies_hz=(F_REF_HZ,), rates_hz_per_s=(0.0,),
+                          reference_hz=F_REF_HZ)
+    with pytest.raises(ValueError, match="before it"):
+        rlt.counted_doppler(T_MID_S, TC_S, st, sc, eph_b, model, uplink_ramp=late, **kw)
+    with pytest.raises(ValueError, match="increasing"):
+        rlt.UplinkRamp(epochs_s=(10.0, 10.0), frequencies_hz=(F_REF_HZ, F_REF_HZ), rates_hz_per_s=(0.0, 0.0),
+                       reference_hz=F_REF_HZ)
+    with pytest.raises(ValueError, match="positive"):
+        rlt.UplinkRamp(epochs_s=(0.0,), frequencies_hz=(-1.0,), rates_hz_per_s=(0.0,), reference_hz=F_REF_HZ)

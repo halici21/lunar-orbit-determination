@@ -165,5 +165,12 @@
     "G24_fail_closed": {
       "rule": "a ramp that starts after the transmit epoch t1 of the count start raises ValueError; non-increasing segment epochs or a non-positive frequency raise ValueError"
     }
+  },
+  "results_slice_5": {
+    "G20": "PASS (first run, no amendment)",
+    "G21": "PASS (first run, no amendment)",
+    "G22": "PASS (first run, no amendment)",
+    "G23": "PASS (first run, no amendment)",
+    "G24": "PASS (first run, no amendment)"
   }
 }

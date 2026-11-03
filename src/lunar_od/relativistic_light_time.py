@@ -568,13 +568,65 @@ def two_way_range_clock_partial(sol: TwoWaySolution) -> float:
             +0.5*_media_interval_clock_partial(sol))
 
 
+@dataclass(frozen=True)
+class UplinkRamp:
+    """Piecewise-linear uplink transmit frequency (F2 WP2.3 slice 5, MEAS-08).
+
+    f_T(t) = frequencies_hz[k] + rates_hz_per_s[k] (t - epochs_s[k]) on [epochs_s[k], epochs_s[k+1]); the last
+    segment extends without end. Epochs are pass seconds (TDB from et0; the TT-TDB offset of the ramp epochs,
+    <= 1.7 ms, is neglected). ``reference_hz`` is the Doppler reference frequency f_ref.
+    """
+
+    epochs_s: tuple
+    frequencies_hz: tuple
+    rates_hz_per_s: tuple
+    reference_hz: float
+
+    def __post_init__(self):
+        n = len(self.epochs_s)
+        if n == 0 or len(self.frequencies_hz) != n or len(self.rates_hz_per_s) != n:
+            raise ValueError("UplinkRamp needs equally long, non-empty epochs, frequencies and rates.")
+        if np.any(np.diff(np.asarray(self.epochs_s, dtype=float)) <= 0.0):
+            raise ValueError("UplinkRamp epochs must be strictly increasing.")
+        values = np.asarray(self.frequencies_hz, dtype=float)
+        if not (np.all(np.isfinite(values)) and np.all(values > 0.0) and float(self.reference_hz) > 0.0):
+            raise ValueError("UplinkRamp frequencies and reference_hz must be finite and positive.")
+
+    def _segment(self, t_s: float) -> int:
+        t = float(t_s)
+        if t < float(self.epochs_s[0]):
+            raise ValueError(f"uplink ramp starts at {self.epochs_s[0]} s; transmit epoch {t} s is before it.")
+        return int(np.searchsorted(np.asarray(self.epochs_s, dtype=float), t, side="right") - 1)
+
+    def frequency_hz(self, t_s: float) -> float:
+        k = self._segment(t_s)
+        return float(self.frequencies_hz[k] + self.rates_hz_per_s[k] * (float(t_s) - self.epochs_s[k]))
+
+    def offset_integral(self, t_a_s: float, t_b_s: float) -> float:
+        """integral_{t_a}^{t_b} (f_T - f_ref) dt [cycles], summed segment by segment in local time offsets."""
+        ta, tb = float(t_a_s), float(t_b_s)
+        ka, kb = self._segment(ta), self._segment(tb)
+        total = 0.0
+        for k in range(ka, kb + 1):
+            lo = ta if k == ka else float(self.epochs_s[k])
+            hi = tb if k == kb else float(self.epochs_s[k + 1])
+            u0, u1 = lo - float(self.epochs_s[k]), hi - float(self.epochs_s[k])
+            total += ((float(self.frequencies_hz[k]) - float(self.reference_hz)) * (u1 - u0)
+                      + 0.5 * float(self.rates_hz_per_s[k]) * (u1 * u1 - u0 * u0))
+        return total
+
+
 def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Callable, sc: SpacecraftHistory,
                     eph: BarycentricEphemeris, model: LightTimeModel, *, with_partial: bool = False,
                     site: "_station_time.Site | None" = None, clock_offset_s: float = 0.0,
-                    with_clock_partial: bool = False, media=None, media_site=None):
+                    with_clock_partial: bool = False, media=None, media_site=None,
+                    uplink_ramp: "UplinkRamp | None" = None):
     """Receive-tagged counted Doppler, m/s equivalent: c/(2 Tc) (tau_end - tau_start), each tau in the
     model's interval time scale (plus the media phase delay, Phase C5-I). Returns (value, partial or None,
-    (start, end) solutions); with ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s]."""
+    (start, end) solutions); with ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s].
+
+    ``uplink_ramp`` (F2 WP2.3 slice 5) gives the Moyer ramped count: the value minus
+    c/(2 f_ref Tc) integral_{t1 start}^{t1 end} (f_T - f_ref) dt1, with its state and clock partials."""
     tc = float(count_interval_s)
     kw = dict(site=site, clock_offset_s=clock_offset_s)
     if media is not None:
@@ -591,10 +643,24 @@ def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Call
                        - _interval_tau_derivative(a) * _round_trip_partial(a, sc))
         partial += .5/tc*(_media_interval_state_partial(b,sc,phase=True)
                            -_media_interval_state_partial(a,sc,phase=True))
+    ramp_k = 0.0
+    if uplink_ramp is not None:
+        ramp_k = C_LIGHT_MPS / (2.0 * float(uplink_ramp.reference_hz) * tc)
+        value = value - ramp_k * uplink_ramp.offset_integral(a.t1_s, b.t1_s)
+        if with_partial:
+            d_a = uplink_ramp.frequency_hz(a.t1_s) - float(uplink_ramp.reference_hz)
+            d_b = uplink_ramp.frequency_hz(b.t1_s) - float(uplink_ramp.reference_hz)
+            partial = partial + ramp_k * (d_b * _round_trip_partial(b, sc) - d_a * _round_trip_partial(a, sc))
     if with_clock_partial:
         clock = k * (_measured_interval_receive_partial(b) - _measured_interval_receive_partial(a))
         clock += .5/tc*(_media_interval_clock_partial(b,phase=True)
                          -_media_interval_clock_partial(a,phase=True))
+        if uplink_ramp is not None:
+            # t1 = t3 - round trip, so dt1/dt3 = the first row of _two_way_receive_partials.
+            d_a = uplink_ramp.frequency_hz(a.t1_s) - float(uplink_ramp.reference_hz)
+            d_b = uplink_ramp.frequency_hz(b.t1_s) - float(uplink_ramp.reference_hz)
+            clock -= ramp_k * (d_b * float(_two_way_receive_partials(b)[0])
+                               - d_a * float(_two_way_receive_partials(a)[0]))
         return value, partial, (a, b), clock
     return value, partial, (a, b)
 
