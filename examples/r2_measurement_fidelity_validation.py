@@ -855,6 +855,9 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/radiometrics.py         be57948e... -> 3f5e5a4c...
 #   lunar_od/measurements.py         b230a85c... -> 5ce61154...
 #   lunar_od/scenarios.py            007ea51f... -> 1d1a1b03...
+#   F2 WP2.3 slice 7: barycentric counted-Doppler transponder delay:
+#   lunar_od/radiometrics.py         3f5e5a4c... -> 20978392...
+#   lunar_od/relativistic_light_time.pyb66a658d... -> 2499813e...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
@@ -863,7 +866,7 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "examples/run_scenario_config.py":
         "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
     "lunar_od/radiometrics.py":
-        "3f5e5a4c9a32147b568340e3b09cf7bf8aeff875bc85bc6a0ecfe630eb2752e6",
+        "2097839235edf7ef24ac3a6c32f422e840e69dbf8236b5f8410c1fb70f08b463",
     "lunar_od/measurements.py":
         "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
     "lunar_od/media.py":
@@ -871,7 +874,7 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/estimators.py":
         "0282c73501001d90d5bbc5502b68f2578a49e9d97851cfdc5f36f4463bdadaeb",
     "lunar_od/relativistic_light_time.py":
-        "b66a658d7fa978e259d0b2ab76b16d623f537ed1c3da0b749a0a423b6662bcd3",
+        "2499813e0696f67c6c2a366703d976f56b1f16450922dd926a6e7994705c6993",
 }
 
 def current_source_path(relative_path: str) -> str:

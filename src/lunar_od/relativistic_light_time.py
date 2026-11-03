@@ -620,15 +620,19 @@ def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Call
                     eph: BarycentricEphemeris, model: LightTimeModel, *, with_partial: bool = False,
                     site: "_station_time.Site | None" = None, clock_offset_s: float = 0.0,
                     with_clock_partial: bool = False, media=None, media_site=None,
-                    uplink_ramp: "UplinkRamp | None" = None):
+                    uplink_ramp: "UplinkRamp | None" = None, transponder_delay_s: float = 0.0):
     """Receive-tagged counted Doppler, m/s equivalent: c/(2 Tc) (tau_end - tau_start), each tau in the
     model's interval time scale (plus the media phase delay, Phase C5-I). Returns (value, partial or None,
     (start, end) solutions); with ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s].
 
     ``uplink_ramp`` (F2 WP2.3 slice 5) gives the Moyer ramped count: the value minus
-    c/(2 f_ref Tc) integral_{t1 start}^{t1 end} (f_T - f_ref) dt1, with its state and clock partials."""
+    c/(2 f_ref Tc) integral_{t1 start}^{t1 end} (f_T - f_ref) dt1, with its state and clock partials.
+    ``transponder_delay_s`` (slice 7) is the fixed delay of :func:`solve_two_way` at both count endpoints; as a
+    term it cancels in the endpoint difference and enters through the event geometry only."""
     tc = float(count_interval_s)
     kw = dict(site=site, clock_offset_s=clock_offset_s)
+    if transponder_delay_s:
+        kw["transponder_delay_s"] = float(transponder_delay_s)
     if media is not None:
         kw.update(media=media, media_site=media_site)
     a = solve_two_way(t_mid_s - 0.5 * tc, station_state, sc, eph, model, **kw)

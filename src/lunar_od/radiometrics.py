@@ -258,7 +258,7 @@ class RangeRatePhysicsConfig:
             unsupported = [
                 name for name, bad in (
                     ("station_clock_drift", self.station_clock_drift != 0.0),
-                    ("transponder_delay_s", self.transponder_delay_s != 0.0),
+                    # F2 WP2.3 slice 7: a fixed transponder delay is supported.
                     ("output_unit", self.output_unit != "mps_equivalent"),
                     ("light_speed_mps", self.light_speed_mps != C_LIGHT_MPS),
                 ) if bad

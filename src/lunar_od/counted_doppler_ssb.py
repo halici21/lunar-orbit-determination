@@ -14,7 +14,7 @@ Station states are the production exact event-epoch ``sxform`` provider, made fr
 cubic-Hermite history. The receive tags, count interval and clock offset follow the production convention
 (count endpoints at ``t_mid -/+ Tc/2``, a receive tag ``t`` read as ``t + b``).
 
-Unsupported production options fail closed: clock drift, transponder delay, ``output_unit='hz'``, the
+Unsupported production options fail closed: clock drift, ``output_unit='hz'``, the
 legacy interpolated station grid and a non-default ``light_speed_mps``.
 """
 from __future__ import annotations
@@ -49,8 +49,6 @@ class _GuardedHistory(_rlt.SpacecraftHistory):
 def _require_supported(cfg) -> None:
     if cfg.station_clock_drift != 0.0:
         raise NotImplementedError("barycentric_dsn counted Doppler does not model station clock drift.")
-    if cfg.transponder_delay_s != 0.0:
-        raise NotImplementedError("barycentric_dsn counted Doppler supports zero transponder delay only.")
     if cfg.output_unit != "mps_equivalent":
         raise NotImplementedError("barycentric_dsn counted Doppler reports the m/s equivalent only.")
     if cfg.light_speed_mps != _rlt.C_LIGHT_MPS:
@@ -85,6 +83,11 @@ def _media_kwargs(cfg, station) -> dict:
     return {"media": MediaModel(), "media_site": MediaSite.from_station(station)}
 
 
+def _delay_kwargs(cfg) -> dict:
+    """F2 WP2.3 slice 7: the fixed transponder delay (absent when zero, so the default path is unchanged)."""
+    return {"transponder_delay_s": float(cfg.transponder_delay_s)} if cfg.transponder_delay_s else {}
+
+
 def _ramp_kwargs(cfg, station, et0_s) -> dict:
     """F2 WP2.3 slice 6: the station's uplink ramp, if the configuration carries one. Table epochs are absolute
     ET (TDB seconds past J2000) and are moved to this pass's seconds (epoch - et0) here, so one table serves
@@ -105,7 +108,8 @@ def barycentric_counted_doppler_observable(receive_mid_time_s, station, t_grid_s
                                             earth_vel_mci_mps, et0_s, 6)
     value, _, _ = _rlt.counted_doppler(float(receive_mid_time_s), cfg.count_interval_s, station_state, sc, eph,
                                        LIGHT_TIME_MODEL, site=site, clock_offset_s=cfg.station_clock_offset_s,
-                                       **_media_kwargs(cfg, station), **_ramp_kwargs(cfg, station, et0_s))
+                                       **_media_kwargs(cfg, station), **_ramp_kwargs(cfg, station, et0_s),
+                                       **_delay_kwargs(cfg))
     return float(value)
 
 
@@ -118,5 +122,5 @@ def barycentric_counted_doppler_initial_state_jacobian(receive_mid_time_s, stati
     _, partial, _ = _rlt.counted_doppler(float(receive_mid_time_s), cfg.count_interval_s, station_state, sc, eph,
                                          LIGHT_TIME_MODEL, with_partial=True, site=site,
                                          clock_offset_s=cfg.station_clock_offset_s, **_media_kwargs(cfg, station),
-                                         **_ramp_kwargs(cfg, station, et0_s))
+                                         **_ramp_kwargs(cfg, station, et0_s), **_delay_kwargs(cfg))
     return np.asarray(partial, dtype=float).reshape(6)

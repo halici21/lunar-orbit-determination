@@ -270,9 +270,9 @@ def test_delayed_data_are_recovered_and_the_delay_is_material(arc):
 
 
 def test_delay_gates(arc):
-    """G11: loader accepts a delay with two_way_light_time_ssb, still rejects the raw convention; barycentric
-    counted Doppler with a delay still fails closed (at RangeRatePhysicsConfig construction, ValueError: one
-    layer earlier than the pre-registered NotImplementedError of counted_doppler_ssb._require_supported)."""
+    """G11: loader accepts a delay with two_way_light_time_ssb, still rejects the raw convention. Its
+    counted-Doppler clause (a delay fails closed) is superseded by slice 7 (G37): the barycentric models now
+    accept a delay."""
     from lunar_od.radiometrics import BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL, RangeRatePhysicsConfig
     from lunar_od.scenario_config import scenario_config_from_mapping
 
@@ -282,10 +282,10 @@ def test_delay_gates(arc):
     with pytest.raises(ValueError, match="delay_calibrated"):
         scenario_config_from_mapping({**base, "transponder_delay_s": 1e-6,
                                       "two_way_range_convention": "raw_half_round_trip"})
-    with pytest.raises(ValueError, match="transponder_delay_s"):
-        RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0,
-                               counted_doppler_model=BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
-                               transponder_delay_s=1e-6)
+    cfg = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0,
+                                 counted_doppler_model=BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+                                 transponder_delay_s=1e-6)
+    assert cfg.transponder_delay_s == 1e-6
 
 
 # ---------------------------------------------------------------------------
@@ -766,3 +766,111 @@ def test_range_rate_resolver_keeps_every_field_but_the_count_interval():
                                     station_state_method=LEGACY_INTERPOLATED_STATION_METHOD)
     out_legacy = _resolve_range_rate_physics(legacy, count_interval_s=30.0)
     assert out_legacy.station_state_method == LEGACY_INTERPOLATED_STATION_METHOD
+
+
+# ---------------------------------------------------------------------------
+# Slice 7: fixed transponder delay in barycentric counted Doppler.
+# ---------------------------------------------------------------------------
+def _four_event_cfg(delay):
+    from lunar_od.radiometrics import FOUR_EVENT_COUNTED_DOPPLER_MODEL, RangeRatePhysicsConfig
+
+    return RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=TC_S,
+                                  counted_doppler_model=FOUR_EVENT_COUNTED_DOPPLER_MODEL, transponder_delay_s=delay)
+
+
+def test_zero_counted_doppler_delay_is_the_slice_six_path(arc):
+    """G33: transponder_delay_s=0 -> observations and production Jacobian rows bitwise equal to the default."""
+    from lunar_od.radiometrics import two_way_counted_doppler_initial_state_jacobian
+
+    obs0, _ = _generate(arc, _bary_cfg())
+    obs1, _ = _generate(arc, _bary_cfg(transponder_delay_s=0.0))
+    assert np.array_equal(obs0, obs1)
+    eph, t = arc["eph"], arc["t"]
+    args = (eph.earth_position(t), eph.earth_velocity(t), np.zeros((t.size, 6, 6)))
+    j0 = two_way_counted_doppler_initial_state_jacobian(T_MID_S, STATIONS[0], t, arc["aug"], *args, _bary_cfg(),
+                                                        et0_s=arc["et0"])
+    j1 = two_way_counted_doppler_initial_state_jacobian(T_MID_S, STATIONS[0], t, arc["aug"], *args,
+                                                        _bary_cfg(transponder_delay_s=0.0), et0_s=arc["et0"])
+    assert np.array_equal(np.asarray(j0), np.asarray(j1))
+
+
+def test_counted_doppler_delay_effect_matches_the_four_event_model(arc):
+    """G34: per count, bary(d) - bary(0) vs 4ev(d) - 4ev(0) within 2.5e-4 max|change| + 1e-9 m/s; the change
+    exceeds 1e-3 m/s. Both models run on one visibility mask that starts one count interval plus one sample
+    after the history start: the four-event model raises on counts whose events precede the history, where the
+    barycentric generator drops them."""
+    from lunar_od.measurements import generate_range_rate_measurements
+
+    d = DELAY_S
+    eph, t = arc["eph"], arc["t"]
+    mask = np.repeat((t >= TC_S + 30.0)[:, None], len(STATIONS), axis=1)
+
+    def gen(cfg):
+        return generate_range_rate_measurements(t, arc["aug"][:, :6], STATIONS, mask, eph.earth_position,
+                                                eph.earth_velocity, arc["et0"], noise=False, arc_id=1,
+                                                range_rate_physics=cfg)[0]
+
+    b0, bd = gen(_bary_cfg()), gen(_bary_cfg(transponder_delay_s=d))
+    f0, fd = gen(_four_event_cfg(0.0)), gen(_four_event_cfg(d))
+    for other in (bd, f0, fd):
+        assert np.array_equal(other[:, [0, SID_COL]], b0[:, [0, SID_COL]])
+    change_b = bd[:, RATE_COL] - b0[:, RATE_COL]
+    change_f = fd[:, RATE_COL] - f0[:, RATE_COL]
+    biggest = float(np.max(np.abs(change_b)))
+    assert biggest > 1e-3, biggest
+    gap = float(np.max(np.abs(change_b - change_f)))
+    assert gap <= 2.5e-4 * biggest + 1e-9, (gap, biggest)
+
+
+def test_delayed_counted_doppler_jacobian_matches_finite_differences(arc):
+    """G35: delayed production Jacobian vs central differences (10 m / 1e-2 m/s), 1e-6 of the row norm."""
+    from lunar_od.radiometrics import (
+        two_way_counted_doppler_initial_state_jacobian,
+        two_way_counted_doppler_observable,
+    )
+
+    eph, t = arc["eph"], arc["t"]
+    cfg = _bary_cfg(transponder_delay_s=DELAY_S)
+    args = (eph.earth_position(t), eph.earth_velocity(t), np.zeros((t.size, 6, 6)))
+    jac = np.asarray(two_way_counted_doppler_initial_state_jacobian(
+        T_MID_S, STATIONS[0], t, arc["aug"], *args, cfg, et0_s=arc["et0"])).reshape(6)
+    fd = np.zeros(6)
+    for j, step in enumerate((10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2)):
+        dx = np.zeros(6)
+        dx[j] = step
+        vp = two_way_counted_doppler_observable(T_MID_S, STATIONS[0], t, arc["propagate"](arc["x0"] + dx), *args,
+                                                cfg, et0_s=arc["et0"])
+        vm = two_way_counted_doppler_observable(T_MID_S, STATIONS[0], t, arc["propagate"](arc["x0"] - dx), *args,
+                                                cfg, et0_s=arc["et0"])
+        fd[j] = (vp - vm) / (2.0 * step)
+    assert np.max(np.abs(jac - fd)) <= 1e-6 * np.linalg.norm(fd), (jac, fd)
+
+
+def test_delayed_counted_doppler_bls_srif_recovery(arc):
+    """G36: BLS-LM and SRIF on noise-free delayed data: position < 1 cm, velocity < 1e-5 m/s."""
+    from lunar_od.estimators import estimate_range_rate_bls_lm, estimate_range_rate_srif
+
+    eph, t, gm = arc["eph"], arc["t"], arc["gm"]
+    obs, geo = _generate(arc, _bary_cfg(transponder_delay_s=DELAY_S))
+    for fn in (estimate_range_rate_bls_lm, estimate_range_rate_srif):
+        x_hat, status, _ = fn(t, obs, arc["x0"] + X_OFFSET, geo, *gm, eph.earth_position, eph.sun_position,
+                              rtol=1e-12, atol=1e-13)
+        assert np.linalg.norm(x_hat[:3] - arc["x0"][:3]) < 1e-2, (fn.__name__, status)
+        assert np.linalg.norm(x_hat[3:] - arc["x0"][3:]) < 1e-5, (fn.__name__, status)
+
+
+def test_barycentric_counted_doppler_delay_options():
+    """G37: both barycentric models accept a delay; output_unit='hz' and clock drift are still rejected."""
+    from lunar_od.radiometrics import BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL
+
+    assert _bary_cfg(transponder_delay_s=1e-6).transponder_delay_s == 1e-6
+    assert _bary_cfg(transponder_delay_s=1e-6).counted_doppler_model != BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL
+    from lunar_od.radiometrics import RangeRatePhysicsConfig
+    media = RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=TC_S,
+                                   counted_doppler_model=BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL,
+                                   transponder_delay_s=1e-6)
+    assert media.transponder_delay_s == 1e-6
+    with pytest.raises(ValueError, match="output_unit"):
+        _bary_cfg(transponder_delay_s=1e-6, output_unit="hz")
+    with pytest.raises(ValueError, match="station_clock_drift"):
+        _bary_cfg(transponder_delay_s=1e-6, station_clock_drift=1e-12)

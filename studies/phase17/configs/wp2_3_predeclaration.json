@@ -234,5 +234,12 @@
     "G37_supported_options": {
       "rule": "barycentric_dsn and barycentric_dsn_media accept transponder_delay_s > 0; output_unit='hz' and station_clock_drift are still rejected; the G11 counted-Doppler rejection clause is superseded"
     }
+  },
+  "results_slice_7": {
+    "G33": "PASS (first run)",
+    "G34": "PASS after a harness fix (no tolerance change): the first run errored before any gate value was computed (four-event TwoWayEventHistoryError at the first count, t2d = -1.36 s before the history start; the barycentric generator drops such counts). Both models now run on one visibility mask starting at Tc + 30 s. 234 counts: max|change| 3.2229e-2 m/s, gap 3.52e-6 m/s vs bound 8.06e-6 m/s (relative 1.09e-4, the predicted first-order frame term)",
+    "G35": "PASS (first run)",
+    "G36": "PASS (first run)",
+    "G37": "PASS (first run); the G11 counted-Doppler rejection clause is superseded and its test now asserts acceptance"
   }
 }
