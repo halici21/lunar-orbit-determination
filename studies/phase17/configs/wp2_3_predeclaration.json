@@ -90,5 +90,20 @@
   },
   "results_slice_2": {
     "G7": "PASS bitwise vs HEAD edc8a0b on 240 rows (ranges and Jacobian)"
+  },
+  "scope_slice_3": "bias_mode='pass_range' in estimate_two_way_range_bls_lm and estimate_two_way_range_srif: one constant range bias per tracking pass, eliminated by the same variable projection as 'station_range'. A pass is a run of one station's rows (time order) with no gap above TWO_WAY_RANGE_PASS_GAP_S = 600 s; passes are numbered from 1 per station. Bias estimates are reported in EstimatorStats.station_range_biases_m keyed by (station id, pass index). Same fail-closed rules as slice 1 (K_SRP, robust rejection, a pass with fewer than two rows)",
+  "gates_slice_3": {
+    "G12_pass_bias_recovery": {
+      "rule": "noise-free SSB data, station 1 tracked in two passes (0-1200 s, 2400-3600 s) with biases +6 m / -3 m, station 2 one pass with +2 m: BLS-LM and SRIF recover every pass bias within 1 mm and position within 1 cm from the G2 offset"
+    },
+    "G13_station_model_misfit": {
+      "rule": "the same data fitted with bias_mode='station_range' leave a pass-mean residual magnitude above 1 m on at least one station-1 pass"
+    },
+    "G14_constant_bias_consistency": {
+      "rule": "on data with station-constant biases (+7 m / -4 m) on the same two-pass geometry, 'pass_range' returns both station-1 pass biases within 1 mm of +7 m"
+    },
+    "G15_fail_closed": {
+      "rule": "a pass with a single row is rejected; 'pass_range' with solve_for_k_srp or robust_outlier_rejection is rejected; the station-mode behaviour (G1-G6) is unchanged"
+    }
   }
 }
