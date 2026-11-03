@@ -750,7 +750,8 @@ class R4CountedDopplerModelSelection(unittest.TestCase):
         schema = scenario_config_schema()["properties"]["counted_doppler_model"]
         self.assertEqual(
             # F2 WP2.1 adds the opt-in barycentric DSN model; the default is unchanged.
-            schema["enum"], ["single_bounce_exact_station", "four_event_delay", "barycentric_dsn"]
+            schema["enum"],
+            ["single_bounce_exact_station", "four_event_delay", "barycentric_dsn", "barycentric_dsn_media"],
         )
         self.assertEqual(schema["default"], "single_bounce_exact_station")
 

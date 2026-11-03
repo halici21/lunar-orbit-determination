@@ -47,7 +47,7 @@ from .radiometrics import (
     DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
     EXACT_EVENT_EPOCH_STATION_METHOD,
-    BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+    BARYCENTRIC_COUNTED_DOPPLER_MODELS,
     FOUR_EVENT_COUNTED_DOPPLER_MODEL,
     LEGACY_INTERPOLATED_STATION_METHOD,
     STATION_STATE_METHODS,
@@ -1113,7 +1113,7 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
             )
     # F2 WP2.1 loader gate: the barycentric DSN counted-Doppler model is
     # qualified for the batch estimators only; SR-UKF fails closed.
-    if config.counted_doppler_model == BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL:
+    if config.counted_doppler_model in BARYCENTRIC_COUNTED_DOPPLER_MODELS:
         if config.range_rate_physics != "two_way_counted_doppler":
             raise ValueError(
                 "counted_doppler_model='barycentric_dsn' requires "

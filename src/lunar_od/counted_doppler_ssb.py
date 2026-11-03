@@ -75,13 +75,24 @@ def _context(cfg, station, t_grid_s, state_history_mci, earth_pos_mci_m, earth_v
     return station_state, sc, eph, site
 
 
+def _media_kwargs(cfg, station) -> dict:
+    """F2 WP2.2: the default-climatology media phase delay of both legs for 'barycentric_dsn_media'."""
+    from .media import MediaModel, MediaSite
+    from .radiometrics import BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL
+
+    if cfg.counted_doppler_model != BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL:
+        return {}
+    return {"media": MediaModel(), "media_site": MediaSite.from_station(station)}
+
+
 def barycentric_counted_doppler_observable(receive_mid_time_s, station, t_grid_s, state_history_mci,
                                            earth_pos_mci_m, earth_vel_mci_mps, cfg, *, et0_s=None) -> float:
     """Counted Doppler [m/s equivalent] under the DSN barycentric light-time model."""
     station_state, sc, eph, site = _context(cfg, station, t_grid_s, state_history_mci, earth_pos_mci_m,
                                             earth_vel_mci_mps, et0_s, 6)
     value, _, _ = _rlt.counted_doppler(float(receive_mid_time_s), cfg.count_interval_s, station_state, sc, eph,
-                                       LIGHT_TIME_MODEL, site=site, clock_offset_s=cfg.station_clock_offset_s)
+                                       LIGHT_TIME_MODEL, site=site, clock_offset_s=cfg.station_clock_offset_s,
+                                       **_media_kwargs(cfg, station))
     return float(value)
 
 
@@ -93,5 +104,5 @@ def barycentric_counted_doppler_initial_state_jacobian(receive_mid_time_s, stati
                                             earth_pos_mci_m, earth_vel_mci_mps, et0_s, 42)
     _, partial, _ = _rlt.counted_doppler(float(receive_mid_time_s), cfg.count_interval_s, station_state, sc, eph,
                                          LIGHT_TIME_MODEL, with_partial=True, site=site,
-                                         clock_offset_s=cfg.station_clock_offset_s)
+                                         clock_offset_s=cfg.station_clock_offset_s, **_media_kwargs(cfg, station))
     return np.asarray(partial, dtype=float).reshape(6)

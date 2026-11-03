@@ -73,14 +73,23 @@ FOUR_EVENT_COUNTED_DOPPLER_MODEL = "four_event_delay"
 # F2 WP2.1 (MEAS-01): explicit opt-in DSN light-time model (SSB legs, Sun and
 # Earth Shapiro delays, TT interval), evaluated by lunar_od.counted_doppler_ssb.
 BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL = "barycentric_dsn"
+# F2 WP2.2 (MEAS-06): the same model plus the troposphere/ionosphere phase
+# delay of both legs (lunar_od.media.MediaModel(), default climatology).
+BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL = "barycentric_dsn_media"
+BARYCENTRIC_COUNTED_DOPPLER_MODELS = (
+    BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+    BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL,
+)
 COUNTED_DOPPLER_MODELS = (
     SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL,
     FOUR_EVENT_COUNTED_DOPPLER_MODEL,
     BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+    BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL,
 )
 DEFAULT_COUNTED_DOPPLER_MODEL = SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL
 FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION = "r4.counted-doppler.four-event-delay.v1"
 BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL_VERSION = "f2.counted-doppler.barycentric-dsn.v1"
+BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL_VERSION = "f2.counted-doppler.barycentric-dsn-media.v1"
 COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD = "cubic_hermite"
 COUNTED_DOPPLER_MODEL_VERSION = "r3.counted-doppler.exact-station.v1"
 
@@ -90,6 +99,7 @@ def counted_doppler_model_version(counted_doppler_model: str) -> str:
     return {
         FOUR_EVENT_COUNTED_DOPPLER_MODEL: FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION,
         BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL: BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL_VERSION,
+        BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL: BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL_VERSION,
     }.get(counted_doppler_model, COUNTED_DOPPLER_MODEL_VERSION)
 STATION_STATE_SOURCE_FRAME = "J2000"
 STATION_STATE_TARGET_FRAME = "ITRF93"
@@ -211,7 +221,7 @@ class RangeRatePhysicsConfig:
                     f"got delay {self.transponder_delay_s!r} s and count "
                     f"interval {self.count_interval_s!r} s."
                 )
-        if self.counted_doppler_model == BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL:
+        if self.counted_doppler_model in BARYCENTRIC_COUNTED_DOPPLER_MODELS:
             if self.mode != "two_way_counted_doppler":
                 raise ValueError(
                     "counted_doppler_model='barycentric_dsn' requires "
@@ -286,7 +296,7 @@ class RangeRatePhysicsConfig:
     @property
     def barycentric_enabled(self) -> bool:
         """True when the explicit F2 barycentric DSN light-time model is selected."""
-        return self.counted_doppler_model == BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL
+        return self.counted_doppler_model in BARYCENTRIC_COUNTED_DOPPLER_MODELS
 
     @property
     def counted_doppler_model_version(self) -> str:

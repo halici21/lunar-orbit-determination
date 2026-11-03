@@ -156,3 +156,100 @@ def test_arc_builder_rejects_media_off_the_barycentric_route():
     with pytest.raises(ValueError, match="media_model"):
         build_measurement_arcs("position", np.arange(3.0), np.zeros((3, 6)), [0], [2], np.ones((3, 1), bool),
                                STATIONS[:1], None, None, 0.0, media_model="default_climatology")
+
+
+# ---------------------------------------------------------------------------
+# Slice 2: counted Doppler with media (counted_doppler_model='barycentric_dsn_media').
+# ---------------------------------------------------------------------------
+def _doppler_cfg(model):
+    from lunar_od.radiometrics import RangeRatePhysicsConfig
+
+    return RangeRatePhysicsConfig(mode="two_way_counted_doppler", count_interval_s=60.0, counted_doppler_model=model)
+
+
+def test_doppler_media_jacobian_matches_central_differences(arc):
+    """G8: the media-bearing Jacobian row against re-propagated central differences."""
+    from lunar_od.radiometrics import (
+        two_way_counted_doppler_initial_state_jacobian,
+        two_way_counted_doppler_observable,
+    )
+
+    cfg = _doppler_cfg("barycentric_dsn_media")
+    t, eph = arc["t"], arc["eph"]
+    vis = _elevation_mask(arc, arc["aug"][:, :6])
+    j_st = int(np.argmax(vis.sum(axis=0)))                 # the station above 10 deg on this arc
+    rows = np.flatnonzero(vis[2:-2, j_st]) + 2
+    t_mid = float(t[rows[rows.size // 2]])
+    station = STATIONS[j_st]
+    zeros = np.zeros((t.size, 6, 6))
+
+    def doppler(history):
+        return two_way_counted_doppler_observable(t_mid, station, t, history, eph.earth_position(t),
+                                                  eph.earth_velocity(t), zeros, cfg, et0_s=arc["et0"])
+
+    analytic = two_way_counted_doppler_initial_state_jacobian(t_mid, station, t, arc["aug"],
+                                                              eph.earth_position(t), eph.earth_velocity(t),
+                                                              zeros, cfg, et0_s=arc["et0"])
+    numeric = np.zeros(6)
+    for j, h in enumerate((10.0, 10.0, 10.0, 1e-2, 1e-2, 1e-2)):
+        dx = np.zeros(6)
+        dx[j] = h
+        numeric[j] = (doppler(arc["propagate"](arc["x0"] + dx))
+                      - doppler(arc["propagate"](arc["x0"] - dx))) / (2.0 * h)
+    assert np.max(np.abs(analytic - numeric)) < 1e-6 * np.linalg.norm(analytic)
+
+
+def test_doppler_media_bls_recovery_and_materiality(arc):
+    """G6/G7: BLS-LM recovers the truth from media-bearing Doppler; the vacuum model misfits it."""
+    from lunar_od.estimators import estimate_range_rate_bls_lm
+    from lunar_od.measurements import compute_range_rate_residuals, generate_range_rate_measurements
+    from lunar_od.radiometrics import BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL_VERSION
+
+    eph, t, gm = arc["eph"], arc["t"], arc["gm"]
+    truth = arc["aug"][:, :6]
+    vis = _elevation_mask(arc, truth)
+    cfg = _doppler_cfg("barycentric_dsn_media")
+    obs, pass_geo = generate_range_rate_measurements(t, truth, STATIONS, vis, eph.earth_position,
+                                                     eph.earth_velocity, arc["et0"], noise=False, arc_id=1,
+                                                     range_rate_physics=cfg)
+    assert obs.shape[0] > 20
+    assert pass_geo.measurement_metadata["counted_doppler_model_version"] == \
+        BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL_VERSION
+
+    # G6 (amended after the result): only Canberra is above 10 deg on this 1 h arc, so single-station Doppler
+    # leaves ~2 cm whatever the media; the gate compares against the vacuum model on the same rows (control).
+    x_start = arc["x0"] + np.array([80.0, -60.0, 40.0, 0.02, -0.01, 0.015])
+
+    def recovery_error(o, geo):
+        x_hat, status, _ = estimate_range_rate_bls_lm(t, o, x_start, geo, *gm, eph.earth_position,
+                                                      eph.sun_position, rtol=1e-12, atol=1e-13)
+        return np.linalg.norm(x_hat[:3] - arc["x0"][:3]), np.linalg.norm(x_hat[3:] - arc["x0"][3:]), status
+
+    obs_vac, geo_vac = generate_range_rate_measurements(t, truth, STATIONS, vis, eph.earth_position,
+                                                        eph.earth_velocity, arc["et0"], noise=False, arc_id=1,
+                                                        range_rate_physics=_doppler_cfg("barycentric_dsn"))
+    pos_m, vel_m, status = recovery_error(obs, pass_geo)
+    pos_v, vel_v, _ = recovery_error(obs_vac, geo_vac)
+    assert pos_m < 0.03 and pos_m <= 1.5 * pos_v, (pos_m, pos_v, status)
+    assert vel_m < 1e-5 and vel_m <= 1.5 * vel_v, (vel_m, vel_v, status)
+
+    _, h_vac = compute_range_rate_residuals(truth, obs, replace(pass_geo,
+                                                                range_rate_physics=_doppler_cfg("barycentric_dsn")))
+    misfit = obs[:, 2] - h_vac[:, 1]
+    assert 1e-5 < float(np.sqrt(np.mean(misfit ** 2))) < 1e-2
+
+
+def test_doppler_media_model_fails_closed():
+    from lunar_od.radiometrics import LEGACY_INTERPOLATED_STATION_METHOD
+    from lunar_od.scenario_config import scenario_config_from_mapping
+
+    cfg = _doppler_cfg("barycentric_dsn_media")
+    for overrides in ({"station_state_method": LEGACY_INTERPOLATED_STATION_METHOD},
+                      {"mode": "geometric_instantaneous"}):
+        with pytest.raises(ValueError, match="barycentric_dsn"):
+            replace(cfg, **overrides)
+    with pytest.raises(ValueError, match="ukf"):
+        scenario_config_from_mapping({"name": "wp2_2", "start_mode": "cold", "network": "single",
+                                      "measurement_type": "range_rate", "estimator_type": "ukf",
+                                      "range_rate_physics": "two_way_counted_doppler",
+                                      "counted_doppler_model": "barycentric_dsn_media"})
