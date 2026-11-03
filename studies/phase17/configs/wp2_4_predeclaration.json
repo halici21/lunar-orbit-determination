@@ -102,5 +102,34 @@
       "2026-11-01": 68.958
     },
     "diagnostic_note": "PREDICT (NAIF 2025-08-26 predict kernel) vs MEASURED (IERS-measured through 2026-11-02): the predict kernel misplaces stations by up to 69 m at today's epochs. Synthetic runs are self-consistent; any real data or external comparison after 2025-08-26 must use MEASURED. NAIF's newer predict kernel earth_2026_260806_2126_predict.bpc exists but is not adopted (it would change every 2027 synthetic result; owner decision)."
+  },
+  "survey_before_predeclaration_slice_4": "Read before writing the gates, no model run: NAIF earthstns_itrf93_260814.bsp comments quote DSN 810-005 301 Rev. P (May 2026): ITRF93 Cartesian coordinates at epoch 2003.0 for 19 antennas and one plate velocity per complex (Goldstone 1.96, Canberra 5.17, Madrid 3.05 cm/yr by arithmetic). So at 2027-03-02 the accumulated motion is 0.47, 1.25 and 0.74 m by arithmetic, larger than the programme's 1 m radial target at Canberra. Phase C3 classified T6 plate motion CONVENTION_REAL_DATA and never measured it. SHA-256 007eb0aa... from two independent downloads of the NAIF file. C3 already measured the pole tide (1.2 mm, 0.004 sigma, DOCUMENT_ONLY): not re-opened. The stated absolute accuracy is up to 0.1 m (1 sigma) by the source's own note. IERS DEHANTTIDEINEL.F could not be fetched (404 at the two paths tried), so the G21 reference values are transcribed from memory of that file's header; a three-component micrometre agreement cannot be accidental, and a disagreement is reported as computed.",
+  "scope_slice_4": "src/lunar_od/dsn_stations.py: the DSN 810-005 301 Rev. P table (ITRF93, epoch 2003.0 TDB) with per-complex plate velocities; dsn_station_itrf93(name, et_s) and dsn_station(name, et_s, *, sigmas, allow_estimated=False), which returns an ordinary Station whose r_ecef_m is the antenna position at et_s, so every production path (Moon-centred and SSB) consumes it without a change to a protected file; the position is frozen at et_s, as Station is static. The SPK joins the kernel manifest but is not furnished by the default loader. The IERS solid-tide published test case closes the plan's test_solid_tide_vs_dehanttideinel_testcase. Existing station tables are not changed: this is opt-in, and synthetic baselines are untouched.",
+  "out_of_scope_slice_4": "ocean loading (needs BLQ coefficients from an external service: NOT_MEASURED stays, a later slice); pole tide (C3 DOCUMENT_ONLY stands); replacing the rounded scenario station tables (CFG-08; would change every synthetic baseline); non-DSN stations (the LRO USN sites of RD-09 are not in this source); finals2000A EOP reader; scenario and desktop fields for the catalogue (F5 with real data)",
+  "gates_slice_4": {
+    "G16_table_vs_naif_spk": {
+      "rule": "dsn_station_itrf93 vs spkezr(<id>, et, 'ITRF93', 'NONE', 'EARTH') for all 19 antennas at 1990, 2003, 2010, 2027 and 2040: position < 1 mm, velocity < 1e-12 m/s"
+    },
+    "G17_station_round_trip": {
+      "rule": "dsn_station(name, et).r_ecef_m reproduces dsn_station_itrf93(name, et) within 1e-6 m for all antennas (WGS-84 geodetic inversion)"
+    },
+    "G18_production_chain_vs_spk": {
+      "rule": "make_exact_sxform_station_state_provider with dsn_station at the arc start, minus the arc's Earth state, vs spkezr(<id>, et, 'J2000', 'NONE', 'EARTH') at the grid nodes of a 1 h arc: position < 1 mm, velocity < 1e-7 m/s"
+    },
+    "G19_freeze_error": {
+      "rule": "freezing the position at the arc start errs by < 0.2 mm after 1 day for every antenna, the documented limit of the static Station"
+    },
+    "G20_materiality": {
+      "rule": "at 2027-03-02, epoch-2003 vs arc-epoch coordinates: station shift within 1 percent of the arithmetic 0.47 / 1.25 / 0.74 m; for DSS-43 on the 1 h arc, max |change| of two-way range in [0.2, 1.3] m and of counted Doppler in [1e-6, 2e-4] m/s under DSN_LIGHT_TIME_MODEL"
+    },
+    "G21_solid_tide_iers_test_case": {
+      "rule": "solid_tide_displacement_ecef at the DEHANTTIDEINEL test case (2009-04-13 0h UTC, station 4075578.385 / 931852.890 / 4801570.154 m) reproduces 0.07700420357108 / 0.06304056321825 / 0.05516568152597 m within 1 um per component (transcribed from memory, see the survey note)"
+    },
+    "G22_fail_closed": {
+      "rule": "unknown antenna raises ValueError; DSS-33 (the source's estimated location, good to a few metres) raises unless allow_estimated=True; a non-finite epoch raises"
+    },
+    "G23_manifest_and_full_regression": {
+      "rule": "KERNEL_MANIFEST records earthstns_itrf93_260814.bsp with SHA-256 007eb0aad5dd022c6d61bdbfb2395680bd1eb31c49a8637d0b0a1cfbea737c6b; the default loader does not furnish it; no protected file changes; full regression green"
+    }
   }
 }
