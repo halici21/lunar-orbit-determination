@@ -147,5 +147,23 @@
     "G17": "PASS",
     "G18": "PASS",
     "G19": "PASS"
+  },
+  "scope_slice_5": "Ramped uplink core (MEAS-08): relativistic_light_time.UplinkRamp, a piecewise-linear transmit frequency f_T(t) = f_k + fdot_k (t - t_k) on [t_k, t_{k+1}) in pass seconds (TDB from et0; the TT-TDB offset of the ramp epochs, <= 1.7 ms, is neglected), with an analytic integral; counted_doppler(..., uplink_ramp=ramp) returns the Moyer ramped counted Doppler in m/s equivalent: the unramped value minus c/(2 f_ref Tc) integral_{t1 start}^{t1 end} (f_T - f_ref) dt1, and its state partial adds c/(2 f_ref Tc) [(f_T(t1e) - f_ref) d(rt_e)/dx - (f_T(t1s) - f_ref) d(rt_s)/dx]. Scenario/estimator plumbing of ramp tables is a later slice",
+  "gates_slice_5": {
+    "G20_constant_limit": {
+      "rule": "a ramp with f = f_ref and fdot = 0 reproduces the unramped value and partial bitwise"
+    },
+    "G21_constant_offset": {
+      "rule": "f = f_ref + 1 kHz, fdot = 0: the change equals -c/(2 f_ref Tc) x 1 kHz x (t1e - t1s) within 1e-12 relative"
+    },
+    "G22_receive_quadrature_oracle": {
+      "rule": "a three-segment ramp (rates +0.4, -0.25, +0.1 Hz/s, breaks inside the count interval): the correction equals an independent Gauss-Legendre quadrature over receive time of (f_T(t1(t3)) - f_ref) dt1/dt3 (t1 solved at each node, dt1/dt3 by central difference of solved t1) within 1e-6 relative to the correction"
+    },
+    "G23_partial_fd": {
+      "rule": "ramped partial vs central finite difference of the initial state (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G24_fail_closed": {
+      "rule": "a ramp that starts after the transmit epoch t1 of the count start raises ValueError; non-increasing segment epochs or a non-positive frequency raise ValueError"
+    }
   }
 }
