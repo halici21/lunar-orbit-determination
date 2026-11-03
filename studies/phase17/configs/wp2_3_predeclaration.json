@@ -216,5 +216,23 @@
     "G30": "PASS (first run)",
     "G31": "PASS (first run)",
     "G32": "FAIL before the fix as required (resolver returned single_bounce_exact_station for barycentric_dsn), PASS after"
+  },
+  "scope_slice_7": "Fixed transponder delay in barycentric counted Doppler (both barycentric models): RangeRatePhysicsConfig and counted_doppler_ssb stop rejecting transponder_delay_s for them; rlt.counted_doppler takes transponder_delay_s and passes it to both endpoint solve_two_way calls (slice-2 event chain and partials: uplink received at t2u = t2d - d). The count is a difference of the endpoint light-time sums, so the fixed delay cancels as a term and enters through the event geometry only. Supersedes the counted-Doppler clause of G11",
+  "gates_slice_7": {
+    "G33_zero_delay_bitwise": {
+      "rule": "transponder_delay_s=0 gives observations and production Jacobian rows bitwise equal to the slice-6 path"
+    },
+    "G34_delay_effect_parity_with_four_event": {
+      "rule": "with d = 0.05 s the per-count change bary(d) - bary(0) agrees with the Moon-centred four-event model change 4ev(d) - 4ev(0) within 2.5e-4 x max|change| + 1e-9 m/s (slice-2 first-order frame term ~1e-4 relative), and max|change| > 1e-3 m/s"
+    },
+    "G35_production_jacobian_fd": {
+      "rule": "delayed production Jacobian vs central differences (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G36_bls_srif_recovery": {
+      "rule": "BLS-LM and SRIF on noise-free delayed barycentric counted Doppler recover position < 1 cm and velocity < 1e-5 m/s from the G2 offset"
+    },
+    "G37_supported_options": {
+      "rule": "barycentric_dsn and barycentric_dsn_media accept transponder_delay_s > 0; output_unit='hz' and station_clock_drift are still rejected; the G11 counted-Doppler rejection clause is superseded"
+    }
   }
 }
