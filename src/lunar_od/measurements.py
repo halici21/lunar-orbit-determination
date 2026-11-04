@@ -229,11 +229,13 @@ def normalize_jacobian_model(
     companion_geometry: str = "instantaneous",
 ) -> str:
     """Return the declared Jacobian model for metadata and validation."""
+    geometric = measurement_model_profile == "geometric_instantaneous" and companion_geometry == "instantaneous"
     if jacobian_model is None:
-        if measurement_model_profile == "geometric_instantaneous" and companion_geometry == "instantaneous":
-            jacobian_model = "analytic_exact_geometric"
-        else:
-            jacobian_model = "analytic_first_order_light_time"
+        jacobian_model = "analytic_exact_geometric" if geometric else "implicit_light_time"
+    elif jacobian_model == "analytic_exact_geometric" and not geometric:
+        # F2 WP2.5 (MEAS-10): the scenario field's default cannot describe a light-time observable. The
+        # first-order map errs by up to 4.6 percent per row and stays available by its explicit name.
+        jacobian_model = "implicit_light_time"
     if jacobian_model not in JACOBIAN_MODELS:
         raise ValueError(f"jacobian_model must be one of {JACOBIAN_MODELS}; got {jacobian_model!r}.")
     if (

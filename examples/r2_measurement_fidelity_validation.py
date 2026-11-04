@@ -860,6 +860,8 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/relativistic_light_time.pyb66a658d... -> 2499813e...
 #   F2 WP2.2 follow-up: archived desktop runs tolerate media_model (SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES):
 #   lunar_od/scenario_config.py      17e4be89... -> 566eb338...
+#   F2 WP2.5 slice 1 (implicit light-time Jacobian by default, MEAS-10):
+#   lunar_od/measurements.py         5ce61154... -> 9e0f9e1b...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
@@ -870,7 +872,7 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/radiometrics.py":
         "2097839235edf7ef24ac3a6c32f422e840e69dbf8236b5f8410c1fb70f08b463",
     "lunar_od/measurements.py":
-        "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
+        "9e0f9e1b82401f7afc34579a18407c99e9d19b2eb03000a72e66be965525b612",
     "lunar_od/media.py":
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":

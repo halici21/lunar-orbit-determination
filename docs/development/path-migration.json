@@ -2628,15 +2628,16 @@
     },
     "lunar_od/measurements.py": {
       "path": "src/lunar_od/measurements.py",
-      "original_sha256": "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
+      "original_sha256": "9e0f9e1b82401f7afc34579a18407c99e9d19b2eb03000a72e66be965525b612",
       "byte_preserved": true,
-      "refrozen_from_sha256": "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
-      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
+      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.5 slice 1: implicit light-time Jacobian by default (MEAS-10); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
         "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
         "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
-        "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d"
+        "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
+        "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03"
       ]
     },
     "lunar_od/monte_carlo.py": {
