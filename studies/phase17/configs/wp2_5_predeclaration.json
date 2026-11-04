@@ -1,0 +1,35 @@
+{
+  "study": "F2 WP2.5: measurement defaults (MEAS-09, MEAS-10)",
+  "date": "2026-11-04",
+  "source_of_predeclaration": "docs/assurance/vv-program.md WP2.5; docs/validation/independent-assessment-2026-10-31.md MEAS-09, MEAS-10",
+  "survey_before_predeclaration": "Run before writing the gates, no production code changed: on a 1 h arc with 121 Canberra rows, one_way_light_time position Jacobians against Richardson central differences (floor 5.2e-7): analytic_first_order_light_time 4.6 percent per row at most, implicit_light_time 5.1e-7. BLS-LM reaches the same fixed point with both (0.16 mm and 0.09 mm). normalize_jacobian_model leaves the scenario field default analytic_exact_geometric as it is on a light-time profile, so a light-time scenario runs the first-order mapping while its output says exact geometric. The implicit near-zenith error applies within 1e-6 rad of zenith (0.2 arcsec). Companion range beside barycentric counted Doppler differs from the SSB one-way range by 37.4-37.6 km (apparent_one_way) and 35.5-39.5 km (instantaneous), angles by about 31 urad: slice 2.",
+  "scope_slice_1": "MEAS-10: measurements.normalize_jacobian_model resolves, on any light-time profile or apparent companion geometry, both None and the inapplicable label analytic_exact_geometric to implicit_light_time. Explicit analytic_first_order_light_time stays available. The geometric instantaneous default stays analytic_exact_geometric. Observations are not touched; only Jacobians and therefore iteration paths and covariances of light-time runs change.",
+  "out_of_scope_slice_1": "the companion geometry of barycentric Doppler (slice 2); the default range_rate_physics; the scenario field's own default value, which is part of the cached-package identity",
+  "gates_slice_1": {
+    "G1_richardson_order": {
+      "rule": "central differences of re-propagated arcs converge to the implicit Jacobian at second order: with steps 8, 4, 2 km and 8, 4, 2 m/s, the median over rows of the max error relative to the row norm falls by a factor in [3, 5] per halving, in both halvings"
+    },
+    "G2_jacobian_accuracy": {
+      "rule": "the default Jacobian of one_way_light_time matches the Richardson reference (steps 40, 20, 10 m and 0.04, 0.02, 0.01 m/s) within 2e-6 of the row norm on every row; explicit analytic_first_order_light_time misses it by more than 1 percent on some row (it stays a documented approximation)"
+    },
+    "G3_resolution_table": {
+      "rule": "None and analytic_exact_geometric resolve to implicit_light_time for one_way_light_time, its aberrated profiles, the SSB profiles and apparent_one_way companion; explicit first-order is preserved; the geometric instantaneous default stays analytic_exact_geometric; implicit on geometric instantaneous still raises"
+    },
+    "G4_observations_unchanged": {
+      "rule": "generated observations are bitwise equal between the default and explicit first-order models"
+    },
+    "G5_estimators": {
+      "rule": "BLS-LM and SRIF with the default model from a 100 m start: position < 1 cm and velocity < 1e-5 m/s, each no worse than 1.5 x the explicit first-order run or below 1 mm"
+    },
+    "G6_covariance": {
+      "rule": "the BLS-LM posterior sigmas with the default model match sqrt(diag(inv(H^T W H))) built from the Richardson Jacobian within 1 percent on all six states; the first-order ratio is reported"
+    },
+    "G7_scenario_route_label": {
+      "rule": "a scenario with measurement_model_profile=one_way_light_time and no jacobian_model reaches its pass geometry as implicit_light_time, the label no longer says exact geometric"
+    },
+    "G8_full_regression": {
+      "rule": "full regression green; every changed test pin and every changed protected file is listed in the slice commit"
+    }
+  },
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+}
