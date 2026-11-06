@@ -1,0 +1,242 @@
+{
+ "6.0h/position/clean/loosening_on": {
+  "pos_err_m": 0.003887170281605014,
+  "status": "MaxIter",
+  "detail": "",
+  "iterations": 60,
+  "cost": 3.0265367142219745e-08,
+  "cost_truth": 0.0,
+  "rows": 174,
+  "wall_s": 28.78219999995781
+ },
+ "6.0h/position/clean/loosening_off": {
+  "pos_err_m": 0.0003585167590172584,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 33,
+  "cost": 2.954763239948025e-10,
+  "cost_truth": 0.0,
+  "rows": 174,
+  "wall_s": 17.003376999986358
+ },
+ "6.0h/position/noisy/loosening_on": {
+  "pos_err_m": 5.952367683818719,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 28,
+  "cost": 526.0126514010566,
+  "cost_truth": 526.8443260798088,
+  "rows": 174,
+  "wall_s": 13.325064399978146
+ },
+ "6.0h/position/noisy/loosening_off": {
+  "pos_err_m": 1.4208227504723852,
+  "status": "J-Stab",
+  "detail": "COST_STABLE",
+  "iterations": 16,
+  "cost": 522.5038737514129,
+  "cost_truth": 526.8443260798088,
+  "rows": 174,
+  "wall_s": 8.906138200021815
+ },
+ "6.0h/range_rate/clean/loosening_on": {
+  "pos_err_m": 0.14926106611740783,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 31,
+  "cost": 95.69833679939002,
+  "cost_truth": 0.0,
+  "rows": 174,
+  "wall_s": 8.457945999980439
+ },
+ "6.0h/range_rate/clean/loosening_off": {
+  "pos_err_m": 1.592966191729208e-06,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 31,
+  "cost": 9.862188497764482e-10,
+  "cost_truth": 0.0,
+  "rows": 174,
+  "wall_s": 10.770008200022858
+ },
+ "6.0h/range_rate/noisy/loosening_on": {
+  "pos_err_m": 0.20533164210053068,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 28,
+  "cost": 784.6182379016698,
+  "cost_truth": 696.6924101186097,
+  "rows": 174,
+  "wall_s": 6.985699799959548
+ },
+ "6.0h/range_rate/noisy/loosening_off": {
+  "pos_err_m": 0.12007506199720575,
+  "status": "J-Stab",
+  "detail": "COST_STABLE",
+  "iterations": 14,
+  "cost": 689.1737811467897,
+  "cost_truth": 696.6924101186097,
+  "rows": 174,
+  "wall_s": 4.6064971999730915
+ },
+ "6.0h/two_way_range/clean/loosening_on": {
+  "pos_err_m": 6.438528882805432,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 33,
+  "cost": 2.83532757178482,
+  "cost_truth": 0.0,
+  "rows": 174,
+  "wall_s": 18.34120600001188
+ },
+ "6.0h/two_way_range/clean/loosening_off": {
+  "pos_err_m": 0.012491319246671066,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 31,
+  "cost": 1.7706337462897181e-07,
+  "cost_truth": 0.0,
+  "rows": 174,
+  "wall_s": 15.855750800052192
+ },
+ "6.0h/two_way_range/noisy/loosening_on": {
+  "pos_err_m": 29.158484414972865,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 30,
+  "cost": 167.79305532230686,
+  "cost_truth": 172.22568832484842,
+  "rows": 174,
+  "wall_s": 15.804922999988776
+ },
+ "6.0h/two_way_range/noisy/loosening_off": {
+  "pos_err_m": 21.277217409471028,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 30,
+  "cost": 164.63152762355725,
+  "cost_truth": 172.22568832484842,
+  "rows": 174,
+  "wall_s": 15.480118900013622
+ },
+ "24.0h/position/clean/loosening_on": {
+  "pos_err_m": 0.00018414815887809457,
+  "status": "MaxIter",
+  "detail": "",
+  "iterations": 60,
+  "cost": 1.4610419663828765e-07,
+  "cost_truth": 0.0,
+  "rows": 967,
+  "wall_s": 150.1872762000421
+ },
+ "24.0h/position/clean/loosening_off": {
+  "pos_err_m": 1.571224235967868e-05,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 33,
+  "cost": 2.4844533433446024e-08,
+  "cost_truth": 0.0,
+  "rows": 967,
+  "wall_s": 83.34493399999337
+ },
+ "24.0h/position/noisy/loosening_on": {
+  "pos_err_m": 0.2963626591149736,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 38,
+  "cost": 3759.254608340349,
+  "cost_truth": 2913.7985846416996,
+  "rows": 967,
+  "wall_s": 89.87386880000122
+ },
+ "24.0h/position/noisy/loosening_off": {
+  "pos_err_m": 0.8637761476840858,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 35,
+  "cost": 2907.562535348436,
+  "cost_truth": 2913.7985846416996,
+  "rows": 967,
+  "wall_s": 102.42176270001801
+ },
+ "24.0h/range_rate/clean/loosening_on": {
+  "pos_err_m": 7.24218166250985e-05,
+  "status": "Converged",
+  "detail": "STEP_NORM",
+  "iterations": 68,
+  "cost": 3.480456562216653e-05,
+  "cost_truth": 0.0,
+  "rows": 967,
+  "wall_s": 116.16713079996407
+ },
+ "24.0h/range_rate/clean/loosening_off": {
+  "pos_err_m": 3.4721091332821164e-05,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 35,
+  "cost": 3.7020287659554294e-06,
+  "cost_truth": 0.0,
+  "rows": 967,
+  "wall_s": 69.28128819999984
+ },
+ "24.0h/range_rate/noisy/loosening_on": {
+  "pos_err_m": 0.5623651389999688,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 30,
+  "cost": 207846.98452238803,
+  "cost_truth": 4005.3849964681617,
+  "rows": 967,
+  "wall_s": 53.636813800025266
+ },
+ "24.0h/range_rate/noisy/loosening_off": {
+  "pos_err_m": 0.05533259583931413,
+  "status": "J-Stab",
+  "detail": "COST_STABLE",
+  "iterations": 23,
+  "cost": 4003.362648566727,
+  "cost_truth": 4005.3849964681617,
+  "rows": 967,
+  "wall_s": 45.74105019995477
+ },
+ "24.0h/two_way_range/clean/loosening_on": {
+  "pos_err_m": 0.5225635582850174,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 30,
+  "cost": 1263.7552183410967,
+  "cost_truth": 0.0,
+  "rows": 967,
+  "wall_s": 135.83523359999526
+ },
+ "24.0h/two_way_range/clean/loosening_off": {
+  "pos_err_m": 0.00011597812840211826,
+  "status": "Converged",
+  "detail": "STEP_NORM",
+  "iterations": 27,
+  "cost": 6.712256128693639e-07,
+  "cost_truth": 0.0,
+  "rows": 967,
+  "wall_s": 98.4166428000317
+ },
+ "24.0h/two_way_range/noisy/loosening_on": {
+  "pos_err_m": 5.210445211759451,
+  "status": "DampingLimit",
+  "detail": "LAMBDA_HARD_LIMIT",
+  "iterations": 33,
+  "cost": 1696.8260979574497,
+  "cost_truth": 959.3803253248085,
+  "rows": 967,
+  "wall_s": 117.68445760000031
+ },
+ "24.0h/two_way_range/noisy/loosening_off": {
+  "pos_err_m": 4.3518859914603905,
+  "status": "Converged",
+  "detail": "STATIONARY_AT_DAMPING_LIMIT",
+  "iterations": 33,
+  "cost": 953.0021533446984,
+  "cost_truth": 959.3803253248085,
+  "rows": 967,
+  "wall_s": 122.91912050003884
+ }
+}

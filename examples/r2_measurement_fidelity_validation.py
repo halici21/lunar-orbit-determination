@@ -867,6 +867,8 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/estimators.py           0282c735... -> c02a68a6...
 #   lunar_od/observability.py        cab86c66... -> b4d096e1...
 #   lunar_od/scenario_config.py      566eb338... -> beb68436...
+#   F4 WP4.2-R (BLS-LM scores every iteration at the caller's tolerance; undamped condition reported):
+#   lunar_od/estimators.py           c02a68a6... -> b84b317b...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
@@ -881,7 +883,7 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/media.py":
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":
-        "c02a68a67189a50d7b43e2156553738b924502bf37ed1466ba1abcfb5df7e458",
+        "b84b317bd193e973282b0a356834faf5e733659df85e0ef8abd4b0421021cef1",
     "lunar_od/relativistic_light_time.py":
         "2499813e0696f67c6c2a366703d976f56b1f16450922dd926a6e7994705c6993",
     "lunar_od/observability.py":

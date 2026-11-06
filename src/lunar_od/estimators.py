@@ -706,7 +706,7 @@ def estimate_position_bls_lm(
         return _whiten(whitening, h_initial), _whiten(whitening, residual)
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = rtol, atol  # F4 WP4.2-R: BLS-LM scores every iteration at the caller's tolerance
         h_initial, residual = _linearize(x_nominal, _atol_r, _atol_a)
         current_cost = _weighted_map_cost(residual, w_diag, x_nominal, x_prior,
             prior_sqrt_info if has_explicit_prior else None)
@@ -783,6 +783,9 @@ def estimate_position_bls_lm(
                 )
                 break
 
+    if stop_reason != "Singular":
+        last_condition_number, last_rank = _undamped_step_condition(
+            _lm_step, h_initial, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled)
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
@@ -945,7 +948,7 @@ def estimate_range_rate_bls_lm(
                 _whiten(whitening, _range_rate_residual_from_h(obs_data, h_nom_aug)))
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = (rtol, atol) if caller_tolerance else _adaptive_tol(iteration, max_iter, rtol, atol)
+        _atol_r, _atol_a = rtol, atol  # F4 WP4.2-R: BLS-LM scores every iteration at the caller's tolerance
         h_initial_state, residual = _linearize(x_nominal, _atol_r, _atol_a)
         w_curr_diag, last_rejected_components, last_active_weight_fraction = _robust_weight_diagonal(
             w_diag,
@@ -1043,6 +1046,9 @@ def estimate_range_rate_bls_lm(
                 )
                 break
 
+    if stop_reason != "Singular":
+        last_condition_number, last_rank = _undamped_step_condition(
+            _lm_step, h_initial, residual, w_curr_diag, scale, prior_inv_scaled, prior_rhs_scaled)
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms.
@@ -1895,6 +1901,15 @@ def _equilibrated_condition(matrix: np.ndarray, *, normal: bool) -> tuple[float,
 def _symmetrize(matrix: np.ndarray) -> np.ndarray:
     return 0.5 * (matrix + matrix.T)
 
+
+def _undamped_step_condition(step_fn, h_initial, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled):
+    """F4 WP4.2-R: (condition, rank) of the last linearization without the LM damping term.
+
+    The step's own condition includes lambda*D and so depends on where the damping schedule ended; the
+    reported number is the design's, the quantity SRIF reports (WP4.3).
+    """
+    _, condition_number, rank, _ = step_fn(h_initial, residual, w_diag, scale, prior_inv_scaled, prior_rhs_scaled, 0.0)
+    return condition_number, rank
 
 def _lm_step(
     h_initial: np.ndarray,
@@ -3112,9 +3127,7 @@ def estimate_two_way_range_bls_lm(
         return cost
 
     for iteration in range(1, max_iter + 1):
-        _atol_r, _atol_a = _adaptive_tol(iteration, max_iter, rtol, atol)
-        if propagation_profile is not None or caller_tolerance:
-            _atol_r, _atol_a = rtol, atol   # Phase D2: the F4 guard (WP4.2: also once nominated)
+        _atol_r, _atol_a = rtol, atol  # F4 WP4.2-R: BLS-LM scores every iteration at the caller's tolerance
         if solve_for_k_srp:
             # Phase 17-HARDEN-BLS1: no early-iteration loosening on this path.
             # The Gauss-Newton fixed point is H^T W r = 0 with the H actually
@@ -3344,6 +3357,9 @@ def estimate_two_way_range_bls_lm(
                 )
                 break
 
+    if stop_reason != "Singular":
+        last_condition_number, last_rank = _undamped_step_condition(
+            _step_fn, h_initial, residual, w_curr_diag, scale, prior_inv_scaled, prior_rhs_scaled)
     posterior_information, posterior_covariance = (None, None)
     if return_posterior:
         # Phase 17-HARDEN-D28: the posterior carries only the objective's prior terms:
