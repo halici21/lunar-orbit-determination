@@ -827,6 +827,175 @@ def delta_dor_clock_partials(sol) -> tuple[float, float]:
     return float(result),-1.
 
 
+# ======================================================================
+# delta-DOR quasar term: IERS 2010 consensus model (F2 WP2.6, MEAS-13)
+# ======================================================================
+CONSENSUS_GRAVITY_BODIES = ("SUN", "EARTH")
+
+
+@dataclass(frozen=True)
+class QuasarDelay:
+    """The quasar differential delay as the two station clocks measure it (tag at B minus tag at A)."""
+
+    delay_s: float             # tau + b_A - b_B
+    tau_s: float               # IERS 2010 eq. 11.9: t2 - t1 in TT
+    gravitational_s: float     # T_grav entering eq. 11.9
+    clock_term_s: float        # b_A - b_B
+
+
+def quasar_delay_consensus(t_obs_s: float, station_a_state: Callable, station_b_state: Callable, quasar,
+                           eph: BarycentricEphemeris, *, clock_offsets_s: tuple[float, float] = (0.0, 0.0),
+                           gravity_bodies: tuple[str, ...] = CONSENSUS_GRAVITY_BODIES) -> QuasarDelay:
+    """Quasar differential delay by the IERS Conventions (2010) consensus model, eq. 11.9 with T_grav.
+
+    ``quasar`` is the barycentric unit vector K towards the source (or anything with ``unit_vector_j2000``).
+    ``station_*_state`` are the production Moon-centred station providers; A's tag ``t_obs`` is read as
+    ``t_obs + b_A`` (the true reception, as :func:`delta_dor_station_time`) and the measured delay carries
+    ``b_A - b_B``, so the clocks cancel in delta-DOR. The delay is in TT, the time scale of the station-time
+    spacecraft delay under ``station_time='FULL_TOPOCENTRIC'``.
+
+    Geometric terms: b the geocentric baseline at t1, V the Earth's barycentric velocity, w2 station B's
+    geocentric velocity, U the Sun's potential at the geocentre. T_grav: eq. 11.1-11.4 per body, the Earth by
+    its own geocentric form; the Sun's higher-order limb term and the quasar's media are not modelled.
+    """
+    k_hat = np.asarray(getattr(quasar, "unit_vector_j2000", quasar), dtype=float).reshape(3)
+    k_hat = k_hat / np.linalg.norm(k_hat)
+    unknown = set(gravity_bodies) - set(SHAPIRO_BODY_CODES)
+    if unknown:
+        raise ValueError(f"unknown gravity bodies {sorted(unknown)}; known: {sorted(SHAPIRO_BODY_CODES)}.")
+    c = C_LIGHT_MPS
+    b_a, b_b = (float(x) for x in clock_offsets_s)
+    t1 = float(t_obs_s) + b_a if b_a else float(t_obs_s)
+    sa = np.asarray(station_a_state(t1), dtype=float)[:6]
+    sb = np.asarray(station_b_state(t1), dtype=float)[:6]
+    moon = eph.moon_state(t1)
+    earth = eph._ssb_state(SHAPIRO_BODY_CODES["EARTH"], t1)
+    baseline = sb[:3] - sa[:3]                       # Moon-centred difference: no barycentric cancellation
+    v_earth = earth[3:6]
+    w2 = sb[3:6] + moon[3:6] - v_earth
+    sun = eph.body_position("SUN", t1)
+    u_sun = eph.gm("SUN") / float(np.linalg.norm(earth[:3] - sun))
+
+    t_grav = 0.0
+    x1_bcrs = sa[:3] + moon[:3]
+    x2_bcrs = sb[:3] + moon[:3] - v_earth / c * float(k_hat @ baseline)
+    for name in gravity_bodies:
+        if name == "EARTH":
+            x1, x2 = x1_bcrs - earth[:3], sb[:3] + moon[:3] - earth[:3]
+            t_grav += 2.0 * eph.gm("EARTH") / c ** 3 * np.log(
+                (np.linalg.norm(x1) + k_hat @ x1) / (np.linalg.norm(x2) + k_hat @ x2))
+            continue
+        body = eph.body_position(name, t1)
+        t_closest = min(t1, t1 - float(k_hat @ (body - x1_bcrs)) / c)
+        body = eph.body_position(name, t_closest)
+        r1, r2 = x1_bcrs - body, x2_bcrs - body
+        t_grav += 2.0 * eph.gm(name) / c ** 3 * np.log(
+            (np.linalg.norm(r1) + k_hat @ r1) / (np.linalg.norm(r2) + k_hat @ r2))
+
+    kb = float(k_hat @ baseline)
+    tau = ((t_grav - kb / c * (1.0 - 2.0 * u_sun / c ** 2 - float(v_earth @ v_earth) / (2.0 * c ** 2)
+                               - float(v_earth @ w2) / c ** 2)
+            - float(v_earth @ baseline) / c ** 2 * (1.0 + float(k_hat @ v_earth) / (2.0 * c)))
+           / (1.0 + float(k_hat @ (v_earth + w2)) / c))
+    clock = b_a - b_b
+    return QuasarDelay(tau + clock if clock else tau, tau, t_grav, clock)
+
+
+def quasar_delay_station_time(t_obs_s: float, station_a_state: Callable, station_b_state: Callable, quasar,
+                              eph: BarycentricEphemeris, model: LightTimeModel, *, sites: tuple = (None, None),
+                              clock_offsets_s: tuple[float, float] = (0.0, 0.0)) -> QuasarDelay:
+    """The quasar differential delay in the SAME light-time model as :func:`delta_dor_station_time`.
+
+    A plane wave from K arrives at A at the true reception ``t1 = t_obs + b_A`` and at B at ``t2``, with
+    ``c (t2 - t1) = -K . (X_B(t2) - X_A(t1)) + c (S_B - S_A)``: the stations in ``model.frame`` exactly as the
+    spacecraft legs place them, Moyer eq. 8-38 in its infinite-source limit per ``model.shapiro_bodies`` (each
+    body at the reception epoch, as :func:`shapiro_delay_s`), and the interval converted to station time as the
+    spacecraft delay is. Every station-position and station-time approximation is therefore common to both
+    delta-DOR terms and cancels in the difference (F2 WP2.6: ERFA dtdb's topocentric term differs from the exact
+    V.b/c^2 by 0.47-0.69 ns between DSN complexes; the IERS consensus delay uses the exact one).
+    """
+    k_hat = np.asarray(getattr(quasar, "unit_vector_j2000", quasar), dtype=float).reshape(3)
+    k_hat = k_hat / np.linalg.norm(k_hat)
+    c = C_LIGHT_MPS
+    b_a, b_b = (float(x) for x in clock_offsets_s)
+    t1 = float(t_obs_s) + b_a if b_a else float(t_obs_s)
+    sa = np.asarray(station_a_state(t1), dtype=float)[:6]
+    xa = _to_frame(model, eph, t1, sa)[:3]
+
+    def shapiro(x, t):
+        total = 0.0
+        for name in model.shapiro_bodies:
+            r = x - eph.body_position(name, t)
+            total += 2.0 * eph.gm(name) / c ** 3 * np.log(1.0 / (np.linalg.norm(r) + k_hat @ r))
+        return total
+
+    s_a = shapiro(xa, t1)
+
+    def update(tau):
+        sb = np.asarray(station_b_state(t1 + tau), dtype=float)[:6]
+        d = _relative(model, eph, t1, t1 + tau, tau, sa, sb)
+        new = -float(k_hat @ d) / c
+        if model.shapiro_bodies:
+            new += shapiro(_to_frame(model, eph, t1 + tau, sb)[:3], t1 + tau) - s_a
+        return new
+
+    tau, _ = _fixed_point(update, -float(k_hat @ (np.asarray(station_b_state(t1), dtype=float)[:3] - sa[:3])) / c,
+                          model, "quasar delay")
+    t_grav = (shapiro(_to_frame(model, eph, t1 + tau, np.asarray(station_b_state(t1 + tau), dtype=float)[:6])[:3],
+                      t1 + tau) - s_a) if model.shapiro_bodies else 0.0
+    corr = 0.0
+    if model.full_station_time:
+        site_a, site_b = sites
+        if site_a is None or site_b is None:
+            raise ValueError("station_time='FULL_TOPOCENTRIC' needs both stations' sites.")
+        corr = -(float(_station_time.tdb_minus_tt(eph.et0_s, t1 + tau, site_b))
+                 - float(_station_time.tdb_minus_tt(eph.et0_s, t1, site_a)))
+    delay = tau + corr if corr else tau
+    clock = b_a - b_b
+    return QuasarDelay(delay + clock if clock else delay, delay, t_grav, clock)
+
+
+@dataclass(frozen=True)
+class DeltaDorSsb:
+    """Delta-DOR with both terms in one model: the barycentric spacecraft delay in station time minus the
+    quasar delay in the same light-time model, on the same tags and clocks."""
+
+    spacecraft: DeltaDorStationTime
+    quasar: QuasarDelay
+
+    @property
+    def value_s(self) -> float:
+        return self.spacecraft.delay_s - self.quasar.delay_s
+
+
+def delta_dor_ssb(t_obs_s: float, station_a_state: Callable, station_b_state: Callable, sc: SpacecraftHistory,
+                  eph: BarycentricEphemeris, quasar, *, sites: tuple, model: LightTimeModel = DSN_C2_LIGHT_TIME_MODEL,
+                  clock_offsets_s: tuple[float, float] = (0.0, 0.0)) -> DeltaDorSsb:
+    """F2 WP2.6 (MEAS-13): the production delta-DOR. The legacy :mod:`lunar_od.delta_dor` observable pairs a
+    Moon-centred spacecraft delay with a static plane-wave quasar term and is 0.6-1 us off this model
+    (studies/phase17/results/wp2_6_survey.json).
+
+    Both terms come from one light-time model (:func:`quasar_delay_station_time`), so their common station
+    approximations cancel; :func:`quasar_delay_consensus` is the independent IERS 2010 check of the quasar term.
+    Requires ``model.frame == 'SSB'`` and ``model.station_time == 'FULL_TOPOCENTRIC'`` with both ``sites``.
+    Media are not applied to either term.
+    """
+    if model.frame != "SSB" or not model.full_station_time:
+        raise ValueError("delta_dor_ssb needs frame='SSB' and station_time='FULL_TOPOCENTRIC'.")
+    if len(sites) != 2 or sites[0] is None or sites[1] is None:
+        raise ValueError("delta_dor_ssb needs both stations' sites.")
+    spacecraft = delta_dor_station_time(t_obs_s, station_a_state, station_b_state, sc, eph, model, sites=sites,
+                                        clock_offsets_s=clock_offsets_s)
+    quasar_term = quasar_delay_station_time(t_obs_s, station_a_state, station_b_state, quasar, eph, model,
+                                            sites=sites, clock_offsets_s=clock_offsets_s)
+    return DeltaDorSsb(spacecraft, quasar_term)
+
+
+def delta_dor_ssb_partial(obs: DeltaDorSsb, sc: SpacecraftHistory) -> np.ndarray:
+    """d(delta-DOR)/d[x0 (, K)]: the spacecraft term's; the quasar term does not depend on the spacecraft."""
+    return delta_dor_partial(obs.spacecraft, sc)
+
+
 def one_way_range(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
                   model: LightTimeModel, *, with_partial: bool = False):
     """Downlink-only light distance c * tau_d to a receive epoch (the RAZEL one-way convention)."""

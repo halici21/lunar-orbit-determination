@@ -55,8 +55,21 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     ve range-rate eşlik satırları). SSB profillerinde (`one_way_light_time_ssb[_aberrated]`,
     `apparent_one_way_ssb`) Jacobian Ay merkezli çözümden gelir: satır başına ~1.5e-4, v/c mertebesi.
     Birinci derece eşleme (%4.6'ya kadar) adıyla seçilebilir; DMC batch implicit modeli reddettiği için
-    orada adıyla istenmelidir. 1 saatlik barycentric Doppler yayında BLS-LM 100 m başlangıçtan 2–3.6 cm'de
-    duruyor (SRIF < 1 cm); açık kalem.
+    orada adıyla istenmelidir. 1 saatlik barycentric Doppler yayındaki BLS-LM 2–3.6 cm tabanı erken
+    iterasyon gevşetmesiymiş; F4 WP4.2-R'den beri 0.19 mm.
+17. **Landmark optik** (`lunar_landmark_optical`, F2 WP2.6): enlem/boylam varsayılan olarak `MOON_ME_DE440_ME421`
+    çerçevesinde okunur (LOLA katalogları); WP2.6 öncesi sessizce `MOON_PA_DE440` idi (163–875 m fark) ve Phase 17
+    R1O-OPT / HARDEN sonuçları PA ile üretildi. Kamera tutumu varsayılan olarak dış girdidir (yıldız izleyici);
+    tutum tahmin edilen konumdan kuruluyorsa `attitude_source='nadir_from_state'` gerekir (aksi halde Jacobian
+    %5.8 eksik). Piksel kuralı `pixel_origin` ile açıktır (varsayılan 'corner', W/2). Mercek bozulması, aydınlatma
+    ve küresel olmayan Ay şekli modellenmez.
+18. **ΔDOR**: `lunar_od.delta_dor` gözlemi `legacy_synthetic`'tir (Ay merkezli D_S, statik düzlem dalga D_Q;
+    SSB modelinden 0.6–1 µs). Üretim gözlemi `relativistic_light_time.delta_dor_ssb`: SSB uzay aracı gecikmesi ve
+    aynı modelde kuasar gecikmesi, istasyon zamanında; ortak istasyon yaklaşımları ΔDOR'da sadeleşir. IERS 2010
+    konsensüs gecikmesi (`quasar_delay_consensus`) bağımsız kontroldür. ERFA dtdb'nin topocentric terimi DSN
+    kompleksleri arasında kesin V·b/c²'den 0.47–0.69 ns sapar: tek tek gecikmeler bu kadar hatalıdır, ΔDOR değil
+    (açık kalem). Kuasar doğrultusundaki medya, kuasar yapısı ve Güneş kenarı yüksek mertebe terimi modellenmez;
+    hiçbir üretim tahmincisi ΔDOR tüketmez.
 
 ## Masaüstü ve CLI
 

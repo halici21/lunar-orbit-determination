@@ -40,5 +40,40 @@
   },
   "G13_regression": "full regression green; every changed pin and protected file listed",
   "out_of_scope": "quasar media (troposphere/ionosphere along the quasar line of sight), quasar structure, the full DSN delta-DOR processing chain; estimator wiring of delta-DOR (no production estimator consumes delta-DOR); rerunning the Phase 17 R1O-OPT / R1OD studies (their scripts are byte-pinned; they used MOON_PA and the legacy delta-DOR)",
-  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory",
+  "results_slice_1": {
+    "commit": "5e08d83",
+    "G1": "PASS first run: 3.6e-11 (no bias), 3.9e-11 (1 mrad bias) vs FD with the attitude rebuilt; before: 5.8% (no such Jacobian)",
+    "G2": "PASS first run (bitwise)",
+    "G3": "PASS first run (ME bitwise to pxform; PA bitwise to before; normal 1e-15; displacement in band)",
+    "G4": "PASS first run",
+    "G5": "PASS first run",
+    "G6": "PASS first run",
+    "behaviour_change": "landmark_inertial_position_m / landmark_surface_outward_normal_j2000 default frame PA -> ME; byte-pinned Phase 17 study scripts calling the default now get ME (archived results used PA)"
+  },
+  "results_slice_2": {
+    "G7": {
+      "preregistered": "FAIL as computed: consensus vs BCRS plane-wave oracle 1.13e-9 s > 8e-10 (Madrid-Canberra; Goldstone-Canberra passed)",
+      "diagnosis": "not proportional to tau; 0.47-0.69 ns from the oracle's ERFA dtdb topocentric term (vs the exact V.b/c^2 between DSN complexes), the rest the (2U + V^2)/c^2 scale terms of Galilean station positions; consequence: with a dtdb spacecraft term and an exact-V consensus quasar term delta-DOR is inconsistent by 0.62-0.73 ns",
+      "design_change": "owner said 'do your best'; agent decision, owner approval pending: delta_dor_ssb computes the quasar term in the same light-time model as the spacecraft term (quasar_delay_station_time); quasar_delay_consensus stays as the independent IERS 2010 check",
+      "amended_gate": "same-model minus consensus (gravity off) < |dtdb error| + (2U/c^2 + V^2/c^2)|b|/c + 1e-11 s: PASS; after removing the dtdb error 0.08 ns (Goldstone-Canberra), 0.82 ns (Madrid-Canberra)",
+      "status": "exploratory (amendment log)"
+    },
+    "G8": "PASS first run: consensus T_grav vs Moyer eq. 8-38 differential for a source at 1e16 m: 1.2e-14 s",
+    "G9": "PASS first run: delta-DOR moves 3.4e-14 / 4.5e-14 s under (1e-6, -2e-6) s clocks",
+    "G10": {
+      "preregistered": "FAIL as computed: 9.2e-7 to 1.04e-6 > 1e-6",
+      "diagnosis": "the test fixture's station provider evaluated et0 + t, quantised at ulp(et0) ~ 1.2e-7 s; the FD shift of t_B (~1e-9 s) left station B frozen and the FD missed the v_B/c term; not the STM nor the event partial (an exact linear STM perturbation gives the same 1.03e-6)",
+      "fix": "fixture moves the station by velocity x the exact rounding error (as BarycentricEphemeris._ssb_state); gate unchanged: PASS 7.7e-8 to 3.9e-7",
+      "status": "fixture correction, threshold unchanged (amendment log)"
+    },
+    "G11": "PASS (legacy bitwise vs values recorded from the pre-change module with the corrected fixture); informational: delta_dor_ssb minus legacy 668-785 ns on Goldstone-Canberra (studies/phase17/results/wp2_6_gate_values.json)",
+    "G12": "PASS first run",
+    "protected_files": "src/lunar_od/relativistic_light_time.py re-frozen in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256; delta_dor.py and lunar_landmark_optical.py in the path manifest",
+    "open_items": [
+      "ERFA dtdb topocentric term 0.47-0.69 ns off the exact V.b/c^2 between DSN complexes: single station-time delays carry it, delta-DOR does not",
+      "quasar media, quasar structure and the solar-limb higher-order gravity term not modelled; no production estimator consumes delta-DOR"
+    ]
+  },
+  "results_G13_regression": "full suite after both slices: 2731 tests, 0 failures, 33 skipped (2026-11-07); protected: lunar_landmark_optical.py and delta_dor.py re-frozen in the path manifest, relativistic_light_time.py in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 (2499813e -> b3c6a004); no existing pin changed"
 }

@@ -2489,8 +2489,11 @@
     },
     "lunar_od/delta_dor.py": {
       "path": "src/lunar_od/delta_dor.py",
-      "original_sha256": "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b",
-      "byte_preserved": true
+      "original_sha256": "9f2f55dece9119e57f6ab5236e9e002ae34e4cffb109735b491133d844303483",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b"
+      ]
     },
     "lunar_od/diagnostics.py": {
       "path": "src/lunar_od/diagnostics.py",
