@@ -23,5 +23,49 @@
       "rule": "exhaustion at the caller's tolerance keeps the existing Converged / DampingLimit decision by the Gauss-Newton decrement; the loosened exhaustion no longer produces a status"
     }
   },
-  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory",
+  "results": {
+    "fix_A_preregistered_minimal": "FAIL as computed: G1 position 3.9 mm (MaxIter), G1 two_way_range 6.44 m (DampingLimit), G2 position DampingLimit. Cause: the cost scored at the loosened tolerance carries ~0.2 chi2 integration noise, good steps are rejected and lambda climbs to ~1e10 before the switch; the tight phase inherits it",
+    "fix_A_prime_reset_damping_on_tolerance_change": "explored after the result: G1 position 9.3 mm (MaxIter), FAIL",
+    "owner_decision_2026_11_06": "option B: BLS-LM (position, range_rate, two_way_range) scores every iteration at the caller's tolerance; SRIF paths unchanged (still loosen, open item)",
+    "G1": "PASS with B (position, range_rate < 1 mm, two_way_range < 2 cm, no DampingLimit)",
+    "G2": "PASS with B (all three types at or below the cost at the truth)",
+    "G3": {
+      "result": "PASS",
+      "file": "studies/phase17/results/wp4_2r_g3_24h.json",
+      "per_type": {
+        "position": {
+          "status": "Converged",
+          "iterations": 35,
+          "cost": 2907.562535348436,
+          "cost_truth": 2913.7985846416996,
+          "pos_err_m": 0.8637761476840858
+        },
+        "range_rate": {
+          "status": "J-Stab",
+          "iterations": 23,
+          "cost": 4003.362648566727,
+          "cost_truth": 4005.3849964681617,
+          "pos_err_m": 0.05533259583931413
+        },
+        "two_way_range": {
+          "status": "Converged",
+          "iterations": 33,
+          "cost": 953.0021533446984,
+          "cost_truth": 959.3803253248085,
+          "pos_err_m": 4.3518859914603905
+        }
+      }
+    },
+    "G4": {
+      "bitwise_clause": "cannot hold under B (every BLS-LM fit changes); amended after the result (exploratory): same status and iterations, estimate within 1e-4 sigma; measured J-Stab 14, 4.6 mm, 1.7e-6 sigma",
+      "full_regression_first_run": "2713 tests, 3 failures, 33 skipped: WP4.3 condition-number parity (damped condition reported), HARDEN-D27 exact-optimum start (data tolerance 1e-12 vs solve 1e-11), WP2.2 G6 media Doppler ratio (floor dropped from ~2 cm to 0.19 mm); each amended with owner approval, amendment log",
+      "code_change_after_result": "BLS-LM statistics report the undamped condition number and rank of the last linearization (_undamped_step_condition); estimates unchanged",
+      "protected_file": "src/lunar_od/estimators.py re-frozen in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256",
+      "full_regression_after_amendments": "2713 tests, 0 failures, 33 skipped (2026-11-06)",
+      "result": "PASS after the amendments (exploratory)"
+    },
+    "G5": "unchanged: exhaustion at the caller's tolerance keeps the Gauss-Newton decrement decision; no status comes from a loosened exhaustion any more",
+    "side_effect": "the 1 h barycentric Doppler BLS-LM floor of 2-3.6 cm (WP2.5 open item) was the loosening: 0.19 mm with B"
+  }
 }
