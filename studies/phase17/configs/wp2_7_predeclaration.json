@@ -1,0 +1,60 @@
+{
+  "study": "F2 WP2.7: visibility (MEAS-14) - atan2 elevation and the azimuth wrap, gap bridging on non-uniform grids, light-time apparent visibility",
+  "date": "2026-11-07",
+  "source_of_predeclaration": "docs/assurance/vv-program.md WP2.7; finding MEAS-14 (docs/validation/independent-assessment-2026-10-31.md); owner 'devam' 2026-11-07",
+  "survey_before_predeclaration": {
+    "script": "studies/phase17/scripts/wp2_7_survey.py",
+    "result": "studies/phase17/results/wp2_7_survey.json",
+    "elevation": "arcsin(Z/|rho|) vs a 60-digit decimal reference: 1.0e-8 rad near the zenith (returns exactly pi/2 up to a zenith distance of 1.26e-8 rad), 8.8e-16 at random directions, 1.5e-17 at the horizon; atan2(Z, hypot(S, E)) 1.1e-16 / 1.5e-16 / 7.6e-18; the visibility kernels' arcsin threshold test is exact away from the zenith",
+    "azimuth": "ecef2razel_sez and accelerated._razel_scalar return exactly 2 pi for directions up to 2.5e-16 rad west of north (contract [0, 2 pi))",
+    "grid": "_gap_fill_network_visibility uses dt = t[1] - t[0]: a 1500 s outage on the 300 s part of a 10 s/300 s grid is bridged with max_gap 1200 s, a 600 s outage on the 10 s part of a 300 s/10 s grid is not; the 3-day network mask resampled 10 s then 120 s gives 8 segments, 120 s then 10 s gives 40, the full 10 s grid 39; a midpoint time rule gives 39 on both and equals the step rule on uniform 10/60 s grids with max_gap 1200/1800 s",
+    "apparent_visibility": "3-day 100 km polar orbit, DSN complexes, 10 s grid, 10 deg: production numba mask equals the numpy fallback and the survey's geometric mask; light-time masks differ in 4-6 (downlink) and 5-8 (two-way) samples per station; boundary shifts: lunar occultation entry/exit +1.327 to +1.351 s (about tau, both modes), elevation set -0.05 to +0.07 s, elevation rise -0.17 to +0.07 s (downlink) and +2.62 to +2.86 s (two-way, the uplink at t - 2 tau); apparent minus geometric elevation up to 7.2e-6 rad, of which diurnal aberration up to 1.1e-6 rad (0.004 s on elevation boundaries, none on occultation)",
+    "terrain": "occultation boundary shift per km of limb relief 2.7-3.5 s (median 3.1 s/km) on the 100 km orbit; LOLA relief spans about -9 to +11 km, so up to ~30 s, about twenty times the light-time shift"
+  },
+  "slice_1_azel": {
+    "design": {
+      "elevation": "geometry.ecef2razel_sez and accelerated._razel_scalar: elevation = atan2(Z, hypot(S, E)), the documented formula (docs/theory/one_way_light_time_jacobians.md); the range < 1e-9 m and hypot(S, E) < 1e-12 m conventions unchanged",
+      "azimuth": "atan2(E, -S), + 2 pi when negative, and 0.0 when that sum rounds to 2 pi: strictly in [0, 2 pi)",
+      "visibility_kernels": "unchanged: they compare arcsin(sin_el) with the mask angle, exact away from the zenith; masks stay bitwise"
+    },
+    "gates": {
+      "G1_elevation_accuracy": "ecef2razel_sez and _razel_scalar elevation vs the survey's 60-digit decimal reference on its 660 directions (zenith, horizon, random; seed 7) and 660 more built the same way with seed 8: max |error| < 4.5e-16 rad (2 ulp of pi/2). Before: 1.0e-8 rad",
+      "G2_azimuth_contract": "azimuth in [0, 2 pi) for every G1 direction and the survey's 15 directions west of north (the 8 that returned exactly 2 pi return 0.0); cardinal azimuths (N 0, E pi/2, S pi, W 3 pi/2) and every azimuth and range of the G1 directions bitwise equal to the functions before the change (sha256 recorded before the change, both functions)",
+      "G3_realistic_elevation": "visible samples of the test arc (1 day, 10 s, three DSN complexes): ecef2razel_sez elevation after minus the arcsin form of the same SEZ vector (a test reimplementation whose output sha256 equals the function before the change) < 1e-15 rad; _razel_scalar minus ecef2razel_sez elevation < 1e-15 rad; azimuth and range of both bitwise unchanged (sha256)"
+    }
+  },
+  "slice_2_grid": {
+    "design": {
+      "rule": "analyze_visibility_gap and analyze_visibility_gap_with_transforms bridge network gaps through one helper. Uniform grid (every spacing within 1e-9 relative of the first): the step rule unchanged (a run of n invisible samples bridged iff n <= max(ceil(max_gap_s / dt), 1)). Non-uniform grid: the run between visible samples e and s is bridged iff its midpoint duration 0.5 [(t[s-1] + t[s]) - (t[e] + t[e+1])] <= max_gap_s. On a uniform grid the midpoint duration is n dt, so the rules agree whenever max_gap_s is a multiple of dt (every current caller: 1200 or 1800 s on 10 or 60 s grids); the ceil and the one-sample floor are grid artefacts kept only on uniform grids",
+      "grid_validation": "t_sim_s finite and strictly increasing, else ValueError (previously unchecked)",
+      "helper": "_gap_fill_network_visibility keeps its signature and step rule"
+    },
+    "gates": {
+      "G4_nonuniform_synthetic": "the survey's two synthetic grids through the bridging helper both public functions use: the 1500 s outage on the 300 s part is not bridged, the 600 s outage on the 10 s part is bridged (max gap 1200 s). Before: both wrong",
+      "G5_nonuniform_realistic": "the test arc's network mask through analyze_visibility_gap_with_transforms on two resampled grids (10 s for 6 h then 120 s; 120 s for 6 h then 10 s; states and transforms subsampled; max gap 1200 s): the same number of segments as the full 10 s grid, each start and end within one local spacing of the full-grid segment",
+      "G6_uniform_bitwise": "uniform grids (test arc at 10 s; at 60 s; a np.linspace grid of 8641 points to 86399.7 s, states by cubic Hermite from the 10 s history and transforms from SPICE) with max_gap_s 0, 150, 1200 and 1800: seg_starts, seg_ends, vis_mask_raw and net_vis_filled bitwise equal to the functions before the change (sha256 recorded before the change), both public functions (the legacy GST path on the 10 and 60 s grids); the MATLAB fixture tests in tests/test_visibility.py unchanged",
+      "G7_grid_fail_closed": "non-finite, decreasing or repeated grid times raise ValueError in both public functions"
+    }
+  },
+  "slice_3_apparent": {
+    "design": {
+      "keyword": "analyze_visibility_gap_with_transforms(..., geometry='geometric'), geometry in {'geometric' (default, unchanged), 'light_time_downlink', 'light_time_two_way'}; the legacy analyze_visibility_gap (GST) stays geometric",
+      "light_time_downlink": "t is the reception epoch at the station (the time tag of the position, one-way and two-way observables). Geocentric J2000 Newtonian light time tau = |r_sc(t - tau) - r_st(t)| / c by fixed point (change < 1e-12 s); the spacecraft by cubic Hermite on the state history (positions and velocities; the edge interval continued at most GENERIC_HISTORY_MAX_EXTRAPOLATION_S), the Earth from get_earth_pos(t - tau). Elevation of the apparent direction (light time and diurnal aberration with the station's geocentric velocity from the 6x6 transform) above the mask at t; the station-spacecraft segment clear of the sphere with the Moon centre at the epoch the ray passes its closest point",
+      "light_time_two_way": "the downlink condition and the uplink from the same station: transmission at t1 = t2 - tau_u (fixed point, t2 = t - tau the spacecraft epoch), station attitude R(t1) = exp(Omega (t1 - t)) R(t) with Omega = dR R^T from the 6x6 transform at t (Rodrigues); the point-ahead direction (light time, transmitter aberration) above the mask at t1; the uplink segment clear of the sphere with the Moon at its closest-point epoch",
+      "requirements": "light-time modes need (N, 6, 6) transforms and a state history with at least 6 columns (ValueError otherwise)",
+      "default": "agent decision, owner approval pending: 'geometric' stays the default - the light-time modes need data not every caller passes, the right mode depends on the observable (one-way or two-way) which the function does not know, and byte-pinned Phase 17 scripts keep their masks"
+    },
+    "gates": {
+      "G8_geometric_unchanged": "geometry='geometric' and the default call bitwise equal to the function before the change on the test arc (the G6 sha256)",
+      "G9_light_time_vs_oracle": "light_time_downlink and light_time_two_way masks on the test arc equal those of a test oracle written independently (SPICE sxform at every epoch including t1, scipy CubicHermiteSpline for the spacecraft, the Moon at the closest-point epoch, first-order aberration): identical, or every differing sample lies within 1 ms of an oracle boundary",
+      "G10_boundary_physics": "production masks on 20 ms grids over +-6 s around every geometric boundary of the test arc (states by cubic Hermite from the 10 s history, transforms from SPICE), windows with exactly one flip per mode: occultation boundaries later by [1.30, 1.38] s in both modes (survey 1.327-1.351); elevation set within +-0.25 s in both modes; elevation rise within +-0.25 s (downlink) and [2.4, 3.1] s (two-way; survey 2.62-2.86); at least 90 percent of windows usable",
+      "G11_fail_closed": "light-time modes with (N, 3, 3) transforms or a position-only state history, and an unknown geometry string, raise ValueError"
+    }
+  },
+  "slice_4_terrain": {
+    "decision": "agent decision, owner approval pending: LOLA DEM terrain masking deferred. No DEM in the repository; adding one is a data dependency (e.g. LDEM_16, about 33 MB, PDS) and an owner decision. The survey bounds the effect: 2.7-3.5 s of occultation-boundary shift per km of limb relief, up to ~30 s for 10 km"
+  },
+  "G12_regression": "full regression green; every changed pin and protected file listed",
+  "out_of_scope": "terrain (slice 4), lunar figure, refraction in the mask, three-way geometry (uplink station not the downlink station), light time in the legacy GST path, choosing the mask geometry from the measurement profile, wrapping noisy generated azimuths into [0, 2 pi) (residuals are wrapped by wrap_to_pi; no visible sample of the survey arc came within 3 sigma of north), rerunning Phase 17 studies (byte-pinned scripts)",
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+}
