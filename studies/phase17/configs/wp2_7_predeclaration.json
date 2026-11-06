@@ -56,5 +56,30 @@
   },
   "G12_regression": "full regression green; every changed pin and protected file listed",
   "out_of_scope": "terrain (slice 4), lunar figure, refraction in the mask, three-way geometry (uplink station not the downlink station), light time in the legacy GST path, choosing the mask geometry from the measurement profile, wrapping noisy generated azimuths into [0, 2 pi) (residuals are wrapped by wrap_to_pi; no visible sample of the survey arc came within 3 sigma of north), rerunning Phase 17 studies (byte-pinned scripts)",
-  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory",
+  "check_before_change": "tests/test_wp2_7_visibility.py on the unchanged tree (7ff862b): G1, G2, G4, G5, G7, G9, G10, G11 fail; G6/G8 fail only on the geometry keyword (the default call matches the recorded sha256); G3 fails on _razel_scalar minus ecef2razel_sez, 1.33e-15 rad on Canberra with both in arcsin form",
+  "values": "studies/phase17/results/wp2_7_gate_values.json (studies/phase17/scripts/wp2_7_gate_values.py)",
+  "results_slice_1": {
+    "G1": "PASS first run: max elevation error 1.5e-16 rad (python and numba) vs the decimal reference; before 1.0e-8",
+    "G2": "PASS first run: the 8 directions that returned 2 pi return 0.0; every other azimuth, cardinal and range bitwise",
+    "G3": "PASS first run: after minus the arcsin form at most 1.1e-16 (Goldstone, Madrid) and 8.9e-16 rad (Canberra, the arcsin rounding at high elevation); _razel_scalar minus ecef2razel_sez at most 2.8e-16 rad (before 1.33e-15); azimuth and range bitwise"
+  },
+  "results_slice_2": {
+    "G4": "PASS first run: 1500 s outage kept open, 600 s outage bridged",
+    "G5": "PASS first run: 14 segments on the full 10 s grid and on both resampled grids, boundaries within 120 s",
+    "G6": "PASS first run: all 12 transform-path and 8 GST-path cases bitwise (sha256), incl. max_gap 0 and 150 s; MATLAB fixture tests unchanged",
+    "G7": "PASS first run"
+  },
+  "results_slice_3": {
+    "G8": "PASS first run (bitwise, default call and geometry='geometric')",
+    "G9": "PASS first run: 0 samples differ from the oracle in either mode; 5 (downlink) and 7 (two-way) samples differ from the geometric mask over the day",
+    "G10": "PASS first run: 29 of 30 windows usable; occultation +1.32 to +1.36 s (both modes, 24 each); set -0.02 to +0.04 s; rise -0.16 to +0.04 s (downlink) and +2.62 to +2.86 s (two-way)",
+    "G11": "PASS first run",
+    "protected_files": "src/lunar_od/accelerated.py re-frozen in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 (PHASE17-HARDEN-D18 ae5dea08 -> d47c41e9); geometry.py and visibility.py in the path manifest",
+    "open_items": [
+      "terrain (LOLA DEM) deferred: 2.7-3.5 s per km of limb relief, owner decision on the data dependency",
+      "the default mask stays geometric (owner approval pending); callers choose the light-time mode that matches their observable",
+      "noisy generated azimuths are not wrapped into [0, 2 pi) (residuals are)"
+    ]
+  }
 }

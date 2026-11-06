@@ -2461,10 +2461,13 @@
     },
     "lunar_od/accelerated.py": {
       "path": "src/lunar_od/accelerated.py",
-      "original_sha256": "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+      "original_sha256": "d47c41e9d73f59bee551e76a2e58851bd039efa484bfa6c89c4b0761d361aa61",
       "byte_preserved": true,
-      "refrozen_from_sha256": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-11-07 for F2 WP2.7 (MEAS-14: atan2 elevation, azimuth wrap, non-uniform grid gap bridging, light-time visibility); all previous identities and historical scientific results retained.",
+      "refrozen_history_sha256": [
+        "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10"
+      ]
     },
     "lunar_od/adaptive_tuning.py": {
       "path": "src/lunar_od/adaptive_tuning.py",
@@ -2588,8 +2591,11 @@
     },
     "lunar_od/geometry.py": {
       "path": "src/lunar_od/geometry.py",
-      "original_sha256": "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf",
-      "byte_preserved": true
+      "original_sha256": "5a375849ae07ac05e8990ceb0516f8549d899522dcdd2fdd9cd2ab9ee82c3226",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf"
+      ]
     },
     "lunar_od/gravity_harmonics.py": {
       "path": "src/lunar_od/gravity_harmonics.py",
@@ -2869,8 +2875,11 @@
     },
     "lunar_od/visibility.py": {
       "path": "src/lunar_od/visibility.py",
-      "original_sha256": "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a",
-      "byte_preserved": true
+      "original_sha256": "c2bfc9fd2c4fd991639dac8c4b19efd664638f5f8452c728ac42c5b93d1011f4",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a"
+      ]
     },
     "plan.md": {
       "path": "docs/development/plan.md",

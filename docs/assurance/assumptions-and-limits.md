@@ -70,6 +70,15 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     kompleksleri arasında kesin V·b/c²'den 0.47–0.69 ns sapar: tek tek gecikmeler bu kadar hatalıdır, ΔDOR değil
     (açık kalem). Kuasar doğrultusundaki medya, kuasar yapısı ve Güneş kenarı yüksek mertebe terimi modellenmez;
     hiçbir üretim tahmincisi ΔDOR tüketmez.
+19. **Görünürlük maskesi** (F2 WP2.7, MEAS-14) varsayılan olarak geometriktir: uzay aracı, istasyon ve Ay aynı
+    epoch'ta. Işık zamanlı maske `analyze_visibility_gap_with_transforms(geometry='light_time_downlink' |
+    'light_time_two_way')` ile seçilir (6×6 dönüşüm ve hızlı durum geçmişi gerekir); hangi modun doğru olduğu
+    gözleme bağlıdır (tek yönlü ya da iki yönlü) ve fonksiyon bunu bilmez. Geometrik maskede Ay örtmesi sınırları
+    ~τ ≈ 1.33–1.35 s, iki yönlü yükselişler ~2τ ≈ 2.6–2.9 s erkendir. Ay küresel (yarıçap yapılandırmadan),
+    arazi yoktur: kenar rölyefinin km'si başına 2.7–3.5 s örtme sınırı kayması (10 km'de ~30 s, ışık zamanı
+    etkisinin ~20 katı; LOLA DEM ertelendi, sahip kararı bekliyor). Kırılma maskede yoktur. Düzgün olmayan
+    ızgarada boşluklar zamanla köprülenir; düzgün ızgarada örnek sayısıyla (davranış değişmedi). Üretilen
+    gürültülü azimutlar [0, 2π) içine sarılmaz; artıklar `wrap_to_pi` ile sarılır.
 
 ## Masaüstü ve CLI
 
