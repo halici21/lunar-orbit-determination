@@ -1,0 +1,44 @@
+{
+  "study": "F2 WP2.6: hidden modules (MEAS-13) - landmark optical fixes and a barycentric delta-DOR with the IERS consensus quasar delay",
+  "date": "2026-11-06",
+  "source_of_predeclaration": "docs/assurance/vv-program.md WP2.6; finding MEAS-13; owner decision 2026-11-06: fix the landmark module, fix delta-DOR now",
+  "survey_before_predeclaration": {
+    "script": "studies/phase17/scripts/wp2_6_survey.py",
+    "result": "studies/phase17/results/wp2_6_survey.json",
+    "landmark": "PA vs ME landmark position 163-875 m on the surface (up to 56 px at 100 km); analytic Jacobian vs FD with the camera DCM held fixed 3.6e-11, vs FD with the nadir DCM rebuilt from the perturbed position 5.8% median (6.1% max, 40 geometries); principal point convention 0.5 px",
+    "delta_dor": "Goldstone-Canberra and Madrid-Canberra, 15 epochs: module D_S (Moon-centred Newtonian) vs an SSB Newtonian reference on geocentric time 69-92 ns; module D_Q (static plane wave) vs IERS 2010 eq. 11.9 geometric 675-1048 ns; delta-DOR 606-957 ns; typical precision 0.1 ns"
+  },
+  "slice_1_landmark": {
+    "design": {
+      "body_frame": "landmark_inertial_position_m and landmark_surface_outward_normal_j2000 take body_frame; allowed exactly 'MOON_ME_DE440_ME421' (default, the frame of LOLA-derived catalogues) and 'MOON_PA_DE440'; computed as pxform('J2000', body_frame).T @ r_body",
+      "attitude_source": "pinhole_position_jacobian takes attitude_source: 'external' (default; DCM is an independent input, e.g. star tracker; unchanged) or 'nadir_from_state' (DCM = perturbed_camera_frame(nadir_pointing_camera_frame(r_sc), attitude_bias_rad); the analytic dC/dr term is added; the passed DCM must equal that construction to 1e-12 or ValueError)",
+      "pixel_origin": "CameraIntrinsics.pixel_origin: 'corner' (default; principal point W/2, pixel i spans [i, i+1]; unchanged) or 'center' (principal point (W-1)/2, pixel i centred on i, the OpenCV convention)"
+    },
+    "gates": {
+      "G1_nadir_jacobian": "attitude_source='nadir_from_state' analytic d(u,v)/dr vs central FD (1 m step) with the DCM rebuilt at each FD point: relative Frobenius error < 1e-6 on the survey's 40 geometries, without and with a fixed 1 mrad alignment bias. Before the fix the only Jacobian is 5.8% off",
+      "G2_external_unchanged": "attitude_source='external' (and the default call) bitwise equal to the function before the change on the same geometries",
+      "G3_body_frame": "default body_frame equals pxform('J2000','MOON_ME_DE440_ME421').T @ r_body bitwise; body_frame='MOON_PA_DE440' bitwise equal to the function before the change; outward normal equals position / |position| to 1e-15; ME vs PA displacement inside the survey band [100, 1000] m",
+      "G4_frames_fail_closed": "'MOON_ME', 'MOON_PA', 'IAU_MOON' and any other string raise ValueError",
+      "G5_pixel_origin": "'corner' projections and FOV flags bitwise equal to before; 'center' principal point is (W-1)/2 and u, v are exactly 0.5 px smaller than 'corner' (to 1e-12 px)",
+      "G6_nadir_consistency": "attitude_source='nadir_from_state' with a DCM that is not the nadir construction (5 mrad off) raises ValueError"
+    }
+  },
+  "slice_2_delta_dor": {
+    "design": {
+      "quasar_term": "relativistic_light_time.quasar_delay_consensus: IERS Conventions (2010) eq. 11.9 geometric delay with T_grav (eq. 11.1 form, bodies configurable, default Sun and Earth), in station TT, b the geocentric baseline at the reception at A, V the Earth's barycentric velocity, w2 station B's geocentric velocity, U the Sun's potential at the geocentre; the station clock convention of delta_dor_station_time (tag at A read as t + b_A; the measured delay carries b_A - b_B)",
+      "observable": "relativistic_light_time.delta_dor_ssb: delta_dor_station_time(...) delay minus quasar_delay_consensus on the same tags and clocks; requires station_time='FULL_TOPOCENTRIC' (ValueError otherwise) and both sites; partial = delta_dor_partial of the station-time solution (the quasar term does not depend on the spacecraft)",
+      "legacy": "delta_dor.quasar_differential_delay_s / delta_dor_observable_s / solve_common_transmit_event unchanged bitwise, labelled legacy_synthetic (Moon-centred, static baseline; self-consistent synthetic studies only) with the survey magnitudes"
+    },
+    "gates": {
+      "G7_consensus_vs_bcrs_oracle": "quasar_delay_consensus without gravity vs a first-principles oracle in the test: plane wave from K in SPICE TDB/SSB coordinates, station positions X_E + x - (V.x)V/(2c^2), arrival at B solved by fixed point, TDB interval converted to station TT with station_time.tdb_minus_tt at each site: |difference| < 8e-10 s (the neglected (V^2/c^2 + 2U/c^2)|tau| bound; verifies the first-order terms, ~2.7 us, to 3e-4); 20 epochs, two baselines",
+      "G8_gravity_vs_moyer": "T_grav (Sun, Earth) vs the difference of Moyer eq. 8-38 one-way Shapiro delays (rlt.shapiro_delay_s) for a source 1e16 m along -K to each station: |difference| < 1e-12 s",
+      "G9_clock_cancellation": "with clock offsets (b_A, b_B) = (1e-6, -2e-6) s each delay moves by ~3e-6 s; delta_dor_ssb moves by < 1e-11 s",
+      "G10_jacobian": "delta_dor_ssb state partial vs Richardson central FD of delta_dor_ssb over the arc-initial state: relative error < 1e-6 per row on a 1 h arc",
+      "G11_legacy_unchanged": "legacy delta_dor functions bitwise unchanged; delta_dor_ssb minus the legacy observable recorded on the survey geometry (informational)",
+      "G12_fail_closed": "delta_dor_ssb with station_time != 'FULL_TOPOCENTRIC' or a missing site raises ValueError"
+    }
+  },
+  "G13_regression": "full regression green; every changed pin and protected file listed",
+  "out_of_scope": "quasar media (troposphere/ionosphere along the quasar line of sight), quasar structure, the full DSN delta-DOR processing chain; estimator wiring of delta-DOR (no production estimator consumes delta-DOR); rerunning the Phase 17 R1O-OPT / R1OD studies (their scripts are byte-pinned; they used MOON_PA and the legacy delta-DOR)",
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+}
