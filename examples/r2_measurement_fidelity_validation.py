@@ -862,23 +862,30 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/scenario_config.py      17e4be89... -> 566eb338...
 #   F2 WP2.5 slice 1 (implicit light-time Jacobian by default, MEAS-10):
 #   lunar_od/measurements.py         5ce61154... -> 9e0f9e1b...
+#   F2 WP2.5 slice 2 (companion Jacobian, apparent_one_way_ssb, MEAS-09):
+#   lunar_od/measurements.py         9e0f9e1b... -> aaf80e34...
+#   lunar_od/estimators.py           0282c735... -> c02a68a6...
+#   lunar_od/observability.py        cab86c66... -> b4d096e1...
+#   lunar_od/scenario_config.py      566eb338... -> beb68436...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
     "lunar_od/scenario_config.py":
-        "566eb3388397cab0f568642aabe90cb70cd913b5ec2e18922d2cee9ed15f0428",
+        "beb68436b37e9a8de9fd9b9580f9eb227665366c6c025c0abe4d3acf8a0bcc30",
     "examples/run_scenario_config.py":
         "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
     "lunar_od/radiometrics.py":
         "2097839235edf7ef24ac3a6c32f422e840e69dbf8236b5f8410c1fb70f08b463",
     "lunar_od/measurements.py":
-        "9e0f9e1b82401f7afc34579a18407c99e9d19b2eb03000a72e66be965525b612",
+        "aaf80e34149dc4ba007eecc845d11ea62782647ebd13c01e69cb6c2244ebd31e",
     "lunar_od/media.py":
         "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
     "lunar_od/estimators.py":
-        "0282c73501001d90d5bbc5502b68f2578a49e9d97851cfdc5f36f4463bdadaeb",
+        "c02a68a67189a50d7b43e2156553738b924502bf37ed1466ba1abcfb5df7e458",
     "lunar_od/relativistic_light_time.py":
         "2499813e0696f67c6c2a366703d976f56b1f16450922dd926a6e7994705c6993",
+    "lunar_od/observability.py":
+        "b4d096e1789c37ce75a471561cc1329995f6d3ca3e75ea0f51f149b580197b5c",
 }
 
 def current_source_path(relative_path: str) -> str:

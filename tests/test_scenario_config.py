@@ -79,7 +79,7 @@ class ScenarioConfigTests(unittest.TestCase):
         )
         self.assertEqual(
             schema["properties"]["companion_geometry"]["enum"],
-            ["instantaneous", "apparent_one_way"],
+            ["instantaneous", "apparent_one_way", "apparent_one_way_ssb"],  # WP2.5 slice 2
         )
         self.assertIn("single", schema["properties"]["network"]["enum"])
         self.assertEqual(schema["properties"]["ukf_alpha"]["default"], 0.35)

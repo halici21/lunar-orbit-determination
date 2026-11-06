@@ -31,7 +31,11 @@ from .measurements import (
     position_initial_state_jacobian_from_augmented_history,
 )
 from .measurements import compute_range_rate_residuals
-from .measurements import compute_range_rate_residuals_analytic, measurement_sigma_vector
+from .measurements import (
+    compute_range_rate_residuals_analytic,
+    measurement_sigma_vector,
+    range_rate_companion_initial_state_jacobian,
+)
 from .radiometrics import RangeRatePhysicsConfig, range_rate_physics_config
 from .radiometrics import two_way_counted_doppler_initial_state_jacobian
 from .two_way_range import (
@@ -1304,7 +1308,8 @@ def _range_rate_nominal_and_initial_jacobian(
     rr_physics = range_rate_physics_config(pass_geo.range_rate_physics)
     if rr_physics.mode == "geometric_instantaneous":
         _, h_nom, h_tilde = compute_range_rate_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
-        return h_nom, _range_rate_initial_jacobian_from_local(obs_data, x_aug_hist, h_tilde)
+        h_initial = _range_rate_initial_jacobian_from_local(obs_data, x_aug_hist, h_tilde)
+        return h_nom, range_rate_companion_initial_state_jacobian(obs_data, x_aug_hist, pass_geo, h_initial)
 
     _, h_nom = compute_range_rate_residuals(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _range_rate_two_way_analytic_initial_jacobian(obs_data, pass_geo, x_aug_hist, rr_physics)
@@ -1320,6 +1325,7 @@ def _range_rate_two_way_analytic_initial_jacobian(
     geometric_pass_geo = replace(pass_geo, range_rate_physics=RangeRatePhysicsConfig())
     _, _, h_tilde = compute_range_rate_residuals_analytic(x_aug_hist[:, :6], obs_data, geometric_pass_geo)
     h_initial = _range_rate_initial_jacobian_from_local(obs_data, x_aug_hist, h_tilde)
+    h_initial = range_rate_companion_initial_state_jacobian(obs_data, x_aug_hist, pass_geo, h_initial)
     for obs_idx in range(obs_data.shape[0]):
         row0 = obs_idx * 4
         station_id = int(obs_data[obs_idx, 5]) - 1
