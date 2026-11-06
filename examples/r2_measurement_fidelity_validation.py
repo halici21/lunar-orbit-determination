@@ -871,6 +871,8 @@ F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
 #   lunar_od/estimators.py           c02a68a6... -> b84b317b...
 #   F2 WP2.6 slice 2 (delta-DOR: same-model quasar delay, IERS 2010 consensus check):
 #   lunar_od/relativistic_light_time.py2499813e... -> b3c6a004...
+#   F2 WP2.7 slice 1 (_razel_scalar: atan2 elevation, azimuth strictly in [0, 2 pi), MEAS-14):
+#   lunar_od/accelerated.py          PHASE17-HARDEN-D18 ae5dea08... -> d47c41e9...
 F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/scenarios.py":
         "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
@@ -890,6 +892,8 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
         "b3c6a0047cf50f66a4d08e389b827824878e71dcb6b49d35b22b3b557d91fc77",
     "lunar_od/observability.py":
         "b4d096e1789c37ce75a471561cc1329995f6d3ca3e75ea0f51f149b580197b5c",
+    "lunar_od/accelerated.py":
+        "d47c41e9d73f59bee551e76a2e58851bd039efa484bfa6c89c4b0761d361aa61",
 }
 
 def current_source_path(relative_path: str) -> str:
