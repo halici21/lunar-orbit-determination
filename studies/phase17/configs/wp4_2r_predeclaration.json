@@ -1,0 +1,27 @@
+{
+  "study": "F4 WP4.2-R: BLS-LM damping exhaustion at the loosened early-iteration tolerance",
+  "date": "2026-11-06",
+  "source_of_predeclaration": "docs/assurance/vv-program.md WP4.2 (convergence declared only at the requested tolerance); finding in studies/phase17/results/wp2_5_loose_tolerance_test.json",
+  "survey_before_predeclaration": "studies/phase17/scripts/wp4_2r_survey.py -> studies/phase17/results/wp4_2r_survey.json, no production code changed, loosening switched off by monkeypatch. 6 h noise-free from a 100 m start: range_rate 0.149 m DampingLimit vs 0.0 mm Converged; two_way_range 6.44 m DampingLimit vs 1.25 cm Converged; position 3.9 mm MaxIter vs 0.4 mm. Noisy (seed 2000): with the loosening off the final cost is below the cost at the truth in all six cases (6 h, 24 h x three types); with it on 24 h ends at 1.3 to 50 x the truth's cost (range_rate 207847 vs 4005). rtol 1e-8 propagates 5.3 m off in 24 h.",
+  "defect": "estimate_position_bls_lm, estimate_range_rate_bls_lm and estimate_two_way_range_bls_lm: when the damping exhausts while the early-iteration tolerance is loosened, the point is re-linearised at the caller's tolerance for the status only and the solve stops. The SRIF paths already switch to the caller's tolerance and continue.",
+  "scope": "(A) the minimal fix: on damping exhaustion at a loosened tolerance, switch to the caller's tolerance, reset the damping to lambda0 and continue the iterations. Fits that never exhaust while loosened are unchanged.",
+  "out_of_scope": "(B) removing the early-iteration loosening altogether (faster in the survey, changes every BLS result) is an owner decision; the SRIF paths; the K_SRP path (already at the caller's tolerance); the DMC batch (fixed tolerance).",
+  "gates": {
+    "G1_clean_recovery": {
+      "rule": "6 h arc, three DSN complexes, noise-free, BLS-LM from the 100 m start: range_rate position error < 1 mm and two_way_range < 2 cm, neither ends in DampingLimit; position < 1 mm. Fails before the fix for range_rate and two_way_range."
+    },
+    "G2_noisy_6h_minimum": {
+      "rule": "same arc, seed 2000, all three types: final cost (recomputed at the caller tolerance) <= cost at the truth, and the status is not DampingLimit"
+    },
+    "G3_noisy_24h_minimum": {
+      "rule": "study script on the 24 h arc, seed 2000, all three types: final cost <= cost at the truth; recorded in the results, not a unit test (runtime)"
+    },
+    "G4_unchanged_elsewhere": {
+      "rule": "full regression green; every changed pin and protected file listed in the commit; a fit on the WP2.5 1 h arc that never exhausts while loosened returns bitwise the same estimate as before the fix (value recorded before the code change)"
+    },
+    "G5_status_honesty": {
+      "rule": "exhaustion at the caller's tolerance keeps the existing Converged / DampingLimit decision by the Gauss-Newton decrement; the loosened exhaustion no longer produces a status"
+    }
+  },
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory"
+}
