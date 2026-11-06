@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -46,7 +46,7 @@ MEASUREMENT_MODEL_PROFILES = (
 )
 SSB_LIGHT_TIME_POSITION_PROFILES = MEASUREMENT_MODEL_PROFILES[5:7]
 POSITION_MEASUREMENT_MODEL_PROFILES = MEASUREMENT_MODEL_PROFILES[:4] + SSB_LIGHT_TIME_POSITION_PROFILES
-COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
+COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way", "apparent_one_way_ssb")
 JACOBIAN_MODELS = (
     "analytic_exact_geometric",
     "analytic_first_order_light_time",
@@ -222,6 +222,25 @@ def normalize_companion_geometry(companion_geometry: str | None = None) -> str:
     return value
 
 
+def validate_companion_for_doppler(rr_physics, companion_geometry: str) -> None:
+    """F2 WP2.5 (MEAS-09): fail closed on companion rows solved in another frame than the Doppler beside them.
+
+    The Moon-centred ``apparent_one_way`` range is 37 km from the SSB one-way range, so beside barycentric
+    Doppler it would claim a light-time model it does not follow. ``apparent_one_way_ssb`` carries no media
+    delay, so it goes with ``barycentric_dsn`` only. The instantaneous companion stays allowed: it claims no
+    light time, and it is a self-consistent synthetic model.
+    """
+    barycentric = rr_physics.barycentric_enabled
+    if companion_geometry == "apparent_one_way" and barycentric:
+        raise ValueError("companion_geometry='apparent_one_way' is Moon-centred; barycentric counted Doppler "
+                         "needs 'apparent_one_way_ssb' (barycentric_dsn) or 'instantaneous'.")
+    if companion_geometry == "apparent_one_way_ssb" and (
+        not barycentric or rr_physics.counted_doppler_model == "barycentric_dsn_media"
+    ):
+        raise ValueError("companion_geometry='apparent_one_way_ssb' goes with "
+                         "counted_doppler_model='barycentric_dsn' only.")
+
+
 def normalize_jacobian_model(
     jacobian_model: str | None = None,
     *,
@@ -229,11 +248,13 @@ def normalize_jacobian_model(
     companion_geometry: str = "instantaneous",
 ) -> str:
     """Return the declared Jacobian model for metadata and validation."""
+    geometric = measurement_model_profile == "geometric_instantaneous" and companion_geometry == "instantaneous"
     if jacobian_model is None:
-        if measurement_model_profile == "geometric_instantaneous" and companion_geometry == "instantaneous":
-            jacobian_model = "analytic_exact_geometric"
-        else:
-            jacobian_model = "analytic_first_order_light_time"
+        jacobian_model = "analytic_exact_geometric" if geometric else "implicit_light_time"
+    elif jacobian_model == "analytic_exact_geometric" and not geometric:
+        # F2 WP2.5 (MEAS-10): the scenario field's default cannot describe a light-time observable. The
+        # first-order map errs by up to 4.6 percent per row and stays available by its explicit name.
+        jacobian_model = "implicit_light_time"
     if jacobian_model not in JACOBIAN_MODELS:
         raise ValueError(f"jacobian_model must be one of {JACOBIAN_MODELS}; got {jacobian_model!r}.")
     if (
@@ -1158,6 +1179,35 @@ def position_initial_state_jacobian_from_augmented_history(
     return h_initial
 
 
+def range_rate_companion_initial_state_jacobian(
+    obs_data: ArrayLike,
+    x_aug_hist: ArrayLike,
+    pass_geo: PassGeometry,
+    h_initial: np.ndarray,
+) -> np.ndarray:
+    """Give the companion rows of 4-row range-rate blocks the Jacobian their label declares (F2 WP2.5).
+
+    ``compute_range_rate_residuals_analytic`` maps at the receive epoch. With a light-time companion and
+    ``jacobian_model='implicit_light_time'`` the range, azimuth and elevation rows are replaced by the
+    transmit-epoch map; the range-rate row stays. ``apparent_one_way_ssb`` uses the same Moon-centred solve,
+    an order v/c approximation as for ``one_way_light_time_ssb``.
+    """
+    companion_geometry = normalize_companion_geometry(getattr(pass_geo, "companion_geometry", "instantaneous"))
+    if (companion_geometry == "instantaneous"
+            or getattr(pass_geo, "jacobian_model", "analytic_exact_geometric") != "implicit_light_time"):
+        return h_initial
+    obs_data = np.asarray(obs_data, dtype=float)
+    position_geo = replace(pass_geo, measurement_model_profile="one_way_light_time", apply_stellar_aberration=False)
+    block = position_initial_state_jacobian_from_augmented_history(
+        obs_data[:, [0, 1, 3, 4, 5, 6]], x_aug_hist, np.zeros((3 * obs_data.shape[0], 6)), position_geo
+    )
+    h_out = np.array(h_initial, dtype=float)
+    h_out[0::4, :] = block[0::3, :]
+    h_out[2::4, :] = block[1::3, :]
+    h_out[3::4, :] = block[2::3, :]
+    return h_out
+
+
 def _light_time_frame_unit_los(
     unit_los: ArrayLike,
     frame_velocity_j2000_mps: ArrayLike,
@@ -1894,6 +1944,7 @@ def _range_rate_companion_observable(
     xform_j2000_to_itrf93: np.ndarray,
     *,
     companion_geometry: str,
+    ssb_et0_s: float | None = None,
 ) -> tuple[float, float, float]:
     companion_geometry = normalize_companion_geometry(companion_geometry)
     if companion_geometry == "instantaneous":
@@ -1904,6 +1955,8 @@ def _range_rate_companion_observable(
             station,
         )
         return z
+    if companion_geometry == "apparent_one_way_ssb" and ssb_et0_s is None:
+        raise ValueError("companion_geometry='apparent_one_way_ssb' needs et0_s (SPICE ET of scenario t=0).")
     z, _t_t, _lt, _it = _apparent_position_observable(
         receive_time_s,
         station,
@@ -1912,6 +1965,7 @@ def _range_rate_companion_observable(
         earth_pos_mci,
         xform_j2000_to_itrf93,
         apply_stellar=False,
+        ssb_et0_s=ssb_et0_s if companion_geometry == "apparent_one_way_ssb" else None,
     )
     return float(z[0]), float(z[1]), float(z[2])
 
@@ -1954,6 +2008,7 @@ def generate_range_rate_measurements(
         raise ValueError("vis_mask_raw must have shape (N, num_stations).")
     rr_physics = range_rate_physics_config(range_rate_physics)
     companion_geometry = normalize_companion_geometry(companion_geometry)
+    validate_companion_for_doppler(rr_physics, companion_geometry)
     if measurement_model_profile is None:
         if rr_physics.mode == "two_way_counted_doppler":
             measurement_model_profile = "two_way_counted_doppler"
@@ -2032,6 +2087,7 @@ def generate_range_rate_measurements(
                         r_earth_mci[k],
                         xforms[k, :, :],
                         companion_geometry=companion_geometry,
+                        ssb_et0_s=float(et0),
                     )
                 if rr_physics.mode == "geometric_instantaneous":
                     rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
@@ -2162,6 +2218,7 @@ def compute_range_rate_residuals(
                 pass_geo.earth_pos_mci_m[time_idx, :],
                 pass_geo.x_j2000_to_itrf93[time_idx, :, :],
                 companion_geometry=companion_geometry,
+                ssb_et0_s=pass_geo.et0_s,
             )
         if rr_physics.mode == "geometric_instantaneous":
             rr_val = instantaneous_geometric_range_rate(r_rel_ecef, v_rel_ecef)
@@ -2385,7 +2442,7 @@ def compute_range_rate_residuals_analytic(
     r_eci      = state_sat[:, :3] - earth_pos                        # (n_obs, 3)
     v_eci      = state_sat[:, 3:] - earth_vel                        # (n_obs, 3)
     r_comp_eci = r_eci.copy()
-    if companion_geometry == "apparent_one_way":
+    if companion_geometry != "instantaneous":
         for obs_idx in range(n_obs):
             station = pass_geo.stations[station_ids[obs_idx]]
             receive_time_s = float(obs_data[obs_idx, 0])
@@ -2397,6 +2454,7 @@ def compute_range_rate_residuals_analytic(
                 pass_geo.earth_pos_mci_m[time_idxs[obs_idx], :],
                 pass_geo.x_j2000_to_itrf93[time_idxs[obs_idx], :, :],
                 apply_stellar=False,
+                ssb_et0_s=pass_geo.et0_s if companion_geometry == "apparent_one_way_ssb" else None,
             )
             _ = z_app
             r_tx_mci = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]

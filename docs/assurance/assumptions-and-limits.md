@@ -45,6 +45,17 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    sıralaması yapılmaz.
 10. Doppler artıkları güçlü otokorelasyonludur (lag-1 0.74–0.81); beyaz ağırlıklandırmayla verilen
     formal σ'lar 2.5–3× iyimserdir.
+15. **Range-rate varsayılanları** anlık geometrik range-rate ve anlık eşlik menzil/açılarıdır (WP2.5'te
+    değişmedi; sahip kararı bekliyor). Barycentric sayılan Doppler yanında anlık eşlik menzili SSB tek yönlü
+    menzilden 35.5–39.5 km uzaktır; kendi içinde tutarlı sentetik modeldir, ışık zamanı iddiası yoktur.
+    Işık zamanlı eşlik için `companion_geometry='apparent_one_way_ssb'` (yalnız `barycentric_dsn`);
+    Ay merkezli `apparent_one_way` barycentric Doppler yanında reddedilir.
+16. **Işık zamanı Jacobian'ı** WP2.5'ten beri varsayılan olarak `implicit_light_time`'dır (konum profilleri
+    ve range-rate eşlik satırları). SSB profillerinde (`one_way_light_time_ssb[_aberrated]`,
+    `apparent_one_way_ssb`) Jacobian Ay merkezli çözümden gelir: satır başına ~1.5e-4, v/c mertebesi.
+    Birinci derece eşleme (%4.6'ya kadar) adıyla seçilebilir; DMC batch implicit modeli reddettiği için
+    orada adıyla istenmelidir. 1 saatlik barycentric Doppler yayında BLS-LM 100 m başlangıçtan 2–3.6 cm'de
+    duruyor (SRIF < 1 cm); açık kalem.
 
 ## Masaüstü ve CLI
 

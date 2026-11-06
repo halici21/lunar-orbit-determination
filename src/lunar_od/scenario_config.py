@@ -42,6 +42,7 @@ from .filters import (
 )
 from .gravity_harmonics import SphericalHarmonicGravityModel
 from .gravity_model_loader import load_lunar_gravity_model, resolve_gravity_dir
+from .measurements import validate_companion_for_doppler
 from .radiometrics import (
     COUNTED_DOPPLER_MODELS,
     DEFAULT_COUNTED_DOPPLER_MODEL,
@@ -90,7 +91,7 @@ ALLOWED_MEASUREMENT_MODEL_PROFILES = (
     "one_way_light_time_ssb",
     "one_way_light_time_ssb_aberrated",
 )
-ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
+ALLOWED_COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way", "apparent_one_way_ssb")
 # F2 WP2.2 (MEAS-06): media delay of the barycentric two-way range
 # (lunar_od.media.MediaModel(); 'none' keeps every existing scenario unchanged).
 ALLOWED_MEDIA_MODELS = ("none", "default_climatology")
@@ -1211,13 +1212,13 @@ def _validate_cross_field_rules(config: ScenarioConfig) -> None:
     if config.companion_geometry != "instantaneous" and config.measurement_type != "range_rate":
         raise ValueError("companion_geometry applies only to measurement_type='range_rate'.")
     if config.jacobian_model == "implicit_light_time" and not (
-        profile_controls_position or config.apply_light_time or config.companion_geometry == "apparent_one_way"
+        profile_controls_position or config.apply_light_time or config.companion_geometry != "instantaneous"
     ):
         raise ValueError(
             "jacobian_model='implicit_light_time' requires a light-time corrected "
             "measurement profile or apparent companion geometry."
         )
-    scenario_range_rate_physics_config(config)
+    validate_companion_for_doppler(scenario_range_rate_physics_config(config), config.companion_geometry)
     if config.ukf_min_process_noise_scale > config.ukf_max_process_noise_scale:
         raise ValueError("ukf_min_process_noise_scale must not exceed ukf_max_process_noise_scale.")
     if not (

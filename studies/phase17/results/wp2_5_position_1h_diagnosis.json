@@ -1,0 +1,136 @@
+{
+ "1001": {
+  "rows": 120,
+  "cost_at_truth": 350.3650671968011,
+  "default_60_iter": {
+   "pos_err_m": 3378.8254500689836,
+   "nees": 6934.199072909089,
+   "status": "MaxIter",
+   "iterations": 60,
+   "cost": 346.48697443070046
+  },
+  "continued_300_iter": {
+   "pos_err_m": 5392.543061218271,
+   "nees": 44825.57510787681,
+   "status": "J-Stab",
+   "iterations": 61,
+   "cost": 345.94657730319597
+  },
+  "from_truth": {
+   "pos_err_m": 5392.603874689495,
+   "nees": 44827.598682332056,
+   "status": "J-Stab",
+   "iterations": 116,
+   "cost": 345.9465767052666
+  },
+  "nielsen_300_iter": {
+   "pos_err_m": 5392.156612025587,
+   "nees": 44812.74047898327,
+   "status": "J-Stab",
+   "iterations": 50,
+   "cost": 345.94657772127425
+  }
+ },
+ "1002": {
+  "rows": 120,
+  "cost_at_truth": 332.1268265049037,
+  "default_60_iter": {
+   "pos_err_m": 3330.5531702890503,
+   "nees": 6517.034760508393,
+   "status": "MaxIter",
+   "iterations": 60,
+   "cost": 326.61744957188694
+  },
+  "continued_300_iter": {
+   "pos_err_m": 6717.652847276724,
+   "nees": 108091.86389752259,
+   "status": "J-Stab",
+   "iterations": 84,
+   "cost": 325.3231472349805
+  },
+  "from_truth": {
+   "pos_err_m": 6717.528420261056,
+   "nees": 108083.88818998766,
+   "status": "J-Stab",
+   "iterations": 136,
+   "cost": 325.3231475793982
+  },
+  "nielsen_300_iter": {
+   "pos_err_m": 6717.677809891993,
+   "nees": 108093.47521574488,
+   "status": "J-Stab",
+   "iterations": 60,
+   "cost": 325.32314710007614
+  }
+ },
+ "1009": {
+  "rows": 120,
+  "cost_at_truth": 353.7213394384748,
+  "default_60_iter": {
+   "pos_err_m": 3306.0976694843225,
+   "nees": 6391.7233226055505,
+   "status": "MaxIter",
+   "iterations": 60,
+   "cost": 343.3311520452428
+  },
+  "continued_300_iter": {
+   "pos_err_m": 6065.200840778945,
+   "nees": 72020.74224960187,
+   "status": "J-Stab",
+   "iterations": 76,
+   "cost": 342.4735764196603
+  },
+  "from_truth": {
+   "pos_err_m": 6065.020308432207,
+   "nees": 72012.19501637474,
+   "status": "J-Stab",
+   "iterations": 131,
+   "cost": 342.47357705142576
+  },
+  "nielsen_300_iter": {
+   "pos_err_m": 6065.007798953549,
+   "nees": 72011.55831306614,
+   "status": "J-Stab",
+   "iterations": 54,
+   "cost": 342.4735769139471
+  }
+ },
+ "1004": {
+  "rows": 120,
+  "cost_at_truth": 377.51454383536947,
+  "default_60_iter": {
+   "pos_err_m": 188.68146427629767,
+   "nees": 2.6981396048777615,
+   "status": "J-Stab",
+   "iterations": 14,
+   "cost": 374.3091725021966
+  },
+  "continued_300_iter": {
+   "pos_err_m": 188.6814642776121,
+   "nees": 2.698139627629492,
+   "status": "J-Stab",
+   "iterations": 8,
+   "cost": 374.30917331446665
+  },
+  "from_truth": {
+   "pos_err_m": 188.77681435176265,
+   "nees": 2.6977528443475194,
+   "status": "J-Stab",
+   "iterations": 17,
+   "cost": 374.309172321024
+  },
+  "nielsen_300_iter": {
+   "pos_err_m": 188.68723458771368,
+   "nees": 2.6981505821121,
+   "status": "J-Stab",
+   "iterations": 20,
+   "cost": 374.30917317076427
+  }
+ },
+ "position_sigma_principal_m": [
+  0.5719460434681364,
+  6.024151872733928,
+  2980.1526941729626
+ ],
+ "rows_note": "one station (Canberra) visible, 30 s cadence"
+}
