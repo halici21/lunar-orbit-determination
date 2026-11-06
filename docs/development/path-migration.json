@@ -2615,8 +2615,11 @@
     },
     "lunar_od/lunar_landmark_optical.py": {
       "path": "src/lunar_od/lunar_landmark_optical.py",
-      "original_sha256": "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36",
-      "byte_preserved": true
+      "original_sha256": "b68f3f0bfbec6f8f364cf7da5da6f6bf256816397a832d96f5c721421d8d82f7",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36"
+      ]
     },
     "lunar_od/measurement_contracts.py": {
       "path": "src/lunar_od/measurement_contracts.py",
