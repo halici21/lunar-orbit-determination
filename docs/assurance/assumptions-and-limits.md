@@ -63,3 +63,35 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     dondurulmuş sonuçlar ve kapılar bu takvimle üretildi. Kazanç oranlı Nielsen/Moré takvimi
     `damping_schedule="nielsen"` ile seçilir (WP4.2b); aynı minimuma daha az iterasyonla ulaşır.
     Nielsen seçimli kalır; dondurulmuş sonuçlar yeniden üretilmez.
+
+## Kuvvet modeli ve yayılım
+
+Madde 15–17'nin kaynağı [WP3.1-R önemlilik taraması](../../studies/phase17/reports/wp3_1_materiality_survey.md)
+(REQ-DYN-007). Ön kayıtlı koşu kapı vetosuyla WP3_1_INCONCLUSIVE kaldı; aşağıdaki sayılar
+olay-bölütlemeli A2 koşusundandır. A2 sonuç görüldükten sonra eklendiği için keşifseldir
+([değişiklik günlüğü](amendment-log.md) 2026-11-07); bu kararlarla REQ-DYN-007'yi kapatmak sahip kararıdır.
+Sınırlar 100 km'lik dairesel yörüngeler, 1 günlük yay, üç DSN istasyonu, menzil ve menzil hızı
+ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözülen parametre kümesi yeni bir tarama ister.
+
+15. **Üretimde olmayan ve OD'yi eşiğin üstünde saptıran kuvvetler** (WP3.2'ye kadar). Gerçek veri
+    sonuçlarında bunlar model hatasıdır; aynı modeli paylaşan sentetik gidiş-dönüş testleri onları göstermez (madde 1).
+    Yanıtlar 1 günlük yayda, 0.1σ eşiğine karşı en kötü hücre, tasarım ve gürültü düzeyindendir:
+
+    | Terim | En büyük yanıt | Not |
+    |---|---|---|
+    | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | |
+    | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar |
+    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar |
+    | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
+    | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
+
+16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
+    ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
+    Üretimin Dünya J2'sindeki birim çerçeve (DYN-19'un o kısmı) ITRF93 kutbuna göre ≤ 2.2e-4σ fark yaratır.
+17. **Gölgeli alçak yörüngelerde olaysız entegrasyonun sayısal tabanı.** Ay gölgesi ivmesi her
+    yarıgölge kontağında kırılır. Olay bölütlemesi yoksa entegratör bu kırıkların üzerinden adım atar;
+    `propagate_state` varsayılanı da `shadow_events=False`'tur. Gölgeli 100 km'lik yörüngelerde tek DOP853
+    koşusunun tabanı (rtol 1e-12'ye karşı 1e-13) günde 0.2–1.4 m'dir. Olay-bölütlemeli `PropagationProfile()`
+    ile taban ≤ 7.5e-5 m'dir. Varsayılan Adams yolunun tabanı burada ölçülmedi. Santimetre ve altındaki
+    karşılaştırmalar gölgeli yörüngelerde `PropagationProfile()` ile yapılmalıdır. Profil başına
+    sertifika WP3.3'tedir (REQ-DYN-006).
