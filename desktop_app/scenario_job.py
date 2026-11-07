@@ -20,11 +20,12 @@ def main(argv=None):
     if job.get("schema") != "lunar-od-desktop-job-v1":
         raise ValueError("Desteklenmeyen masaüstü koşu sözleşmesi.")
     from desktop_app.models.scenario_model import ScenarioModel
-    from desktop_app.services.scenario_execution import execution_payload
-    expected_config, options = execution_payload(ScenarioModel.from_dict(job["form"]))
+    from desktop_app.services.scenario_execution import execution_payload, reconcile_saved_options
+    expected_config, derived = execution_payload(ScenarioModel.from_dict(job["form"]))
+    options = reconcile_saved_options(derived, job["options"])
     configured = dict(job["config"])
     folder = Path(configured.pop("output_dir")).resolve()
-    if configured != expected_config or options != job["options"] or folder != job_path.parent:
+    if configured != expected_config or options is None or folder != job_path.parent:
         raise ValueError("Kaydedilen form, etkili yapılandırma ve çıktı klasörü uyuşmuyor.")
     from lunar_od import scenario_config_from_mapping
     config = scenario_config_from_mapping(job["config"])
