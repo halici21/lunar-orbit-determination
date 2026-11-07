@@ -849,6 +849,17 @@ def current_source_path(relative_path: str) -> str:
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
 
 
+#   F2 WP2.4 slice 2: scenario earth_orientation field, archive registry, run-provenance block:
+#   lunar_od/scenario_config.py      -> 4b2eb3af...
+#   examples/run_scenario_config.py  -> e08fb7ef...
+F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenario_config.py":
+        "4b2eb3aff6fdd3754cecd46a1c6db47000dbf7e41b27cbd482f51b9cd56e66e4",
+    "examples/run_scenario_config.py":
+        "e08fb7ef04149bfda6c063fe52ea714605fe564d0c258bca6622c78cc915267d",
+}
+
+
 def expected_current_tree_sha256(relative_path: str) -> str:
     """Expected CURRENT-tree hash for a protected path.
 
@@ -862,6 +873,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
         return F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_X12_REFROZEN_CURRENT_TREE_SHA256:
         return F1_X12_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:

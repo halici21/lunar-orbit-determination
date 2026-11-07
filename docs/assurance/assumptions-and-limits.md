@@ -101,3 +101,13 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     ile taban ≤ 7.5e-5 m'dir. Varsayılan Adams yolunun tabanı burada ölçülmedi. Santimetre ve altındaki
     karşılaştırmalar gölgeli yörüngelerde `PropagationProfile()` ile yapılmalıdır. Profil başına
     sertifika WP3.3'tedir (REQ-DYN-006).
+
+## İstasyon konumları
+
+18. `config.py` istasyon tabloları yuvarlatılmıştır; "Goldstone DSN" DSS-14'ten 15.7 km, en yakın antenden 6.0 km,
+    "Madrid DSN" 0.22 km, "Canberra DSN" 0.29 km uzaktadır (WP2.4 dilim 4). Bu tablolar kendi içinde tutarlı sentetik
+    veri içindir; gerçek veride `lunar_od.dsn_stations.dsn_station` (DSN 810-005 301 Rev. P) kullanılır.
+19. `dsn_station` konumu verilen epoch'ta dondurur (`Station` statiktir): gün başına < 0.2 mm hata. Kaynağın beyan ettiği
+    mutlak doğruluk 0.1 m'ye kadardır (1σ). Levha hareketi 2027'de Goldstone 0.47 m, Canberra 1.25 m, Madrid 0.74 m birikir.
+20. Kutup gelgiti modellenmez: etkisi 1.2 mm, OD'de ≤ 0.004σ (Phase C3). Okyanus yüklemesi modellenmez ve ölçülmemiştir
+    (BLQ katsayıları gerekir). DSN dışı istasyonlar (LRO'nun USN sahaları, RD-09) bu kaynakta yoktur.

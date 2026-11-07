@@ -25,8 +25,10 @@ def test_refreeze_keeps_the_historical_record_and_protects_approved_bytes():
     assert campaign.DESKTOP_WORKSPACE_REFROZEN_CURRENT_TREE_SHA256[BRIDGE] == _filtered_sha256(APPROVED_COMMIT)
     # The numerical-core correction is the later additive identity of the bridge.
     assert campaign.NUMERICAL_CORE_REFROZEN_CURRENT_TREE_SHA256[BRIDGE] == _filtered_sha256(NUMERICAL_CORE_COMMIT)
-    # WP1.2 brought up to date with main (WP1.2 + WP1.6 + WP1.9 together) is the current identity.
-    assert campaign.expected_current_tree_sha256(BRIDGE) == campaign.WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256[BRIDGE]
+    # WP1.2 brought up to date with main (WP1.2 + WP1.6 + WP1.9 together) stays recorded; F2 WP2.4 slice 2
+    # (scenario earth_orientation profile and run-provenance block) is the later additive, current identity.
+    assert campaign.WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256[BRIDGE]
+    assert campaign.expected_current_tree_sha256(BRIDGE) == campaign.F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256[BRIDGE]
     assert campaign.expected_current_tree_sha256(BRIDGE) == hashlib.sha256((ROOT / BRIDGE).read_bytes()).hexdigest()
 
 
