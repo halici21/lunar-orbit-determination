@@ -16,6 +16,10 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS-LM (konum, range-rate,
    iki yönlü menzil) F4 WP4.2-R'den beri her iterasyonu çağıranın toleransında skorlar; SRIF yolları ilk
    iterasyonlarda hâlâ rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir (taranmadı, açık kalem).
+   F2 WP2.7 G12'de görülen belirti: gevşek evrede skorlanan maliyet integrasyon gürültüsüdür (yakınsamış
+   noktada konumda 3.7e-3, çağıranın toleransında 1e-11), satır araması bu gürültüde adım kabul
+   edebiliyor; range-rate'te çağıranın toleransında da ~1e-8 m'lik yarılanmış adımlar kabul ediliyor.
+   Kendi çözümünden yeniden başlatılan SRIF 2 yerine 3–8 iterasyon harcıyor; çözüm ≤ 2.6e-8 m oynuyor.
 4. **Kuvvet parmak izi** yürütülen efemeris kernel'ini, interpolasyonunu ve Ay dönüş modunu
    kapsamaz; "force parity PASS" bu eksenlerde eşitlik kanıtı değildir.
 5. **Varsayılan Ay J2 terimi** IAU sabit ortalama kutbunu kullanır; bu kutup MOON_PA_DE440

@@ -79,7 +79,11 @@ def test_srif_solution_is_a_fixed_point(kind):
     x_est, _, _ = _solve(kind, X_TRUE + OFFSET, rtol=1e-12, atol=1e-13)
     x_again, reason, stats = _solve(kind, x_est, rtol=1e-12, atol=1e-13)
     assert reason in {"Converged", "J-Stab"}, (reason, stats.termination_detail)
-    assert stats.iterations <= 3
+    # F2 WP2.7 G12 (exploratory, amendment log): the bound was 3, which held only for the bit-exact
+    # restart. At the optimum, noise-level steps can win the line search, mostly at the loosened
+    # tolerance of the first iterations; restarts moved by 0-3 ulp take up to 8
+    # (studies/phase17/results/wp2_7_g12_fixed_point_sweep.json). Before WP4.1: max_iter (40).
+    assert stats.iterations <= 10
     assert np.linalg.norm(x_again[:3] - x_est[:3]) < 1e-4
 
 
