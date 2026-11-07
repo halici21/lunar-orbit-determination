@@ -31,7 +31,8 @@ DIAGNOSTICS            = exploratory, no decision changed:
                          SRP_LIGHT_TIME: the predeclared occulter delta = |r|/c is 3.07x too long at the
                          100 km contacts; with the ray-crossing delta = (r.u)/c the term is marginal
                          (0.109 in O2xE1, 0.101 in O3xE3)
-OWNER DECISIONS        = accept A2's decisions for REQ-DYN-007 (exploratory); WP3.2 scope and defaults
+DECISIONS (2026-11-08) = delegated by the owner to the agent (section 9): A2's classification sets the WP3.2
+                         scope; REQ-DYN-007 closes after WP3.2's predeclared hold-out replication
 ```
 
 "sigma" is the predeclared response: the largest |delta_theta_i / sigma_i| over the initial state and K_SRP, in some
@@ -286,9 +287,9 @@ O1×E1, baseline and term at (1e-13, 1e-14), profile D2:
 
 The marginal response is not an integration artefact.
 
-## 7. For WP3.2 (owner decisions)
+## 7. For WP3.2
 
-WP3.2 needs its own predeclaration; defaults stay an owner decision. A2's decisions support:
+WP3.2 needs its own predeclaration. Section 9 records the scope decision. A2's decisions support:
 
 1. **TIDE**: Earth and Sun, degrees 2 and 3, GL1800F Love numbers.
 2. **LRP**: albedo and thermal IR. Implement it together with the K_SRP estimate, which LRP otherwise biases by about
@@ -317,5 +318,45 @@ WP3.2 needs its own predeclaration; defaults stay an owner decision. A2's decisi
   survey values in O3 measure that model, not the physics.
 - The A2 integration of SRP_LIGHT_TIME was not cut at the shifted contacts (A2 `not_cut`), which adds about 10 % in O3
   (section 6.1). A2's `not_cut` note gives ~0.1 s for the shift; the predeclared term moves the contacts by 0.34 s.
-- The agent decisions of the predeclaration await the owner: synthetic arcs, not LRO; box-wing deferred to WP3.4;
-  base origin/main, independent of the F2 stack.
+- The predeclaration's agent decisions were approved on 2026-11-08 (section 9): synthetic arcs, not LRO; box-wing
+  deferred to WP3.4; base origin/main, independent of the F2 stack.
+
+## 9. Decisions (2026-11-08)
+
+The owner delegated the open decisions to the agent ("en doğru kararı ver ve uygula", 2026-11-08). The agent
+decided as follows.
+
+1. **REQ-DYN-007: A2's classification sets the WP3.2 scope; the requirement closes after WP3.2's hold-out
+   replication.**
+   - *P0 agrees where it is valid.* In O2, P0 is valid: no shadow kink, and G4 passes with a floor of ~2e-5 m. There
+     P0 and D2 give the same response for every term to four digits, for example TIDE 230, EARTH_SHADOW 12.2,
+     LRP 1.5, SRP_LIGHT_TIME 0.109, PN 0.011 and PLANETS 0.0062. G5's veto came from the shadowed O1×E1 design.
+   - *Which decisions depend on A2.* The predeclared profile, in its valid cells, already finds TIDE, LRP,
+     EARTH_SHADOW and SRP_LIGHT_TIME material and PN and PLANETS not. Only EARTH_J2's 0.108 comes from a shadowed
+     cell, and so from A2 alone.
+   - *Remaining status.* The classification stays exploratory under the amendment rule. REQ-DYN-007 therefore stays
+     `partial`. WP3.2's predeclaration repeats the classification on a hold-out population (new epochs) with the
+     production implementation, and the requirement closes on that confirmatory result.
+2. **WP3.2 scope.**
+   - **TIDE, LRP and EARTH_SHADOW go into production as opt-in terms.**
+     - Defaults and frozen results stay unchanged. This follows the owner's earlier decisions: the BLS-LM damping
+       schedule (2026-11-02) and the NAIF predict kernel, which was not adopted because it would change every 2027
+       synthetic result.
+     - EARTH_SHADOW needs its own contacts in the event-segmented profile; otherwise its penumbra kinks bring the
+       integration floor back on eclipse arcs.
+     - LRP must enter the K_SRP sensitivity, since it scales with the same area-to-mass ratio.
+   - **SRP_LIGHT_TIME goes in opt-in as one package** (the P–R force with the Sun at emission, and the shadow with the
+     Moon at the ray crossing), after the three terms above. Its O2 response of 0.109 holds under P0, D2, 1 s steps
+     and either occulter.
+   - **EARTH_J2 is already a production option.** Its identity frame is immaterial (≤ 2.2e-4). It joins the
+     recommended configuration; the default stays off.
+   - **Event segmentation stays opt-in** (`PropagationProfile()`). WP3.3 certifies the profiles, including the
+     Adams default's floor on shadowed orbits.
+   - **Recommended configuration for real data (F5/F6):** every material term on, Earth J2 on, event-segmented
+     integration. The marginal terms are implemented because long arcs make them grow: the P–R drag's along-track
+     error is quadratic in time.
+3. **The predeclaration's agent decisions are approved.**
+   - Synthetic arcs: the LRO days 262/263 are already used for model selection (RD-01), and synthetic arcs give a
+     known truth.
+   - Box-wing SRP in WP3.4: it needs the LRO macro-model and attitude.
+   - Base `main`: WP3.1-R touches no F2 code.

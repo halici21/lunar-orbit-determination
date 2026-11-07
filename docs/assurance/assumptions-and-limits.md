@@ -69,7 +69,9 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 Madde 15–17'nin kaynağı [WP3.1-R önemlilik taraması](../../studies/phase17/reports/wp3_1_materiality_survey.md)
 (REQ-DYN-007). Ön kayıtlı koşu kapı vetosuyla WP3_1_INCONCLUSIVE kaldı; aşağıdaki sayılar
 olay-bölütlemeli A2 koşusundandır. A2 sonuç görüldükten sonra eklendiği için keşifseldir
-([değişiklik günlüğü](amendment-log.md) 2026-11-07); bu kararlarla REQ-DYN-007'yi kapatmak sahip kararıdır.
+([değişiklik günlüğü](amendment-log.md) 2026-11-07). Karar (2026-11-08, sahip ajana devretti): A2'nin
+sınıflandırması WP3.2 kapsamının temelidir; REQ-DYN-007, WP3.2'nin ön kayıtlı hold-out tekrarından sonra kapanır.
+WP3.2 terimleri seçimli (opt-in) ekler; varsayılanlar ve dondurulmuş sonuçlar değişmez.
 Sınırlar 100 km'lik dairesel yörüngeler, 1 günlük yay, üç DSN istasyonu, menzil ve menzil hızı
 ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözülen parametre kümesi yeni bir tarama ister.
 
