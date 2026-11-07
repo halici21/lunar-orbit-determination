@@ -16,6 +16,10 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS-LM (konum, range-rate,
    iki yönlü menzil) F4 WP4.2-R'den beri her iterasyonu çağıranın toleransında skorlar; SRIF yolları ilk
    iterasyonlarda hâlâ rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir (taranmadı, açık kalem).
+   F2 WP2.7 G12'de görülen belirti: gevşek evrede skorlanan maliyet integrasyon gürültüsüdür (yakınsamış
+   noktada konumda 3.7e-3, çağıranın toleransında 1e-11), satır araması bu gürültüde adım kabul
+   edebiliyor; range-rate'te çağıranın toleransında da ~1e-8 m'lik yarılanmış adımlar kabul ediliyor.
+   Kendi çözümünden yeniden başlatılan SRIF 2 yerine 3–8 iterasyon harcıyor; çözüm ≤ 2.6e-8 m oynuyor.
 4. **Kuvvet parmak izi** yürütülen efemeris kernel'ini, interpolasyonunu ve Ay dönüş modunu
    kapsamaz; "force parity PASS" bu eksenlerde eşitlik kanıtı değildir.
 5. **Varsayılan Ay J2 terimi** IAU sabit ortalama kutbunu kullanır; bu kutup MOON_PA_DE440
@@ -70,6 +74,15 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     kompleksleri arasında kesin V·b/c²'den 0.47–0.69 ns sapar: tek tek gecikmeler bu kadar hatalıdır, ΔDOR değil
     (açık kalem). Kuasar doğrultusundaki medya, kuasar yapısı ve Güneş kenarı yüksek mertebe terimi modellenmez;
     hiçbir üretim tahmincisi ΔDOR tüketmez.
+19. **Görünürlük maskesi** (F2 WP2.7, MEAS-14) varsayılan olarak geometriktir: uzay aracı, istasyon ve Ay aynı
+    epoch'ta. Işık zamanlı maske `analyze_visibility_gap_with_transforms(geometry='light_time_downlink' |
+    'light_time_two_way')` ile seçilir (6×6 dönüşüm ve hızlı durum geçmişi gerekir); hangi modun doğru olduğu
+    gözleme bağlıdır (tek yönlü ya da iki yönlü) ve fonksiyon bunu bilmez. Geometrik maskede Ay örtmesi sınırları
+    ~τ ≈ 1.33–1.35 s, iki yönlü yükselişler ~2τ ≈ 2.6–2.9 s erkendir. Ay küresel (yarıçap yapılandırmadan),
+    arazi yoktur: kenar rölyefinin km'si başına 2.7–3.5 s örtme sınırı kayması (10 km'de ~30 s, ışık zamanı
+    etkisinin ~20 katı; LOLA DEM ertelendi, sahip kararı bekliyor). Kırılma maskede yoktur. Düzgün olmayan
+    ızgarada boşluklar zamanla köprülenir; düzgün ızgarada örnek sayısıyla (davranış değişmedi). Üretilen
+    gürültülü azimutlar [0, 2π) içine sarılmaz; artıklar `wrap_to_pi` ile sarılır.
 
 ## Masaüstü ve CLI
 
