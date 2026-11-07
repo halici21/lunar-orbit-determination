@@ -2485,7 +2485,8 @@
       "refrozen_history_sha256": [
         "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
         "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e",
-        "699b34173eb2ad8a46c24395bb4a8b90727b4faa729e900255f87519736ee9fd"
+        "699b34173eb2ad8a46c24395bb4a8b90727b4faa729e900255f87519736ee9fd",
+        "60703d3b0ad7f852a86e9e12dfc4c78a1091cb89a769ec2f410405c6e54846be"
       ]
     },
     "lunar_od/delta_dor.py": {
@@ -2514,7 +2515,8 @@
         "1b060a04d1434798f3b1335d62fe7cd67d33eeb42b5f4b29a7dee18f44b91d7a",
         "ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3",
         "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
-        "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c"
+        "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
+        "f71cdb7c7b9fa8a1acff713f01f68aed05f555bcd59ba135e9c3932b5596bbb8"
       ]
     },
     "lunar_od/ephemeris.py": {
@@ -2570,7 +2572,8 @@
       "refrozen_history_sha256": [
         "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
         "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
-        "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0"
+        "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
+        "1eb152ba6e18808bce6236d0d60b80d0627c57a306346842f6eb494a683b0471"
       ],
       "refrozen_from_sha256": "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
       "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained."
@@ -2607,7 +2610,8 @@
       "original_sha256": "b7397c3d2d1c08be60adac2ca03de41254cf1306ba321f6499fdf47505655bfd",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4"
+        "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4",
+        "b7397c3d2d1c08be60adac2ca03de41254cf1306ba321f6499fdf47505655bfd"
       ]
     },
     "lunar_od/lunar_landmark_optical.py": {
@@ -2643,7 +2647,8 @@
       "note": "Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
-        "d504063bbdb363410258550c6dc02e58945b555a96c169b0e1c3772775589ceb"
+        "d504063bbdb363410258550c6dc02e58945b555a96c169b0e1c3772775589ceb",
+        "e73514c6abeb410cbf30b6002c04f5c7d1bd37b7cdc281cdcf27f3999faa6867"
       ]
     },
     "lunar_od/noise_models.py": {
@@ -2791,10 +2796,14 @@
         "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
         "c3c82845a20b3c9fe70fea4ae5a5347862c9a9f5f0c942693d16540448036865",
         "50714882f3fb8b57ca458e491fd63e756493ad5a804df267055b964eaf5c179b",
-        "40c90fdf3287e1ab1f5438aa07e2764362c6d1a08fd840916e44631ebeb6e372"
+        "40c90fdf3287e1ab1f5438aa07e2764362c6d1a08fd840916e44631ebeb6e372",
+        "29ea1dde9f950ab2998ecb5bb43bea79c712a71032b5b3d3015f6b8f5139b068",
+        "5da4b353b1c1dd0dc8d3a6ef1debb58fabceab263757b6e1d5c5db912b11d4f6",
+        "45bb408dee3e9a3a47a548aa6ee24501b7232d79c032abc4915bfcda4cba88a9",
+        "7e1177e1f7e2d20e83df3b2c6ec7b0a404f71c10743e624717aee9581a38639a"
       ],
       "refrozen_from_sha256": "40c90fdf3287e1ab1f5438aa07e2764362c6d1a08fd840916e44631ebeb6e372",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.7 (DYN-12/CFG-07): explicit PA label, stale guards; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-02 when PR #96 (WP1.7) was brought up to date with main after the branch consolidation (PR #97): the WP1.7 schema guard and the WP1.6 seed keys merged into one file (no new edits); both identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.7) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained."
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.7 (DYN-12/CFG-07): explicit PA label, stale guards; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-02 when PR #96 (WP1.7) was brought up to date with main after the branch consolidation (PR #97): the WP1.7 schema guard and the WP1.6 seed keys merged into one file (no new edits); both identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.7) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity (after merging main); all previous identities and historical scientific results retained."
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
@@ -2804,7 +2813,8 @@
         "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
         "f241594661c4976dd2514b001784cb21fa50684a19be1377cfa968fad739fd48",
         "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
-        "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709"
+        "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
+        "888c7c79c942f0263938de0200f5125dbabebba8b8d3815d269edbe33fe7dd65"
       ],
       "refrozen_from_sha256": "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
       "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained."
@@ -2857,10 +2867,13 @@
         "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
         "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
         "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
-        "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea"
+        "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea",
+        "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
+        "9a909719ed105b49129fd9d8bd2c7860b9c6474b948b28f4d4224a17057822eb",
+        "e5ce57517b02d3a42cdbe484e4d6d4d1622c6158053b7d68d236b7224a17817e"
       ],
       "refrozen_from_sha256": "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-02 for the owner-requested branch consolidation: the separately re-frozen WP1.6 and WP1.9 changes merged into one file (no new edits); both branch identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.9) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256."
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-02 for the owner-requested branch consolidation: the separately re-frozen WP1.6 and WP1.9 changes merged into one file (no new edits); both branch identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.9) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity (after merging main); all previous identities and historical scientific results retained."
     },
     "examples/r1_covariance_observability_validation.py": {
       "path": "examples/r1_covariance_observability_validation.py",
@@ -2874,7 +2887,8 @@
       "refrozen_history_sha256": [
         "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33",
         "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0",
-        "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8"
+        "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
+        "1d540e31363588bd04e950f225c5ce5e9d60c5101f5f7f294bdf9eec28f537c5"
       ],
       "refrozen_from_sha256": "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
       "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained."
