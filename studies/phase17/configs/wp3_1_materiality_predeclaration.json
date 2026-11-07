@@ -91,6 +91,16 @@
       "now": "with v along u (no Sun or Moon motion), a_LT = (1 - 2 v/c) a_SRP to 1e-12 relative",
       "why": "the declared a_LT = K P nu [(1 - v.u/c) u - v/c] gives (1 - v/c) u - (v/c) u = (1 - 2 v/c) u for v = v u: the Doppler factor of the incident flux and the aberration term each contribute -v/c along u (Poynting-Robertson; Burns, Lamy & Soter 1979, Icarus 40, eq. 2). The formula is unchanged; the old test statement contradicted it",
       "status": "the survey stays confirmatory; recorded in docs/assurance/amendment-log.md"
+    },
+    {
+      "id": "A2",
+      "date": "2026-11-07",
+      "before_any_result": "no: after a gate result. Before the survey, an integrator diagnostic with no force term measured the G4 floor of cell O1 x E1 under the predeclared profile (one DOP853 solve_ivp run, shadow_events False) at 1.434 m over the 1-day arc, so G4 fails there as predeclared (> 1e-3 m); O2 x E1: 1.9e-5 m. Under production's consistent profile (PropagationProfile(): DOP853, shadow_events True) the O1 x E1 floor is 6.0e-5 m, and 2.1e-5 m with the shadow switched off (NO_SHADOW). A 1-h smoke run of O1 x E1 (software check, all terms, both profiles) was also seen: under the predeclared profile the G5 K_SRP column misses by 0.17 (state columns 4e-5 to 3e-4); under D2 the state columns agree to 2e-7 and the K_SRP column to 1.7e-4 (range) and 1.7e-5 (range rate) over that hour",
+      "cause": "the kink of the conical lunar-shadow acceleration at each penumbra contact falls inside integrator steps (Phase D1: 0.1-1.9 m per ~1.2-day arc; D2 added event segmentation for this reason). O1 (beta 0) and O3 cross the lunar shadow about 24 times a day",
+      "change": "a second full run under profile D2: every propagation of the survey (baseline, term runs, G3's production reference propagate_state(..., method='DOP853', shadow_events=True), G4, the K-sensitivity run, G5's finite differences) uses production's event segmentation: dynamics._shadow_contact_times on the RHS being integrated (a term run is cut at its own trajectory's contacts) and dynamics._integrate_segmented with _shadow_contact_check. Terms, cells, designs, noise levels, prior, gates, thresholds and the materiality rule are unchanged",
+      "not_cut": "SRP_LIGHT_TIME moves the lunar-shadow contacts by ~0.1 s; its own kinks are not cut (an impulse of ~5e-9 m/s per contact)",
+      "both_reported": "the predeclared run (profile P0) is also run in full and reported as computed: studies/phase17/results/wp3_1_materiality_survey.json; the D2 run: studies/phase17/results/wp3_1_materiality_survey_a2.json. The G4 values of the two runs reproduce the diagnostic's O1 x E1 floors",
+      "status": "exploratory (keşifsel): a change after a gate result. Closing REQ-DYN-007 on the D2 decisions is an owner decision"
     }
   ],
   "outputs": {
