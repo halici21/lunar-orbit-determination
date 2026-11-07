@@ -274,6 +274,7 @@ def run_configured_scenario(
             apply_stellar_aberration=config.apply_stellar_aberration,
             stellar_aberration_model=config.stellar_aberration_model,
             measurement_model_profile=config.measurement_model_profile,
+            media_model=getattr(config, "media_model", "none"),
             companion_geometry=config.companion_geometry,
             jacobian_model=config.jacobian_model,
         )

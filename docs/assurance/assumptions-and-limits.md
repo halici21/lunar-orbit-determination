@@ -13,8 +13,13 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
 2. **Tahminci karşılaştırmaları** şu farkları içerir: UKF hızlı yayıcıda
    RK4 + doğrusal efemeris (X-04, MEAS-05; doğrusal Dünya konumu ızgara ortasında ≤117 m sapar, ama yörünge farkı 60 s'de 4.6e-6 m, 1 günde 4.1e-2 m — ölçüm gürültüsünün çok altında, `tests/test_meas05_sigma_ephemeris_fidelity.py` ile sabitlendi), BLS ve SRIF'in
    farklı tekillik eşikleri (X-14). (X-06, SRIF adım kabulündeki yol farkı, WP4.1'de kapatıldı.)
-3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS ilk iterasyonlarda
-   rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir.
+3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS-LM (konum, range-rate,
+   iki yönlü menzil) F4 WP4.2-R'den beri her iterasyonu çağıranın toleransında skorlar; SRIF yolları ilk
+   iterasyonlarda hâlâ rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir (taranmadı, açık kalem).
+   F2 WP2.7 G12'de görülen belirti: gevşek evrede skorlanan maliyet integrasyon gürültüsüdür (yakınsamış
+   noktada konumda 3.7e-3, çağıranın toleransında 1e-11), satır araması bu gürültüde adım kabul
+   edebiliyor; range-rate'te çağıranın toleransında da ~1e-8 m'lik yarılanmış adımlar kabul ediliyor.
+   Kendi çözümünden yeniden başlatılan SRIF 2 yerine 3–8 iterasyon harcıyor; çözüm ≤ 2.6e-8 m oynuyor.
 4. **Kuvvet parmak izi** yürütülen efemeris kernel'ini, interpolasyonunu ve Ay dönüş modunu
    kapsamaz; "force parity PASS" bu eksenlerde eşitlik kanıtı değildir.
 5. **Varsayılan Ay J2 terimi** (X-02, sahip kararı 2026-11-02) tam epoch'taki MOON_PA_DE440
@@ -49,6 +54,39 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    sıralaması yapılmaz.
 10. Doppler artıkları güçlü otokorelasyonludur (lag-1 0.74–0.81); beyaz ağırlıklandırmayla verilen
     formal σ'lar 2.5–3× iyimserdir.
+15. **Range-rate varsayılanları** anlık geometrik range-rate ve anlık eşlik menzil/açılarıdır (WP2.5'te
+    değişmedi; sahip kararı bekliyor). Barycentric sayılan Doppler yanında anlık eşlik menzili SSB tek yönlü
+    menzilden 35.5–39.5 km uzaktır; kendi içinde tutarlı sentetik modeldir, ışık zamanı iddiası yoktur.
+    Işık zamanlı eşlik için `companion_geometry='apparent_one_way_ssb'` (yalnız `barycentric_dsn`);
+    Ay merkezli `apparent_one_way` barycentric Doppler yanında reddedilir.
+16. **Işık zamanı Jacobian'ı** WP2.5'ten beri varsayılan olarak `implicit_light_time`'dır (konum profilleri
+    ve range-rate eşlik satırları). SSB profillerinde (`one_way_light_time_ssb[_aberrated]`,
+    `apparent_one_way_ssb`) Jacobian Ay merkezli çözümden gelir: satır başına ~1.5e-4, v/c mertebesi.
+    Birinci derece eşleme (%4.6'ya kadar) adıyla seçilebilir; DMC batch implicit modeli reddettiği için
+    orada adıyla istenmelidir. 1 saatlik barycentric Doppler yayındaki BLS-LM 2–3.6 cm tabanı erken
+    iterasyon gevşetmesiymiş; F4 WP4.2-R'den beri 0.19 mm.
+17. **Landmark optik** (`lunar_landmark_optical`, F2 WP2.6): enlem/boylam varsayılan olarak `MOON_ME_DE440_ME421`
+    çerçevesinde okunur (LOLA katalogları); WP2.6 öncesi sessizce `MOON_PA_DE440` idi (163–875 m fark) ve Phase 17
+    R1O-OPT / HARDEN sonuçları PA ile üretildi. Kamera tutumu varsayılan olarak dış girdidir (yıldız izleyici);
+    tutum tahmin edilen konumdan kuruluyorsa `attitude_source='nadir_from_state'` gerekir (aksi halde Jacobian
+    %5.8 eksik). Piksel kuralı `pixel_origin` ile açıktır (varsayılan 'corner', W/2). Mercek bozulması, aydınlatma
+    ve küresel olmayan Ay şekli modellenmez.
+18. **ΔDOR**: `lunar_od.delta_dor` gözlemi `legacy_synthetic`'tir (Ay merkezli D_S, statik düzlem dalga D_Q;
+    SSB modelinden 0.6–1 µs). Üretim gözlemi `relativistic_light_time.delta_dor_ssb`: SSB uzay aracı gecikmesi ve
+    aynı modelde kuasar gecikmesi, istasyon zamanında; ortak istasyon yaklaşımları ΔDOR'da sadeleşir. IERS 2010
+    konsensüs gecikmesi (`quasar_delay_consensus`) bağımsız kontroldür. ERFA dtdb'nin topocentric terimi DSN
+    kompleksleri arasında kesin V·b/c²'den 0.47–0.69 ns sapar: tek tek gecikmeler bu kadar hatalıdır, ΔDOR değil
+    (açık kalem). Kuasar doğrultusundaki medya, kuasar yapısı ve Güneş kenarı yüksek mertebe terimi modellenmez;
+    hiçbir üretim tahmincisi ΔDOR tüketmez.
+19. **Görünürlük maskesi** (F2 WP2.7, MEAS-14) varsayılan olarak geometriktir: uzay aracı, istasyon ve Ay aynı
+    epoch'ta. Işık zamanlı maske `analyze_visibility_gap_with_transforms(geometry='light_time_downlink' |
+    'light_time_two_way')` ile seçilir (6×6 dönüşüm ve hızlı durum geçmişi gerekir); hangi modun doğru olduğu
+    gözleme bağlıdır (tek yönlü ya da iki yönlü) ve fonksiyon bunu bilmez. Geometrik maskede Ay örtmesi sınırları
+    ~τ ≈ 1.33–1.35 s, iki yönlü yükselişler ~2τ ≈ 2.6–2.9 s erkendir. Ay küresel (yarıçap yapılandırmadan),
+    arazi yoktur: kenar rölyefinin km'si başına 2.7–3.5 s örtme sınırı kayması (10 km'de ~30 s, ışık zamanı
+    etkisinin ~20 katı; LOLA DEM ertelendi, sahip kararı bekliyor). Kırılma maskede yoktur. Düzgün olmayan
+    ızgarada boşluklar zamanla köprülenir; düzgün ızgarada örnek sayısıyla (davranış değişmedi). Üretilen
+    gürültülü azimutlar [0, 2π) içine sarılmaz; artıklar `wrap_to_pi` ile sarılır.
 
 ## Masaüstü ve CLI
 

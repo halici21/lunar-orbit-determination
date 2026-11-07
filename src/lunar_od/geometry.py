@@ -70,7 +70,8 @@ def ecef2razel_sez(
 ) -> tuple[float, float, float]:
     """Compute azimuth, elevation, and range from a relative ECEF vector.
 
-    Azimuth is clockwise from North and returned in `[0, 2*pi)`.
+    Azimuth is clockwise from North and returned in `[0, 2*pi)`; elevation is
+    `atan2(Z, hypot(S, E))`.
     """
     r_rel_ecef_m = np.asarray(r_rel_ecef_m, dtype=float).reshape(-1)
     if r_rel_ecef_m.size != 3:
@@ -83,15 +84,21 @@ def ecef2razel_sez(
     if range_m < 1e-9:
         return 0.0, 0.0, range_m
 
-    sin_el = float(np.clip(zenith_m / range_m, -1.0, 1.0))
-    elevation_rad = float(np.arcsin(sin_el))
+    # F2 WP2.7 (MEAS-14): atan2 keeps full precision at the zenith, where
+    # arcsin(Z / |rho|) was off by up to 1e-8 rad (it returned pi/2 exactly
+    # within 1.3e-8 rad of the zenith).
+    horizontal_m = float(np.hypot(south_m, east_m))
+    elevation_rad = float(np.arctan2(zenith_m, horizontal_m))
 
-    if float(np.hypot(south_m, east_m)) < 1e-12:
+    if horizontal_m < 1e-12:
         return 0.0, elevation_rad, range_m
 
     azimuth_rad = float(np.arctan2(east_m, -south_m))
     if azimuth_rad < 0.0:
         azimuth_rad += 2.0 * np.pi
+        if azimuth_rad >= 2.0 * np.pi:
+            # F2 WP2.7: within 2.5e-16 rad west of north the sum rounds to 2 pi.
+            azimuth_rad = 0.0
 
     return azimuth_rad, elevation_rad, range_m
 

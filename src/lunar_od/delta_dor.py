@@ -90,6 +90,13 @@ from .measurements import (
     solve_one_way_light_time,
 )
 
+#: F2 WP2.6 (MEAS-13): this module's observable is a self-consistent synthetic model only. D_S is Newtonian light
+#: time in the Moon-centred frame and D_Q a static plane wave with no aberration, station motion, topocentric time
+#: or gravity; against the barycentric spacecraft delay in station time and the IERS 2010 consensus quasar delay
+#: it is 0.6-1 us off (D_S 69-92 ns, D_Q 0.67-1.05 us; studies/phase17/results/wp2_6_survey.json) for a 0.1 ns
+#: measurement. The production observable is :func:`lunar_od.relativistic_light_time.delta_dor_ssb`.
+DELTA_DOR_MODEL_STATUS = "legacy_synthetic"
+
 
 class DeltaDorEventError(RuntimeError):
     """The common-transmit-event / forward light-time solve did not converge."""
@@ -343,6 +350,9 @@ def quasar_differential_delay_s(
 ) -> float:
     """D_Q = -(r_B - r_A) . s_hat / c, the analytic plane-wave differential delay.
 
+    ``legacy_synthetic`` (F2 WP2.6): 0.67-1.05 us off the IERS 2010 consensus delay; real-data and
+    production use :func:`lunar_od.relativistic_light_time.quasar_delay_consensus`.
+
     Both station positions must be evaluated at the SAME reference epoch by
     the caller (R1O-D §27 characterizes the sensitivity to that choice: the
     baseline rotates with Earth, so evaluating at t_A vs t_B vs their mean
@@ -358,7 +368,11 @@ def delta_dor_observable_s(
     common_event: CommonTransmitEventSolution,
     quasar_differential_delay_value_s: float,
 ) -> float:
-    """DDOR = D_S - D_Q, in seconds.  Sign convention QUALIFIED by oracle (R1O-D §35)."""
+    """DDOR = D_S - D_Q, in seconds.  Sign convention QUALIFIED by oracle (R1O-D §35).
+
+    ``legacy_synthetic`` (F2 WP2.6, see ``DELTA_DOR_MODEL_STATUS``); the production observable is
+    :func:`lunar_od.relativistic_light_time.delta_dor_ssb`.
+    """
     return common_event.spacecraft_differential_delay_s - quasar_differential_delay_value_s
 
 

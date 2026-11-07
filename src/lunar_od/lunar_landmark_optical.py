@@ -17,8 +17,8 @@ pair with EXACTLY known attitude and EXACTLY known landmark position -- no
 camera, no attitude chain, no image plane.  This module instead builds the
 full chain a real optical-navigation OD would consume:
 
-    r_landmark^PA (body-fixed, Moon principal axes)
-        --[MOON_PA_DE440, already-qualified]-->  r_landmark^J2000(t)
+    r_landmark^ME (body-fixed; MOON_ME_DE440_ME421 by default, MOON_PA_DE440 on request -- F2 WP2.6)
+        --[versioned DE440 body frame]-->  r_landmark^J2000(t)
         --[camera-from-inertial attitude, EXPLICIT EXTERNAL INPUT]-->  rho^C
         --[pinhole projection]-->  (u, v) pixels
 
@@ -51,6 +51,15 @@ CHARACTERIZED_NOT_FULLY_IMPLEMENTED`` -- only solar-incidence-angle screening
 is provided), and an ellipsoidal/topographic lunar shape model
 (``LANDMARK_POSITION_MODEL = SPHERICAL_REFERENCE``, R_MOON_M mean radius,
 matching R1O's own surrogate).
+
+## Conventions made explicit in F2 WP2.6 (MEAS-13)
+
+Landmark body frame (``body_frame``, default ME), camera attitude source
+(``attitude_source``: an external attitude, or a nadir attitude built from the
+estimated position with its dC/dr term) and the pixel origin
+(``CameraIntrinsics.pixel_origin``).  Each was implicit before; the defaults of
+the latter two keep the historical behaviour, the landmark frame default
+changed from PA to ME.
 """
 from __future__ import annotations
 
@@ -62,6 +71,15 @@ from numpy.typing import ArrayLike
 
 class OpticalGeometryError(RuntimeError):
     """A landmark projection was requested from a degenerate camera geometry."""
+
+
+PIXEL_ORIGINS = ("corner", "center")
+#: F2 WP2.6 (MEAS-13): landmark lat/lon frames. LOLA-derived catalogues are in the mean-Earth/polar-axis frame;
+#: the principal-axis frame differs by 163-875 m on the surface (studies/phase17/results/wp2_6_survey.json).
+LANDMARK_BODY_FRAMES = ("MOON_ME_DE440_ME421", "MOON_PA_DE440")
+DEFAULT_LANDMARK_BODY_FRAME = "MOON_ME_DE440_ME421"
+ATTITUDE_SOURCES = ("external", "nadir_from_state")
+NADIR_CONSISTENCY_TOL = 1e-12
 
 
 # ======================================================================
@@ -79,6 +97,14 @@ class CameraIntrinsics:
     pixel_pitch_m: float = 5.5e-6          # common CMOS pixel pitch
     sensor_width_px: int = 2048
     sensor_height_px: int = 2048
+    # F2 WP2.6 (MEAS-13): the pixel coordinate convention, stated instead of implied.
+    # 'corner': pixel i spans [i, i+1], the principal point of an ideal sensor is W/2 (the historical value);
+    # 'center': pixel i is centred on i (OpenCV), the principal point is (W - 1)/2.
+    pixel_origin: str = "corner"
+
+    def __post_init__(self):
+        if self.pixel_origin not in PIXEL_ORIGINS:
+            raise ValueError(f"pixel_origin must be one of {PIXEL_ORIGINS}; got {self.pixel_origin!r}.")
 
     @property
     def focal_length_px(self) -> float:
@@ -86,6 +112,8 @@ class CameraIntrinsics:
 
     @property
     def principal_point_px(self) -> tuple[float, float]:
+        if self.pixel_origin == "center":
+            return ((self.sensor_width_px - 1) / 2.0, (self.sensor_height_px - 1) / 2.0)
         return (self.sensor_width_px / 2.0, self.sensor_height_px / 2.0)
 
     @property
@@ -219,23 +247,58 @@ def pinhole_project(
     )
 
 
+def _skew(a: np.ndarray) -> np.ndarray:
+    return np.array([[0.0, -a[2], a[1]], [a[2], 0.0, -a[0]], [-a[1], a[0], 0.0]])
+
+
+def _nadir_frame_position_derivatives(r_sc: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """d(x_cam)/dr, d(y_cam)/dr, d(boresight)/dr (each 3x3, column j = d/dr_j) of
+    :func:`nadir_pointing_camera_frame`, on the same branch of its reference vector."""
+    norm = float(np.linalg.norm(r_sc))
+    b = -r_sc / norm
+    ref = np.array([0.0, 0.0, 1.0]) if abs(b[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    w = np.cross(b, ref)
+    w_norm = float(np.linalg.norm(w))
+    x_cam = w / w_norm
+    db = -(np.eye(3) - np.outer(b, b)) / norm
+    dw = -_skew(ref) @ db                      # d(b x ref) = db x ref = -ref x db
+    dx = (np.eye(3) - np.outer(x_cam, x_cam)) @ dw / w_norm
+    dy = -_skew(x_cam) @ db + _skew(b) @ dx    # d(b x x) = db x x + b x dx
+    return dx, dy, db
+
+
 def pinhole_position_jacobian(
     r_sc_inertial_m: ArrayLike,
     r_landmark_inertial_m: ArrayLike,
     c_ci: ArrayLike,
     intrinsics: CameraIntrinsics = DEFAULT_CAMERA,
+    *,
+    attitude_source: str = "external",
+    attitude_bias_rad: ArrayLike | None = None,
 ) -> np.ndarray:
     """Analytic d(u, v)/d(r_sc), a (2, 3) matrix.
 
-    ``rho_cam = C_ci @ (r_lm - r_sc)``, so ``d(rho_cam)/d(r_sc) = -C_ci``
-    (``r_lm`` and ``C_ci`` do not depend on ``r_sc``).  Then the standard
+    ``rho_cam = C_ci @ (r_lm - r_sc)``.  With ``attitude_source='external'``
+    (the default) the camera attitude is an independent input -- a star
+    tracker's, say -- so ``C_ci`` does not depend on ``r_sc`` and
+    ``d(rho_cam)/d(r_sc) = -C_ci``.  Then the standard
     pinhole-projection partials
     ``d(u)/d(rho_cam) = f_px * [1/z, 0, -x/z^2]``,
     ``d(v)/d(rho_cam) = f_px * [0, 1/z, -y/z^2]`` are chained through.
     Verified against a convergence-checked central finite difference in
     ``examples/phase17_r1o_opt_oracles.py`` (R1O-OPT §73: an analytic
     Jacobian checked by FD, not "supported only by one arbitrary FD step").
+
+    F2 WP2.6 (MEAS-13): ``attitude_source='nadir_from_state'`` is for a
+    camera whose attitude is BUILT from the position being estimated,
+    ``C_ci = perturbed_camera_frame(nadir_pointing_camera_frame(r_sc),
+    attitude_bias_rad)``.  The attitude then moves with ``r_sc`` and
+    ``d(rho_cam)/d(r_sc) = -C_ci + R_bias @ (dC_nadir/dr) (r_lm - r_sc)``;
+    leaving that term out is 5.8% (median) at 100 km.  ``c_ci`` must equal
+    that construction, otherwise ValueError.
     """
+    if attitude_source not in ATTITUDE_SOURCES:
+        raise ValueError(f"attitude_source must be one of {ATTITUDE_SOURCES}; got {attitude_source!r}.")
     r_sc = np.asarray(r_sc_inertial_m, dtype=float).reshape(3)
     r_lm = np.asarray(r_landmark_inertial_m, dtype=float).reshape(3)
     c = np.asarray(c_ci, dtype=float).reshape(3, 3)
@@ -251,6 +314,16 @@ def pinhole_position_jacobian(
         [0.0, f_px / z, -f_px * y / z ** 2],
     ])
     d_rhocam_d_rsc = -c
+    if attitude_source == "nadir_from_state":
+        c_nadir = nadir_pointing_camera_frame(r_sc)
+        bias = np.zeros(3) if attitude_bias_rad is None else np.asarray(attitude_bias_rad, dtype=float)
+        expected = perturbed_camera_frame(c_nadir, bias)
+        if float(np.max(np.abs(expected - c))) > NADIR_CONSISTENCY_TOL:
+            raise ValueError("attitude_source='nadir_from_state' needs c_ci == perturbed_camera_frame("
+                             "nadir_pointing_camera_frame(r_sc), attitude_bias_rad).")
+        d = r_lm - r_sc
+        dx, dy, db = _nadir_frame_position_derivatives(r_sc)
+        d_rhocam_d_rsc = d_rhocam_d_rsc + small_angle_rotation(bias) @ np.vstack([d @ dx, d @ dy, d @ db])
     return d_uv_d_rhocam @ d_rhocam_d_rsc
 
 
@@ -282,36 +355,50 @@ def landmark_optical_state_and_k_sensitivity(
 # ======================================================================
 # Landmark lunar-fixed -> inertial position (reuses qualified MOON_PA_DE440)
 # ======================================================================
-def landmark_inertial_position_m(lat_rad: float, lon_rad: float, r_moon_m: float, et: float) -> np.ndarray:
+def _landmark_body_rotation(body_frame: str, et: float) -> np.ndarray:
+    """J2000 -> ``body_frame`` at ``et``; versioned DE440 realizations only, never the MOON_ME/MOON_PA aliases."""
+    if body_frame not in LANDMARK_BODY_FRAMES:
+        raise ValueError(f"body_frame must be one of {LANDMARK_BODY_FRAMES}; got {body_frame!r}.")
+    if body_frame == "MOON_PA_DE440":
+        from .lunar_frames import moon_pa_de440_rotation_at_et
+
+        return moon_pa_de440_rotation_at_et(et)
+    import spiceypy as spice
+
+    return np.asarray(spice.pxform("J2000", body_frame, float(et)), dtype=np.float64)
+
+
+def landmark_inertial_position_m(lat_rad: float, lon_rad: float, r_moon_m: float, et: float, *,
+                                 body_frame: str = DEFAULT_LANDMARK_BODY_FRAME) -> np.ndarray:
     """Spherical-Moon landmark position at inertial epoch ``et`` (TDB seconds past J2000).
 
-    Uses the already-qualified ``moon_pa_de440_rotation_at_et`` (Phase
-    17-R1M/17-R1O precedent) -- the versioned DE440 realization, never the
-    load-order-dependent generic ``MOON_PA`` alias.
+    ``lat_rad``/``lon_rad`` are read in ``body_frame``.  F2 WP2.6 (MEAS-13):
+    the default is the mean-Earth/polar-axis frame ``MOON_ME_DE440_ME421``, the
+    frame of LOLA-derived landmark catalogues.  Before WP2.6 the latitude and
+    longitude were silently read in ``MOON_PA_DE440`` (the Phase 17 R1O-OPT and
+    HARDEN studies did so); pass ``body_frame='MOON_PA_DE440'`` to reproduce
+    them.  The two differ by 163-875 m on the surface.  Only the versioned
+    DE440 realizations are accepted, never the load-order-dependent aliases.
     """
-    from .lunar_frames import moon_pa_de440_rotation_at_et
-
     lat, lon = float(lat_rad), float(lon_rad)
-    r_pa = r_moon_m * np.array([
+    r_body = r_moon_m * np.array([
         np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat),
     ])
-    c_pa = moon_pa_de440_rotation_at_et(et)
-    return c_pa.T @ r_pa
+    return _landmark_body_rotation(body_frame, et).T @ r_body
 
 
-def landmark_surface_outward_normal_j2000(lat_rad: float, lon_rad: float, et: float) -> np.ndarray:
+def landmark_surface_outward_normal_j2000(lat_rad: float, lon_rad: float, et: float, *,
+                                          body_frame: str = DEFAULT_LANDMARK_BODY_FRAME) -> np.ndarray:
     """Outward local-vertical unit normal at a spherical-Moon landmark, in J2000.
 
     For a spherical body the outward normal equals the unit position vector,
     so this is only a distinct function from ``landmark_inertial_position_m``
     for documentation clarity at the occultation-gate call sites below.
+    ``body_frame`` as in :func:`landmark_inertial_position_m`.
     """
-    from .lunar_frames import moon_pa_de440_rotation_at_et
-
     lat, lon = float(lat_rad), float(lon_rad)
-    n_pa = np.array([np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)])
-    c_pa = moon_pa_de440_rotation_at_et(et)
-    return c_pa.T @ n_pa
+    n_body = np.array([np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)])
+    return _landmark_body_rotation(body_frame, et).T @ n_body
 
 
 # ======================================================================

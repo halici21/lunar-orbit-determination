@@ -14,6 +14,7 @@ from numpy.typing import ArrayLike
 
 from .dynamics import propagate_augmented_state
 from .measurements import (
+    range_rate_companion_initial_state_jacobian,
     PassGeometry,
     compute_position_residuals_analytic,
     position_initial_state_jacobian_from_augmented_history,
@@ -401,7 +402,7 @@ def build_initial_state_jacobian(
         time_idx = int(obs_data[obs_idx, time_col]) - 1
         phi_k = x_aug_hist[time_idx, 6:].reshape((6, 6), order="F")
         h_initial[row0 : row0 + block_size, :] = h_tilde[row0 : row0 + block_size, :] @ phi_k
-    return h_initial
+    return range_rate_companion_initial_state_jacobian(obs_data, x_aug_hist, pass_geo, h_initial)
 
 
 def _build_two_way_range_rate_initial_state_jacobian(
@@ -419,6 +420,10 @@ def _build_two_way_range_rate_initial_state_jacobian(
         time_idx = int(obs_data[obs_idx, 6]) - 1
         phi_k = x_aug_hist[time_idx, 6:].reshape((6, 6), order="F")
         h_initial[row0 : row0 + 4, :] = h_tilde[row0 : row0 + 4, :] @ phi_k
+    h_initial = range_rate_companion_initial_state_jacobian(obs_data, x_aug_hist, pass_geo, h_initial)
+    for obs_idx in range(obs_data.shape[0]):
+        row0 = obs_idx * 4
+        time_idx = int(obs_data[obs_idx, 6]) - 1
         station_id = int(obs_data[obs_idx, 5]) - 1
         h_initial[row0 + 1, :] = two_way_counted_doppler_initial_state_jacobian(
             float(pass_geo.t_s[time_idx]),
