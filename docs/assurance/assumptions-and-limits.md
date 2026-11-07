@@ -11,7 +11,7 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    zamanı) ve X-09 (istasyon zinciri) birbirini götürür (X-08 aberasyon çerçevesi WP1.10'da kapatıldı). Sentetik doğruluk
    sayıları gerçek veri doğruluğu değildir.
 2. **Tahminci karşılaştırmaları** şu farkları içerir: UKF hızlı yayıcıda
-   RK4 + doğrusal efemeris (X-04, MEAS-05), BLS ve SRIF'in
+   RK4 + doğrusal efemeris (X-04, MEAS-05; doğrusal Dünya konumu ızgara ortasında ≤117 m sapar, ama yörünge farkı 60 s'de 4.6e-6 m, 1 günde 4.1e-2 m — ölçüm gürültüsünün çok altında, `tests/test_meas05_sigma_ephemeris_fidelity.py` ile sabitlendi), BLS ve SRIF'in
    farklı tekillik eşikleri (X-14). (X-06, SRIF adım kabulündeki yol farkı, WP4.1'de kapatıldı.)
 3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS ilk iterasyonlarda
    rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir.
