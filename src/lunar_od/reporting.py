@@ -58,9 +58,14 @@ def write_numerical_profile_manifest(truth_profile, scenario: ScenarioResult, ou
     This records numerical execution, not the still separate full input-data
     and runtime manifest. Missing estimator provenance stays explicitly null.
     """
+    from .propagation_contract import numerical_profile_differences
+    differences = numerical_profile_differences(truth_profile, scenario.numerical_profile)
     return write_force_model_manifest(dict(schema_version='numerical-profile-manifest.v1',
         force_manifest_sha256=scenario.force_contract_manifest_sha256,
-        truth=truth_profile,estimator=scenario.numerical_profile),output_path)
+        truth=truth_profile,estimator=scenario.numerical_profile,
+        # WP1.8: whether truth and estimator ran on one numerical path, and where not.
+        shared_profile=not differences,
+        profile_differences={k: list(v) for k, v in differences.items()}),output_path)
 
 
 def write_scenario_summary_csv(scenarios: Sequence[ScenarioResult], output_path) -> Path:

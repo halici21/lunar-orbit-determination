@@ -2749,13 +2749,14 @@
     },
     "lunar_od/reporting.py": {
       "path": "src/lunar_od/reporting.py",
-      "original_sha256": "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8",
+      "original_sha256": "837bcb4ce2ecd6ea3b1a17298aa178d47467b0c391215b859af4739f4b68400d",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e"
+        "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
+        "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8"
       ],
-      "refrozen_from_sha256": "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.8 profile parity record; all previous identities and historical scientific results retained."
     },
     "lunar_od/rf/__init__.py": {
       "path": "src/lunar_od/rf/__init__.py",

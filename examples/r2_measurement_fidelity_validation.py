@@ -817,6 +817,19 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
         "e5ce57517b02d3a42cdbe484e4d6d4d1622c6158053b7d68d236b7224a17817e",
 }
 
+# F1 WP1.8 (independent-assessment programme; DYN-14/X-04).  The numerical-profile
+# manifest records whether truth and estimator shared one numerical path
+# (shared_profile, profile_differences).  reporting.py is a record here, not a
+# gate-protected path.
+#
+#   old (numerical core)  ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8
+#   new (WP1.8)           837bcb4ce2ecd6ea3b1a17298aa178d47467b0c391215b859af4739f4b68400d
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/reporting.py":
+        "837bcb4ce2ecd6ea3b1a17298aa178d47467b0c391215b859af4739f4b68400d",
+}
+
 
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
@@ -832,6 +845,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     """
     if relative_path in F1_X02_REFROZEN_CURRENT_TREE_SHA256:
         return F1_X02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
