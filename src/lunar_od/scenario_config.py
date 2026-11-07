@@ -28,6 +28,7 @@ from .force_contract import (
     ForceModelContract,
     ForceModelMismatchPolicy,
     ForceModelParityDecision,
+    LUNAR_ROTATION_SAMPLED_GEODESIC,
     LunarHarmonicsForceContract,
     SolarRadiationPressureForceContract, ESTIMATOR_CONSUMER_ROLES,
     bind_spec_to_runtime,
@@ -812,6 +813,8 @@ def _lunar_harmonics_force_contract(config: ScenarioConfig) -> LunarHarmonicsFor
             if config.lunar_gravity_rotation_margin_s is None
             else float(config.lunar_gravity_rotation_margin_s)
         ),
+        # The scenario path samples the rotation on the cadence grid (WP1.3 SLERP).
+        rotation_mode=LUNAR_ROTATION_SAMPLED_GEODESIC,
     )
 
 

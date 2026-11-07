@@ -23,6 +23,8 @@ from lunar_od.force_contract import (
     ForceContractError,
     ForceElementStatus,
     ForceModelContract,
+    LUNAR_ROTATION_DIRECT_EXACT_EPOCH,
+    LUNAR_ROTATION_SAMPLED_GEODESIC,
     LunarHarmonicsForceContract,
     OrientationPolicy,
     canonical_json_bytes,
@@ -374,10 +376,43 @@ class ForceContractHarmonicsHashingTests(unittest.TestCase):
             kernel_profile_policy="de421",
             rotation_cadence_s=60.0,
             rotation_margin_s=None,
+            rotation_mode=LUNAR_ROTATION_SAMPLED_GEODESIC,
         )
         self.assertEqual(
             contract.status, ForceElementStatus.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY
         )
+
+    def test_x12_rotation_mode_is_part_of_the_force_identity(self):
+        # REQ-DYN-004: same coefficients, cadence and frame, different body-rotation
+        # evaluation -> different acceleration -> different fingerprint.
+        base = _contract()
+        enabled = dataclasses.replace(
+            base.lunar_harmonics, enabled=True, model_identity="synthetic",
+            coefficient_file_sha256="sha256:" + "0" * 64, degree_nmax=2, order_mmax=2,
+            normalization="fully_normalized_4pi", model_gravitational_parameter_m3_s2=4.9028e12,
+            reference_radius_m=1.738e6, body_frame="MOON_PA_DE440", kernel_profile_policy="de440",
+            rotation_cadence_s=60.0, rotation_mode=LUNAR_ROTATION_SAMPLED_GEODESIC,
+        )
+        sampled = dataclasses.replace(base, lunar_harmonics=enabled)
+        direct = dataclasses.replace(base, lunar_harmonics=dataclasses.replace(
+            enabled, rotation_mode=LUNAR_ROTATION_DIRECT_EXACT_EPOCH))
+        self.assertNotEqual(sampled.force_model_fingerprint(), direct.force_model_fingerprint())
+        self.assertEqual(
+            sampled.to_canonical_payload()["lunar_harmonics"]["rotation_mode"],
+            "sampled_grid_geodesic_interpolation",
+        )
+
+    def test_x12_rotation_mode_is_required_when_enabled_and_absent_when_disabled(self):
+        disabled = _contract().lunar_harmonics
+        self.assertIsNone(disabled.rotation_mode)
+        # Omitted from the payload, so the frozen no-harmonics fingerprints hold.
+        self.assertNotIn("rotation_mode", _contract().to_canonical_payload()["lunar_harmonics"])
+        with self.assertRaises(ForceContractError):
+            dataclasses.replace(disabled, rotation_mode=LUNAR_ROTATION_SAMPLED_GEODESIC)
+        with self.assertRaises(ForceContractError):
+            dataclasses.replace(disabled, enabled=True)
+        with self.assertRaises(ForceContractError):
+            dataclasses.replace(disabled, enabled=True, rotation_mode="nearest_sample")
 
 
 class ForceContractImportDirectionTests(unittest.TestCase):
