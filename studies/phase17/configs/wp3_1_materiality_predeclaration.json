@@ -81,6 +81,18 @@
   "out_of_scope": "box-wing / panel SRP (needs the LRO macro-model and attitude; WP3.4); the atmosphere's ~2 % enlargement of the Earth's umbra and the light-time displacement of the Earth's shadow (~38 km at the Moon, contacts ~40 s), refinements for WP3.2 if EARTH_SHADOW is implemented; the Earth's shadow on the lunar surface in LRP (LRP is overestimated during the umbral phase of E2/E3); Earth albedo / IR on the spacecraft (~1e-12 m/s^2); lunar de Sitter and Lense-Thirring (~1e-11 m/s^2); lagged or frequency-dependent tide; lunar gravity beyond the point mass in the baseline; the LRO arc (C6/C7) and the C7-I refit; any production change",
   "reject_if": "G1 fails for a term -> that term WP3_1_INCONCLUSIVE; G2, G3 or G5 fails -> every term WP3_1_INCONCLUSIVE; G4 fails in a cell -> the terms with max |delta_r| < 100 x that cell's floor are WP3_1_INCONCLUSIVE in that cell; G6 fails -> EARTH_SHADOW WP3_1_INCONCLUSIVE. Any change after a result goes to docs/assurance/amendment-log.md and the result is exploratory",
   "agent_decisions": "agent decisions, owner approval pending: (1) synthetic production arcs, not the LRO arc; (2) box-wing SRP deferred to WP3.4; (3) base origin/main, independent of the F2 stack",
+  "amendments": [
+    {
+      "id": "A1",
+      "date": "2026-11-07",
+      "before_any_result": "yes: found while writing tests/test_wp3_1_force_terms.py, before any test, gate or survey number existed",
+      "gate": "G1_UNIT (b), the case v along u",
+      "was": "with v along u the magnitude factor is (1 - v/c) to 1e-12",
+      "now": "with v along u (no Sun or Moon motion), a_LT = (1 - 2 v/c) a_SRP to 1e-12 relative",
+      "why": "the declared a_LT = K P nu [(1 - v.u/c) u - v/c] gives (1 - v/c) u - (v/c) u = (1 - 2 v/c) u for v = v u: the Doppler factor of the incident flux and the aberration term each contribute -v/c along u (Poynting-Robertson; Burns, Lamy & Soter 1979, Icarus 40, eq. 2). The formula is unchanged; the old test statement contradicted it",
+      "status": "the survey stays confirmatory; recorded in docs/assurance/amendment-log.md"
+    }
+  ],
   "outputs": {
     "terms": "studies/phase17/scripts/wp3_1_force_terms.py",
     "driver": "studies/phase17/scripts/wp3_1_materiality_survey.py",
