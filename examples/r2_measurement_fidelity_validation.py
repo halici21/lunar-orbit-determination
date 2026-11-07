@@ -948,6 +948,29 @@ F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
         "d47c41e9d73f59bee551e76a2e58851bd039efa484bfa6c89c4b0761d361aa61",
 }
 
+# Owner-requested branch consolidation of 2026-11-08: all 17 open branches merged
+# into main through one integration PR.  These files carry changes from branches
+# that were each re-frozen on their own; the merged file is the union of those
+# already-authorized changes (conflicts resolved by keeping both sides) and has a
+# new identity.  No new edits.
+#
+#   lunar_od/scenario_config.py        X-02 7e1177e1... + X-01 7ff0d866... + X-12 bedb11bd... + WP2.4 4b2eb3af... + WP2.1-2.7 beb68436... -> cb2796ae...
+#   lunar_od/scenarios.py              X-02 888c7c79... + WP2.1-2.7 1d1a1b03... -> 585303e0...
+#   examples/run_scenario_config.py    WP2.4 e08fb7ef... + WP2.1-2.7 1362c085... -> 511641de...
+#   lunar_od/force_contract.py         X-02 1eb152ba... + X-12 3aa7e6d7... -> cbddcd5c...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenario_config.py":
+        "cb2796ae1b126ce5531089cf3a9bca00083713d5f927d964a957b6509374e20a",
+    "lunar_od/scenarios.py":
+        "585303e0a12bb81cff216e202c36698600140f28a87b6a214239ea23d91b7632",
+    "examples/run_scenario_config.py":
+        "511641de0a31e35d40092441c9cde40df51918e748407977f20a026cc3d699c4",
+    "lunar_od/force_contract.py":
+        "cbddcd5c90351f441dd6b90c9a01196fb51e7d30f8a7695392d5d88bc95114d3",
+}
+
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -971,6 +994,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256:
+        return BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_X02_REFROZEN_CURRENT_TREE_SHA256:
         return F1_X02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256:
