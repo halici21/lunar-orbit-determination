@@ -10,6 +10,16 @@ from tests.test_ukf_force_consistency import fixture
 from tests import test_filters as T
 from lunar_od import dynamics as D
 from lunar_od.constants import MU_MOON_M3S2, J2_MOON_UNNORMALIZED
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 
 @pytest.mark.parametrize('measurement',['position','range_rate'])

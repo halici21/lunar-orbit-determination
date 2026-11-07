@@ -144,6 +144,11 @@ F1_WP1_2_ZERO_J2_FINGERPRINT = (
 F1_WP1_2_LUNAR_J2_FINGERPRINT = (
     "sha256:a8ab569c4653aad321211e17cb19f127fb4e4713957aafeb0188615acf4273a7"
 )
+# F1 X-02: the lunar-J2 identities above are the legacy mean-pole model and are
+# recomputed under it; the default (MOON_PA_DE440 pole, GRAIL pair) is frozen here.
+F1_X02_LUNAR_J2_GRAIL_PA_FINGERPRINT = (
+    "sha256:ef0d271c5e95bea489c6474c884b153d7ce25f604ba750d3d2bba248a74bc87f"
+)
 
 PLOT_CONTRACT = (
     {
@@ -778,6 +783,27 @@ F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256 = {
         "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
 }
 
+# F1 X-02 (owner decision 2026-11-02, "Yes, switch default"; DYN-03/DYN-04).  The
+# default point-mass lunar J2 is about the exact-epoch MOON_PA_DE440 pole with the
+# GRGM1200A (C20, R_ref = 1738 km) pair; the IAU mean-pole model stays selectable
+# as lunar_j2_model="iau_mean_pole_legacy" and is bit for bit the earlier physics
+# (FROZEN_LUNAR_J2_FINGERPRINT is still reproduced under it).
+#
+#   lunar_od/dynamics.py         WP1.3 6827b9d9... -> f71cdb7c...
+#   lunar_od/force_contract.py   60c72036...       -> 1eb152ba...
+#   desktop_app/controllers/analysis_controller.py
+#                                WP1.2 5e6a2c38... -> 1d540e31... (merged with main;
+#                                the X-02 edit alone was a4b5bd0b... -> f1dae7ea...)
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_X02_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "f71cdb7c7b9fa8a1acff713f01f68aed05f555bcd59ba135e9c3932b5596bbb8",
+    "lunar_od/force_contract.py":
+        "1eb152ba6e18808bce6236d0d60b80d0627c57a306346842f6eb494a683b0471",
+    "desktop_app/controllers/analysis_controller.py":
+        "1d540e31363588bd04e950f225c5ce5e9d60c5101f5f7f294bdf9eec28f537c5",
+}
+
 
 # PR #99 (F1 WP1.2) brought up to date with main on 2026-11-02, after the branch
 # consolidation (PR #97) and WP1.7 (PR #96).  run_scenario_config.py carries the
@@ -804,6 +830,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F1_X02_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_X02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
@@ -2444,7 +2472,8 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
     rows.extend(build_r2_historical_byte_identity_rows(repository_root))
     rows.extend(build_r2_current_tree_protection_rows(repository_root))
 
-    from lunar_od.constants import J2_MOON_UNNORMALIZED
+    from lunar_od.constants import J2_MOON_GRAIL_UNNORMALIZED, J2_MOON_UNNORMALIZED
+    from lunar_od.lunar_j2_model import use_lunar_j2_model
 
     def contract(j2_moon: float):
         config = scenario_config_from_mapping(
@@ -2460,10 +2489,17 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
         return force_model_contract_from_scenario_config(config)
 
     zero = contract(0.0)
-    lunar_j2 = contract(float(J2_MOON_UNNORMALIZED))
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        lunar_j2_legacy = contract(float(J2_MOON_UNNORMALIZED))
+    lunar_j2 = contract(float(J2_MOON_GRAIL_UNNORMALIZED))
     for item, expected, actual in (
         ("zero_j2_fingerprint", F1_WP1_2_ZERO_J2_FINGERPRINT, zero.force_model_fingerprint()),
-        ("lunar_j2_fingerprint", F1_WP1_2_LUNAR_J2_FINGERPRINT, lunar_j2.force_model_fingerprint()),
+        ("lunar_j2_fingerprint", F1_WP1_2_LUNAR_J2_FINGERPRINT, lunar_j2_legacy.force_model_fingerprint()),
+        (
+            "lunar_j2_grail_pa_fingerprint",
+            F1_X02_LUNAR_J2_GRAIL_PA_FINGERPRINT,
+            lunar_j2.force_model_fingerprint(),
+        ),
         ("force_contract_schema", "r0b.force-model-contract.v1", FORCE_CONTRACT_SCHEMA_VERSION),
     ):
         rows.append(

@@ -54,20 +54,26 @@ from .spice_loader import require_moon_pa_de440
 # ---------------------------------------------------------------------------
 # J2 support — Moon's mean-pole rotation frame
 # ---------------------------------------------------------------------------
-# IAU 2006 mean pole: RA₀ = 269.9949°, Dec₀ = 66.5392° (constant term only).
-# WP1.3 (DYN-03): this is NOT the lunar figure axis.  The MOON_PA_DE440 pole
-# sits 1.47°-1.62° from it over a nodal cycle (the IAU model's periodic terms,
-# up to 3.9° in RA and 1.5° in Dec, are omitted here), so the point-mass J2
-# acceleration direction is off by that angle, a few percent of the J2 term.
-# (J2_MOON_UNNORMALIZED, R_MOON_M) is also not GRAIL's (C20, R_ref) pair (DYN-04).
-# Exact-pole degree-2 gravity is available through the harmonic path in DIRECT
-# mode (GRAIL model, nmax=2, harmonic_epoch_et0); this default is kept so the
-# frozen J2 baselines stay reproducible (see tests/test_moon_orientation_wp1_3.py).
+# Two point-mass lunar J2 models (X-02, DYN-03/04; owner decision 2026-11-02):
+#
+# ``grail_pa_de440`` (default): the axis is the MOON_PA_DE440 pole at the exact
+#   epoch et0 + t (the harmonic DIRECT-mode convention) and the coefficient pairs
+#   with GRGM1200A's reference radius R_MOON_GRAIL_REF_M = 1738.0 km; callers
+#   pass J2_MOON_GRAIL_UNNORMALIZED.  It needs the arc epoch (see
+#   ``lunar_j2_orientation``) and refuses the legacy coefficient, whose pair is
+#   1737.4 km.
+# ``iau_mean_pole_legacy``: the IAU 2006 mean pole, RA0 = 269.9949 deg,
+#   Dec0 = 66.5392 deg (constant term only), with (MOON_J2, MOON_R_M).  This is
+#   NOT the figure axis: MOON_PA_DE440 sits 1.47-1.62 deg from it over a nodal
+#   cycle, about 2 % of the J2 acceleration.  Kept bit for bit so the J2
+#   baselines frozen before 2026-11-02 stay reproducible.
+#
 # MOON_J2 / MOON_R_M are sourced from the centralized constants module and
 # re-exported here under their legacy names for backward compatibility.
 from .constants import (
-    J2_MOON_UNNORMALIZED as MOON_J2,   # IAU/GRAIL J2 coefficient
+    J2_MOON_UNNORMALIZED as MOON_J2,   # legacy J2 coefficient (pairs with MOON_R_M)
     R_MOON_M as MOON_R_M,              # Moon mean radius (m)
+    R_MOON_GRAIL_REF_M,                # GRGM1200A reference radius (m)
     R_EARTH_J2_REF_M,                  # EGM96 Earth J2 reference radius (m)
 )
 
@@ -86,6 +92,71 @@ def _build_moon_j2_rotation() -> np.ndarray:
 
 
 _MCI_TO_MOON_BF: np.ndarray = _build_moon_j2_rotation()
+
+from .lunar_j2_model import (  # noqa: E402
+    DEFAULT_LUNAR_J2_MODEL,
+    LUNAR_J2_MODELS,
+    resolve_lunar_j2_model,
+)
+
+
+def _legacy_j2_rotation(t_s: float) -> np.ndarray:
+    return _MCI_TO_MOON_BF
+
+
+def lunar_j2_epoch(lunar_j2_epoch_et0=None, harmonic_epoch_et0=None, ephemeris_owner=None):
+    """The SPICE ET of propagation t = 0 for the lunar J2 axis, or None.
+
+    Explicit ``lunar_j2_epoch_et0`` first, then the harmonic DIRECT epoch, then
+    the ``et0_s`` of a :class:`~lunar_od.ephemeris.MoonCenteredEphemeris` (or of
+    the object a bound ``earth_position`` method belongs to).  Two different
+    known epochs are a contract error, never resolved silently.
+    """
+    owner = getattr(ephemeris_owner, "__self__", ephemeris_owner)
+    known = [float(e) for e in (lunar_j2_epoch_et0, harmonic_epoch_et0,
+                                getattr(owner, "et0_s", None)) if e is not None]
+    if not known:
+        return None
+    if any(abs(e - known[0]) > 1e-6 for e in known[1:]):
+        raise ValueError(f"lunar J2 epoch sources disagree: {known}")
+    return known[0]
+
+
+def lunar_j2_orientation(j2_moon: float, *, model: str | None = None,
+                         epoch_et0: float | None = None):
+    """``(rotation_at(t_s), reference_radius_m)`` of the point-mass lunar J2.
+
+    ``model=None`` is the active model (``lunar_j2_model.use_lunar_j2_model``;
+    default ``grail_pa_de440``).
+
+    ``rotation_at`` returns the ``r_bf = C @ r_mci`` matrix whose third row is the
+    J2 axis.  With J2 off or the legacy model it is the constant mean-pole matrix
+    (the very same object, so legacy results are bit for bit unchanged).
+    """
+    model = resolve_lunar_j2_model(model)
+    if not j2_moon or model == "iau_mean_pole_legacy":
+        return _legacy_j2_rotation, MOON_R_M
+    if float(j2_moon) == MOON_J2:
+        raise ValueError(
+            "j2_moon equals the legacy coefficient J2_MOON_UNNORMALIZED, which pairs "
+            "with R_MOON_M = 1737.4 km; the grail_pa_de440 model uses R_ref = 1738.0 km. "
+            "Pass J2_MOON_GRAIL_UNNORMALIZED, or select the legacy model "
+            "(lunar_j2_model='iau_mean_pole_legacy' or use_lunar_j2_model)."
+        )
+    if epoch_et0 is None or not np.isfinite(float(epoch_et0)):
+        raise ValueError(
+            "lunar J2 model grail_pa_de440 needs the arc epoch: pass lunar_j2_epoch_et0 "
+            "(SPICE ET of t = 0), harmonic_epoch_et0, or ephemeris methods of a "
+            "MoonCenteredEphemeris with et0_s; or select the legacy model "
+            "(lunar_j2_model='iau_mean_pole_legacy' or use_lunar_j2_model)."
+        )
+    et0 = float(epoch_et0)
+    require_moon_pa_de440(et0)
+
+    def rotation_at(t_s: float) -> np.ndarray:
+        return moon_pa_de440_rotation_at_et(et0 + float(t_s))
+
+    return rotation_at, R_MOON_GRAIL_REF_M
 
 # ---------------------------------------------------------------------------
 # Earth J2 frame (Phase 5).  First-phase constant approximation:
@@ -233,11 +304,16 @@ def f3body_moon(
     harmonic_model: SphericalHarmonicGravityModel | None = None,
     c_inertial_to_bf_harmonic: ArrayLike | None = None,
     srp: "SRPOptions | None" = None,
+    moon_j2_rotation: ArrayLike | None = None,
+    moon_j2_radius_m: float | None = None,
 ) -> np.ndarray:
     """6-state derivative matching MATLAB `f3body_moon.m`.
 
-    Pass ``j2_moon=MOON_J2`` to include the lunar J2 oblateness perturbation
-    (transforms to/from the Moon mean-pole body-fixed frame via ``_MCI_TO_MOON_BF``).
+    Pass ``j2_moon`` to include the lunar J2 oblateness perturbation about the
+    axis ``moon_j2_rotation`` (r_bf = C @ r_mci) with reference radius
+    ``moon_j2_radius_m``.  This kernel is time-agnostic: the propagators resolve
+    both from ``lunar_j2_orientation``; left ``None`` they are the legacy
+    mean-pole ``_MCI_TO_MOON_BF`` and ``MOON_R_M``.
 
     Pass ``j2_earth=J2_EARTH_UNNORMALIZED`` to include Earth's J2 perturbation in
     the Moon-centered frame.  ``earth_j2_mode='indirect'`` (default) uses the
@@ -283,7 +359,9 @@ def f3body_moon(
             raise ValueError("earth_j2_mode must be 'indirect' or 'direct'.")
     if j2_moon:
         a_total_mps2 = a_total_mps2 + body_j2_acceleration(
-            r_sc_m, mu_moon_m3_s2, MOON_R_M, j2_moon, _MCI_TO_MOON_BF
+            r_sc_m, mu_moon_m3_s2,
+            MOON_R_M if moon_j2_radius_m is None else moon_j2_radius_m, j2_moon,
+            _MCI_TO_MOON_BF if moon_j2_rotation is None else moon_j2_rotation,
         )
     if harmonic_model is not None:
         a_total_mps2 = a_total_mps2 + spherical_harmonic_acceleration(
@@ -344,8 +422,12 @@ def dynamics_jacobian_a_matrix(
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
     srp: "SRPOptions | None" = None,
+    moon_j2_rotation: ArrayLike | None = None,
+    moon_j2_radius_m: float | None = None,
 ) -> np.ndarray:
     """Build the 6x6 variational A matrix used by `odeFun_v3.m`.
+
+    ``moon_j2_rotation`` / ``moon_j2_radius_m``: as in :func:`f3body_moon`.
 
     The Earth-J2 indirect term ``-a_J2(Moon rel Earth)`` is state-independent, so
     only the spacecraft term contributes to the gravity gradient (the same
@@ -374,7 +456,9 @@ def dynamics_jacobian_a_matrix(
         )
     if j2_moon:
         g_total = g_total + body_j2_gravity_gradient(
-            r_sc_m, mu_moon_m3_s2, MOON_R_M, j2_moon, _MCI_TO_MOON_BF
+            r_sc_m, mu_moon_m3_s2,
+            MOON_R_M if moon_j2_radius_m is None else moon_j2_radius_m, j2_moon,
+            _MCI_TO_MOON_BF if moon_j2_rotation is None else moon_j2_rotation,
         )
     if srp is not None and srp.is_active:
         from .srp import srp_acceleration_position_gradient
@@ -399,11 +483,15 @@ def ode_fun_v3(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    *,
+    moon_j2_rotation_at: Callable[[float], np.ndarray] | None = None,
+    moon_j2_radius_m: float | None = None,
 ) -> np.ndarray:
     """42-state derivative matching MATLAB `odeFun_v3.m`.
 
     The STM is stored and flattened in column-major order, matching MATLAB's
-    `Phi(:)` convention.
+    `Phi(:)` convention.  ``moon_j2_rotation_at(t_s)`` supplies the lunar J2
+    axis at ``t_s`` (default: the legacy constant mean pole).
     """
     state_aug_mci = np.asarray(state_aug_mci, dtype=float).reshape(-1)
     if state_aug_mci.size != 42:
@@ -413,6 +501,7 @@ def ode_fun_v3(
     phi = state_aug_mci[6:].reshape((6, 6), order="F")
     r_moon_earth_m = _vec3(get_earth_pos(float(t_s)), "r_moon_earth_m")
     r_moon_sun_m = _vec3(get_sun_pos(float(t_s)), "r_moon_sun_m")
+    c_j2 = None if moon_j2_rotation_at is None else moon_j2_rotation_at(float(t_s))
 
     x_dot = f3body_moon(
         x_mci,
@@ -424,6 +513,8 @@ def ode_fun_v3(
         j2_moon=j2_moon,
         j2_earth=j2_earth,
         earth_j2_mode=earth_j2_mode,
+        moon_j2_rotation=c_j2,
+        moon_j2_radius_m=moon_j2_radius_m,
     )
     a_matrix = dynamics_jacobian_a_matrix(
         x_mci,
@@ -435,6 +526,8 @@ def ode_fun_v3(
         j2_moon=j2_moon,
         j2_earth=j2_earth,
         earth_j2_mode=earth_j2_mode,
+        moon_j2_rotation=c_j2,
+        moon_j2_radius_m=moon_j2_radius_m,
     )
     phi_dot = a_matrix @ phi
     return np.concatenate([x_dot, phi_dot.reshape(-1, order="F")])
@@ -899,6 +992,8 @@ def shadow_contact_times(
     harmonic_model: SphericalHarmonicGravityModel | None = None,
     harmonic_rotation=None,
     harmonic_epoch_et0: float | None = None,
+    lunar_j2_model: str | None = None,
+    lunar_j2_epoch_et0: float | None = None,
 ) -> list[float]:
     """Penumbra contact epochs of the 6-state trajectory over ``t_eval_s``.
 
@@ -909,10 +1004,14 @@ def shadow_contact_times(
         return []
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
     state0_mci = _state6(state0_mci)
+    _j2rot, _j2r = lunar_j2_orientation(
+        j2_moon, model=lunar_j2_model,
+        epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, harmonic_epoch_et0, get_earth_pos),
+    )
     rhs, get_sun_pos = _build_state_rhs(
         t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
-        harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
+        harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp, _j2rot, _j2r,
     )
     return _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
 
@@ -920,9 +1019,12 @@ def shadow_contact_times(
 def _build_state_rhs(
     t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
     get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
-    harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
+    harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp, j2_rotation_at, j2_radius_m,
 ):
-    """The 6-state RHS ``propagate_state`` integrates, and its Sun lookup."""
+    """The 6-state RHS ``propagate_state`` integrates, and its Sun lookup.
+
+    ``j2_rotation_at`` / ``j2_radius_m`` come from :func:`lunar_j2_orientation`.
+    """
     # One Sun lookup per epoch, shared by the force model and the SRP term.
     # Identity function when SRP is off.
     get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
@@ -937,8 +1039,7 @@ def _build_state_rhs(
 
     if _FAST_DYNAMICS:
         _j2 = float(j2_moon)
-        _mr = MOON_R_M if j2_moon else 0.0
-        _cbf = _MCI_TO_MOON_BF
+        _mr = j2_radius_m if j2_moon else 0.0
         _j2e = float(j2_earth)
         _er = R_EARTH_J2_REF_M if j2_earth else 0.0
         _cbfe = _J2000_TO_EARTH_BF
@@ -946,7 +1047,7 @@ def _build_state_rhs(
             return _f3body_rhs_fast(
                 state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
-                _j2, _mr, _cbf, _j2e, _er, _emode, _cbfe,
+                _j2, _mr, j2_rotation_at(t_s), _j2e, _er, _emode, _cbfe,
             )
     else:
         def rhs(t_s: float, state: np.ndarray) -> np.ndarray:
@@ -954,6 +1055,7 @@ def _build_state_rhs(
                 state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
                 j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
+                moon_j2_rotation=j2_rotation_at(t_s), moon_j2_radius_m=j2_radius_m,
             )
 
     if _h_ctx is not None:
@@ -978,7 +1080,7 @@ def _build_state_rhs(
 
         if _FAST_DYNAMICS and _FAST_HARMONICS:
             _j2h = float(j2_moon)
-            _mrh = MOON_R_M if j2_moon else 0.0
+            _mrh = j2_radius_m if j2_moon else 0.0
             _j2eh = float(j2_earth)
             _erh = R_EARTH_J2_REF_M if j2_earth else 0.0
 
@@ -986,7 +1088,7 @@ def _build_state_rhs(
                 return _f3body_harmonics_rhs_fast(
                     state, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                     get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
-                    _j2h, _mrh, _MCI_TO_MOON_BF, _j2eh, _erh, _emode,
+                    _j2h, _mrh, j2_rotation_at(t_s), _j2eh, _erh, _emode,
                     _J2000_TO_EARTH_BF,
                     _hcb, _hsb, _hmu, _hrr, _hn, _hm, _rotation_at(t_s),
                 )
@@ -998,6 +1100,7 @@ def _build_state_rhs(
                     j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
                     harmonic_model=harmonic_model,
                     c_inertial_to_bf_harmonic=_rotation_at(t_s),
+                    moon_j2_rotation=j2_rotation_at(t_s), moon_j2_radius_m=j2_radius_m,
                 )
 
     # SRP wraps whichever of the four force paths above was selected, rather
@@ -1027,6 +1130,8 @@ def propagate_state(
     harmonic_epoch_et0: float | None = None,
     srp: "SRPOptions | None" = None,
     shadow_events: bool = False,
+    lunar_j2_model: str | None = None,
+    lunar_j2_epoch_et0: float | None = None,
 ) -> np.ndarray:
     """Propagate the 6-state dynamics at requested epochs.
 
@@ -1069,10 +1174,14 @@ def propagate_state(
         raise ValueError("t_eval_s must contain at least one epoch.")
 
     state0_mci = _state6(state0_mci)
+    _j2rot, _j2r = lunar_j2_orientation(
+        j2_moon, model=lunar_j2_model,
+        epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, harmonic_epoch_et0, get_earth_pos),
+    )
     rhs, get_sun_pos = _build_state_rhs(
         t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
-        harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
+        harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp, _j2rot, _j2r,
     )
 
     if shadow_events and _shadow_events_active(srp):
@@ -1105,6 +1214,7 @@ def _propagate_augmented_with_harmonics(
     get_earth_pos, get_sun_pos, harmonic_model, h_ctx, *,
     rtol, atol, method, j2_moon, j2_earth, earth_j2_mode,
     harmonic_epoch_et0=None, srp=None, cuts=None,
+    j2_rotation_at=_legacy_j2_rotation, j2_radius_m=MOON_R_M,
 ):
     """42-state RHS with a MATCHED harmonic acceleration and gradient.
 
@@ -1143,16 +1253,17 @@ def _propagate_augmented_with_harmonics(
         r_earth = _vec3(get_earth_pos(t_s), "r_moon_earth_m")
         r_sun = _vec3(get_sun_pos(t_s), "r_moon_sun_m")
         c_bf = _rotation_at(t_s)
+        c_j2 = j2_rotation_at(t_s)
         x_dot = f3body_moon(
             x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_model=harmonic_model, c_inertial_to_bf_harmonic=c_bf,
-            srp=srp,
+            srp=srp, moon_j2_rotation=c_j2, moon_j2_radius_m=j2_radius_m,
         )
         a_matrix = dynamics_jacobian_a_matrix(
             x_mci, mu_moon, mu_earth, mu_sun, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
-            srp=srp,
+            srp=srp, moon_j2_rotation=c_j2, moon_j2_radius_m=j2_radius_m,
         )
         # Same analytic Pines gradient either way; the fast branch is the
         # qualified Numba twin.  The inertial assembly C^T G_bf C mirrors
@@ -1236,6 +1347,8 @@ def propagate_augmented_state(
     harmonic_stm_opt_in: bool = False,
     srp: "SRPOptions | None" = None,
     shadow_events: bool = False,
+    lunar_j2_model: str | None = None,
+    lunar_j2_epoch_et0: float | None = None,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -1279,6 +1392,10 @@ def propagate_augmented_state(
     from scipy.integrate import solve_ivp
 
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
+    _j2rot, _j2r = lunar_j2_orientation(
+        j2_moon, model=lunar_j2_model,
+        epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, harmonic_epoch_et0, get_earth_pos),
+    )
     _cuts = None
     if shadow_events and _shadow_events_active(srp):
         _cuts = shadow_contact_times(
@@ -1287,6 +1404,7 @@ def propagate_augmented_state(
             srp=srp, rtol=rtol, atol=atol, j2_moon=j2_moon, j2_earth=j2_earth,
             earth_j2_mode=earth_j2_mode, harmonic_model=harmonic_model,
             harmonic_rotation=harmonic_rotation, harmonic_epoch_et0=harmonic_epoch_et0,
+            lunar_j2_model=lunar_j2_model, lunar_j2_epoch_et0=lunar_j2_epoch_et0,
         )
     if harmonic_model is not None:
         if not harmonic_stm_opt_in:
@@ -1308,7 +1426,7 @@ def propagate_augmented_state(
             rtol=rtol, atol=atol, method=method,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_epoch_et0=harmonic_epoch_et0,
-            srp=srp, cuts=_cuts,
+            srp=srp, cuts=_cuts, j2_rotation_at=_j2rot, j2_radius_m=_j2r,
         )
 
     if t_eval_s.size == 0:
@@ -1323,8 +1441,7 @@ def propagate_augmented_state(
 
     if _FAST_DYNAMICS:
         _j2 = float(j2_moon)
-        _mr = MOON_R_M if j2_moon else 0.0
-        _cbf = _MCI_TO_MOON_BF
+        _mr = _j2r if j2_moon else 0.0
         _j2e = float(j2_earth)
         _er = R_EARTH_J2_REF_M if j2_earth else 0.0
         _cbfe = _J2000_TO_EARTH_BF
@@ -1332,13 +1449,14 @@ def propagate_augmented_state(
             return _ode42_rhs_fast(
                 state_aug, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos(float(t_s)), get_sun_pos(float(t_s)),
-                _j2, _mr, _cbf, _j2e, _er, _emode, _cbfe,
+                _j2, _mr, _j2rot(t_s), _j2e, _er, _emode, _cbfe,
             )
     else:
         def rhs(t_s: float, state_aug: np.ndarray) -> np.ndarray:
             return ode_fun_v3(
                 t_s, state_aug, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
                 get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
+                moon_j2_rotation_at=_j2rot, moon_j2_radius_m=_j2r,
             )
 
     rhs = _with_srp_acceleration(rhs, get_sun_pos, srp, state_size=42)
@@ -1376,6 +1494,8 @@ def make_fast_sigma_propagator(
     j2_moon: float = 0.0,
     j2_earth: float = 0.0,
     earth_j2_mode: str = "indirect",
+    lunar_j2_model: str | None = None,
+    lunar_j2_epoch_et0: float | None = None,
 ):
     """Return a fast (t0, t1, state6) → state6 callable using numba RK4.
 
@@ -1383,7 +1503,9 @@ def make_fast_sigma_propagator(
     ~250× faster than scipy DOP853 for short intervals (UKF sigma steps).
     Position accuracy ~3 mm over 60 s — sufficient when measurement noise
     is ≥ 10 m.  Pass ``j2_moon`` / ``j2_earth`` to include the J2 perturbations
-    in the sigma propagation as well.
+    in the sigma propagation as well.  The lunar J2 axis is evaluated once per
+    call, at the interval midpoint (the MOON_PA_DE440 pole moves ~2e-4 rad per
+    day, so ~1.5e-7 rad within a 60 s sigma step).
 
     Returns ``None`` when numba is unavailable.
     """
@@ -1396,9 +1518,12 @@ def make_fast_sigma_propagator(
     mu_e = float(mu_earth_m3_s2)
     mu_s = float(mu_sun_m3_s2)
     dt   = float(rk4_dt_s)
+    _j2rot, _j2r = lunar_j2_orientation(
+        j2_moon, model=lunar_j2_model,
+        epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, None, ephemeris),
+    )
     _j2 = float(j2_moon)
-    _mr = MOON_R_M if j2_moon else 0.0
-    _cbf = _MCI_TO_MOON_BF
+    _mr = _j2r if j2_moon else 0.0
     _j2e = float(j2_earth)
     _er = R_EARTH_J2_REF_M if j2_earth else 0.0
     _emode = _earth_mode_int(j2_earth, earth_j2_mode)
@@ -1411,7 +1536,7 @@ def make_fast_sigma_propagator(
             np.asarray(state6, dtype=np.float64),
             float(t0), float(t1), mu_m, mu_e, mu_s,
             t_grid, earth_grid, sun_grid, dt=dt,
-            j2_moon=_j2, moon_r=_mr, c_bf=_cbf,
+            j2_moon=_j2, moon_r=_mr, c_bf=_j2rot(0.5 * (float(t0) + float(t1))),
             j2_earth=_j2e, earth_r=_er, earth_mode=_emode, c_bf_earth=_cbfe,
         )
 
@@ -1434,6 +1559,8 @@ def propagate_truth_with_ephemeris(
     earth_j2_mode: str = "indirect",
     srp=None,
     propagation_profile=None,
+    lunar_j2_model: str | None = None,
+    lunar_j2_epoch_et0: float | None = None,
 ) -> np.ndarray:
     """Propagate truth dynamics using Moon-centered ephemeris interpolants."""
     from .propagation_contract import propagator_options
@@ -1455,6 +1582,8 @@ def propagate_truth_with_ephemeris(
         j2_moon=j2_moon,
         j2_earth=j2_earth,
         earth_j2_mode=earth_j2_mode,
+        lunar_j2_model=lunar_j2_model,
+        lunar_j2_epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, None, ephemeris),
     )
 
 
@@ -1501,6 +1630,8 @@ def propagate_state_with_k_sensitivity(
     harmonic_stm_opt_in: bool = False,
     s_k0: ArrayLike | None = None,
     shadow_events: bool = False,
+    lunar_j2_model: str | None = None,
+    lunar_j2_epoch_et0: float | None = None,
 ) -> np.ndarray:
     """Propagate state, STM and the SRP-coefficient sensitivity together.
 
@@ -1544,6 +1675,10 @@ def propagate_state_with_k_sensitivity(
     if t_eval_s.size == 0:
         raise ValueError("t_eval_s must contain at least one epoch.")
     state0_mci = _state6(state0_mci)
+    _j2rot, _j2r = lunar_j2_orientation(
+        j2_moon, model=lunar_j2_model,
+        epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, harmonic_epoch_et0, get_earth_pos),
+    )
 
     _h_ctx = None
     if harmonic_model is not None:
@@ -1586,17 +1721,18 @@ def propagate_state_with_k_sensitivity(
         r_earth = _vec3(get_earth_pos(t_s), "r_moon_earth_m")
         r_sun = _vec3(get_sun_pos(t_s), "r_moon_sun_m")
         c_bf = _rotation_at(t_s) if _h_ctx is not None else None
+        c_j2 = _j2rot(t_s)
 
         x_dot = f3body_moon(
             x_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_model=harmonic_model, c_inertial_to_bf_harmonic=c_bf,
-            srp=srp,
+            srp=srp, moon_j2_rotation=c_j2, moon_j2_radius_m=_j2r,
         )
         a_matrix = dynamics_jacobian_a_matrix(
             x_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, r_earth, r_sun,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
-            srp=srp,
+            srp=srp, moon_j2_rotation=c_j2, moon_j2_radius_m=_j2r,
         )
         if _h_ctx is not None:
             if _HARMONIC_GRADIENT_FAST and _pines_gradient_bf_fast is not None:
@@ -1627,7 +1763,7 @@ def propagate_state_with_k_sensitivity(
             get_earth_pos, get_sun_pos, srp=srp, rtol=rtol, atol=atol,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_model=harmonic_model, harmonic_rotation=harmonic_rotation,
-            harmonic_epoch_et0=harmonic_epoch_et0,
+            harmonic_epoch_et0=harmonic_epoch_et0, lunar_j2_model=lunar_j2_model, lunar_j2_epoch_et0=lunar_j2_epoch_et0,
         )
         return _integrate_segmented(
             t_eval_s, aug0, rhs, rtol, atol, method, cuts, "K-sensitivity propagation",

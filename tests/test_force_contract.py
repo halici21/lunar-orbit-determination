@@ -15,6 +15,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from lunar_od.lunar_j2_model import use_lunar_j2_model
 from lunar_od.force_contract import (
     FORCE_CONTRACT_SCHEMA_VERSION,
     ConsumerReadiness,
@@ -229,11 +230,25 @@ class ForceContractCapabilityTests(unittest.TestCase):
         self.assertEqual(caps[ConsumerRole.OBSERVABILITY], ConsumerReadiness.VERIFIED)
 
     def test_lunar_j2_element_status_is_supported(self):
+        # X-02 (2026-11-02): the default model is the exact-epoch MOON_PA_DE440 pole.
         contract = _contract(j2_moon=J2_MOON)
         self.assertEqual(contract.lunar_j2.status, ForceElementStatus.SUPPORTED)
         self.assertEqual(
             contract.lunar_j2.orientation_policy,
+            OrientationPolicy.EXACT_EPOCH_MOON_PA_DE440_POLE,
+        )
+        self.assertEqual(contract.lunar_j2.reference_radius_m, 1_738_000.0)
+
+    def test_legacy_lunar_j2_model_keeps_the_mean_pole_contract(self):
+        with use_lunar_j2_model("iau_mean_pole_legacy"):
+            contract = _contract(j2_moon=J2_MOON)
+        self.assertEqual(
+            contract.lunar_j2.orientation_policy,
             OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE,
+        )
+        self.assertEqual(contract.lunar_j2.reference_radius_m, 1_737_400.0)
+        self.assertNotEqual(
+            contract.force_model_fingerprint(), _contract(j2_moon=J2_MOON).force_model_fingerprint()
         )
 
     def test_earth_j2_element_status_is_unsupported_official_od(self):
@@ -401,11 +416,17 @@ class ForceContractImportDirectionTests(unittest.TestCase):
         imported = self._module_imports("src/lunar_od/force_contract.py")
         allowed = {
             "__future__", "hashlib", "json", "math", "dataclasses",
-            "enum", "types", "typing",
+            "enum", "types", "typing", "lunar_j2_model",
         }
         self.assertTrue(
             imported <= allowed, f"unexpected non-stdlib imports: {imported - allowed}"
         )
+        # The one package import must itself stay standard library only.
+        self.assertTrue(
+            self._module_imports("src/lunar_od/lunar_j2_model.py")
+            <= {"__future__", "contextlib", "contextvars", "constants"}
+        )
+        self.assertTrue(self._module_imports("src/lunar_od/constants.py") <= {"__future__"})
 
     def test_dynamics_does_not_import_force_contract_or_scenario_config(self):
         imported = self._module_imports("src/lunar_od/dynamics.py")

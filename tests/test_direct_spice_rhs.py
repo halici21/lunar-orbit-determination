@@ -24,6 +24,17 @@ from lunar_od import lunar_frames as lf
 from lunar_od.gravity_model_loader import load_lunar_gravity_model
 from lunar_od.project_paths import gravity_data_root
 from lunar_od.spice_loader import load_spice_kernels
+import pytest
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 ET0 = 820497669.18392
 GL1800F_TAB = str(gravity_data_root() / "gl1800f" / "jggrx_1800f_sha.tab")  # HARDEN-D10
