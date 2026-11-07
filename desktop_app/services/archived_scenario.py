@@ -74,12 +74,15 @@ def load_archived_scenario(result_path, cancel=lambda: False):
     # Validate current defaults against the recorded effective configuration on
     # this worker. Unsupported old defaults must not be silently replaced.
     from lunar_od import scenario_config_from_mapping
-    from lunar_od.scenario_config import SCENARIO_CONFIG_FIELDS_ADDED_WP1_6
+    from lunar_od.scenario_config import LUNAR_HARMONICS_ONLY_FIELDS, SCENARIO_CONFIG_FIELDS_ADDED_WP1_6
     current = scenario_config_from_mapping(saved_config).to_dict()
     # Archives written before WP1.6 have no seed fields; they ran with the default (None).
     added = set(SCENARIO_CONFIG_FIELDS_ADDED_WP1_6)
+    inert = set()
+    if not effective.get("enable_lunar_harmonics") and not current.get("enable_lunar_harmonics"):
+        inert = set(LUNAR_HARMONICS_ONLY_FIELDS)
     differences = sorted(k for k in effective.keys() | current.keys()
-        if k not in {"name", "output_dir"}
+        if k not in {"name", "output_dir"} | inert
         and effective.get(k, None if k in added else "<missing>") != current.get(k, "<missing>"))
     if differences:
         raise ResultLoadError("Etkin ayarlar bu form/yürütücü ile aynen kurulamadı: " + ", ".join(differences[:12]))

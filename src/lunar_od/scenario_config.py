@@ -94,6 +94,7 @@ ALLOWED_EARTH_J2_MODES = ("indirect", "direct")
 # kernels both define the FRAME_MOON_PA alias, so a bare name silently follows
 # whichever kernel pool was furnished last.  Explicit versioned names only.
 ALLOWED_LUNAR_GRAVITY_FRAMES = ("MOON_PA_DE421", "MOON_PA_DE440")
+DEFAULT_LUNAR_GRAVITY_FRAME = "MOON_PA_DE440"
 ALLOWED_LUNAR_KERNEL_PROFILES = (None, "DE421", "DE440")
 _LUNAR_FRAME_TO_PROFILE = {"MOON_PA_DE421": "DE421", "MOON_PA_DE440": "DE440"}
 
@@ -185,7 +186,9 @@ class ScenarioConfig:
     lunar_gravity_model_path: str | None = None
     lunar_gravity_nmax: int | None = None
     lunar_gravity_mmax: int | None = None
-    lunar_gravity_frame: str = "MOON_PA_DE421"
+    # X-01 / DYN-02 (2026-11-03): DE440 realization, matching the DE440 ephemeris
+    # default (C4-I) and GMs (WP1.2).  MOON_PA_DE421 stays selectable by name.
+    lunar_gravity_frame: str = DEFAULT_LUNAR_GRAVITY_FRAME
     lunar_gravity_rotation_cadence_s: float = 60.0
     lunar_gravity_rotation_margin_s: float | None = None
     lunar_gravity_kernel_profile: str | None = None
@@ -203,6 +206,13 @@ SCENARIO_CONFIG_FIELDS = frozenset(field.name for field in fields(ScenarioConfig
 #: Fields added after desktop run archives existed; an archived effective config
 #: without them recorded the default (None).
 SCENARIO_CONFIG_FIELDS_ADDED_WP1_6 = ("measurement_seed", "cold_start_seed")
+#: Fields with no effect while enable_lunar_harmonics is False (X-01 moved the
+#: frame default; an archive that ran without harmonics is not a different run).
+LUNAR_HARMONICS_ONLY_FIELDS = (
+    "lunar_gravity_model_path", "lunar_gravity_nmax", "lunar_gravity_mmax",
+    "lunar_gravity_frame", "lunar_gravity_rotation_cadence_s",
+    "lunar_gravity_rotation_margin_s", "lunar_gravity_kernel_profile",
+)
 
 
 def scenario_config_schema() -> dict[str, Any]:
@@ -305,7 +315,7 @@ def scenario_config_schema() -> dict[str, Any]:
             "lunar_gravity_mmax": {"type": ["integer", "null"], "default": None},
             "lunar_gravity_frame": {
                 "enum": list(ALLOWED_LUNAR_GRAVITY_FRAMES),
-                "default": "MOON_PA_DE421",
+                "default": DEFAULT_LUNAR_GRAVITY_FRAME,
             },
             "lunar_gravity_rotation_cadence_s": {"type": "number", "default": 60.0},
             "lunar_gravity_rotation_margin_s": {"type": ["number", "null"], "default": None},
@@ -555,7 +565,7 @@ def scenario_config_from_mapping(payload: dict[str, Any]) -> ScenarioConfig:
             minimum=0,
         ),
         lunar_gravity_frame=_enum_value(
-            payload.get("lunar_gravity_frame", "MOON_PA_DE421"),
+            payload.get("lunar_gravity_frame", DEFAULT_LUNAR_GRAVITY_FRAME),
             ALLOWED_LUNAR_GRAVITY_FRAMES,
             "lunar_gravity_frame",
         ),
