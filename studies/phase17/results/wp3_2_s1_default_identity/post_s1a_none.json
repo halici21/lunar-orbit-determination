@@ -1,0 +1,139 @@
+{
+ "commit": "d979980cba91f33228ae21085b428c143da42bd1",
+ "configs": {
+  "contacts": {
+   "digest": "ed13b8926eff660a71422edeb9544a8969e1e280166006a8177e94e32f5c0d33",
+   "leaves": {
+    "out": "<f8[12]:9a4786acafbc43644650b3713e254d0559b08ee2c313a6521597d8939b3b6cc4"
+   }
+  },
+  "est_position_bls_lm_legacy": {
+   "error": "TypeError: estimate_position_bls_lm() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_position_bls_lm_profile": {
+   "error": "TypeError: estimate_position_bls_lm() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_position_srif_legacy": {
+   "error": "TypeError: estimate_position_srif() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_position_srif_profile": {
+   "error": "TypeError: estimate_position_srif() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_range_rate_bls_lm_legacy": {
+   "error": "TypeError: estimate_range_rate_bls_lm() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_range_rate_bls_lm_profile": {
+   "error": "TypeError: estimate_range_rate_bls_lm() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_range_rate_srif_legacy": {
+   "error": "TypeError: estimate_range_rate_srif() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "est_range_rate_srif_profile": {
+   "error": "TypeError: estimate_range_rate_srif() got an unexpected keyword argument 'lunar_tide'"
+  },
+  "k48_adams": {
+   "digest": "5234a2455a87e2ed00730d3ce03c1c346d0fd4b76006d910e4cf9b3b15fb8e68",
+   "leaves": {
+    "out": "<f8[73, 48]:63cdc2b20a3d41463398055e26c75846e20362b122993d3180fc9ba2b96fc5e7"
+   }
+  },
+  "k48_dop853_events": {
+   "digest": "59de20dee068260b95da032d00c5d2a539cf6f5eff44b979ada51efeac229d0c",
+   "leaves": {
+    "out": "<f8[73, 48]:eb4d173f5dfeaf429d63d0beedc1033dff2297bc81bfcbc76e9364d9e237816e"
+   }
+  },
+  "k48_harmonic_events": {
+   "digest": "efc2711a1291b84a21c755d596c9413f89ded1cb84c1a73e05bd2150e5f92f0c",
+   "leaves": {
+    "out": "<f8[73, 48]:67fdabe54c4df4a601b957f6c8310e370d033b0cdff2dd8adf267a46f339afa1"
+   }
+  },
+  "pa_adams_j2": {
+   "digest": "a28f3ee774668a76e52c15f7b977ec226f07a98a23f00ad3ebb16e6d618eaafc",
+   "leaves": {
+    "out": "<f8[73, 42]:a8217ff197b3af541f37ec7eefbaa0ab954dc681374005c271a5f8a28741cc4b"
+   }
+  },
+  "pa_adams_srp": {
+   "digest": "770bf9aa58e286176fa49afd3dad24dd1c78efe751c38c1a08acbd71ec4dbcbc",
+   "leaves": {
+    "out": "<f8[73, 42]:0f6b19f9f1c0d63cc08852d5f5961ff1e52b159afd03e734fac850e8aa456546"
+   }
+  },
+  "pa_dop853_events": {
+   "digest": "db16aa51b2dfb6643a90c7c54edbcee1fdf7541f419268488f5734f56332b7c2",
+   "leaves": {
+    "out": "<f8[73, 42]:51a641be00a7981451e452002a7a63ae09acacf7d7ddc9af4a0bd5b828a88e67"
+   }
+  },
+  "pa_harmonic_events": {
+   "digest": "a590ca4a41252ed7f095738533cd994944ab4261f44cd1e8d44e4bf091d2cde7",
+   "leaves": {
+    "out": "<f8[73, 42]:52d15e35ef067f8ad5b62ece059aa70ea8f3e56fa3426b2e117573df44521d6c"
+   }
+  },
+  "pa_reference_srp": {
+   "digest": "c66954e851475e62f2812a11587e2656e6fc65acb465b85c185ce9b3966ff003",
+   "leaves": {
+    "out": "<f8[73, 42]:23266512ba8031b9ee1011e62333b1477b96056dc879d899c23b47a0ad86e14a"
+   }
+  },
+  "ps_adams_j2": {
+   "digest": "b82b07873fb653d7cceb7799cbd3497e4d3b1e3de6a27e25875272fba018fbcc",
+   "leaves": {
+    "out": "<f8[73, 6]:271030e610480082cb62ddb66581382d0e452abb9adf4a6f63c0723646e9772b"
+   }
+  },
+  "ps_adams_srp_earthj2": {
+   "digest": "3f36dc9ab38d2a253ef837fe0cea2dcde223ef24459fe61357aa5651649dc322",
+   "leaves": {
+    "out": "<f8[73, 6]:9a482179fbe64e5b70112aac5383e02f7215a8b7fce24e1f02e3437b73de6ed4"
+   }
+  },
+  "ps_dop853_noshadow": {
+   "digest": "0d2e1c638886e70e9ac19742ec1ea7d6ba27d86506a848cdbc59d2656f7a1047",
+   "leaves": {
+    "out": "<f8[73, 6]:d6066533462c9e355bec3089d547dd8e8883ff83e3118c44da1b78dfb14bd0ce"
+   }
+  },
+  "ps_dop853_srp_events": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  },
+  "ps_harmonic": {
+   "digest": "ddbbb549e00b5b16d27a3d345fcb2060e9c2adc6e36602995a56085d589d99ae",
+   "leaves": {
+    "out": "<f8[73, 6]:f9cd945942352940aaf13ae3aedbc7492b656fa0bd29c49e9ec81627d01ac6be"
+   }
+  },
+  "ps_reference_srp": {
+   "digest": "d668185222dae86743ff13ec3cbadb1ceafec440128da1144f6d55c2870b0114",
+   "leaves": {
+    "out": "<f8[73, 6]:95cccf562db6ff3a1c16beb58aada331c573207545b05a7487d1f7f5753e2007"
+   }
+  },
+  "truth_legacy": {
+   "digest": "eca0840cd11e6e4630c1e0bd94c7161c71250aae7a0750cc90d2850b81a69405",
+   "leaves": {
+    "out": "<f8[73, 6]:ca20bf36bcef69d3d894c2e4da51bf852b46bab0e01c11e2f94100d7ab896498"
+   }
+  },
+  "truth_profile": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  }
+ },
+ "fast_dynamics": true,
+ "gate": "T_G1(b)",
+ "mode": "none",
+ "numba": "0.65.1",
+ "numpy": "2.4.3",
+ "python": "3.13.2",
+ "scipy": "1.17.1",
+ "src_status": "M src/lunar_od/dynamics.py\n?? src/lunar_od/lunar_tide.py"
+}

@@ -778,6 +778,21 @@ F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256 = {
         "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
 }
 
+# F3 WP3.2 S1 (re-freeze under the owner's 2026-11-08 delegation of the WP3.1-R decisions:
+# the material force terms go in as opt-in terms with defaults unchanged; REQ-DYN-007,
+# DYN-06).  The opt-in lunar solid tide (lunar_od.lunar_tide) enters the 6/42/48-state
+# propagators through _with_tide_acceleration, which returns the RHS itself when the tide
+# is off; T_G1(b) found the default paths byte-identical before and after
+# (studies/phase17/configs/wp3_2_s1_lunar_tide_predeclaration.json).
+#
+#   old (F1 WP1.3)   6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c
+#   new (WP3.2 S1)   ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39",
+}
+
 
 # PR #99 (F1 WP1.2) brought up to date with main on 2026-11-02, after the branch
 # consolidation (PR #97) and WP1.7 (PR #96).  run_scenario_config.py carries the
@@ -804,6 +819,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
