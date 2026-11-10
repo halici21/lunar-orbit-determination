@@ -2,7 +2,8 @@
 
 Predeclaration: studies/phase17/configs/wp3_2_s1_lunar_tide_predeclaration.json (bdafb53).
 Reuses the geometry, oracles and metrics of tests/test_wp3_2_lunar_tide.py, so the recorded numbers
-are the ones the tests compare with their thresholds.  Also records, as information only, the
+are the ones the tests compare with their thresholds (B_G3 from tests/test_wp3_2_lunar_tide_transport.py).
+Also records, as information only, the
 tide's trajectory effect and the wrapper's cost per RHS call.
 
 usage: python wp3_2_s1_gate_values.py OUT.json
@@ -131,6 +132,25 @@ def t_g7():
                 tide_effect_1d_m=float(np.max(np.linalg.norm(p_tide[:, 0:3] - p_free[:, 0:3], axis=1))))
 
 
+def b_g3():
+    from tests import test_wp3_2_lunar_tide_transport as B
+    t = M.T6H
+    truth = dyn.propagate_state(t, M.X0, *M.BASE, j2_moon=J2_MOON_UNNORMALIZED, lunar_tide=M.TIDE,
+                                method="DOP853", rtol=1e-12, atol=1e-13)
+    stations = tuple(B.T._synthetic_position_station(*q) for q in [(0., 0., 0.), (0., 90., 0.), (45., -30., 500.)])
+    pg = B.PassGeometry(t_s=t, earth_pos_mci_m=np.zeros((t.size, 3)), earth_vel_mci_mps=np.zeros((t.size, 3)),
+                        x_j2000_to_itrf93=np.repeat(np.eye(6)[None, :, :], t.size, axis=0), stations=stations,
+                        measurement_type="position")
+    case = (t, pg, B.T._build_clean_position_observations(t, truth, pg))
+    out = {}
+    for solver in ("bls_lm", "srif"):
+        dr, dv = B._solve(solver, case, M.TIDE)
+        dr_free, dv_free = B._solve(solver, case, None)
+        out[solver] = dict(dr0_m=dr, dv0_m_s=dv, dr0_without_tide_m=dr_free, dv0_without_tide_m_s=dv_free,
+                           contrast=dr_free / dr if dr > 0 else float("inf"))
+    return out
+
+
 def cost_per_call(n=20000):
     rhs_off = M._production_rhs6(tide=None)
     rhs_on = M._production_rhs6()
@@ -153,7 +173,7 @@ def main(path):
               "python": platform.python_version(), "numpy": np.__version__, "scipy": scipy.__version__,
               "numba": numba.__version__, "fast_dynamics": bool(dyn._FAST_DYNAMICS)}
     for name, fn in (("T_G2_G3_G4", t_g2_g3_g4), ("T_G5", t_g5), ("T_G6", t_g6), ("T_G7", t_g7),
-                     ("wrapper_cost_6_state_rhs", cost_per_call)):
+                     ("B_G3", b_g3), ("wrapper_cost_6_state_rhs", cost_per_call)):
         t0 = time.perf_counter()
         result[name] = fn()
         print(name, json.dumps(result[name]), f"({time.perf_counter() - t0:.1f} s)", flush=True)
@@ -171,6 +191,7 @@ def main(path):
                     for v in result["T_G6"].values()),
         "T_G7": result["T_G7"]["n_cuts"] == result["T_G7"]["n_cuts_free"]
         and result["T_G7"]["max_cut_shift_s"] > 1e-3 and "Shadow contact inconsistent" in result["T_G7"]["control_message"],
+        "B_G3": all(v["dr0_m"] < 1e-3 and v["dv0_m_s"] < 1e-6 and v["contrast"] >= 100 for v in result["B_G3"].values()),
     }
     result["thresholds"] = thresholds
     result["verdicts"] = {k: "PASS" if v else "FAIL" for k, v in verdicts.items()}

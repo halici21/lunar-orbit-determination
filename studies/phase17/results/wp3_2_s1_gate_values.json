@@ -55,10 +55,26 @@
   "control_message": "Shadow contact inconsistent with final trajectory at 7822.90632845 s: angular residual 2.416e-06 rad, 2.720e-03 s from the contact (> 1e-03 s); tighten propagation tolerances.",
   "tide_effect_1d_m": 43.630328771673426
  },
+ "B_G3": {
+  "bls_lm": {
+   "dr0_m": 3.4532290455323737e-07,
+   "dv0_m_s": 1.5731403744749607e-10,
+   "dr0_without_tide_m": 2.0831337880474177,
+   "dv0_without_tide_m_s": 0.0002686416488193548,
+   "contrast": 6032422.873143844
+  },
+  "srif": {
+   "dr0_m": 3.415495024741402e-07,
+   "dv0_m_s": 1.5642730640135228e-10,
+   "dr0_without_tide_m": 2.083133705374559,
+   "dv0_without_tide_m_s": 0.0002686416673505321,
+   "contrast": 6099068.188606949
+  }
+ },
  "wrapper_cost_6_state_rhs": {
-  "off_us": 12.447729997802526,
-  "tide_us": 100.37162500084378,
-  "srp_only_us": 26.94275500252843
+  "off_us": 13.055270002223551,
+  "tide_us": 99.63631000136957,
+  "srp_only_us": 25.478370004566386
  },
  "thresholds": {
   "g2": 1e-12,
@@ -76,6 +92,7 @@
   "T_G4": "PASS",
   "T_G5": "PASS",
   "T_G6": "PASS",
-  "T_G7": "PASS"
+  "T_G7": "PASS",
+  "B_G3": "PASS"
  }
 }

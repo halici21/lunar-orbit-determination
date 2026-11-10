@@ -782,15 +782,20 @@ F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256 = {
 # the material force terms go in as opt-in terms with defaults unchanged; REQ-DYN-007,
 # DYN-06).  The opt-in lunar solid tide (lunar_od.lunar_tide) enters the 6/42/48-state
 # propagators through _with_tide_acceleration, which returns the RHS itself when the tide
-# is off; T_G1(b) found the default paths byte-identical before and after
+# is off, and the 15 batch-estimator functions forward lunar_tide=None to every
+# propagation (S1b); T_G1(b) found the default paths byte-identical before and after
 # (studies/phase17/configs/wp3_2_s1_lunar_tide_predeclaration.json).
 #
-#   old (F1 WP1.3)   6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c
-#   new (WP3.2 S1)   ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
+#   lunar_od/dynamics.py     old (F1 WP1.3)  6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c
+#                            new (WP3.2 S1)  ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
+#   lunar_od/estimators.py   old (F4 WP4.5b) ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6
+#                            new (WP3.2 S1)  0ed775891fc30b61218e800ce499ecc3ed554e991b721e9b6c89bd2e15ba1781
 #     filtered-checkout (core.autocrlf=true) representation, as every table above
 F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/dynamics.py":
         "ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39",
+    "lunar_od/estimators.py":
+        "0ed775891fc30b61218e800ce499ecc3ed554e991b721e9b6c89bd2e15ba1781",
 }
 
 
