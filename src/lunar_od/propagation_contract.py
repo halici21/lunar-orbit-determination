@@ -26,17 +26,24 @@ def resolve_profile(srp=None, propagation_profile=None):
     return profile
 
 
-def model_options(srp=None, propagation_profile=None):
-    """Options passed between consumers, keeping legacy calls unchanged."""
+def model_options(srp=None, propagation_profile=None, lunar_tide=None):
+    """Options passed between consumers, keeping legacy calls unchanged.
+
+    ``lunar_tide`` (F3 WP3.2 S1, opt-in) is added under its own key only when
+    given, so every tide-free options dict is the historical one.
+    """
     profile = resolve_profile(srp, propagation_profile)
     out = {} if srp is None else {'srp': srp}
     if profile is not None:
         out['propagation_profile'] = profile
+    if lunar_tide is not None:
+        from .lunar_tide import require_lunar_tide_options
+        out['lunar_tide'] = require_lunar_tide_options(lunar_tide)
     return out
 
 
-def propagator_options(srp=None, propagation_profile=None):
-    options = model_options(srp, propagation_profile)
+def propagator_options(srp=None, propagation_profile=None, lunar_tide=None):
+    options = model_options(srp, propagation_profile, lunar_tide)
     profile = options.pop('propagation_profile', None)
     if profile is not None:
         options.update(profile.propagator_kwargs())
