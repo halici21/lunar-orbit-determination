@@ -81,11 +81,25 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
 
     | Terim | En büyük yanıt | Not |
     |---|---|---|
-    | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | |
+    | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
     | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar |
     | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar |
     | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
     | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
+
+    **Ay gelgiti seçimli olarak üretimde** (WP3.2 S1, 2026-11-10;
+    [rapor](../../studies/phase17/reports/wp3_2_s1_lunar_tide.md)).
+    - **Kullanım.** Gelgit `LunarTideOptions(static_field_convention="TIDE_FREE")` ile açılır.
+    - **Gelgiti taşıyan yollar:**
+      - 6, 42 ve 48 durumlu yayılım;
+      - gölge kontakları;
+      - truth sarmalayıcısı;
+      - konum, menzil hızı ve iki yönlü menzil için BLS-LM ve SRIF.
+    - **Varsayılan kapalıdır.** Kapalı yollar değişiklikten önceki çıktıyı bayt bayt aynen üretir.
+    - **Gelgiti henüz taşımayanlar:** UKF, EKF, senaryo yapılandırması, CLI ve masaüstü.
+    - **Statik alan şartı.** Statik alan kalıcı gelgiti içermemelidir. Bunu yalnız GL1800F'nin etiketi söylüyor.
+    - **Çift sayım riski.** Varsayılan J2 ile ya da etiketi bu konuda sessiz GRGM660PRIM ve GRGM1200L ile açmak,
+      kalıcı kısmı iki kez sayabilir. Bu kısım varsayılan J2 R²'nin yaklaşık 4.5e-4'ü kadardır.
 
 16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
     ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
