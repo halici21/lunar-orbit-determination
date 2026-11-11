@@ -159,7 +159,10 @@ def test_noiseless_tide_truth_is_recovered_with_the_tide_and_biased_without_it(s
 
 
 def test_wp3_2_s1_refreeze_of_estimators_is_additive_and_history_is_preserved():
-    """estimators.py moved only through the additive WP3.2 S1 table; WP4.5b's record is untouched."""
+    """estimators.py moved through the additive WP3.2 S1 table; WP4.5b's record is untouched.
+
+    WP3.2 S2 re-froze it again; tests/test_wp3_2_lunar_radiation_transport.py checks the current identity.
+    """
     import hashlib
     import sys
     from pathlib import Path
@@ -169,6 +172,7 @@ def test_wp3_2_s1_refreeze_of_estimators_is_additive_and_history_is_preserved():
     import r2_measurement_fidelity_validation as r2
     path = "lunar_od/estimators.py"
     assert r2.F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ee18f3c9")
-    new = r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path]
-    assert r2.expected_current_tree_sha256(path) == new
-    assert hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest() == new
+    assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("0ed77589")
+    assert r2.expected_current_tree_sha256(path) == r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest() != (
+        r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path])

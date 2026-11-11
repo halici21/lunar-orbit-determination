@@ -6,6 +6,7 @@ the ones the tests compare with their thresholds. Also records, as information o
 the 6-state propagation with and without LRP, and the kernel's cost per call.
 
 usage: python wp3_2_s2_gate_values.py LABEL OUT.json
+       python wp3_2_s2_gate_values.py --add-lb-g3 OUT.json   (S2b: adds LB_G3 to an existing record)
 """
 from __future__ import annotations
 
@@ -105,6 +106,35 @@ def cost():
     return out
 
 
+def lb_g3():
+    """S2b: noiseless LRP truth recovered with the LRP, biased without it (the test's setup and metric)."""
+    from tests import test_wp3_2_lunar_radiation_transport as B
+    case = B.make_lrp_truth_case()
+    out = {}
+    for solver in ("bls_lm", "srif"):
+        dr, dv = B.lrp_recovery(solver, case, B.LRP)
+        dr_free, dv_free = B.lrp_recovery(solver, case, None)
+        out[solver] = dict(dr0_m=dr, dv0_m_s=dv, dr0_without_lrp_m=dr_free, dv0_without_lrp_m_s=dv_free,
+                           ratio=dr_free / dr)
+    return out
+
+
+def add_lb_g3(path):
+    result = json.loads(Path(path).read_text(encoding="utf-8"))
+    t0 = time.perf_counter()
+    values = lb_g3()
+    result["LB_G3"] = dict(values, commit=_git("rev-parse", "HEAD"),
+                           src_status=_git("status", "--porcelain", "--", "src"))
+    print("LB_G3", json.dumps(result["LB_G3"]), f"({time.perf_counter() - t0:.1f} s)", flush=True)
+    result["thresholds"].update(lb_g3_dr=1e-3, lb_g3_dv=1e-6, lb_g3_ratio=100.0)
+    t = result["thresholds"]
+    result["verdicts"]["LB_G3"] = "PASS" if all(
+        v["dr0_m"] < t["lb_g3_dr"] and v["dv0_m_s"] < t["lb_g3_dv"] and v["ratio"] >= t["lb_g3_ratio"]
+        for v in values.values()) else "FAIL"
+    print(json.dumps(result["verdicts"]))
+    Path(path).write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8")
+
+
 def _git(*args):
     try:
         return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
@@ -158,4 +188,7 @@ def main(label, path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    if sys.argv[1] == "--add-lb-g3":
+        add_lb_g3(sys.argv[2])
+    else:
+        main(sys.argv[1], sys.argv[2])

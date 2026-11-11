@@ -803,15 +803,21 @@ F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256 = {
 # The opt-in lunar albedo/IR radiation pressure (lunar_od.lunar_radiation, the WP3.1 C6
 # model, K_LRP = K_SRP) enters the 6/42/48-state propagators and the shadow-contact
 # pre-pass through _with_lunar_radiation_acceleration, which returns the RHS itself when
-# lunar_radiation is None; L_G1 checks the default paths byte-identical before and after
+# lunar_radiation is None, and the 15 batch-estimator functions forward
+# lunar_radiation=None to every propagation (S2b); L_G1 checks the default paths
+# byte-identical before and after
 # (studies/phase17/configs/wp3_2_s2_lunar_radiation_predeclaration.json).
 #
 #   lunar_od/dynamics.py     old (WP3.2 S1)  ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
 #                            new (WP3.2 S2)  eefbb63bec3c9127f2223dce391d11c841299d4d8d8cf02e0856c8ae152bc2c3
+#   lunar_od/estimators.py   old (WP3.2 S1)  0ed775891fc30b61218e800ce499ecc3ed554e991b721e9b6c89bd2e15ba1781
+#                            new (WP3.2 S2)  d0e69634591679bedcfb4b68f0a9a86abeb7fb52240f6293f89aefdfca770873
 #     filtered-checkout (core.autocrlf=true) representation, as every table above
 F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256 = {
     "lunar_od/dynamics.py":
         "eefbb63bec3c9127f2223dce391d11c841299d4d8d8cf02e0856c8ae152bc2c3",
+    "lunar_od/estimators.py":
+        "d0e69634591679bedcfb4b68f0a9a86abeb7fb52240f6293f89aefdfca770873",
 }
 
 
