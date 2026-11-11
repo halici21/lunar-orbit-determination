@@ -339,19 +339,20 @@ def _razel_scalar(rho_x: float, rho_y: float, rho_z: float, lat_rad: float, lon_
     if rng < 1e-9:
         return 0.0, 0.0, rng
 
-    sin_el = zenith / rng
-    if sin_el > 1.0:
-        sin_el = 1.0
-    elif sin_el < -1.0:
-        sin_el = -1.0
-    el = np.arcsin(sin_el)
+    # F2 WP2.7 (MEAS-14): atan2 elevation, as geometry.ecef2razel_sez; arcsin
+    # (Z / rng) was off by up to 1e-8 rad at the zenith.
+    horizontal = np.hypot(south, east)
+    el = np.arctan2(zenith, horizontal)
 
-    if np.sqrt(south * south + east * east) < 1e-12:
+    if horizontal < 1e-12:
         return 0.0, el, rng
 
     az = np.arctan2(east, -south)
     if az < 0.0:
         az += two_pi
+        if az >= two_pi:
+            # F2 WP2.7: a hair west of north rounds to 2 pi; keep [0, 2 pi).
+            az = 0.0
     return az, el, rng
 
 

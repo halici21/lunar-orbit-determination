@@ -45,6 +45,20 @@ KERNEL_MANIFEST: dict[str, tuple[str, str]] = {
     "earth_2025_250826_2125_predict.bpc": (
         "f5ed4d1f460dbcf40bf24f657ab9021718048e18fb723093bfd229066b4e3a49",
         NAIF_GENERIC + "pck/earth_2025_250826_2125_predict.bpc"),
+    # F2 WP2.4: the high-precision Earth PCK of the Earth-orientation profiles (spice_loader), by its versioned
+    # NAIF name; last datum 2026-11-02, downloaded 2026-11-03 with the owner's approval.
+    "earth_000101_270128_261102.bpc": (
+        "feed146c1ba6fba13f1e579371d34b67f6c134612d158db27cec019892bca5ab",
+        NAIF_GENERIC + "pck/earth_000101_270128_261102.bpc"),
+    # The local copy of NAIF's rolling high-precision file (earth_000101_260419_260121.bpc, last datum 2026-01-21)
+    # that the F1/F2 LRO study scripts furnish by this name; recorded 2026-11-03 so their records stay traceable.
+    "earth_latest_high_prec.bpc": (
+        "99ddb26ac25e1ddc0fd98083424801d9c648a342f01b033bf1695591cfae2ec5",
+        NAIF_GENERIC + "pck/earth_latest_high_prec.bpc"),
+    # F2 WP2.4 slice 4: the qualification oracle of lunar_od.dsn_stations; never furnished by the default loader.
+    "earthstns_itrf93_260814.bsp": (
+        "007eb0aad5dd022c6d61bdbfb2395680bd1eb31c49a8637d0b0a1cfbea737c6b",
+        NAIF_GENERIC + "spk/stations/earthstns_itrf93_260814.bsp"),
     "moon_pa_de421_1900-2050.bpc": (
         "656f90616403d75a75f0cd6c8830fc5b44f8cb4facb5ccb8915e752b397520cf",
         NAIF_GENERIC + "pck/moon_pa_de421_1900-2050.bpc"),

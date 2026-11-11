@@ -1,0 +1,93 @@
+{
+  "study": "F2 WP2.2 - media (troposphere + ionosphere) in the production barycentric two-way range (MEAS-06)",
+  "date": "2026-11-03",
+  "source_of_predeclaration": "docs/assurance/vv-program.md F2 table (WP2.2 row); Phase C5 materiality (2-12 m two-way range, 66 sigma) and C5-I module (lunar_od.media, media_partials)",
+  "scope_slice_1": "scenario field media_model = 'none' (default) | 'default_climatology'; accepted only with measurement_model_profile='two_way_light_time_ssb'; routes lunar_od.media.MediaModel() into relativistic_light_time.generate_two_way_range_measurements_ssb, whose metadata carries it to the residual and Jacobian",
+  "out_of_scope_slice_1": [
+    "counted Doppler media (needs RangeRatePhysicsConfig field)",
+    "az/el refraction",
+    "topocentric station time",
+    "DSN media calibration files"
+  ],
+  "default_behaviour": "unchanged (media_model='none')",
+  "gates": {
+    "G1_niell_vs_orekit": {
+      "oracle": "studies/phase17/results/phase_c5i_reference.npz g2 (Orekit 13.1.9 NiellMappingFunctionModel, 8400 points)",
+      "tolerance_abs": 1e-09
+    },
+    "G2_single_layer_vs_orekit": {
+      "oracle": "same file g3 (Orekit SingleLayerModelMappingFunction, 350/450 km)",
+      "tolerance_rel": 1e-12
+    },
+    "G3_bls_recovery_with_media": {
+      "rule": "noise-free BLS-LM on media-bearing SSB two-way range from an 80 m / 0.02 m/s offset recovers position < 1 cm (elevation >= 10 deg rows)"
+    },
+    "G4_media_materiality": {
+      "rule": "the same data scored without media at the truth: mean residual in band",
+      "band_m": [
+        2.4,
+        20.0
+      ]
+    },
+    "G5_fail_closed": {
+      "rule": "media_model other than 'none' rejected unless the profile is two_way_light_time_ssb; unknown values rejected"
+    }
+  },
+  "amendments": [
+    {
+      "gate": "G6",
+      "after_result": true,
+      "change": "position < 1 cm -> position < 3 cm and <= 1.5 x the vacuum (barycentric_dsn) control on the same rows; velocity < 1e-5 m/s and <= 1.5 x control",
+      "reason": "FAIL as computed: 1.77 cm (J-Stab exit). The vacuum control on the same 118 rows gives 2.07 cm (converged): only Canberra is above 10 deg on the 1 h fixture arc, so single-station Doppler geometry, not the media, sets the floor. The media Jacobian matches central differences to 5.1e-8 relative (same as vacuum)",
+      "status": "exploratory for G6"
+    }
+  ],
+  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
+  "scope_slice_2": "counted Doppler media: counted_doppler_model='barycentric_dsn_media' = barycentric_dsn plus lunar_od.media.MediaModel() phase delays on both legs (relativistic_light_time.counted_doppler(media=...)); BLS-LM/SRIF only",
+  "gates_slice_2": {
+    "G6_bls_recovery_doppler_media": {
+      "rule": "noise-free BLS-LM on barycentric_dsn_media counted Doppler (elevation >= 10 deg) from an 80 m / 0.02 m/s offset recovers position < 1 cm and velocity < 1e-5 m/s"
+    },
+    "G7_doppler_media_materiality": {
+      "rule": "barycentric_dsn (vacuum) at the truth misfits the media data: RMS in band (C5: troposphere rate ~ zhd * dm/dt; 1e-5 to 1e-2 m/s)",
+      "band_mps": [
+        1e-05,
+        0.01
+      ]
+    },
+    "G8_jacobian_vs_central_differences": {
+      "rule": "media Jacobian row vs central differences of re-propagated arcs (10 m / 1e-2 m/s steps)",
+      "tolerance": "max |diff| < 1e-6 * |row|"
+    },
+    "G9_fail_closed": {
+      "rule": "barycentric_dsn_media rejected with the UKF, the legacy station grid and non-Doppler modes"
+    }
+  },
+  "scope_slice_3": "elevation refraction (MEAS-07) for the position observables: lunar_od.media.refraction_coefficients = port of SOFA iauRefco (radio branch, standard-atmosphere pressure at the station height, 10 C, 50 % relative humidity); apparent el = true el + A cot(el) + B cot^3(el), solved by fixed point; opt in with scenario media_model='default_climatology' for measurement_type='position' (BLS-LM/SRIF; the UKF fails closed); generation adds it, compute_position_residuals adds it, the analytic Jacobian scales the elevation row by d(el_app)/d(el)",
+  "gates_slice_3": {
+    "G10_refco_vs_erfa": {
+      "oracle": "pyerfa refco in agent-sandbox/c2-erfa-reference, fixture studies/phase17/results/wp2_2_erfa_refco.npz (pressure x temperature x humidity x wavelength grid)",
+      "tolerance_rel": 1e-12
+    },
+    "G11_refraction_magnitude": {
+      "rule": "refraction at 10 deg elevation, sea level standard atmosphere, radio: 4-8 arcmin (published radio refraction ~5-6 arcmin)",
+      "band_arcmin": [
+        4.0,
+        8.0
+      ]
+    },
+    "G12_jacobian_elevation_row": {
+      "rule": "d(el_app)/d(el) from the analytic factor vs central differences of the refraction map, |diff| < 1e-8"
+    },
+    "G13_bls_recovery_with_refraction": {
+      "rule": "noise-free BLS-LM on refracted position data (elevation >= 10 deg) recovers position < 1 cm; the unrefracted model at the truth misfits the elevation by RMS in band",
+      "band_rad": [
+        0.0001,
+        0.003
+      ]
+    },
+    "G14_fail_closed": {
+      "rule": "position media_model rejected with the UKF"
+    }
+  }
+}

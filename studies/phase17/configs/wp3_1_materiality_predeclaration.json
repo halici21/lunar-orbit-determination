@@ -1,0 +1,113 @@
+{
+  "study": "F3 WP3.1-R: materiality of the force-model terms production lacks (REQ-DYN-007), synthetic survey with a linear OD-impact rule (analysis only, no production change)",
+  "date": "2026-11-07",
+  "written": "2026-11-07, before any survey number. The only computation before this file was an infrastructure check: SPICE coverage (sxform J2000->ITRF93, MOON_PA_DE440, SSB states, Venus/Jupiter positions, GM values) at the planned epochs",
+  "base": "origin/main 4d8819a (independent of the F2 stack #109-#114: no measurement or estimator change of that stack is used)",
+  "question": "Which force terms, absent from the production force model, bias this project's OD by at least 0.1 sigma on a production synthetic arc?",
+  "requirement": "REQ-DYN-007; findings DYN-06 (lunar solid tide), DYN-07 (lunar albedo / IR), DYN-08 (Earth shadow), DYN-09 (1PN), DYN-17 (Sun direction without light time in SRP / shadow), DYN-19 (Earth J2 frame = identity); the C7 planets item",
+  "prior_evidence": {
+    "C7": "studies/phase17/reports/phase_c7_dynamics_candidates_survey.md: on the LRO arc (linear about F2p) the tide is MATERIAL (47.5 m, share 0.64 of the 263 gap, K 0.0745 -> 0.0395); 1PN 0.10 m and Venus+Jupiter 0.0003 m immaterial. C7-I (nonlinear refit) has gates G_OFF/G_LIN PASS, no refit result on record",
+    "C6": "studies/phase17/reports/phase_c6_lunar_radiation_survey.md: C6_NOT_QUALIFIED (G_QUAD of the linear quadrature failed in three runs); lunar radiation 2.06e-8 m/s^2 RMS at K 0.010, 0.60 of SRP on the sunlit part",
+    "why_again": "C6/C7 measured on the real LRO arc with study-specific linearisations. This survey decides REQ-DYN-007 for production synthetic arcs with one predeclared rule, the production force model and the production measurement Jacobians. It uses nonlinear trajectory differences, so C6's quadrature problem does not arise"
+  },
+  "baseline_dynamics": {
+    "rhs": "the production 6-state RHS that dynamics.propagate_state integrates (dynamics._build_state_rhs): point-mass Moon, Earth and Sun third body from the production Moon-centred ephemeris providers (ephemeris.sample_moon_centered_ephemeris, 60 s grid, 600 s margin each side), cannonball SRP K_SRP = 0.010 m^2/kg (KP2 K0) with the CONICAL_PENUMBRA lunar shadow, shadow_events False",
+    "off": "lunar J2 and harmonics, Earth J2 (the ScenarioConfig defaults j2_moon = 0, enable_lunar_harmonics False, enable_earth_j2 False)",
+    "gm": "ephemeris_generation.gravitational_parameters() (DE440)",
+    "integrator": "scipy solve_ivp DOP853, rtol 1e-12, atol 1e-13, t_eval on the arc grid (the production solve_ivp branch of propagate_state with method='DOP853')",
+    "with_term": "the same closure plus scale * [0, 0, 0, a_term(t, x)], scale = 1 (survey) or 0 (G2); every term is added alone to the same baseline"
+  },
+  "terms": {
+    "TIDE": "elastic solid tide of the Moon raised by the Earth and the Sun, degrees 2 and 3: sum over B in {Earth, Sun}, n in {2, 3} of k_n grad[GM_B R^(2n+1) / (d_B^(n+1) r^(n+1)) P_n(cos psi_B)] (studies/phase17/scripts/phase_c7_dynamics_candidates.tide_acceleration), k2 = 0.024223, k3 = 0.0163, R = 1738 km (GL1800F label lines 31-34), GM_B from the baseline, d_B from the baseline providers. The full tide (permanent + time-varying), as C7",
+    "LRP": "lunar albedo + thermal-IR pressure on the cannonball: K_LRP * phase_c6_lunar_radiation.acceleration_kernel (albedo 0.12, emissivity 0.95, night 100 K, Gauss-Legendre cap 60 x 72), K_LRP = K_SRP = 0.010 m^2/kg (one cannonball), Sun from the baseline provider",
+    "EARTH_SHADOW": "a_SRP(production, lunar shadow) * (nu_E - 1); nu_E = srp.illumination_fraction(r_sc, r_sun, r_earth, R_E) with R_E = 6378137 m (WGS-84 equatorial), nu_E = 1 when the spacecraft is on the sunward side of the plane through the Earth's centre normal to the Sun direction. Geometric positions; the two occulters combined by multiplication (independent-occulter approximation)",
+    "PN": "Schwarzschild term of the Moon (IERS 2010 eq. 10.12 without Lense-Thirring and de Sitter, gamma = beta = 1): phase_c7_dynamics_candidates.pn_acceleration with GM_moon of the baseline",
+    "PLANETS": "Venus and the Jupiter barycentre as third bodies (indirect form, phase_c7_dynamics_candidates.third_body_acceleration), positions spkpos(name, et0 + t, 'J2000', 'NONE', 'MOON'), GM from gm_de440.tpc (bodvrd)",
+    "SRP_LIGHT_TIME": "a_LT - a_SRP(production). a_LT = K_SRP P(d) nu_LT [(1 - v.u/c) u - v/c] (first order in v/c, Poynting-Robertson form): u and d from the Sun's emission position r_sun - v_sun tau (tau = |r_sc - r_sun| / c) to the spacecraft; nu_LT = srp.illumination_fraction with the Moon at its ray-crossing position -v_moon delta (delta = |r_sc| / c); v = v_sc + v_moon - v_sun; v_moon, v_sun = SSB velocities (spkezr at et0 + t). The Moon-centred frame is the J2000-parallel frame at the Moon's position at t",
+    "EARTH_J2": "indirect Earth J2 with the epoch's pole: force_models.body_j2_acceleration(r_sc - r_E) - body_j2_acceleration(-r_E), J2_EARTH_UNNORMALIZED, R_EARTH_J2_REF_M, rotation pxform('J2000', 'ITRF93', et0 + t). Reported also: its pole-only part (minus the same with the identity rotation production uses, dynamics._J2000_TO_EARTH_BF)"
+  },
+  "population": {
+    "epochs": {
+      "E1_NOMINAL": "t0 = str2et('2027-03-02T00:00:00') (UTC), the WP2.7 survey epoch; no eclipse",
+      "E2_ECLIPSE_TOTAL": "t0 = t_ge - 43200 s, t_ge the greatest eclipse near 2026-03-03 (total lunar eclipse)",
+      "E3_ECLIPSE_PARTIAL": "t0 = t_ge - 43200 s, t_ge the greatest eclipse near 2026-08-28 (partial lunar eclipse)",
+      "t_ge_rule": "the epoch that minimises the angle between the geocentric Moon direction and the anti-Sun direction (geometric DE440 positions, Earth-centred J2000), on a 60 s grid from 00:00 UTC of the day before to 00:00 UTC of the day after the named date, refined by bounded scalar minimisation (+/- 60 s around the grid minimum) to 1 s"
+    },
+    "orbits": {
+      "frame": "Moon-centred J2000; p = MOON_PA_DE440 z-axis in J2000 at t0; s = unit Sun direction from the Moon at t0",
+      "O1_POLAR_BETA0": "orbit normal n = unit(p x s): polar, the Sun in the orbit plane (longest lunar-shadow passes)",
+      "O2_POLAR_BETA90": "n = unit(s - (s.p) p): polar terminator orbit, no lunar shadow",
+      "O3_EQUATORIAL": "n = p",
+      "initial_state": "circular, altitude 100 km above R_MOON_M (r0 = 1837.4 km); r0_hat = unit(n x p) if |n x p| > 0.1 else unit(n x x_J2000); v0 = sqrt(GM_moon / r0) (n x r0_hat)"
+    },
+    "arc": "1 day: t = 0 to 86400 s every 60 s (1441 epochs)",
+    "stations": "Goldstone DSN, Madrid DSN, Canberra DSN (config.range_rate_stations())",
+    "visibility": "a row for every station and grid epoch in the raw production mask (visibility.analyze_visibility_gap_with_transforms on the baseline trajectory with sample_j2000_to_itrf93_transforms: elevation >= 10 deg, line of sight clear of the Moon); no gap filling",
+    "cells": "3 orbits x 3 epochs = 9"
+  },
+  "measurements": "production instantaneous geometric range and range-rate (measurements.compute_range_rate_residuals_analytic on a PassGeometry built from the baseline providers and transforms): values for the signature, local 4x6 H_tilde blocks for the design. The terms change the trajectory, not the observable model, so the instantaneous model carries their signature",
+  "od_impact": {
+    "parameters": "theta = (x0 (6), K_SRP)",
+    "design": "H = H_tilde [Phi(t, t0) | dx/dK] with Phi and dx/dK from production dynamics.propagate_state_with_k_sensitivity (DOP853, rtol 1e-12, atol 1e-13) along the baseline",
+    "signature": "delta_y = y(x_term) - y(x_baseline) per row, nonlinear, from the production measurement values on the two trajectories",
+    "designs": {
+      "RANGE_ONLY": "range rows",
+      "RANGE_RANGE_RATE": "range and range-rate rows"
+    },
+    "noise_levels": {
+      "PROJECT": "range 5 m, range-rate 1e-4 m/s (KP2 / C1)",
+      "DSN_REALISTIC": "range 1 m, range-rate 3e-5 m/s (C1)"
+    },
+    "prior": "diag(100 m, 100 m, 100 m, 0.1 m/s, 0.1 m/s, 0.1 m/s)^2 on x0 (KP2 PRIOR_SD), none on K_SRP",
+    "estimate": "delta_theta = argmin |W^(1/2) (delta_y - H delta_theta)|^2 + |P0^(-1/2) delta_x0|^2, solved by QR of the stacked whitened design (the normal matrix is not formed)",
+    "sigma": "sqrt(diag((H^T W H + P0inv)^-1)) from the same QR factor",
+    "response": "max over the 7 parameters of |delta_theta_i / sigma_i|",
+    "information": "max |delta_r(t)| over the arc (m); max |delta_y| per observable; post-fit signature |W^(1/2) (delta_y - H delta_theta)| RMS in sigma units; the acceleration RMS and maximum along the baseline"
+  },
+  "materiality_rule": {
+    "od_material": "a term is OD_MATERIAL if, in some cell, design and noise level, max_i |delta_theta_i / sigma_i| >= 0.1 (the C1 threshold)",
+    "decision": "IMPLEMENT (to WP3.2, its own predeclaration; defaults stay an owner decision) if OD_MATERIAL, DOCUMENT_ONLY otherwise (the measured bound goes to docs/assurance/assumptions-and-limits.md). EARTH_SHADOW is zero outside eclipses by construction; its decision is taken on E2/E3 and reads 'eclipse arcs'",
+    "gate_veto": "a failed gate makes the outcome of the affected terms WP3_1_INCONCLUSIVE (see reject_if)"
+  },
+  "gates": {
+    "G1_UNIT": "tests/test_wp3_1_force_terms.py passes before the survey runs: (a) EARTH_SHADOW: nu_E = 0 on the anti-Sun axis 384400 km behind the Earth, 1 on the sunward side and far off the axis, continuous and monotone across the penumbra along a line normal to the axis (no step > 0.01 between 1 km samples); the term equals -a_SRP where nu_E = 0 and is exactly 0 where nu_E = 1; (b) SRP_LIGHT_TIME: with c = infinity the term is <= 1e-15 |a_SRP|; with v perpendicular to u the aberration part equals -K P nu v / c to 1e-12 relative, with v along u the magnitude factor is (1 - v/c) to 1e-12; displacing the occulter by -v delta moves a spacecraft on the geometric umbra boundary to the side the displacement predicts; (c) EARTH_J2: with the identity rotation each of its two parts equals an independent closed-form zonal J2 acceleration (test implementation) to 1e-12 relative, and the term equals the production difference f3body_moon(j2_earth = J2_EARTH_UNNORMALIZED) - f3body_moon(j2_earth = 0) to 1e-14 m/s^2 absolute (the rounding of two ~1.45 m/s^2 sums); the ITRF93 pole is within 20 arcsec of the IAU 2006 precession angle theta_A(T) from the J2000 pole; (d) TIDE, LRP, PN, PLANETS: tests/test_phase_c7_dynamics_candidates.py and tests/test_phase_c6_lunar_radiation.py pass, and the survey wrappers pass the declared parameters (k2, k3, R, K_LRP, model fields)",
+    "G2_NULL": "every term with scale 0 reproduces the baseline trajectory bit for bit, every cell",
+    "G3_PARITY": "the survey baseline equals production dynamics.propagate_state(method='DOP853', srp = SRPOptions(K_SRP), rtol 1e-12, atol 1e-13) bit for bit at every grid epoch, every cell",
+    "G4_FLOOR": "max position difference between the baseline at (1e-12, 1e-13) and at (1e-13, 1e-14) <= 1e-3 m in every cell; a term whose max |delta_r| is below 10 x its cell's floor is reported BELOW_FLOOR (its delta_theta / sigma is still reported)",
+    "G5_DESIGN": "in cell O1 x E1 every design column (6 state + K, range and range-rate rows) agrees with central finite differences of production propagation + measurement (steps 1 m, 1e-3 m/s, 1e-4 m^2/kg) to <= 1e-4 relative (column 2-norm)",
+    "G6_ECLIPSE": "the Moon centre has nu_E = 0 (umbra) at some grid epoch of E2, nu_E < 0.5 at some grid epoch of E3, and nu_E = 1 at every grid epoch of E1 (same EARTH_SHADOW geometry evaluated at the Moon centre)"
+  },
+  "expectations": "stated before the run, not gates: TIDE and LRP OD_MATERIAL (C7 47.5 m on LRO; C6 LRP 0.60 of SRP); EARTH_SHADOW material on E2/E3 only; PN (~1e-10 m/s^2), PLANETS (~1e-12), EARTH_J2 (tidal part ~3e-11) and SRP_LIGHT_TIME (~1e-4 of SRP, lunar-shadow contacts ~0.1 s) DOCUMENT_ONLY",
+  "out_of_scope": "box-wing / panel SRP (needs the LRO macro-model and attitude; WP3.4); the atmosphere's ~2 % enlargement of the Earth's umbra and the light-time displacement of the Earth's shadow (~38 km at the Moon, contacts ~40 s), refinements for WP3.2 if EARTH_SHADOW is implemented; the Earth's shadow on the lunar surface in LRP (LRP is overestimated during the umbral phase of E2/E3); Earth albedo / IR on the spacecraft (~1e-12 m/s^2); lunar de Sitter and Lense-Thirring (~1e-11 m/s^2); lagged or frequency-dependent tide; lunar gravity beyond the point mass in the baseline; the LRO arc (C6/C7) and the C7-I refit; any production change",
+  "reject_if": "G1 fails for a term -> that term WP3_1_INCONCLUSIVE; G2, G3 or G5 fails -> every term WP3_1_INCONCLUSIVE; G4 fails in a cell -> the terms with max |delta_r| < 100 x that cell's floor are WP3_1_INCONCLUSIVE in that cell; G6 fails -> EARTH_SHADOW WP3_1_INCONCLUSIVE. Any change after a result goes to docs/assurance/amendment-log.md and the result is exploratory",
+  "agent_decisions": "agent decisions, owner approval pending: (1) synthetic production arcs, not the LRO arc; (2) box-wing SRP deferred to WP3.4; (3) base origin/main, independent of the F2 stack",
+  "amendments": [
+    {
+      "id": "A1",
+      "date": "2026-11-07",
+      "before_any_result": "yes: found while writing tests/test_wp3_1_force_terms.py, before any test, gate or survey number existed",
+      "gate": "G1_UNIT (b), the case v along u",
+      "was": "with v along u the magnitude factor is (1 - v/c) to 1e-12",
+      "now": "with v along u (no Sun or Moon motion), a_LT = (1 - 2 v/c) a_SRP to 1e-12 relative",
+      "why": "the declared a_LT = K P nu [(1 - v.u/c) u - v/c] gives (1 - v/c) u - (v/c) u = (1 - 2 v/c) u for v = v u: the Doppler factor of the incident flux and the aberration term each contribute -v/c along u (Poynting-Robertson; Burns, Lamy & Soter 1979, Icarus 40, eq. 2). The formula is unchanged; the old test statement contradicted it",
+      "status": "the survey stays confirmatory; recorded in docs/assurance/amendment-log.md"
+    },
+    {
+      "id": "A2",
+      "date": "2026-11-07",
+      "before_any_result": "no: after a gate result. Before the survey, an integrator diagnostic with no force term measured the G4 floor of cell O1 x E1 under the predeclared profile (one DOP853 solve_ivp run, shadow_events False) at 1.434 m over the 1-day arc, so G4 fails there as predeclared (> 1e-3 m); O2 x E1: 1.9e-5 m. Under production's consistent profile (PropagationProfile(): DOP853, shadow_events True) the O1 x E1 floor is 6.0e-5 m, and 2.1e-5 m with the shadow switched off (NO_SHADOW). A 1-h smoke run of O1 x E1 (software check, all terms, both profiles) was also seen: under the predeclared profile the G5 K_SRP column misses by 0.17 (state columns 4e-5 to 3e-4); under D2 the state columns agree to 2e-7 and the K_SRP column to 1.7e-4 (range) and 1.7e-5 (range rate) over that hour",
+      "cause": "the kink of the conical lunar-shadow acceleration at each penumbra contact falls inside integrator steps (Phase D1: 0.1-1.9 m per ~1.2-day arc; D2 added event segmentation for this reason). O1 (beta 0) and O3 cross the lunar shadow about 24 times a day",
+      "change": "a second full run under profile D2: every propagation of the survey (baseline, term runs, G3's production reference propagate_state(..., method='DOP853', shadow_events=True), G4, the K-sensitivity run, G5's finite differences) uses production's event segmentation: dynamics._shadow_contact_times on the RHS being integrated (a term run is cut at its own trajectory's contacts) and dynamics._integrate_segmented with _shadow_contact_check. Terms, cells, designs, noise levels, prior, gates, thresholds and the materiality rule are unchanged",
+      "not_cut": "SRP_LIGHT_TIME moves the lunar-shadow contacts by ~0.1 s; its own kinks are not cut (an impulse of ~5e-9 m/s per contact)",
+      "both_reported": "the predeclared run (profile P0) is also run in full and reported as computed: studies/phase17/results/wp3_1_materiality_survey.json; the D2 run: studies/phase17/results/wp3_1_materiality_survey_a2.json. The G4 values of the two runs reproduce the diagnostic's O1 x E1 floors",
+      "status": "exploratory (keşifsel): a change after a gate result. Closing REQ-DYN-007 on the D2 decisions is an owner decision"
+    }
+  ],
+  "outputs": {
+    "terms": "studies/phase17/scripts/wp3_1_force_terms.py",
+    "driver": "studies/phase17/scripts/wp3_1_materiality_survey.py",
+    "tests": "tests/test_wp3_1_force_terms.py",
+    "results": "studies/phase17/results/wp3_1_materiality_survey.json",
+    "report": "studies/phase17/reports/wp3_1_materiality_survey.md"
+  }
+}

@@ -366,6 +366,9 @@ class TwoWaySolution:
     interval_rate_curvature: float = 0.0  # d²(TDB-TT)/dt² at the rate epoch
     rate_at_midpoint: bool = False
     media_context: tuple | None = field(default=None, repr=False, compare=False)
+    #: F2 WP2.3 slice 2: fixed transponder delay [s] (coordinate time); the uplink
+    #: is received at t2u = t2d - delay. round_trip_s stays the light-time sum.
+    transponder_delay_s: float = 0.0
 
     @cached_property
     def media_leg_partials(self):
@@ -392,8 +395,12 @@ class TwoWaySolution:
 
 def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
                   model: LightTimeModel, *, site: "_station_time.Site | None" = None,
-                  clock_offset_s: float = 0.0, media=None, media_site=None) -> TwoWaySolution:
-    """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay, the R3/M3 production default).
+                  clock_offset_s: float = 0.0, media=None, media_site=None,
+                  transponder_delay_s: float = 0.0) -> TwoWaySolution:
+    """Receive-tagged two-way chain t3 -> t2 -> t1 (zero transponder delay by default, the R3/M3 production default).
+
+    ``transponder_delay_s`` (F2 WP2.3 slice 2) is the M3 fixed coordinate-time delay: the uplink is received at
+    t2u = t2d - delay, a local offset (never an epoch difference); the delay-calibrated range excludes it.
 
     ``site`` (the station's :class:`lunar_od.station_time.Site`) is required by ``station_time='FULL_TOPOCENTRIC'``
     and ignored otherwise. ``clock_offset_s`` reads the receive tag as ``t3 + b`` (production convention); the
@@ -404,8 +411,12 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
     t3 = float(t3_s)
     if clock_offset_s:
         t3 = t3 + float(clock_offset_s)
+    delay = float(transponder_delay_s)
+    if not np.isfinite(delay) or delay < 0.0:
+        raise ValueError(f"transponder_delay_s must be finite and non-negative; got {transponder_delay_s!r}.")
     down = _leg(model, eph, t_rx=t3, rx_fixed=station_state(t3), tx_fn=sc.state, label="downlink")
-    up = _leg(model, eph, t_rx=down.t_tx_s, rx_fixed=sc.state(down.t_tx_s), tx_fn=station_state, label="uplink")
+    t2u = down.t_tx_s - delay if delay else down.t_tx_s
+    up = _leg(model, eph, t_rx=t2u, rx_fixed=sc.state(t2u), tx_fn=station_state, label="uplink")
     curvature = 0.0
     if model.interval_time_scale != "TT":
         rate = 0.0
@@ -413,7 +424,7 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         if site is None:
             raise ValueError("station_time='FULL_TOPOCENTRIC' needs the station's site.")
         # D_site(t3) - D_site(t1) = round trip x the rate at the interval midpoint (exact to ~1e-20 s)
-        mid = t3 - 0.5 * (down.light_time_s + up.light_time_s)
+        mid = t3 - 0.5 * (down.light_time_s + delay + up.light_time_s)
         rate = float(_station_time.tdb_minus_tt_rate(eph.et0_s, mid, site))
         # Difference the analytic rate in relative seconds, never large ET/TT
         # epochs. Independent C2 checks compare this 1 s stencil with 10 s.
@@ -424,6 +435,8 @@ def solve_two_way(t3_s: float, station_state: Callable, sc: SpacecraftHistory, e
         curvature = float((eph.tdb_minus_tt_rate(t3+1.) - eph.tdb_minus_tt_rate(t3-1.))/2.)
     interval = dict(interval_rate_curvature=curvature, rate_at_midpoint=model.full_station_time,
                     media_context=None if media is None else (media,media_site,eph.et0_s))
+    if delay:
+        interval["transponder_delay_s"] = delay
     if media is None:
         return TwoWaySolution(t3, down, up, rate, **interval)
     if media_site is None:
@@ -473,13 +486,15 @@ def _two_way_event_partials(sol: TwoWaySolution, sc: SpacecraftHistory) -> np.nd
     los_d = d.rel / np.linalg.norm(d.rel)     # spacecraft -> station
     los_u = u.rel / np.linalg.norm(u.rel)     # station -> spacecraft
     v_sc, v_st1 = d.tx[3:6], u.tx[3:6]
+    # F2 WP2.3 slice 2: with a transponder delay the uplink ends at t2u = t2 - delay (dt2u = dt2).
+    m_u, v_sc_u = (sc.position_sensitivity(u.t_rx_s), u.rx[3:6]) if sol.transponder_delay_s else (m, v_sc)
     # d|r_rx - r_tx|/d r_tx = -los, /d r_rx = +los; Shapiro gradients add to the same position partials.
     dGd_dr2 = (los_d / c) - d.shapiro_grad_tx          # w.r.t. spacecraft position at t2 (transmitter of downlink)
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx         # spacecraft is the uplink receiver
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx          # station transmitter position at t1
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
-    g_x = np.vstack([dGd_dr2 @ m, dGu_dr2 @ m])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc_u) - u.shapiro_epoch_partial]])
+    g_x = np.vstack([dGd_dr2 @ m, dGu_dr2 @ m_u])
     dy = np.linalg.solve(g_y, -g_x)
     return dy
 
@@ -497,8 +512,9 @@ def _media_interval_state_partial(sol,sc,*,phase=False):
     dt1,dt2=_two_way_event_partials(sol,sc)
     d,u=sol.downlink,sol.uplink
     m=sc.position_sensitivity(d.t_tx_s)
+    m_u=sc.position_sensitivity(u.t_rx_s) if sol.transponder_delay_s else m
     los_down=m+d.tx[3:6,None]*dt2[None,:]
-    los_up=m+u.rx[3:6,None]*dt2[None,:]-u.tx[3:6,None]*dt1[None,:]
+    los_up=m_u+u.rx[3:6,None]*dt2[None,:]-u.tx[3:6,None]*dt1[None,:]
     name="phase" if phase else "group"
     return (getattr(down,name+"_los_gradient")@los_down
             +getattr(up,name+"_los_gradient")@los_up+getattr(up,name+"_time_rate")*dt1)
@@ -531,11 +547,12 @@ def _two_way_receive_partials(sol: TwoWaySolution) -> np.ndarray:
     los_d = d.rel / np.linalg.norm(d.rel)
     los_u = u.rel / np.linalg.norm(u.rel)
     v_sc, v_st1, v_st3 = d.tx[3:6], u.tx[3:6], d.rx[3:6]
+    v_sc_u = u.rx[3:6] if sol.transponder_delay_s else v_sc
     dGd_dr2 = (los_d / c) - d.shapiro_grad_tx
     dGu_dr2 = -(los_u / c) - u.shapiro_grad_rx
     dGu_dr1 = (los_u / c) - u.shapiro_grad_tx
     g_y = np.array([[0.0, -1.0 + float(dGd_dr2 @ v_sc)],
-                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc) - u.shapiro_epoch_partial]])
+                    [-1.0 + float(dGu_dr1 @ v_st1), 1.0 + float(dGu_dr2 @ v_sc_u) - u.shapiro_epoch_partial]])
     g_t3 = np.array([1.0 - float(((los_d / c) + d.shapiro_grad_rx) @ v_st3) - d.shapiro_epoch_partial, 0.0])
     dy = np.linalg.solve(g_y, -g_t3)
     return dy
@@ -551,15 +568,71 @@ def two_way_range_clock_partial(sol: TwoWaySolution) -> float:
             +0.5*_media_interval_clock_partial(sol))
 
 
+@dataclass(frozen=True)
+class UplinkRamp:
+    """Piecewise-linear uplink transmit frequency (F2 WP2.3 slice 5, MEAS-08).
+
+    f_T(t) = frequencies_hz[k] + rates_hz_per_s[k] (t - epochs_s[k]) on [epochs_s[k], epochs_s[k+1]); the last
+    segment extends without end. Epochs are pass seconds (TDB from et0; the TT-TDB offset of the ramp epochs,
+    <= 1.7 ms, is neglected). ``reference_hz`` is the Doppler reference frequency f_ref.
+    """
+
+    epochs_s: tuple
+    frequencies_hz: tuple
+    rates_hz_per_s: tuple
+    reference_hz: float
+
+    def __post_init__(self):
+        n = len(self.epochs_s)
+        if n == 0 or len(self.frequencies_hz) != n or len(self.rates_hz_per_s) != n:
+            raise ValueError("UplinkRamp needs equally long, non-empty epochs, frequencies and rates.")
+        if np.any(np.diff(np.asarray(self.epochs_s, dtype=float)) <= 0.0):
+            raise ValueError("UplinkRamp epochs must be strictly increasing.")
+        values = np.asarray(self.frequencies_hz, dtype=float)
+        if not (np.all(np.isfinite(values)) and np.all(values > 0.0) and float(self.reference_hz) > 0.0):
+            raise ValueError("UplinkRamp frequencies and reference_hz must be finite and positive.")
+
+    def _segment(self, t_s: float) -> int:
+        t = float(t_s)
+        if t < float(self.epochs_s[0]):
+            raise ValueError(f"uplink ramp starts at {self.epochs_s[0]} s; transmit epoch {t} s is before it.")
+        return int(np.searchsorted(np.asarray(self.epochs_s, dtype=float), t, side="right") - 1)
+
+    def frequency_hz(self, t_s: float) -> float:
+        k = self._segment(t_s)
+        return float(self.frequencies_hz[k] + self.rates_hz_per_s[k] * (float(t_s) - self.epochs_s[k]))
+
+    def offset_integral(self, t_a_s: float, t_b_s: float) -> float:
+        """integral_{t_a}^{t_b} (f_T - f_ref) dt [cycles], summed segment by segment in local time offsets."""
+        ta, tb = float(t_a_s), float(t_b_s)
+        ka, kb = self._segment(ta), self._segment(tb)
+        total = 0.0
+        for k in range(ka, kb + 1):
+            lo = ta if k == ka else float(self.epochs_s[k])
+            hi = tb if k == kb else float(self.epochs_s[k + 1])
+            u0, u1 = lo - float(self.epochs_s[k]), hi - float(self.epochs_s[k])
+            total += ((float(self.frequencies_hz[k]) - float(self.reference_hz)) * (u1 - u0)
+                      + 0.5 * float(self.rates_hz_per_s[k]) * (u1 * u1 - u0 * u0))
+        return total
+
+
 def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Callable, sc: SpacecraftHistory,
                     eph: BarycentricEphemeris, model: LightTimeModel, *, with_partial: bool = False,
                     site: "_station_time.Site | None" = None, clock_offset_s: float = 0.0,
-                    with_clock_partial: bool = False, media=None, media_site=None):
+                    with_clock_partial: bool = False, media=None, media_site=None,
+                    uplink_ramp: "UplinkRamp | None" = None, transponder_delay_s: float = 0.0):
     """Receive-tagged counted Doppler, m/s equivalent: c/(2 Tc) (tau_end - tau_start), each tau in the
     model's interval time scale (plus the media phase delay, Phase C5-I). Returns (value, partial or None,
-    (start, end) solutions); with ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s]."""
+    (start, end) solutions); with ``with_clock_partial`` a fourth item, d(value)/d(clock offset) [m/s per s].
+
+    ``uplink_ramp`` (F2 WP2.3 slice 5) gives the Moyer ramped count: the value minus
+    c/(2 f_ref Tc) integral_{t1 start}^{t1 end} (f_T - f_ref) dt1, with its state and clock partials.
+    ``transponder_delay_s`` (slice 7) is the fixed delay of :func:`solve_two_way` at both count endpoints; as a
+    term it cancels in the endpoint difference and enters through the event geometry only."""
     tc = float(count_interval_s)
     kw = dict(site=site, clock_offset_s=clock_offset_s)
+    if transponder_delay_s:
+        kw["transponder_delay_s"] = float(transponder_delay_s)
     if media is not None:
         kw.update(media=media, media_site=media_site)
     a = solve_two_way(t_mid_s - 0.5 * tc, station_state, sc, eph, model, **kw)
@@ -574,10 +647,24 @@ def counted_doppler(t_mid_s: float, count_interval_s: float, station_state: Call
                        - _interval_tau_derivative(a) * _round_trip_partial(a, sc))
         partial += .5/tc*(_media_interval_state_partial(b,sc,phase=True)
                            -_media_interval_state_partial(a,sc,phase=True))
+    ramp_k = 0.0
+    if uplink_ramp is not None:
+        ramp_k = C_LIGHT_MPS / (2.0 * float(uplink_ramp.reference_hz) * tc)
+        value = value - ramp_k * uplink_ramp.offset_integral(a.t1_s, b.t1_s)
+        if with_partial:
+            d_a = uplink_ramp.frequency_hz(a.t1_s) - float(uplink_ramp.reference_hz)
+            d_b = uplink_ramp.frequency_hz(b.t1_s) - float(uplink_ramp.reference_hz)
+            partial = partial + ramp_k * (d_b * _round_trip_partial(b, sc) - d_a * _round_trip_partial(a, sc))
     if with_clock_partial:
         clock = k * (_measured_interval_receive_partial(b) - _measured_interval_receive_partial(a))
         clock += .5/tc*(_media_interval_clock_partial(b,phase=True)
                          -_media_interval_clock_partial(a,phase=True))
+        if uplink_ramp is not None:
+            # t1 = t3 - round trip, so dt1/dt3 = the first row of _two_way_receive_partials.
+            d_a = uplink_ramp.frequency_hz(a.t1_s) - float(uplink_ramp.reference_hz)
+            d_b = uplink_ramp.frequency_hz(b.t1_s) - float(uplink_ramp.reference_hz)
+            clock -= ramp_k * (d_b * float(_two_way_receive_partials(b)[0])
+                               - d_a * float(_two_way_receive_partials(a)[0]))
         return value, partial, (a, b), clock
     return value, partial, (a, b)
 
@@ -740,6 +827,175 @@ def delta_dor_clock_partials(sol) -> tuple[float, float]:
     return float(result),-1.
 
 
+# ======================================================================
+# delta-DOR quasar term: IERS 2010 consensus model (F2 WP2.6, MEAS-13)
+# ======================================================================
+CONSENSUS_GRAVITY_BODIES = ("SUN", "EARTH")
+
+
+@dataclass(frozen=True)
+class QuasarDelay:
+    """The quasar differential delay as the two station clocks measure it (tag at B minus tag at A)."""
+
+    delay_s: float             # tau + b_A - b_B
+    tau_s: float               # IERS 2010 eq. 11.9: t2 - t1 in TT
+    gravitational_s: float     # T_grav entering eq. 11.9
+    clock_term_s: float        # b_A - b_B
+
+
+def quasar_delay_consensus(t_obs_s: float, station_a_state: Callable, station_b_state: Callable, quasar,
+                           eph: BarycentricEphemeris, *, clock_offsets_s: tuple[float, float] = (0.0, 0.0),
+                           gravity_bodies: tuple[str, ...] = CONSENSUS_GRAVITY_BODIES) -> QuasarDelay:
+    """Quasar differential delay by the IERS Conventions (2010) consensus model, eq. 11.9 with T_grav.
+
+    ``quasar`` is the barycentric unit vector K towards the source (or anything with ``unit_vector_j2000``).
+    ``station_*_state`` are the production Moon-centred station providers; A's tag ``t_obs`` is read as
+    ``t_obs + b_A`` (the true reception, as :func:`delta_dor_station_time`) and the measured delay carries
+    ``b_A - b_B``, so the clocks cancel in delta-DOR. The delay is in TT, the time scale of the station-time
+    spacecraft delay under ``station_time='FULL_TOPOCENTRIC'``.
+
+    Geometric terms: b the geocentric baseline at t1, V the Earth's barycentric velocity, w2 station B's
+    geocentric velocity, U the Sun's potential at the geocentre. T_grav: eq. 11.1-11.4 per body, the Earth by
+    its own geocentric form; the Sun's higher-order limb term and the quasar's media are not modelled.
+    """
+    k_hat = np.asarray(getattr(quasar, "unit_vector_j2000", quasar), dtype=float).reshape(3)
+    k_hat = k_hat / np.linalg.norm(k_hat)
+    unknown = set(gravity_bodies) - set(SHAPIRO_BODY_CODES)
+    if unknown:
+        raise ValueError(f"unknown gravity bodies {sorted(unknown)}; known: {sorted(SHAPIRO_BODY_CODES)}.")
+    c = C_LIGHT_MPS
+    b_a, b_b = (float(x) for x in clock_offsets_s)
+    t1 = float(t_obs_s) + b_a if b_a else float(t_obs_s)
+    sa = np.asarray(station_a_state(t1), dtype=float)[:6]
+    sb = np.asarray(station_b_state(t1), dtype=float)[:6]
+    moon = eph.moon_state(t1)
+    earth = eph._ssb_state(SHAPIRO_BODY_CODES["EARTH"], t1)
+    baseline = sb[:3] - sa[:3]                       # Moon-centred difference: no barycentric cancellation
+    v_earth = earth[3:6]
+    w2 = sb[3:6] + moon[3:6] - v_earth
+    sun = eph.body_position("SUN", t1)
+    u_sun = eph.gm("SUN") / float(np.linalg.norm(earth[:3] - sun))
+
+    t_grav = 0.0
+    x1_bcrs = sa[:3] + moon[:3]
+    x2_bcrs = sb[:3] + moon[:3] - v_earth / c * float(k_hat @ baseline)
+    for name in gravity_bodies:
+        if name == "EARTH":
+            x1, x2 = x1_bcrs - earth[:3], sb[:3] + moon[:3] - earth[:3]
+            t_grav += 2.0 * eph.gm("EARTH") / c ** 3 * np.log(
+                (np.linalg.norm(x1) + k_hat @ x1) / (np.linalg.norm(x2) + k_hat @ x2))
+            continue
+        body = eph.body_position(name, t1)
+        t_closest = min(t1, t1 - float(k_hat @ (body - x1_bcrs)) / c)
+        body = eph.body_position(name, t_closest)
+        r1, r2 = x1_bcrs - body, x2_bcrs - body
+        t_grav += 2.0 * eph.gm(name) / c ** 3 * np.log(
+            (np.linalg.norm(r1) + k_hat @ r1) / (np.linalg.norm(r2) + k_hat @ r2))
+
+    kb = float(k_hat @ baseline)
+    tau = ((t_grav - kb / c * (1.0 - 2.0 * u_sun / c ** 2 - float(v_earth @ v_earth) / (2.0 * c ** 2)
+                               - float(v_earth @ w2) / c ** 2)
+            - float(v_earth @ baseline) / c ** 2 * (1.0 + float(k_hat @ v_earth) / (2.0 * c)))
+           / (1.0 + float(k_hat @ (v_earth + w2)) / c))
+    clock = b_a - b_b
+    return QuasarDelay(tau + clock if clock else tau, tau, t_grav, clock)
+
+
+def quasar_delay_station_time(t_obs_s: float, station_a_state: Callable, station_b_state: Callable, quasar,
+                              eph: BarycentricEphemeris, model: LightTimeModel, *, sites: tuple = (None, None),
+                              clock_offsets_s: tuple[float, float] = (0.0, 0.0)) -> QuasarDelay:
+    """The quasar differential delay in the SAME light-time model as :func:`delta_dor_station_time`.
+
+    A plane wave from K arrives at A at the true reception ``t1 = t_obs + b_A`` and at B at ``t2``, with
+    ``c (t2 - t1) = -K . (X_B(t2) - X_A(t1)) + c (S_B - S_A)``: the stations in ``model.frame`` exactly as the
+    spacecraft legs place them, Moyer eq. 8-38 in its infinite-source limit per ``model.shapiro_bodies`` (each
+    body at the reception epoch, as :func:`shapiro_delay_s`), and the interval converted to station time as the
+    spacecraft delay is. Every station-position and station-time approximation is therefore common to both
+    delta-DOR terms and cancels in the difference (F2 WP2.6: ERFA dtdb's topocentric term differs from the exact
+    V.b/c^2 by 0.47-0.69 ns between DSN complexes; the IERS consensus delay uses the exact one).
+    """
+    k_hat = np.asarray(getattr(quasar, "unit_vector_j2000", quasar), dtype=float).reshape(3)
+    k_hat = k_hat / np.linalg.norm(k_hat)
+    c = C_LIGHT_MPS
+    b_a, b_b = (float(x) for x in clock_offsets_s)
+    t1 = float(t_obs_s) + b_a if b_a else float(t_obs_s)
+    sa = np.asarray(station_a_state(t1), dtype=float)[:6]
+    xa = _to_frame(model, eph, t1, sa)[:3]
+
+    def shapiro(x, t):
+        total = 0.0
+        for name in model.shapiro_bodies:
+            r = x - eph.body_position(name, t)
+            total += 2.0 * eph.gm(name) / c ** 3 * np.log(1.0 / (np.linalg.norm(r) + k_hat @ r))
+        return total
+
+    s_a = shapiro(xa, t1)
+
+    def update(tau):
+        sb = np.asarray(station_b_state(t1 + tau), dtype=float)[:6]
+        d = _relative(model, eph, t1, t1 + tau, tau, sa, sb)
+        new = -float(k_hat @ d) / c
+        if model.shapiro_bodies:
+            new += shapiro(_to_frame(model, eph, t1 + tau, sb)[:3], t1 + tau) - s_a
+        return new
+
+    tau, _ = _fixed_point(update, -float(k_hat @ (np.asarray(station_b_state(t1), dtype=float)[:3] - sa[:3])) / c,
+                          model, "quasar delay")
+    t_grav = (shapiro(_to_frame(model, eph, t1 + tau, np.asarray(station_b_state(t1 + tau), dtype=float)[:6])[:3],
+                      t1 + tau) - s_a) if model.shapiro_bodies else 0.0
+    corr = 0.0
+    if model.full_station_time:
+        site_a, site_b = sites
+        if site_a is None or site_b is None:
+            raise ValueError("station_time='FULL_TOPOCENTRIC' needs both stations' sites.")
+        corr = -(float(_station_time.tdb_minus_tt(eph.et0_s, t1 + tau, site_b))
+                 - float(_station_time.tdb_minus_tt(eph.et0_s, t1, site_a)))
+    delay = tau + corr if corr else tau
+    clock = b_a - b_b
+    return QuasarDelay(delay + clock if clock else delay, delay, t_grav, clock)
+
+
+@dataclass(frozen=True)
+class DeltaDorSsb:
+    """Delta-DOR with both terms in one model: the barycentric spacecraft delay in station time minus the
+    quasar delay in the same light-time model, on the same tags and clocks."""
+
+    spacecraft: DeltaDorStationTime
+    quasar: QuasarDelay
+
+    @property
+    def value_s(self) -> float:
+        return self.spacecraft.delay_s - self.quasar.delay_s
+
+
+def delta_dor_ssb(t_obs_s: float, station_a_state: Callable, station_b_state: Callable, sc: SpacecraftHistory,
+                  eph: BarycentricEphemeris, quasar, *, sites: tuple, model: LightTimeModel = DSN_C2_LIGHT_TIME_MODEL,
+                  clock_offsets_s: tuple[float, float] = (0.0, 0.0)) -> DeltaDorSsb:
+    """F2 WP2.6 (MEAS-13): the production delta-DOR. The legacy :mod:`lunar_od.delta_dor` observable pairs a
+    Moon-centred spacecraft delay with a static plane-wave quasar term and is 0.6-1 us off this model
+    (studies/phase17/results/wp2_6_survey.json).
+
+    Both terms come from one light-time model (:func:`quasar_delay_station_time`), so their common station
+    approximations cancel; :func:`quasar_delay_consensus` is the independent IERS 2010 check of the quasar term.
+    Requires ``model.frame == 'SSB'`` and ``model.station_time == 'FULL_TOPOCENTRIC'`` with both ``sites``.
+    Media are not applied to either term.
+    """
+    if model.frame != "SSB" or not model.full_station_time:
+        raise ValueError("delta_dor_ssb needs frame='SSB' and station_time='FULL_TOPOCENTRIC'.")
+    if len(sites) != 2 or sites[0] is None or sites[1] is None:
+        raise ValueError("delta_dor_ssb needs both stations' sites.")
+    spacecraft = delta_dor_station_time(t_obs_s, station_a_state, station_b_state, sc, eph, model, sites=sites,
+                                        clock_offsets_s=clock_offsets_s)
+    quasar_term = quasar_delay_station_time(t_obs_s, station_a_state, station_b_state, quasar, eph, model,
+                                            sites=sites, clock_offsets_s=clock_offsets_s)
+    return DeltaDorSsb(spacecraft, quasar_term)
+
+
+def delta_dor_ssb_partial(obs: DeltaDorSsb, sc: SpacecraftHistory) -> np.ndarray:
+    """d(delta-DOR)/d[x0 (, K)]: the spacecraft term's; the quasar term does not depend on the spacecraft."""
+    return delta_dor_partial(obs.spacecraft, sc)
+
+
 def one_way_range(t3_s: float, station_state: Callable, sc: SpacecraftHistory, eph: BarycentricEphemeris,
                   model: LightTimeModel, *, with_partial: bool = False):
     """Downlink-only light distance c * tau_d to a receive epoch (the RAZEL one-way convention)."""
@@ -802,15 +1058,22 @@ def pass_station_kwargs(pass_geo) -> list[dict]:
         model = MediaModel.from_metadata(meta["media"])
         for kw, st in zip(out, stations):
             kw.update(media=model, media_site=MediaSite.from_station(st))
+    if getattr(pass_geo, "two_way_range", None) is not None:
+        from .two_way_range import two_way_range_config
+        delay = float(two_way_range_config(pass_geo.two_way_range).transponder_delay_s)
+        if delay:
+            # F2 WP2.3 slice 2: the pass's fixed transponder delay (two-way range only).
+            for kw in out:
+                kw["transponder_delay_s"] = delay
     return out
 
 
 def _pass_context(pass_geo):
     from .two_way_range import _station_state_providers_for_pass, two_way_range_config
     cfg = two_way_range_config(pass_geo.two_way_range)
-    if cfg.transponder_delay_s != 0.0 or cfg.convention != "delay_calibrated_half_round_trip":
-        raise NotImplementedError("the barycentric two-way range supports zero transponder delay and the "
-                                  "delay-calibrated half-round-trip convention only.")
+    if cfg.convention != "delay_calibrated_half_round_trip":
+        raise NotImplementedError("the barycentric two-way range supports the delay-calibrated "
+                                  "half-round-trip convention only (F2 WP2.3 slice 2 added the delay).")
     stations = [exact_epoch_station_state(lambda t, p=p: np.asarray(p.state(t), dtype=float), pass_geo.et0_s,
                                           pass_geo.t_s, pass_geo.earth_pos_mci_m, pass_geo.earth_vel_mci_mps)
                 for p in _station_state_providers_for_pass(pass_geo)]
@@ -928,6 +1191,18 @@ def two_way_range_nominal_and_initial_jacobian_ssb(obs_data, pass_geo, augmented
         h_nom[i] = two_way_range_m(sol)
         h_x0[i] = two_way_range_partial(sol, sc)
     return h_nom, h_x0
+
+
+def two_way_range_clock_columns_ssb(state_history_mci, obs_data, pass_geo) -> np.ndarray:
+    """d(two-way range)/d(receive time-tag offset) [m/s] per row under the pass's model (F2 WP2.3 slice 4, the
+    design column of a station time-tag bias); :func:`two_way_range_clock_partial` of each row's solution."""
+    obs = np.asarray(obs_data, dtype=float)
+    model, station_states, eph = _pass_context(pass_geo)
+    kw = pass_station_kwargs(pass_geo)
+    sc = SpacecraftHistory(pass_geo.t_s, np.asarray(state_history_mci, dtype=float)[:, :6])
+    return np.array([two_way_range_clock_partial(solve_two_way(float(obs[i, 0]), station_states[int(obs[i, 2]) - 1],
+                                                               sc, eph, model, **kw[int(obs[i, 2]) - 1]))
+                     for i in range(obs.shape[0])])
 
 
 def compute_two_way_range_residuals_ssb(state_history_mci, obs_data, pass_geo):

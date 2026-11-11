@@ -912,7 +912,7 @@ change origins; translations are explicit vector additions (Section 5).
 | `v_station_inertial = C @ v_bf + Cdot @ r_bf` (`Cdot @ r` term from the `sxform` block) | station inertial velocity including body-fixed-rotation coupling | `measurements.py:1050-1052`; `radiometrics.py:389-406`; M3 provider |
 | `r_sc_topocentric = r_sc_ITRF93 - r_station_ITRF93` | Earth-fixed line-of-sight vector | `measurements.py:1268`; `filters.py:1487` |
 | `[S, E, Z] = R_SEZ<-ITRF93(lat, lon) @ r_topocentric`, `S x E = Z` | SEZ rotation and handedness | `geometry.py:42-96` |
-| `az = atan2(E, -S) mod 2*pi`, `el = asin(Z / |r|)` | north-clockwise azimuth, elevation | `geometry.py:42-96` |
+| `az = atan2(E, -S) mod 2*pi` in `[0, 2*pi)`, `el = atan2(Z, hypot(S, E))` (F2 WP2.7; `asin(Z / |r|)` before) | north-clockwise azimuth, elevation | `geometry.py:42-104` |
 | `a_MCI = C.T @ a_bf` | lunar gravity acceleration rotate-back (body-fixed to inertial) | `force_models.py:55`; `gravity_harmonics.py:288` |
 | `G_MCI = C.T @ G_bf @ C` | lunar gravity-gradient similarity transform | `force_models.py:74` |
 | `G_u = t2u - t1 - \|r_sc(t2u) - r_st(t1)\| / c = 0` | M3 uplink light-time event equation | `two_way_range.py: solve_two_way_range_events` |

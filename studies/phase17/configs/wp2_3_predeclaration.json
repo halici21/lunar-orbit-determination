@@ -1,0 +1,245 @@
+{
+  "study": "F2 WP2.3 slice 1 - two-way range station bias solve-for in BLS-LM (MEAS-08, X-15 bias part)",
+  "date": "2026-11-03",
+  "source_of_predeclaration": "docs/assurance/vv-program.md F2 table (WP2.3 row); plan section 9 design 2026-11-03",
+  "scope_slice_1": "estimate_two_way_range_bls_lm(bias_mode='station_range'): one constant range bias per station of the pass, data-only, eliminated exactly by variable projection (Golub-Pereyra; the bias enters linearly with a constant design column): residual and Jacobian rows of each station have their a-priori-weighted station mean removed, so the LM loop, its acceptance test and the posterior (the Schur-complement marginal of the orbit state) are unchanged in form. The bias estimates are reported in EstimatorStats.station_range_biases_m. Moon-centred and barycentric (two_way_light_time_ssb) passes alike",
+  "out_of_scope_slice_1": [
+    "SRIF (fails closed; slice 1b)",
+    "bias prior",
+    "combination with K_SRP solve-for (fails closed)",
+    "robust outlier rejection with bias (fails closed)",
+    "per-pass bias",
+    "time-tag bias"
+  ],
+  "default_behaviour": "unchanged (bias_mode=None)",
+  "gates": {
+    "G1_bias_recovery": {
+      "rule": "noise-free data with known biases +7 m (station 1) and -4 m (station 2): recovered biases within 1 mm"
+    },
+    "G2_state_recovery": {
+      "rule": "position < 1 cm from an 80 m / 0.02 m/s offset, on the same data"
+    },
+    "G3_bias_free_model_misfit": {
+      "rule": "the same data fitted without bias_mode leaves a station-mean residual within 2 m of the injected bias on at least one station (evidence the bias is material)"
+    },
+    "G4_projection_identity": {
+      "rule": "on unbiased data, bias_mode='station_range' returns biases < 1 mm and a state within 1 cm of the bias-free solve"
+    },
+    "G5_fail_closed": {
+      "rule": "SRIF with bias_mode, bias_mode with solve_for_k_srp, with robust_outlier_rejection, and unknown bias_mode values are rejected; a pass with a single station row is rejected"
+    }
+  },
+  "amendments": [
+    {
+      "gate": "G8",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (3.8 mm raw)",
+      "new_rule": "after removing the first-order frame term Delta_M3 (u_up . v_Moon,SSB)/c the rows agree within 1.5 mm (measured 1.03 mm)",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G9",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (1.8e-6; round-off floor)",
+      "new_rule": "FD step 10 m / 1e-2 m/s, threshold unchanged (measured 7.5e-8)",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G10",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "materiality clause FAIL (0.28 m post-fit RMS; 187 m absorbed position error); recovery clause PASS",
+      "new_rule": "zero-delay fit position error > 10 m and post-fit RMS > 1000x the matched fit",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G11",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "the delay is rejected earlier, at RangeRatePhysicsConfig (ValueError)",
+      "new_rule": "fail-closed at config construction",
+      "status": "exploratory (mechanism only)"
+    },
+    {
+      "gate": "G13",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (0.088 m pass-mean residual; 676 m absorbed position error)",
+      "new_rule": "station-mode fit position error > 10 m and post-fit RMS > 1000x the pass-mode fit",
+      "status": "exploratory"
+    },
+    {
+      "gate": "G16",
+      "date": "2026-11-03",
+      "after_result": true,
+      "as_computed": "FAIL (BLS position 0.81 m with the column fixed at the a-priori state)",
+      "new_rule": "design: the time-tag column is re-evaluated at every linearisation point; thresholds unchanged",
+      "status": "exploratory"
+    },
+    {
+      "gate": "slice 6 scope + G27/G30-G32",
+      "date": "2026-11-03",
+      "after_result": false,
+      "reason": "pre-result design review by a peer session (erayh-fd), whose own pre-registration 874865d (G25-G33, StationUplinkRamp/ET design) was superseded by 7a258ad before either ran; ET epochs, resolver fix, SRIF recovery, production Jacobian FD and arc-epoch independence adopted",
+      "status": "pre-registered (no result seen)"
+    }
+  ],
+  "reject_if": "any gate fails as computed, or a frozen default-path baseline changes",
+  "scope_slice_1b": "estimate_two_way_range_srif(bias_mode='station_range'): the same variable projection in the SRIF residual, scored cost and posterior design; SRIF no longer fails closed for this mode (G5's SRIF clause is superseded by G6)",
+  "gates_slice_1b": {
+    "G6_srif_parity": {
+      "rule": "on the G1 data SRIF recovers the biases within 1 mm and its state agrees with BLS-LM within 1 cm; SRIF and BLS-LM posterior position sigmas agree within 1 percent"
+    }
+  },
+  "scope_slice_2": "two_way_light_time_ssb with a nonzero fixed transponder delay d (delay-calibrated half-round-trip convention, as the Moon-centred M3 'fixed_coordinate_time' model): relativistic_light_time.solve_two_way takes transponder_delay_s; the uplink is received at the spacecraft at t2u = t2d - d (a local delay, never an epoch difference), the delay-calibrated range is 0.5 c (tau_down + tau_up)(1 - dD/dt) and the measured interval t3 - t1 = tau_down + d + tau_up sets the midpoint rate epoch; the event partials take the spacecraft position sensitivity and velocity at t2u for the uplink. _pass_context and the scenario loader accept d > 0 with this convention; the raw convention and barycentric counted Doppler with a delay still fail closed",
+  "gates_slice_2": {
+    "G7_zero_delay_identity": {
+      "rule": "transponder_delay_s=0 reproduces the slice-1 SSB ranges and Jacobian bitwise"
+    },
+    "G8_delay_effect_parity_with_M3": {
+      "rule": "on the G1 arc with d = 0.05 s, the per-row range change SSB(d) - SSB(0) agrees with the Moon-centred M3 change M3(d) - M3(0) within 1 mm, and the change exceeds 1 m on at least one row"
+    },
+    "G9_jacobian_fd": {
+      "rule": "the d = 0.05 s range Jacobian matches a central finite difference of the initial state (position step 1 m, velocity step 1e-3 m/s) within 1e-6 relative to the row norm"
+    },
+    "G10_bls_recovery": {
+      "rule": "BLS-LM on noise-free d = 0.05 s data with the matching model recovers position within 1 cm from the G2 offset; a model with d = 0 leaves an RMS residual above 0.5 m on the same data"
+    },
+    "G11_fail_closed": {
+      "rule": "the scenario loader accepts transponder_delay_s > 0 with two_way_light_time_ssb, still rejects the raw convention; barycentric counted Doppler with a delay still raises NotImplementedError"
+    }
+  },
+  "results_slice_2": {
+    "G7": "PASS bitwise vs HEAD edc8a0b on 240 rows (ranges and Jacobian)"
+  },
+  "scope_slice_3": "bias_mode='pass_range' in estimate_two_way_range_bls_lm and estimate_two_way_range_srif: one constant range bias per tracking pass, eliminated by the same variable projection as 'station_range'. A pass is a run of one station's rows (time order) with no gap above TWO_WAY_RANGE_PASS_GAP_S = 600 s; passes are numbered from 1 per station. Bias estimates are reported in EstimatorStats.station_range_biases_m keyed by (station id, pass index). Same fail-closed rules as slice 1 (K_SRP, robust rejection, a pass with fewer than two rows)",
+  "gates_slice_3": {
+    "G12_pass_bias_recovery": {
+      "rule": "noise-free SSB data, station 1 tracked in two passes (0-1200 s, 2400-3600 s) with biases +6 m / -3 m, station 2 one pass with +2 m: BLS-LM and SRIF recover every pass bias within 1 mm and position within 1 cm from the G2 offset"
+    },
+    "G13_station_model_misfit": {
+      "rule": "the same data fitted with bias_mode='station_range' leave a pass-mean residual magnitude above 1 m on at least one station-1 pass"
+    },
+    "G14_constant_bias_consistency": {
+      "rule": "on data with station-constant biases (+7 m / -4 m) on the same two-pass geometry, 'pass_range' returns both station-1 pass biases within 1 mm of +7 m"
+    },
+    "G15_fail_closed": {
+      "rule": "a pass with a single row is rejected; 'pass_range' with solve_for_k_srp or robust_outlier_rejection is rejected; the station-mode behaviour (G1-G6) is unchanged"
+    }
+  },
+  "results_slice_3": {
+    "G12": "PASS (BLS-LM and SRIF, every pass bias within 0.17 mm, position 0.25 mm)",
+    "G14": "PASS",
+    "G15": "PASS"
+  },
+  "scope_slice_4": "bias_mode='station_time_tag' (BLS-LM, SRIF; two_way_light_time_ssb only): per station a constant range bias and a receive time-tag offset b_t, the latter entering linearly through the column g = d(range)/d(t3) (relativistic_light_time.two_way_range_clock_partial), both eliminated by variable projection (a 2x2 weighted group solve). g is evaluated once per solve at the a-priori state (its change with the state, ~|delta rho_dot| x b_t, is neglected) and the linearisation in b_t neglects 0.5 rho_ddot b_t^2. Reported in EstimatorStats.station_range_biases_m and station_time_tag_biases_s by station id. RD-07 (time-tag offset)",
+  "gates_slice_4": {
+    "G16_time_tag_recovery": {
+      "rule": "noise-free SSB data generated with station clock offsets +1 ms / -2 ms and range biases +7 m / -4 m: BLS-LM and SRIF recover both time tags within 1 microsecond, both range biases within 1 mm and position within 1 cm from the G2 offset"
+    },
+    "G17_range_only_misfit": {
+      "rule": "the same data fitted with bias_mode='station_range': position error above 10 m or post-fit RMS above 1000x the station_time_tag fit"
+    },
+    "G18_identity_on_untagged_data": {
+      "rule": "on data without clock offsets (range biases +7 m / -4 m) the time tags are below 1e-8 s and the state within 1 cm of the station_range solve"
+    },
+    "G19_fail_closed": {
+      "rule": "station_time_tag on a Moon-centred pass, with fewer than three rows on a station, with solve_for_k_srp or with robust_outlier_rejection is rejected"
+    }
+  },
+  "results_slice_4": {
+    "G16": "PASS after the design amendment (BLS position 4.5 mm, tags 0.16 us, biases 0.12 mm; SRIF within the same gates)",
+    "G17": "PASS",
+    "G18": "PASS",
+    "G19": "PASS"
+  },
+  "scope_slice_5": "Ramped uplink core (MEAS-08): relativistic_light_time.UplinkRamp, a piecewise-linear transmit frequency f_T(t) = f_k + fdot_k (t - t_k) on [t_k, t_{k+1}) in pass seconds (TDB from et0; the TT-TDB offset of the ramp epochs, <= 1.7 ms, is neglected), with an analytic integral; counted_doppler(..., uplink_ramp=ramp) returns the Moyer ramped counted Doppler in m/s equivalent: the unramped value minus c/(2 f_ref Tc) integral_{t1 start}^{t1 end} (f_T - f_ref) dt1, and its state partial adds c/(2 f_ref Tc) [(f_T(t1e) - f_ref) d(rt_e)/dx - (f_T(t1s) - f_ref) d(rt_s)/dx]. Scenario/estimator plumbing of ramp tables is a later slice",
+  "gates_slice_5": {
+    "G20_constant_limit": {
+      "rule": "a ramp with f = f_ref and fdot = 0 reproduces the unramped value and partial bitwise"
+    },
+    "G21_constant_offset": {
+      "rule": "f = f_ref + 1 kHz, fdot = 0: the change equals -c/(2 f_ref Tc) x 1 kHz x (t1e - t1s) within 1e-12 relative"
+    },
+    "G22_receive_quadrature_oracle": {
+      "rule": "a three-segment ramp (rates +0.4, -0.25, +0.1 Hz/s, breaks inside the count interval): the correction equals an independent Gauss-Legendre quadrature over receive time of (f_T(t1(t3)) - f_ref) dt1/dt3 (t1 solved at each node, dt1/dt3 by central difference of solved t1) within 1e-6 relative to the correction"
+    },
+    "G23_partial_fd": {
+      "rule": "ramped partial vs central finite difference of the initial state (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G24_fail_closed": {
+      "rule": "a ramp that starts after the transmit epoch t1 of the count start raises ValueError; non-increasing segment epochs or a non-positive frequency raise ValueError"
+    }
+  },
+  "results_slice_5": {
+    "G20": "PASS (first run, no amendment)",
+    "G21": "PASS (first run, no amendment)",
+    "G22": "PASS (first run, no amendment)",
+    "G23": "PASS (first run, no amendment)",
+    "G24": "PASS (first run, no amendment)"
+  },
+  "scope_slice_6": "Ramp tables in the production counted-Doppler path: RangeRatePhysicsConfig.uplink_ramps (last field, default ()), a tuple of (station name, relativistic_light_time.UplinkRamp) pairs, accepted only with a barycentric counted_doppler_model; the barycentric adapter (counted_doppler_ssb) passes the station's ramp to counted_doppler for generation, residuals and the Jacobian (BLS-LM, SRIF). Stations without a ramp keep the constant uplink. Pass metadata records uplink_ramp_stations only when ramps are set. Scenario-JSON ramp tables are out of scope (they come with real tracking data, F5/F6). PRE-RESULT AMENDMENT (before any slice-6 test ran, after a peer-session review): the table epochs are absolute ET (TDB seconds past J2000), converted per pass to pass seconds (epoch - et0) in the adapter, so arc-by-arc runs with different et0 share one table; scenarios._resolve_range_rate_physics keeps every field except count_interval_s (it rebuilt the config field by field and silently dropped counted_doppler_model, station_state_method and uplink_ramps). A station without a table keeps the constant uplink by design and is visible through uplink_ramp_stations",
+  "gates_slice_6": {
+    "G25_default_identity": {
+      "rule": "with uplink_ramps=() the generated observations are bitwise equal to the config without the field, and the metadata has no uplink_ramp_stations key"
+    },
+    "G26_routing": {
+      "rule": "with a ramp on Goldstone only, each generated Goldstone row equals rlt.counted_doppler with that ramp within 1e-12 m/s and each Canberra row equals the unramped value bitwise"
+    },
+    "G27_bls_recovery_and_materiality": {
+      "rule": "BLS-LM and SRIF on the noise-free ramped data with the ramped config recovers position < 1 cm and velocity < 1e-5 m/s from the G2 offset; the unramped config at the truth misfits the Goldstone rows by more than 1 m/s RMS"
+    },
+    "G28_fail_closed": {
+      "rule": "uplink_ramps with a non-barycentric counted_doppler_model, a malformed entry or duplicate station names raise ValueError; a ramp not covering a count's transmit epochs raises ValueError at generation"
+    },
+    "G29_provenance": {
+      "rule": "metadata uplink_ramp_stations == ('Goldstone',) when that ramp is set"
+    },
+    "G30_production_partial_fd": {
+      "rule": "the ramped production Jacobian (radiometrics dispatch) vs central differences of re-propagated arcs (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G31_arc_epoch_independence": {
+      "rule": "the same ET ramp table on two passes with different et0 gives, for the same absolute receive epoch, values within 1e-9 m/s"
+    },
+    "G32_resolver_keeps_fields": {
+      "rule": "_resolve_range_rate_physics(cfg, count_interval_s) changes count_interval_s only (counted_doppler_model, station_state_method, uplink_ramps preserved); fails before the fix"
+    }
+  },
+  "results_slice_6": {
+    "G25": "PASS (first run)",
+    "G26": "PASS (first run)",
+    "G27": "PASS (first run)",
+    "G28": "PASS (first run)",
+    "G29": "PASS (first run)",
+    "G30": "PASS (first run)",
+    "G31": "PASS (first run)",
+    "G32": "FAIL before the fix as required (resolver returned single_bounce_exact_station for barycentric_dsn), PASS after"
+  },
+  "scope_slice_7": "Fixed transponder delay in barycentric counted Doppler (both barycentric models): RangeRatePhysicsConfig and counted_doppler_ssb stop rejecting transponder_delay_s for them; rlt.counted_doppler takes transponder_delay_s and passes it to both endpoint solve_two_way calls (slice-2 event chain and partials: uplink received at t2u = t2d - d). The count is a difference of the endpoint light-time sums, so the fixed delay cancels as a term and enters through the event geometry only. Supersedes the counted-Doppler clause of G11",
+  "gates_slice_7": {
+    "G33_zero_delay_bitwise": {
+      "rule": "transponder_delay_s=0 gives observations and production Jacobian rows bitwise equal to the slice-6 path"
+    },
+    "G34_delay_effect_parity_with_four_event": {
+      "rule": "with d = 0.05 s the per-count change bary(d) - bary(0) agrees with the Moon-centred four-event model change 4ev(d) - 4ev(0) within 2.5e-4 x max|change| + 1e-9 m/s (slice-2 first-order frame term ~1e-4 relative), and max|change| > 1e-3 m/s"
+    },
+    "G35_production_jacobian_fd": {
+      "rule": "delayed production Jacobian vs central differences (10 m / 1e-2 m/s) within 1e-6 of the row norm"
+    },
+    "G36_bls_srif_recovery": {
+      "rule": "BLS-LM and SRIF on noise-free delayed barycentric counted Doppler recover position < 1 cm and velocity < 1e-5 m/s from the G2 offset"
+    },
+    "G37_supported_options": {
+      "rule": "barycentric_dsn and barycentric_dsn_media accept transponder_delay_s > 0; output_unit='hz' and station_clock_drift are still rejected; the G11 counted-Doppler rejection clause is superseded"
+    }
+  },
+  "results_slice_7": {
+    "G33": "PASS (first run)",
+    "G34": "PASS after a harness fix (no tolerance change): the first run errored before any gate value was computed (four-event TwoWayEventHistoryError at the first count, t2d = -1.36 s before the history start; the barycentric generator drops such counts). Both models now run on one visibility mask starting at Tc + 30 s. 234 counts: max|change| 3.2229e-2 m/s, gap 3.52e-6 m/s vs bound 8.06e-6 m/s (relative 1.09e-4, the predicted first-order frame term)",
+    "G35": "PASS (first run)",
+    "G36": "PASS (first run)",
+    "G37": "PASS (first run); the G11 counted-Doppler rejection clause is superseded and its test now asserts acceptance"
+  }
+}

@@ -144,6 +144,11 @@ F1_WP1_2_ZERO_J2_FINGERPRINT = (
 F1_WP1_2_LUNAR_J2_FINGERPRINT = (
     "sha256:a8ab569c4653aad321211e17cb19f127fb4e4713957aafeb0188615acf4273a7"
 )
+# F1 X-02: the lunar-J2 identities above are the legacy mean-pole model and are
+# recomputed under it; the default (MOON_PA_DE440 pole, GRAIL pair) is frozen here.
+F1_X02_LUNAR_J2_GRAIL_PA_FINGERPRINT = (
+    "sha256:ef0d271c5e95bea489c6474c884b153d7ce25f604ba750d3d2bba248a74bc87f"
+)
 
 PLOT_CONTRACT = (
     {
@@ -778,6 +783,27 @@ F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256 = {
         "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
 }
 
+# F1 X-02 (owner decision 2026-11-02, "Yes, switch default"; DYN-03/DYN-04).  The
+# default point-mass lunar J2 is about the exact-epoch MOON_PA_DE440 pole with the
+# GRGM1200A (C20, R_ref = 1738 km) pair; the IAU mean-pole model stays selectable
+# as lunar_j2_model="iau_mean_pole_legacy" and is bit for bit the earlier physics
+# (FROZEN_LUNAR_J2_FINGERPRINT is still reproduced under it).
+#
+#   lunar_od/dynamics.py         WP1.3 6827b9d9... -> f71cdb7c...
+#   lunar_od/force_contract.py   60c72036...       -> 1eb152ba...
+#   desktop_app/controllers/analysis_controller.py
+#                                WP1.2 5e6a2c38... -> 1d540e31... (merged with main;
+#                                the X-02 edit alone was a4b5bd0b... -> f1dae7ea...)
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_X02_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "f71cdb7c7b9fa8a1acff713f01f68aed05f555bcd59ba135e9c3932b5596bbb8",
+    "lunar_od/force_contract.py":
+        "1eb152ba6e18808bce6236d0d60b80d0627c57a306346842f6eb494a683b0471",
+    "desktop_app/controllers/analysis_controller.py":
+        "1d540e31363588bd04e950f225c5ce5e9d60c5101f5f7f294bdf9eec28f537c5",
+}
+
 
 # PR #99 (F1 WP1.2) brought up to date with main on 2026-11-02, after the branch
 # consolidation (PR #97) and WP1.7 (PR #96).  run_scenario_config.py carries the
@@ -791,10 +817,174 @@ WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256 = {
         "e5ce57517b02d3a42cdbe484e4d6d4d1622c6158053b7d68d236b7224a17817e",
 }
 
+# F1 WP1.8 (independent-assessment programme; DYN-14/X-04).  The numerical-profile
+# manifest records whether truth and estimator shared one numerical path
+# (shared_profile, profile_differences).  reporting.py is a record here, not a
+# gate-protected path.
+#
+#   old (numerical core)  ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8
+#   new (WP1.8)           837bcb4ce2ecd6ea3b1a17298aa178d47467b0c391215b859af4739f4b68400d
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/reporting.py":
+        "837bcb4ce2ecd6ea3b1a17298aa178d47467b0c391215b859af4739f4b68400d",
+}
+
+
+# F1 X-12 (independent-assessment programme; REQ-DYN-004).  The lunar-harmonics
+# force contract records how the body rotation is evaluated between grid samples
+# (rotation_mode).  The field is omitted for disabled harmonics, so the frozen
+# zero-J2 / lunar-J2 fingerprints are unchanged.
+#
+#   lunar_od/force_contract.py  old (consolidation)  60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0
+#                               new (X-12)           3aa7e6d7a719a63e842543652dedbf7b9e17431f3022089dc259479c17afd3f0
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F1_X12_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/force_contract.py":
+        "3aa7e6d7a719a63e842543652dedbf7b9e17431f3022089dc259479c17afd3f0",
+}
+
+# F2 WP2.1 (MEAS-01, X-07): opt-in barycentric DSN counted Doppler
+# (counted_doppler_model='barycentric_dsn').  radiometrics.py adds the model
+# constant, its cross-field rules and the dispatch (to the new module
+# counted_doppler_ssb.py, as the R4 four-event route does); scenarios.py and
+# scenario_config.py take the model-version label from radiometrics and add the
+# loader gates; slice 2 adds the scenario profile 'two_way_light_time_ssb'
+# (barycentric two-way range) and its arc-builder route.  The default model
+# is unchanged.  Slice 3 adds the position profiles 'one_way_light_time_ssb'
+# and 'one_way_light_time_ssb_aberrated' (SSB one-way leg with Sun+Earth
+# Shapiro in measurements._apparent_position_observable) and their loader enum.
+#
+#   lunar_od/radiometrics.py     F1 WP1.4 -> e93cd6b1...
+#   lunar_od/scenarios.py        -> f9bf4f2f...
+#   lunar_od/scenario_config.py  -> a57cffef... -> 8e716a8e... (slice 3)
+#   lunar_od/measurements.py     -> b74614ce... (slice 3)
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/radiometrics.py":
+        "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
+    "lunar_od/scenarios.py":
+        "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
+    "lunar_od/scenario_config.py":
+        "8e716a8e4fb2c74ed003fe98d2ed82c38b26a32eb57c7b490ea1e14daa697598",
+    "lunar_od/measurements.py":
+        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
+}
+
+
+# F2 WP2.2 slice 1 (MEAS-06): opt-in media delay (troposphere + ionosphere,
+# lunar_od.media.MediaModel) for the barycentric two-way range.  scenario_config.py
+# adds the field media_model ('none' default) and its gate; scenarios.py routes it
+# into relativistic_light_time.generate_two_way_range_measurements_ssb;
+# run_scenario_config.py passes the field.  Defaults are unchanged.
+#
+#   lunar_od/scenarios.py            F2 WP2.1 f9bf4f2f... -> a6b22da3...
+#   lunar_od/scenario_config.py      F2 WP2.1 8e716a8e... -> f1b13e33...
+#   examples/run_scenario_config.py  -> 1362c085...
+#   slice 2 (counted_doppler_model='barycentric_dsn_media'):
+#   lunar_od/radiometrics.py         F2 WP2.1 e93cd6b1... -> be57948e...
+#   lunar_od/scenario_config.py      slice 1 f1b13e33... -> 31e37141...
+#   slice 3 (elevation refraction):
+#   lunar_od/measurements.py         -> b230a85c...
+#   lunar_od/media.py                -> 643e4770...
+#   lunar_od/scenarios.py            a6b22da3... -> 007ea51f...
+#   lunar_od/scenario_config.py      31e37141... -> 4e44f2e5...
+#   F2 WP2.3 slice 1 (two-way range station bias, variable projection):
+#   lunar_od/estimators.py           -> c2c25818...
+#   F2 WP2.3 slice 1b (SRIF station bias):
+#   lunar_od/estimators.py           c2c25818... -> fb706a81...
+#   F2 WP2.3 slice 2 (SSB transponder delay):
+#   lunar_od/relativistic_light_time.py-> f067a54b...
+#   lunar_od/scenario_config.py      4e44f2e5... -> 17e4be89...
+#   F2 WP2.3 slice 3 (per-pass range bias):
+#   lunar_od/estimators.py           fb706a81... -> 125340f7...
+#   F2 WP2.3 slice 4 (station time-tag bias):
+#   lunar_od/estimators.py           125340f7... -> 0282c735...
+#   lunar_od/relativistic_light_time.pyf067a54b... -> 567b58bb...
+#   F2 WP2.3 slice 5 (ramped uplink core):
+#   lunar_od/relativistic_light_time.py567b58bb... -> b66a658d...
+#   F2 WP2.3 slice 6 (ramp tables, resolver fix):
+#   lunar_od/radiometrics.py         be57948e... -> 3f5e5a4c...
+#   lunar_od/measurements.py         b230a85c... -> 5ce61154...
+#   lunar_od/scenarios.py            007ea51f... -> 1d1a1b03...
+#   F2 WP2.3 slice 7: barycentric counted-Doppler transponder delay:
+#   lunar_od/radiometrics.py         3f5e5a4c... -> 20978392...
+#   lunar_od/relativistic_light_time.pyb66a658d... -> 2499813e...
+#   F2 WP2.2 follow-up: archived desktop runs tolerate media_model (SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES):
+#   lunar_od/scenario_config.py      17e4be89... -> 566eb338...
+#   F2 WP2.5 slice 1 (implicit light-time Jacobian by default, MEAS-10):
+#   lunar_od/measurements.py         5ce61154... -> 9e0f9e1b...
+#   F2 WP2.5 slice 2 (companion Jacobian, apparent_one_way_ssb, MEAS-09):
+#   lunar_od/measurements.py         9e0f9e1b... -> aaf80e34...
+#   lunar_od/estimators.py           0282c735... -> c02a68a6...
+#   lunar_od/observability.py        cab86c66... -> b4d096e1...
+#   lunar_od/scenario_config.py      566eb338... -> beb68436...
+#   F4 WP4.2-R (BLS-LM scores every iteration at the caller's tolerance; undamped condition reported):
+#   lunar_od/estimators.py           c02a68a6... -> b84b317b...
+#   F2 WP2.6 slice 2 (delta-DOR: same-model quasar delay, IERS 2010 consensus check):
+#   lunar_od/relativistic_light_time.py2499813e... -> b3c6a004...
+#   F2 WP2.7 slice 1 (_razel_scalar: atan2 elevation, azimuth strictly in [0, 2 pi), MEAS-14):
+#   lunar_od/accelerated.py          PHASE17-HARDEN-D18 ae5dea08... -> d47c41e9...
+F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenarios.py":
+        "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701",
+    "lunar_od/scenario_config.py":
+        "beb68436b37e9a8de9fd9b9580f9eb227665366c6c025c0abe4d3acf8a0bcc30",
+    "examples/run_scenario_config.py":
+        "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26",
+    "lunar_od/radiometrics.py":
+        "2097839235edf7ef24ac3a6c32f422e840e69dbf8236b5f8410c1fb70f08b463",
+    "lunar_od/measurements.py":
+        "aaf80e34149dc4ba007eecc845d11ea62782647ebd13c01e69cb6c2244ebd31e",
+    "lunar_od/media.py":
+        "643e477086d27a4161b2a5ac79a66e5596036db1d71ae12655591ede479eb33b",
+    "lunar_od/estimators.py":
+        "b84b317bd193e973282b0a356834faf5e733659df85e0ef8abd4b0421021cef1",
+    "lunar_od/relativistic_light_time.py":
+        "b3c6a0047cf50f66a4d08e389b827824878e71dcb6b49d35b22b3b557d91fc77",
+    "lunar_od/observability.py":
+        "b4d096e1789c37ce75a471561cc1329995f6d3ca3e75ea0f51f149b580197b5c",
+    "lunar_od/accelerated.py":
+        "d47c41e9d73f59bee551e76a2e58851bd039efa484bfa6c89c4b0761d361aa61",
+}
+
+# Owner-requested branch consolidation of 2026-11-08: all 17 open branches merged
+# into main through one integration PR.  These files carry changes from branches
+# that were each re-frozen on their own; the merged file is the union of those
+# already-authorized changes (conflicts resolved by keeping both sides) and has a
+# new identity.  No new edits.
+#
+#   lunar_od/scenario_config.py        X-02 7e1177e1... + X-01 7ff0d866... + X-12 bedb11bd... + WP2.4 4b2eb3af... + WP2.1-2.7 beb68436... -> cb2796ae...
+#   lunar_od/scenarios.py              X-02 888c7c79... + WP2.1-2.7 1d1a1b03... -> 585303e0...
+#   examples/run_scenario_config.py    WP2.4 e08fb7ef... + WP2.1-2.7 1362c085... -> 511641de...
+#   lunar_od/force_contract.py         X-02 1eb152ba... + X-12 3aa7e6d7... -> cbddcd5c...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenario_config.py":
+        "cb2796ae1b126ce5531089cf3a9bca00083713d5f927d964a957b6509374e20a",
+    "lunar_od/scenarios.py":
+        "585303e0a12bb81cff216e202c36698600140f28a87b6a214239ea23d91b7632",
+    "examples/run_scenario_config.py":
+        "511641de0a31e35d40092441c9cde40df51918e748407977f20a026cc3d699c4",
+    "lunar_od/force_contract.py":
+        "cbddcd5c90351f441dd6b90c9a01196fb51e7d30f8a7695392d5d88bc95114d3",
+}
+
 
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
+
+
+#   F2 WP2.4 slice 2: scenario earth_orientation field, archive registry, run-provenance block:
+#   lunar_od/scenario_config.py      -> 4b2eb3af...
+#   examples/run_scenario_config.py  -> e08fb7ef...
+F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/scenario_config.py":
+        "4b2eb3aff6fdd3754cecd46a1c6db47000dbf7e41b27cbd482f51b9cd56e66e4",
+    "examples/run_scenario_config.py":
+        "e08fb7ef04149bfda6c063fe52ea714605fe564d0c258bca6622c78cc915267d",
+}
 
 
 def expected_current_tree_sha256(relative_path: str) -> str:
@@ -804,6 +994,20 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256:
+        return BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_X02_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_X02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F1_X12_REFROZEN_CURRENT_TREE_SHA256:
+        return F1_X12_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_4_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256:
+        return F2_WP2_1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:
         return F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in WP1_2_MAIN_SYNC_2026_11_02_REFROZEN_CURRENT_TREE_SHA256:
@@ -2444,7 +2648,8 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
     rows.extend(build_r2_historical_byte_identity_rows(repository_root))
     rows.extend(build_r2_current_tree_protection_rows(repository_root))
 
-    from lunar_od.constants import J2_MOON_UNNORMALIZED
+    from lunar_od.constants import J2_MOON_GRAIL_UNNORMALIZED, J2_MOON_UNNORMALIZED
+    from lunar_od.lunar_j2_model import use_lunar_j2_model
 
     def contract(j2_moon: float):
         config = scenario_config_from_mapping(
@@ -2460,10 +2665,17 @@ def build_compatibility_rows(repository_root: Path) -> list[dict[str, object]]:
         return force_model_contract_from_scenario_config(config)
 
     zero = contract(0.0)
-    lunar_j2 = contract(float(J2_MOON_UNNORMALIZED))
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        lunar_j2_legacy = contract(float(J2_MOON_UNNORMALIZED))
+    lunar_j2 = contract(float(J2_MOON_GRAIL_UNNORMALIZED))
     for item, expected, actual in (
         ("zero_j2_fingerprint", F1_WP1_2_ZERO_J2_FINGERPRINT, zero.force_model_fingerprint()),
-        ("lunar_j2_fingerprint", F1_WP1_2_LUNAR_J2_FINGERPRINT, lunar_j2.force_model_fingerprint()),
+        ("lunar_j2_fingerprint", F1_WP1_2_LUNAR_J2_FINGERPRINT, lunar_j2_legacy.force_model_fingerprint()),
+        (
+            "lunar_j2_grail_pa_fingerprint",
+            F1_X02_LUNAR_J2_GRAIL_PA_FINGERPRINT,
+            lunar_j2.force_model_fingerprint(),
+        ),
         ("force_contract_schema", "r0b.force-model-contract.v1", FORCE_CONTRACT_SCHEMA_VERSION),
     ):
         rows.append(

@@ -1,0 +1,29 @@
+{
+ "source": "lunar_od.delta_dor at commit 5e08d83 (before F2 WP2.6 slice 2); Goldstone-Canberra, the arc of tests/test_wp2_6_delta_dor_ssb.py",
+ "rows": [
+  {
+   "t_obs": 300.0,
+   "hex": [
+    "0x1.1b9fed1f74000p-8",
+    "0x1.b1e186f9c8834p-9",
+    "0x1.0abca68a3ef98p-10"
+   ]
+  },
+  {
+   "t_obs": 1500.0,
+   "hex": [
+    "0x1.6a05d4a28e200p-9",
+    "0x1.b857266aa6f9ep-10",
+    "0x1.1bb482da75462p-10"
+   ]
+  },
+  {
+   "t_obs": 3300.0,
+   "hex": [
+    "0x1.233ccdf787000p-12",
+    "-0x1.cf4919fb7386dp-11",
+    "0x1.3073c07b9b836p-10"
+   ]
+  }
+ ]
+}

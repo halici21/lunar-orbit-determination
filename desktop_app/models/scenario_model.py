@@ -1,8 +1,15 @@
 """Scenario configuration model and built-in presets."""
 from __future__ import annotations
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from typing import Optional
+
+from lunar_od.scenario_config import ScenarioConfig
+from lunar_od.thesis_matrix import THESIS_ATOL, THESIS_EPHEMERIS_STEP_S, THESIS_RTOL
+
+# X-11 / CFG-01: the form starts from the library's scientific defaults
+# (examples/run_scenario_config.py, ScenarioConfig), not desktop-only values.
+_LIBRARY_BLS_LAMBDA0 = next(f.default for f in fields(ScenarioConfig) if f.name == "bls_lambda0")
 
 
 @dataclass
@@ -11,7 +18,7 @@ class ScenarioModel:
     description: str = ""
     duration_days: float = 1.0
     state_step_s: float = 600.0
-    ephemeris_step_s: float = 3600.0
+    ephemeris_step_s: float = THESIS_EPHEMERIS_STEP_S
     arc_mode: str = "prescribed"          # prescribed | visibility
     arc_duration_h: float = 2.0
     arc_stride_h: float = 6.0
@@ -38,9 +45,9 @@ class ScenarioModel:
 
     # BLS-LM parameters
     bls_max_iter: int = 10
-    bls_damping_init: float = 1e-3
-    bls_rtol: float = 1e-8
-    bls_atol: float = 1e-10
+    bls_damping_init: float = _LIBRARY_BLS_LAMBDA0
+    bls_rtol: float = THESIS_RTOL
+    bls_atol: float = THESIS_ATOL
 
     # SR-UKF parameters
     ukf_alpha: float = 0.35

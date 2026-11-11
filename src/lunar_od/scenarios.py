@@ -24,6 +24,7 @@ from .estimators import (
     estimate_two_way_range_srif,
 )
 from .filters import UKFAdaptiveConfig, UnscentedTransformConfig, assess_ukf_operational_stability, run_lunar_ukf
+from .lunar_j2_model import active_lunar_j2_model, use_lunar_j2_model
 from .history_domain import (
     HistoryDomainDropRecord,
     HistoryDomainError,
@@ -36,15 +37,16 @@ from .measurements import (
     measurement_model_metadata,
 )
 from .radiometrics import (
-    COUNTED_DOPPLER_MODEL_VERSION,
     DEFAULT_COUNTED_DOPPLER_MODEL,
     DEFAULT_STATION_STATE_METHOD,
-    FOUR_EVENT_COUNTED_DOPPLER_MODEL,
-    FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION,
     RangeRatePhysicsConfig,
+    counted_doppler_model_version,
     range_rate_physics_config,
 )
-from .measurement_contracts import generate_two_way_range_measurements_checked
+from .measurement_contracts import (
+    generate_two_way_range_measurements_checked,
+    require_earth_provider_contract,
+)
 from .two_way_range import TwoWayRangeConfig
 
 #: Default UKF initial state sigma (position m, velocity m/s): the thesis cold-start error the
@@ -229,11 +231,7 @@ class ScenarioResult:
     @property
     def counted_doppler_model_version(self) -> str:
         """Truthful counted-Doppler model version for this run (R4-P17)."""
-        return (
-            FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION
-            if self.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL
-            else COUNTED_DOPPLER_MODEL_VERSION
-        )
+        return counted_doppler_model_version(self.counted_doppler_model)
 
     @property
     def algorithmic_success_fraction(self) -> float:
@@ -285,6 +283,12 @@ def make_cold_start_bank(
     )
 
 
+def _default_media_model():
+    from .media import MediaModel
+
+    return MediaModel()
+
+
 def build_measurement_arcs(
     measurement_type: MeasurementType,
     t_sim_s: ArrayLike,
@@ -309,8 +313,25 @@ def build_measurement_arcs(
     companion_geometry: str = "instantaneous",
     jacobian_model: str | None = None,
     two_way_range: TwoWayRangeConfig | None = None,
+    media_model: str = "none",
 ) -> tuple[PreparedArc, ...]:
-    """Build per-arc observation packages from visibility segmentation."""
+    """Build per-arc observation packages from visibility segmentation.
+
+    ``media_model`` (F2 WP2.2): 'default_climatology' adds the troposphere and
+    ionosphere delay (:class:`lunar_od.media.MediaModel`) to the barycentric
+    two-way range and the default radio elevation refraction to position
+    measurements; any other measurement route requires 'none'.
+    """
+    if media_model not in ("none", "default_climatology"):
+        raise ValueError(f"media_model must be 'none' or 'default_climatology'; got {media_model!r}.")
+    if media_model != "none" and not (
+        measurement_type == "position"
+        or (measurement_type == "two_way_range" and measurement_model_profile == "two_way_light_time_ssb")
+    ):
+        raise ValueError(
+            "media_model applies only to position measurements (elevation refraction) and the "
+            "'two_way_light_time_ssb' two-way range profile."
+        )
     t_sim_s = np.asarray(t_sim_s, dtype=float).reshape(-1)
     state_history_mci = np.asarray(state_history_mci, dtype=float)
     seg_starts = np.asarray(seg_starts, dtype=int).reshape(-1)
@@ -357,6 +378,7 @@ def build_measurement_arcs(
                 stellar_aberration_model=stellar_aberration_model,
                 measurement_model_profile=measurement_model_profile,
                 jacobian_model=jacobian_model,
+                refraction=media_model != "none",
             )
         elif measurement_type == "range_rate":
             obs_data, pass_geo = generate_range_rate_measurements(
@@ -373,6 +395,26 @@ def build_measurement_arcs(
                 range_rate_physics=rr_physics,
                 companion_geometry=companion_geometry,
                 jacobian_model=jacobian_model,
+            )
+        elif measurement_type == "two_way_range" and measurement_model_profile == "two_way_light_time_ssb":
+            # F2 WP2.1 slice 2: barycentric DSN two-way range; the estimators
+            # dispatch on the profile the generator stamps on pass_geo.
+            from .relativistic_light_time import generate_two_way_range_measurements_ssb
+
+            require_earth_provider_contract(get_earth_pos, get_earth_vel, et0, t_pass_s)
+            obs_data, pass_geo = generate_two_way_range_measurements_ssb(
+                t_pass_s,
+                x_pass,
+                stations,
+                vis_pass,
+                get_earth_pos,
+                get_earth_vel,
+                et0,
+                noise=noise,
+                rng=rng,
+                arc_id=arc_number,
+                config=two_way_range,
+                media=None if media_model == "none" else _default_media_model(),
             )
         elif measurement_type == "two_way_range":
             obs_data, pass_geo = generate_two_way_range_measurements_checked(
@@ -532,22 +574,10 @@ def _resolve_range_rate_physics(
     cfg = range_rate_physics_config(range_rate_physics)
     if count_interval_s is None:
         return cfg
-    return RangeRatePhysicsConfig(
-        mode=cfg.mode,
-        count_interval_s=float(count_interval_s),
-        uplink_frequency_hz=cfg.uplink_frequency_hz,
-        turnaround_ratio=cfg.turnaround_ratio,
-        output_unit=cfg.output_unit,
-        light_speed_mps=cfg.light_speed_mps,
-        light_time_tolerance_s=cfg.light_time_tolerance_s,
-        light_time_max_iter=cfg.light_time_max_iter,
-        light_time_equation_tolerance_s=cfg.light_time_equation_tolerance_s,
-        local_state_model=cfg.local_state_model,
-        station_clock_offset_s=cfg.station_clock_offset_s,
-        station_clock_drift=cfg.station_clock_drift,
-        clock_reference_time_s=cfg.clock_reference_time_s,
-        transponder_delay_s=cfg.transponder_delay_s,
-    )
+    # F2 WP2.3 slice 6: replace only the count interval. The former field-by-field
+    # rebuild silently dropped station_state_method, counted_doppler_model and
+    # uplink_ramps back to their defaults.
+    return replace(cfg, count_interval_s=float(count_interval_s))
 
 
 def run_srif_arc_sequence(
@@ -602,6 +632,12 @@ def run_srif_arc_sequence(
 
 def _run_arc_worker(args: tuple) -> "ArcResult":
     arc, kwargs = args
+    # A worker process starts with the default lunar J2 model; carry the parent's.
+    with use_lunar_j2_model(kwargs["lunar_j2_model"]):
+        return _run_arc_in_worker(arc, kwargs)
+
+
+def _run_arc_in_worker(arc, kwargs: dict) -> "ArcResult":
     return run_batch_arc_sequence(
         (arc,),
         kwargs["measurement_type"],
@@ -751,6 +787,7 @@ def run_batch_arc_sequence(
             "j2_moon": j2_moon,
             "srp": srp,
             "propagation_profile": propagation_profile,
+            "lunar_j2_model": active_lunar_j2_model(),
         }
         _tasks = [
             (arc, {**_base_kwargs, "cold_pert": np.asarray(cold_start_bank[arc_idx], dtype=float).reshape(6)})

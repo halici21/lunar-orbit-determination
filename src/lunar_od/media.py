@@ -92,6 +92,60 @@ def default_vtec_tecu(local_time_h: float) -> float:
     return 5.0 + 25.0 * max(0.0, math.cos(2.0 * math.pi * (local_time_h - 14.0) / 24.0))
 
 
+# ----------------------------------------------------------------------
+# F2 WP2.2 slice 3 (MEAS-07): elevation refraction
+# ----------------------------------------------------------------------
+def refraction_coefficients(phpa: float, tc: float, rh: float, wl_um: float) -> tuple[float, float]:
+    """(A, B) [rad] of dZ = A tan Z + B tan^3 Z; a port of SOFA iauRefco (optical for wl <= 100 um, else radio).
+
+    Qualified against pyerfa's refco (gate WP2.2 G10). The model is meant for zenith distances below ~75 deg."""
+    optic = wl_um <= 100.0
+    t = min(max(tc, -150.0), 200.0)
+    p = min(max(phpa, 0.0), 10000.0)
+    r = min(max(rh, 0.0), 1.0)
+    w = min(max(wl_um, 0.1), 1.0e6)
+    if p > 0.0:
+        ps = 10.0 ** ((0.7859 + 0.03477 * t) / (1.0 + 0.00412 * t)) * (1.0 + p * (4.5e-6 + 6.0e-10 * t * t))
+        pw = r * ps / (1.0 - (1.0 - r) * ps / p)
+    else:
+        pw = 0.0
+    tk = t + 273.15
+    if optic:
+        wlsq = w * w
+        gamma = ((77.53484e-6 + (4.39108e-7 + 3.666e-9 / wlsq) / wlsq) * p - 11.2684e-6 * pw) / tk
+    else:
+        gamma = (77.6890e-6 * p - (6.3938e-6 - 0.375463 / tk) * pw) / tk
+    beta = 4.4474e-6 * tk
+    if not optic:
+        beta -= 0.0074 * pw * beta
+    return gamma * (1.0 - beta), -gamma * (beta - gamma / 2.0)
+
+
+#: Radio refraction of the default climatology: standard-atmosphere pressure at the station height, 10 C, 50 %.
+RADIO_REFRACTION_TEMPERATURE_C = 10.0
+RADIO_REFRACTION_HUMIDITY = 0.5
+RADIO_WAVELENGTH_UM = 1.0e6
+
+
+def default_radio_refraction_coefficients(h_m: float) -> tuple[float, float]:
+    return refraction_coefficients(standard_pressure_hpa(h_m), RADIO_REFRACTION_TEMPERATURE_C,
+                                   RADIO_REFRACTION_HUMIDITY, RADIO_WAVELENGTH_UM)
+
+
+def apparent_elevation(true_el_rad, a: float, b: float):
+    """(apparent elevation, d apparent / d true) for el_app = el_true + A cot(el_app) + B cot^3(el_app).
+
+    Vectorised; fixed-point solve (|d/d el| of the refraction term ~ A csc^2 el < 1e-2 above 5 deg)."""
+    el = np.asarray(true_el_rad, dtype=float)
+    app = el.copy()
+    for _ in range(8):
+        cot = 1.0 / np.tan(app)
+        app = el + a * cot + b * cot ** 3
+    cot = 1.0 / np.tan(app)
+    csc2 = 1.0 + cot * cot
+    slope = -(a + 3.0 * b * cot * cot) * csc2
+    return app, 1.0 / (1.0 - slope)
+
 @dataclass(frozen=True)
 class MediaSite:
     lat_rad: float

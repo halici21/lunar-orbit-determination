@@ -11,19 +11,28 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    zamanı) ve X-09 (istasyon zinciri) birbirini götürür (X-08 aberasyon çerçevesi WP1.10'da kapatıldı). Sentetik doğruluk
    sayıları gerçek veri doğruluğu değildir.
 2. **Tahminci karşılaştırmaları** şu farkları içerir: UKF hızlı yayıcıda
-   RK4 + doğrusal efemeris (X-04, MEAS-05), BLS ve SRIF'in
+   RK4 + doğrusal efemeris (X-04, MEAS-05; doğrusal Dünya konumu ızgara ortasında ≤117 m sapar, ama yörünge farkı 60 s'de 4.6e-6 m, 1 günde 4.1e-2 m — ölçüm gürültüsünün çok altında, `tests/test_meas05_sigma_ephemeris_fidelity.py` ile sabitlendi), BLS ve SRIF'in
    farklı tekillik eşikleri (X-14). (X-06, SRIF adım kabulündeki yol farkı, WP4.1'de kapatıldı.)
-3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS ilk iterasyonlarda
-   rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir.
+3. **Entegrasyon toleransları** yalnız 8 481 s'lik yaylar için sertifikalıdır; BLS-LM (konum, range-rate,
+   iki yönlü menzil) F4 WP4.2-R'den beri her iterasyonu çağıranın toleransında skorlar; SRIF yolları ilk
+   iterasyonlarda hâlâ rtol 1e-8'e gevşer ve bu evrede yakınsama ilan edebilir (taranmadı, açık kalem).
+   F2 WP2.7 G12'de görülen belirti: gevşek evrede skorlanan maliyet integrasyon gürültüsüdür (yakınsamış
+   noktada konumda 3.7e-3, çağıranın toleransında 1e-11), satır araması bu gürültüde adım kabul
+   edebiliyor; range-rate'te çağıranın toleransında da ~1e-8 m'lik yarılanmış adımlar kabul ediliyor.
+   Kendi çözümünden yeniden başlatılan SRIF 2 yerine 3–8 iterasyon harcıyor; çözüm ≤ 2.6e-8 m oynuyor.
 4. **Kuvvet parmak izi** yürütülen efemeris kernel'ini, interpolasyonunu ve Ay dönüş modunu
    kapsamaz; "force parity PASS" bu eksenlerde eşitlik kanıtı değildir.
-5. **Varsayılan Ay J2 terimi** IAU sabit ortalama kutbunu kullanır; bu kutup MOON_PA_DE440
-   figür ekseninden 1.47–1.62° uzaktadır (DYN-03). 160 km'de fark J2 ivmesinin %2.0'ı
-   (7.5e-6 m/s², SRP'nin ~500 katı). (J2, R) çifti GRAIL GRGM1200A'nın (C̄20, R_ref) çiftinden
-   J2·R² olarak 4.7e-4 yüksektir (DYN-04). Dondurulmuş J2 tabanları bu varsayılanla üretildiği için
-   değiştirilmedi; doğru kutuplu derece-2 alan harmonik yolda DIRECT modda (nmax=2,
-   `harmonic_epoch_et0`) kullanılabilir. Izgaralı harmonik yolda Ay yönelimi WP1.3'ten beri
-   SLERP ile süreklidir (DYN-05 kapandı).
+5. **Varsayılan Ay J2 terimi** (X-02, sahip kararı 2026-11-02) tam epoch'taki MOON_PA_DE440
+   kutbu etrafındadır ve GRAIL GRGM1200A (C̄20, R_ref = 1738 km) çiftini kullanır
+   (`J2_MOON_GRAIL_UNNORMALIZED`, `R_MOON_GRAIL_REF_M`). Kutup her sağ taraf çağrısında
+   `pxform` ile alınır; hızlı UKF sigma yayıcısı aralık ortasındaki kutbu kullanır (1 günde
+   2.2e-4 rad sürüklenme). Model yayın epoch'unu ister: `lunar_j2_epoch_et0`, harmonik epoch ya da
+   efemeris nesnesinin `et0_s`'i; epoch yoksa ya da eski katsayı verilirse hata verir.
+   Eski IAU sabit ortalama kutup modeli (`J2_MOON_UNNORMALIZED`, `R_MOON_M`; figür ekseninden
+   1.47–1.62°, DYN-03; J2·R² 4.7e-4 yüksek, DYN-04) `lunar_j2_model="iau_mean_pole_legacy"` ya da
+   `use_lunar_j2_model(...)` ile bit-bit aynı seçilebilir; 2026-11-02 öncesi dondurulmuş J2
+   tabanları bu modelle yeniden üretilir (R0B `FROZEN_LUNAR_J2_FINGERPRINT` dahil). Izgaralı
+   harmonik yolda Ay yönelimi WP1.3'ten beri SLERP ile süreklidir (DYN-05 kapandı).
 
 ## Uzun yaylar
 
@@ -45,6 +54,39 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
    sıralaması yapılmaz.
 10. Doppler artıkları güçlü otokorelasyonludur (lag-1 0.74–0.81); beyaz ağırlıklandırmayla verilen
     formal σ'lar 2.5–3× iyimserdir.
+15. **Range-rate varsayılanları** anlık geometrik range-rate ve anlık eşlik menzil/açılarıdır (WP2.5'te
+    değişmedi; sahip kararı bekliyor). Barycentric sayılan Doppler yanında anlık eşlik menzili SSB tek yönlü
+    menzilden 35.5–39.5 km uzaktır; kendi içinde tutarlı sentetik modeldir, ışık zamanı iddiası yoktur.
+    Işık zamanlı eşlik için `companion_geometry='apparent_one_way_ssb'` (yalnız `barycentric_dsn`);
+    Ay merkezli `apparent_one_way` barycentric Doppler yanında reddedilir.
+16. **Işık zamanı Jacobian'ı** WP2.5'ten beri varsayılan olarak `implicit_light_time`'dır (konum profilleri
+    ve range-rate eşlik satırları). SSB profillerinde (`one_way_light_time_ssb[_aberrated]`,
+    `apparent_one_way_ssb`) Jacobian Ay merkezli çözümden gelir: satır başına ~1.5e-4, v/c mertebesi.
+    Birinci derece eşleme (%4.6'ya kadar) adıyla seçilebilir; DMC batch implicit modeli reddettiği için
+    orada adıyla istenmelidir. 1 saatlik barycentric Doppler yayındaki BLS-LM 2–3.6 cm tabanı erken
+    iterasyon gevşetmesiymiş; F4 WP4.2-R'den beri 0.19 mm.
+17. **Landmark optik** (`lunar_landmark_optical`, F2 WP2.6): enlem/boylam varsayılan olarak `MOON_ME_DE440_ME421`
+    çerçevesinde okunur (LOLA katalogları); WP2.6 öncesi sessizce `MOON_PA_DE440` idi (163–875 m fark) ve Phase 17
+    R1O-OPT / HARDEN sonuçları PA ile üretildi. Kamera tutumu varsayılan olarak dış girdidir (yıldız izleyici);
+    tutum tahmin edilen konumdan kuruluyorsa `attitude_source='nadir_from_state'` gerekir (aksi halde Jacobian
+    %5.8 eksik). Piksel kuralı `pixel_origin` ile açıktır (varsayılan 'corner', W/2). Mercek bozulması, aydınlatma
+    ve küresel olmayan Ay şekli modellenmez.
+18. **ΔDOR**: `lunar_od.delta_dor` gözlemi `legacy_synthetic`'tir (Ay merkezli D_S, statik düzlem dalga D_Q;
+    SSB modelinden 0.6–1 µs). Üretim gözlemi `relativistic_light_time.delta_dor_ssb`: SSB uzay aracı gecikmesi ve
+    aynı modelde kuasar gecikmesi, istasyon zamanında; ortak istasyon yaklaşımları ΔDOR'da sadeleşir. IERS 2010
+    konsensüs gecikmesi (`quasar_delay_consensus`) bağımsız kontroldür. ERFA dtdb'nin topocentric terimi DSN
+    kompleksleri arasında kesin V·b/c²'den 0.47–0.69 ns sapar: tek tek gecikmeler bu kadar hatalıdır, ΔDOR değil
+    (açık kalem). Kuasar doğrultusundaki medya, kuasar yapısı ve Güneş kenarı yüksek mertebe terimi modellenmez;
+    hiçbir üretim tahmincisi ΔDOR tüketmez.
+19. **Görünürlük maskesi** (F2 WP2.7, MEAS-14) varsayılan olarak geometriktir: uzay aracı, istasyon ve Ay aynı
+    epoch'ta. Işık zamanlı maske `analyze_visibility_gap_with_transforms(geometry='light_time_downlink' |
+    'light_time_two_way')` ile seçilir (6×6 dönüşüm ve hızlı durum geçmişi gerekir); hangi modun doğru olduğu
+    gözleme bağlıdır (tek yönlü ya da iki yönlü) ve fonksiyon bunu bilmez. Geometrik maskede Ay örtmesi sınırları
+    ~τ ≈ 1.33–1.35 s, iki yönlü yükselişler ~2τ ≈ 2.6–2.9 s erkendir. Ay küresel (yarıçap yapılandırmadan),
+    arazi yoktur: kenar rölyefinin km'si başına 2.7–3.5 s örtme sınırı kayması (10 km'de ~30 s, ışık zamanı
+    etkisinin ~20 katı; LOLA DEM ertelendi, sahip kararı bekliyor). Kırılma maskede yoktur. Düzgün olmayan
+    ızgarada boşluklar zamanla köprülenir; düzgün ızgarada örnek sayısıyla (davranış değişmedi). Üretilen
+    gürültülü azimutlar [0, 2π) içine sarılmaz; artıklar `wrap_to_pi` ile sarılır.
 
 ## Masaüstü ve CLI
 
@@ -63,3 +105,47 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     dondurulmuş sonuçlar ve kapılar bu takvimle üretildi. Kazanç oranlı Nielsen/Moré takvimi
     `damping_schedule="nielsen"` ile seçilir (WP4.2b); aynı minimuma daha az iterasyonla ulaşır.
     Nielsen seçimli kalır; dondurulmuş sonuçlar yeniden üretilmez.
+
+## Kuvvet modeli ve yayılım
+
+Madde 15–17'nin kaynağı [WP3.1-R önemlilik taraması](../../studies/phase17/reports/wp3_1_materiality_survey.md)
+(REQ-DYN-007). Ön kayıtlı koşu kapı vetosuyla WP3_1_INCONCLUSIVE kaldı; aşağıdaki sayılar
+olay-bölütlemeli A2 koşusundandır. A2 sonuç görüldükten sonra eklendiği için keşifseldir
+([değişiklik günlüğü](amendment-log.md) 2026-11-07). Karar (2026-11-08, sahip ajana devretti): A2'nin
+sınıflandırması WP3.2 kapsamının temelidir; REQ-DYN-007, WP3.2'nin ön kayıtlı hold-out tekrarından sonra kapanır.
+WP3.2 terimleri seçimli (opt-in) ekler; varsayılanlar ve dondurulmuş sonuçlar değişmez.
+Sınırlar 100 km'lik dairesel yörüngeler, 1 günlük yay, üç DSN istasyonu, menzil ve menzil hızı
+ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözülen parametre kümesi yeni bir tarama ister.
+
+15. **Üretimde olmayan ve OD'yi eşiğin üstünde saptıran kuvvetler** (WP3.2'ye kadar). Gerçek veri
+    sonuçlarında bunlar model hatasıdır; aynı modeli paylaşan sentetik gidiş-dönüş testleri onları göstermez (madde 1).
+    Yanıtlar 1 günlük yayda, 0.1σ eşiğine karşı en kötü hücre, tasarım ve gürültü düzeyindendir:
+
+    | Terim | En büyük yanıt | Not |
+    |---|---|---|
+    | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | |
+    | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar |
+    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar |
+    | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
+    | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
+
+16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
+    ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
+    Üretimin Dünya J2'sindeki birim çerçeve (DYN-19'un o kısmı) ITRF93 kutbuna göre ≤ 2.2e-4σ fark yaratır.
+17. **Gölgeli alçak yörüngelerde olaysız entegrasyonun sayısal tabanı.** Ay gölgesi ivmesi her
+    yarıgölge kontağında kırılır. Olay bölütlemesi yoksa entegratör bu kırıkların üzerinden adım atar;
+    `propagate_state` varsayılanı da `shadow_events=False`'tur. Gölgeli 100 km'lik yörüngelerde tek DOP853
+    koşusunun tabanı (rtol 1e-12'ye karşı 1e-13) günde 0.2–1.4 m'dir. Olay-bölütlemeli `PropagationProfile()`
+    ile taban ≤ 7.5e-5 m'dir. Varsayılan Adams yolunun tabanı burada ölçülmedi. Santimetre ve altındaki
+    karşılaştırmalar gölgeli yörüngelerde `PropagationProfile()` ile yapılmalıdır. Profil başına
+    sertifika WP3.3'tedir (REQ-DYN-006).
+
+## İstasyon konumları
+
+18. `config.py` istasyon tabloları yuvarlatılmıştır; "Goldstone DSN" DSS-14'ten 15.7 km, en yakın antenden 6.0 km,
+    "Madrid DSN" 0.22 km, "Canberra DSN" 0.29 km uzaktadır (WP2.4 dilim 4). Bu tablolar kendi içinde tutarlı sentetik
+    veri içindir; gerçek veride `lunar_od.dsn_stations.dsn_station` (DSN 810-005 301 Rev. P) kullanılır.
+19. `dsn_station` konumu verilen epoch'ta dondurur (`Station` statiktir): gün başına < 0.2 mm hata. Kaynağın beyan ettiği
+    mutlak doğruluk 0.1 m'ye kadardır (1σ). Levha hareketi 2027'de Goldstone 0.47 m, Canberra 1.25 m, Madrid 0.74 m birikir.
+20. Kutup gelgiti modellenmez: etkisi 1.2 mm, OD'de ≤ 0.004σ (Phase C3). Okyanus yüklemesi modellenmez ve ölçülmemiştir
+    (BLQ katsayıları gerekir). DSN dışı istasyonlar (LRO'nun USN sahaları, RD-09) bu kaynakta yoktur.

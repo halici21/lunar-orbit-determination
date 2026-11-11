@@ -2461,10 +2461,13 @@
     },
     "lunar_od/accelerated.py": {
       "path": "src/lunar_od/accelerated.py",
-      "original_sha256": "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+      "original_sha256": "d47c41e9d73f59bee551e76a2e58851bd039efa484bfa6c89c4b0761d361aa61",
       "byte_preserved": true,
-      "refrozen_from_sha256": "e455b36b44673ef581ca68daef19c9bb38def1e33dfa79cd880d4bfa44a09f5b",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256."
+      "refrozen_from_sha256": "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-11-07 for F2 WP2.7 (MEAS-14: atan2 elevation, azimuth wrap, non-uniform grid gap bridging, light-time visibility); all previous identities and historical scientific results retained.",
+      "refrozen_history_sha256": [
+        "ae5dea08a92676216bc450ae579b0f42ca52740b681bb504fc414e9b2e6cdc10"
+      ]
     },
     "lunar_od/adaptive_tuning.py": {
       "path": "src/lunar_od/adaptive_tuning.py",
@@ -2478,19 +2481,24 @@
     },
     "lunar_od/constants.py": {
       "path": "src/lunar_od/constants.py",
-      "original_sha256": "699b34173eb2ad8a46c24395bb4a8b90727b4faa729e900255f87519736ee9fd",
+      "original_sha256": "60703d3b0ad7f852a86e9e12dfc4c78a1091cb89a769ec2f410405c6e54846be",
       "byte_preserved": true,
-      "refrozen_from_sha256": "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e",
-      "note": "Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "699b34173eb2ad8a46c24395bb4a8b90727b4faa729e900255f87519736ee9fd",
+      "note": "Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "384fb4877deeb199d808301525fb1d4d3d546a3bc5d2a9cb3eb68efd82edcede",
-        "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e"
+        "f05d0b1e7eda04b7169d497383155d0f7b2f273526811e00f9e00656588a947e",
+        "699b34173eb2ad8a46c24395bb4a8b90727b4faa729e900255f87519736ee9fd",
+        "60703d3b0ad7f852a86e9e12dfc4c78a1091cb89a769ec2f410405c6e54846be"
       ]
     },
     "lunar_od/delta_dor.py": {
       "path": "src/lunar_od/delta_dor.py",
-      "original_sha256": "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b",
-      "byte_preserved": true
+      "original_sha256": "9f2f55dece9119e57f6ab5236e9e002ae34e4cffb109735b491133d844303483",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "c5dd3fad0d2b7d7e84bb85dfc4613d35e4e10d76b14288ac00bc744efdd62c0b"
+      ]
     },
     "lunar_od/diagnostics.py": {
       "path": "src/lunar_od/diagnostics.py",
@@ -2502,17 +2510,19 @@
     },
     "lunar_od/dynamics.py": {
       "path": "src/lunar_od/dynamics.py",
-      "original_sha256": "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
+      "original_sha256": "f71cdb7c7b9fa8a1acff713f01f68aed05f555bcd59ba135e9c3932b5596bbb8",
       "byte_preserved": true,
-      "refrozen_from_sha256": "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
-      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-27 (a8f1bef) for the user-requested F2 G4e-R fix: the shadow-contact guard judges a pre-pass cut by its time offset from the contact (1e-3 s) instead of the angle-only 1e-9 rad test, which refused the two-day N=300 F2 arc; qualified by G4e-R (studies/phase17/reports/phase_f2_g4er_root_cause_and_requalification.md). All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.3 continuous lunar orientation; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
+      "note": "Re-frozen for Phase D2 (2026-10-23; shadow-event segmented integration, PropagationProfile), authorized by the owner; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-27 (a8f1bef) for the user-requested F2 G4e-R fix: the shadow-contact guard judges a pre-pass cut by its time offset from the contact (1e-3 s) instead of the angle-only 1e-9 rad test, which refused the two-day N=300 F2 arc; qualified by G4e-R (studies/phase17/reports/phase_f2_g4er_root_cause_and_requalification.md). All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.3 continuous lunar orientation; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "c6e7975c0ca3fc7a3cfd64d4f06c2a802f54a317ab647cb9002e6918521c8921",
         "2f531a045961907d5f7bf2e53aa30ce8867163e7994c6048dfa7abd56c02005d",
         "0be3bafb998569f9b7a794c0852e138bd96795f107df64d609ca8f289dd82baf",
         "1b060a04d1434798f3b1335d62fe7cd67d33eeb42b5f4b29a7dee18f44b91d7a",
         "ea6f6322419c517ba25a1ecf450fefc4338bc1e87a61c35f88e9fc9a980f21c3",
-        "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0"
+        "b19c2d8031f9ab6f9fab5be5a56717b35fe37fc867985b412a02a772abdd62d0",
+        "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
+        "f71cdb7c7b9fa8a1acff713f01f68aed05f555bcd59ba135e9c3932b5596bbb8"
       ]
     },
     "lunar_od/ephemeris.py": {
@@ -2527,10 +2537,10 @@
     },
     "lunar_od/estimators.py": {
       "path": "src/lunar_od/estimators.py",
-      "original_sha256": "ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6",
+      "original_sha256": "b84b317bd193e973282b0a356834faf5e733659df85e0ef8abd4b0421021cef1",
       "byte_preserved": true,
-      "refrozen_from_sha256": "c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936",
-      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-26: explicit MAP candidate/objective consistency; historical data and gates unchanged. Re-frozen 2026-11-01 for V&V programme F4 WP4.1 (EST-01/02/03, owner-authorized): the SRIF estimators score incumbent and trials on one propagation path and (two-way) on the MAP objective, halve rejected steps and certify stationarity by the Gauss-Newton decrement; QR step, priors, posteriors and BLS-LM unchanged. All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.2 (independent-assessment programme, EST-04/05): convergence declared only after a caller-tolerance re-linearisation certified by the Gauss-Newton decrement; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.3 (independent-assessment programme, EST-06/07): batch posteriors by design QR; one equilibrated singularity criterion for BLS-LM and SRIF; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.2b (EST-08): opt-in gain-ratio LM damping; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.5b (EST-15): Gauss-Markov whitening in batch BLS-LM; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "c02a68a67189a50d7b43e2156553738b924502bf37ed1466ba1abcfb5df7e458",
+      "note": "Re-frozen for Phase 17-HARDEN-D30 (2026-10-22), Phase C1-I two_way_light_time_ssb dispatch (2026-10-22) and Phase D2 propagation_profile (2026-10-23), all authorized by the owner; refrozen_from_sha256 is the identity before D2, refrozen_history_sha256 lists every earlier identity in order. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-10-26: explicit MAP candidate/objective consistency; historical data and gates unchanged. Re-frozen 2026-11-01 for V&V programme F4 WP4.1 (EST-01/02/03, owner-authorized): the SRIF estimators score incumbent and trials on one propagation path and (two-way) on the MAP objective, halve rejected steps and certify stationarity by the Gauss-Newton decrement; QR step, priors, posteriors and BLS-LM unchanged. All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.2 (independent-assessment programme, EST-04/05): convergence declared only after a caller-tolerance re-linearisation certified by the Gauss-Newton decrement; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.3 (independent-assessment programme, EST-06/07): batch posteriors by design QR; one equilibrated singularity criterion for BLS-LM and SRIF; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.2b (EST-08): opt-in gain-ratio LM damping; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F4 WP4.5b (EST-15): Gauss-Markov whitening in batch BLS-LM; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 1 station bias; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 1b SRIF station bias; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 3 per-pass bias; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 4 time-tag bias; all previous identities and historical scientific results retained. Re-frozen 2026-11-06 for F2 WP2.5 slice 2 (companion Jacobian, apparent_one_way_ssb); all previous identities and historical scientific results retained. Re-frozen 2026-11-06 for F4 WP4.2-R: BLS-LM no early-iteration loosening; undamped condition reported; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "7bf66dcd79b482bbda751de1e6b52fccd0000ddfe64df1d1502aa48be5235ff6",
         "1499aaf138232e83e53d37f9f22ef69b70d9f0ddfb66080d3a8b903b6d2f6dbd",
@@ -2541,7 +2551,13 @@
         "028d7a041c4018073a691ad6f56015365b5b2ff205c28ba0df4ce299eaac652c",
         "c391e1d857b6e66e39ca5d8d7175b206db0c46abd9b78677fd178c9d23a85353",
         "eab3466e162bed6528ce4d1b551247578bfcdf7d140d4a49a802799bc66028d6",
-        "c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936"
+        "c8a7639e23cede8aadefef710f603a4dd799cdda9f1bc5d8647139076f7cf936",
+        "ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6",
+        "c2c2581827fccae8c763e2bc113a3a436caef6dda90b6ba3a12c9672a93793af",
+        "fb706a81e8e321bf78e0fcdba95d65efe532bf1c3f8a152f010702048a3dc0f4",
+        "125340f72e450f5964bc9f8a55d1430e9b5b2a19acfe5c58ee7c44cf08c4d7ef",
+        "0282c73501001d90d5bbc5502b68f2578a49e9d97851cfdc5f36f4463bdadaeb",
+        "c02a68a67189a50d7b43e2156553738b924502bf37ed1466ba1abcfb5df7e458"
       ]
     },
     "lunar_od/filters.py": {
@@ -2563,14 +2579,17 @@
     },
     "lunar_od/force_contract.py": {
       "path": "src/lunar_od/force_contract.py",
-      "original_sha256": "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
+      "original_sha256": "cbddcd5c90351f441dd6b90c9a01196fb51e7d30f8a7695392d5d88bc95114d3",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "2f05835c45480abe8a55b1aba5efe008ed926c72d7e286c1a60360446d6b7813",
-        "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a"
+        "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
+        "60c72036930b8867e9146b6160ca66e41f03f058a26015ca2f29799d2824f2b0",
+        "1eb152ba6e18808bce6236d0d60b80d0627c57a306346842f6eb494a683b0471",
+        "3aa7e6d7a719a63e842543652dedbf7b9e17431f3022089dc259479c17afd3f0"
       ],
-      "refrozen_from_sha256": "536096e3502580b676f9e50ee476eeb2da988e8ebb3afb34b0bd1a3e890a8c0a",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "1eb152ba6e18808bce6236d0d60b80d0627c57a306346842f6eb494a683b0471",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-12 rotation mode in force identity; all previous identities and historical scientific results retained. Re-frozen 2026-11-08 for the owner-requested branch consolidation (all 17 open branches merged in one integration PR): X-02 1eb152ba... + X-12 3aa7e6d7... merged into one file (no new edits); all identities retained in refrozen_history_sha256."
     },
     "lunar_od/force_models.py": {
       "path": "src/lunar_od/force_models.py",
@@ -2579,8 +2598,11 @@
     },
     "lunar_od/geometry.py": {
       "path": "src/lunar_od/geometry.py",
-      "original_sha256": "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf",
-      "byte_preserved": true
+      "original_sha256": "5a375849ae07ac05e8990ceb0516f8549d899522dcdd2fdd9cd2ab9ee82c3226",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "1edd2f720239bf3a716c69da1df047d7a1d3299ea64cedfe0a7920261c08fcbf"
+      ]
     },
     "lunar_od/gravity_harmonics.py": {
       "path": "src/lunar_od/gravity_harmonics.py",
@@ -2604,13 +2626,17 @@
       "original_sha256": "b7397c3d2d1c08be60adac2ca03de41254cf1306ba321f6499fdf47505655bfd",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4"
+        "bfa06b42a426b188702b17090233ff47d53088b86ec6b46b299162e0a9637cc4",
+        "b7397c3d2d1c08be60adac2ca03de41254cf1306ba321f6499fdf47505655bfd"
       ]
     },
     "lunar_od/lunar_landmark_optical.py": {
       "path": "src/lunar_od/lunar_landmark_optical.py",
-      "original_sha256": "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36",
-      "byte_preserved": true
+      "original_sha256": "b68f3f0bfbec6f8f364cf7da5da6f6bf256816397a832d96f5c721421d8d82f7",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "1d5da6e273424f566fbf9ec299821a5702f2aea81bab327bfe73cc6456ed8a36"
+      ]
     },
     "lunar_od/measurement_contracts.py": {
       "path": "src/lunar_od/measurement_contracts.py",
@@ -2624,20 +2650,29 @@
     },
     "lunar_od/measurements.py": {
       "path": "src/lunar_od/measurements.py",
-      "original_sha256": "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
+      "original_sha256": "aaf80e34149dc4ba007eecc845d11ea62782647ebd13c01e69cb6c2244ebd31e",
       "byte_preserved": true,
-      "refrozen_from_sha256": "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
-      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "9e0f9e1b82401f7afc34579a18407c99e9d19b2eb03000a72e66be965525b612",
+      "note": "Re-frozen 2026-11-01 for V&V programme F1 WP1.10 (MEAS-02, owner-authorized): spice_ssb stellar aberration made frame-consistent with the Moon-centred light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained. Re-frozen 2026-11-04 for F2 WP2.5 slice 1: implicit light-time Jacobian by default (MEAS-10); all previous identities and historical scientific results retained. Re-frozen 2026-11-06 for F2 WP2.5 slice 2 (companion Jacobian, apparent_one_way_ssb); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
-        "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537"
+        "4949a8d0d24f146c9c07dddb281da2d12550eaf7c0bf85e69248975300798537",
+        "60dc49a4eac825561e767b51bd31f280b005c7608712ae708764cef8d8840810",
+        "b74614ce7b72e37f3b664b580a2b85671762a1f91380c55db0d97553a5aee623",
+        "b230a85c90db15d83f663b34483472ff843664b896d2ec36765ccc07703a985d",
+        "5ce6115492631fb99b0fc513064a2679233eab48ae18b08163987ae784b7ad03",
+        "9e0f9e1b82401f7afc34579a18407c99e9d19b2eb03000a72e66be965525b612"
       ]
     },
     "lunar_od/monte_carlo.py": {
       "path": "src/lunar_od/monte_carlo.py",
-      "original_sha256": "d504063bbdb363410258550c6dc02e58945b555a96c169b0e1c3772775589ceb",
+      "original_sha256": "e73514c6abeb410cbf30b6002c04f5c7d1bd37b7cdc281cdcf27f3999faa6867",
       "byte_preserved": true,
+      "refrozen_from_sha256": "d504063bbdb363410258550c6dc02e58945b555a96c169b0e1c3772775589ceb",
+      "note": "Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
-        "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b"
+        "e4ecb7b0baa6080c49fdffc935f6369da44c195bcfdc8b6cc48e70dd3f8cc61b",
+        "d504063bbdb363410258550c6dc02e58945b555a96c169b0e1c3772775589ceb",
+        "e73514c6abeb410cbf30b6002c04f5c7d1bd37b7cdc281cdcf27f3999faa6867"
       ]
     },
     "lunar_od/noise_models.py": {
@@ -2650,14 +2685,15 @@
     },
     "lunar_od/observability.py": {
       "path": "src/lunar_od/observability.py",
-      "original_sha256": "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440",
+      "original_sha256": "b4d096e1789c37ce75a471561cc1329995f6d3ca3e75ea0f51f149b580197b5c",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "a572406385551a51da8f8da7081cd519d13b97b07972ccf40cf9b5a6f9a2ff9f",
-        "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956"
+        "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956",
+        "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440"
       ],
-      "refrozen_from_sha256": "6bc8dddd1dbd96c9272ac991c3d8de0dfbd8e7e54f10fe7e69ab0cd98f72e956",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.3b (independent-assessment programme, EST-18): unit-invariant observability rank/condition and bias classification; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "cab86c66efc6170e69c2933e85e10445e7ac579176b6c9fc0904b1e9ae8c4440",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F4 WP4.3b (independent-assessment programme, EST-18): unit-invariant observability rank/condition and bias classification; all previous identities and historical scientific results retained. Re-frozen 2026-11-06 for F2 WP2.5 slice 2 (companion Jacobian, apparent_one_way_ssb); all previous identities and historical scientific results retained."
     },
     "lunar_od/orbit.py": {
       "path": "src/lunar_od/orbit.py",
@@ -2676,14 +2712,18 @@
     },
     "lunar_od/radiometrics.py": {
       "path": "src/lunar_od/radiometrics.py",
-      "original_sha256": "57f2bea2f3949f069300164d37866c198c6ad078ae4e92c1ad0b2d21cd91eaaa",
+      "original_sha256": "2097839235edf7ef24ac3a6c32f422e840e69dbf8236b5f8410c1fb70f08b463",
       "byte_preserved": true,
-      "refrozen_from_sha256": "aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1",
-      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-31 for V&V programme F1 WP1.4 (MEAS-03, owner-authorized): solve_two_way_light_time forms its update and equation residuals on local light times instead of absolute epoch differences, so it converges on long arcs; equations, tolerances and iterates unchanged (event epochs, light times and iteration counts bitwise identical on all existing solver tests). All previous identities and historical scientific results retained.",
+      "refrozen_from_sha256": "3f5e5a4c9a32147b568340e3b09cf7bf8aeff875bc85bc6a0ecfe630eb2752e6",
+      "note": "Re-frozen for Phase 17-HARDEN-D18/D19 (interpolation bounds), authorized by the owner on 2026-10-21; previous identity kept in refrozen_from_sha256. Re-frozen 2026-10-25 for the user-requested numerical-core reliability plan; all earlier identities retained. Re-frozen 2026-10-31 for V&V programme F1 WP1.4 (MEAS-03, owner-authorized): solve_two_way_light_time forms its update and equation residuals on local light times instead of absolute epoch differences, so it converges on long arcs; equations, tolerances and iterates unchanged (event epochs, light times and iteration counts bitwise identical on all existing solver tests). All previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 2 counted Doppler media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 7 re-freeze; all previous identities and historical scientific results retained.",
       "refrozen_history_sha256": [
         "d258a0f8af4eca259bb6939894ae7aac7b26338ed0b6ba17d4565bfcbf8a4dcc",
         "185cfe9ce04a57929a2a9974f3250b5b0d990fba664d2b18a98c492020d1173d",
-        "aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1"
+        "aea6ad1c3bf927f768673b865a57501e6ee7e4a55a4a90273740388b2ce80ff1",
+        "57f2bea2f3949f069300164d37866c198c6ad078ae4e92c1ad0b2d21cd91eaaa",
+        "e93cd6b14c68d58be87787194c4fcea3a938df34720a56de39e66d7e501a2337",
+        "be57948e85674420dd92290f98472e70d51feec2b09b552e708357b0b3c1075b",
+        "3f5e5a4c9a32147b568340e3b09cf7bf8aeff875bc85bc6a0ecfe630eb2752e6"
       ]
     },
     "lunar_od/reference_config/__init__.py": {
@@ -2738,13 +2778,14 @@
     },
     "lunar_od/reporting.py": {
       "path": "src/lunar_od/reporting.py",
-      "original_sha256": "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8",
+      "original_sha256": "837bcb4ce2ecd6ea3b1a17298aa178d47467b0c391215b859af4739f4b68400d",
       "byte_preserved": true,
       "refrozen_history_sha256": [
-        "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e"
+        "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
+        "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8"
       ],
-      "refrozen_from_sha256": "bbb1fed570331e75c5183b4d6d7058da02a12264bbb006f45cd269a37ebaa37e",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate."
+      "refrozen_from_sha256": "ea2114dfd9bf8e1ba838bf1f76b000ab88771294ca531588dc99f8a173196bd8",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.8 profile parity record; all previous identities and historical scientific results retained."
     },
     "lunar_od/rf/__init__.py": {
       "path": "src/lunar_od/rf/__init__.py",
@@ -2778,28 +2819,52 @@
     },
     "lunar_od/scenario_config.py": {
       "path": "src/lunar_od/scenario_config.py",
-      "original_sha256": "40c90fdf3287e1ab1f5438aa07e2764362c6d1a08fd840916e44631ebeb6e372",
+      "original_sha256": "cb2796ae1b126ce5531089cf3a9bca00083713d5f927d964a957b6509374e20a",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "4c01958569832fab2e48fe6ae80ac62bd454c5d3cc6808083194f1b701a764e6",
         "6c95d615f04854267052a4415ac86496e3fedb5f7ec0cdcdb87343e4d85e012c",
         "c3c82845a20b3c9fe70fea4ae5a5347862c9a9f5f0c942693d16540448036865",
-        "50714882f3fb8b57ca458e491fd63e756493ad5a804df267055b964eaf5c179b"
+        "50714882f3fb8b57ca458e491fd63e756493ad5a804df267055b964eaf5c179b",
+        "40c90fdf3287e1ab1f5438aa07e2764362c6d1a08fd840916e44631ebeb6e372",
+        "29ea1dde9f950ab2998ecb5bb43bea79c712a71032b5b3d3015f6b8f5139b068",
+        "5da4b353b1c1dd0dc8d3a6ef1debb58fabceab263757b6e1d5c5db912b11d4f6",
+        "45bb408dee3e9a3a47a548aa6ee24501b7232d79c032abc4915bfcda4cba88a9",
+        "7e1177e1f7e2d20e83df3b2c6ec7b0a404f71c10743e624717aee9581a38639a",
+        "7ff0d866913aa6118996002fb424284a3fcff69dbfe64b66da4c71ef8714d634",
+        "bedb11bdd93ff1f1e3502dff8946b4168e443ef010dfb1f30d96e5a4f3bf93ab",
+        "4b2eb3aff6fdd3754cecd46a1c6db47000dbf7e41b27cbd482f51b9cd56e66e4",
+        "4c62f4bf8c6d2f81eea8ce521080d54a9fba72690968b8c9caed8cc744bf4186",
+        "a57cffef5056948cb7316f1a06c70860cd1e8a848a56851906d81d7e70f446e1",
+        "8e716a8e4fb2c74ed003fe98d2ed82c38b26a32eb57c7b490ea1e14daa697598",
+        "f1b13e3370ac17fa3e5f678b44d8970b2bde467a78e60b6f193b45deee781282",
+        "31e37141d63ba1f1f3776f9d55dfef0f2dc80d71d681778bb86418f26409decc",
+        "4e44f2e5d77f0689509217abd98c12ad17305a5c10af6b602d795838da5fc5e7",
+        "17e4be89e9aafbd7fd385be35cd655dc2b6380e0d4488e10b5ff202c303375cc",
+        "566eb3388397cab0f568642aabe90cb70cd913b5ec2e18922d2cee9ed15f0428",
+        "beb68436b37e9a8de9fd9b9580f9eb227665366c6c025c0abe4d3acf8a0bcc30"
       ],
-      "refrozen_from_sha256": "c3c82845a20b3c9fe70fea4ae5a5347862c9a9f5f0c942693d16540448036865",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.7 (DYN-12/CFG-07): explicit PA label, stale guards; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-02 when PR #96 (WP1.7) was brought up to date with main after the branch consolidation (PR #97): the WP1.7 schema guard and the WP1.6 seed keys merged into one file (no new edits); both identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.7) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256."
+      "refrozen_from_sha256": "7e1177e1f7e2d20e83df3b2c6ec7b0a404f71c10743e624717aee9581a38639a",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.7 (DYN-12/CFG-07): explicit PA label, stale guards; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.5 (DYN-10/11/16, owner-authorized): force identity covers the executed ephemeris; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-02 when PR #96 (WP1.7) was brought up to date with main after the branch consolidation (PR #97): the WP1.7 schema guard and the WP1.6 seed keys merged into one file (no new edits); both identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.7) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity (after merging main); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-01 gravity frame default; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-12 rotation mode in force identity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.4 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 3 position SSB light time; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 2 counted Doppler media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 2 SSB transponder delay; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for archive compat follow-up; all previous identities and historical scientific results retained. Re-frozen 2026-11-06 for F2 WP2.5 slice 2 (companion Jacobian, apparent_one_way_ssb); all previous identities and historical scientific results retained. Re-frozen 2026-11-08 for the owner-requested branch consolidation (all 17 open branches merged in one integration PR): X-02 7e1177e1... + X-01 7ff0d866... + X-12 bedb11bd... + WP2.4 4b2eb3af... + WP2.1-2.7 beb68436... merged into one file (no new edits); all identities retained in refrozen_history_sha256."
     },
     "lunar_od/scenarios.py": {
       "path": "src/lunar_od/scenarios.py",
-      "original_sha256": "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
+      "original_sha256": "585303e0a12bb81cff216e202c36698600140f28a87b6a214239ea23d91b7632",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "2f15fd7974ad726a68981643fcbe0aada37f082b310d971b4d6e34c42de2ab4e",
         "f241594661c4976dd2514b001784cb21fa50684a19be1377cfa968fad739fd48",
-        "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2"
+        "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
+        "472f530751fee7097fd973a57d88e5febab00f92a6f393dfeb6ec446aff06709",
+        "888c7c79c942f0263938de0200f5125dbabebba8b8d3815d269edbe33fe7dd65",
+        "2a63e95a596e2003fd5915d6b2ebcd379c1bafef643bf3b68e1622941f5e6505",
+        "f9bf4f2f9d3ae3396e896085714f0d17316971dc5119c9441bef6cd78dbaeb5b",
+        "a6b22da304dc3ac08273d74414ed9d855334323ddbf4790b37a0b3d573af2b7d",
+        "007ea51f39421ed2cc9835c5d3374f8172938413c45bceb0b253c319e9a05299",
+        "1d1a1b03c3e752471e20e0d8f880b14e78c7f69e5687580026e45648a437d701"
       ],
-      "refrozen_from_sha256": "b6398d534cd2649967b8b8a15f7dcea6de303bfb1e326bed272a3db438f929a2",
-      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "888c7c79c942f0263938de0200f5125dbabebba8b8d3815d269edbe33fe7dd65",
+      "note": " Re-frozen 2026-10-26: Reviewed time/force/media derivative consistency correction; historical scientific results unchanged. All previous source identities retained; this is not scientific requalification. Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 barycentric counted Doppler re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.1 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 3 refraction; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.3 slice 6 ramp tables; all previous identities and historical scientific results retained. Re-frozen 2026-11-08 for the owner-requested branch consolidation (all 17 open branches merged in one integration PR): X-02 888c7c79... + WP2.1-2.7 1d1a1b03... merged into one file (no new edits); all identities retained in refrozen_history_sha256."
     },
     "lunar_od/spice_loader.py": {
       "path": "src/lunar_od/spice_loader.py",
@@ -2833,8 +2898,11 @@
     },
     "lunar_od/visibility.py": {
       "path": "src/lunar_od/visibility.py",
-      "original_sha256": "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a",
-      "byte_preserved": true
+      "original_sha256": "c2bfc9fd2c4fd991639dac8c4b19efd664638f5f8452c728ac42c5b93d1011f4",
+      "byte_preserved": true,
+      "refrozen_history_sha256": [
+        "37e016d1058080d84552698dfd86bb11c16bbd38abaa90c062391b80fedd4f8a"
+      ]
     },
     "plan.md": {
       "path": "docs/development/plan.md",
@@ -2843,16 +2911,21 @@
     },
     "examples/run_scenario_config.py": {
       "path": "examples/run_scenario_config.py",
-      "original_sha256": "e5ce57517b02d3a42cdbe484e4d6d4d1622c6158053b7d68d236b7224a17817e",
+      "original_sha256": "511641de0a31e35d40092441c9cde40df51918e748407977f20a026cc3d699c4",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "fd427ae8bc5be590c358d2a31286906d14593a5481a94b355a9122987f92daed",
         "1bf731a35b934a7dbba86818d6282183cced14e68a296ff5cd8f5c48f12392da",
         "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
-        "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea"
+        "35a0741f0afcced128ec5a28286f8bcfc1e11e4c729889d9519689f1cd26faea",
+        "749a09c2eea49a073d6688c329048e6f91e8d4862c750bfe95ecf24ad380430b",
+        "9a909719ed105b49129fd9d8bd2c7860b9c6474b948b28f4d4224a17057822eb",
+        "e5ce57517b02d3a42cdbe484e4d6d4d1622c6158053b7d68d236b7224a17817e",
+        "e08fb7ef04149bfda6c063fe52ea714605fe564d0c258bca6622c78cc915267d",
+        "1362c085d72944b69b9445f8939be8c5537d5d553e8f9ad03b9a5cd966ed1e26"
       ],
-      "refrozen_from_sha256": "7b3488566140c6c8c52a03fd3bbdb59d47ec1f64937b6fbc3e0692a499e435a2",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-02 for the owner-requested branch consolidation: the separately re-frozen WP1.6 and WP1.9 changes merged into one file (no new edits); both branch identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.9) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256."
+      "refrozen_from_sha256": "e5ce57517b02d3a42cdbe484e4d6d4d1622c6158053b7d68d236b7224a17817e",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.6 (CFG-02/05/10, owner-authorized): a scenario JSON fully defines its run (seeds, unknown keys rejected, run provenance); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for V&V programme F1 WP1.9 (EST-19, owner-authorized): UKF initial covariance built from the injected cold-start sigmas; all previous identities and historical scientific results retained. Re-frozen 2026-11-02 for the owner-requested branch consolidation: the separately re-frozen WP1.6 and WP1.9 changes merged into one file (no new edits); both branch identities retained in refrozen_history_sha256. Re-frozen 2026-11-02 when PR #99 was brought up to date with main: WP1.2 and the main-side (WP1.6 + WP1.9) changes merged into one file (no new edits); all identities retained in refrozen_history_sha256. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity (after merging main); all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.4 slice 2 re-freeze; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F2 WP2.2 slice 1 media; all previous identities and historical scientific results retained. Re-frozen 2026-11-08 for the owner-requested branch consolidation (all 17 open branches merged in one integration PR): WP2.4 e08fb7ef... + WP2.1-2.7 1362c085... merged into one file (no new edits); all identities retained in refrozen_history_sha256."
     },
     "examples/r1_covariance_observability_validation.py": {
       "path": "examples/r1_covariance_observability_validation.py",
@@ -2861,14 +2934,16 @@
     },
     "desktop_app/controllers/analysis_controller.py": {
       "path": "desktop_app/controllers/analysis_controller.py",
-      "original_sha256": "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
+      "original_sha256": "1d540e31363588bd04e950f225c5ce5e9d60c5101f5f7f294bdf9eec28f537c5",
       "byte_preserved": true,
       "refrozen_history_sha256": [
         "46bcaa2970206869d3329b8095bb2cf92d440ecd91bd1a644d1e4ea8d0b0cc33",
-        "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0"
+        "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0",
+        "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
+        "1d540e31363588bd04e950f225c5ce5e9d60c5101f5f7f294bdf9eec28f537c5"
       ],
-      "refrozen_from_sha256": "a4b5bd0bc9567cf382f5556eb54df9092037e9181d14165fecc029720e9cabf0",
-      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained."
+      "refrozen_from_sha256": "5e6a2c38fe033040eaf33ab047670f26397f5625d165ee66b2168e960cb1adf8",
+      "note": " Re-frozen 2026-10-26 for explicit common profiles and SRP force binding; prior hashes and historical scientific results retained. Qualification remains separate. Re-frozen 2026-11-01 for F1 WP1.2 GM generation unity; all previous identities and historical scientific results retained. Re-frozen 2026-11-01 for F1 X-02 default lunar J2 switch (merged with main); all previous identities and historical scientific results retained."
     },
     "docs/station-layout_2026-10-15.md": {
       "path": "docs/development/station-layout_2026-10-15.md",
