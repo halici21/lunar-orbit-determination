@@ -4,7 +4,8 @@ Predeclaration: studies/phase17/configs/wp3_2_s2_lunar_radiation_predeclaration.
 Reuses the S1 T_G1(b) configuration set (wp3_2_s1_default_identity.configurations) twice: as in S1, and with
 the S1 tide on in every call (prefix ``tide_``), 50 configurations. ``run`` writes the SHA-256 of every output
 array's bytes with ``lunar_radiation`` omitted (mode ``omit``) or passed as ``None`` (mode ``none``).
-``compare`` is the S1 comparison.
+Four tide-on configurations are S1's fail-closed path (EXPECTED_FAIL_CLOSED): their outcome is the error,
+hashed. ``compare`` is the S1 comparison.
 
 usage: python wp3_2_s2_default_identity.py run {omit|none} OUT.json
        python wp3_2_s2_default_identity.py compare A.json B.json [...] [--out RESULT.json]
@@ -26,6 +27,23 @@ import wp3_2_s1_default_identity as S1  # noqa: E402
 from lunar_od.lunar_tide import LunarTideOptions  # noqa: E402
 
 TIDE = LunarTideOptions(static_field_convention="TIDE_FREE")
+#: S1's range-rate solves pass GM_Earth = GM_Sun = 0, so with the tide on they raise S1's fail-closed GM check
+#: (T_G8). Their outcome is that error: its type and message are hashed, and not raising fails the comparison.
+EXPECTED_FAIL_CLOSED = tuple(f"tide_est_range_rate_{s}_{v}" for s in ("bls_lm", "srif") for v in ("legacy", "profile"))
+
+
+def _outcome(name, call):
+    import hashlib
+    try:
+        value = call()
+    except Exception as exc:  # noqa: BLE001 - recorded, the comparison fails on it unless expected
+        text = f"{type(exc).__name__}: {exc}"
+        if name in EXPECTED_FAIL_CLOSED and isinstance(exc, ValueError) and "needs its GM > 0" in str(exc):
+            return {"digest": hashlib.sha256(text.encode("utf-8")).hexdigest(), "expected_error": text}
+        return {"error": text}
+    if name in EXPECTED_FAIL_CLOSED:
+        return {"error": "expected the fail-closed GM ValueError, but the call returned"}
+    return S1._record(value)
 
 
 def configurations(lrp_kw):
@@ -40,10 +58,7 @@ def run(mode, out_path):
     lrp_kw = {} if mode == "omit" else {"lunar_radiation": None}
     results = {}
     for name, call in configurations(lrp_kw).items():
-        try:
-            results[name] = S1._record(call())
-        except Exception as exc:  # noqa: BLE001 - recorded, the comparison fails on it
-            results[name] = {"error": f"{type(exc).__name__}: {exc}"}
+        results[name] = _outcome(name, call)
         print(f"{name:34s} {results[name].get('digest', results[name].get('error'))[:72]}", flush=True)
     import numba
     import scipy
