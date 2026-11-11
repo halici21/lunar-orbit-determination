@@ -1,0 +1,133 @@
+{
+ "status": "exploratory, not a predeclared gate (docs/assurance/amendment-log.md)",
+ "commit": "3fdb892e3373626c6bad67cc7f0924ce7aff3d98",
+ "src_status": "",
+ "python": "3.13.2",
+ "numpy": "2.4.3",
+ "scipy": "1.17.1",
+ "numba": "0.65.1",
+ "smooth_c0_n_m2": 1e-06,
+ "fine_nodes": [
+  120,
+  144
+ ],
+ "runs": {
+  "smooth_harmonics_False_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 7.879571057856083e-07,
+    "48": 7.655471563339233e-07
+   },
+   "phi_42_vs_48_relative": 9.259976747211351e-14,
+   "self_floor_6_state_m": 6.490154191851616e-07,
+   "lrp_effect_6h_m": 2.057292775629321
+  },
+  "smooth_harmonics_False_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 8.834758773446083e-07,
+    "48": 9.25152562558651e-07
+   },
+   "phi_42_vs_48_relative": 1.2282914822325283e-13,
+   "self_floor_6_state_m": 7.989001460373402e-07,
+   "lrp_effect_6h_m": 2.057294234560686
+  },
+  "smooth_harmonics_True_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 7.967173587530851e-07,
+    "48": 9.356590453535318e-07
+   },
+   "phi_42_vs_48_relative": 1.7033705675659075e-13,
+   "self_floor_6_state_m": 7.967319106683135e-07,
+   "lrp_effect_6h_m": 2.058260448742658
+  },
+  "smooth_harmonics_True_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 6.863847374916077e-07,
+    "48": 7.203052518889308e-07
+   },
+   "phi_42_vs_48_relative": 1.2412591243616932e-13,
+   "self_floor_6_state_m": 6.190384738147259e-07,
+   "lrp_effect_6h_m": 2.058261889498681
+  },
+  "c6_harmonics_False_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 1.5221245121210814e-05,
+    "48": 1.5602883649989963e-05
+   },
+   "phi_42_vs_48_relative": 2.7585327067768764e-10,
+   "self_floor_6_state_m": 7.133392500691116e-06,
+   "lrp_effect_6h_m": 1.328019056643825
+  },
+  "c6_harmonics_False_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 4.773901309818029e-06,
+    "48": 1.0335992556065321e-05
+   },
+   "phi_42_vs_48_relative": 1.3474476897146365e-09,
+   "self_floor_6_state_m": 1.6117497580125928e-05,
+   "lrp_effect_6h_m": 1.3280186244373908
+  },
+  "c6_harmonics_True_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 6.194517482072115e-06,
+    "48": 7.185153663158417e-06
+   },
+   "phi_42_vs_48_relative": 1.88781934178162e-09,
+   "self_floor_6_state_m": 8.890376193448901e-06,
+   "lrp_effect_6h_m": 1.3290606015798403
+  },
+  "c6_harmonics_True_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 8.467468433082104e-06,
+    "48": 1.060339855030179e-05
+   },
+   "phi_42_vs_48_relative": 1.1008579131659642e-09,
+   "self_floor_6_state_m": 9.37448930926621e-06,
+   "lrp_effect_6h_m": 1.3290463301818818
+  },
+  "fine_harmonics_False_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 7.560593076050282e-07,
+    "48": 2.862565452232957e-06
+   },
+   "phi_42_vs_48_relative": 1.5944800901984562e-10,
+   "self_floor_6_state_m": 2.5238841772079468e-06,
+   "lrp_effect_6h_m": 1.328005332085013
+  },
+  "fine_harmonics_False_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 4.47762431576848e-06,
+    "48": 5.471738404594362e-06
+   },
+   "phi_42_vs_48_relative": 6.023649999523613e-10,
+   "self_floor_6_state_m": 6.497488357126713e-06,
+   "lrp_effect_6h_m": 1.3280134600936435
+  }
+ },
+ "verdicts": {
+  "A1": "PASS",
+  "A2": "PASS",
+  "A3": "PASS",
+  "cases": {
+   "harmonics_False_tide_False": {
+    "A1": true,
+    "A2": true,
+    "A3": true
+   },
+   "harmonics_False_tide_True": {
+    "A1": true,
+    "A2": true,
+    "A3": true
+   },
+   "harmonics_True_tide_False": {
+    "A1": true,
+    "A2": true,
+    "A3": true
+   },
+   "harmonics_True_tide_True": {
+    "A1": true,
+    "A2": true,
+    "A3": true
+   }
+  }
+ }
+}
