@@ -1,0 +1,267 @@
+{
+ "predeclaration": "studies/phase17/configs/wp3_2_s2_lunar_radiation_predeclaration.json (da5a4a0)",
+ "label": "s2a_committed",
+ "commit": "4d48178c8af272c083193dcb25a3b53781103079",
+ "src_status": "",
+ "python": "3.13.2",
+ "numpy": "2.4.3",
+ "scipy": "1.17.1",
+ "numba": "0.65.1",
+ "kernel_compiled": true,
+ "L_G2": {
+  "c6_parity": 1.4128993302126835e-15,
+  "python_fallback_parity": 4.596355122705363e-16
+ },
+ "L_G3": {
+  "closed_forms": {
+   "20km": {
+    "night": 7.020374030781709e-15,
+    "night_reference": 2.8260417143934805e-16,
+    "subsolar_radial": 1.7719775843500858e-13,
+    "subsolar_transverse": 1.488275692548639e-15,
+    "subsolar_reference": 1.8433487145029818e-13
+   },
+   "100km": {
+    "night": 9.083978179841325e-15,
+    "night_reference": 3.415229049493636e-16,
+    "subsolar_radial": 5.4447968474482056e-15,
+    "subsolar_transverse": 2.5157084438428194e-15,
+    "subsolar_reference": 1.093179768579022e-15
+   },
+   "1000km": {
+    "night": 5.076052930028312e-15,
+    "night_reference": 1.714169874765771e-16,
+    "subsolar_radial": 6.372535225578816e-15,
+    "subsolar_transverse": 1.0246798901470016e-15,
+    "subsolar_reference": 1.8742750663467106e-16
+   },
+   "3000km": {
+    "night": 9.837318801406894e-15,
+    "night_reference": 1.7640084398329692e-16,
+    "subsolar_radial": 5.837437323282789e-15,
+    "subsolar_transverse": 9.102362507427426e-16,
+    "subsolar_reference": 2.5533469370573e-16
+   }
+  },
+  "adaptive": [
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 0.0,
+    "rel_error": 6.461266003918029e-15
+   },
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 45.0,
+    "rel_error": 4.809770244900847e-15
+   },
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 80.0,
+    "rel_error": 5.794779006696199e-15
+   },
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 90.0,
+    "rel_error": 3.182305474938668e-05
+   },
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 100.0,
+    "rel_error": 1.4924306999152252e-15
+   },
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 135.0,
+    "rel_error": 3.675061740405171e-15
+   },
+   {
+    "altitude_km": 20.0,
+    "sun_nadir_deg": 180.0,
+    "rel_error": 4.975091060990653e-15
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 0.0,
+    "rel_error": 2.133217242910348e-15
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 45.0,
+    "rel_error": 6.654841592665221e-15
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 80.0,
+    "rel_error": 4.431010986449375e-07
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 90.0,
+    "rel_error": 3.711358329456422e-05
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 100.0,
+    "rel_error": 0.00015214499668068517
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 135.0,
+    "rel_error": 4.356623289398708e-15
+   },
+   {
+    "altitude_km": 100.0,
+    "sun_nadir_deg": 180.0,
+    "rel_error": 7.43530312351756e-15
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 0.0,
+    "rel_error": 7.511144174539798e-15
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 45.0,
+    "rel_error": 1.7096837453232038e-07
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 80.0,
+    "rel_error": 7.339136473883679e-06
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 90.0,
+    "rel_error": 0.0001965669768388019
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 100.0,
+    "rel_error": 1.4265327205658816e-05
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 135.0,
+    "rel_error": 1.457780307417216e-05
+   },
+   {
+    "altitude_km": 1000.0,
+    "sun_nadir_deg": 180.0,
+    "rel_error": 4.405635197934509e-15
+   }
+  ],
+  "adaptive_worst": 0.0001965669768388019
+ },
+ "L_G4": {
+  "complex_step": 9.262369672814178e-15,
+  "reference_vs_c6": 1.3850383143036908e-15,
+  "python_fallback": 2.892559784462087e-16
+ },
+ "L_G5": {
+  "a_stm_gated": 3.614353665235917e-08,
+  "a_stm_control_no_lrp_gradient": 2.6286549044813767e-06,
+  "a_ratio": 72.7282149991207,
+  "b_k_sensitivity": 3.3591891081309044e-08
+ },
+ "L_G6": {
+  "harmonics_False_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 1.5221245121210814e-05,
+    "48": 1.5602883649989963e-05,
+    "42_reference": 2.254548599012196e-05
+   },
+   "phi_vs_48_relative": {
+    "42": 2.7585327067768764e-10,
+    "48": 0.0,
+    "42_reference": 4.970596563851275e-10
+   },
+   "lrp_effect_6h_m": 1.328019056643825
+  },
+  "harmonics_False_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 4.773901309818029e-06,
+    "48": 1.0335992556065321e-05,
+    "42_reference": 5.799985956400633e-06
+   },
+   "phi_vs_48_relative": {
+    "42": 1.3474476897146365e-09,
+    "48": 0.0,
+    "42_reference": 3.6243714380544495e-10
+   },
+   "lrp_effect_6h_m": 1.3280186244373908
+  },
+  "harmonics_True_tide_False": {
+   "position_vs_6_state_m": {
+    "42": 6.194517482072115e-06,
+    "48": 7.185153663158417e-06
+   },
+   "phi_vs_48_relative": {
+    "42": 1.88781934178162e-09,
+    "48": 0.0
+   },
+   "lrp_effect_6h_m": 1.3290606015798403
+  },
+  "harmonics_True_tide_True": {
+   "position_vs_6_state_m": {
+    "42": 8.467468433082104e-06,
+    "48": 1.060339855030179e-05
+   },
+   "phi_vs_48_relative": {
+    "42": 1.1008579131659642e-09,
+    "48": 0.0
+   },
+   "lrp_effect_6h_m": 1.3290463301818818
+  }
+ },
+ "L_G7": {
+  "n_cuts": 50,
+  "n_cuts_free": 50,
+  "max_cut_shift_s": 0.016440745210275054,
+  "contact_time_tol_s": 0.001,
+  "cuts_beyond_tolerance": 46,
+  "control_message": "Shadow contact inconsistent with final trajectory at 7822.90335502 s: angular residual 1.237e-06 rad, 1.393e-03 s from the contact (> 1e-03 s); tighten propagation tolerances."
+ },
+ "integration_floor": {
+  "without_lrp": {
+   "rtol_1e-12_vs_1e-13_m": 9.085678670392784e-06,
+   "rtol_3e-14_vs_1e-13_m": 7.791532692300265e-07
+  },
+  "with_lrp": {
+   "rtol_1e-12_vs_1e-13_m": 4.837555819879847e-05,
+   "rtol_3e-14_vs_1e-13_m": 8.527304700029952e-06
+  }
+ },
+ "cost": {
+  "value_us": 228.31954999128357,
+  "value_and_gradient_us": 522.1702000126243
+ },
+ "thresholds": {
+  "l_g2": 1e-12,
+  "l_g3_closed": 1e-10,
+  "l_g3_transverse": 1e-12,
+  "l_g3_c": 0.0003,
+  "l_g4_cs": 1e-10,
+  "l_g4_ref": 1e-12,
+  "l_g4_py": 1e-12,
+  "l_g5a": 1e-07,
+  "l_g5a_ratio": 10.0,
+  "l_g5b": 1e-06,
+  "l_g6_pos": 1e-05,
+  "l_g6_phi": 1e-08,
+  "l_g6_effect": 0.1
+ },
+ "verdicts": {
+  "L_G2": "PASS",
+  "L_G3": "PASS",
+  "L_G4": "PASS",
+  "L_G5": "PASS",
+  "L_G6": "FAIL",
+  "L_G6_cases": {
+   "harmonics_False_tide_False": "FAIL",
+   "harmonics_False_tide_True": "FAIL",
+   "harmonics_True_tide_False": "PASS",
+   "harmonics_True_tide_True": "FAIL"
+  },
+  "L_G7": "PASS"
+ }
+}

@@ -1,0 +1,533 @@
+{
+ "commit": "0d554c4f91d87cd7dacd082e695b77585b87ff24",
+ "configs": {
+  "contacts": {
+   "digest": "ed13b8926eff660a71422edeb9544a8969e1e280166006a8177e94e32f5c0d33",
+   "leaves": {
+    "out": "<f8[12]:9a4786acafbc43644650b3713e254d0559b08ee2c313a6521597d8939b3b6cc4"
+   }
+  },
+  "est_position_bls_lm_legacy": {
+   "digest": "53f123c104fea4e8d96df03965eb99a4d3afbbd8dd5d5d2f25fa0f9625f74487",
+   "leaves": {
+    "out[0]": "<f8[6]:47343d77791c16390e6fa2fb1271eeca9ca9d655666e84feed50c500f3ea9efe",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.c8d9f9c6ff999p+10",
+    "out[2].final_cost": "0x1.abfcaa67a0436p-1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c5083de571d5dp+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:20dbcfe6d00f049ca4569ade509194f9208a60b6818f42e3e580aa89a9e0270b",
+    "out[2].posterior_information": "<f8[6, 6]:8dba55d06cce3ffe5aed43f692a0fc5939b0b79ba3047df2a6c16b9c993c2563",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0d4999dcdd9ccp-8"
+   }
+  },
+  "est_position_bls_lm_profile": {
+   "digest": "507f8645867ff9c499c319704664f6efe8e9c6a0bb1a23c9a183a5b3921a2aa5",
+   "leaves": {
+    "out[0]": "<f8[6]:40a307560d386db92b9fe42b434a6b01af21ec9e750403c1357291cd790344ee",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.c8d9fdd715f9fp+10",
+    "out[2].final_cost": "0x1.abdf87b29cafep-1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c5022210895e4p+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:5f5f50a4cb0058e5e70a72560de818c1866de962686a129163b2cce13ead6f18",
+    "out[2].posterior_information": "<f8[6, 6]:ec485823503697788a93efe67da3102bb78575f0ad68bee61525dbe9bf89cf42",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0d493d9b056d4p-8"
+   }
+  },
+  "est_position_srif_legacy": {
+   "digest": "253c6b300f5e03fa7eae6898c14c5cf3c68e1a38738fd9e5ccbb0e4e3859c00c",
+   "leaves": {
+    "out[0]": "<f8[6]:4842056dae1b84f290966a6c54441d288243c6371e2689313781aca2cbb64399",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d9a21852a9p+11",
+    "out[2].final_cost": "0x1.df82fed7d8701p-14",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.fad9e0c41b6a3p-8",
+    "out[2].posterior_covariance": "<f8[6, 6]:e96d3e7d21d16ff016de6deab7602ce7452b403a7c07d142ddfadaf4b9d68aff",
+    "out[2].posterior_information": "<f8[6, 6]:35ba91fb328774f3c9ed2b13fe11c89b36d21ca1c870b43e6d2284900effcd11",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:c664ad8094a798ec2e43ea81720de19e92c4591601707291d10076fb9384ddfc",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.6badc9b6257acp-17"
+   }
+  },
+  "est_position_srif_profile": {
+   "digest": "933d7dd4c6186275ba7176968958eb194b5bb55dc5f2724496469f813f6ab6da",
+   "leaves": {
+    "out[0]": "<f8[6]:dfbcc327fd0702f50bf1a0df9465660dbb730631e7d33f06481db344841a728f",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d9cadea702p+11",
+    "out[2].final_cost": "0x1.8dd0575e2dfb3p-28",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.f50c93e30cb0ep-36",
+    "out[2].posterior_covariance": "<f8[6, 6]:1688d1f479d0b2c11bb9e6006b42980b1e7e11c5681967335fb04e2eb8524d18",
+    "out[2].posterior_information": "<f8[6, 6]:10a2a0c66cbf1cf65384fd13a91e83ce42a358d5edb795503841223c0db08410",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:a1e615cf90f68364d506d8a48db974b1b725d5a4f6a3adc6c27827134c90dc39",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.369bc8125e7b4p-46"
+   }
+  },
+  "est_range_rate_bls_lm_legacy": {
+   "digest": "0a8f70a217c82ece7ba0bf3b5be7af27eaa126c862d5c76b26badd8ccdf3fda8",
+   "leaves": {
+    "out[0]": "<f8[6]:1278dd33c952af62277827d93208aa68edd8d13dcfe343a8f69688383703ef07",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3afc99d187c0ap+5",
+    "out[2].final_cost": "0x1.0248a2060b66fp-19",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.4a50daa4b2e4bp-5",
+    "out[2].posterior_covariance": "<f8[6, 6]:f164cb7f02a975dcc2af45d7d873be5eae447ae48d914204a62588f2db63b2c4",
+    "out[2].posterior_information": "<f8[6, 6]:a457157ce1cf58e7f8f180bcb5d6e4d0537ce5577555531aca703cfb659eb428",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.8d33942386930p-16"
+   }
+  },
+  "est_range_rate_bls_lm_profile": {
+   "digest": "0168f68c2c8563b917ca8ad3655b295800a16166bb16874652c1474f7c0dbaa8",
+   "leaves": {
+    "out[0]": "<f8[6]:9b052fd85a9a6fd24031126854773920b1e5e99b4274332c3ac0e3078e625326",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3afc9c1df3c0ep+5",
+    "out[2].final_cost": "0x1.7bd64bcddbac5p-7",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.49e925252cc4ep-5",
+    "out[2].posterior_covariance": "<f8[6, 6]:dc4186e974c7434702316d0e0b464b100e8bde2242908cb6a37539c42997d85f",
+    "out[2].posterior_information": "<f8[6, 6]:90c52860db2e22d8f45d42cbaf6b9890b5c63bd8b2aed0345abdcfa2c7e8d69f",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.8cb0e985b00fdp-16"
+   }
+  },
+  "est_range_rate_srif_legacy": {
+   "digest": "1c486ce7fa60eca655ca136cd4e930058fe3c31fdacff8dd520dd59cf21b52e6",
+   "leaves": {
+    "out[0]": "<f8[6]:ff1bb189dc3c63e11c4c552f7d1e858f267e090641bbeabcf6d0db0940d312e5",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbd9599d61bp+5",
+    "out[2].final_cost": "0x1.6fcf616969160p-32",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.0a31f1882ead1p-30",
+    "out[2].posterior_covariance": "<f8[6, 6]:e44def42f15ff44ea364702058f15d3c2c59a5fb2952264b36690fbe3cf30640",
+    "out[2].posterior_information": "<f8[6, 6]:e644e5907a37453b02480b24d73b91158c00e0df64155321a28b1ebe86b709ae",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:4412ba901ab4a3013f0cb4a2d038765fc6fdbbf03825db485875eab865ef814b",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.5e97163f692bdp-41"
+   }
+  },
+  "est_range_rate_srif_profile": {
+   "digest": "be6ada59f56c2240a9e05082b52934c31c072de2fdcec9c915961984711babb5",
+   "leaves": {
+    "out[0]": "<f8[6]:7d10d8690b55dcf6cddb09a77adc2d6cf11529868250cda1ec3fb5815d862ffe",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbdbad4c175p+5",
+    "out[2].final_cost": "0x1.7bc5d0e0969bap-7",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.888786ed605d6p-37",
+    "out[2].posterior_covariance": "<f8[6, 6]:451b92a7d2ed1aa69a0abdc5701613dd507d3af822244d1c3c4a806c59c15201",
+    "out[2].posterior_information": "<f8[6, 6]:a7ef414c4b14d660805d7ddd8b82ba3e8fc6f0110bcbd72f6cabf18b20662091",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:f2834eccd4603b248f4d095b428e377c0e3658c6edd1a9732a3161eaa7062992",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.9fd76bc1ba7ddp-49"
+   }
+  },
+  "k48_adams": {
+   "digest": "5234a2455a87e2ed00730d3ce03c1c346d0fd4b76006d910e4cf9b3b15fb8e68",
+   "leaves": {
+    "out": "<f8[73, 48]:63cdc2b20a3d41463398055e26c75846e20362b122993d3180fc9ba2b96fc5e7"
+   }
+  },
+  "k48_dop853_events": {
+   "digest": "59de20dee068260b95da032d00c5d2a539cf6f5eff44b979ada51efeac229d0c",
+   "leaves": {
+    "out": "<f8[73, 48]:eb4d173f5dfeaf429d63d0beedc1033dff2297bc81bfcbc76e9364d9e237816e"
+   }
+  },
+  "k48_harmonic_events": {
+   "digest": "efc2711a1291b84a21c755d596c9413f89ded1cb84c1a73e05bd2150e5f92f0c",
+   "leaves": {
+    "out": "<f8[73, 48]:67fdabe54c4df4a601b957f6c8310e370d033b0cdff2dd8adf267a46f339afa1"
+   }
+  },
+  "pa_adams_j2": {
+   "digest": "a28f3ee774668a76e52c15f7b977ec226f07a98a23f00ad3ebb16e6d618eaafc",
+   "leaves": {
+    "out": "<f8[73, 42]:a8217ff197b3af541f37ec7eefbaa0ab954dc681374005c271a5f8a28741cc4b"
+   }
+  },
+  "pa_adams_srp": {
+   "digest": "770bf9aa58e286176fa49afd3dad24dd1c78efe751c38c1a08acbd71ec4dbcbc",
+   "leaves": {
+    "out": "<f8[73, 42]:0f6b19f9f1c0d63cc08852d5f5961ff1e52b159afd03e734fac850e8aa456546"
+   }
+  },
+  "pa_dop853_events": {
+   "digest": "db16aa51b2dfb6643a90c7c54edbcee1fdf7541f419268488f5734f56332b7c2",
+   "leaves": {
+    "out": "<f8[73, 42]:51a641be00a7981451e452002a7a63ae09acacf7d7ddc9af4a0bd5b828a88e67"
+   }
+  },
+  "pa_harmonic_events": {
+   "digest": "a590ca4a41252ed7f095738533cd994944ab4261f44cd1e8d44e4bf091d2cde7",
+   "leaves": {
+    "out": "<f8[73, 42]:52d15e35ef067f8ad5b62ece059aa70ea8f3e56fa3426b2e117573df44521d6c"
+   }
+  },
+  "pa_reference_srp": {
+   "digest": "c66954e851475e62f2812a11587e2656e6fc65acb465b85c185ce9b3966ff003",
+   "leaves": {
+    "out": "<f8[73, 42]:23266512ba8031b9ee1011e62333b1477b96056dc879d899c23b47a0ad86e14a"
+   }
+  },
+  "ps_adams_j2": {
+   "digest": "b82b07873fb653d7cceb7799cbd3497e4d3b1e3de6a27e25875272fba018fbcc",
+   "leaves": {
+    "out": "<f8[73, 6]:271030e610480082cb62ddb66581382d0e452abb9adf4a6f63c0723646e9772b"
+   }
+  },
+  "ps_adams_srp_earthj2": {
+   "digest": "3f36dc9ab38d2a253ef837fe0cea2dcde223ef24459fe61357aa5651649dc322",
+   "leaves": {
+    "out": "<f8[73, 6]:9a482179fbe64e5b70112aac5383e02f7215a8b7fce24e1f02e3437b73de6ed4"
+   }
+  },
+  "ps_dop853_noshadow": {
+   "digest": "0d2e1c638886e70e9ac19742ec1ea7d6ba27d86506a848cdbc59d2656f7a1047",
+   "leaves": {
+    "out": "<f8[73, 6]:d6066533462c9e355bec3089d547dd8e8883ff83e3118c44da1b78dfb14bd0ce"
+   }
+  },
+  "ps_dop853_srp_events": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  },
+  "ps_harmonic": {
+   "digest": "ddbbb549e00b5b16d27a3d345fcb2060e9c2adc6e36602995a56085d589d99ae",
+   "leaves": {
+    "out": "<f8[73, 6]:f9cd945942352940aaf13ae3aedbc7492b656fa0bd29c49e9ec81627d01ac6be"
+   }
+  },
+  "ps_reference_srp": {
+   "digest": "d668185222dae86743ff13ec3cbadb1ceafec440128da1144f6d55c2870b0114",
+   "leaves": {
+    "out": "<f8[73, 6]:95cccf562db6ff3a1c16beb58aada331c573207545b05a7487d1f7f5753e2007"
+   }
+  },
+  "tide_contacts": {
+   "digest": "7d61a524c8dfb98dc47e7f6953028966d90da194a7074ae417240ec2d1438acf",
+   "leaves": {
+    "out": "<f8[12]:9a82f882a26b79b3c658d4cf7aa4b770f4d2ccbd4d49169df19624dfa57ffb26"
+   }
+  },
+  "tide_est_position_bls_lm_legacy": {
+   "digest": "fd39d570dc7242e320516578aabbdd678fa6e2c0b4a9e7ca347a37be222dd83b",
+   "leaves": {
+    "out[0]": "<f8[6]:0a3e4adfb2ce685eace7fea378aa99975e62d0411310261aecf2e2870577769d",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.c8d9e5ef7de9ep+10",
+    "out[2].final_cost": "0x1.03db6cab77a03p+1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c65930851555fp+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:e1b26ca2da4495af09925764265d3e2da601fd045d11b2f194f9688e1a32f22c",
+    "out[2].posterior_information": "<f8[6, 6]:72ec99a951238d260b2050d77724c804549f4cbc47234a1b26a3ef1fc16693f9",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0de222518a169p-8"
+   }
+  },
+  "tide_est_position_bls_lm_profile": {
+   "digest": "f937b441e7543c8eea8ab8c427f6cabf40bbc4532228fe3e9d00de8169253937",
+   "leaves": {
+    "out[0]": "<f8[6]:19b38355ad384792227b4e2cda6a65ee5740385dfe8bcce254add51aaebe99e8",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.c8d9e9ff8651ep+10",
+    "out[2].final_cost": "0x1.04a6d2d842538p+1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c65329d78736bp+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:b2cdb3f5a4e0e6c87c9d6f04e97728e45a8a0618e96ca7ba6995947e48267d0f",
+    "out[2].posterior_information": "<f8[6, 6]:4954163fada6c10017b65881236115237238b3d355ccac24a1843d671a5bab65",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0de1d51cd38a7p-8"
+   }
+  },
+  "tide_est_position_srif_legacy": {
+   "digest": "a2a9571ed961f82529699cc8e5797f7c3d7209aea7eefa2bb69f93c01ab72e56",
+   "leaves": {
+    "out[0]": "<f8[6]:beb043fc492833ff67f1b12bd5944651549b43ff74a014bbd88be21e33af7e0e",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d8d070b085p+11",
+    "out[2].final_cost": "0x1.30602cc43f985p+0",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.41214703b4e6ap-22",
+    "out[2].posterior_covariance": "<f8[6, 6]:8d92d8c382386b02dcbd87d4a8d0e77f26f5ec884b5f9bf7f8c5d9d68a310676",
+    "out[2].posterior_information": "<f8[6, 6]:625db61e36a82353ae3c70ef1cf25c98a01c056f4611c390114d9f5d74459e79",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:3b47f1ca5c545416eaebe5721f71a910ca50015e0c6b7b5bd08276355fd541f2",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.3e56fafa0c417p-32"
+   }
+  },
+  "tide_est_position_srif_profile": {
+   "digest": "cafb2d90127d69c8a42ae2a5af79350b0bc30c909c28de2039361880d56b66ba",
+   "leaves": {
+    "out[0]": "<f8[6]:a90ae220a24aca033aaa62d7a62c6fbf80fe3116c6d13ecf48c30480e8b49020",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d8fb8c11bfp+11",
+    "out[2].final_cost": "0x1.31fb5a962c9e8p+0",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.3d06c7797d707p-33",
+    "out[2].posterior_covariance": "<f8[6, 6]:418cbf66c0ae5a26db6e72a55b47a6704a87e604a4de8c3b6e40d6d497d5fc85",
+    "out[2].posterior_information": "<f8[6, 6]:e20607d7c8d10faab51caa7750dd6058db1685fc7a7f2e1178b44b660181be85",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:0125e55cb5f812608868f5cdc589cc0c063814d6a3cb35f0cbdabb86d966a6a4",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.3e8dc9f405025p-43"
+   }
+  },
+  "tide_est_range_rate_bls_lm_legacy": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_est_range_rate_bls_lm_profile": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_est_range_rate_srif_legacy": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_est_range_rate_srif_profile": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_k48_adams": {
+   "digest": "47c7c3030d1726c4c0f9e83da85ecf4f3b5712b99981df8741a379e7525a9432",
+   "leaves": {
+    "out": "<f8[73, 48]:c9471c02337e4d687895ad27219dc9feb557b3d8736ae74af625e79a57800072"
+   }
+  },
+  "tide_k48_dop853_events": {
+   "digest": "d9564d048aa9e10e325bfb2da6446c819ca809e76c7d9c767b6c0f24d574ae4e",
+   "leaves": {
+    "out": "<f8[73, 48]:89f6d5eca98dff51bee38801d7aaceb8ba23b44538d8c9b2846a948edb8368fe"
+   }
+  },
+  "tide_k48_harmonic_events": {
+   "digest": "4e880ee73df3df7d78d455e699ec753dac74c00c188bb37d906ee61181f9b428",
+   "leaves": {
+    "out": "<f8[73, 48]:d629aeaf4fb4a220989708f7eb455879d651158bb618b84a613efdd5d17aed1a"
+   }
+  },
+  "tide_pa_adams_j2": {
+   "digest": "78f61629a1b6e67debdc15f5cb380c694abf2813d98c53389337483b37ccea2d",
+   "leaves": {
+    "out": "<f8[73, 42]:250194d42eee65bf9a32ddefdf921b094750187111b4cad8917e49c77695fbd3"
+   }
+  },
+  "tide_pa_adams_srp": {
+   "digest": "5d428c8dfc7fbd9e49dff9329f8ce20256c88327ea24f38339bf99bfa56c9756",
+   "leaves": {
+    "out": "<f8[73, 42]:a7b1197e4def1c9d748a0d73741535c8e489aabdda5fc16bd335ce9353467fd7"
+   }
+  },
+  "tide_pa_dop853_events": {
+   "digest": "b38a1f2c436900383319eff3a44cd2ca35d8762784955fc8534f463968803da3",
+   "leaves": {
+    "out": "<f8[73, 42]:6a03d050e300cf0ea6dc07a77db713b033e74d0b8cafd837c7f4bc4d1bc8d0af"
+   }
+  },
+  "tide_pa_harmonic_events": {
+   "digest": "71e14a712590f135869d1198564244b09d737ebc49317f62cf85e46cf1031c93",
+   "leaves": {
+    "out": "<f8[73, 42]:ec395f4f7645f5c9520e1f091ae62695b6698f13fdf3a4eadae869e21c3f2a98"
+   }
+  },
+  "tide_pa_reference_srp": {
+   "digest": "5e851a6feb42a9debd65810fc4948df502ffe753cfdc951bfd76ad4c349d517a",
+   "leaves": {
+    "out": "<f8[73, 42]:0ad9c49a4f4bd5872f13b7473ea92e18f52e094d41a4663f1b4291d13697c03e"
+   }
+  },
+  "tide_ps_adams_j2": {
+   "digest": "573e25e3885c206f47dc12557af2f091ebcabaae7980f7e8daae103d458cfd01",
+   "leaves": {
+    "out": "<f8[73, 6]:d06edd299737e921f9a37e29d16ec11d4482c861016c06e3c5b62814b43c0baa"
+   }
+  },
+  "tide_ps_adams_srp_earthj2": {
+   "digest": "8e5f81dabbf88b3fe037912847871e335264ea3c28c2b54521c32582373a9dec",
+   "leaves": {
+    "out": "<f8[73, 6]:618c275725bba1179fd9e0c53811e4aea635d75b1bab836b676afd9cc1e68a3f"
+   }
+  },
+  "tide_ps_dop853_noshadow": {
+   "digest": "fbb2eacf3eca3b7ec0e433382f131aec46a3f363bee32aa0d343684b89d2ecef",
+   "leaves": {
+    "out": "<f8[73, 6]:13371a7de998801294d9a255152c75d30542c6ad1ef197fdf57c50b8ebb5196b"
+   }
+  },
+  "tide_ps_dop853_srp_events": {
+   "digest": "0cfcbf8ddac75ef22847ed62c99b6e7629bbad90a474c6a63ac309b6711d65ab",
+   "leaves": {
+    "out": "<f8[73, 6]:cee262542dfeab7ab13635290b584cce5397079c3d25d285de48496f2b193192"
+   }
+  },
+  "tide_ps_harmonic": {
+   "digest": "6b7be8f23b83e9004773f05dd51f8e1dca150ff33bed8d5a2a14300c0027f8de",
+   "leaves": {
+    "out": "<f8[73, 6]:02abadf0a1f39ea3ad79a8e9d26c3c88967c1c4794ca8aeadd072e936c7070a7"
+   }
+  },
+  "tide_ps_reference_srp": {
+   "digest": "2f0885fbc5ace0dee59e5db9b97cf0522a5ecb411480eaffa5065e2dd21ee202",
+   "leaves": {
+    "out": "<f8[73, 6]:4c7b742dfb07e38e7fcc6fca83894993d366c9ba612daa78a9a4d54d38bc9f10"
+   }
+  },
+  "tide_truth_legacy": {
+   "digest": "07e247e54b639011eb5a5480785b65a29154bff8d5bcc526fce6f0620112f954",
+   "leaves": {
+    "out": "<f8[73, 6]:758d62fec942f0b47389cd1f0a1a28722ae50877fbe3d4e00c226a600556d520"
+   }
+  },
+  "tide_truth_profile": {
+   "digest": "0cfcbf8ddac75ef22847ed62c99b6e7629bbad90a474c6a63ac309b6711d65ab",
+   "leaves": {
+    "out": "<f8[73, 6]:cee262542dfeab7ab13635290b584cce5397079c3d25d285de48496f2b193192"
+   }
+  },
+  "truth_legacy": {
+   "digest": "eca0840cd11e6e4630c1e0bd94c7161c71250aae7a0750cc90d2850b81a69405",
+   "leaves": {
+    "out": "<f8[73, 6]:ca20bf36bcef69d3d894c2e4da51bf852b46bab0e01c11e2f94100d7ab896498"
+   }
+  },
+  "truth_profile": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  }
+ },
+ "fast_dynamics": true,
+ "gate": "L_G1(b)",
+ "mode": "omit",
+ "numba": "0.65.1",
+ "numpy": "2.4.3",
+ "python": "3.13.2",
+ "scipy": "1.17.1",
+ "src_status": ""
+}
