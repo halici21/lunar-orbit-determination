@@ -799,6 +799,22 @@ F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F3 WP3.2 S2 (re-freeze under the same 2026-11-08 delegation; REQ-DYN-007, DYN-06).
+# The opt-in lunar albedo/IR radiation pressure (lunar_od.lunar_radiation, the WP3.1 C6
+# model, K_LRP = K_SRP) enters the 6/42/48-state propagators and the shadow-contact
+# pre-pass through _with_lunar_radiation_acceleration, which returns the RHS itself when
+# lunar_radiation is None; L_G1 checks the default paths byte-identical before and after
+# (studies/phase17/configs/wp3_2_s2_lunar_radiation_predeclaration.json).
+#
+#   lunar_od/dynamics.py     old (WP3.2 S1)  ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
+#                            new (WP3.2 S2)  eefbb63bec3c9127f2223dce391d11c841299d4d8d8cf02e0856c8ae152bc2c3
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "eefbb63bec3c9127f2223dce391d11c841299d4d8d8cf02e0856c8ae152bc2c3",
+}
+
+
 # PR #99 (F1 WP1.2) brought up to date with main on 2026-11-02, after the branch
 # consolidation (PR #97) and WP1.7 (PR #96).  run_scenario_config.py carries the
 # WP1.2 GM-generation change and the WP1.6/WP1.9 changes; the merged file is the
@@ -824,6 +840,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256:
         return F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256:

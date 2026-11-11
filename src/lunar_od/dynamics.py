@@ -17,6 +17,8 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from .srp import SRPOptions
     # Opt-in lunar tide (F3 WP3.2 S1), imported lazily the same way.
     from .lunar_tide import LunarTideOptions
+    # Opt-in lunar radiation pressure (F3 WP3.2 S2), imported lazily the same way.
+    from .lunar_radiation import LunarRadiationOptions
 
 try:
     from .accelerated import (
@@ -764,6 +766,77 @@ def _with_tide_acceleration(
     return rhs_with_tide
 
 
+def _require_lunar_radiation_k(srp: "SRPOptions | None", lunar_radiation) -> float:
+    """Validate an opt-in ``lunar_radiation`` and return the K it uses (K_LRP = K_SRP)."""
+    from .lunar_radiation import require_lunar_radiation_options
+
+    require_lunar_radiation_options(lunar_radiation)
+    if srp is None or not srp.is_active:
+        raise ValueError(
+            "lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar "
+            "radiation kernel (one cannonball), and there is no K without SRP."
+        )
+    return float(srp.k_srp_m2_per_kg)
+
+
+def _with_lunar_radiation_acceleration(
+    rhs: Callable[[float, np.ndarray], np.ndarray],
+    get_sun_pos: Callable[[float], ArrayLike],
+    srp: "SRPOptions | None",
+    lunar_radiation: "LunarRadiationOptions | None",
+    *,
+    state_size: int,
+) -> Callable[[float, np.ndarray], np.ndarray]:
+    """Add the opt-in lunar albedo/IR radiation pressure (F3 WP3.2 S2) on top of an RHS closure.
+
+    Returns ``rhs`` ITSELF when ``lunar_radiation`` is None, the identity contract of
+    ``_with_srp_acceleration``.
+
+    The acceleration is ``K g(r, r_sun)`` with ``K`` the SRP coefficient (one cannonball,
+    K_LRP = K_SRP), so it needs an active ``srp``.  Elements 3:6 get ``K g``.  The 42-state
+    path also gets ``K G @ Phi[0:3, :]`` in rows 3:6 of ``Phi_dot``, and the 48-state path also
+    ``K G @ s_K[0:3] + g`` in ``s_K_dot[3:6]``: the position gradient joins ``A`` for both, and
+    ``g`` is the LRP part of ``df/dK``.  The 6-state path never evaluates the gradient.
+    """
+    if lunar_radiation is None:
+        return rhs
+
+    from .lunar_radiation import (
+        lunar_radiation_acceleration_and_gradient_per_k,
+        lunar_radiation_acceleration_per_k,
+    )
+
+    k = _require_lunar_radiation_k(srp, lunar_radiation)
+    if state_size not in (6, 42, 48):
+        raise ValueError(f"the lunar radiation wrapper supports 6-, 42- and 48-state RHS; got {state_size}.")
+
+    def rhs_with_lunar_radiation(t_s: float, state: np.ndarray) -> np.ndarray:
+        out = np.array(rhs(t_s, state), dtype=float, copy=True)
+        if out.size != state_size:
+            raise ValueError(f"expected a {state_size}-element derivative; got {out.size}")
+        state = np.asarray(state, dtype=float)
+        r_sun = _vec3(get_sun_pos(float(t_s)), "r_moon_sun_m")
+        if state_size == 6:
+            out[3:6] += k * lunar_radiation_acceleration_per_k(state[:3], r_sun, lunar_radiation)
+            return out
+        g, grad = lunar_radiation_acceleration_and_gradient_per_k(state[:3], r_sun, lunar_radiation)
+        out[3:6] += k * g
+        phi = state[6:42].reshape((6, 6), order="F")
+        phi_dot_lrp = np.zeros((6, 6))
+        phi_dot_lrp[3:6, :] = (k * grad) @ phi[0:3, :]
+        out[6:42] += phi_dot_lrp.reshape(-1, order="F")
+        if state_size == 48:
+            out[45:48] += (k * grad) @ state[42:45] + g
+        return out
+
+    rhs_with_lunar_radiation.__doc__ = (
+        f"{state_size}-state RHS with the opt-in lunar radiation pressure "
+        f"(K_SRP = {k} m^2/kg, albedo {lunar_radiation.albedo}, "
+        f"{lunar_radiation.n_theta} x {lunar_radiation.n_phi} cap quadrature)."
+    )
+    return rhs_with_lunar_radiation
+
+
 # ---------------------------------------------------------------------------
 # Shadow-event segmented integration (Phase D2, opt-in, default-off)
 # ---------------------------------------------------------------------------
@@ -991,13 +1064,17 @@ def shadow_contact_times(
     harmonic_rotation=None,
     harmonic_epoch_et0: float | None = None,
     lunar_tide: "LunarTideOptions | None" = None,
+    lunar_radiation: "LunarRadiationOptions | None" = None,
 ) -> list[float]:
     """Penumbra contact epochs of the 6-state trajectory over ``t_eval_s``.
 
     Sorted in the propagation direction, strictly inside the span.  Empty when
-    the SRP force has no shadow to segment at.  ``lunar_tide`` enters the
-    pre-pass exactly as it enters the final propagation.
+    the SRP force has no shadow to segment at.  ``lunar_tide`` and
+    ``lunar_radiation`` enter the pre-pass exactly as they enter the final
+    propagation.
     """
+    if lunar_radiation is not None:
+        _require_lunar_radiation_k(srp, lunar_radiation)      # fail closed even without contacts
     if not _shadow_events_active(srp):
         return []
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
@@ -1006,7 +1083,7 @@ def shadow_contact_times(
         t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
         harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
-        lunar_tide=lunar_tide,
+        lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
     )
     return _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
 
@@ -1015,7 +1092,7 @@ def _build_state_rhs(
     t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
     get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
     harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
-    *, lunar_tide=None,
+    *, lunar_tide=None, lunar_radiation=None,
 ):
     """The 6-state RHS ``propagate_state`` integrates, and its Sun lookup."""
     # One Sun lookup per epoch, shared by the force model and the SRP term.
@@ -1105,6 +1182,8 @@ def _build_state_rhs(
     rhs = _with_tide_acceleration(
         rhs, get_earth_pos, get_sun_pos, mu_earth_m3_s2, mu_sun_m3_s2, lunar_tide, state_size=6,
     )
+    # And the lunar radiation pressure (identity when off).
+    rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=6)
     return rhs, get_sun_pos
 
 
@@ -1129,6 +1208,7 @@ def propagate_state(
     srp: "SRPOptions | None" = None,
     shadow_events: bool = False,
     lunar_tide: "LunarTideOptions | None" = None,
+    lunar_radiation: "LunarRadiationOptions | None" = None,
 ) -> np.ndarray:
     """Propagate the 6-state dynamics at requested epochs.
 
@@ -1170,6 +1250,12 @@ def propagate_state(
     (permanent plus time-variable) tide, so the static field must exclude the
     permanent tide; the options require that declaration.  ``None`` runs the
     same closure as before the tide existed.
+
+    Lunar radiation pressure (F3 WP3.2 S2, opt-in, default-off): pass
+    ``lunar_radiation`` as a ``lunar_od.lunar_radiation.LunarRadiationOptions``.
+    Albedo and thermal IR from the Moon act on the SRP cannonball with the same
+    coefficient (K_LRP = K_SRP), so it requires an active ``srp``.  ``None`` runs
+    the same closure as before it existed.
     """
     from scipy.integrate import solve_ivp
 
@@ -1182,7 +1268,7 @@ def propagate_state(
         t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
         harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp,
-        lunar_tide=lunar_tide,
+        lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
     )
 
     if shadow_events and _shadow_events_active(srp):
@@ -1214,7 +1300,7 @@ def _propagate_augmented_with_harmonics(
     t_eval_s, state_aug0_mci, mu_moon, mu_earth, mu_sun,
     get_earth_pos, get_sun_pos, harmonic_model, h_ctx, *,
     rtol, atol, method, j2_moon, j2_earth, earth_j2_mode,
-    harmonic_epoch_et0=None, srp=None, cuts=None, lunar_tide=None,
+    harmonic_epoch_et0=None, srp=None, cuts=None, lunar_tide=None, lunar_radiation=None,
 ):
     """42-state RHS with a MATCHED harmonic acceleration and gradient.
 
@@ -1225,7 +1311,8 @@ def _propagate_augmented_with_harmonics(
     Phase 17-F1, its position gradient enters ``dynamics_jacobian_a_matrix``:
     trajectory and variational fidelity are matched for SRP as for gravity.
     ``lunar_tide`` wraps the RHS with its acceleration and gradient
-    (``_with_tide_acceleration``).
+    (``_with_tide_acceleration``), and ``lunar_radiation`` likewise
+    (``_with_lunar_radiation_acceleration``).
     """
     from scipy.integrate import solve_ivp
     from .gravity_harmonics import spherical_harmonic_gravity_gradient
@@ -1286,6 +1373,7 @@ def _propagate_augmented_with_harmonics(
         return np.concatenate([x_dot, phi_dot.reshape(-1, order="F")])
 
     rhs = _with_tide_acceleration(rhs, get_earth_pos, get_sun_pos, mu_earth, mu_sun, lunar_tide, state_size=42)
+    rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=42)
 
     if cuts is not None:
         return _integrate_segmented(
@@ -1352,6 +1440,7 @@ def propagate_augmented_state(
     srp: "SRPOptions | None" = None,
     shadow_events: bool = False,
     lunar_tide: "LunarTideOptions | None" = None,
+    lunar_radiation: "LunarRadiationOptions | None" = None,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -1394,7 +1483,8 @@ def propagate_augmented_state(
 
     ``lunar_tide`` (F3 WP3.2 S1) is as for ``propagate_state``; its exact
     position gradient enters the variational block on both the plain and the
-    harmonic path.
+    harmonic path.  ``lunar_radiation`` (F3 WP3.2 S2) likewise, with the exact
+    derivative of its quadrature.
     """
     from scipy.integrate import solve_ivp
 
@@ -1407,7 +1497,7 @@ def propagate_augmented_state(
             srp=srp, rtol=rtol, atol=atol, j2_moon=j2_moon, j2_earth=j2_earth,
             earth_j2_mode=earth_j2_mode, harmonic_model=harmonic_model,
             harmonic_rotation=harmonic_rotation, harmonic_epoch_et0=harmonic_epoch_et0,
-            lunar_tide=lunar_tide,
+            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
         )
     if harmonic_model is not None:
         if not harmonic_stm_opt_in:
@@ -1429,7 +1519,7 @@ def propagate_augmented_state(
             rtol=rtol, atol=atol, method=method,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_epoch_et0=harmonic_epoch_et0,
-            srp=srp, cuts=_cuts, lunar_tide=lunar_tide,
+            srp=srp, cuts=_cuts, lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
         )
 
     if t_eval_s.size == 0:
@@ -1467,6 +1557,7 @@ def propagate_augmented_state(
     rhs = _with_tide_acceleration(
         rhs, get_earth_pos, get_sun_pos, mu_earth_m3_s2, mu_sun_m3_s2, lunar_tide, state_size=42,
     )
+    rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=42)
 
     if _cuts is not None:
         return _integrate_segmented(
@@ -1560,6 +1651,7 @@ def propagate_truth_with_ephemeris(
     srp=None,
     propagation_profile=None,
     lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     """Propagate truth dynamics using Moon-centered ephemeris interpolants."""
     from .propagation_contract import propagator_options
@@ -1582,6 +1674,7 @@ def propagate_truth_with_ephemeris(
         j2_earth=j2_earth,
         earth_j2_mode=earth_j2_mode,
         lunar_tide=lunar_tide,
+        lunar_radiation=lunar_radiation,
     )
 
 
@@ -1629,6 +1722,7 @@ def propagate_state_with_k_sensitivity(
     s_k0: ArrayLike | None = None,
     shadow_events: bool = False,
     lunar_tide: "LunarTideOptions | None" = None,
+    lunar_radiation: "LunarRadiationOptions | None" = None,
 ) -> np.ndarray:
     """Propagate state, STM and the SRP-coefficient sensitivity together.
 
@@ -1659,6 +1753,10 @@ def propagate_state_with_k_sensitivity(
 
     ``lunar_tide`` (F3 WP3.2 S1) is as for ``propagate_state``; its position
     gradient joins ``A(t)`` for both the STM and ``dx/dK``.
+
+    ``lunar_radiation`` (F3 WP3.2 S2) is as for ``propagate_state``.  It scales
+    with the same K, so its kernel joins ``df/dK`` and ``K`` times its position
+    gradient joins ``A(t)``.
     """
     from scipy.integrate import solve_ivp
 
@@ -1756,6 +1854,7 @@ def propagate_state_with_k_sensitivity(
     rhs = _with_tide_acceleration(
         rhs, get_earth_pos, get_sun_pos, mu_earth_m3_s2, mu_sun_m3_s2, lunar_tide, state_size=48,
     )
+    rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=48)
 
     if shadow_events and _shadow_events_active(srp):
         cuts = shadow_contact_times(
@@ -1764,6 +1863,7 @@ def propagate_state_with_k_sensitivity(
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_model=harmonic_model, harmonic_rotation=harmonic_rotation,
             harmonic_epoch_et0=harmonic_epoch_et0, lunar_tide=lunar_tide,
+            lunar_radiation=lunar_radiation,
         )
         return _integrate_segmented(
             t_eval_s, aug0, rhs, rtol, atol, method, cuts, "K-sensitivity propagation",
