@@ -16,6 +16,17 @@ from lunar_od.propagation_contract import model_options, propagator_options, res
 from lunar_od.srp import SRPOptions
 from tests import test_filters as T
 from tests import test_wp3_2_lunar_tide as G
+from lunar_od.lunar_j2_model import use_lunar_j2_model  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _legacy_lunar_j2_model():
+    """F1 X-02 (on main since the 2026-11-08 consolidation) made the GRAIL/DE440 lunar J2 the default, which
+    refuses J2_MOON_UNNORMALIZED.  These WP3.2 gates were written and evaluated on the legacy mean-pole model
+    (the pre-X-02 physics, bit for bit), so the module runs on it; module scope so module fixtures see it."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 TIDE = LunarTideOptions(static_field_convention="TIDE_FREE")
 PROPAGATORS = ("propagate_state", "propagate_augmented_state", "propagate_state_with_k_sensitivity")
@@ -161,7 +172,8 @@ def test_noiseless_tide_truth_is_recovered_with_the_tide_and_biased_without_it(s
 def test_wp3_2_s1_refreeze_of_estimators_is_additive_and_history_is_preserved():
     """estimators.py moved through the additive WP3.2 S1 table; WP4.5b's record is untouched.
 
-    WP3.2 S2 re-froze it again; tests/test_wp3_2_lunar_radiation_transport.py checks the current identity.
+    WP3.2 S2 and the 2026-11-21 merge with main re-froze it again; tests/test_wp3_2_lunar_radiation_transport.py
+    checks the current identity.
     """
     import hashlib
     import sys
@@ -173,6 +185,7 @@ def test_wp3_2_s1_refreeze_of_estimators_is_additive_and_history_is_preserved():
     path = "lunar_od/estimators.py"
     assert r2.F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ee18f3c9")
     assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("0ed77589")
-    assert r2.expected_current_tree_sha256(path) == r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert r2.expected_current_tree_sha256(path) == (
+        r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path])
     assert hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest() != (
         r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path])

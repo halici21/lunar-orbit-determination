@@ -1,0 +1,40 @@
+{
+  "schema": "lunar-od-predeclaration-v1",
+  "id": "F1_PHASE_GATE",
+  "declared": "2026-11-02",
+  "declared_before_any_gate_computation": true,
+  "subject": "origin/main be84e88 (F1 WP1.1, 1.2, 1.4-1.7, 1.9, 1.10 merged; WP1.3 #100 and WP1.8 #101 open and evaluated separately)",
+  "programme_reference": "docs/assurance/vv-program.md, F1 phase gate",
+  "gates": {
+    "G1_dynamics_vs_external_oracle": {
+      "question": "Did any F1 change move the dynamics in the Orekit-aligned configuration of 2026-10-21?",
+      "method": "Re-run agent-sandbox/orekit-gmat-oracle/harness run_lunar_od.run(case, 'ref3') for D1a, D1b, D2-50, D2-100, D3 with lunar_od imported from this checkout, output to a separate directory. Compare with the stored 2026-10-21 snapshot (lunar_od a5707e0) run and with the stored Orekit run of the same case.",
+      "pass": "for every case, |r_end(now) - r_end(snapshot)| <= 0.1 mm, hence |Delta r vs Orekit| changes by <= 0.1 mm",
+      "note": "The harness fixes GM, the initial state and the epoch in scenario.json and runs harmonics in DIRECT exact-epoch mode, so WP1.2 (GM source) and WP1.3 (grid orientation) are not exercised by it."
+    },
+    "G2_production_variant": {
+      "question": "Did the production integration path (VODE Adams 1e-11, PCHIP 600 s) move?",
+      "method": "Same harness, variant 'prod'",
+      "pass": "|r_end(now) - r_end(snapshot)| <= 1 mm per case; a larger change must be attributed to a named merged change, otherwise FAIL"
+    },
+    "G3_paired_benchmark": {
+      "question": "Paired Level-0 estimator benchmark (examples/configs/benchmark.json, 32 seeds x 2 noise levels) after F1 + WP4.1",
+      "method": "examples/benchmark_estimators.py, compared group by group with docs/figures/benchmark/summary.json (curated at 732fda8)",
+      "pass": [
+        "every group success_fraction == 1.0",
+        "SRIF solver_termination_fraction >= 0.95 in both noise groups (WP4.1 acceptance; curated value 0.25)",
+        "BLS-LM median position error within 1 % of the curated value (no F1 change targets BLS-LM on this case)"
+      ],
+      "report_only": "SR-UKF and SRIF error/NEES changes (WP1.9 P0 and WP4.1 are expected to move them)"
+    },
+    "G4_regression": {
+      "pass": "full pytest regression on the gate checkout: 0 failed, 0 errors"
+    },
+    "G5_cross_calculation_items": {
+      "question": "Status of X-01..X-06, X-08, X-10..X-13 (the F1 gate list)",
+      "method": "Table from docs/assurance/verification-matrix.csv and merged/open PRs, each item closed / partial / open with evidence",
+      "pass": "reported as computed; the gate is PASS only if every listed X item is closed, otherwise PARTIAL with the open items named"
+    }
+  },
+  "amendment_rule": "Any change to these criteria after a gate result is seen goes to docs/assurance/amendment-log.md and makes that gate exploratory."
+}

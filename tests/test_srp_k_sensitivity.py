@@ -28,6 +28,16 @@ from lunar_od.srp import (
     srp_acceleration_with_lunar_shadow,
     srp_partial_wrt_k_srp,
 )
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 SUN_PLUS_X = np.array([AU_M, 0.0, 0.0])
 R_SUNWARD = np.array([2.0e6, 3.0e5, -1.0e5])

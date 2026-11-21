@@ -26,6 +26,17 @@ from lunar_od.lunar_radiation import LunarRadiationOptions
 from lunar_od.lunar_tide import LunarTideOptions
 from lunar_od.srp import SRPOptions, solar_pressure_at
 from tests import test_wp3_2_lunar_tide as G
+from lunar_od.lunar_j2_model import use_lunar_j2_model  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _legacy_lunar_j2_model():
+    """F1 X-02 (on main since the 2026-11-08 consolidation) made the GRAIL/DE440 lunar J2 the default, which
+    refuses J2_MOON_UNNORMALIZED.  These WP3.2 gates were written and evaluated on the legacy mean-pole model
+    (the pre-X-02 physics, bit for bit), so the module runs on it; module scope so module fixtures see it."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "studies" / "phase17" / "scripts") not in sys.path:
@@ -338,7 +349,7 @@ H_POS, H_VEL = 3.0, 3e-3
 
 def _production_rhs6(srp=NOS, lrp=LRP):
     rhs, _ = dyn._build_state_rhs(T6H, *BASE, J2_MOON_UNNORMALIZED, 0.0, "indirect", None, None, None, srp,
-                                  lunar_radiation=lrp)
+                                  dyn._legacy_j2_rotation, dyn.MOON_R_M, lunar_radiation=lrp)
     return rhs
 
 
@@ -503,7 +514,7 @@ def shadow_event_values():
     cuts_lrp = np.array(dyn.shadow_contact_times(G.T1D, x0, *BASE, lunar_radiation=LRP, **pre))
     cuts_free = np.array(dyn.shadow_contact_times(G.T1D, x0, *BASE, **pre))
     rhs, sun_lookup = dyn._build_state_rhs(G.T1D, *BASE, J2_MOON_UNNORMALIZED, 0.0, "indirect", None, None, None,
-                                           PEN, lunar_radiation=LRP)
+                                           PEN, dyn._legacy_j2_rotation, dyn.MOON_R_M, lunar_radiation=LRP)
     message = None
     try:
         dyn._integrate_segmented(G.T1D, x0, rhs, 1e-11, 1e-12, "DOP853", list(cuts_free), "control",

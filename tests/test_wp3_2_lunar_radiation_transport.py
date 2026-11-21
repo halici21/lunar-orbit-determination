@@ -18,6 +18,17 @@ from lunar_od.srp import SRPOptions
 from tests import test_filters as T
 from tests import test_wp3_2_lunar_tide as G
 from tests import test_wp3_2_lunar_tide_transport as S1
+from lunar_od.lunar_j2_model import use_lunar_j2_model  # noqa: E402
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _legacy_lunar_j2_model():
+    """F1 X-02 (on main since the 2026-11-08 consolidation) made the GRAIL/DE440 lunar J2 the default, which
+    refuses J2_MOON_UNNORMALIZED.  These WP3.2 gates were written and evaluated on the legacy mean-pole model
+    (the pre-X-02 physics, bit for bit), so the module runs on it; module scope so module fixtures see it."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 LRP = LunarRadiationOptions()
 TIDE = LunarTideOptions(static_field_convention="TIDE_FREE")
@@ -153,7 +164,8 @@ def test_noiseless_lrp_truth_is_recovered_with_lrp_and_biased_without_it(solver,
 
 
 def test_wp3_2_s2_refreeze_of_estimators_is_additive_and_history_is_preserved():
-    """estimators.py moved only through the additive WP3.2 S2 table; the S1 and WP4.5b records are untouched."""
+    """estimators.py moved only through additive tables: WP3.2 S2, then the 2026-11-21 merge with main;
+    the S1 and WP4.5b records are untouched."""
     import hashlib
     import sys
     from pathlib import Path
@@ -164,6 +176,7 @@ def test_wp3_2_s2_refreeze_of_estimators_is_additive_and_history_is_preserved():
     path = "lunar_od/estimators.py"
     assert r2.F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ee18f3c9")
     assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("0ed77589")
-    new = r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path].startswith("d0e69634")
+    new = r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest() == new

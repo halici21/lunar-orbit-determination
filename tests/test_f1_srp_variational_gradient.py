@@ -33,6 +33,16 @@ from lunar_od.srp import (
     srp_acceleration_position_gradient,
     srp_acceleration_with_lunar_shadow,
 )
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SUN_DIR = np.array([-0.83, 0.52, 0.19]) / np.linalg.norm([-0.83, 0.52, 0.19])
@@ -295,9 +305,12 @@ def test_f1_refreeze_is_additive_and_history_is_preserved():
     assert r2.PHASE_F2_G4E_R_REFROZEN_CURRENT_TREE_SHA256[path].startswith("b19c2d80")
     # F1 WP1.3 (continuous lunar orientation, DYN-05) re-froze it next.
     assert r2.F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256[path].startswith("6827b9d9")
-    # F3 WP3.2 S1 (opt-in lunar solid tide, DYN-06) re-froze it next.
+    # Two branches re-froze it after WP1.3: F1 X-02 (default lunar J2 = MOON_PA_DE440 pole + GRAIL pair) on main,
+    # F3 WP3.2 S1 (opt-in lunar solid tide) and S2 (opt-in lunar albedo/IR radiation pressure) on the WP3.2 branch.
+    assert r2.F1_X02_REFROZEN_CURRENT_TREE_SHA256[path].startswith("f71cdb7c")
     assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ae0f3d0d")
-    # F3 WP3.2 S2 (opt-in lunar albedo/IR radiation pressure, DYN-06) is the current identity.
-    new = r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path]
+    assert r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path].startswith("eefbb63b")
+    # Their merge (2026-11-21, the union of both) is the current identity.
+    new = r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new

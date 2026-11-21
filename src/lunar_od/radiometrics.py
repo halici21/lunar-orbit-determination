@@ -70,20 +70,60 @@ COUNTED_DOPPLER_EARTH_EPHEMERIS_METHOD = "cubic_hermite_grid_interpolation"
 # constant transponder delay.
 SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL = "single_bounce_exact_station"
 FOUR_EVENT_COUNTED_DOPPLER_MODEL = "four_event_delay"
+# F2 WP2.1 (MEAS-01): explicit opt-in DSN light-time model (SSB legs, Sun and
+# Earth Shapiro delays, TT interval), evaluated by lunar_od.counted_doppler_ssb.
+BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL = "barycentric_dsn"
+# F2 WP2.2 (MEAS-06): the same model plus the troposphere/ionosphere phase
+# delay of both legs (lunar_od.media.MediaModel(), default climatology).
+BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL = "barycentric_dsn_media"
+BARYCENTRIC_COUNTED_DOPPLER_MODELS = (
+    BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+    BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL,
+)
 COUNTED_DOPPLER_MODELS = (
     SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL,
     FOUR_EVENT_COUNTED_DOPPLER_MODEL,
+    BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL,
+    BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL,
 )
 DEFAULT_COUNTED_DOPPLER_MODEL = SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL
 FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION = "r4.counted-doppler.four-event-delay.v1"
+BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL_VERSION = "f2.counted-doppler.barycentric-dsn.v1"
+BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL_VERSION = "f2.counted-doppler.barycentric-dsn-media.v1"
 COUNTED_DOPPLER_SPACECRAFT_INTERPOLATION_METHOD = "cubic_hermite"
 COUNTED_DOPPLER_MODEL_VERSION = "r3.counted-doppler.exact-station.v1"
+
+
+def counted_doppler_model_version(counted_doppler_model: str) -> str:
+    """Truthful model-version label of a counted-Doppler model selector."""
+    return {
+        FOUR_EVENT_COUNTED_DOPPLER_MODEL: FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION,
+        BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL: BARYCENTRIC_DSN_COUNTED_DOPPLER_MODEL_VERSION,
+        BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL: BARYCENTRIC_DSN_MEDIA_COUNTED_DOPPLER_MODEL_VERSION,
+    }.get(counted_doppler_model, COUNTED_DOPPLER_MODEL_VERSION)
 STATION_STATE_SOURCE_FRAME = "J2000"
 STATION_STATE_TARGET_FRAME = "ITRF93"
 # Truthful station_velocity_model provenance labels (the pre-R3 literal
 # "sxform" overclaimed the interpolated path).
 EXACT_STATION_VELOCITY_MODEL = "exact_event_epoch_sxform"
 LEGACY_STATION_VELOCITY_MODEL = "interpolated_sxform_grid"
+
+
+def _validate_uplink_ramps(cfg) -> None:
+    """F2 WP2.3 slice 6: uplink_ramps is ((station name, UplinkRamp), ...) with unique names, barycentric only."""
+    from .relativistic_light_time import UplinkRamp
+
+    if cfg.mode != "two_way_counted_doppler" or cfg.counted_doppler_model not in BARYCENTRIC_COUNTED_DOPPLER_MODELS:
+        raise ValueError("uplink_ramps needs two_way_counted_doppler with a barycentric counted_doppler_model "
+                         f"{BARYCENTRIC_COUNTED_DOPPLER_MODELS}; got {cfg.counted_doppler_model!r}.")
+    names = []
+    for entry in cfg.uplink_ramps:
+        if not (isinstance(entry, tuple) and len(entry) == 2 and isinstance(entry[0], str)
+                and isinstance(entry[1], UplinkRamp)):
+            raise ValueError(f"uplink_ramps entries must be (station name, UplinkRamp) pairs; got {entry!r}.")
+        names.append(entry[0])
+    if len(set(names)) != len(names):
+        raise ValueError(f"uplink_ramps has duplicate station names: {names}.")
 
 
 @dataclass(frozen=True)
@@ -123,6 +163,11 @@ class RangeRatePhysicsConfig:
     # accepted R3 single-bounce model; ``four_event_delay`` is explicit opt-in
     # and is the only model that may carry a nonzero transponder delay.
     counted_doppler_model: CountedDopplerModel = DEFAULT_COUNTED_DOPPLER_MODEL
+    # F2 WP2.3 slice 6: ramped uplink tables, ((station name, UplinkRamp), ...),
+    # epochs in absolute ET (TDB s past J2000); barycentric counted Doppler only.
+    # Kept last; the empty default leaves every
+    # existing configuration, metadata and result unchanged.
+    uplink_ramps: tuple = ()
 
     def __post_init__(self) -> None:
         normalized = _normalize_range_rate_mode(self.mode)
@@ -198,6 +243,33 @@ class RangeRatePhysicsConfig:
                     f"got delay {self.transponder_delay_s!r} s and count "
                     f"interval {self.count_interval_s!r} s."
                 )
+        if self.counted_doppler_model in BARYCENTRIC_COUNTED_DOPPLER_MODELS:
+            if self.mode != "two_way_counted_doppler":
+                raise ValueError(
+                    "counted_doppler_model='barycentric_dsn' requires "
+                    f"mode='two_way_counted_doppler'; got mode={self.mode!r}."
+                )
+            if self.station_state_method != EXACT_EVENT_EPOCH_STATION_METHOD:
+                raise ValueError(
+                    "counted_doppler_model='barycentric_dsn' requires "
+                    f"station_state_method='{EXACT_EVENT_EPOCH_STATION_METHOD}'; "
+                    f"got {self.station_state_method!r}."
+                )
+            unsupported = [
+                name for name, bad in (
+                    ("station_clock_drift", self.station_clock_drift != 0.0),
+                    # F2 WP2.3 slice 7: a fixed transponder delay is supported.
+                    ("output_unit", self.output_unit != "mps_equivalent"),
+                    ("light_speed_mps", self.light_speed_mps != C_LIGHT_MPS),
+                ) if bad
+            ]
+            if unsupported:
+                raise ValueError(
+                    "counted_doppler_model='barycentric_dsn' supports the default "
+                    f"value of {unsupported} only."
+                )
+        if self.uplink_ramps:
+            _validate_uplink_ramps(self)
         if (
             self.mode == "two_way_counted_doppler"
             and self.counted_doppler_model == SINGLE_BOUNCE_COUNTED_DOPPLER_MODEL
@@ -246,13 +318,14 @@ class RangeRatePhysicsConfig:
         return self.counted_doppler_model == FOUR_EVENT_COUNTED_DOPPLER_MODEL
 
     @property
+    def barycentric_enabled(self) -> bool:
+        """True when the explicit F2 barycentric DSN light-time model is selected."""
+        return self.counted_doppler_model in BARYCENTRIC_COUNTED_DOPPLER_MODELS
+
+    @property
     def counted_doppler_model_version(self) -> str:
         """Truthful model-version label for the counted-Doppler path actually used."""
-        return (
-            FOUR_EVENT_COUNTED_DOPPLER_MODEL_VERSION
-            if self.four_event_enabled
-            else COUNTED_DOPPLER_MODEL_VERSION
-        )
+        return counted_doppler_model_version(self.counted_doppler_model)
 
     @property
     def event_model(self) -> str:
@@ -714,6 +787,21 @@ def two_way_counted_doppler_observable(
     if cfg.mode != "two_way_counted_doppler":
         raise ValueError("two_way_counted_doppler_observable requires two_way_counted_doppler mode.")
 
+    if cfg.barycentric_enabled:
+        # F2 WP2.1 dispatch; function-local import like the R4 route below.
+        from .counted_doppler_ssb import barycentric_counted_doppler_observable
+
+        return barycentric_counted_doppler_observable(
+            receive_mid_time_s,
+            station,
+            t_grid_s,
+            state_history_mci,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            cfg,
+            et0_s=et0_s,
+        )
+
     if cfg.four_event_enabled:
         # R4 dispatch. The import is deliberately function-local: it keeps the
         # R3 rule that production ``radiometrics`` carries no module-level
@@ -810,6 +898,22 @@ def two_way_counted_doppler_initial_state_jacobian(
     cfg = range_rate_physics_config(config)
     if cfg.mode != "two_way_counted_doppler":
         raise ValueError("two_way_counted_doppler_initial_state_jacobian requires two_way_counted_doppler mode.")
+
+    if cfg.barycentric_enabled:
+        from .counted_doppler_ssb import (
+            barycentric_counted_doppler_initial_state_jacobian,
+        )
+
+        return barycentric_counted_doppler_initial_state_jacobian(
+            receive_mid_time_s,
+            station,
+            t_grid_s,
+            augmented_state_history_mci,
+            earth_pos_mci_m,
+            earth_vel_mci_mps,
+            cfg,
+            et0_s=et0_s,
+        )
 
     if cfg.four_event_enabled:
         # R4 dispatch, mirroring the observable. Function-local import for the

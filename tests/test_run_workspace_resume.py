@@ -98,6 +98,23 @@ def test_archived_effective_settings_that_form_cannot_recreate_are_rejected(tmp_
         load_archived_scenario(result)
 
 
+def test_archive_from_before_x01_reopens_its_inert_de421_gravity_frame(tmp_path):
+    """X-01 moved the lunar_gravity_frame default to MOON_PA_DE440.  Without
+    harmonics the frame has no effect, so an archive recording DE421 still reopens;
+    a real effective difference (j2_moon) is still rejected (test above)."""
+    _, folder, _, result = native_run(tmp_path)
+    config = folder / "effective_config.json"
+    data = json.loads(config.read_text())
+    assert data["enable_lunar_harmonics"] is False and data["lunar_gravity_frame"] == "MOON_PA_DE440"
+    data["lunar_gravity_frame"] = "MOON_PA_DE421"
+    config.write_text(json.dumps(data))
+    assert load_archived_scenario(result).origin["effective_config"]["lunar_gravity_frame"] == "MOON_PA_DE421"
+    data["enable_lunar_harmonics"] = True
+    config.write_text(json.dumps(data))
+    with pytest.raises(ResultLoadError, match="lunar_gravity_frame"):
+        load_archived_scenario(result)
+
+
 def test_legacy_cannot_become_invented_scenario_and_loading_can_cancel(tmp_path):
     path = write_run(tmp_path)
     path.with_name("sample_result_manifest.json").unlink()

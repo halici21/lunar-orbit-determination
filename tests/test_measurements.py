@@ -420,7 +420,7 @@ class MeasurementTests(unittest.TestCase):
         self.assertEqual(pass_geo.measurement_model_profile, "one_way_light_time")
         self.assertTrue(pass_geo.apply_light_time)
         self.assertFalse(pass_geo.apply_stellar_aberration)
-        self.assertEqual(pass_geo.jacobian_model, "analytic_first_order_light_time")
+        self.assertEqual(pass_geo.jacobian_model, "implicit_light_time")  # WP2.5 default
         residuals, _h = compute_position_residuals(fx["state_history"], clean_obs, pass_geo)
         self.assertLess(float(np.linalg.norm(residuals)), 1e-6)
         meta = measurement_model_metadata(pass_geo)
@@ -1035,6 +1035,8 @@ class MeasurementTests(unittest.TestCase):
 
         fx = self._position_light_time_fixture()
         pass_geo, clean = self._generate_position_clean(fx, apply_light_time=True)
+        # WP2.5: the first-order map is no longer the default; this test pins it by name.
+        pass_geo = dataclasses.replace(pass_geo, jacobian_model="analytic_first_order_light_time")
         state = fx["state_history"]
         tp = fx["t_pass"]
         _, _, h_tilde = compute_position_residuals_analytic(state, clean, pass_geo)

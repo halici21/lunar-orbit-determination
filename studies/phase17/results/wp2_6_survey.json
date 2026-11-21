@@ -1,0 +1,157 @@
+{
+ "landmark": {
+  "pa_vs_me_surface_displacement_m": {
+   "max": 875.3063582553714,
+   "min": 163.37390323433624
+  },
+  "pa_vs_me_in_pixels_at_100km": 55.701313707160004,
+  "jacobian_fixed_attitude_vs_fd_rel_max": 3.640707901116051e-11,
+  "jacobian_vs_nadir_coupled_fd_rel": {
+   "max": 0.06126509749402908,
+   "median": 0.0577903761783589,
+   "n": 40
+  },
+  "principal_point_offset_px": 0.5
+ },
+ "ddor": {
+  "n_epochs": 15,
+  "ds_module_minus_ssb_ns": {
+   "max_abs": 91.57434399491294,
+   "min": 68.60479337227055,
+   "max": 91.57434399491294
+  },
+  "dq_module_minus_iers_ns": {
+   "max_abs": 1047.6651048987874,
+   "min": 674.849509295361,
+   "max": 1047.6651048987874
+  },
+  "ddor_module_minus_reference_ns": {
+   "max_abs": 956.7270557783031,
+   "min": -956.7270557783031,
+   "max": -606.2447159230904
+  },
+  "typical_ddor_precision_ns": 0.1,
+  "rows": [
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 15.75,
+    "ds_module_minus_ssb_ns": 68.60479337227055,
+    "dq_module_minus_iers_ns": 674.849509295361,
+    "ddor_module_minus_reference_ns": -606.2447159230904,
+    "dq_iers_ms": 4.757483042009845
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 16.0,
+    "ds_module_minus_ssb_ns": 72.10633430447533,
+    "dq_module_minus_iers_ns": 731.3144806115994,
+    "ddor_module_minus_reference_ns": -659.208146307124,
+    "dq_iers_ms": 3.750296486734719
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 16.25,
+    "ds_module_minus_ssb_ns": 75.366744510183,
+    "dq_module_minus_iers_ns": 775.6067755314635,
+    "ddor_module_minus_reference_ns": -700.2400310212806,
+    "dq_iers_ms": 2.583792451540383
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 16.5,
+    "ds_module_minus_ssb_ns": 78.35233853262582,
+    "dq_module_minus_iers_ns": 809.7566973998879,
+    "ddor_module_minus_reference_ns": -731.404358867262,
+    "dq_iers_ms": 1.290926546786374
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 16.75,
+    "ds_module_minus_ssb_ns": 81.02934307926448,
+    "dq_module_minus_iers_ns": 840.643588735506,
+    "ddor_module_minus_reference_ns": -759.6142456562077,
+    "dq_iers_ms": -0.047301205688679654
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 17.0,
+    "ds_module_minus_ssb_ns": 83.43956222486783,
+    "dq_module_minus_iers_ns": 875.2328015749003,
+    "ddor_module_minus_reference_ns": -791.7932393500596,
+    "dq_iers_ms": -1.3525092002069676
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 17.25,
+    "ds_module_minus_ssb_ns": 85.53397171377937,
+    "dq_module_minus_iers_ns": 915.7215251315125,
+    "ddor_module_minus_reference_ns": -830.187553417733,
+    "dq_iers_ms": -2.5969239139324496
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 17.5,
+    "ds_module_minus_ssb_ns": 87.33503958262625,
+    "dq_module_minus_iers_ns": 958.00002552918,
+    "ddor_module_minus_reference_ns": -870.6649859465538,
+    "dq_iers_ms": -3.817094067800729
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 17.75,
+    "ds_module_minus_ssb_ns": 88.83077729383155,
+    "dq_module_minus_iers_ns": 994.2813127212028,
+    "ddor_module_minus_reference_ns": -905.4505354273712,
+    "dq_iers_ms": -5.0863037798642665
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 18.0,
+    "ds_module_minus_ssb_ns": 90.00366182898567,
+    "dq_module_minus_iers_ns": 1018.0377321492018,
+    "ddor_module_minus_reference_ns": -928.0340703202161,
+    "dq_iers_ms": -6.46424783989805
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 18.25,
+    "ds_module_minus_ssb_ns": 90.86612156108953,
+    "dq_module_minus_iers_ns": 1028.182050048787,
+    "ddor_module_minus_reference_ns": -937.3159284876975,
+    "dq_iers_ms": -7.955446823345879
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 18.5,
+    "ds_module_minus_ssb_ns": 91.3866282457182,
+    "dq_module_minus_iers_ns": 1029.839468414534,
+    "ddor_module_minus_reference_ns": -938.4528401688158,
+    "dq_iers_ms": -9.503173275670575
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 18.75,
+    "ds_module_minus_ssb_ns": 91.57434399491294,
+    "dq_module_minus_iers_ns": 1030.99250100408,
+    "ddor_module_minus_reference_ns": -939.418157009167,
+    "dq_iers_ms": -11.023463737269992
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 19.0,
+    "ds_module_minus_ssb_ns": 91.41346106467108,
+    "dq_module_minus_iers_ns": 1037.1352777132497,
+    "ddor_module_minus_reference_ns": -945.7218166485787,
+    "dq_iers_ms": -12.456068114577294
+   },
+   {
+    "pair": "Goldstone-Canberra",
+    "hour": 19.25,
+    "ds_module_minus_ssb_ns": 90.9380491204842,
+    "dq_module_minus_iers_ns": 1047.6651048987874,
+    "ddor_module_minus_reference_ns": -956.7270557783031,
+    "dq_iers_ms": -13.797849497926318
+   }
+  ]
+ }
+}

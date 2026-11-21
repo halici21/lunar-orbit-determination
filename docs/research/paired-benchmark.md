@@ -2,22 +2,22 @@
 
 This bounded Level-0 experiment uses **32 paired seeds per noise block**, 64 seeded arcs and 192 estimator fits. The two noise blocks share seeds; they are not 64 independent geometries. [Predeclared design](paired-benchmark-plan.md).
 
-Producing commit: `732fda80114fe7e073e641314215b19704a92d1f`; clean source: `True`. Campaign elapsed time: 63.87 s on the recorded environment.
+Producing commit: `4d8819ab16fb115caca81c311aa23421c0d41be3`; clean source: `True`. Campaign elapsed time: 39.01 s on the recorded environment.
 
 ![Across-seed final position error](../figures/benchmark/position-distribution.png)
 
 | Noise | Estimator | Median / p95 position (m) | Median velocity (m/s) | Numerical criteria | Solver termination | Mean NEES |
 |---|---|---|---|---|---|---|
-| 1× | BLS-LM | 53.255 / 129.053 | 0.06488 | 32/32 | 100.0% | 5.005 |
-| 1× | SRIF | 52.280 / 128.687 | 0.06306 | 32/32 | 25.0% | 4.992 |
-| 1× | SR-UKF | 52.247 / 128.486 | 0.06304 | 32/32 | 100.0% | 4.989 |
-| 3× | BLS-LM | 98.997 / 176.211 | 0.13241 | 32/32 | 100.0% | 5.306 |
-| 3× | SRIF | 96.922 / 176.041 | 0.13206 | 32/32 | 43.8% | 5.175 |
-| 3× | SR-UKF | 96.931 / 176.025 | 0.13203 | 32/32 | 100.0% | 5.175 |
+| 1× | BLS-LM | 52.279 / 128.687 | 0.06306 | 32/32 | 100.0% | 4.990 |
+| 1× | SRIF | 52.280 / 128.687 | 0.06306 | 32/32 | 100.0% | 4.990 |
+| 1× | SR-UKF | 52.277 / 128.684 | 0.06307 | 32/32 | 100.0% | 4.990 |
+| 3× | BLS-LM | 96.922 / 176.045 | 0.13206 | 32/32 | 100.0% | 5.175 |
+| 3× | SRIF | 96.922 / 176.045 | 0.13206 | 32/32 | 100.0% | 5.175 |
+| 3× | SR-UKF | 96.924 / 176.031 | 0.13204 | 32/32 | 100.0% | 5.176 |
 
 ## Interpretation and scientific review
 
-**Accept with caveats** for this declared synthetic comparison. All three estimators meet the predeclared numerical error/covariance criteria in all attempted trials. Solver termination is a separate criterion: SRIF reaches MaxIter in many trials even when its state error is small. Those trials are retained and are not called converged. See raw stop reasons below.
+The table reports the predeclared numerical criteria separately from solver termination. Every attempted trial is retained. MaxIter counts are: BLS-LM=0, SRIF=0, SR-UKF=0. Such stopped trials are not called converged. A scientific acceptance decision must inspect these outcomes and the complete diagnostics; numerical criteria alone are insufficient.
 
 Final errors are close in this fixed, well-behaved geometry; the data do not establish general estimator superiority. BLS-LM/SRIF estimate an initial state using the complete arc; the UKF filters sequentially. Only their aligned final epoch is compared. Priors, R, zero Q and sigma-point settings are explicit in the design and inputs.
 

@@ -10,7 +10,7 @@ from typing import get_args, get_type_hints
 
 from models.scenario_model import ScenarioModel
 from services.run_archive import local_reference
-from services.scenario_execution import execution_payload
+from services.scenario_execution import execution_payload, reconcile_saved_options
 from services.tracking_results import load_tracking_results, ResultLoadError, LoadCancelled
 
 
@@ -19,6 +19,21 @@ class ArchivedScenario:
     model: ScenarioModel
     origin: dict
     notes: tuple[str, ...]
+
+
+def effective_config_differences(effective, current):
+    """Keys whose recorded effective value differs from the current one. A key the archive predates (a field
+    added later, ``SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES``) is compared with the value it ran with."""
+    from lunar_od.scenario_config import LUNAR_HARMONICS_ONLY_FIELDS
+    from lunar_od.scenario_config import SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES as added
+    missing = "<missing>"
+    # Fields with no effect while lunar harmonics are off on both sides (X-01).
+    inert = set()
+    if not effective.get("enable_lunar_harmonics") and not current.get("enable_lunar_harmonics"):
+        inert = set(LUNAR_HARMONICS_ONLY_FIELDS)
+    return sorted(k for k in effective.keys() | current.keys()
+        if k not in {"name", "output_dir"} | inert
+        and effective.get(k, added.get(k, missing)) != current.get(k, missing))
 
 
 def form_from_mapping(form):
@@ -65,7 +80,8 @@ def load_archived_scenario(result_path, cancel=lambda: False):
     saved_config = job.get("config")
     if not isinstance(saved_config, dict) or not isinstance(saved_config.get("output_dir"), str):
         raise ResultLoadError("Kaydedilmiş koşu yapılandırması eksik.")
-    if {k: v for k, v in saved_config.items() if k != "output_dir"} != config or job.get("options") != options:
+    options = reconcile_saved_options(options, job.get("options"))
+    if {k: v for k, v in saved_config.items() if k != "output_dir"} != config or options is None:
         raise ResultLoadError("Kayıtlı form, yapılandırma ve zamanlama ayarları uyuşmuyor.")
     effective = read_verified(local_reference(folder, manifest.get("config_file")))
     if cancel():
@@ -73,13 +89,8 @@ def load_archived_scenario(result_path, cancel=lambda: False):
     # Validate current defaults against the recorded effective configuration on
     # this worker. Unsupported old defaults must not be silently replaced.
     from lunar_od import scenario_config_from_mapping
-    from lunar_od.scenario_config import SCENARIO_CONFIG_FIELDS_ADDED_WP1_6
     current = scenario_config_from_mapping(saved_config).to_dict()
-    # Archives written before WP1.6 have no seed fields; they ran with the default (None).
-    added = set(SCENARIO_CONFIG_FIELDS_ADDED_WP1_6)
-    differences = sorted(k for k in effective.keys() | current.keys()
-        if k not in {"name", "output_dir"}
-        and effective.get(k, None if k in added else "<missing>") != current.get(k, "<missing>"))
+    differences = effective_config_differences(effective, current)
     if differences:
         raise ResultLoadError("Etkin ayarlar bu form/yürütücü ile aynen kurulamadı: " + ", ".join(differences[:12]))
     if cancel():

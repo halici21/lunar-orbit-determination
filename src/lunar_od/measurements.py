@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -39,9 +39,14 @@ MEASUREMENT_MODEL_PROFILES = (
     "one_way_light_time_aberrated_local_mci",
     "one_way_light_time_aberrated_spice_ssb",
     "two_way_counted_doppler",
+    # F2 WP2.1 slice 3 (MEAS-01): barycentric one-way light time (SSB leg, Sun
+    # and Earth Shapiro), plain or with SSB stellar aberration (SPICE CN+S).
+    "one_way_light_time_ssb",
+    "one_way_light_time_ssb_aberrated",
 )
-POSITION_MEASUREMENT_MODEL_PROFILES = MEASUREMENT_MODEL_PROFILES[:4]
-COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way")
+SSB_LIGHT_TIME_POSITION_PROFILES = MEASUREMENT_MODEL_PROFILES[5:7]
+POSITION_MEASUREMENT_MODEL_PROFILES = MEASUREMENT_MODEL_PROFILES[:4] + SSB_LIGHT_TIME_POSITION_PROFILES
+COMPANION_GEOMETRIES = ("instantaneous", "apparent_one_way", "apparent_one_way_ssb")
 JACOBIAN_MODELS = (
     "analytic_exact_geometric",
     "analytic_first_order_light_time",
@@ -202,6 +207,10 @@ def normalize_measurement_model_profile(
         return measurement_model_profile, True, True, "local_mci"
     if measurement_model_profile == "one_way_light_time_aberrated_spice_ssb":
         return measurement_model_profile, True, True, "spice_ssb"
+    if measurement_model_profile == "one_way_light_time_ssb":
+        return measurement_model_profile, True, False, stellar_aberration_model
+    if measurement_model_profile == "one_way_light_time_ssb_aberrated":
+        return measurement_model_profile, True, True, "spice_ssb"
     return measurement_model_profile, apply_light_time, apply_stellar_aberration, stellar_aberration_model
 
 
@@ -213,6 +222,25 @@ def normalize_companion_geometry(companion_geometry: str | None = None) -> str:
     return value
 
 
+def validate_companion_for_doppler(rr_physics, companion_geometry: str) -> None:
+    """F2 WP2.5 (MEAS-09): fail closed on companion rows solved in another frame than the Doppler beside them.
+
+    The Moon-centred ``apparent_one_way`` range is 37 km from the SSB one-way range, so beside barycentric
+    Doppler it would claim a light-time model it does not follow. ``apparent_one_way_ssb`` carries no media
+    delay, so it goes with ``barycentric_dsn`` only. The instantaneous companion stays allowed: it claims no
+    light time, and it is a self-consistent synthetic model.
+    """
+    barycentric = rr_physics.barycentric_enabled
+    if companion_geometry == "apparent_one_way" and barycentric:
+        raise ValueError("companion_geometry='apparent_one_way' is Moon-centred; barycentric counted Doppler "
+                         "needs 'apparent_one_way_ssb' (barycentric_dsn) or 'instantaneous'.")
+    if companion_geometry == "apparent_one_way_ssb" and (
+        not barycentric or rr_physics.counted_doppler_model == "barycentric_dsn_media"
+    ):
+        raise ValueError("companion_geometry='apparent_one_way_ssb' goes with "
+                         "counted_doppler_model='barycentric_dsn' only.")
+
+
 def normalize_jacobian_model(
     jacobian_model: str | None = None,
     *,
@@ -220,11 +248,13 @@ def normalize_jacobian_model(
     companion_geometry: str = "instantaneous",
 ) -> str:
     """Return the declared Jacobian model for metadata and validation."""
+    geometric = measurement_model_profile == "geometric_instantaneous" and companion_geometry == "instantaneous"
     if jacobian_model is None:
-        if measurement_model_profile == "geometric_instantaneous" and companion_geometry == "instantaneous":
-            jacobian_model = "analytic_exact_geometric"
-        else:
-            jacobian_model = "analytic_first_order_light_time"
+        jacobian_model = "analytic_exact_geometric" if geometric else "implicit_light_time"
+    elif jacobian_model == "analytic_exact_geometric" and not geometric:
+        # F2 WP2.5 (MEAS-10): the scenario field's default cannot describe a light-time observable. The
+        # first-order map errs by up to 4.6 percent per row and stays available by its explicit name.
+        jacobian_model = "implicit_light_time"
     if jacobian_model not in JACOBIAN_MODELS:
         raise ValueError(f"jacobian_model must be one of {JACOBIAN_MODELS}; got {jacobian_model!r}.")
     if (
@@ -403,6 +433,9 @@ def measurement_model_metadata(
         "ionosphere_model": "none",
         "solar_plasma_model": "none",
     }
+    if getattr(rr, "uplink_ramps", ()):
+        # F2 WP2.3 slice 6: provenance of ramped stations (absent without ramps).
+        metadata["uplink_ramp_stations"] = tuple(name for name, _ramp in rr.uplink_ramps)
     if use_light_time:
         metadata["spacecraft_position_epoch"] = "transmit"
         metadata["spacecraft_velocity_epoch"] = "transmit"
@@ -1146,6 +1179,35 @@ def position_initial_state_jacobian_from_augmented_history(
     return h_initial
 
 
+def range_rate_companion_initial_state_jacobian(
+    obs_data: ArrayLike,
+    x_aug_hist: ArrayLike,
+    pass_geo: PassGeometry,
+    h_initial: np.ndarray,
+) -> np.ndarray:
+    """Give the companion rows of 4-row range-rate blocks the Jacobian their label declares (F2 WP2.5).
+
+    ``compute_range_rate_residuals_analytic`` maps at the receive epoch. With a light-time companion and
+    ``jacobian_model='implicit_light_time'`` the range, azimuth and elevation rows are replaced by the
+    transmit-epoch map; the range-rate row stays. ``apparent_one_way_ssb`` uses the same Moon-centred solve,
+    an order v/c approximation as for ``one_way_light_time_ssb``.
+    """
+    companion_geometry = normalize_companion_geometry(getattr(pass_geo, "companion_geometry", "instantaneous"))
+    if (companion_geometry == "instantaneous"
+            or getattr(pass_geo, "jacobian_model", "analytic_exact_geometric") != "implicit_light_time"):
+        return h_initial
+    obs_data = np.asarray(obs_data, dtype=float)
+    position_geo = replace(pass_geo, measurement_model_profile="one_way_light_time", apply_stellar_aberration=False)
+    block = position_initial_state_jacobian_from_augmented_history(
+        obs_data[:, [0, 1, 3, 4, 5, 6]], x_aug_hist, np.zeros((3 * obs_data.shape[0], 6)), position_geo
+    )
+    h_out = np.array(h_initial, dtype=float)
+    h_out[0::4, :] = block[0::3, :]
+    h_out[2::4, :] = block[1::3, :]
+    h_out[3::4, :] = block[2::3, :]
+    return h_out
+
+
 def _light_time_frame_unit_los(
     unit_los: ArrayLike,
     frame_velocity_j2000_mps: ArrayLike,
@@ -1332,8 +1394,15 @@ def _apparent_position_observable(
     max_iter: int = ONE_WAY_LIGHT_TIME_MAX_ITERATIONS,
     equation_tolerance_s: float = ONE_WAY_LIGHT_TIME_EQUATION_TOLERANCE_S,
     observation_index: int | None = None,
+    ssb_et0_s: float | None = None,
 ) -> tuple[np.ndarray, float, float, int]:
     """Apparent (one-way light-time corrected) [range, az, el] for one receive epoch.
+
+    F2 WP2.1 slice 3: with ``ssb_et0_s`` (the SPICE ET of scenario t=0) the leg is
+    solved in the SSB frame with the Sun and Earth Shapiro delays
+    (``relativistic_light_time.DSN_LIGHT_TIME_MODEL``); the range is c x the
+    light time and the direction is the SSB leg vector (SPICE CN), so the SSB
+    aberration needs no frame re-expression.
 
     The spacecraft position is evaluated at the transmit time ``t_t = t_r - tau``;
     the Earth centre, station, and topocentric SEZ frame are evaluated at the
@@ -1379,6 +1448,13 @@ def _apparent_position_observable(
         consumer="_apparent_position_observable",
         observation_index=observation_index,
     )
+    if ssb_et0_s is not None:
+        return _ssb_apparent_position_observable(
+            receive_time_s, station, station_rel_state_j2000, earth_pos_mci_rx, x_rx,
+            state_lookup, float(ssb_et0_s),
+            observer_earth_vel_rx=observer_earth_vel_rx, apply_stellar=apply_stellar,
+            light_speed_mps=light_speed_mps,
+        )
     solution = solve_one_way_light_time(
         receive_time_s,
         station_mci_rx,
@@ -1434,6 +1510,37 @@ def _apparent_position_observable(
     return z, transmit_time_s, solution.light_time_s, int(solution.iterations)
 
 
+_SSB_EPHEMERIS_CACHE: dict = {}
+
+
+def _ssb_apparent_position_observable(
+    receive_time_s, station, station_rel_state_j2000, earth_pos_mci_rx, x_rx, state_lookup, et0_s,
+    *, observer_earth_vel_rx, apply_stellar, light_speed_mps,
+):
+    """SSB-leg branch of :func:`_apparent_position_observable` (F2 WP2.1 slice 3)."""
+    from . import relativistic_light_time as rlt
+
+    eph = _SSB_EPHEMERIS_CACHE.get(et0_s)
+    if eph is None:
+        eph = _SSB_EPHEMERIS_CACHE.setdefault(et0_s, rlt.BarycentricEphemeris(et0_s))
+    station_mci_rx = np.concatenate([earth_pos_mci_rx + station_rel_state_j2000[:3], np.zeros(3)])
+    t3 = float(receive_time_s)
+    leg = rlt._leg(rlt.DSN_LIGHT_TIME_MODEL, eph, t_rx=t3, rx_fixed=station_mci_rx,
+                   tx_fn=lambda t: np.asarray(state_lookup(t), dtype=float)[:6], label="one-way position")
+    rho_inertial = -np.asarray(leg.rel, dtype=float)          # station -> spacecraft, SSB frame
+    if apply_stellar:
+        if observer_earth_vel_rx is None:
+            raise ValueError("apply_stellar=True requires observer_earth_vel_rx.")
+        observer_vel_inertial = _observer_velocity_j2000_at_receive_epoch(
+            station, x_rx, observer_earth_vel_rx, station_relative_state_j2000=station_rel_state_j2000,
+        )
+        rho_inertial = apply_stellar_aberration(rho_inertial, observer_vel_inertial,
+                                                light_speed_mps=light_speed_mps)
+    az_rad, el_rad, _geometric = ecef2razel_sez(x_rx[:3, :3] @ rho_inertial, station.lat_rad, station.lon_rad)
+    range_m = float(light_speed_mps) * leg.light_time_s
+    return np.array([range_m, az_rad, el_rad], dtype=float), leg.t_tx_s, leg.light_time_s, 0
+
+
 def _apparent_position_rowwise(
     state_history_mci: np.ndarray,
     obs_data: np.ndarray,
@@ -1480,6 +1587,11 @@ def _apparent_position_rowwise(
         if (use_stellar and model == "spice_ssb")
         else None
     )
+    if profile in SSB_LIGHT_TIME_POSITION_PROFILES and getattr(pass_geo, "et0_s", None) is None:
+        raise ValueError(
+            f"measurement_model_profile={profile!r} requires pass_geo.et0_s "
+            "(regenerate with generate_position_measurements)."
+        )
     n_obs = obs_data.shape[0]
     h_meas = np.zeros((n_obs, 3), dtype=float)
     r_tx = np.zeros((n_obs, 3), dtype=float)
@@ -1500,6 +1612,7 @@ def _apparent_position_rowwise(
             apply_stellar=use_stellar,
             light_time_frame_velocity_rx=None if frame_vel is None else frame_vel[time_idx],
             observation_index=i,
+            ssb_et0_s=pass_geo.et0_s if profile in SSB_LIGHT_TIME_POSITION_PROFILES else None,
         )
         h_meas[i] = z
         r_tx[i] = _guarded_spacecraft_state_lookup(
@@ -1529,8 +1642,13 @@ def generate_position_measurements(
     measurement_model_profile: str | None = None,
     jacobian_model: str | None = None,
     noise_seed: int | None = None,
+    refraction: bool = False,
 ) -> tuple[np.ndarray, PassGeometry, np.ndarray]:
     """Generate range/azimuth/elevation measurements.
+
+    ``refraction`` (F2 WP2.2): add the default radio elevation refraction
+    (:func:`lunar_od.media.default_radio_refraction_coefficients`) to the
+    elevation; the pass metadata carries it to the residuals and the Jacobian.
 
     ObsData follows MATLAB's convention:
     `[t, range, az, el, station_id_1based, time_index_1based, optional_arc_id]`.
@@ -1644,6 +1762,11 @@ def generate_position_measurements(
                             else None
                         ),
                         observation_index=candidate_counter,
+                        ssb_et0_s=(
+                            float(et0)
+                            if measurement_model_profile in SSB_LIGHT_TIME_POSITION_PROFILES
+                            else None
+                        ),
                     )
                 else:
                     rho_vec_ecef = r_sat_ecef - station.r_ecef_m
@@ -1663,6 +1786,9 @@ def generate_position_measurements(
                 continue
             candidate_counter += 1
 
+            if refraction:
+                z_clean = np.array(z_clean, dtype=float)
+                z_clean[2] = _refracted_elevation(np.array([z_clean[2]]), (station,))[0][0]
             bias_vec = np.asarray(getattr(station, "bias", np.zeros(3)), dtype=float).reshape(-1)
             if bias_vec.size != 3:
                 bias_vec = np.zeros(3)
@@ -1693,6 +1819,7 @@ def generate_position_measurements(
         measurement_model_profile=measurement_model_profile,
         companion_geometry="instantaneous",
         jacobian_model=jacobian_model,
+        et0_s=float(et0) if measurement_model_profile in SSB_LIGHT_TIME_POSITION_PROFILES else None,
     )
     metadata = measurement_model_metadata(
         pass_geo, noise_enabled=noise, noise_seed=noise_seed
@@ -1702,6 +1829,8 @@ def generate_position_measurements(
         metadata["history_domain_all_candidates_dropped"] = bool(
             candidate_counter > 0 and obs_counter == 0
         )
+    if refraction:
+        metadata["refraction"] = dict(REFRACTION_METADATA)
     object.__setattr__(pass_geo, "measurement_metadata", metadata)
     return obs_data[:obs_counter, :], pass_geo, clean_obs_data[:obs_counter, :]
 
@@ -1750,12 +1879,47 @@ def compute_position_residuals(
             state_history_mci, obs_data, pass_geo, apply_stellar_aberration=use_stellar
         )
 
+    if _pass_refraction(pass_geo):
+        h_meas = np.array(h_meas, dtype=float)
+        h_meas[:, 2] = _refracted_elevation(h_meas[:, 2], _row_stations(pass_geo, obs_data))[0]
+
     diff_raw = obs_data[:, 1:4] - h_meas
     diff_raw[:, 1] = wrap_to_pi(diff_raw[:, 1])
     diff_raw[:, 2] = wrap_to_pi(diff_raw[:, 2])
     _zero_tiny_position_residuals(diff_raw)
     residuals = diff_raw.T.reshape(-1, order="F")
     return residuals, h_meas
+
+
+#: F2 WP2.2 slice 3: provenance of the elevation refraction stamped on position passes.
+REFRACTION_METADATA = {
+    "model": "sofa_refco_radio",
+    "pressure": "standard_atmosphere_at_station_height",
+    "temperature_c": 10.0,
+    "relative_humidity": 0.5,
+}
+
+
+def _pass_refraction(pass_geo) -> bool:
+    return bool((getattr(pass_geo, "measurement_metadata", None) or {}).get("refraction"))
+
+
+def _row_stations(pass_geo, obs_data):
+    return tuple(pass_geo.stations[int(i) - 1] for i in np.asarray(obs_data, dtype=float)[:, 4])
+
+
+def _refracted_elevation(true_el_rad, stations):
+    """(apparent elevation, d apparent / d true) per row, each with its station's default radio refraction."""
+    from .media import apparent_elevation, default_radio_refraction_coefficients
+
+    true_el = np.asarray(true_el_rad, dtype=float).reshape(-1)
+    app = np.empty_like(true_el)
+    slope = np.empty_like(true_el)
+    for i, (el, station) in enumerate(zip(true_el, stations)):
+        a, b = default_radio_refraction_coefficients(float(station.alt_m))
+        app_i, slope_i = apparent_elevation(el, a, b)
+        app[i], slope[i] = float(app_i), float(slope_i)
+    return app, slope
 
 
 def _instantaneous_range_rate_companion(
@@ -1780,6 +1944,7 @@ def _range_rate_companion_observable(
     xform_j2000_to_itrf93: np.ndarray,
     *,
     companion_geometry: str,
+    ssb_et0_s: float | None = None,
 ) -> tuple[float, float, float]:
     companion_geometry = normalize_companion_geometry(companion_geometry)
     if companion_geometry == "instantaneous":
@@ -1790,6 +1955,8 @@ def _range_rate_companion_observable(
             station,
         )
         return z
+    if companion_geometry == "apparent_one_way_ssb" and ssb_et0_s is None:
+        raise ValueError("companion_geometry='apparent_one_way_ssb' needs et0_s (SPICE ET of scenario t=0).")
     z, _t_t, _lt, _it = _apparent_position_observable(
         receive_time_s,
         station,
@@ -1798,6 +1965,7 @@ def _range_rate_companion_observable(
         earth_pos_mci,
         xform_j2000_to_itrf93,
         apply_stellar=False,
+        ssb_et0_s=ssb_et0_s if companion_geometry == "apparent_one_way_ssb" else None,
     )
     return float(z[0]), float(z[1]), float(z[2])
 
@@ -1840,6 +2008,7 @@ def generate_range_rate_measurements(
         raise ValueError("vis_mask_raw must have shape (N, num_stations).")
     rr_physics = range_rate_physics_config(range_rate_physics)
     companion_geometry = normalize_companion_geometry(companion_geometry)
+    validate_companion_for_doppler(rr_physics, companion_geometry)
     if measurement_model_profile is None:
         if rr_physics.mode == "two_way_counted_doppler":
             measurement_model_profile = "two_way_counted_doppler"
@@ -1918,6 +2087,7 @@ def generate_range_rate_measurements(
                         r_earth_mci[k],
                         xforms[k, :, :],
                         companion_geometry=companion_geometry,
+                        ssb_et0_s=float(et0),
                     )
                 if rr_physics.mode == "geometric_instantaneous":
                     rr_ideal = instantaneous_geometric_range_rate(rho_vec_ecef, rho_dot_ecef)
@@ -2048,6 +2218,7 @@ def compute_range_rate_residuals(
                 pass_geo.earth_pos_mci_m[time_idx, :],
                 pass_geo.x_j2000_to_itrf93[time_idx, :, :],
                 companion_geometry=companion_geometry,
+                ssb_et0_s=pass_geo.et0_s,
             )
         if rr_physics.mode == "geometric_instantaneous":
             rr_val = instantaneous_geometric_range_rate(r_rel_ecef, v_rel_ecef)
@@ -2191,6 +2362,10 @@ def compute_position_residuals_analytic(
     dsez_drmci  = np.einsum('nij,njk->nik', c_sez, R_j2k)           # (n_obs, 3, 3)
     dmeas_drmci = np.einsum('nij,njk->nik', d_meas_dsez, dsez_drmci) # (n_obs, 3, 3)
 
+    if _pass_refraction(pass_geo):
+        # F2 WP2.2: elevation row through the refraction map, d(el_app)/d(el_true).
+        el_true = np.arctan2(zenith, rho_h)
+        dmeas_drmci[:, 2, :] *= _refracted_elevation(el_true, _row_stations(pass_geo, obs_data))[1][:, None]
     h_tilde = np.zeros((3 * n_obs, 6), dtype=float)
     h_tilde[:, :3] = dmeas_drmci.reshape(3 * n_obs, 3)
 
@@ -2267,7 +2442,7 @@ def compute_range_rate_residuals_analytic(
     r_eci      = state_sat[:, :3] - earth_pos                        # (n_obs, 3)
     v_eci      = state_sat[:, 3:] - earth_vel                        # (n_obs, 3)
     r_comp_eci = r_eci.copy()
-    if companion_geometry == "apparent_one_way":
+    if companion_geometry != "instantaneous":
         for obs_idx in range(n_obs):
             station = pass_geo.stations[station_ids[obs_idx]]
             receive_time_s = float(obs_data[obs_idx, 0])
@@ -2279,6 +2454,7 @@ def compute_range_rate_residuals_analytic(
                 pass_geo.earth_pos_mci_m[time_idxs[obs_idx], :],
                 pass_geo.x_j2000_to_itrf93[time_idxs[obs_idx], :, :],
                 apply_stellar=False,
+                ssb_et0_s=pass_geo.et0_s if companion_geometry == "apparent_one_way_ssb" else None,
             )
             _ = z_app
             r_tx_mci = interp_state_history(pass_geo.t_s, state_history_mci, transmit_time_s)[:3]

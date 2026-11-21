@@ -22,6 +22,17 @@ from lunar_od.constants import (
     J2_EARTH_UNNORMALIZED as J2_E, R_MOON_M,
 )
 from phase6_scenario_comparison import SCENARIOS, initial_state  # the actual scenario matrix
+import pytest
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 R_ME = np.array([-83446893.0, 354010875.0, 178558253.0])
 R_MS = np.array([1.40753701450e11, -4.21884124439e10, -1.82638284191e10])

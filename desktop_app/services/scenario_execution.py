@@ -10,6 +10,30 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+def cold_start_seed_for(random_seed: int) -> int:
+    """CFG-09: the cold-start perturbation must not reuse the noise stream.
+
+    The form's seed stays the measurement-noise seed (earlier desktop runs keep
+    their noise realization); the cold-start seed is an independent child of it.
+    """
+    import numpy as np
+
+    return int(np.random.SeedSequence(random_seed).spawn(1)[0].generate_state(1)[0])
+
+
+def reconcile_saved_options(derived: dict, saved) -> dict | None:
+    """The options a saved job ran with, or None when they do not follow from its form.
+
+    Jobs saved before X-11 used the form seed for the cold start as well; they stay
+    valid and replay with their recorded seeds.
+    """
+    if saved == derived:
+        return saved
+    if saved == {**derived, "cold_start_seed": derived["measurement_seed"]}:
+        return saved
+    return None
+
+
 def execution_payload(model):
     """Return canonical backend config + explicit desktop scheduling options."""
     if not re.fullmatch(r"[\w.-]{1,100}", model.name) or model.name in {".", ".."}:
@@ -64,7 +88,7 @@ def execution_payload(model):
         "arc_mode", "arc_duration_h", "arc_stride_h", "elevation_mask_deg",
         "gap_threshold_s", "ephemeris_step_s", "min_visibility_samples", "max_arcs")}
     options["measurement_seed"] = model.random_seed
-    options["cold_start_seed"] = model.random_seed
+    options["cold_start_seed"] = cold_start_seed_for(model.random_seed)
     options["schedule_policy"] = "planned_windows_with_real_visibility" if model.arc_mode == "prescribed" else "real_visibility_windows"
     return config, options
 

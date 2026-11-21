@@ -1,0 +1,51 @@
+{
+ "arc": "2027-03-02T16:00 TDB + 1 h, 100 km lunar orbit, quasar 3 deg from the spacecraft",
+ "G7_same_model_minus_consensus": {
+  "Goldstone-Canberra": {
+   "max_abs_diff_ns": 0.7414252566929902,
+   "max_abs_diff_plus_dtdb_error_ns": 0.07880110470775425
+  },
+  "Madrid-Canberra": {
+   "max_abs_diff_ns": 1.294107116606158,
+   "max_abs_diff_plus_dtdb_error_ns": 0.8218672584088672
+  }
+ },
+ "informational_goldstone_canberra": [
+  {
+   "t_obs": 300.0,
+   "ssb_minus_legacy_ns": 668.1462696150193,
+   "ddor_same_model_minus_ddor_consensus_ns": 0.6236927974946627,
+   "quasar_gravitational_ns": -0.5984658070219522
+  },
+  {
+   "t_obs": 900.0,
+   "ssb_minus_legacy_ns": 693.9089095439437,
+   "ddor_same_model_minus_ddor_consensus_ns": 0.6453215418630864,
+   "quasar_gravitational_ns": -0.6356718797173588
+  },
+  {
+   "t_obs": 1500.0,
+   "ssb_minus_legacy_ns": 717.3410730310515,
+   "ddor_same_model_minus_ddor_consensus_ns": 0.6672885796438904,
+   "quasar_gravitational_ns": -0.6715684740623596
+  },
+  {
+   "t_obs": 2100.0,
+   "ssb_minus_legacy_ns": 739.5515335200612,
+   "ddor_same_model_minus_ddor_consensus_ns": 0.6892067209909175,
+   "quasar_gravitational_ns": -0.7060321012726523
+  },
+  {
+   "t_obs": 2700.0,
+   "ssb_minus_legacy_ns": 761.7267556087655,
+   "ddor_same_model_minus_ddor_consensus_ns": 0.7106795382895827,
+   "quasar_gravitational_ns": -0.7391910753743076
+  },
+  {
+   "t_obs": 3300.0,
+   "ssb_minus_legacy_ns": 784.8049951486493,
+   "ddor_same_model_minus_ddor_consensus_ns": 0.7313995301332782,
+   "quasar_gravitational_ns": -0.7713669856394649
+  }
+ ]
+}

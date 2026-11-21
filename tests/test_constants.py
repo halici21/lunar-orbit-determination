@@ -67,14 +67,14 @@ def spice_pool():
     return spice
 
 
-# WP1.2: the default (DE440) kernel set furnishes gm_de440.tpc; the legacy
-# MU_*_M3S2 names keep their gm_de431 values for frozen baselines.
-@pytest.mark.parametrize("body, name", [
-    ("MOON", "MU_MOON_DE440_M3S2"),
-    ("EARTH", "MU_EARTH_DE440_M3S2"),
-    ("SUN", "MU_SUN_DE440_M3S2"),
-])
-def test_gm_equals_loaded_gm_kernel(spice_pool, body, name):
-    """The DE440 constants match the furnished GM kernel exactly (km^3/s^2 -> m^3/s^2)."""
+@pytest.mark.parametrize("index, body", [(0, "MOON"), (1, "EARTH"), (2, "SUN")])
+def test_gm_equals_loaded_gm_kernel(spice_pool, index, body):
+    """The selected generation's GMs match the furnished GM kernel exactly (km^3/s^2 -> m^3/s^2).
+
+    WP1.2: each ephemeris loads its own GM kernel, and runs take GM from
+    ``gravitational_parameters()``; the legacy MU_*_M3S2 names stay gm_de431.
+    """
+    from lunar_od.ephemeris_generation import gravitational_parameters
+
     (gm_km3_s2,) = spice_pool.bodvrd(body, "GM", 1)[1]
-    assert getattr(K, name) == pytest.approx(gm_km3_s2 * 1e9, rel=1e-15)
+    assert gravitational_parameters()[index] == pytest.approx(gm_km3_s2 * 1e9, rel=1e-15)

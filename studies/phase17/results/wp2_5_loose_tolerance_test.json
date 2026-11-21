@@ -1,0 +1,78 @@
+{
+ "propagation_difference_vs_rtol_1e-12_max_m": {
+  "1e-08": 5.3408474112491415,
+  "1e-10": 0.0040599338462048795
+ },
+ "loosening_off/range_rate/implicit_light_time": {
+  "pos_err_m": 0.05533259583931413,
+  "vel_err_mps": 1.6696460027010162e-05,
+  "nees": 2.0190343480347415,
+  "status": "J-Stab",
+  "iterations": 23,
+  "cost": 4003.362648566727,
+  "cost_truth": 4005.3849964681617
+ },
+ "loosening_off/range_rate/analytic_first_order_light_time": {
+  "pos_err_m": 0.05468111539283778,
+  "vel_err_mps": 1.6457923328979814e-05,
+  "nees": 2.0261832882084336,
+  "status": "Converged",
+  "iterations": 30,
+  "cost": 4003.364443348156,
+  "cost_truth": 4005.3849964681617
+ },
+ "loosening_off/position/implicit_light_time": {
+  "pos_err_m": 0.8637761476840858,
+  "vel_err_mps": 0.0006485427074957944,
+  "nees": 6.234954095009549,
+  "status": "Converged",
+  "iterations": 35,
+  "cost": 2907.562535348436,
+  "cost_truth": 2913.7985846416996
+ },
+ "loosening_off/position/analytic_first_order_light_time": {
+  "pos_err_m": 0.8643945401724806,
+  "vel_err_mps": 0.0006487534071765668,
+  "nees": 6.233544359495506,
+  "status": "Converged",
+  "iterations": 33,
+  "cost": 2907.560827735702,
+  "cost_truth": 2913.7985846416996
+ },
+ "loosening_on/range_rate/implicit_light_time": {
+  "pos_err_m": 0.5623651389999688,
+  "vel_err_mps": 9.610533585265251e-05,
+  "nees": 203924.9402697515,
+  "status": "DampingLimit",
+  "iterations": 30,
+  "cost": 207846.98452238803,
+  "cost_truth": 4005.3849964681617
+ },
+ "loosening_on/range_rate/analytic_first_order_light_time": {
+  "pos_err_m": 0.9039632645728835,
+  "vel_err_mps": 0.00013420166319640103,
+  "nees": 279924.70476702804,
+  "status": "DampingLimit",
+  "iterations": 38,
+  "cost": 283826.7055391656,
+  "cost_truth": 4005.3849964681617
+ },
+ "loosening_on/position/implicit_light_time": {
+  "pos_err_m": 0.2963626591149736,
+  "vel_err_mps": 0.0002897288042324085,
+  "nees": 777.7583609073989,
+  "status": "DampingLimit",
+  "iterations": 38,
+  "cost": 3759.254608340349,
+  "cost_truth": 2913.7985846416996
+ },
+ "loosening_on/position/analytic_first_order_light_time": {
+  "pos_err_m": 1.3278496101150654,
+  "vel_err_mps": 0.0008422759969755976,
+  "nees": 6.085433494450523,
+  "status": "DampingLimit",
+  "iterations": 55,
+  "cost": 2907.6415365991793,
+  "cost_truth": 2913.7985846416996
+ }
+}

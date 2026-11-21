@@ -45,7 +45,14 @@ from lunar_od.force_contract import scenario_result_force_fields  # noqa: E402
 from lunar_od.reporting import write_force_model_manifest, write_numerical_profile_manifest  # noqa: E402
 from lunar_od.force_contract import ephemeris_execution_contract  # noqa: E402
 from lunar_od.ephemeris import MoonCenteredEphemeris  # noqa: E402
-from lunar_od.run_provenance import furnished_kernels, run_provenance_record, write_run_provenance  # noqa: E402
+from lunar_od.run_provenance import (  # noqa: E402
+    earth_orientation_record,
+    furnished_kernels,
+    run_provenance_record,
+    write_run_provenance,
+)
+from lunar_od.scenario_config import scenario_earth_orientation_profile  # noqa: E402
+from lunar_od.station_frames import require_measured_earth_orientation  # noqa: E402
 from lunar_od.thesis_matrix import (  # noqa: E402
     THESIS_COLD_START_SIGMA_POS_M,
     THESIS_COLD_START_SIGMA_VEL_MPS,
@@ -193,9 +200,14 @@ def run_configured_scenario(
 
     import spiceypy as spice
 
-    load_spice_kernels()
+    # F2 WP2.4: the scenario's Earth-orientation profile (None keeps the process default).
+    earth_profile = scenario_earth_orientation_profile(config)
+    load_spice_kernels(earth_orientation=earth_profile)
     try:
         et0 = float(spice.str2et(epoch_utc))
+        earth_span = (et0, et0 + float(t_eval_s[-1]))
+        if config.earth_orientation == "measured_only":
+            require_measured_earth_orientation(earth_span)
         ephemeris = sample_moon_centered_ephemeris(et0, t_ephem_s)
         estimator_ephemeris = perturb_moon_centered_ephemeris(
             ephemeris,
@@ -262,6 +274,7 @@ def run_configured_scenario(
             apply_stellar_aberration=config.apply_stellar_aberration,
             stellar_aberration_model=config.stellar_aberration_model,
             measurement_model_profile=config.measurement_model_profile,
+            media_model=getattr(config, "media_model", "none"),
             companion_geometry=config.companion_geometry,
             jacobian_model=config.jacobian_model,
         )
@@ -347,6 +360,7 @@ def run_configured_scenario(
                     "desktop_options": dict(options),
                     "epoch_utc": epoch_utc,
                 },
+                earth_orientation=earth_orientation_record(earth_profile, config.earth_orientation, earth_span),
             ),
             manifest_output_dir / f"{config.name}_run_provenance.json",
         )

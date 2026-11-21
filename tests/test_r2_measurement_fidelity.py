@@ -962,18 +962,25 @@ def _force_contract(j2_moon: float, **gms):
 
 
 def test_r0b_fingerprints_schema_and_r1_readiness_are_frozen():
+    from lunar_od.constants import J2_MOON_GRAIL_UNNORMALIZED
+    from lunar_od.lunar_j2_model import use_lunar_j2_model
+
     zero = _force_contract(0.0)
-    lunar_j2 = _force_contract(float(J2_MOON_UNNORMALIZED))
+    # F1 X-02: the lunar-J2 identities below are the legacy mean-pole model.
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        legacy = _force_contract(float(J2_MOON_UNNORMALIZED))
+        # The R0B-era fingerprints remain reproducible from the DE431 GMs (WP1.2).
+        historical = campaign.DE431_LITERAL_GMS_M3S2
+        assert _force_contract(0.0, **historical).force_model_fingerprint() == (
+            campaign.FROZEN_ZERO_J2_FINGERPRINT
+        )
+        assert _force_contract(float(J2_MOON_UNNORMALIZED), **historical).force_model_fingerprint() == (
+            campaign.FROZEN_LUNAR_J2_FINGERPRINT
+        )
+    lunar_j2 = _force_contract(float(J2_MOON_GRAIL_UNNORMALIZED))
     assert zero.force_model_fingerprint() == campaign.F1_WP1_2_ZERO_J2_FINGERPRINT
-    assert lunar_j2.force_model_fingerprint() == campaign.F1_WP1_2_LUNAR_J2_FINGERPRINT
-    # The R0B-era fingerprints remain reproducible from the DE431 GMs (WP1.2).
-    historical = campaign.DE431_LITERAL_GMS_M3S2
-    assert _force_contract(0.0, **historical).force_model_fingerprint() == (
-        campaign.FROZEN_ZERO_J2_FINGERPRINT
-    )
-    assert _force_contract(float(J2_MOON_UNNORMALIZED), **historical).force_model_fingerprint() == (
-        campaign.FROZEN_LUNAR_J2_FINGERPRINT
-    )
+    assert legacy.force_model_fingerprint() == campaign.F1_WP1_2_LUNAR_J2_FINGERPRINT
+    assert lunar_j2.force_model_fingerprint() == campaign.F1_X02_LUNAR_J2_GRAIL_PA_FINGERPRINT
     assert FORCE_CONTRACT_SCHEMA_VERSION == "r0b.force-model-contract.v1"
     payload = lunar_j2.to_canonical_payload()
     assert payload["consumer_capabilities"]["posterior_covariance"] == "verified"

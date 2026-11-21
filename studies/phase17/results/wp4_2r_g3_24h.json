@@ -1,0 +1,38 @@
+{
+ "arc_h": 24.0,
+ "seed": 2000,
+ "gate": "final cost <= cost at the truth",
+ "per_type": {
+  "position": {
+   "pos_err_m": 0.8637761476840858,
+   "status": "Converged",
+   "iterations": 35,
+   "cost": 2907.562535348436,
+   "cost_truth": 2913.7985846416996,
+   "rows": 967,
+   "wall_s": 110.94558970001526,
+   "pass": true
+  },
+  "range_rate": {
+   "pos_err_m": 0.05533259583931413,
+   "status": "J-Stab",
+   "iterations": 23,
+   "cost": 4003.362648566727,
+   "cost_truth": 4005.3849964681617,
+   "rows": 967,
+   "wall_s": 45.55352259997744,
+   "pass": true
+  },
+  "two_way_range": {
+   "pos_err_m": 4.3518859914603905,
+   "status": "Converged",
+   "iterations": 33,
+   "cost": 953.0021533446984,
+   "cost_truth": 959.3803253248085,
+   "rows": 967,
+   "wall_s": 127.04441209998913,
+   "pass": true
+  }
+ },
+ "pass": true
+}

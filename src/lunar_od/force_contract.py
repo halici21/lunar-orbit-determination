@@ -25,10 +25,12 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass
 from enum import Enum
 from types import MappingProxyType
 from typing import Any, Mapping
+
+from .lunar_j2_model import active_lunar_j2_model, check_lunar_j2_model
 
 __all__ = [
     "FORCE_CONTRACT_SCHEMA_VERSION",
@@ -123,6 +125,8 @@ class OrientationPolicy(str, Enum):
     NOT_APPLICABLE = "not_applicable"
     # Constant IAU 2006 lunar mean pole (RA0 269.9949 deg, Dec0 66.5392 deg).
     CONSTANT_IAU2006_MOON_MEAN_POLE = "constant_iau2006_moon_mean_pole"
+    # MOON_PA_DE440 figure axis at the exact epoch (X-02, default since 2026-11-02).
+    EXACT_EPOCH_MOON_PA_DE440_POLE = "exact_epoch_moon_pa_de440_pole"
     # Identity J2000 -> Earth body-fixed: experimental direct-trajectory
     # approximation only; NOT an IERS-compliant Earth orientation.
     EXPERIMENTAL_IDENTITY_J2000_TO_EARTH_BODY_FIXED = (
@@ -230,6 +234,27 @@ class LunarHarmonicsForceContract:
     rotation_cadence_s: float | None
     rotation_margin_s: float | None
     status: ForceElementStatus = ForceElementStatus.EXPERIMENTAL_DIRECT_TRAJECTORY_ONLY
+    # X-12 (REQ-DYN-004): how the body rotation between grid samples is evaluated.
+    # WP1.3 moved the sampled path from the nearest sample to geodesic
+    # interpolation with no fingerprint change; this field makes the mode part of
+    # the identity.  None (omitted from the payload) only for disabled harmonics,
+    # so the frozen no-harmonics fingerprints are unchanged.
+    rotation_mode: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.enabled and self.rotation_mode not in LUNAR_ROTATION_MODES:
+            raise ForceContractError(
+                f"enabled lunar harmonics need rotation_mode in {LUNAR_ROTATION_MODES}, "
+                f"got {self.rotation_mode!r}."
+            )
+        if not self.enabled and self.rotation_mode is not None:
+            raise ForceContractError("disabled lunar harmonics carry no rotation_mode.")
+
+
+# Values of LunarHarmonicsForceContract.rotation_mode.
+LUNAR_ROTATION_SAMPLED_GEODESIC = "sampled_grid_geodesic_interpolation"
+LUNAR_ROTATION_DIRECT_EXACT_EPOCH = "direct_exact_epoch_moon_pa_de440"
+LUNAR_ROTATION_MODES = (LUNAR_ROTATION_SAMPLED_GEODESIC, LUNAR_ROTATION_DIRECT_EXACT_EPOCH)
 
 
 @dataclass(frozen=True)
@@ -378,6 +403,9 @@ def _normalize(value: Any) -> Any:
             if not (isinstance(value, ForceModelContract)
                     and field.name in ('solar_radiation_pressure', 'ephemeris_execution')
                     and getattr(value, field.name) is None)
+            and not (isinstance(value, LunarHarmonicsForceContract)
+                     and field.name == 'rotation_mode'
+                     and value.rotation_mode is None)
         }
     if isinstance(value, Mapping):
         normalized: dict[str, Any] = {}
@@ -469,6 +497,12 @@ def consumer_capabilities_for(
     return capability_map({role: ConsumerReadiness.VERIFIED for role in ConsumerRole})
 
 
+_LUNAR_J2_ORIENTATION = {
+    "grail_pa_de440": OrientationPolicy.EXACT_EPOCH_MOON_PA_DE440_POLE,
+    "iau_mean_pole_legacy": OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE,
+}
+
+
 @dataclass(frozen=True)
 class ForceExecutionSpec:
     """Single source of one executed force model: runtime args AND contract.
@@ -496,6 +530,14 @@ class ForceExecutionSpec:
     force_ephemeris_policy: str = "moon_centered_sampled_ephemeris"
     solar_radiation_pressure: SolarRadiationPressureForceContract | None = None
     ephemeris_execution: EphemerisExecutionContract | None = None
+    #: Lunar J2 model executed (``lunar_j2_model.LUNAR_J2_MODELS``). Defaults to
+    #: the model active when the spec is built, which is the one an omitted
+    #: propagator argument resolves to; the reference radius above must be
+    #: that model's pair.
+    lunar_j2_model: str = field(default_factory=active_lunar_j2_model)
+
+    def __post_init__(self):
+        check_lunar_j2_model(self.lunar_j2_model)
 
     @property
     def lunar_j2_on(self) -> bool:
@@ -556,7 +598,7 @@ class ForceExecutionSpec:
                     float(self.lunar_j2_reference_radius_m) if lunar_j2_on else 0.0
                 ),
                 orientation_policy=(
-                    OrientationPolicy.CONSTANT_IAU2006_MOON_MEAN_POLE
+                    _LUNAR_J2_ORIENTATION[self.lunar_j2_model]
                     if lunar_j2_on
                     else OrientationPolicy.NOT_APPLICABLE
                 ),

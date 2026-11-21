@@ -62,6 +62,17 @@ from tests.test_r0a_force_config_parity import (
     _synthetic_ephemeris,
     _ukf_inputs,
 )
+import pytest
+from lunar_od.lunar_j2_model import use_lunar_j2_model
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _legacy_lunar_j2_model():
+    """X-02: this module pins J2 numbers frozen before 2026-11-02; run it on the
+    legacy mean-pole model (the default is covered by test_moon_orientation_wp1_3)."""
+    with use_lunar_j2_model("iau_mean_pole_legacy"):
+        yield
+
 
 
 J2 = float(J2_MOON_UNNORMALIZED)

@@ -1,0 +1,172 @@
+{
+  "study": "F2 WP2.4 station chain (MEAS-06, R-15)",
+  "date": "2026-11-03",
+  "source_of_predeclaration": "V&V programme plan F2 WP2.4; Phase C3 owner decision 2026-10-23 (T2B CONVENTION_REAL_DATA: real data require final EOP or a high-precision Earth PCK covering the data epochs)",
+  "survey_before_predeclaration": {
+    "note": "Seen before these gates were written (diagnostic, not a gate): production loads only earth_2025_250826_2125_predict.bpc, coverage 2025-01-01..2125-11-22, last datum 2025-08-26; earth_latest_high_prec.bpc is on disk but not loaded, coverage 2000-01-01..2026-04-19, last datum 2026-01-21. Pre-2025 epochs (all LRO data) have no ITRF93 orientation in production; F1 LRO scripts furnish the high-precision kernel themselves. DSS-14 position, predict vs high-precision: 5e-5 m at 2025-06-01, 5.0 mm at 2025-08-20, 6.19 m at 2025-10-01, 21.4 m at 2026-03-01.",
+    "limitation": "The local high-precision kernel is stale (last datum 2026-01-21, today 2026-11-03). Fetching a newer one is a download and needs the owner's permission; the manifest pins the present file."
+  },
+  "scope_slice_1": "Earth-orientation profiles in spice_loader, selected like the planetary ephemeris (explicit argument, else LUNAR_OD_EARTH_ORIENTATION, else default): PREDICT (default) furnishes earth_latest_high_prec.bpc immediately BEFORE the predict PCK, so the predict kernel keeps priority wherever it covers and the high-precision kernel only adds pre-2025 coverage; MEASURED furnishes it immediately AFTER the predict PCK, so it has priority over its whole span. station_frames gains earth_orientation_provenance(et) (which loaded Earth PCK supplies body 3000 at et, searched in reverse load order with pckcov; its last datum read from the kernel comment 'UTC Epoch of last datum'; measured = et <= last datum) and require_measured_earth_orientation(et_values) (fail-closed PredictedEarthOrientationError). is_predicted_earth_orientation is re-expressed through the provenance. The high-precision kernel's SHA-256 enters the kernel manifest.",
+  "out_of_scope_slice_1": "scenario/ingestion wiring of a measured-only policy and run-output provenance (slice 2); IERS EOP file reader; plate motion, pole tide, ocean loading; NAIF DSN station SPK cross-check; downloading newer kernels",
+  "gates_slice_1": {
+    "G1_default_unchanged_where_predict_covers": {
+      "rule": "PREDICT profile kernel list = previous list with earth_latest_high_prec.bpc inserted immediately before the predict PCK; sxform('ITRF93','J2000') at 30 monthly epochs 2025-01-02..2027-06-02 bitwise equal to the previous kernel list"
+    },
+    "G2_default_gains_pre_2025_coverage": {
+      "rule": "PREDICT profile resolves ITRF93 at 2000-01-02, 2009-09-20, 2010-09-20, 2015-06-01, 2020-06-01, 2024-12-31, bitwise equal to the high-precision kernel loaded alone (with LSK and the ITRF93 association FK)"
+    },
+    "G3_measured_profile_priority": {
+      "rule": "MEASURED profile: epochs inside [2000-01-02, 2026-04-18] bitwise equal to the high-precision kernel alone; epochs 2026-04-20..2027-06 bitwise equal to the predict kernel alone"
+    },
+    "G4_provenance": {
+      "rule": "earth_orientation_provenance reads last datum 2025-08-26T00:00:00 UTC (predict) and 2026-01-21T00:00:00 UTC (high precision) from the comments; kernel and measured flag match: PREDICT 2020-06-01 high_prec/measured, 2025-06-01 predict/measured, 2025-10-01 predict/predicted; MEASURED 2025-10-01 high_prec/measured, 2026-03-01 high_prec/predicted, 2026-06-01 predict/predicted; 1990-01-01 no kernel"
+    },
+    "G5_fail_closed": {
+      "rule": "require_measured_earth_orientation raises PredictedEarthOrientationError (a ValueError) naming the first predicted or uncovered epoch and its kernel, and returns silently when every epoch is measured; is_predicted_earth_orientation keeps 2027-03-08 True and 2025-03-01 False under the default profile"
+    },
+    "G6_selection_and_manifest": {
+      "rule": "explicit argument beats the environment variable, which beats the default; an unknown profile raises ValueError; every kernel of both profiles and both planetary ephemerides is in the manifest"
+    },
+    "G7_full_regression": {
+      "rule": "full regression green; the only pre-existing test changed is the readiness kernel count (10 -> 11), a deliberate contract change"
+    }
+  },
+  "reject_if": "any G1 epoch differs (the default profile would change existing physics), or the provenance disagrees with the SPICE kernel actually used",
+  "results_slice_1": {
+    "G1": "PASS (first run)",
+    "G2": "PASS (first run)",
+    "G3": "PASS (first run)",
+    "G4": "PASS (first run)",
+    "G5": "PASS (first run)",
+    "G6": "PASS (first run)",
+    "G7": "PASS: full regression 2604 tests, 0 failures, 33 skipped (branch on origin/main 4d8819a); only the readiness kernel count changed (10 -> 11)",
+    "diagnostic_profile_offset_dss14_m": {
+      "2025-09-01": 0.265,
+      "2025-10-01": 6.186,
+      "2025-12-01": 17.531,
+      "2026-01-15": 20.025,
+      "2026-03-01": 21.408
+    },
+    "diagnostic_note": "PREDICT vs MEASURED station position in J2000; up to 2026-01-21 the MEASURED value is IERS-measured, so the PREDICT profile misplaces stations by up to ~20 m in that window. Self-consistent synthetic runs are unaffected; real data and external comparisons there need MEASURED."
+  },
+  "scope_slice_2": "Scenario wiring: ScenarioConfig.earth_orientation (None default = the process default, i.e. load_spice_kernels() exactly as before; 'predict' | 'measured' | 'measured_only'). The runner loads the selected profile; 'measured_only' loads MEASURED and fails closed (PredictedEarthOrientationError) before any propagation when the scenario span [et0, et0 + duration] holds predicted or uncovered orientation. The run provenance gains an earth_orientation block (resolved profile, policy, provenance at span start and end). The field is registered in SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES (archives predating it ran with None) and enters scenario_measurement_identity when not None. Note fixed before results: the runner's epoch comes from fixtures/spice_snapshots.json (2027-03-02), beyond the high-precision kernel, so both profiles serve the predict kernel there; the measured-orientation effect is exercised by the slice-1 gates, not by a scenario run.",
+  "out_of_scope_slice_2": "the LRO real-data study scripts (they furnish the high-precision kernel themselves; F5 must use earth_orientation='MEASURED' + require_measured_earth_orientation); a configurable scenario epoch; desktop form controls",
+  "gates_slice_2": {
+    "G8_config_field": {
+      "rule": "default None; accepts predict/measured/measured_only, unknown raises ValueError; JSON round trip; schema lists it; SCENARIO_CONFIG_FIELDS_ADDED_AFTER_ARCHIVES['earth_orientation'] is None; scenario_measurement_identity carries it only when not None"
+    },
+    "G9_default_and_profiles_bitwise": {
+      "rule": "end-to-end runner (1 h, 600 s, seeded noise): unset, 'predict' and 'measured' give bitwise identical result columns at the fixture epoch (predict kernel serves 2027 under both profiles); the furnished kernel list of 'measured' has the high-precision kernel after the predict kernel"
+    },
+    "G10_measured_only_fails_closed": {
+      "rule": "'measured_only' at the fixture epoch raises PredictedEarthOrientationError naming the predict kernel, before propagation"
+    },
+    "G11_run_provenance": {
+      "rule": "run provenance earth_orientation block: profile PREDICT (unset), MEASURED ('measured'); policy; span_start/span_end each with kernel earth_2025_250826_2125_predict.bpc, last_datum_utc 2025 AUG 26 00:00:00, measured false"
+    },
+    "G12_full_regression": {
+      "rule": "full regression green"
+    }
+  },
+  "results_slice_2": {
+    "G8": "PASS (first run)",
+    "G9": "PASS (first run)",
+    "G10": "PASS (first run)",
+    "G11": "PASS (first run)",
+    "G12": "FAIL as computed: 2611 tests, 1 failure (test_desktop_bridge_provenance: the bridge's current identity is pinned to the newest re-freeze table, and slice 2 re-froze run_scenario_config.py). Fixed additively (3d04922: the older identity stays asserted, F2_WP2_4 is the current one), as #109 did for F2_WP2_2; the full re-run is the slice-3 regression."
+  },
+  "scope_slice_3": "Owner-approved (2026-11-03) update of the high-precision Earth PCK: spice_loader names the versioned NAIF release earth_000101_270128_261102.bpc (last datum 2026-11-02, coverage to 2027-01-29; SHA-256 feed146c...) instead of the rolling earth_latest_high_prec.bpc, whose local copy (last datum 2026-01-21) stays untouched for the LRO study scripts that furnish it by name and stays in the manifest. Reason for a versioned name, measured before this slice: NAIF refits the whole series per release (DSS-14 differs by up to 3.8 mm in 2009-2025 between the two releases, 2.1 m at 2026-03-01), so a rolling name would change earlier results silently.",
+  "amendments_slice_3": [
+    "G2-G5 of slice 1 hard-coded the old release's dates (last datum 2026-01-21, coverage end 2026-04-19). With the kernel change they are re-expressed from the pinned kernel's own metadata (pckcov coverage and the comment's last datum): G3 inside = up to coverage end - 1 day, after = coverage end + 1..365 days; G4/G5 epochs = last datum -/+ 1 day. Same rules, release-independent dates. The slice-1 results stay recorded against the old release. Not exploratory: the change follows a kernel update, not a seen gate value."
+  ],
+  "gates_slice_3": {
+    "G13_slice1_gates_on_new_release": {
+      "rule": "G1-G6 pass with the amended, kernel-derived epochs on the new release; G1 unchanged (the predict kernel serves 2025+ under PREDICT)"
+    },
+    "G14_versioned_name_and_manifest": {
+      "rule": "EARTH_HIGH_PRECISION_PCK == 'earth_000101_270128_261102.bpc'; manifest SHA feed146c1ba6fba13f1e579371d34b67f6c134612d158db27cec019892bca5ab; earth_latest_high_prec.bpc keeps its recorded SHA 99ddb26a... (untouched)"
+    },
+    "G15_full_regression": {
+      "rule": "full regression green"
+    }
+  },
+  "results_slice_3": {
+    "G13": "PASS (first run)",
+    "G14": "PASS (first run)",
+    "G15": "PASS: full regression 2611 tests, 0 failures, 33 skipped (also the full re-run for slice 2's G12)",
+    "diagnostic_profile_offset_dss14_m_new_release": {
+      "2025-10-01": 6.186,
+      "2026-01-15": 20.025,
+      "2026-06-01": 42.575,
+      "2026-10-01": 56.928,
+      "2026-11-01": 68.958
+    },
+    "diagnostic_note": "PREDICT (NAIF 2025-08-26 predict kernel) vs MEASURED (IERS-measured through 2026-11-02): the predict kernel misplaces stations by up to 69 m at today's epochs. Synthetic runs are self-consistent; any real data or external comparison after 2025-08-26 must use MEASURED. NAIF's newer predict kernel earth_2026_260806_2126_predict.bpc exists but is not adopted (it would change every 2027 synthetic result; owner decision)."
+  },
+  "survey_before_predeclaration_slice_4": "Read before writing the gates, no model run: NAIF earthstns_itrf93_260814.bsp comments quote DSN 810-005 301 Rev. P (May 2026): ITRF93 Cartesian coordinates at epoch 2003.0 for 19 antennas and one plate velocity per complex (Goldstone 1.96, Canberra 5.17, Madrid 3.05 cm/yr by arithmetic). So at 2027-03-02 the accumulated motion is 0.47, 1.25 and 0.74 m by arithmetic, larger than the programme's 1 m radial target at Canberra. Phase C3 classified T6 plate motion CONVENTION_REAL_DATA and never measured it. SHA-256 007eb0aa... from two independent downloads of the NAIF file. C3 already measured the pole tide (1.2 mm, 0.004 sigma, DOCUMENT_ONLY): not re-opened. The stated absolute accuracy is up to 0.1 m (1 sigma) by the source's own note. IERS DEHANTTIDEINEL.F could not be fetched (404 at the two paths tried), so the G21 reference values are transcribed from memory of that file's header; a three-component micrometre agreement cannot be accidental, and a disagreement is reported as computed.",
+  "scope_slice_4": "src/lunar_od/dsn_stations.py: the DSN 810-005 301 Rev. P table (ITRF93, epoch 2003.0 TDB) with per-complex plate velocities; dsn_station_itrf93(name, et_s) and dsn_station(name, et_s, *, sigmas, allow_estimated=False), which returns an ordinary Station whose r_ecef_m is the antenna position at et_s, so every production path (Moon-centred and SSB) consumes it without a change to a protected file; the position is frozen at et_s, as Station is static. The SPK joins the kernel manifest but is not furnished by the default loader. The IERS solid-tide published test case closes the plan's test_solid_tide_vs_dehanttideinel_testcase. Existing station tables are not changed: this is opt-in, and synthetic baselines are untouched.",
+  "out_of_scope_slice_4": "ocean loading (needs BLQ coefficients from an external service: NOT_MEASURED stays, a later slice); pole tide (C3 DOCUMENT_ONLY stands); replacing the rounded scenario station tables (CFG-08; would change every synthetic baseline); non-DSN stations (the LRO USN sites of RD-09 are not in this source); finals2000A EOP reader; scenario and desktop fields for the catalogue (F5 with real data)",
+  "gates_slice_4": {
+    "G16_table_vs_naif_spk": {
+      "rule": "dsn_station_itrf93 vs spkezr(<id>, et, 'ITRF93', 'NONE', 'EARTH') for all 19 antennas at 1990, 2003, 2010, 2027 and 2040: position < 1 mm, velocity < 1e-12 m/s"
+    },
+    "G17_station_round_trip": {
+      "rule": "dsn_station(name, et).r_ecef_m reproduces dsn_station_itrf93(name, et) within 1e-6 m for all antennas (WGS-84 geodetic inversion)"
+    },
+    "G18_production_chain_vs_spk": {
+      "rule": "make_exact_sxform_station_state_provider with dsn_station at the arc start, minus the arc's Earth state, vs spkezr(<id>, et, 'J2000', 'NONE', 'EARTH') at the grid nodes of a 1 h arc: position < 1 mm, velocity < 1e-7 m/s"
+    },
+    "G19_freeze_error": {
+      "rule": "freezing the position at the arc start errs by < 0.2 mm after 1 day for every antenna, the documented limit of the static Station"
+    },
+    "G20_materiality": {
+      "rule": "at 2027-03-02, epoch-2003 vs arc-epoch coordinates: station shift within 1 percent of the arithmetic 0.47 / 1.25 / 0.74 m; for DSS-43 on the 1 h arc, max |change| of two-way range in [0.2, 1.3] m and of counted Doppler in [1e-6, 2e-4] m/s under DSN_LIGHT_TIME_MODEL"
+    },
+    "G21_solid_tide_iers_test_case": {
+      "rule": "solid_tide_displacement_ecef at the DEHANTTIDEINEL test case (2009-04-13 0h UTC, station 4075578.385 / 931852.890 / 4801570.154 m) reproduces 0.07700420357108 / 0.06304056321825 / 0.05516568152597 m within 1 um per component (transcribed from memory, see the survey note)"
+    },
+    "G22_fail_closed": {
+      "rule": "unknown antenna raises ValueError; DSS-33 (the source's estimated location, good to a few metres) raises unless allow_estimated=True; a non-finite epoch raises"
+    },
+    "G23_manifest_and_full_regression": {
+      "rule": "KERNEL_MANIFEST records earthstns_itrf93_260814.bsp with SHA-256 007eb0aad5dd022c6d61bdbfb2395680bd1eb31c49a8637d0b0a1cfbea737c6b; the default loader does not furnish it; no protected file changes; full regression green"
+    }
+  },
+  "results_slice_4": {
+    "G16": "PASS (first run): 1.9e-09 m, 2.1e-25 m/s",
+    "G17": "PASS (first run): 1.4e-09 m",
+    "G18": "PASS (first run): 5.9e-06 m (the 1 h freeze), 1.7e-09 m/s (the omitted plate velocity)",
+    "G19": "PASS (first run): 0.142 mm per day at most",
+    "G20": "PASS (first run): shifts 0.471 / 1.250 / 0.737 m; DSS-43 range 0.418 m, Doppler 54.2 um/s",
+    "G21": "PASS (first run): 1.2e-08 m; the agreement also confirms the values transcribed from memory",
+    "G22": "PASS (first run)",
+    "G23": "PASS: manifest and loader checks first run; full regression 2620 tests, 0 failures, 33 skipped",
+    "diagnostic_rounded_scenario_stations": {
+      "Goldstone DSN": {
+        "antenna": "DSS-14",
+        "offset_km": 15.730542062202927,
+        "nearest_antenna": "DSS-13",
+        "nearest_offset_km": 6.031822517951278,
+        "two_way_range_change_m": 4264.135038985215,
+        "doppler_change_mps": 0.048418620564234516
+      },
+      "Madrid DSN": {
+        "antenna": "DSS-63",
+        "offset_km": 0.21886189686753169,
+        "nearest_antenna": "DSS-63",
+        "nearest_offset_km": 0.2188618968681005,
+        "two_way_range_change_m": 102.44005986206481,
+        "doppler_change_mps": 0.001075293737130778
+      },
+      "Canberra DSN": {
+        "antenna": "DSS-43",
+        "offset_km": 0.2918783768151112,
+        "nearest_antenna": "DSS-34",
+        "nearest_offset_km": 0.24708841413159716,
+        "two_way_range_change_m": 64.18668297465263,
+        "doppler_change_mps": 0.0020774710637851967
+      }
+    },
+    "diagnostic_note": "Computed after the gates, not gated: the rounded config.py stations sit 15.7 km (Goldstone, from DSS-14; 6.0 km from the nearest antenna), 0.22 km (Madrid) and 0.29 km (Canberra) from the antennas. Harmless for self-consistent synthetic data, unusable against real data. The assessment's CFG-08 wording (~1 km) understates Goldstone."
+  }
+}

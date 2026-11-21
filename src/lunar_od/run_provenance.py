@@ -66,6 +66,27 @@ def furnished_kernels() -> list[dict[str, Any]]:
     return kernels
 
 
+def earth_orientation_record(profile: str | None, policy: str | None, et_values) -> dict[str, Any]:
+    """F2 WP2.4: the loaded Earth-orientation profile and, per epoch, the Earth PCK SPICE uses and whether its
+    orientation is measured (``station_frames.earth_orientation_provenance``, without absolute paths)."""
+    import spiceypy as spice
+
+    from .spice_loader import earth_orientation
+
+    record: dict[str, Any] = {"profile": earth_orientation(profile), "policy": policy}
+    if not hasattr(spice, "ktotal"):  # a stubbed SPICE module has no pool to report
+        record["epochs"] = "unrecorded"
+        return record
+    from .station_frames import earth_orientation_provenance
+
+    record["epochs"] = []
+    for et in et_values:
+        prov = earth_orientation_provenance(float(et))
+        record["epochs"].append({"et_s": float(et), "kernel": prov["kernel"],
+                                 "last_datum_utc": prov["last_datum_utc"], "measured": bool(prov["measured"])})
+    return record
+
+
 def package_versions() -> dict[str, str | None]:
     versions: dict[str, str | None] = {"python": platform.python_version()}
     for name in _PACKAGES:
@@ -84,9 +105,10 @@ def run_provenance_record(
     kernels: list[dict[str, Any]],
     ephemeris_identities: dict[str, Any],
     run_options: dict[str, Any] | None = None,
+    earth_orientation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config_dict = config.to_dict()
-    return {
+    record = {
         "schema": RUN_PROVENANCE_SCHEMA,
         "source": source_revision(),
         "scenario_config": config_dict,
@@ -104,6 +126,9 @@ def run_provenance_record(
         },
         "packages": package_versions(),
     }
+    if earth_orientation is not None:
+        record["earth_orientation"] = earth_orientation
+    return record
 
 
 def write_run_provenance(record: dict[str, Any], path) -> Path:

@@ -1,0 +1,1335 @@
+{
+ "elevation_numerics": {
+  "zenith": {
+   "n": 270,
+   "max_err_arcsin_rad": 9.999999938767661e-09,
+   "max_err_numba_arcsin_rad": 9.999999938767661e-09,
+   "max_err_atan2_rad": 1.0831976430501221e-16,
+   "numba_equals_python_bitwise": false
+  },
+  "horizon": {
+   "n": 90,
+   "max_err_arcsin_rad": 1.5381338083156934e-17,
+   "max_err_numba_arcsin_rad": 1.5381338083156934e-17,
+   "max_err_atan2_rad": 7.603776630447758e-18,
+   "numba_equals_python_bitwise": false
+  },
+  "random": {
+   "n": 300,
+   "max_err_arcsin_rad": 8.825372332008467e-16,
+   "max_err_numba_arcsin_rad": 8.825372332008467e-16,
+   "max_err_atan2_rad": 1.4876913291632944e-16,
+   "numba_equals_python_bitwise": false
+  },
+  "arcsin_returns_exact_pi_over_2_up_to_zenith_distance_rad": 1.2589254117941687e-08
+ },
+ "azimuth_contract": {
+  "tiny_west_of_north_at_4e8_m": [
+   {
+    "east_m": -1e-14,
+    "true_az_minus_2pi_rad": -2.5e-23,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-13,
+    "true_az_minus_2pi_rad": -2.5000000000000002e-22,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-12,
+    "true_az_minus_2pi_rad": -2.5e-21,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-11,
+    "true_az_minus_2pi_rad": -2.5e-20,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-10,
+    "true_az_minus_2pi_rad": -2.5e-19,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-09,
+    "true_az_minus_2pi_rad": -2.5e-18,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-08,
+    "true_az_minus_2pi_rad": -2.5e-17,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-07,
+    "true_az_minus_2pi_rad": -2.4999999999999997e-16,
+    "az_rad": 6.283185307179586,
+    "python_returns_2pi": true,
+    "numba_returns_2pi": true
+   },
+   {
+    "east_m": -1e-06,
+    "true_az_minus_2pi_rad": -2.5e-15,
+    "az_rad": 6.283185307179584,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   },
+   {
+    "east_m": -1e-05,
+    "true_az_minus_2pi_rad": -2.5e-14,
+    "az_rad": 6.283185307179561,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   },
+   {
+    "east_m": -0.0001,
+    "true_az_minus_2pi_rad": -2.5e-13,
+    "az_rad": 6.283185307179337,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   },
+   {
+    "east_m": -0.001,
+    "true_az_minus_2pi_rad": -2.5000000000000003e-12,
+    "az_rad": 6.283185307177086,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   },
+   {
+    "east_m": -0.01,
+    "true_az_minus_2pi_rad": -2.5e-11,
+    "az_rad": 6.283185307154587,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   },
+   {
+    "east_m": -0.1,
+    "true_az_minus_2pi_rad": -2.5e-10,
+    "az_rad": 6.283185306929586,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   },
+   {
+    "east_m": -1.0,
+    "true_az_minus_2pi_rad": -2.5e-09,
+    "az_rad": 6.283185304679586,
+    "python_returns_2pi": false,
+    "numba_returns_2pi": false
+   }
+  ],
+  "largest_west_offset_returning_2pi_rad": 2.4999999999999997e-16,
+  "east_minus_zero_returns_negative_zero": false
+ },
+ "nonuniform_grid_synthetic": {
+  "dense_then_coarse_1500s_outage": {
+   "max_gap_s": 1200.0,
+   "expected": "not bridged",
+   "current_segments_s": [
+    [
+     0.0,
+     14400.0
+    ]
+   ],
+   "time_rule_segments_s": [
+    [
+     0.0,
+     3900.0
+    ],
+    [
+     5700.0,
+     14400.0
+    ]
+   ]
+  },
+  "coarse_then_dense_600s_outage": {
+   "max_gap_s": 1200.0,
+   "expected": "bridged",
+   "current_segments_s": [
+    [
+     0.0,
+     4990.0
+    ],
+    [
+     5610.0,
+     14400.0
+    ]
+   ],
+   "time_rule_segments_s": [
+    [
+     0.0,
+     14400.0
+    ]
+   ]
+  }
+ },
+ "apparent_visibility": {
+  "arc": "2027-03-02T00:00 TDB + 3 d, 10 s grid, 100 km polar lunar orbit, DSN complexes, 10 deg mask",
+  "production_numba_equals_numpy_fallback": true,
+  "per_station": {
+   "Goldstone DSN": {
+    "visible_samples_geometric": 5449,
+    "survey_geometric_equals_production": true,
+    "samples_differing_downlink": 4,
+    "samples_differing_two_way": 5,
+    "max_abs_downlink_elevation_minus_geometric_rad": 6.284903574682588e-06,
+    "max_abs_diurnal_aberration_elevation_rad": 3.0517688581754854e-07
+   },
+   "Madrid DSN": {
+    "visible_samples_geometric": 4734,
+    "survey_geometric_equals_production": true,
+    "samples_differing_downlink": 5,
+    "samples_differing_two_way": 6,
+    "max_abs_downlink_elevation_minus_geometric_rad": 6.2704278807612646e-06,
+    "max_abs_diurnal_aberration_elevation_rad": 2.1432434182955262e-07
+   },
+   "Canberra DSN": {
+    "visible_samples_geometric": 8845,
+    "survey_geometric_equals_production": true,
+    "samples_differing_downlink": 6,
+    "samples_differing_two_way": 8,
+    "max_abs_downlink_elevation_minus_geometric_rad": 7.243558311387233e-06,
+    "max_abs_diurnal_aberration_elevation_rad": 1.1156484778229725e-06
+   }
+  },
+  "visible_samples_within_3_sigma_1e-4_rad_of_north": {
+   "Goldstone DSN": 0,
+   "Madrid DSN": 0,
+   "Canberra DSN": 0
+  },
+  "boundary_shift_summary": {
+   "elevation_rise_or_exit": {
+    "shift_down_s": {
+     "n": 8,
+     "min": -0.16866374015808105,
+     "median": -0.04618513584136963,
+     "max": 0.07223749160766602
+    },
+    "shift_two_way_s": {
+     "n": 8,
+     "min": 2.6230840458592866,
+     "median": 2.7371737128705718,
+     "max": 2.8600300389443873
+    },
+    "aberration_extra_shift_s": {
+     "n": 8,
+     "min": 0.0034922361373901367,
+     "median": 0.003814876079559326,
+     "max": 0.0041522979736328125
+    }
+   },
+   "elevation_set_or_entry": {
+    "shift_down_s": {
+     "n": 6,
+     "min": -0.047692060470581055,
+     "median": 0.028777003288269043,
+     "max": 0.07018768787384033
+    },
+    "shift_two_way_s": {
+     "n": 6,
+     "min": -0.047692060470581055,
+     "median": 0.028777003288269043,
+     "max": 0.07018768787384033
+    },
+    "aberration_extra_shift_s": {
+     "n": 6,
+     "min": 0.0034971237182617188,
+     "median": 0.0036098361015319824,
+     "max": 0.0038193464279174805
+    }
+   },
+   "occultation_rise_or_exit": {
+    "shift_down_s": {
+     "n": 39,
+     "min": 1.326906427682843,
+     "median": 1.3405897254269803,
+     "max": 1.3467845719424076
+    },
+    "shift_two_way_s": {
+     "n": 39,
+     "min": 1.330219334224239,
+     "median": 1.3438191449968144,
+     "max": 1.3497466894914396
+    },
+    "aberration_extra_shift_s": {
+     "n": 39,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0
+    },
+    "shift_per_km_relief_s": {
+     "n": 39,
+     "min": 2.665060628518799,
+     "median": 3.098159830196866,
+     "max": 3.534399087214593
+    }
+   },
+   "occultation_set_or_entry": {
+    "shift_down_s": {
+     "n": 41,
+     "min": 1.3288897670572624,
+     "median": 1.3421730838090298,
+     "max": 1.3506862376234494
+    },
+    "shift_two_way_s": {
+     "n": 41,
+     "min": 1.3288897670572624,
+     "median": 1.3421730838090298,
+     "max": 1.3487093239673413
+    },
+    "aberration_extra_shift_s": {
+     "n": 41,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 0.0
+    },
+    "shift_per_km_relief_s": {
+     "n": 41,
+     "min": 2.668932603762216,
+     "median": 3.1391391033498164,
+     "max": 3.5291651990974566
+    }
+   }
+  },
+  "boundaries": [
+   {
+    "station": "Goldstone DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 43753.80427724123,
+    "shift_down_s": 0.051959872245788574,
+    "shift_two_way_s": 2.634988053512643,
+    "shift_down_aberration_minus_down_s": 0.0035462379455566406
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 46716.42385581405,
+    "shift_down_s": 1.3444931664853357,
+    "shift_two_way_s": 1.3444931664853357,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -297.20333385095,
+    "shift_per_km_relief_s": 3.364699806838333
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 49034.401208786265,
+    "shift_down_s": 1.3430843214591732,
+    "shift_two_way_s": 1.3470930368202971,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 297.4535912980791,
+    "shift_per_km_relief_s": 3.361868974706367
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 53801.984712938094,
+    "shift_down_s": 1.341251221296261,
+    "shift_two_way_s": 1.341251221296261,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -298.1222322299145,
+    "shift_per_km_relief_s": 3.354328835257047
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 56122.03325210734,
+    "shift_down_s": 1.3405897254269803,
+    "shift_two_way_s": 1.3455634650308639,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 298.1844623319339,
+    "shift_per_km_relief_s": 3.353628798025086
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 60888.32782116289,
+    "shift_down_s": 1.3422273009928176,
+    "shift_two_way_s": 1.3422273009928176,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -298.1541587822139,
+    "shift_per_km_relief_s": 3.353969651419311
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 63208.91175766148,
+    "shift_down_s": 1.342499812002643,
+    "shift_two_way_s": 1.3471616467431886,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 298.05981906084344,
+    "shift_per_km_relief_s": 3.3550312254462864
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 67977.96296819815,
+    "shift_down_s": 1.3472197749069892,
+    "shift_two_way_s": 1.3472197749069892,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -297.58379331068136,
+    "shift_per_km_relief_s": 3.3603980541910325
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 134233.0979055849,
+    "shift_down_s": 1.3463819378521293,
+    "shift_two_way_s": 1.3497466894914396,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 320.606977510266,
+    "shift_per_km_relief_s": 3.119083707303218
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 138925.13083102752,
+    "shift_down_s": 1.343194052518811,
+    "shift_two_way_s": 1.343194052518811,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -322.402772043366,
+    "shift_per_km_relief_s": 3.1017103037361333
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 141321.56108249433,
+    "shift_down_s": 1.341365743544884,
+    "shift_two_way_s": 1.345839935587719,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 322.7722437859047,
+    "shift_per_km_relief_s": 3.098159830196866
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 146007.853352769,
+    "shift_down_s": 1.341347627050709,
+    "shift_two_way_s": 1.341347627050709,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -323.8177603241056,
+    "shift_per_km_relief_s": 3.0881567428516306
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 148408.49673912028,
+    "shift_down_s": 1.3405541214160621,
+    "shift_two_way_s": 1.3449859457323328,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 324.01748790824786,
+    "shift_per_km_relief_s": 3.08625317249287
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 153092.6586947115,
+    "shift_down_s": 1.3436705390340649,
+    "shift_two_way_s": 1.3436705390340649,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -324.65058059361763,
+    "shift_per_km_relief_s": 3.0802347501474303
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 155496.97277234722,
+    "shift_down_s": 1.344115546613466,
+    "shift_two_way_s": 1.3473758003674448,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 324.79308223957196,
+    "shift_per_km_relief_s": 3.078883309658627
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "elevation",
+    "rising": false,
+    "t_geo_s": 159629.2803929448,
+    "shift_down_s": -0.047692060470581055,
+    "shift_two_way_s": -0.047692060470581055,
+    "shift_down_aberration_minus_down_s": 0.0038193464279174805
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 220818.93328148127,
+    "shift_down_s": 0.017501473426818848,
+    "shift_two_way_s": 2.6656699584564194,
+    "shift_down_aberration_minus_down_s": 0.0036406517028808594
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 223979.05066899507,
+    "shift_down_s": 1.3426008478272706,
+    "shift_two_way_s": 1.3426008478272706,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -364.14376614405774,
+    "shift_per_km_relief_s": 2.74616811538219
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 226487.71074316488,
+    "shift_down_s": 1.3399637268739752,
+    "shift_two_way_s": 1.3433091240585782,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 364.7989720730111,
+    "shift_per_km_relief_s": 2.741235794381184
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 231058.93734250736,
+    "shift_down_s": 1.3381076017976739,
+    "shift_two_way_s": 1.3381076017976739,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -366.5103697529994,
+    "shift_per_km_relief_s": 2.7284357620602258
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 233573.0857220522,
+    "shift_down_s": 1.3364803800941445,
+    "shift_two_way_s": 1.3400394853088073,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 366.96039269375615,
+    "shift_per_km_relief_s": 2.725089736958457
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 238140.01384828944,
+    "shift_down_s": 1.337616947654169,
+    "shift_two_way_s": 1.337616947654169,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -368.19860173552297,
+    "shift_per_km_relief_s": 2.7159255773553967
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 240658.91215463035,
+    "shift_down_s": 1.3373852545628324,
+    "shift_two_way_s": 1.3402577364468016,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 368.5674694776535,
+    "shift_per_km_relief_s": 2.7132074391080536
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 245223.18396203715,
+    "shift_down_s": 1.3411425625672564,
+    "shift_two_way_s": 1.3411425625672564,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -369.80036827968433,
+    "shift_per_km_relief_s": 2.7041617201519075
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 247747.310935045,
+    "shift_down_s": 1.3423390780808404,
+    "shift_two_way_s": 1.3438191449968144,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 370.24143334594555,
+    "shift_per_km_relief_s": 2.7009402782470913
+   },
+   {
+    "station": "Goldstone DSN",
+    "kind": "elevation",
+    "rising": false,
+    "t_geo_s": 249912.1667074561,
+    "shift_down_s": 0.04863929748535156,
+    "shift_two_way_s": 0.04863929748535156,
+    "shift_down_aberration_minus_down_s": 0.003554821014404297
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 17677.44320768118,
+    "shift_down_s": -0.16866374015808105,
+    "shift_two_way_s": 2.8600300389443873,
+    "shift_down_aberration_minus_down_s": 0.0041522979736328125
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 18326.830308990575,
+    "shift_down_s": 1.3453582508009276,
+    "shift_two_way_s": 1.3453582508009276,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -295.29369051591493,
+    "shift_per_km_relief_s": 3.3864590816447016
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 20638.84727354745,
+    "shift_down_s": 1.3442573574502603,
+    "shift_two_way_s": 1.347651282165316,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 295.4696015785448,
+    "shift_per_km_relief_s": 3.3844429161494283
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 25414.149598587697,
+    "shift_down_s": 1.3421730838090298,
+    "shift_two_way_s": 1.3421730838090298,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -295.89497694699094,
+    "shift_per_km_relief_s": 3.3795774781913526
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 27727.05322374263,
+    "shift_down_s": 1.3417649595576222,
+    "shift_two_way_s": 1.3462547728267964,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 295.9077951274812,
+    "shift_per_km_relief_s": 3.379431081121692
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 32501.707501602512,
+    "shift_down_s": 1.342921981755353,
+    "shift_two_way_s": 1.342921981755353,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -295.6787169952877,
+    "shift_per_km_relief_s": 3.3820493073092486
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 34814.05619620104,
+    "shift_down_s": 1.3433325720543507,
+    "shift_two_way_s": 1.3477663343510358,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 295.5344341166783,
+    "shift_per_km_relief_s": 3.3837004577449528
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 39592.14045654939,
+    "shift_down_s": 1.3474873237719294,
+    "shift_two_way_s": 1.3474873237719294,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -294.7950553772971,
+    "shift_per_km_relief_s": 3.392187154293133
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 106450.45168966055,
+    "shift_down_s": 0.07223749160766602,
+    "shift_two_way_s": 2.6230840458592866,
+    "shift_down_aberration_minus_down_s": 0.0034922361373901367
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 110559.68421330187,
+    "shift_down_s": 1.345427556661889,
+    "shift_two_way_s": 1.345427556661889,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -312.1978572597727,
+    "shift_per_km_relief_s": 3.203096935953416
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 112925.63532323382,
+    "shift_down_s": 1.343837238411652,
+    "shift_two_way_s": 1.3480962280009408,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 312.5313547414262,
+    "shift_per_km_relief_s": 3.1996789596594337
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 117643.77565966718,
+    "shift_down_s": 1.3435478197934572,
+    "shift_two_way_s": 1.3435478197934572,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -313.50634870212525,
+    "shift_per_km_relief_s": 3.1897280681551345
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 120013.61536636174,
+    "shift_down_s": 1.3428342294937465,
+    "shift_two_way_s": 1.3472576036001556,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 313.67335124406964,
+    "shift_per_km_relief_s": 3.1880298279527697
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 124729.67370823311,
+    "shift_down_s": 1.3455795903282706,
+    "shift_two_way_s": 1.3455795903282706,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -314.1823913087137,
+    "shift_per_km_relief_s": 3.182864564225072
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 127102.63676685237,
+    "shift_down_s": 1.3459327317250427,
+    "shift_two_way_s": 1.3493882486654911,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 314.2700890242122,
+    "shift_per_km_relief_s": 3.1819763793141553
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "elevation",
+    "rising": false,
+    "t_geo_s": 129963.45391851664,
+    "shift_down_s": 0.07018768787384033,
+    "shift_two_way_s": 0.07018768787384033,
+    "shift_down_aberration_minus_down_s": 0.0034971237182617188
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 194626.06401985884,
+    "shift_down_s": -0.13429629802703857,
+    "shift_two_way_s": 2.822683430276811,
+    "shift_down_aberration_minus_down_s": 0.0040585994720458984
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 195634.4214952683,
+    "shift_down_s": 1.3459066735231318,
+    "shift_two_way_s": 1.3459066735231318,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -349.2373325531371,
+    "shift_per_km_relief_s": 2.863382309930592
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 198105.89465147717,
+    "shift_down_s": 1.3434853917569853,
+    "shift_two_way_s": 1.3467857631621882,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 349.88002218771726,
+    "shift_per_km_relief_s": 2.8581226037063674
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 202715.33381120284,
+    "shift_down_s": 1.3415710483095609,
+    "shift_two_way_s": 1.3415710483095609,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -351.6704746908508,
+    "shift_per_km_relief_s": 2.843571104111278
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 205192.70462142624,
+    "shift_down_s": 1.339991471846588,
+    "shift_two_way_s": 1.3436556828091852,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 352.11439711088315,
+    "shift_per_km_relief_s": 2.8399861187303097
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 209797.24389561394,
+    "shift_down_s": 1.3409353137831204,
+    "shift_two_way_s": 1.3409353137831204,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -353.39368919702247,
+    "shift_per_km_relief_s": 2.829705313278768
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 212279.6085157976,
+    "shift_down_s": 1.3405781808542088,
+    "shift_two_way_s": 1.343673843133729,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 353.74108713306487,
+    "shift_per_km_relief_s": 2.826926349168581
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 216881.21801356238,
+    "shift_down_s": 1.3440674617886543,
+    "shift_two_way_s": 1.3440674617886543,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -354.93400189257227,
+    "shift_per_km_relief_s": 2.8174251964247414
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 219368.86217959016,
+    "shift_down_s": 1.3450059339520521,
+    "shift_two_way_s": 1.3467633873806335,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 355.32199570094235,
+    "shift_per_km_relief_s": 2.8143487093370165
+   },
+   {
+    "station": "Madrid DSN",
+    "kind": "elevation",
+    "rising": false,
+    "t_geo_s": 220499.013345778,
+    "shift_down_s": -0.003016352653503418,
+    "shift_two_way_s": -0.003016352653503418,
+    "shift_down_aberration_minus_down_s": 0.0036983489990234375
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 4113.586597673899,
+    "shift_down_s": 1.3354256215025089,
+    "shift_two_way_s": 1.3354256215025089,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -285.51089209807105,
+    "shift_per_km_relief_s": 3.5024933467564763
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 6392.55194867572,
+    "shift_down_s": 1.337053057803132,
+    "shift_two_way_s": 1.3400930176321708,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 285.0964927149471,
+    "shift_per_km_relief_s": 3.507584363725748
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 11212.221419456568,
+    "shift_down_s": 1.3441806577138777,
+    "shift_two_way_s": 1.3435043538156606,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -283.35312845534645,
+    "shift_per_km_relief_s": 3.5291651990974566
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 13486.220979778751,
+    "shift_down_s": 1.3460506966184766,
+    "shift_two_way_s": 1.346812136205699,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 282.93352712132037,
+    "shift_per_km_relief_s": 3.534399087214593
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "elevation",
+    "rising": false,
+    "t_geo_s": 14544.359497606754,
+    "shift_down_s": 0.028257250785827637,
+    "shift_two_way_s": 0.028257250785827637,
+    "shift_down_aberration_minus_down_s": 0.003611326217651367
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 56370.61075288057,
+    "shift_down_s": -0.12017583847045898,
+    "shift_two_way_s": 2.816820858643041,
+    "shift_down_aberration_minus_down_s": 0.0040177106857299805
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 60940.98948252831,
+    "shift_down_s": 1.3430467099387897,
+    "shift_two_way_s": 1.3430467099387897,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -290.23925919341855,
+    "shift_per_km_relief_s": 3.445433270395682
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 63238.32617252237,
+    "shift_down_s": 1.3411057919583982,
+    "shift_two_way_s": 1.3426713507942623,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 290.76140160346404,
+    "shift_per_km_relief_s": 3.4392460432687857
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 68028.78339152902,
+    "shift_down_s": 1.3357186400389764,
+    "shift_two_way_s": 1.3357186400389764,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -292.66278123040684,
+    "shift_per_km_relief_s": 3.416901854741558
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 70332.10075139589,
+    "shift_down_s": 1.3339474441017956,
+    "shift_two_way_s": 1.337713865446858,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 293.02819769643247,
+    "shift_per_km_relief_s": 3.412640857983118
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 75114.09942170049,
+    "shift_down_s": 1.3313482716330327,
+    "shift_two_way_s": 1.3313482716330327,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -294.1789409266785,
+    "shift_per_km_relief_s": 3.399291590519531
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 77421.30776824555,
+    "shift_down_s": 1.3302003410935868,
+    "shift_two_way_s": 1.3351862206764054,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 294.35307886102237,
+    "shift_per_km_relief_s": 3.397280585171477
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 82199.6589178855,
+    "shift_down_s": 1.3310566133004613,
+    "shift_two_way_s": 1.3310566133004613,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -294.77172564482316,
+    "shift_per_km_relief_s": 3.392455629224499
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 84509.00831138663,
+    "shift_down_s": 1.3308405549323652,
+    "shift_two_way_s": 1.3357647716766223,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 294.78560537518933,
+    "shift_per_km_relief_s": 3.392295898326673
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 89287.93430713523,
+    "shift_down_s": 1.3349516895832494,
+    "shift_two_way_s": 1.3349516895832494,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -294.73899620678276,
+    "shift_per_km_relief_s": 3.3928323461426895
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 91598.66198026939,
+    "shift_down_s": 1.3357509911584202,
+    "shift_two_way_s": 1.339346925728023,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 294.68091090908274,
+    "shift_per_km_relief_s": 3.393501115885066
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 96380.4758471279,
+    "shift_down_s": 1.342083393363282,
+    "shift_two_way_s": 1.3418793150922284,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -294.6142864746507,
+    "shift_per_km_relief_s": 3.3942685263704693
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 98693.20719641665,
+    "shift_down_s": 1.3437448625918478,
+    "shift_two_way_s": 1.3450799817510415,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 294.6049836969469,
+    "shift_per_km_relief_s": 3.3943757076040377
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 103477.4685272309,
+    "shift_down_s": 1.3506862376234494,
+    "shift_two_way_s": 1.348693106614519,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -295.01995668164454,
+    "shift_per_km_relief_s": 3.389601202738627
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 145998.3643283248,
+    "shift_down_s": -0.1098717451095581,
+    "shift_two_way_s": 2.808677467284724,
+    "shift_down_aberration_minus_down_s": 0.003989100456237793
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 146055.79139238008,
+    "shift_down_s": 1.3487093239673413,
+    "shift_two_way_s": 1.3487093239673413,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -318.55867710127495,
+    "shift_per_km_relief_s": 3.1391391033498164
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 148444.66500043712,
+    "shift_down_s": 1.34633334830869,
+    "shift_two_way_s": 1.3471661692601629,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 319.49693595804274,
+    "shift_per_km_relief_s": 3.1299204701334693
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 153139.93125904165,
+    "shift_down_s": 1.340383214817848,
+    "shift_two_way_s": 1.340383214817848,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -322.6334637561813,
+    "shift_per_km_relief_s": 3.0994924964005417
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 155538.74576779065,
+    "shift_down_s": 1.3377692613867112,
+    "shift_two_way_s": 1.3406709130504169,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 323.35847490024753,
+    "shift_per_km_relief_s": 3.092543036976188
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 160221.99532895169,
+    "shift_down_s": 1.3339221566566266,
+    "shift_two_way_s": 1.3339221566566266,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -325.59379451093264,
+    "shift_per_km_relief_s": 3.071311606236471
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 162628.1179065194,
+    "shift_down_s": 1.3317245214711875,
+    "shift_two_way_s": 1.335906355350744,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 326.08204880869016,
+    "shift_per_km_relief_s": 3.0667128216760324
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 167303.8853727794,
+    "shift_down_s": 1.3308921578573063,
+    "shift_two_way_s": 1.3308921578573063,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -327.50905905873515,
+    "shift_per_km_relief_s": 3.0533506550139764
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 169715.33521056897,
+    "shift_down_s": 1.3296673374716192,
+    "shift_two_way_s": 1.3340474186697975,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 327.8114172103815,
+    "shift_per_km_relief_s": 3.050534385012661
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 174387.3794189127,
+    "shift_down_s": 1.332018990360666,
+    "shift_two_way_s": 1.332018990360666,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -328.76389897521585,
+    "shift_per_km_relief_s": 3.0416964974472025
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 176803.38085933944,
+    "shift_down_s": 1.3320806063711643,
+    "shift_two_way_s": 1.335544669360388,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 328.99306029151194,
+    "shift_per_km_relief_s": 3.0395777926559506
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 181473.65595739294,
+    "shift_down_s": 1.3369809826253913,
+    "shift_two_way_s": 1.3369809826253913,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -329.9597212485969,
+    "shift_per_km_relief_s": 3.030672944612485
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 183894.88586064818,
+    "shift_down_s": 1.3383229532046244,
+    "shift_two_way_s": 1.3400056739337742,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 330.2589243010152,
+    "shift_per_km_relief_s": 3.0279272607590397
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 188562.9611664788,
+    "shift_down_s": 1.3444864229531959,
+    "shift_two_way_s": 1.343316513695754,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -331.74779216828756,
+    "shift_per_km_relief_s": 3.014338071292195
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 190991.40477920946,
+    "shift_down_s": 1.3467845719424076,
+    "shift_two_way_s": 1.3467845719424076,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 332.2502629477531,
+    "shift_per_km_relief_s": 3.009779408834514
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "elevation",
+    "rising": false,
+    "t_geo_s": 192326.73012036085,
+    "shift_down_s": 0.02929675579071045,
+    "shift_two_way_s": 0.02929675579071045,
+    "shift_down_aberration_minus_down_s": 0.0036083459854125977
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "elevation",
+    "rising": true,
+    "t_geo_s": 235896.97683423758,
+    "shift_down_s": 0.03502976894378662,
+    "shift_two_way_s": 2.6438782307086512,
+    "shift_down_aberration_minus_down_s": 0.003592252731323242
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 238180.5577695967,
+    "shift_down_s": 1.3423980923835188,
+    "shift_two_way_s": 1.3423980923835188,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -368.02831572224386,
+    "shift_per_km_relief_s": 2.717182231039837
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 240700.15769901272,
+    "shift_down_s": 1.3393298587179743,
+    "shift_two_way_s": 1.3410898391157389,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 369.0769608116243,
+    "shift_per_km_relief_s": 2.7094619989308866
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 245260.26218457788,
+    "shift_down_s": 1.3343775535468012,
+    "shift_two_way_s": 1.3343775535468012,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -371.918975333916,
+    "shift_per_km_relief_s": 2.688757676593889
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 247787.85712850775,
+    "shift_down_s": 1.3314988025813363,
+    "shift_two_way_s": 1.3344182418077253,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 372.6897580260411,
+    "shift_per_km_relief_s": 2.6831968908845805
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": false,
+    "t_geo_s": 252339.60951113747,
+    "shift_down_s": 1.3288897670572624,
+    "shift_two_way_s": 1.3288897670572624,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": -374.6816231291741,
+    "shift_per_km_relief_s": 2.668932603762216
+   },
+   {
+    "station": "Canberra DSN",
+    "kind": "occultation",
+    "rising": true,
+    "t_geo_s": 254873.23228152544,
+    "shift_down_s": 1.326906427682843,
+    "shift_two_way_s": 1.330219334224239,
+    "shift_down_aberration_minus_down_s": 0.0,
+    "clearance_rate_mps": 375.2259852173738,
+    "shift_per_km_relief_s": 2.665060628518799
+   }
+  ]
+ },
+ "nonuniform_grid_realistic": {
+  "full_10s_current_equals_time_rule": true,
+  "full_10s_segments": 39,
+  "10s_then_120s": {
+   "samples": 6121,
+   "current_segments": 8,
+   "time_rule_segments": 39,
+   "current_equals_time_rule": false
+  },
+  "120s_then_10s": {
+   "samples": 21961,
+   "current_segments": 40,
+   "time_rule_segments": 39,
+   "current_equals_time_rule": false
+  },
+  "uniform_10s_max_gap_1800s_current_equals_time_rule": true,
+  "uniform_60s_max_gap_1200s_current_equals_time_rule": true,
+  "uniform_60s_max_gap_1800s_current_equals_time_rule": true
+ }
+}

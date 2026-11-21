@@ -49,6 +49,31 @@ GM_KERNELS = {
 }
 PLANETARY_EPHEMERIS_ENV = "LUNAR_OD_PLANETARY_EPHEMERIS"
 
+#: F2 WP2.4 (MEAS-06, R-15): Earth-orientation profiles. SPICE gives a later-loaded binary PCK priority wherever
+#: it covers, so the ORDER of the two Earth PCKs is the profile:
+#:
+#: * ``PREDICT`` (default): the high-precision kernel BEFORE the NAIF long-term predict kernel. The predict kernel
+#:   keeps priority over its whole span (2025-01-01 on), so every value computed before WP2.4 is unchanged; the
+#:   high-precision kernel only adds measured orientation where the predict kernel has none (2000-2024).
+#: * ``MEASURED``: the high-precision kernel AFTER the predict kernel, so measured IERS orientation wins over the
+#:   high-precision kernel's whole span (Phase C3 owner decision: real data require final EOP / a high-precision
+#:   Earth PCK covering the data epochs).
+#:
+#: Selection order: the explicit ``earth_orientation=`` argument, else ``LUNAR_OD_EARTH_ORIENTATION``, else
+#: ``DEFAULT_EARTH_ORIENTATION``. ``station_frames.earth_orientation_provenance`` reports which kernel serves an epoch.
+EARTH_PREDICT_PCK = "earth_2025_250826_2125_predict.bpc"
+#: The high-precision kernel by its VERSIONED NAIF name (coverage 2000-01-01..2027-01-29, last datum 2026-11-02,
+#: owner-approved download 2026-11-03), not the rolling ``earth_latest_high_prec.bpc``: NAIF refits the whole series
+#: in every release (3.8 mm at DSS-14 in 2010 between the 2026-01 and 2026-11 files), so a rolling name would change
+#: earlier results silently. A newer release is a deliberate change of this name and of the kernel manifest.
+EARTH_HIGH_PRECISION_PCK = "earth_000101_270128_261102.bpc"
+EARTH_ORIENTATION_KERNELS = {
+    "PREDICT": (EARTH_HIGH_PRECISION_PCK, EARTH_PREDICT_PCK),
+    "MEASURED": (EARTH_PREDICT_PCK, EARTH_HIGH_PRECISION_PCK),
+}
+DEFAULT_EARTH_ORIENTATION = "PREDICT"
+EARTH_ORIENTATION_ENV = "LUNAR_OD_EARTH_ORIENTATION"
+
 #: ORDER IS LOAD-BEARING, not cosmetic. Both ``moon_de440_220930.txt`` and
 #: ``moon_080317.tf.txt`` define the generic ``MOON_PA`` alias, and SPICE lets
 #: the LAST text kernel loaded win that name. Listing the DE440 pair FIRST
@@ -69,7 +94,8 @@ _KERNEL_TEMPLATE = (
     "@PLANETARY_EPHEMERIS@",
     "earth_assoc_itrf93.tf.txt",
     "moon_080317.tf.txt",
-    "earth_2025_250826_2125_predict.bpc",
+    # The Earth PCK pair in the selected profile's order (the predict kernel alone before WP2.4).
+    "@EARTH_ORIENTATION@",
     "moon_pa_de421_1900-2050.bpc",
     "@GM@",
     "pck00010.tpc.txt",
@@ -88,11 +114,27 @@ def planetary_ephemeris(ephemeris: str | None = None) -> str:
     return name
 
 
-def required_kernels(ephemeris: str | None = None) -> tuple[str, ...]:
-    """The required kernel list with the selected planetary ephemeris."""
+def earth_orientation(earth_orientation: str | None = None) -> str:
+    """The selected Earth-orientation profile name (``"PREDICT"`` or ``"MEASURED"``)."""
+    name = earth_orientation if earth_orientation is not None else os.environ.get(EARTH_ORIENTATION_ENV)
+    name = DEFAULT_EARTH_ORIENTATION if name in (None, "") else str(name).strip().upper()
+    if name not in EARTH_ORIENTATION_KERNELS:
+        raise ValueError(
+            f"unknown Earth-orientation profile {name!r}; choose one of "
+            f"{tuple(EARTH_ORIENTATION_KERNELS)}"
+        )
+    return name
+
+
+def required_kernels(ephemeris: str | None = None, earth_orientation: str | None = None) -> tuple[str, ...]:
+    """The required kernel list with the selected planetary ephemeris and Earth-orientation profile."""
     name = planetary_ephemeris(ephemeris)
-    slots = {"@PLANETARY_EPHEMERIS@": PLANETARY_EPHEMERIS_KERNELS[name], "@GM@": GM_KERNELS[name]}
-    return tuple(slots.get(k, k) for k in _KERNEL_TEMPLATE)
+    slots = {"@PLANETARY_EPHEMERIS@": (PLANETARY_EPHEMERIS_KERNELS[name],), "@GM@": (GM_KERNELS[name],),
+             "@EARTH_ORIENTATION@": EARTH_ORIENTATION_KERNELS[_earth_orientation(earth_orientation)]}
+    return tuple(item for k in _KERNEL_TEMPLATE for item in slots.get(k, (k,)))
+
+
+_earth_orientation = earth_orientation
 
 
 #: The required kernel list as resolved at import (default or environment).
@@ -174,10 +216,11 @@ def resolve_kernel_dir(candidates: Iterable[os.PathLike[str] | str] | None = Non
 def required_kernel_paths(
     kernel_dir: os.PathLike[str] | str | None = None,
     ephemeris: str | None = None,
+    earth_orientation: str | None = None,
 ) -> list[Path]:
     """Return full paths for the required kernel list and validate existence."""
     resolved_dir = resolve_kernel_dir([kernel_dir]) if kernel_dir is not None else resolve_kernel_dir()
-    kernel_paths = [resolved_dir / kernel_name for kernel_name in required_kernels(ephemeris)]
+    kernel_paths = [resolved_dir / kernel_name for kernel_name in required_kernels(ephemeris, earth_orientation)]
 
     missing = [path.name for path in kernel_paths if not path.is_file()]
     if missing:
@@ -192,10 +235,12 @@ def load_spice_kernels(
     clear: bool = True,
     ephemeris: str | None = None,
     verify: bool = True,
+    earth_orientation: str | None = None,
 ) -> list[Path]:
     """Load the required kernels with spiceypy and return the loaded paths.
 
-    ``ephemeris`` selects the planetary ephemeris (see ``planetary_ephemeris``).
+    ``ephemeris`` selects the planetary ephemeris (see ``planetary_ephemeris``);
+    ``earth_orientation`` the Earth-orientation profile (see ``earth_orientation``).
     ``verify`` checks every kernel against ``lunar_od.kernel_manifest`` before
     anything is furnished and raises ``KernelIntegrityError`` on an unknown or
     changed file; ``verify=False`` is for deliberate experiments with other kernels.
@@ -208,7 +253,7 @@ def load_spice_kernels(
             "running dynamics, frame-transform, or measurement code."
         ) from exc
 
-    kernel_paths = required_kernel_paths(kernel_dir, ephemeris)
+    kernel_paths = required_kernel_paths(kernel_dir, ephemeris, earth_orientation)
     if verify:
         from .kernel_manifest import verify_kernels
 

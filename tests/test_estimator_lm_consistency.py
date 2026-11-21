@@ -351,12 +351,17 @@ class DescentAcceptanceTests(unittest.TestCase):
         the Gauss-Newton decrement at the returned point (~0) now certifies the
         stationary point, so the label is ``Converged`` with the distinct
         detail ``STATIONARY_AT_DAMPING_LIMIT``.
+
+        F4 WP4.2-R (amended after the result): the truth is the exact optimum only at the tolerance the data
+        were generated with (1e-12/1e-13).  At the fixture's 1e-11 the minimiser sits ~1e-7 m away, which the
+        early-iteration loosening used to hide; with BLS-LM scoring every iteration at the caller's tolerance
+        the solve rightly moved there.  This test now solves at the data's own tolerance.
         """
         from lunar_od.estimators import STATIONARITY_DECREMENT_TOL
 
         t_pass, gep, gsp, x_true0, obs, pass_geo = _observations()
         x_hat, stop_reason, stats = _solve(
-            t_pass, obs, x_true0.copy(), pass_geo, gep, gsp, max_iter=30
+            t_pass, obs, x_true0.copy(), pass_geo, gep, gsp, max_iter=30, rtol=1e-12, atol=1e-13
         )
 
         self.assertTrue(np.all(np.isfinite(x_hat)))

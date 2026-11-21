@@ -1,0 +1,79 @@
+{
+  "study": "F2 WP2.6: hidden modules (MEAS-13) - landmark optical fixes and a barycentric delta-DOR with the IERS consensus quasar delay",
+  "date": "2026-11-06",
+  "source_of_predeclaration": "docs/assurance/vv-program.md WP2.6; finding MEAS-13; owner decision 2026-11-06: fix the landmark module, fix delta-DOR now",
+  "survey_before_predeclaration": {
+    "script": "studies/phase17/scripts/wp2_6_survey.py",
+    "result": "studies/phase17/results/wp2_6_survey.json",
+    "landmark": "PA vs ME landmark position 163-875 m on the surface (up to 56 px at 100 km); analytic Jacobian vs FD with the camera DCM held fixed 3.6e-11, vs FD with the nadir DCM rebuilt from the perturbed position 5.8% median (6.1% max, 40 geometries); principal point convention 0.5 px",
+    "delta_dor": "Goldstone-Canberra and Madrid-Canberra, 15 epochs: module D_S (Moon-centred Newtonian) vs an SSB Newtonian reference on geocentric time 69-92 ns; module D_Q (static plane wave) vs IERS 2010 eq. 11.9 geometric 675-1048 ns; delta-DOR 606-957 ns; typical precision 0.1 ns"
+  },
+  "slice_1_landmark": {
+    "design": {
+      "body_frame": "landmark_inertial_position_m and landmark_surface_outward_normal_j2000 take body_frame; allowed exactly 'MOON_ME_DE440_ME421' (default, the frame of LOLA-derived catalogues) and 'MOON_PA_DE440'; computed as pxform('J2000', body_frame).T @ r_body",
+      "attitude_source": "pinhole_position_jacobian takes attitude_source: 'external' (default; DCM is an independent input, e.g. star tracker; unchanged) or 'nadir_from_state' (DCM = perturbed_camera_frame(nadir_pointing_camera_frame(r_sc), attitude_bias_rad); the analytic dC/dr term is added; the passed DCM must equal that construction to 1e-12 or ValueError)",
+      "pixel_origin": "CameraIntrinsics.pixel_origin: 'corner' (default; principal point W/2, pixel i spans [i, i+1]; unchanged) or 'center' (principal point (W-1)/2, pixel i centred on i, the OpenCV convention)"
+    },
+    "gates": {
+      "G1_nadir_jacobian": "attitude_source='nadir_from_state' analytic d(u,v)/dr vs central FD (1 m step) with the DCM rebuilt at each FD point: relative Frobenius error < 1e-6 on the survey's 40 geometries, without and with a fixed 1 mrad alignment bias. Before the fix the only Jacobian is 5.8% off",
+      "G2_external_unchanged": "attitude_source='external' (and the default call) bitwise equal to the function before the change on the same geometries",
+      "G3_body_frame": "default body_frame equals pxform('J2000','MOON_ME_DE440_ME421').T @ r_body bitwise; body_frame='MOON_PA_DE440' bitwise equal to the function before the change; outward normal equals position / |position| to 1e-15; ME vs PA displacement inside the survey band [100, 1000] m",
+      "G4_frames_fail_closed": "'MOON_ME', 'MOON_PA', 'IAU_MOON' and any other string raise ValueError",
+      "G5_pixel_origin": "'corner' projections and FOV flags bitwise equal to before; 'center' principal point is (W-1)/2 and u, v are exactly 0.5 px smaller than 'corner' (to 1e-12 px)",
+      "G6_nadir_consistency": "attitude_source='nadir_from_state' with a DCM that is not the nadir construction (5 mrad off) raises ValueError"
+    }
+  },
+  "slice_2_delta_dor": {
+    "design": {
+      "quasar_term": "relativistic_light_time.quasar_delay_consensus: IERS Conventions (2010) eq. 11.9 geometric delay with T_grav (eq. 11.1 form, bodies configurable, default Sun and Earth), in station TT, b the geocentric baseline at the reception at A, V the Earth's barycentric velocity, w2 station B's geocentric velocity, U the Sun's potential at the geocentre; the station clock convention of delta_dor_station_time (tag at A read as t + b_A; the measured delay carries b_A - b_B)",
+      "observable": "relativistic_light_time.delta_dor_ssb: delta_dor_station_time(...) delay minus quasar_delay_consensus on the same tags and clocks; requires station_time='FULL_TOPOCENTRIC' (ValueError otherwise) and both sites; partial = delta_dor_partial of the station-time solution (the quasar term does not depend on the spacecraft)",
+      "legacy": "delta_dor.quasar_differential_delay_s / delta_dor_observable_s / solve_common_transmit_event unchanged bitwise, labelled legacy_synthetic (Moon-centred, static baseline; self-consistent synthetic studies only) with the survey magnitudes"
+    },
+    "gates": {
+      "G7_consensus_vs_bcrs_oracle": "quasar_delay_consensus without gravity vs a first-principles oracle in the test: plane wave from K in SPICE TDB/SSB coordinates, station positions X_E + x - (V.x)V/(2c^2), arrival at B solved by fixed point, TDB interval converted to station TT with station_time.tdb_minus_tt at each site: |difference| < 8e-10 s (the neglected (V^2/c^2 + 2U/c^2)|tau| bound; verifies the first-order terms, ~2.7 us, to 3e-4); 20 epochs, two baselines",
+      "G8_gravity_vs_moyer": "T_grav (Sun, Earth) vs the difference of Moyer eq. 8-38 one-way Shapiro delays (rlt.shapiro_delay_s) for a source 1e16 m along -K to each station: |difference| < 1e-12 s",
+      "G9_clock_cancellation": "with clock offsets (b_A, b_B) = (1e-6, -2e-6) s each delay moves by ~3e-6 s; delta_dor_ssb moves by < 1e-11 s",
+      "G10_jacobian": "delta_dor_ssb state partial vs Richardson central FD of delta_dor_ssb over the arc-initial state: relative error < 1e-6 per row on a 1 h arc",
+      "G11_legacy_unchanged": "legacy delta_dor functions bitwise unchanged; delta_dor_ssb minus the legacy observable recorded on the survey geometry (informational)",
+      "G12_fail_closed": "delta_dor_ssb with station_time != 'FULL_TOPOCENTRIC' or a missing site raises ValueError"
+    }
+  },
+  "G13_regression": "full regression green; every changed pin and protected file listed",
+  "out_of_scope": "quasar media (troposphere/ionosphere along the quasar line of sight), quasar structure, the full DSN delta-DOR processing chain; estimator wiring of delta-DOR (no production estimator consumes delta-DOR); rerunning the Phase 17 R1O-OPT / R1OD studies (their scripts are byte-pinned; they used MOON_PA and the legacy delta-DOR)",
+  "reject_if": "a gate fails as computed; a changed tolerance after a result goes to docs/assurance/amendment-log.md and the result is exploratory",
+  "results_slice_1": {
+    "commit": "5e08d83",
+    "G1": "PASS first run: 3.6e-11 (no bias), 3.9e-11 (1 mrad bias) vs FD with the attitude rebuilt; before: 5.8% (no such Jacobian)",
+    "G2": "PASS first run (bitwise)",
+    "G3": "PASS first run (ME bitwise to pxform; PA bitwise to before; normal 1e-15; displacement in band)",
+    "G4": "PASS first run",
+    "G5": "PASS first run",
+    "G6": "PASS first run",
+    "behaviour_change": "landmark_inertial_position_m / landmark_surface_outward_normal_j2000 default frame PA -> ME; byte-pinned Phase 17 study scripts calling the default now get ME (archived results used PA)"
+  },
+  "results_slice_2": {
+    "G7": {
+      "preregistered": "FAIL as computed: consensus vs BCRS plane-wave oracle 1.13e-9 s > 8e-10 (Madrid-Canberra; Goldstone-Canberra passed)",
+      "diagnosis": "not proportional to tau; 0.47-0.69 ns from the oracle's ERFA dtdb topocentric term (vs the exact V.b/c^2 between DSN complexes), the rest the (2U + V^2)/c^2 scale terms of Galilean station positions; consequence: with a dtdb spacecraft term and an exact-V consensus quasar term delta-DOR is inconsistent by 0.62-0.73 ns",
+      "design_change": "owner said 'do your best'; agent decision, owner approval pending: delta_dor_ssb computes the quasar term in the same light-time model as the spacecraft term (quasar_delay_station_time); quasar_delay_consensus stays as the independent IERS 2010 check",
+      "amended_gate": "same-model minus consensus (gravity off) < |dtdb error| + (2U/c^2 + V^2/c^2)|b|/c + 1e-11 s: PASS; after removing the dtdb error 0.08 ns (Goldstone-Canberra), 0.82 ns (Madrid-Canberra)",
+      "status": "exploratory (amendment log)"
+    },
+    "G8": "PASS first run: consensus T_grav vs Moyer eq. 8-38 differential for a source at 1e16 m: 1.2e-14 s",
+    "G9": "PASS first run: delta-DOR moves 3.4e-14 / 4.5e-14 s under (1e-6, -2e-6) s clocks",
+    "G10": {
+      "preregistered": "FAIL as computed: 9.2e-7 to 1.04e-6 > 1e-6",
+      "diagnosis": "the test fixture's station provider evaluated et0 + t, quantised at ulp(et0) ~ 1.2e-7 s; the FD shift of t_B (~1e-9 s) left station B frozen and the FD missed the v_B/c term; not the STM nor the event partial (an exact linear STM perturbation gives the same 1.03e-6)",
+      "fix": "fixture moves the station by velocity x the exact rounding error (as BarycentricEphemeris._ssb_state); gate unchanged: PASS 7.7e-8 to 3.9e-7",
+      "status": "fixture correction, threshold unchanged (amendment log)"
+    },
+    "G11": "PASS (legacy bitwise vs values recorded from the pre-change module with the corrected fixture); informational: delta_dor_ssb minus legacy 668-785 ns on Goldstone-Canberra (studies/phase17/results/wp2_6_gate_values.json)",
+    "G12": "PASS first run",
+    "protected_files": "src/lunar_od/relativistic_light_time.py re-frozen in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256; delta_dor.py and lunar_landmark_optical.py in the path manifest",
+    "open_items": [
+      "ERFA dtdb topocentric term 0.47-0.69 ns off the exact V.b/c^2 between DSN complexes: single station-time delays carry it, delta-DOR does not",
+      "quasar media, quasar structure and the solar-limb higher-order gravity term not modelled; no production estimator consumes delta-DOR"
+    ]
+  },
+  "results_G13_regression": "full suite after both slices: 2731 tests, 0 failures, 33 skipped (2026-11-07); protected: lunar_landmark_optical.py and delta_dor.py re-frozen in the path manifest, relativistic_light_time.py in F2_WP2_2_REFROZEN_CURRENT_TREE_SHA256 (2499813e -> b3c6a004); no existing pin changed"
+}

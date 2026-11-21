@@ -207,6 +207,12 @@ None besides those S1 already made, which S2's tests reuse.
 - **Validated geometry.** Synthetic Earth and Sun, a 100 km polar orbit, 6 h and 1 day arcs, noiseless position
   observations. OD materiality on the WP3.1 population is S5's hold-out replication.
 - **REQ-DYN-007 stays partial** until S5.
+- **After the merge with main (2026-11-21).** Main's F1 X-02 made the GRAIL/DE440 lunar J2 the default; it refuses
+  the legacy `J2_MOON_UNNORMALIZED` that the S1 and S2 gates use. The four WP3.2 test modules therefore run on the
+  legacy mean-pole model (`use_lunar_j2_model("iau_mean_pole_legacy")`, module-scoped autouse fixture, main's own
+  pattern), which is the pre-X-02 physics bit for bit, so the gates test what was evaluated. The tide and LRP with
+  the GRAIL/DE440 J2 default are not gated here. The recorded identity hashes and gate values belong to their
+  commits on the WP3.2 branch, before the merge; the scripts are not re-run on the merged tree.
 
 ## 8. Agent decisions
 

@@ -53,7 +53,7 @@ class HarmonicsOffTests(unittest.TestCase):
         self.assertIsNone(config.lunar_gravity_model_path)
         self.assertIsNone(config.lunar_gravity_nmax)
         self.assertIsNone(config.lunar_gravity_mmax)
-        self.assertEqual(config.lunar_gravity_frame, "MOON_PA_DE421")
+        self.assertEqual(config.lunar_gravity_frame, "MOON_PA_DE440")  # X-01
         self.assertEqual(config.lunar_gravity_rotation_cadence_s, 60.0)
         self.assertIsNone(config.lunar_gravity_rotation_margin_s)
         self.assertIsNone(config.lunar_gravity_kernel_profile)

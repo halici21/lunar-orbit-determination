@@ -47,7 +47,7 @@ def test_explicit_missing_directory_cannot_fall_back(tmp_path, file_only, monkey
     assert report["ready"] is False
     assert report["kernel_dir"] is None
     assert report["searched_paths"] == [str(tmp_path / "chosen-missing")]
-    assert len(report["kernels"]) == 10
+    assert len(report["kernels"]) == len(REQUIRED_KERNELS) == 11  # F2 WP2.4 added earth_latest_high_prec.bpc
 
 
 def test_runtime_checks_read_the_relocated_reference_profile(tmp_path, monkeypatch):
