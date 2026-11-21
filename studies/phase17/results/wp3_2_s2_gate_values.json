@@ -248,7 +248,10 @@
   "l_g5b": 1e-06,
   "l_g6_pos": 1e-05,
   "l_g6_phi": 1e-08,
-  "l_g6_effect": 0.1
+  "l_g6_effect": 0.1,
+  "lb_g3_dr": 0.001,
+  "lb_g3_dv": 1e-06,
+  "lb_g3_ratio": 100.0
  },
  "verdicts": {
   "L_G2": "PASS",
@@ -262,6 +265,25 @@
    "harmonics_True_tide_False": "PASS",
    "harmonics_True_tide_True": "FAIL"
   },
-  "L_G7": "PASS"
+  "L_G7": "PASS",
+  "LB_G3": "PASS"
+ },
+ "LB_G3": {
+  "bls_lm": {
+   "dr0_m": 7.677765321959496e-06,
+   "dv0_m_s": 7.716903919772655e-09,
+   "dr0_without_lrp_m": 0.2620329697338877,
+   "dv0_without_lrp_m_s": 7.426532631658964e-05,
+   "ratio": 34128.80685274871
+  },
+  "srif": {
+   "dr0_m": 7.52918359019088e-06,
+   "dv0_m_s": 7.701859372970547e-09,
+   "dr0_without_lrp_m": 0.26203291478751733,
+   "dv0_without_lrp_m_s": 7.426534117898508e-05,
+   "ratio": 34802.30115903898
+  },
+  "commit": "f5395723c7bd4bfaf45cc055a3e7f974f19cd538",
+  "src_status": ""
  }
 }
