@@ -82,7 +82,7 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     | Terim | En büyük yanıt | Not |
     |---|---|---|
     | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
-    | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar |
+    | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar; WP3.2 S2'den beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
     | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar |
     | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
     | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
@@ -100,6 +100,22 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     - **Statik alan şartı.** Statik alan kalıcı gelgiti içermemelidir. Bunu yalnız GL1800F'nin etiketi söylüyor.
     - **Çift sayım riski.** Varsayılan J2 ile ya da etiketi bu konuda sessiz GRGM660PRIM ve GRGM1200L ile açmak,
       kalıcı kısmı iki kez sayabilir. Bu kısım varsayılan J2 R²'nin yaklaşık 4.5e-4'ü kadardır.
+
+    **Ay albedo/IR basıncı seçimli olarak üretimde** (WP3.2 S2, 2026-11-11;
+    [rapor](../../studies/phase17/reports/wp3_2_s2_lunar_radiation.md)).
+    - **Kullanım.** `LunarRadiationOptions()` ile açılır; WP3.1'in ölçtüğü C6 modeli değişmeden kullanılır
+      (düzgün Lambert küresi, albedo 0.12, ε 0.95, gece tabanı 100 K, 60 × 72 düğüm).
+    - **K_LRP = K_SRP.** Terim etkin bir `SRPOptions` ister; yoksa ValueError. K duyarlılığına girer.
+    - **Taşıyan yollar:** gelgitle aynı (6, 42 ve 48 durumlu yayılım, gölge kontakları, truth sarmalayıcısı,
+      konum, menzil hızı ve iki yönlü menzil için BLS-LM ve SRIF). Kapalı yollar bayt bayt aynıdır (50/50).
+    - **Taşımayanlar:** UKF, EKF, senaryo yapılandırması, CLI ve masaüstü.
+    - **Sayısal taban (L_G6 FAIL).** C6'nın ayrık kuralı konumda pürüzsüz değildir (düğümler terminatörü ve ısıl
+      tabanı geçerken RHS kırılır). Açıkken 6 durumlu yolun öz tabanı rtol 1e-13'te 6 saatte ~1e-5 m'dir
+      (kapalıyken 7.8e-7 m); 6, 42 ve 48 durumlu yollar 1.6e-5 m'ye kadar ayrışır. Bu, terimin 1.33 m'lik
+      etkisinin ~1e-5'i kadardır; ön kayıtlı 1e-5 m yol tutarlılığı kapısını aşar, OD eşiğini aşmaz (keşifsel
+      L_G6-A tanısı). Birleştirme kararı sahibindir.
+    - **Kapsam dışı.** Tutulmalarda Dünya gölgesinin Ay yüzeyine düşmesi ve ısıl gecikme modellenmez; terim
+      umbral evrelerde fazla tahmin edilir.
 
 16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
     ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
