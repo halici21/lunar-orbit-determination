@@ -51,3 +51,14 @@ A materiality survey (no production change) decides what an implementation phase
 | F2r–F2u | Post-fit error growth against LOLA; cross-track misfit on 2009-09-17/18 (window fits, C_N/S_N, FDF reference) | F2r `E_DYNAMICS_HYPOTHESES_NOT_SUFFICIENT`; F2s-1 `H_REF_SUPPORTED`; F2t `SPREAD` + `EMP_ABSORBS` (non-physical C_N); F2u `F2U_UNRESOLVED` | [F2 §17.9–17.12](phase17/reports/phase_f2_lro_od.md) |
 
 LRO tracking data and reference orbits are not committed; each F report names its PDS source.
+
+## V&V programme F3 (force model, REQ-DYN-007)
+
+Files are named `wp3_<n>_*`. Exploratory amendments are listed in the
+[amendment log](../docs/assurance/amendment-log.md).
+
+| Work package | Topic | Outcome | Report |
+|---|---|---|---|
+| WP3.1-R | Materiality survey of unmodelled force terms | Predeclared `WP3_1_INCONCLUSIVE`; exploratory A2 sets the WP3.2 scope (tide, albedo/IR, Earth shadow, SRP light time) | [WP3.1](phase17/reports/wp3_1_materiality_survey.md) |
+| WP3.2 S1 | Lunar solid tide, opt-in | Every gate PASS as predeclared | [S1](phase17/reports/wp3_2_s1_lunar_tide.md) |
+| WP3.2 S2 | Lunar albedo/IR radiation pressure, opt-in | NOT QUALIFIED as computed (L_G6 path consistency FAIL, 3 of 4 cases); exploratory L_G6-A attributes it to the C6 quadrature floor; merge is the owner's decision | [S2](phase17/reports/wp3_2_s2_lunar_radiation.md) |

@@ -1,4 +1,14 @@
-"""Estimator helpers for the Python Lunar OD port."""
+"""Estimator helpers for the Python Lunar OD port.
+
+Lunar solid tide (F3 WP3.2 S1, opt-in, default-off): every batch estimator that takes
+``propagation_profile`` also takes ``lunar_tide`` (a ``lunar_tide.LunarTideOptions``) and
+forwards it to every propagation of the solve: nominal, candidate, rescore, Jacobian, K
+sensitivity and posterior.  ``None`` leaves every call exactly as before.
+
+Lunar albedo/IR radiation pressure (F3 WP3.2 S2, opt-in, default-off): the same functions
+take ``lunar_radiation`` (a ``lunar_radiation.LunarRadiationOptions``) and forward it the
+same way.  It scales with the SRP coefficient, so it needs an active ``srp``.
+"""
 
 from __future__ import annotations
 
@@ -120,6 +130,8 @@ def estimate_position_srif(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Position-only SRIF/QR estimator for the initial state.
 
@@ -169,7 +181,7 @@ def estimate_position_srif(
         x_hist_trial = propagate_state(
             t_pass_s, x_state[:nx], mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=r_tol, atol=a_tol, j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         _, h_trial, _ = compute_position_residuals_analytic(x_hist_trial, obs_data, pass_geo)
         h_trial_aug = _apply_position_bias(
@@ -194,7 +206,7 @@ def estimate_position_srif(
             rtol=_atol_r,
             atol=_atol_a,
             j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         x_hist = x_aug_hist[:, :6]
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
@@ -297,7 +309,7 @@ def estimate_position_srif(
             atol,
             j2_moon=j2_moon,
             return_design=True,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
         # information eigenvalues at max*1e-14 in physical units.
@@ -319,7 +331,7 @@ def estimate_position_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
 
     stats = EstimatorStats(
@@ -364,6 +376,8 @@ def estimate_range_rate_srif(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Range/range-rate/azimuth/elevation SRIF estimator.
 
@@ -416,7 +430,7 @@ def estimate_range_rate_srif(
         x_hist_trial = propagate_state(
             t_pass_s, x_state[:nx], mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=r_tol, atol=a_tol, j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         _, h_trial = compute_range_rate_residuals(x_hist_trial, obs_data, pass_geo)
         h_trial_aug = _apply_range_rate_bias(
@@ -440,7 +454,7 @@ def estimate_range_rate_srif(
             rtol=_atol_r,
             atol=_atol_a,
             j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         h_nom, h_initial_state = _range_rate_nominal_and_initial_jacobian(
             t_pass_s,
@@ -455,7 +469,7 @@ def estimate_range_rate_srif(
             x_aug_hist,
             rtol,
             atol,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         h_nom_aug = _apply_range_rate_bias(h_nom, obs_data, b_nominal, bias_cfg)
         residual = _range_rate_residual_from_h(obs_data, h_nom_aug)
@@ -563,7 +577,7 @@ def estimate_range_rate_srif(
             atol,
             j2_moon=j2_moon,
             return_design=True,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         # WP4.3 (EST-06): QR of the whitened, scaled design instead of clipping the
         # information eigenvalues at max*1e-14 in physical units.
@@ -585,7 +599,7 @@ def estimate_range_rate_srif(
             rtol,
             atol,
             j2_moon=j2_moon,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
 
     stats = EstimatorStats(
@@ -630,6 +644,8 @@ def estimate_position_bls_lm(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
     damping_schedule: str = "fixed",
     measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
@@ -689,7 +705,7 @@ def estimate_position_bls_lm(
             rtol=r_tol,
             atol=a_tol,
             j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         x_hist = x_aug_hist[:, :6]
         _, h_nom, h_tilde = compute_position_residuals_analytic(x_hist, obs_data, pass_geo)
@@ -749,7 +765,7 @@ def estimate_position_bls_lm(
         x_aug_hist_cand = propagate_augmented_state(
             t_pass_s, x_aug0_cand, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         _, h_candidate, _ = compute_position_residuals_analytic(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_position_bias(h_candidate, obs_data, b_candidate, bias_cfg)
@@ -808,7 +824,7 @@ def estimate_position_bls_lm(
             atol,
             j2_moon=j2_moon,
             return_design=True,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         if whitening is not None:
             posterior_design = whitening(posterior_design)
@@ -860,6 +876,8 @@ def estimate_range_rate_bls_lm(
     return_posterior: bool = False,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
     damping_schedule: str = "fixed",
     measurement_correlation_time_s: float | None = None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
@@ -925,7 +943,7 @@ def estimate_range_rate_bls_lm(
             rtol=r_tol,
             atol=a_tol,
             j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         h_nom, h_initial_state = _range_rate_nominal_and_initial_jacobian(
             t_pass_s,
@@ -940,7 +958,7 @@ def estimate_range_rate_bls_lm(
             x_aug_hist,
             rtol,
             atol,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         h_nom_aug = _apply_range_rate_bias(
             h_nom, obs_data, x_state[nx:] if nb else np.zeros(0), bias_cfg)
@@ -1007,7 +1025,7 @@ def estimate_range_rate_bls_lm(
         x_aug_hist_cand = propagate_augmented_state(
             t_pass_s, x_aug0_cand, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, rtol=_atol_r, atol=_atol_a, j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         _, h_candidate = compute_range_rate_residuals(x_aug_hist_cand[:, :6], obs_data, pass_geo)
         h_candidate_aug = _apply_range_rate_bias(h_candidate, obs_data, b_candidate, bias_cfg)
@@ -1071,7 +1089,7 @@ def estimate_range_rate_bls_lm(
             atol,
             j2_moon=j2_moon,
             return_design=True,
-            **model_options(srp, propagation_profile),
+            **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         if whitening is not None:
             posterior_design = whitening(posterior_design)
@@ -1250,6 +1268,8 @@ def _position_posterior_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
     return_design: bool = False,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
@@ -1264,7 +1284,7 @@ def _position_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
-        **propagator_options(srp, propagation_profile),
+        **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _position_initial_state_jacobian(
@@ -1294,6 +1314,8 @@ def _range_rate_nominal_and_initial_jacobian(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> tuple[np.ndarray, np.ndarray]:
     if x_aug_hist is None:
         x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
@@ -1308,7 +1330,7 @@ def _range_rate_nominal_and_initial_jacobian(
             rtol=rtol,
             atol=atol,
             j2_moon=j2_moon,
-            **propagator_options(srp, propagation_profile),
+            **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
 
     rr_physics = range_rate_physics_config(pass_geo.range_rate_physics)
@@ -1389,6 +1411,8 @@ def _range_rate_numerical_initial_jacobian(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     warnings.warn(
         "_range_rate_numerical_initial_jacobian runs 12 ODE integrations per call "
@@ -1413,7 +1437,7 @@ def _range_rate_numerical_initial_jacobian(
             get_sun_pos,
             rtol,
             atol,
-            j2_moon=j2_moon, **model_options(srp, propagation_profile),
+            j2_moon=j2_moon, **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         h_minus = _range_rate_h_vector_from_initial(
             t_pass_s,
@@ -1427,7 +1451,7 @@ def _range_rate_numerical_initial_jacobian(
             get_sun_pos,
             rtol,
             atol,
-            j2_moon=j2_moon, **model_options(srp, propagation_profile),
+            j2_moon=j2_moon, **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
         )
         delta = (h_plus - h_minus).reshape(-1, 4)
         delta[:, 2] = wrap_to_pi(delta[:, 2])
@@ -1452,6 +1476,8 @@ def _range_rate_h_vector_from_initial(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1464,7 +1490,7 @@ def _range_rate_h_vector_from_initial(
         get_sun_pos,
         rtol=rtol,
         atol=atol,
-        j2_moon=j2_moon, **propagator_options(srp, propagation_profile),
+        j2_moon=j2_moon, **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     _, h_meas = compute_range_rate_residuals(x_aug_hist[:, :6], obs_data, pass_geo)
     return h_meas.reshape(-1)
@@ -1497,6 +1523,8 @@ def _range_rate_posterior_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
     return_design: bool = False,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
@@ -1511,7 +1539,7 @@ def _range_rate_posterior_information(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
-        **propagator_options(srp, propagation_profile),
+        **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     _, h_initial = _range_rate_nominal_and_initial_jacobian(
         t_pass_s,
@@ -1527,7 +1555,7 @@ def _range_rate_posterior_information(
         rtol,
         atol,
         j2_moon=j2_moon,
-        **model_options(srp, propagation_profile),
+        **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
@@ -1555,6 +1583,8 @@ def _position_posterior_sqrt_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     h_initial = _position_initial_jacobian(
         t_pass_s,
@@ -1570,7 +1600,7 @@ def _position_posterior_sqrt_information(
         rtol,
         atol,
         j2_moon=j2_moon,
-        **model_options(srp, propagation_profile),
+        **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     rows = np.vstack([prior_sqrt_info, h_initial * np.sqrt(w_diag)[:, None]])
     return _upper_triangular_qr_factor(rows)
@@ -1595,6 +1625,8 @@ def _range_rate_posterior_sqrt_information(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     h_initial = _range_rate_initial_jacobian(
         t_pass_s,
@@ -1610,7 +1642,7 @@ def _range_rate_posterior_sqrt_information(
         rtol,
         atol,
         j2_moon=j2_moon,
-        **model_options(srp, propagation_profile),
+        **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     rows = np.vstack([prior_sqrt_info, h_initial * np.sqrt(w_diag)[:, None]])
     return _upper_triangular_qr_factor(rows)
@@ -1633,6 +1665,8 @@ def _position_initial_jacobian(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1646,7 +1680,7 @@ def _position_initial_jacobian(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
-        **propagator_options(srp, propagation_profile),
+        **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     _, _, h_tilde = compute_position_residuals_analytic(x_aug_hist[:, :6], obs_data, pass_geo)
     h_initial = _position_initial_state_jacobian(
@@ -1674,6 +1708,8 @@ def _range_rate_initial_jacobian(
     j2_moon: float = 0.0,
     srp=None,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> np.ndarray:
     x_aug0 = np.concatenate([x_dyn, np.eye(6).reshape(-1, order="F")])
     x_aug_hist = propagate_augmented_state(
@@ -1687,7 +1723,7 @@ def _range_rate_initial_jacobian(
         rtol=rtol,
         atol=atol,
         j2_moon=j2_moon,
-        **propagator_options(srp, propagation_profile),
+        **propagator_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     _, h_initial = _range_rate_nominal_and_initial_jacobian(
         t_pass_s,
@@ -1703,7 +1739,7 @@ def _range_rate_initial_jacobian(
         rtol,
         atol,
         j2_moon=j2_moon,
-        **model_options(srp, propagation_profile),
+        **model_options(srp, propagation_profile, lunar_tide, lunar_radiation),
     )
     if bias_cfg["size"]:
         h_initial = np.hstack([h_initial, _range_rate_bias_jacobian(obs_data, bias_cfg)])
@@ -2875,6 +2911,8 @@ def estimate_two_way_range_bls_lm(
     k_srp_scale: float = 1e-2,
     acceptance_rescore_tolerance_factor: float | None = 1e-2,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Two-way range batch least-squares with LM damping.
 
@@ -2934,6 +2972,12 @@ def estimate_two_way_range_bls_lm(
               "harmonic_epoch_et0": harmonic_epoch_et0}
     )
     _prop = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
+    if lunar_tide is not None:   # F3 WP3.2 S1: every propagation and posterior carries it
+        from .lunar_tide import require_lunar_tide_options
+        _prop = {**_prop, "lunar_tide": require_lunar_tide_options(lunar_tide)}
+    if lunar_radiation is not None:   # F3 WP3.2 S2: carried exactly like the tide
+        from .lunar_radiation import require_lunar_radiation_options
+        _prop = {**_prop, "lunar_radiation": require_lunar_radiation_options(lunar_radiation)}
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()
@@ -3499,6 +3543,8 @@ def estimate_two_way_range_srif(
     k_srp_prior_sigma: float | None = None,
     k_srp_scale: float = 1e-2,
     propagation_profile=None,
+    lunar_tide=None,
+    lunar_radiation=None,
 ) -> tuple[np.ndarray, str, EstimatorStats]:
     """Two-way range square-root information filter estimator.
 
@@ -3522,6 +3568,12 @@ def estimate_two_way_range_srif(
     semantics: "sequential filtering requires an initial uncertainty."
     """
     _prop = {} if propagation_profile is None else propagation_profile.propagator_kwargs()
+    if lunar_tide is not None:   # F3 WP3.2 S1: every propagation and posterior carries it
+        from .lunar_tide import require_lunar_tide_options
+        _prop = {**_prop, "lunar_tide": require_lunar_tide_options(lunar_tide)}
+    if lunar_radiation is not None:   # F3 WP3.2 S2: carried exactly like the tide
+        from .lunar_radiation import require_lunar_radiation_options
+        _prop = {**_prop, "lunar_radiation": require_lunar_radiation_options(lunar_radiation)}
     t_pass_s = np.asarray(t_pass_s, dtype=float).reshape(-1)
     obs_data = np.asarray(obs_data, dtype=float)
     x_nominal = np.asarray(x_nominal0, dtype=float).reshape(-1).copy()

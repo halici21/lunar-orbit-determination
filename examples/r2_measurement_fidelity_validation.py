@@ -783,6 +783,49 @@ F1_WP1_3_REFROZEN_CURRENT_TREE_SHA256 = {
         "6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c",
 }
 
+# F3 WP3.2 S1 (re-freeze under the owner's 2026-11-08 delegation of the WP3.1-R decisions:
+# the material force terms go in as opt-in terms with defaults unchanged; REQ-DYN-007,
+# DYN-06).  The opt-in lunar solid tide (lunar_od.lunar_tide) enters the 6/42/48-state
+# propagators through _with_tide_acceleration, which returns the RHS itself when the tide
+# is off, and the 15 batch-estimator functions forward lunar_tide=None to every
+# propagation (S1b); T_G1(b) found the default paths byte-identical before and after
+# (studies/phase17/configs/wp3_2_s1_lunar_tide_predeclaration.json).
+#
+#   lunar_od/dynamics.py     old (F1 WP1.3)  6827b9d9e8565f796146321258fe22d33ebb085513d2df41554159e8c10caa3c
+#                            new (WP3.2 S1)  ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
+#   lunar_od/estimators.py   old (F4 WP4.5b) ee18f3c916fa669e49f15b5db13307330bdf8a8235b0ace27e769cf09214a2d6
+#                            new (WP3.2 S1)  0ed775891fc30b61218e800ce499ecc3ed554e991b721e9b6c89bd2e15ba1781
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39",
+    "lunar_od/estimators.py":
+        "0ed775891fc30b61218e800ce499ecc3ed554e991b721e9b6c89bd2e15ba1781",
+}
+
+
+# F3 WP3.2 S2 (re-freeze under the same 2026-11-08 delegation; REQ-DYN-007, DYN-06).
+# The opt-in lunar albedo/IR radiation pressure (lunar_od.lunar_radiation, the WP3.1 C6
+# model, K_LRP = K_SRP) enters the 6/42/48-state propagators and the shadow-contact
+# pre-pass through _with_lunar_radiation_acceleration, which returns the RHS itself when
+# lunar_radiation is None, and the 15 batch-estimator functions forward
+# lunar_radiation=None to every propagation (S2b); L_G1 checks the default paths
+# byte-identical before and after
+# (studies/phase17/configs/wp3_2_s2_lunar_radiation_predeclaration.json).
+#
+#   lunar_od/dynamics.py     old (WP3.2 S1)  ae0f3d0d254b23f886cec45b2db36d54538ccd86eb19118b4bef7aa17e35ff39
+#                            new (WP3.2 S2)  eefbb63bec3c9127f2223dce391d11c841299d4d8d8cf02e0856c8ae152bc2c3
+#   lunar_od/estimators.py   old (WP3.2 S1)  0ed775891fc30b61218e800ce499ecc3ed554e991b721e9b6c89bd2e15ba1781
+#                            new (WP3.2 S2)  d0e69634591679bedcfb4b68f0a9a86abeb7fb52240f6293f89aefdfca770873
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "eefbb63bec3c9127f2223dce391d11c841299d4d8d8cf02e0856c8ae152bc2c3",
+    "lunar_od/estimators.py":
+        "d0e69634591679bedcfb4b68f0a9a86abeb7fb52240f6293f89aefdfca770873",
+}
+
+
 # F1 X-02 (owner decision 2026-11-02, "Yes, switch default"; DYN-03/DYN-04).  The
 # default point-mass lunar J2 is about the exact-epoch MOON_PA_DE440 pole with the
 # GRGM1200A (C20, R_ref = 1738 km) pair; the IAU mean-pole model stays selectable
@@ -970,6 +1013,23 @@ BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256 = {
         "cbddcd5c90351f441dd6b90c9a01196fb51e7d30f8a7695392d5d88bc95114d3",
 }
 
+# F3 WP3.2 (S1 + S2) brought up to date with main on 2026-11-21, after the branch
+# consolidation (PR #117).  dynamics.py and estimators.py carry the WP3.2 S1/S2 changes
+# (opt-in lunar tide and lunar albedo/IR radiation pressure) and main's changes (F1 X-02
+# default lunar J2 model; F2 WP2.3/WP2.5 and F4 WP4.2-R estimator changes).  The merged
+# file is the union of those authorized changes (conflicts resolved by keeping both
+# keyword sets) and has a new identity.  No new edits.
+#
+#   lunar_od/dynamics.py     WP3.2 S2 eefbb63b... + X-02 f71cdb7c... -> bcdd8fa1...
+#   lunar_od/estimators.py   WP3.2 S2 d0e69634... + main b84b317b... -> e5884773...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "bcdd8fa14fb043822cc430685d05a604b511ee39203e1a9fdc2c2748df2f9d95",
+    "lunar_od/estimators.py":
+        "e58847732ae2af80871f6ae75eb1d42bf3a2f433a202a04a870d942b270313e0",
+}
+
 
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
@@ -994,8 +1054,14 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256:
         return BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[relative_path]
+    if relative_path in F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_X02_REFROZEN_CURRENT_TREE_SHA256:
         return F1_X02_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F1_WP1_8_REFROZEN_CURRENT_TREE_SHA256:

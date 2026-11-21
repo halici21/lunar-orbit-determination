@@ -1,0 +1,265 @@
+{
+ "commit": "0d554c4f91d87cd7dacd082e695b77585b87ff24",
+ "configs": {
+  "contacts": {
+   "digest": "ed13b8926eff660a71422edeb9544a8969e1e280166006a8177e94e32f5c0d33",
+   "leaves": {
+    "out": "<f8[12]:9a4786acafbc43644650b3713e254d0559b08ee2c313a6521597d8939b3b6cc4"
+   }
+  },
+  "est_position_bls_lm_legacy": {
+   "error": "TypeError: estimate_position_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_position_bls_lm_profile": {
+   "error": "TypeError: estimate_position_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_position_srif_legacy": {
+   "error": "TypeError: estimate_position_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_position_srif_profile": {
+   "error": "TypeError: estimate_position_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_range_rate_bls_lm_legacy": {
+   "error": "TypeError: estimate_range_rate_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_range_rate_bls_lm_profile": {
+   "error": "TypeError: estimate_range_rate_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_range_rate_srif_legacy": {
+   "error": "TypeError: estimate_range_rate_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "est_range_rate_srif_profile": {
+   "error": "TypeError: estimate_range_rate_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "k48_adams": {
+   "digest": "5234a2455a87e2ed00730d3ce03c1c346d0fd4b76006d910e4cf9b3b15fb8e68",
+   "leaves": {
+    "out": "<f8[73, 48]:63cdc2b20a3d41463398055e26c75846e20362b122993d3180fc9ba2b96fc5e7"
+   }
+  },
+  "k48_dop853_events": {
+   "digest": "59de20dee068260b95da032d00c5d2a539cf6f5eff44b979ada51efeac229d0c",
+   "leaves": {
+    "out": "<f8[73, 48]:eb4d173f5dfeaf429d63d0beedc1033dff2297bc81bfcbc76e9364d9e237816e"
+   }
+  },
+  "k48_harmonic_events": {
+   "digest": "efc2711a1291b84a21c755d596c9413f89ded1cb84c1a73e05bd2150e5f92f0c",
+   "leaves": {
+    "out": "<f8[73, 48]:67fdabe54c4df4a601b957f6c8310e370d033b0cdff2dd8adf267a46f339afa1"
+   }
+  },
+  "pa_adams_j2": {
+   "digest": "a28f3ee774668a76e52c15f7b977ec226f07a98a23f00ad3ebb16e6d618eaafc",
+   "leaves": {
+    "out": "<f8[73, 42]:a8217ff197b3af541f37ec7eefbaa0ab954dc681374005c271a5f8a28741cc4b"
+   }
+  },
+  "pa_adams_srp": {
+   "digest": "770bf9aa58e286176fa49afd3dad24dd1c78efe751c38c1a08acbd71ec4dbcbc",
+   "leaves": {
+    "out": "<f8[73, 42]:0f6b19f9f1c0d63cc08852d5f5961ff1e52b159afd03e734fac850e8aa456546"
+   }
+  },
+  "pa_dop853_events": {
+   "digest": "db16aa51b2dfb6643a90c7c54edbcee1fdf7541f419268488f5734f56332b7c2",
+   "leaves": {
+    "out": "<f8[73, 42]:51a641be00a7981451e452002a7a63ae09acacf7d7ddc9af4a0bd5b828a88e67"
+   }
+  },
+  "pa_harmonic_events": {
+   "digest": "a590ca4a41252ed7f095738533cd994944ab4261f44cd1e8d44e4bf091d2cde7",
+   "leaves": {
+    "out": "<f8[73, 42]:52d15e35ef067f8ad5b62ece059aa70ea8f3e56fa3426b2e117573df44521d6c"
+   }
+  },
+  "pa_reference_srp": {
+   "digest": "c66954e851475e62f2812a11587e2656e6fc65acb465b85c185ce9b3966ff003",
+   "leaves": {
+    "out": "<f8[73, 42]:23266512ba8031b9ee1011e62333b1477b96056dc879d899c23b47a0ad86e14a"
+   }
+  },
+  "ps_adams_j2": {
+   "digest": "b82b07873fb653d7cceb7799cbd3497e4d3b1e3de6a27e25875272fba018fbcc",
+   "leaves": {
+    "out": "<f8[73, 6]:271030e610480082cb62ddb66581382d0e452abb9adf4a6f63c0723646e9772b"
+   }
+  },
+  "ps_adams_srp_earthj2": {
+   "digest": "3f36dc9ab38d2a253ef837fe0cea2dcde223ef24459fe61357aa5651649dc322",
+   "leaves": {
+    "out": "<f8[73, 6]:9a482179fbe64e5b70112aac5383e02f7215a8b7fce24e1f02e3437b73de6ed4"
+   }
+  },
+  "ps_dop853_noshadow": {
+   "digest": "0d2e1c638886e70e9ac19742ec1ea7d6ba27d86506a848cdbc59d2656f7a1047",
+   "leaves": {
+    "out": "<f8[73, 6]:d6066533462c9e355bec3089d547dd8e8883ff83e3118c44da1b78dfb14bd0ce"
+   }
+  },
+  "ps_dop853_srp_events": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  },
+  "ps_harmonic": {
+   "digest": "ddbbb549e00b5b16d27a3d345fcb2060e9c2adc6e36602995a56085d589d99ae",
+   "leaves": {
+    "out": "<f8[73, 6]:f9cd945942352940aaf13ae3aedbc7492b656fa0bd29c49e9ec81627d01ac6be"
+   }
+  },
+  "ps_reference_srp": {
+   "digest": "d668185222dae86743ff13ec3cbadb1ceafec440128da1144f6d55c2870b0114",
+   "leaves": {
+    "out": "<f8[73, 6]:95cccf562db6ff3a1c16beb58aada331c573207545b05a7487d1f7f5753e2007"
+   }
+  },
+  "tide_contacts": {
+   "digest": "7d61a524c8dfb98dc47e7f6953028966d90da194a7074ae417240ec2d1438acf",
+   "leaves": {
+    "out": "<f8[12]:9a82f882a26b79b3c658d4cf7aa4b770f4d2ccbd4d49169df19624dfa57ffb26"
+   }
+  },
+  "tide_est_position_bls_lm_legacy": {
+   "error": "TypeError: estimate_position_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_position_bls_lm_profile": {
+   "error": "TypeError: estimate_position_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_position_srif_legacy": {
+   "error": "TypeError: estimate_position_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_position_srif_profile": {
+   "error": "TypeError: estimate_position_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_range_rate_bls_lm_legacy": {
+   "error": "TypeError: estimate_range_rate_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_range_rate_bls_lm_profile": {
+   "error": "TypeError: estimate_range_rate_bls_lm() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_range_rate_srif_legacy": {
+   "error": "TypeError: estimate_range_rate_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_est_range_rate_srif_profile": {
+   "error": "TypeError: estimate_range_rate_srif() got an unexpected keyword argument 'lunar_radiation'"
+  },
+  "tide_k48_adams": {
+   "digest": "47c7c3030d1726c4c0f9e83da85ecf4f3b5712b99981df8741a379e7525a9432",
+   "leaves": {
+    "out": "<f8[73, 48]:c9471c02337e4d687895ad27219dc9feb557b3d8736ae74af625e79a57800072"
+   }
+  },
+  "tide_k48_dop853_events": {
+   "digest": "d9564d048aa9e10e325bfb2da6446c819ca809e76c7d9c767b6c0f24d574ae4e",
+   "leaves": {
+    "out": "<f8[73, 48]:89f6d5eca98dff51bee38801d7aaceb8ba23b44538d8c9b2846a948edb8368fe"
+   }
+  },
+  "tide_k48_harmonic_events": {
+   "digest": "4e880ee73df3df7d78d455e699ec753dac74c00c188bb37d906ee61181f9b428",
+   "leaves": {
+    "out": "<f8[73, 48]:d629aeaf4fb4a220989708f7eb455879d651158bb618b84a613efdd5d17aed1a"
+   }
+  },
+  "tide_pa_adams_j2": {
+   "digest": "78f61629a1b6e67debdc15f5cb380c694abf2813d98c53389337483b37ccea2d",
+   "leaves": {
+    "out": "<f8[73, 42]:250194d42eee65bf9a32ddefdf921b094750187111b4cad8917e49c77695fbd3"
+   }
+  },
+  "tide_pa_adams_srp": {
+   "digest": "5d428c8dfc7fbd9e49dff9329f8ce20256c88327ea24f38339bf99bfa56c9756",
+   "leaves": {
+    "out": "<f8[73, 42]:a7b1197e4def1c9d748a0d73741535c8e489aabdda5fc16bd335ce9353467fd7"
+   }
+  },
+  "tide_pa_dop853_events": {
+   "digest": "b38a1f2c436900383319eff3a44cd2ca35d8762784955fc8534f463968803da3",
+   "leaves": {
+    "out": "<f8[73, 42]:6a03d050e300cf0ea6dc07a77db713b033e74d0b8cafd837c7f4bc4d1bc8d0af"
+   }
+  },
+  "tide_pa_harmonic_events": {
+   "digest": "71e14a712590f135869d1198564244b09d737ebc49317f62cf85e46cf1031c93",
+   "leaves": {
+    "out": "<f8[73, 42]:ec395f4f7645f5c9520e1f091ae62695b6698f13fdf3a4eadae869e21c3f2a98"
+   }
+  },
+  "tide_pa_reference_srp": {
+   "digest": "5e851a6feb42a9debd65810fc4948df502ffe753cfdc951bfd76ad4c349d517a",
+   "leaves": {
+    "out": "<f8[73, 42]:0ad9c49a4f4bd5872f13b7473ea92e18f52e094d41a4663f1b4291d13697c03e"
+   }
+  },
+  "tide_ps_adams_j2": {
+   "digest": "573e25e3885c206f47dc12557af2f091ebcabaae7980f7e8daae103d458cfd01",
+   "leaves": {
+    "out": "<f8[73, 6]:d06edd299737e921f9a37e29d16ec11d4482c861016c06e3c5b62814b43c0baa"
+   }
+  },
+  "tide_ps_adams_srp_earthj2": {
+   "digest": "8e5f81dabbf88b3fe037912847871e335264ea3c28c2b54521c32582373a9dec",
+   "leaves": {
+    "out": "<f8[73, 6]:618c275725bba1179fd9e0c53811e4aea635d75b1bab836b676afd9cc1e68a3f"
+   }
+  },
+  "tide_ps_dop853_noshadow": {
+   "digest": "fbb2eacf3eca3b7ec0e433382f131aec46a3f363bee32aa0d343684b89d2ecef",
+   "leaves": {
+    "out": "<f8[73, 6]:13371a7de998801294d9a255152c75d30542c6ad1ef197fdf57c50b8ebb5196b"
+   }
+  },
+  "tide_ps_dop853_srp_events": {
+   "digest": "0cfcbf8ddac75ef22847ed62c99b6e7629bbad90a474c6a63ac309b6711d65ab",
+   "leaves": {
+    "out": "<f8[73, 6]:cee262542dfeab7ab13635290b584cce5397079c3d25d285de48496f2b193192"
+   }
+  },
+  "tide_ps_harmonic": {
+   "digest": "6b7be8f23b83e9004773f05dd51f8e1dca150ff33bed8d5a2a14300c0027f8de",
+   "leaves": {
+    "out": "<f8[73, 6]:02abadf0a1f39ea3ad79a8e9d26c3c88967c1c4794ca8aeadd072e936c7070a7"
+   }
+  },
+  "tide_ps_reference_srp": {
+   "digest": "2f0885fbc5ace0dee59e5db9b97cf0522a5ecb411480eaffa5065e2dd21ee202",
+   "leaves": {
+    "out": "<f8[73, 6]:4c7b742dfb07e38e7fcc6fca83894993d366c9ba612daa78a9a4d54d38bc9f10"
+   }
+  },
+  "tide_truth_legacy": {
+   "digest": "07e247e54b639011eb5a5480785b65a29154bff8d5bcc526fce6f0620112f954",
+   "leaves": {
+    "out": "<f8[73, 6]:758d62fec942f0b47389cd1f0a1a28722ae50877fbe3d4e00c226a600556d520"
+   }
+  },
+  "tide_truth_profile": {
+   "digest": "0cfcbf8ddac75ef22847ed62c99b6e7629bbad90a474c6a63ac309b6711d65ab",
+   "leaves": {
+    "out": "<f8[73, 6]:cee262542dfeab7ab13635290b584cce5397079c3d25d285de48496f2b193192"
+   }
+  },
+  "truth_legacy": {
+   "digest": "eca0840cd11e6e4630c1e0bd94c7161c71250aae7a0750cc90d2850b81a69405",
+   "leaves": {
+    "out": "<f8[73, 6]:ca20bf36bcef69d3d894c2e4da51bf852b46bab0e01c11e2f94100d7ab896498"
+   }
+  },
+  "truth_profile": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  }
+ },
+ "fast_dynamics": true,
+ "gate": "L_G1(b)",
+ "mode": "none",
+ "numba": "0.65.1",
+ "numpy": "2.4.3",
+ "python": "3.13.2",
+ "scipy": "1.17.1",
+ "src_status": ""
+}
