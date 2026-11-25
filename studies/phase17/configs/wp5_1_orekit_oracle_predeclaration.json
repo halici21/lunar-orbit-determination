@@ -1,0 +1,84 @@
+{
+ "study": "F5 WP5.1: the Orekit external oracle made permanent in the repository (acceptance criterion AC-3, risk R-18)",
+ "date": "2026-11-25",
+ "written": "2026-11-25, before any WP5.1 comparison number. Read before writing: docs/assurance/vv-program.md (WP5.1 row), docs/assurance/intended-use.md (AC-3), the 2026-10-21 Orekit/GMAT trial outside the repository (agent-sandbox/orekit-gmat-oracle: PREDECLARATION.md, REPORT.md, harness/*.py, harness/jhelpers/oracle/*.java) and the F1 phase gate G1 (docs/validation/f1-phase-gate-2026-11-02.md). The trial's numbers are therefore KNOWN to the author: dynamics after the TDB->TT alignment 0.14 mm (D1a, D1b), 0.90-1.15 mm (D2-50), 4.24-6.12 mm (D2-100), 2.66-14.21 mm (D3), all with integrator settings not converged to 1 mm on at least one side; two-way range 0.186 mm and counted Doppler 0.35 um/s on the Moon-centred model with Orekit shifting a receive-epoch state. No WP5.1 run has been made: no Orekit propagation, no fixture, no lunar_od-vs-Orekit difference at the current main",
+ "base": "branch f5/wp5-1-orekit-oracle from origin/main 7864ae0 (PR #118)",
+ "question": "With constants, frames and time aligned, does the current lunar_od agree with Orekit to < 1 mm/day in dynamics, < 1 mm in two-way range and < 1 um/s in counted Doppler (AC-3), and can that comparison be re-run by every pytest run WITHOUT Orekit, from pinned Orekit outputs with full provenance?",
+ "oracle": {
+  "tool": "Orekit 13.1.9 through orekit-jpype 13.1.9.0 (JPype 1.7.1), JDK 25, orekit-data as vendored by the trial (SHA-256 of orekit-data.zip c9b65c42...6b57, recorded in the provenance file)",
+  "independent_of_lunar_od": "planetary positions (Orekit's own JPL binary reader: linux_p1550p2650.440, lnxp1900p2053.421), time scales, frames, Earth orientation (IERS 2010 + EOP), station geometry, third-body and Holmes-Featherstone harmonic accelerations, SRP with conical shadow, numerical integration, light-time solution",
+  "shared_with_lunar_od": "(1) the scenario numbers (initial state built once by lunar_od.orbit.lunar_initial_state_mci, GM values, SRP constants, station geodetic coordinates); (2) the GL1800F coefficients, parsed by lunar_od.gravity_model_loader (Orekit has no PDS SHADR reader); (3) the MOON_PA_DE440 Euler-angle records, read by jplephem from the same binary PCK file and evaluated by the Java PckEulerProvider (no CSPICE); (4) for the measurement cases, the spacecraft trajectory (see measurement_cases.shared_inputs). These are inputs, not results; the report lists them as independence limits",
+  "java_helpers": "three source files carried from the trial unchanged (BodyCenteredIcrfProvider: Moon-centred frame with ICRF axes; GmOverrideBody: GM override; PckEulerProvider: MOON_PA_DE440 from PCK records). The jar is built from source by tools/oracle/java/build.py and is not committed"
+ },
+ "scenario": {
+  "epoch": "2025-03-01T00:00:00 TDB (SPICE ET 794059200.0); t is TDB seconds since this epoch",
+  "orbit": "100 km circular polar orbit in MOON_PA_DE440 (a = R_MOON_M + 100 km, e = 0, i = 90 deg, RAAN = argp = nu = 0), built by lunar_initial_state_mci with sxform(MOON_PA_DE440, J2000, et0) as in the trial. Expected identical to the trial's scenario.json; any difference is reported",
+  "gm": "gm_de431 for Moon, Earth, Sun: lunar_od.constants MU_MOON_M3S2, MU_EARTH_M3S2, MU_SUN_M3S2; Orekit central term from the orbit mu, third bodies through GmOverrideBody. Ephemeris-header GMs are not used by either tool",
+  "arc": "86 400 s, states compared every 600 s (145 samples)",
+  "station": "lunar_od 'Canberra DSN' geodetic coordinates (WGS84 -35.40 deg, 148.98 deg, 680 m)"
+ },
+ "dynamics_cases": {
+  "D1a": "Moon point mass + Earth and Sun third body (direct and indirect terms), DE440",
+  "D1b": "D1a with DE421 (lunar_od loads de421.bsp explicitly; Orekit reads lnxp1900p2053.421)",
+  "D2-50": "D1a + GL1800F 50x50 (degree >= 2, the file's own GM and 1738.0 km reference radius), body-fixed frame MOON_PA_DE440",
+  "D2-100": "as D2-50 at 100x100",
+  "D3": "D1a + cannonball SRP, K = C_R A / m = 0.02 m^2/kg, P(1 AU) = 1361 W m^-2 / c, AU = 149 597 870.7 km, R_sun = 695 700 km, conical (penumbra) lunar shadow with R_occ = R_MOON_M = 1737.4 km, true Sun distance"
+ },
+ "alignment": {
+  "A_TIME": "Orekit integrates with TAI/TT seconds as the independent variable, lunar_od with TDB seconds (the trial's 25.6 mm/day along-track term). The aligned lunar_od run integrates lunar_od's OWN force function (dynamics.f3body_moon, with lunar_frames.moon_pa_de440_rotation_at_et for D2 and srp.SRPOptions for D3) with TT seconds since the epoch's TT instant as the independent variable; ephemerides and frames are evaluated at et = TDB(TT) through SPICE unitim. This adapter lives in tools/oracle/lunar_od_side.py and contains no force physics. The TDB-vs-TT difference itself is reported, not gated",
+  "A_FRAME": "propagation in Moon-centred axes of ICRF/J2000 (Orekit BodyCenteredIcrfProvider on GCRF; lunar_od MCI J2000). EME2000 vs GCRF frame bias is not involved: lunar_od's J2000 in SPICE is ICRF-aligned and Orekit's frame is GCRF-aligned",
+  "A_BODY_FRAME": "MOON_PA_DE440 explicitly on both sides; neither tool's IAU Moon frame or the generic MOON_PA alias is used",
+  "A_GM": "scenario.gm on both sides",
+  "A_EPHEMERIS": "DE440 (DE421 for D1b) on both sides, each tool with its own reader",
+  "A_MEASUREMENT": "Newtonian light time with zero transponder delay, no media, no Shapiro, no aberration correction beyond the light-time solution, range = c x round trip / 2, counted Doppler in range-rate form (m/s, positive when the round-trip range grows) = (R2(t + Tc/2) - R2(t - Tc/2)) / Tc with Tc = 60 s, interval in TDB (lunar_od LightTimeModel interval_time_scale='TDB'). The light-time frame is the case's frame: Moon-centred (MOON) or solar-system barycentric (SSB), on both sides",
+  "A_STATION": "both measurement solvers use THE SAME station track: Orekit's Canberra DSN (TopocentricFrame on WGS84 in ITRF of IERS 2010 conventions with full EOP from orekit-data), sampled every 10 s in Moon-centred ICRF as position and velocity and pinned. The lunar_od solvers get it through a TwoWayStationStateProvider / callable that interpolates the pinned track (cubic Hermite on position and velocity). The Earth-orientation difference between SPICE's ITRF93 PCK and Orekit's ITRF (the trial: 23-26 cm in station position) is therefore not part of the gate; it is reported as information (I_STATION)"
+ },
+ "settings_selection": {
+  "rule": "Integrator settings of each tool are fixed by SELF-convergence only, before any cross-tool number is computed: a setting S is accepted for a case when the next rung of that tool's ladder changes the position by max over the 145 samples <= 0.1 mm. The first accepted rung is used. Self-convergence numbers are recorded in the results file",
+  "orekit_ladder": "DormandPrince853, absolute (1e-8 m, 1e-11 m/s), relative 1e-14, minStep 1e-3 s, maxStep 300 s (the trial's ref3); then maxStep 60, 20, 10, 5, 2, 1 s with the same tolerances. The comparison rung for S is the next rung",
+  "lunar_od_ladder": "scipy solve_ivp DOP853, rtol 1e-13, atol 1e-9 (the trial's reference), no step cap; then max_step 60, 20, 10, 5, 2, 1 s. D3 always restarts at every shadow contact (penumbra and umbra entry and exit located by terminal events on the apparent-disc geometry of srp.apparent_radii_and_separation), as the trial's converged D3 reference did",
+  "if_no_rung_converges": "the last rung is used, the case is labelled integrator-limited and its gate is reported as computed with that label"
+ },
+ "measurement_cases": {
+  "geometry": "Canberra DSN receive epochs t3 = 3600 ... 10800 s every 60 s (121 epochs), receive-tagged",
+  "shared_inputs": "(1) spacecraft trajectory: lunar_od D1a physics integrated by the same TT-aligned adapter at the D1a accepted setting, sampled every 10 s on [0, 14400] s, position and velocity (pinned); both tools interpolate it, lunar_od with its production cubic Hermite (radiometrics/relativistic_light_time SpacecraftHistory), Orekit with Hipparchus Hermite interpolation of 8 samples (TimeStampedPVCoordinatesHermiteInterpolator, position and velocity); (2) the station track of A_STATION",
+  "orekit_procedure": "org.orekit.estimation.measurements.Range (two-way and one-way), estimateWithoutDerivatives, the spacecraft state given AT THE BOUNCE (one-way: transmit) EPOCH: the epoch is taken from the previous estimate's participants and the estimate repeated until the epoch changes by < 1e-9 s (at most 5 times); a non-converged epoch fails the generator. This removes Orekit's internal Keplerian state shift (the trial's 0.37 mm term). For the SSB cases the state and station are expressed in Orekit's ICRF (SSB-centred) frame, the Moon's SSB state from Orekit's JPL reader",
+  "lunar_od_procedure": "M*-MOON: two_way_range.solve_two_way_range_events + two_way_range_from_solution (TwoWayRangeConfig default, zero delay); one-way: measurements.solve_one_way_light_time. M*-SSB: relativistic_light_time.solve_two_way + two_way_range_m with LightTimeModel(frame='SSB', shapiro_bodies=(), interval_time_scale='TDB'), the Moon's SSB state from SPICE (BarycentricEphemeris). Counted Doppler on both frames as the range difference of A_MEASUREMENT. Link L_M3: the production counted-Doppler observable relativistic_light_time.counted_doppler with the same model equals the lunar_od range-difference form",
+  "cases": {
+   "M2-MOON": "two-way range, Moon-centred light time",
+   "M3-MOON": "counted Doppler, Moon-centred light time",
+   "M2-SSB": "two-way range, barycentric light time (the production frame since WP2.1, without Shapiro)",
+   "M3-SSB": "counted Doppler, barycentric light time",
+   "M1-MOON": "one-way downlink range, Moon-centred (information, no AC-3 threshold)"
+  }
+ },
+ "gates": {
+  "O_P_PRECONDITIONS": "reported before any cross number, each with its bound: (a) Orekit JPL reader vs CSPICE spkpos, Moon-centred Earth and Sun over the arc, DE440 and DE421: Earth <= 1e-5 m, Sun <= 1e-3 m; (b) PckEulerProvider vs spice.pxform(J2000, MOON_PA_DE440): max element <= 1e-11; (c) the Moon-centred ICRF frame does not rotate against GCRF (rate <= 1e-15 rad/s); (d) Orekit (TDB - TT) minus SPICE (TDB - TT): its CHANGE over the arc <= 50 ns (the adapter uses SPICE's TT->TDB; 50 ns x 1.6 km/s = 0.08 mm); if larger, the adapter is given Orekit's mapping pinned at 600 s samples and the report says so; (e) Holmes-Featherstone with only C00 gives zero acceleration; (f) frame sensitivity: Orekit two-way range with the state in the SSB frame differs from the Moon-centred one by > 1 m on every epoch (the trial: 1.83-1.94 m), proving Orekit solves light time in the frame of the state. A failed precondition stops the comparison of the affected cases",
+  "O_D_DYNAMICS": "for each dynamics case: max over the 145 samples of |r_lunar_od,TT-aligned - r_Orekit| < 1 mm (AC-3 '< 1 mm/day'). Velocity difference and RTN components reported",
+  "O_L_LINK": "for each dynamics case: the production propagator lunar_od.dynamics.propagate_state (method DOP853, the lunar_od accepted rtol/atol, direct-SPICE Earth/Sun callbacks, harmonic_rotation as an epoch grid of moon_pa_de440_rotation_at_et every 60 s for D2, shadow_events=True for D3) agrees with the adapter run in TDB mode (same physics, TDB as the independent variable) to max |dr| <= 0.1 mm. This ties the TT-aligned comparison to the code path the estimators call; the TT-minus-TDB difference of the adapter is reported (information I_TIME)",
+  "O_M2": "M2-MOON and M2-SSB: max over 121 epochs of |R2_lunar_od - R2_Orekit| < 1 mm",
+  "O_M3": "M3-MOON and M3-SSB: max over 121 epochs of |CD_lunar_od - CD_Orekit| < 1 um/s",
+  "L_M3": "production counted_doppler (SSB, model as M*-SSB) minus the lunar_od range-difference form <= 1e-8 m/s on all 121 epochs",
+  "O_F_FIXTURE": "(a) every pinned file's SHA-256 equals the one in tests/fixtures/external_oracle/provenance.json; (b) provenance records: Orekit, orekit-jpype, JPype, JDK, numpy, scipy, jplephem, spiceypy versions; SHA-256 of orekit-data.zip, both JPL DE files, de440.bsp, de421.bsp, moon_pa_de440_200625.bpc, moon_de440_220930.txt, naif0012 leapseconds, the GL1800F .tab; the scenario, constants and alignment rules; the accepted settings; the generating commit and whether the tree was clean; (c) tests/test_external_oracle.py imports no Orekit/JPype module and reads its thresholds from THIS file, so a threshold cannot be loosened in the test alone; (d) the fixture tests skip (not fail) only when SPICE kernels or the GL1800F file are absent, with the missing file named",
+  "O_R_REGRESSION": "full pytest: 0 failures and 0 errors; tools/check_repository.py passes; python tools/build_docs.py --strict passes with the new page in the nav"
+ },
+ "information_not_gated": {
+  "I_TIME": "lunar_od adapter TDB minus TT run at t0 + 1 day (the trial: 25.5 mm along-track)",
+  "I_STATION": "lunar_od's own Canberra DSN station (SPICE ITRF93 binary PCK through make_exact_sxform_station_state_provider) minus the pinned Orekit station, position over the measurement window",
+  "I_M1": "M1-MOON one-way range difference",
+  "I_TRIAL": "for D1a..D3 the difference between the WP5.1 Orekit trajectory and the trial's stored ref3 trajectory"
+ },
+ "test_tiers": "tests/test_external_oracle.py: fixture integrity (O_F) and the measurement gates run in the default suite; dynamics cases whose lunar_od side takes > 20 s on this machine are marked with tests.slow (LUNAR_OD_RUN_SLOW_TESTS=1); the report states which. Every dynamics case is run at least once in the full gate run recorded in the results file",
+ "reject_if": "a gate that fails is reported as computed. A failing O_D/O_M case stays in the test as a strict xfail citing this file and the report, not as a loosened threshold. A change to any gate or threshold after its result is an amendment recorded in docs/assurance/amendment-log.md. Defects found in protected source files (dynamics.py, estimators.py, accelerated.py, ...) are reported, not fixed, in this work package",
+ "out_of_scope": "GMAT (kept as the secondary, measurement-physics reference: documented, not pinned, because of the trial's open items: 5.13 arcsec harmonic-frame offset and a 13.7 us measurement time-tag term); Shapiro delay, media, transponder delay, TT interval scaling and topocentric station time in the oracle comparison (Orekit's Shapiro modifier models only one body, and the DSN-faithful model is WP2.1's own V&V); the production default integrator profile (VODE Adams 1e-11, WP3.3); the Earth-orientation realization difference (reported, I_STATION); second epoch / eclipse season geometry; the one-shot hold-out WP5.4",
+ "agent_decisions": "flagged for the owner's review: (1) the TT-aligned adapter of the trial is kept as the alignment method, with the O_L link to the production propagator, rather than asking Orekit to integrate in TDB (not configurable without patching Orekit); (2) both measurement solvers share Orekit's station track so the gate isolates light time, and the Earth-orientation difference becomes information; (3) the SSB light-time cases are added beside the trial's Moon-centred ones because the production estimators use the SSB frame since WP2.1; (4) Orekit is given the state at the bounce epoch instead of shifting a receive-epoch state; (5) settings fixed by self-convergence to 0.1 mm before any cross number; (6) the documentation page is placed at docs/validation/external_cross_validation.md (repository layout groups documents by purpose) instead of the plan row's docs/external_cross_validation.md, and published as a curated site page",
+ "outputs": {
+  "generators": "tools/oracle/ (README.md, scenario.py, orekit_session.py, lunar_od_side.py, generate.py, java/oracle/*.java, java/build.py, requirements-oracle.txt)",
+  "fixtures": "tests/fixtures/external_oracle/ (CSV files + provenance.json)",
+  "test": "tests/test_external_oracle.py",
+  "results": "studies/phase17/results/wp5_1_orekit_oracle.json (gate values, settings ladders, preconditions, information)",
+  "doc": "docs/validation/external_cross_validation.md",
+  "report": "studies/phase17/reports/wp5_1_orekit_oracle.md",
+  "assurance": "docs/assurance/verification-matrix.csv (AC-3 row), docs/assurance/risk-register.md (R-18 status)"
+ }
+}
