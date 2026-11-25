@@ -1,0 +1,65 @@
+{
+ "study": "F3 WP3.3: long-arc integrator certification of every library PropagationProfile over 1/3/7/28-day arcs (REQ-DYN-006, DYN-14)",
+ "date": "2026-11-25",
+ "written": "2026-11-25, before any WP3.3 code, test or number. Read before writing: docs/assurance/vv-program.md (WP3.3 row), requirements.md and verification-matrix.csv (REQ-DYN-006 partial, DYN-14), docs/development/numerical-core/error_budget.csv, assumptions-and-limits.md item 17, the D1 integrator and D2 propagation reports and scripts, dynamics.PropagationProfile, propagate_state, _integrate/_integrate_segmented/_propagate_vode, propagation_contract.resolve_profile/numerical_metadata/truth_numerical_metadata, the WP3.1 survey geometry (wp3_1_materiality_survey.initial_state/build_cell). No WP3.3 propagation has been run. Orekit was checked for: neither orekit nor orekit_jpype is importable in this environment",
+ "base": "branch f3/wp3-3-integrator-certification from origin/main 7864ae0 (PR #118 merged)",
+ "nature": "characterization. No production source file changes (dynamics.py, estimators.py, accelerated.py, srp.py, propagation_contract.py are not edited). A defect found is reported and the work stops there, it is not fixed here",
+ "question": "For each propagation profile the library offers, over which arc lengths (1, 3, 7, 28 days) does the production 6-state propagator stay within 1 mm / 1 cm / 1 dm / 1 m of an independent tight reference, on shadowed and sunlit low lunar orbits, at the library and thesis tolerances?",
+ "profiles": {
+  "rule": "every combination resolve_profile accepts: method in its whitelist with shadow_events False, plus the only legal shadow_events True profile (DOP853). The two historical no-profile defaults are named: ADAMS/False is the estimator default (propagate_state default, numerical_metadata 'ADAMS'), DOP853/False the truth-wrapper default (truth_numerical_metadata)",
+  "list": {
+   "P_ADAMS": {"method": "ADAMS", "shadow_events": false, "note": "estimator / propagate_state default (VODE Adams-12, nsteps 50000)"},
+   "P_DOP853": {"method": "DOP853", "shadow_events": false, "note": "truth-wrapper default"},
+   "P_D2": {"method": "DOP853", "shadow_events": true, "note": "PropagationProfile() (D2 consistent profile; the profile SRP-enabled solves resolve to)"},
+   "P_RK45": {"method": "RK45", "shadow_events": false},
+   "P_RK23": {"method": "RK23", "shadow_events": false},
+   "P_RADAU": {"method": "Radau", "shadow_events": false},
+   "P_BDF": {"method": "BDF", "shadow_events": false},
+   "P_LSODA": {"method": "LSODA", "shadow_events": false}
+  },
+  "entry_point": "lunar_od.dynamics.propagate_state(**PropagationProfile(...).propagator_kwargs()), the 6-state path",
+  "not_a_library_profile": "RK4_FAST_SIGMA (filters fast_sigma_propagator) is caller-supplied, owns its own force model and step, and is not a PropagationProfile; out of scope, stated in the report"
+ },
+ "tolerances": {
+  "T_LIB": {"rtol": 1e-11, "atol": 1e-12, "source": "propagate_state defaults"},
+  "T_THESIS": {"rtol": 1e-10, "atol": 1e-11, "source": "thesis_matrix THESIS_RTOL/THESIS_ATOL, scenario_config default"}
+ },
+ "arcs_days": [1, 3, 7, 28],
+ "arc_rule": "each arc is a separate propagation from t0 (the production call a user would make), output every 60 s; the error of arc L is the maximum over its own output grid. Arcs run in increasing length; once one exceeds the budget, longer arcs of that cell are not attempted",
+ "budget": "wall-clock 1800 s per propagation, enforced by a deadline check inside the Sun-position callable (called at every RHS evaluation); an exceeded run is BUDGET_EXCEEDED, which is NOT_CERTIFIED (cost), not an accuracy verdict",
+ "orbits": {
+  "epoch": "E1 of WP3.1: et0 = str2et('2027-03-02T00:00:00'), DE440 via the repository kernels; Earth/Sun from sample_moon_centered_ephemeris (60 s samples, 600 s margins) over the 28-day window",
+  "construction": "wp3_1_materiality_survey.initial_state geometry (MOON_PA_DE440 pole p, Sun unit vector s at t0)",
+  "list": {
+   "O1_SHADOWED_100KM": "circular 100 km, orbit normal n = unit(p x s) (beta ~ 0 at t0): eclipse every revolution, the shadowed 100 km orbit of assumptions item 17",
+   "O2_SUNLIT_100KM": "circular 100 km, n = unit(s - (s.p) p) (high beta at t0). Contacts that occur later in the 28 days are counted and reported as computed",
+   "O3_ELLIPTIC_100x3000KM": "periapsis altitude 100 km, apoapsis altitude 3000 km, plane of O1, periapsis at the O1 initial position"
+  },
+  "force_model": "point Moon + Earth and Sun third body (DE440 GMs from gravitational_parameters('DE440')), Moon J2 (j2_moon = J2_MOON_UNNORMALIZED, propagate_state default frame handling), SRP SRPOptions(k_srp_m2_per_kg=0.010, shadow_model CONICAL_PENUMBRA) (KP2 K0). No harmonics field, tide, LRP or Earth J2"
+ },
+ "reference": {
+  "method": "DOP853 at rtol 1e-13, atol 1e-14, restarted at every lunar penumbra/umbra contact (cuts carry the state unchanged). Each segment is one propagate_state call with method DOP853 and shadow_events False, so the reference shares the production force functions (it certifies integration, not force modelling, as in D1)",
+  "contacts": "found independently of production's shadow_contact_times: a 10 s dense DOP853 1e-13 run (itself segmented at the contacts of an unsegmented 1e-12 pre-pass, one refinement iteration), illumination class (0 umbra, 1 penumbra, 2 full sun) from srp._illumination_for on the Hermite-interpolated state (radiometrics._interp_state), bisection of every class change to a bracket <= 1e-6 s",
+  "self_convergence": "the same cut set propagated at rtol 1e-12, atol 1e-13",
+  "orekit": "OUT OF SCOPE: Orekit is not installed locally (checked 2026-11-25). F5 WP5.1 builds the permanent Orekit oracle; the WP3.3 Orekit point is deferred to it and recorded as open in the report and the verification matrix"
+ },
+ "gates": {
+  "K_G1_TWO_BODY_10REV_CLOSURE": "test_two_body_10rev_closure in tests/test_wp3_3_integrator_certification.py, parametrized over every profile x {K_CIRC: circular 100 km, K_ECC: periapsis 100 km / apoapsis 3000 km altitude}. Pure Kepler: mu_moon from gravitational_parameters('DE440'), mu_earth = mu_sun = 0, no J2, no SRP, T_LIB tolerances, 10 Keplerian periods 2 pi sqrt(a^3/mu) sampled every 60 s plus the end epoch. Oracle: the analytic return to the initial state. PASS iff |r(10T) - r0| <= 1e-3 m AND max over samples |E(t) - E0| / |E0| <= 1e-11 (E = v^2/2 - mu/r). A failing case is recorded as computed and kept as a strict xfail naming the report; no tolerance is changed. Default test tier: P_ADAMS, P_DOP853, P_D2; the other five run under LUNAR_OD_RUN_SLOW_TESTS=1 and always in the driver",
+  "R_G1_REFERENCE_SELF_CONVERGENCE": "per orbit and arc: dR(L) = max over the 60 s grid in [0, L] of |r_ref(1e-13) - r_ref(1e-12)| <= 1e-4 m. Conclusiveness rule: a tier verdict at arc L is CONCLUSIVE only if dR(L) <= 0.1 x the tier threshold; otherwise that tier at L is INCONCLUSIVE (it is neither certified nor refused)",
+  "R_G2_REFERENCE_CONTACTS": "per orbit: (a) every reference cut changes the illumination class between t_cut - 1e-3 s and t_cut + 1e-3 s on the final reference; (b) the class changes counted on the final 10 s dense grid equal the number of cuts. A failure makes that orbit's certification INCONCLUSIVE",
+  "C_G1_VALIDITY": "per profile x tolerance x orbit x arc: e_r(L) = max over the 60 s grid of |r - r_ref| (also e_v, reported). Tiers: MM 1e-3 m, CM 1e-2 m, DM 1e-1 m, M 1 m. A profile at a tolerance is VALID for a tier up to arc L iff, for every orbit, every arc <= L completed within budget, passed the tier, and was conclusive. The validity range is the longest such L in {1, 3, 7, 28} days, or 'none' (shorter than 1 day). This range is the deliverable; it is reported per profile, not turned into a programme pass/fail",
+  "C_G2_DIAGNOSTIC": "information, not gated: production shadow_contact_times cuts vs the reference cuts (count, max |dt|) on O1 over 1 day; contact counts per orbit and arc; runtime per propagation"
+ },
+ "acceptance": "WP3.3 (plan row): a validity range per profile is documented. REQ-DYN-006 becomes 'verified' only if every profile has a documented range for every tier at both tolerances (a range of 'none' or 'budget' is a documented result) AND K_G1 is recorded for every profile AND R_G1 holds at 1 day for every orbit; the Orekit point stays open (deferred to WP5.1), so the status stays 'partial' with that reason unless the owner decides otherwise",
+ "expectations": "stated before the run, not gates: P_D2 at T_LIB ~1e-4 m at 1 day on O1 (D2: <= 7.5e-5 m), growing roughly linearly in along-track to mm-cm at 28 days; P_DOP853 on O1 0.2-2 m per day (D1 F2, limits item 17) and sub-mm on O2 while it stays sunlit; P_ADAMS 0.1-1 m per day everywhere (D1 F1), so likely 'none' for MM and CM; RK45 and LSODA cm-dm; RK23 probably BUDGET_EXCEEDED beyond 1 day; Radau/BDF slow and possibly poor; K_G1: DOP853 passes closure, energy at 1e-11 is marginal (rtol-level secular drift over 10 revolutions), ADAMS likely fails closure. The reference self-convergence at 28 days may exceed 1e-4 m on O1 (~1400 restarts), which would make MM at 28 days INCONCLUSIVE there",
+ "out_of_scope": "the 42- and 48-state propagators (propagate_augmented_state, propagate_state_with_k_sensitivity) and their STM accuracy (D2 and WP3.2 L_G6 cover path consistency); harmonic gravity fields; tide and LRP; Earth shadow (WP3.2 S3 in progress); the UKF RK4 fast-sigma propagator; Orekit (see reference.orekit); force-model fidelity (the reference shares the production forces)",
+ "reject_if": "if R_G1 fails at 1 day for an orbit, that orbit's certification is reported INCONCLUSIVE and no validity range is derived from it; if a profile raises (not budget) the error is reported as a finding and the profile is NOT_CERTIFIED; if a production defect is found it is reported and the work stops (no source edit). A change to any gate, threshold, orbit or profile after a number exists is exploratory and goes to docs/assurance/amendment-log.md",
+ "agent_decisions": "flagged for owner review: (1) the profile set is resolve_profile's whitelist, so solvers nobody uses today (RK23, Radau, BDF) are certified or refused too; (2) four tiers instead of one threshold, because the use cases differ (1 mm closure tests, 1 cm DSN range limit in error_budget.csv, dm-m for real-data fits); (3) separate runs per arc instead of prefixes of one 28-day run, so each arc is exactly the production call; (4) a wall-clock budget so that a slow solver cannot stall the campaign; (5) Orekit deferred to WP5.1 instead of installed here",
+ "outputs": {
+  "tests": "tests/test_wp3_3_integrator_certification.py",
+  "driver": "studies/phase17/scripts/wp3_3_integrator_certification.py",
+  "results": "studies/phase17/results/wp3_3_integrator_certification.json",
+  "report": "studies/phase17/reports/wp3_3_integrator_certification.md",
+  "assurance": "docs/assurance/verification-matrix.csv (REQ-DYN-006), docs/development/numerical-core/error_budget.csv (INTEGRATOR rows), docs/assurance/assumptions-and-limits.md (item 17 if limits change), studies/README.md index"
+ }
+}
