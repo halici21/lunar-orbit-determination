@@ -143,3 +143,125 @@ def pytest_sessionfinish(session, exitstatus):
         (folder / f"local_{stamp}_{os.getpid()}.json").write_text(json.dumps(record, indent=1), encoding="utf-8")
     except Exception:
         pass
+
+
+# --- WP7.1 verification levels (REQ-SW-002/003) -------------------------------
+# Every test gets exactly one level marker and its resource markers from the
+# central table tests/levels.py; no test file carries them.  A `spice` test at
+# L2+ FAILS when the kernels are missing (REQ-SW-003); --require-kernels extends
+# that to every `spice` test (the kernel-backed CI tiers pass it).
+from tests import levels as _levels  # noqa: E402
+from tests.slow import SLOW_ATTRIBUTE as _SLOW_ATTRIBUTE  # noqa: E402
+
+_STRICT_LEVELS_ENV = "LUNAR_OD_STRICT_LEVELS"
+_KERNEL_STATUS: list = []  # [None] when the kernels are present, [message] when not
+
+
+def pytest_addoption(parser):
+    group = parser.getgroup("lunar-od verification levels")
+    group.addoption("--require-kernels", action="store_true", default=False,
+                    help="fail (not skip) every `spice` test when the SPICE kernels are missing")
+    group.addoption("--strict-levels", action="store_true", default=False,
+                    help="refuse to run when a collected test has no level or more than one "
+                         f"(also {_STRICT_LEVELS_ENV}=1)")
+
+
+def _kernel_problem():
+    """None when the DE440 and DE421 kernel sets resolve; otherwise the reason."""
+    if not _KERNEL_STATUS:
+        try:
+            from lunar_od.spice_loader import required_kernel_paths
+
+            for ephemeris in ("DE440", "DE421"):
+                required_kernel_paths(ephemeris=ephemeris)
+            _KERNEL_STATUS.append(None)
+        except (FileNotFoundError, ImportError, ValueError) as exc:
+            _KERNEL_STATUS.append(str(exc).strip())
+    return _KERNEL_STATUS[0]
+
+
+def _is_slow(item):
+    for owner in (getattr(item, "obj", None), getattr(item, "cls", None)):
+        if owner is not None and getattr(owner, _SLOW_ATTRIBUTE, False):
+            return True
+    return False
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(session, config, items):
+    """Apply the level and resource markers before `-m` selection sees the items."""
+    unclassified, conflicting = {}, []
+    for item in items:
+        explicit = {m.name for m in item.iter_markers() if m.name in _levels.LEVELS}
+        row = _levels.classify(item.nodeid)
+        resources = set(row[1]) if row else set()
+        if len(explicit) > 1:
+            conflicting.append(f"{item.nodeid}: {sorted(explicit)}")
+            continue
+        if explicit:
+            level = explicit.pop()
+        elif row is not None:
+            level = row[0]
+            item.add_marker(getattr(pytest.mark, level))
+        else:
+            unclassified.setdefault(item.nodeid.split("::", 1)[0], 0)
+            unclassified[item.nodeid.split("::", 1)[0]] += 1
+            level = None
+        if _is_slow(item):
+            resources.add("slow")
+        for name in sorted(resources):
+            item.add_marker(getattr(pytest.mark, name))
+        if level in _levels.KERNEL_FAIL_CLOSED_LEVELS and "spice" in resources:
+            item.add_marker(getattr(pytest.mark, _levels.REQUIRES_KERNELS))
+    config._lunar_od_unclassified = unclassified
+    config._lunar_od_conflicting = conflicting
+    strict = config.getoption("--strict-levels") or os.environ.get(_STRICT_LEVELS_ENV, "") == "1"
+    if strict and (unclassified or conflicting):
+        raise pytest.UsageError(_levels_problem_text(unclassified, conflicting))
+
+
+def _levels_problem_text(unclassified, conflicting):
+    lines = []
+    if unclassified:
+        lines.append("WP7.1: test files without a verification level; add one row each to "
+                     "FILE_LEVELS in tests/levels.py:")
+        for path, count in sorted(unclassified.items()):
+            lines.append(_levels.suggested_row(path.rsplit("/", 1)[-1]) + f"  # {count} tests")
+    if conflicting:
+        lines.append("WP7.1: tests with more than one level marker (keep exactly one):")
+        lines.extend("    " + entry for entry in conflicting)
+    return "\n".join(lines)
+
+
+def pytest_collection_finish(session):
+    counts = {}
+    for item in session.items:
+        for marker in item.iter_markers():
+            if marker.name in _levels.LEVELS:
+                counts[marker.name] = counts.get(marker.name, 0) + 1
+                break
+    session.config._lunar_od_level_counts = counts
+
+
+def pytest_runtest_setup(item):
+    needs = item.get_closest_marker(_levels.REQUIRES_KERNELS) is not None or (
+        item.config.getoption("--require-kernels") and item.get_closest_marker("spice") is not None)
+    if needs:
+        problem = _kernel_problem()
+        if problem is not None:
+            pytest.fail("REQ-SW-003: this SPICE test must not skip; the kernels are missing "
+                        "(set LUNAR_OD_KERNEL_DIR, or run tools/fetch_kernels.py). "
+                        + problem.replace("\n", " "), pytrace=False)
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    counts = getattr(config, "_lunar_od_level_counts", None)
+    if counts:
+        text = ", ".join(f"{_levels.LEVELS[name]} {name} {counts[name]}"
+                         for name in _levels.LEVELS if counts.get(name))
+        terminalreporter.write_line(f"verification levels selected: {text}")
+    problem = _levels_problem_text(getattr(config, "_lunar_od_unclassified", {}),
+                                   getattr(config, "_lunar_od_conflicting", []))
+    if problem:
+        terminalreporter.section("unclassified tests (WP7.1)", sep="-", yellow=True)
+        terminalreporter.write_line(problem)

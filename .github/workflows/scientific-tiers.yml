@@ -1,0 +1,95 @@
+# WP7.2 (REQ-SW-002): marker-selected scientific tiers on every push and pull request.
+# Levels come from tests/levels.py; the selections live in tools/run_tier.py.
+# Not a required check: the required checks (Public checks, Library qualification,
+# Documentation, Dependencies review) keep their names and content.
+name: Scientific tiers
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scientific-tiers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commit:
+    name: Scientific / commit tier (L0 L1 L7, kernel-free)
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13.2'
+          cache: pip
+          cache-dependency-path: requirements/windows.txt
+      - run: python -m pip install -r requirements/windows.txt
+      - run: python -m pip install -e .
+      - name: Commit tier (no kernels, campaign data or desktop)
+        env:
+          LUNAR_OD_KERNEL_DIR: ${{ github.workspace }}/outputs/no-kernels
+          LUNAR_OD_CAMPAIGN_ROOT: ${{ github.workspace }}/outputs/no-campaign
+          LUNAR_OD_GRAVITY_ROOT: ${{ github.workspace }}/outputs/no-gravity
+          LUNAR_OD_RECORD_TESTS: '0'
+        run: python tools/run_tier.py commit --junitxml outputs/tier-commit.xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tier-commit
+          path: outputs/tier-commit.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  pr:
+    name: Scientific / PR tier (L2, verified kernels)
+    if: github.event_name != 'push'
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13.2'
+          cache: pip
+          cache-dependency-path: requirements/windows.txt
+      - run: python -m pip install -r requirements/windows.txt
+      - run: python -m pip install -e .
+      # Kernels are never committed. The cache holds a set that tools/fetch_kernels.py
+      # verified against lunar_od.kernel_manifest; on a miss the tool takes the validated
+      # archive (secret LUNAR_OD_KERNEL_ARCHIVE_URL), then NAIF, and FAILS with the list of
+      # missing kernels if the set is incomplete (REQ-SW-003: fail, never skip).
+      - name: Restore verified SPICE kernels
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: outputs/kernels
+          key: spice-kernels-${{ hashFiles('src/lunar_od/kernel_manifest.py', 'src/lunar_od/spice_loader.py', 'tools/fetch_kernels.py') }}
+      - name: Verify or fetch SPICE kernels
+        env:
+          LUNAR_OD_KERNEL_ARCHIVE_URL: ${{ secrets.LUNAR_OD_KERNEL_ARCHIVE_URL }}
+          LUNAR_OD_KERNEL_ARCHIVE_TOKEN: ${{ secrets.LUNAR_OD_KERNEL_ARCHIVE_TOKEN }}
+        run: python tools/fetch_kernels.py --dest outputs/kernels
+      - name: PR tier (fails, not skips, on a missing kernel)
+        env:
+          LUNAR_OD_KERNEL_DIR: ${{ github.workspace }}/outputs/kernels
+          LUNAR_OD_CAMPAIGN_ROOT: ${{ github.workspace }}/outputs/no-campaign
+          LUNAR_OD_GRAVITY_ROOT: ${{ github.workspace }}/outputs/no-gravity
+          LUNAR_OD_RECORD_TESTS: '0'
+        run: python tools/run_tier.py pr --junitxml outputs/tier-pr.xml
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: tier-pr
+          path: outputs/tier-pr.xml
+          if-no-files-found: warn
+          retention-days: 14

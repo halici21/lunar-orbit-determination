@@ -46,4 +46,22 @@ namespaces = false
 # Keep discovery local: never inherit a parent worktree's pythonpath.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --strict-markers"
+# WP7.1: levels and resources are applied centrally from tests/levels.py by
+# tests/conftest.py; select with -m (tools/run_tier.py holds the CI expressions).
+markers = [
+    "analytic: L0 closed form, invariant or same-model recovery oracle",
+    "derivative: L1 finite-difference / Richardson check of a Jacobian, STM or partial",
+    "external_oracle: L2 independent tool or record (SPICE, ERFA/SOFA, Orekit, MATLAB, standards)",
+    "model_mismatch: L3 truth and estimator use different models",
+    "statistical: L4 Monte Carlo, NIS/NEES, chi-square or whiteness consistency",
+    "real_data: L5 real tracking or real gravity-field data",
+    "golden: L6 frozen record of the project's own outputs",
+    "contract_negative: L7 interface, schema, provenance, UI-workflow or fail-closed contract",
+    "spice: needs the SPICE kernels",
+    "campaign: reads the external campaign data",
+    "qt: needs PyQt5 (desktop application)",
+    "numba: exercises the Numba-accelerated twins",
+    "slow: expensive; runs only with LUNAR_OD_RUN_SLOW_TESTS=1",
+    "requires_kernels: derived; spice test at L2+ that fails, not skips, without kernels (REQ-SW-003)",
+]
