@@ -19,6 +19,7 @@ nav:
   - Theory: theory.md
   - Validation: validation.md
   - Python API: api.md
+  - CCSDS orbit data export: ccsds-odm.md
   - Research studies: studies.md
   - Roadmap: roadmap.md
   - Contributing: contributing.md
