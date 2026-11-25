@@ -1,0 +1,7 @@
+# Optional: only needed to REGENERATE the pinned Orekit oracle fixtures
+# (tests/fixtures/external_oracle). tests/test_external_oracle.py never imports these.
+# Versions are the ones the pinned fixtures were generated with (see provenance.json).
+# Also needs a JDK >= 21 (generated with JDK 25) in JAVA_HOME.
+orekit-jpype==13.1.9.0
+JPype1==1.7.1
+jplephem==2.24
