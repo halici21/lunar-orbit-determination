@@ -186,6 +186,6 @@ def test_wp3_2_s1_refreeze_of_estimators_is_additive_and_history_is_preserved():
     assert r2.F4_WP4_5B_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ee18f3c9")
     assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("0ed77589")
     assert r2.expected_current_tree_sha256(path) == (
-        r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path])
+        r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path])         # after the merge, WP3.2 S3 re-froze it
     assert hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest() != (
         r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path])

@@ -19,6 +19,8 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from .lunar_tide import LunarTideOptions
     # Opt-in lunar radiation pressure (F3 WP3.2 S2), imported lazily the same way.
     from .lunar_radiation import LunarRadiationOptions
+    # Opt-in Earth shadow on the SRP (F3 WP3.2 S3), imported lazily the same way.
+    from .earth_shadow import EarthShadowOptions
 
 try:
     from .accelerated import (
@@ -930,6 +932,108 @@ def _with_lunar_radiation_acceleration(
     return rhs_with_lunar_radiation
 
 
+def _require_earth_shadow_srp(srp: "SRPOptions | None", earth_shadow) -> "EarthShadowOptions":
+    """Validate an opt-in ``earth_shadow``; it scales the SRP, so it needs an active SRP."""
+    from .earth_shadow import require_earth_shadow_options
+
+    require_earth_shadow_options(earth_shadow)
+    if srp is None or not srp.is_active:
+        raise ValueError(
+            "earth_shadow needs an active SRPOptions: it multiplies the SRP acceleration by the Earth's "
+            "illumination factor, and there is no SRP to scale without it."
+        )
+    return earth_shadow
+
+
+def _share_earth_shadow_lookup(get_earth_pos, earth_shadow):
+    """One Earth lookup per epoch for the force model and the Earth shadow; unchanged when it is off."""
+    if earth_shadow is None:
+        return get_earth_pos
+    cached = _epoch_cached(get_earth_pos)
+    # Keep the arc epoch that lunar_j2_epoch reads from a MoonCenteredEphemeris method
+    # (the D2 pre-pass resolves the default lunar J2 axis from the lookup it is handed).
+    et0 = getattr(getattr(get_earth_pos, "__self__", get_earth_pos), "et0_s", None)
+    if et0 is not None:
+        cached.et0_s = et0
+    return cached
+
+
+def _earth_contacts(get_earth_pos, earth_shadow):
+    """The Earth occulter handed to the D2 pre-pass and contact check; None (the lunar-only path) when off."""
+    if earth_shadow is None:
+        return None
+    return (get_earth_pos, earth_shadow)
+
+
+def _segmentation_active(srp: "SRPOptions | None", earth_shadow) -> bool:
+    """True when the D2 profile has contacts to segment at: the lunar penumbra, the Earth's, or both."""
+    if earth_shadow is None:
+        return _shadow_events_active(srp)
+    return _shadow_events_active(srp) or (srp is not None and srp.is_active)
+
+
+def _with_earth_shadow_acceleration(
+    rhs: Callable[[float, np.ndarray], np.ndarray],
+    get_earth_pos: Callable[[float], ArrayLike],
+    get_sun_pos: Callable[[float], ArrayLike],
+    srp: "SRPOptions | None",
+    earth_shadow: "EarthShadowOptions | None",
+    *,
+    state_size: int,
+) -> Callable[[float, np.ndarray], np.ndarray]:
+    """Add the opt-in Earth shadow on the SRP (F3 WP3.2 S3) on top of an RHS closure.
+
+    Returns ``rhs`` ITSELF when ``earth_shadow`` is None, the identity contract of
+    ``_with_srp_acceleration``.
+
+    The SRP becomes ``nu_E a_SRP`` (WP3.1's EARTH_SHADOW, occulters multiplied), added as the increment
+    ``da = (nu_E - 1) a_SRP``.  Elements 3:6 get ``da``.  The 42-state path also gets ``G_ES @ Phi[0:3, :]``
+    in rows 3:6 of ``Phi_dot`` and the 48-state path also ``G_ES @ s_K[0:3] + (nu_E - 1) g_SRP`` in
+    ``s_K_dot[3:6]``, with ``G_ES = (nu_E - 1) G_SRP + a_SRP (grad nu_E)^T``.  Where ``nu_E = 1`` nothing is
+    added.  The 6-state path never evaluates a gradient.
+    """
+    if earth_shadow is None:
+        return rhs
+
+    from .earth_shadow import earth_illumination, earth_shadow_acceleration_and_gradient
+    from .srp import srp_acceleration_with_lunar_shadow
+
+    _require_earth_shadow_srp(srp, earth_shadow)
+    if state_size not in (6, 42, 48):
+        raise ValueError(f"the Earth shadow wrapper supports 6-, 42- and 48-state RHS; got {state_size}.")
+
+    def rhs_with_earth_shadow(t_s: float, state: np.ndarray) -> np.ndarray:
+        out = np.array(rhs(t_s, state), dtype=float, copy=True)
+        if out.size != state_size:
+            raise ValueError(f"expected a {state_size}-element derivative; got {out.size}")
+        state = np.asarray(state, dtype=float)
+        t = float(t_s)
+        r_earth = _vec3(get_earth_pos(t), "r_moon_earth_m")
+        r_sun = _vec3(get_sun_pos(t), "r_moon_sun_m")
+        if state_size == 6:
+            nu = earth_illumination(state[:3], r_sun, r_earth, earth_shadow)
+            if nu != 1.0:
+                out[3:6] += srp_acceleration_with_lunar_shadow(state[:3], r_sun, srp) * (nu - 1.0)
+            return out
+        nu, da, g_es, dfdk = earth_shadow_acceleration_and_gradient(state[:3], r_sun, r_earth, srp, earth_shadow)
+        if nu == 1.0:
+            return out
+        out[3:6] += da
+        phi = state[6:42].reshape((6, 6), order="F")
+        phi_dot_es = np.zeros((6, 6))
+        phi_dot_es[3:6, :] = g_es @ phi[0:3, :]
+        out[6:42] += phi_dot_es.reshape(-1, order="F")
+        if state_size == 48:
+            out[45:48] += g_es @ state[42:45] + dfdk
+        return out
+
+    rhs_with_earth_shadow.__doc__ = (
+        f"{state_size}-state RHS with the opt-in Earth shadow on the SRP "
+        f"(K_SRP = {srp.k_srp_m2_per_kg} m^2/kg, Earth radius {earth_shadow.radius_m} m)."
+    )
+    return rhs_with_earth_shadow
+
+
 # ---------------------------------------------------------------------------
 # Shadow-event segmented integration (Phase D2, opt-in, default-off)
 # ---------------------------------------------------------------------------
@@ -1014,7 +1118,22 @@ def _integrate_segmented(t_eval_s, y0, rhs, rtol, atol, method, cuts, label, *, 
     return out
 
 
-def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
+def _earth_contact_events(earth, get_sun_pos):
+    """The Earth's outer and inner contact functions ``f(t, y)`` for the pre-pass (F3 WP3.2 S3)."""
+    from .earth_shadow import earth_shadow_contact_functions
+
+    get_earth_pos, earth_shadow = earth
+
+    def earth_outer(t, y):
+        return earth_shadow_contact_functions(y[:3], get_sun_pos(float(t)), get_earth_pos(float(t)), earth_shadow)[0]
+
+    def earth_inner(t, y):
+        return earth_shadow_contact_functions(y[:3], get_sun_pos(float(t)), get_earth_pos(float(t)), earth_shadow)[1]
+
+    return (earth_outer, earth_inner)
+
+
+def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol, *, earth=None):
     """Penumbra contact epochs along a state-only DOP853 pre-pass.
 
     Outer contact is ``gamma = a_sun + a_occ`` and inner contact
@@ -1023,6 +1142,10 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
     smooth, so ``solve_ivp``'s event root finder locates them on the dense
     output to near machine precision.  On the sunward half-space ``gamma`` is
     above 90 degrees and neither function changes sign.
+
+    ``earth`` (F3 WP3.2 S3) is ``(get_earth_pos, EarthShadowOptions)`` or None.  When given, the Earth's
+    outer and inner contact functions join the lunar pair (CONICAL_PENUMBRA SRP) or replace it (NO_SHADOW);
+    when None the event tuple is the lunar pair, as before.
     """
     from scipy.integrate import solve_ivp
     from scipy.optimize import brentq, minimize_scalar
@@ -1043,13 +1166,17 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
         a_s, a_o, g, _, _ = apparent_radii_and_separation(y[:3], get_sun_pos(float(t)), origin, r_occ)
         return g - abs(a_s - a_o)
 
+    events = (outer, inner)
+    if earth is not None:
+        events = (events if _shadow_events_active(srp) else ()) + _earth_contact_events(earth, get_sun_pos)
+
     solution = solve_ivp(
         rhs6, (t0, t1), np.asarray(x0, dtype=float)[:6], method="DOP853",
         # An unsegmented pre-pass at the final trajectory's tolerance can
         # itself accumulate shadow-crossing error. Resolve its geometry more
         # tightly before using its contacts to segment the nominal integration.
         rtol=max(100 * np.finfo(float).eps, rtol * 0.01), atol=atol * 0.01,
-        events=(outer, inner), max_step=_CONTACT_MAX_STEP_S,
+        events=events, max_step=_CONTACT_MAX_STEP_S,
         dense_output=True,
     )
     if not solution.success:
@@ -1060,7 +1187,7 @@ def _shadow_contact_times(rhs6, t_eval_s, x0, get_sun_pos, srp, rtol, atol):
     # on the dense trajectory, never the rounded illumination fraction.
     times = list(np.concatenate(solution.t_events))
     angle_roundoff = 64.0 * np.finfo(float).eps
-    for event in (outer, inner):
+    for event in events:
         f = lambda t: float(event(float(t), solution.sol(float(t))))
         for a, b in zip(solution.t[:-1], solution.t[1:]):
             lo, hi = sorted((float(a), float(b)))
@@ -1098,7 +1225,59 @@ _CONTACT_ANGLE_TOL_RAD = 1e-9
 _CONTACT_RATE_STEP_S = 1e-2
 
 
-def _shadow_contact_check(get_sun_pos, srp):
+def _contact_time_offsets(t, state, get_sun_pos, srp, earth):
+    """``{label: time offset (s)}`` of a state from each lunar (CONICAL_PENUMBRA) and Earth contact.
+
+    The offset is the contact function's angular residual over its rate along the trajectory, as in
+    ``_shadow_contact_check``; an angular residual within ``_CONTACT_ANGLE_TOL_RAD`` counts as offset 0
+    (a tangent, where the rate vanishes).  ``earth`` is ``(get_earth_pos, EarthShadowOptions)``.
+    """
+    from .earth_shadow import earth_shadow_contact_functions
+    from .srp import apparent_radii_and_separation
+
+    get_earth_pos, earth_shadow = earth
+    lunar = _shadow_events_active(srp)
+    radius = srp.occulting_body_radius_m
+
+    def contact_functions(tt, r):
+        f = {}
+        r_sun = get_sun_pos(tt)
+        if lunar:
+            a, b, g, _, _ = apparent_radii_and_separation(r, r_sun, np.zeros(3), radius)
+            f["lunar_outer"], f["lunar_inner"] = g - a - b, g - abs(a - b)
+        f["earth_outer"], f["earth_inner"] = earth_shadow_contact_functions(r, r_sun, get_earth_pos(tt), earth_shadow)
+        return f
+
+    state = np.asarray(state, dtype=float)
+    f = contact_functions(t, state[:3])
+    h = _CONTACT_RATE_STEP_S
+    plus = contact_functions(t + h, state[:3] + h * state[3:6])
+    minus = contact_functions(t - h, state[:3] - h * state[3:6])
+    offsets = {}
+    for key, value in f.items():
+        residual = float(abs(value))
+        if residual <= _CONTACT_ANGLE_TOL_RAD:
+            offsets[key] = 0.0
+            continue
+        rate = abs(float(plus[key] - minus[key])) / (2.0 * h)
+        offsets[key] = residual / rate if rate > 0.0 else np.inf
+    return offsets
+
+
+def _shadow_and_earth_contact_check(get_sun_pos, srp, earth):
+    """``_shadow_contact_check`` with the Earth's contacts (F3 WP3.2 S3): a cut must lie within
+    ``_CONTACT_TIME_TOL_S`` of a lunar or an Earth contact on the final trajectory."""
+    def check(t, state):
+        offsets = _contact_time_offsets(t, state, get_sun_pos, srp, earth)
+        label = min(offsets, key=lambda k: offsets[k])
+        if offsets[label] > _CONTACT_TIME_TOL_S:
+            raise RuntimeError(f"Shadow contact inconsistent with final trajectory at {t:.12g} s: "
+                               f"nearest contact {label} is {offsets[label]:.3e} s away "
+                               f"(> {_CONTACT_TIME_TOL_S:.0e} s); tighten propagation tolerances.")
+    return check
+
+
+def _shadow_contact_check(get_sun_pos, srp, earth=None):
     """Fail closed if a pre-pass cut is not a contact on the final trajectory.
 
     The pre-pass is integrated 100x tighter than the final trajectory, so on a long high-degree arc the two
@@ -1111,7 +1290,13 @@ def _shadow_contact_check(get_sun_pos, srp):
 
     This numerical guard is not an orbit-accuracy certificate; the observable/parameter error budget is checked
     separately.
+
+    ``earth`` (F3 WP3.2 S3, ``(get_earth_pos, EarthShadowOptions)``) adds the Earth's contacts
+    (``_shadow_and_earth_contact_check``); None is the lunar check below, unchanged.
     """
+    if earth is not None:
+        return _shadow_and_earth_contact_check(get_sun_pos, srp, earth)
+
     from .srp import apparent_radii_and_separation
 
     radius = srp.occulting_body_radius_m
@@ -1160,17 +1345,21 @@ def shadow_contact_times(
     lunar_j2_epoch_et0: float | None = None,
     lunar_tide: "LunarTideOptions | None" = None,
     lunar_radiation: "LunarRadiationOptions | None" = None,
+    earth_shadow: "EarthShadowOptions | None" = None,
 ) -> list[float]:
     """Penumbra contact epochs of the 6-state trajectory over ``t_eval_s``.
 
     Sorted in the propagation direction, strictly inside the span.  Empty when
     the SRP force has no shadow to segment at.  ``lunar_tide`` and
     ``lunar_radiation`` enter the pre-pass exactly as they enter the final
-    propagation.
+    propagation.  ``earth_shadow`` (F3 WP3.2 S3) enters it likewise and adds the
+    Earth's contacts (alone with NO_SHADOW SRP).
     """
     if lunar_radiation is not None:
         _require_lunar_radiation_k(srp, lunar_radiation)      # fail closed even without contacts
-    if not _shadow_events_active(srp):
+    if earth_shadow is not None:
+        _require_earth_shadow_srp(srp, earth_shadow)          # likewise
+    if not _segmentation_active(srp, earth_shadow):
         return []
     t_eval_s = np.asarray(t_eval_s, dtype=float).reshape(-1)
     state0_mci = _state6(state0_mci)
@@ -1182,16 +1371,17 @@ def shadow_contact_times(
         t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
         harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp, _j2rot, _j2r,
-        lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
+        lunar_tide=lunar_tide, lunar_radiation=lunar_radiation, earth_shadow=earth_shadow,
     )
-    return _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
+    return _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol,
+                                 earth=_earth_contacts(get_earth_pos, earth_shadow))
 
 
 def _build_state_rhs(
     t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
     get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
     harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp, j2_rotation_at, j2_radius_m,
-    *, lunar_tide=None, lunar_radiation=None,
+    *, lunar_tide=None, lunar_radiation=None, earth_shadow=None,
 ):
     """The 6-state RHS ``propagate_state`` integrates, and its Sun lookup.
 
@@ -1202,6 +1392,8 @@ def _build_state_rhs(
     get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
     # Likewise one Earth and Sun lookup per epoch for the tide; unchanged when it is off.
     get_earth_pos, get_sun_pos = _share_tide_lookups(get_earth_pos, get_sun_pos, lunar_tide)
+    # And one Earth lookup per epoch for the Earth shadow; unchanged when it is off.
+    get_earth_pos = _share_earth_shadow_lookup(get_earth_pos, earth_shadow)
     _emode = _earth_mode_int(j2_earth, earth_j2_mode)
     _h_ctx = None
     if harmonic_model is not None:
@@ -1287,6 +1479,8 @@ def _build_state_rhs(
     )
     # And the lunar radiation pressure (identity when off).
     rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=6)
+    # And the Earth shadow on the SRP (identity when off).
+    rhs = _with_earth_shadow_acceleration(rhs, get_earth_pos, get_sun_pos, srp, earth_shadow, state_size=6)
     return rhs, get_sun_pos
 
 
@@ -1314,6 +1508,7 @@ def propagate_state(
     lunar_j2_epoch_et0: float | None = None,
     lunar_tide: "LunarTideOptions | None" = None,
     lunar_radiation: "LunarRadiationOptions | None" = None,
+    earth_shadow: "EarthShadowOptions | None" = None,
 ) -> np.ndarray:
     """Propagate the 6-state dynamics at requested epochs.
 
@@ -1361,6 +1556,13 @@ def propagate_state(
     Albedo and thermal IR from the Moon act on the SRP cannonball with the same
     coefficient (K_LRP = K_SRP), so it requires an active ``srp``.  ``None`` runs
     the same closure as before it existed.
+
+    Earth shadow (F3 WP3.2 S3, opt-in, default-off): pass ``earth_shadow`` as a
+    ``lunar_od.earth_shadow.EarthShadowOptions``.  The SRP is multiplied by the
+    Earth's conical illumination factor (occulters multiplied with the lunar
+    shadow), so it requires an active ``srp``; with ``shadow_events`` the
+    Earth's contacts are segmented too (alone with ``NO_SHADOW``).  ``None``
+    runs the same closure and contact handling as before it existed.
     """
     from scipy.integrate import solve_ivp
 
@@ -1377,14 +1579,15 @@ def propagate_state(
         t_eval_s, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
         get_earth_pos, get_sun_pos, j2_moon, j2_earth, earth_j2_mode,
         harmonic_model, harmonic_rotation, harmonic_epoch_et0, srp, _j2rot, _j2r,
-        lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
+        lunar_tide=lunar_tide, lunar_radiation=lunar_radiation, earth_shadow=earth_shadow,
     )
 
-    if shadow_events and _shadow_events_active(srp):
-        cuts = _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol)
+    if shadow_events and _segmentation_active(srp, earth_shadow):
+        _earth = _earth_contacts(get_earth_pos, earth_shadow)
+        cuts = _shadow_contact_times(rhs, t_eval_s, state0_mci, get_sun_pos, srp, rtol, atol, earth=_earth)
         return _integrate_segmented(
             t_eval_s, state0_mci, rhs, rtol, atol, method, cuts, "State propagation",
-            contact_check=_shadow_contact_check(get_sun_pos, srp),
+            contact_check=_shadow_contact_check(get_sun_pos, srp, _earth),
         )
 
     if method.upper() == "ADAMS":
@@ -1411,7 +1614,7 @@ def _propagate_augmented_with_harmonics(
     rtol, atol, method, j2_moon, j2_earth, earth_j2_mode,
     harmonic_epoch_et0=None, srp=None, cuts=None,
     j2_rotation_at=_legacy_j2_rotation, j2_radius_m=MOON_R_M,
-    lunar_tide=None, lunar_radiation=None,
+    lunar_tide=None, lunar_radiation=None, earth_shadow=None,
 ):
     """42-state RHS with a MATCHED harmonic acceleration and gradient.
 
@@ -1423,12 +1626,15 @@ def _propagate_augmented_with_harmonics(
     trajectory and variational fidelity are matched for SRP as for gravity.
     ``lunar_tide`` wraps the RHS with its acceleration and gradient
     (``_with_tide_acceleration``), and ``lunar_radiation`` likewise
-    (``_with_lunar_radiation_acceleration``).
+    (``_with_lunar_radiation_acceleration``), and ``earth_shadow`` likewise
+    (``_with_earth_shadow_acceleration``).
     """
     from scipy.integrate import solve_ivp
     from .gravity_harmonics import spherical_harmonic_gravity_gradient
 
+    _earth = _earth_contacts(get_earth_pos, earth_shadow)
     get_earth_pos, get_sun_pos = _share_tide_lookups(get_earth_pos, get_sun_pos, lunar_tide)
+    get_earth_pos = _share_earth_shadow_lookup(get_earth_pos, earth_shadow)
     rot_const, rot_t, rot_grid = h_ctx[0], h_ctx[1], h_ctx[2]
 
     def _rotation_at(t_s: float) -> np.ndarray:
@@ -1486,11 +1692,12 @@ def _propagate_augmented_with_harmonics(
 
     rhs = _with_tide_acceleration(rhs, get_earth_pos, get_sun_pos, mu_earth, mu_sun, lunar_tide, state_size=42)
     rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=42)
+    rhs = _with_earth_shadow_acceleration(rhs, get_earth_pos, get_sun_pos, srp, earth_shadow, state_size=42)
 
     if cuts is not None:
         return _integrate_segmented(
             t_eval_s, state_aug0_mci, rhs, rtol, atol, method, cuts,
-            "Augmented harmonic propagation", contact_check=_shadow_contact_check(get_sun_pos, srp),
+            "Augmented harmonic propagation", contact_check=_shadow_contact_check(get_sun_pos, srp, _earth),
         )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
@@ -1555,6 +1762,7 @@ def propagate_augmented_state(
     lunar_j2_epoch_et0: float | None = None,
     lunar_tide: "LunarTideOptions | None" = None,
     lunar_radiation: "LunarRadiationOptions | None" = None,
+    earth_shadow: "EarthShadowOptions | None" = None,
 ) -> np.ndarray:
     """Propagate the 42-state dynamics at requested epochs.
 
@@ -1598,7 +1806,9 @@ def propagate_augmented_state(
     ``lunar_tide`` (F3 WP3.2 S1) is as for ``propagate_state``; its exact
     position gradient enters the variational block on both the plain and the
     harmonic path.  ``lunar_radiation`` (F3 WP3.2 S2) likewise, with the exact
-    derivative of its quadrature.
+    derivative of its quadrature.  ``earth_shadow`` (F3 WP3.2 S3) likewise,
+    with the exact derivative of the Earth's illumination factor; with
+    ``shadow_events`` its contacts are segmented too.
     """
     from scipy.integrate import solve_ivp
 
@@ -1608,7 +1818,7 @@ def propagate_augmented_state(
         epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, harmonic_epoch_et0, get_earth_pos),
     )
     _cuts = None
-    if shadow_events and _shadow_events_active(srp):
+    if shadow_events and _segmentation_active(srp, earth_shadow):
         _cuts = shadow_contact_times(
             t_eval_s, np.asarray(state_aug0_mci, dtype=float).reshape(-1)[:6],
             mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2, get_earth_pos, get_sun_pos,
@@ -1616,7 +1826,7 @@ def propagate_augmented_state(
             earth_j2_mode=earth_j2_mode, harmonic_model=harmonic_model,
             harmonic_rotation=harmonic_rotation, harmonic_epoch_et0=harmonic_epoch_et0,
             lunar_j2_model=lunar_j2_model, lunar_j2_epoch_et0=lunar_j2_epoch_et0,
-            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
+            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation, earth_shadow=earth_shadow,
         )
     if harmonic_model is not None:
         if not harmonic_stm_opt_in:
@@ -1639,7 +1849,7 @@ def propagate_augmented_state(
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_epoch_et0=harmonic_epoch_et0,
             srp=srp, cuts=_cuts, j2_rotation_at=_j2rot, j2_radius_m=_j2r,
-            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
+            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation, earth_shadow=earth_shadow,
         )
 
     if t_eval_s.size == 0:
@@ -1649,8 +1859,10 @@ def propagate_augmented_state(
     if state_aug0_mci.size != 42:
         raise ValueError("Initial augmented state must have 42 elements.")
 
+    _earth = _earth_contacts(get_earth_pos, earth_shadow)
     get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
     get_earth_pos, get_sun_pos = _share_tide_lookups(get_earth_pos, get_sun_pos, lunar_tide)
+    get_earth_pos = _share_earth_shadow_lookup(get_earth_pos, earth_shadow)
     _emode = _earth_mode_int(j2_earth, earth_j2_mode)
 
     if _FAST_DYNAMICS:
@@ -1678,11 +1890,12 @@ def propagate_augmented_state(
         rhs, get_earth_pos, get_sun_pos, mu_earth_m3_s2, mu_sun_m3_s2, lunar_tide, state_size=42,
     )
     rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=42)
+    rhs = _with_earth_shadow_acceleration(rhs, get_earth_pos, get_sun_pos, srp, earth_shadow, state_size=42)
 
     if _cuts is not None:
         return _integrate_segmented(
             t_eval_s, state_aug0_mci, rhs, rtol, atol, method, _cuts,
-            "Augmented propagation", contact_check=_shadow_contact_check(get_sun_pos, srp),
+            "Augmented propagation", contact_check=_shadow_contact_check(get_sun_pos, srp, _earth),
         )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, state_aug0_mci, rhs, rtol, atol)
@@ -1781,6 +1994,7 @@ def propagate_truth_with_ephemeris(
     lunar_j2_epoch_et0: float | None = None,
     lunar_tide=None,
     lunar_radiation=None,
+    earth_shadow=None,
 ) -> np.ndarray:
     """Propagate truth dynamics using Moon-centered ephemeris interpolants."""
     from .propagation_contract import propagator_options
@@ -1806,6 +2020,7 @@ def propagate_truth_with_ephemeris(
         lunar_j2_epoch_et0=lunar_j2_epoch(lunar_j2_epoch_et0, None, ephemeris),
         lunar_tide=lunar_tide,
         lunar_radiation=lunar_radiation,
+        earth_shadow=earth_shadow,
     )
 
 
@@ -1856,6 +2071,7 @@ def propagate_state_with_k_sensitivity(
     lunar_j2_epoch_et0: float | None = None,
     lunar_tide: "LunarTideOptions | None" = None,
     lunar_radiation: "LunarRadiationOptions | None" = None,
+    earth_shadow: "EarthShadowOptions | None" = None,
 ) -> np.ndarray:
     """Propagate state, STM and the SRP-coefficient sensitivity together.
 
@@ -1890,6 +2106,10 @@ def propagate_state_with_k_sensitivity(
     ``lunar_radiation`` (F3 WP3.2 S2) is as for ``propagate_state``.  It scales
     with the same K, so its kernel joins ``df/dK`` and ``K`` times its position
     gradient joins ``A(t)``.
+
+    ``earth_shadow`` (F3 WP3.2 S3) is as for ``propagate_state``.  It scales the
+    SRP, so ``(nu_E - 1) g`` joins ``df/dK`` and its position gradient joins
+    ``A(t)``.
     """
     from scipy.integrate import solve_ivp
 
@@ -1936,10 +2156,12 @@ def propagate_state_with_k_sensitivity(
             return _rc
         return interpolated_rotation_at_time(_rg, _rt, float(t_s))
 
+    _earth = _earth_contacts(get_earth_pos, earth_shadow)
     get_sun_pos = _share_sun_lookup(get_sun_pos, srp)
     get_earth_pos, get_sun_pos = _share_tide_lookups(get_earth_pos, get_sun_pos, lunar_tide)
+    get_earth_pos = _share_earth_shadow_lookup(get_earth_pos, earth_shadow)
 
-    sens0 = (np.zeros(6) if s_k0 is None
+    sens0 =(np.zeros(6) if s_k0 is None
              else np.asarray(s_k0, dtype=float).reshape(6))
     aug0 = np.concatenate(
         [state0_mci, np.eye(6).reshape(-1, order="F"), sens0]
@@ -1993,19 +2215,20 @@ def propagate_state_with_k_sensitivity(
         rhs, get_earth_pos, get_sun_pos, mu_earth_m3_s2, mu_sun_m3_s2, lunar_tide, state_size=48,
     )
     rhs = _with_lunar_radiation_acceleration(rhs, get_sun_pos, srp, lunar_radiation, state_size=48)
+    rhs = _with_earth_shadow_acceleration(rhs, get_earth_pos, get_sun_pos, srp, earth_shadow, state_size=48)
 
-    if shadow_events and _shadow_events_active(srp):
+    if shadow_events and _segmentation_active(srp, earth_shadow):
         cuts = shadow_contact_times(
             t_eval_s, state0_mci, mu_moon_m3_s2, mu_earth_m3_s2, mu_sun_m3_s2,
             get_earth_pos, get_sun_pos, srp=srp, rtol=rtol, atol=atol,
             j2_moon=j2_moon, j2_earth=j2_earth, earth_j2_mode=earth_j2_mode,
             harmonic_model=harmonic_model, harmonic_rotation=harmonic_rotation,
             harmonic_epoch_et0=harmonic_epoch_et0, lunar_j2_model=lunar_j2_model, lunar_j2_epoch_et0=lunar_j2_epoch_et0,
-            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation,
+            lunar_tide=lunar_tide, lunar_radiation=lunar_radiation, earth_shadow=earth_shadow,
         )
         return _integrate_segmented(
             t_eval_s, aug0, rhs, rtol, atol, method, cuts, "K-sensitivity propagation",
-            contact_check=_shadow_contact_check(get_sun_pos, srp),
+            contact_check=_shadow_contact_check(get_sun_pos, srp, _earth),
         )
     if method.upper() == "ADAMS":
         return _propagate_vode(t_eval_s, aug0, rhs, rtol, atol)
