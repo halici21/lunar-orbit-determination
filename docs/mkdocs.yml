@@ -18,6 +18,7 @@ nav:
   - Support matrix: support.md
   - Theory: theory.md
   - Validation: validation.md
+  - CCSDS TDM: ccsds-tdm.md
   - Python API: api.md
   - CCSDS orbit data export: ccsds-odm.md
   - Research studies: studies.md

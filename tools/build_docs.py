@@ -23,6 +23,7 @@ PAGES = {
     "support.md": "docs/validation/support-matrix.md",
     "theory.md": "docs/site/theory.md",
     "validation.md": "docs/site/validation.md",
+    "ccsds-tdm.md": "docs/interfaces/ccsds-tdm.md",
     "api.md": "docs/site/api.md",
     "studies.md": "docs/site/studies.md",
     "roadmap.md": "docs/roadmap.md",
