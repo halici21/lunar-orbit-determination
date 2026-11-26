@@ -174,3 +174,35 @@ def test_noiseless_earth_shadow_truth_is_recovered_with_it_and_biased_without_it
     assert dr < 1e-3, dr
     assert dv < 1e-6, dv
     assert dr_free >= 100 * dr, (dr_free, dr)
+
+
+# ----------------------------------------------------------------------
+# E_G9: the protected-file re-freeze is additive
+# ----------------------------------------------------------------------
+def test_wp3_2_s3_refreeze_is_additive_and_history_is_preserved():
+    """dynamics.py and estimators.py moved through a new F3_WP3_2_S3 table resolved first; the 2026-11-21
+    merge table and the path-migration history keep every earlier identity."""
+    import hashlib
+    import json
+    if str(ROOT / "examples") not in sys.path:
+        sys.path.insert(0, str(ROOT / "examples"))
+    import r2_measurement_fidelity_validation as r2
+    migration = json.loads((ROOT / "docs" / "development" / "path-migration.json").read_text(encoding="utf-8"))
+    entries = {}
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key in ("lunar_od/dynamics.py", "lunar_od/estimators.py") and isinstance(value, dict) \
+                        and "original_sha256" in value:
+                    entries[key] = value
+                walk(value)
+    walk(migration)
+    for path, old in (("lunar_od/dynamics.py", "bcdd8fa1"), ("lunar_od/estimators.py", "e5884773")):
+        previous = r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path]
+        assert previous.startswith(old)
+        new = r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path]
+        assert r2.expected_current_tree_sha256(path) == new != previous
+        assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
+        assert entries[path]["original_sha256"] == new
+        assert entries[path]["refrozen_history_sha256"][-1] == previous

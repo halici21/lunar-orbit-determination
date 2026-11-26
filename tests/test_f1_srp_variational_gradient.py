@@ -310,7 +310,8 @@ def test_f1_refreeze_is_additive_and_history_is_preserved():
     assert r2.F1_X02_REFROZEN_CURRENT_TREE_SHA256[path].startswith("f71cdb7c")
     assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("ae0f3d0d")
     assert r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path].startswith("eefbb63b")
-    # Their merge (2026-11-21, the union of both) is the current identity.
-    new = r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path]
+    # Their merge (2026-11-21, the union of both), then F3 WP3.2 S3 (opt-in Earth shadow), the current identity.
+    assert r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path].startswith("bcdd8fa1")
+    new = r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path]
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
