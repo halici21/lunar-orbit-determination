@@ -13,6 +13,7 @@ ECSS-Q-ST-80C kritiklik D'nin hafif bir uyarlaması. Kaynak değerlendirme:
 | [assumptions-and-limits.md](assumptions-and-limits.md) | Bilinen tutarsızlıklar ve kullanım sınırları | 7009A sonuç raporlama |
 | [amendment-log.md](amendment-log.md) | Sonuç görüldükten sonra yapılan ön-kayıt değişiklikleri | 7009A girdi soyağacı |
 | [vv-program.md](vv-program.md) | Fazlar, iş paketleri, testler, kabul | ECSS SVVP |
+| [test-levels.md](test-levels.md) | Test seviyeleri (L0–L7), işaretçiler, CI kadansı, kernel kaynağı (WP7.1–7.2) | ECSS SVVP, NPR 7150.2 SWE-066 |
 
 Belgeler yaşayandır: her iş paketi PR'ı ilgili gereksinim satırını, risk durumunu ve doğrulama
 matrisini aynı commit'te günceller.

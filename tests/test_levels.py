@@ -144,6 +144,14 @@ def test_l2_spice_test_fails_without_kernels_instead_of_skipping(tmp_path):
     assert "REQ-SW-003" in out and " skipped" not in out, out[-3000:]
 
 
+def test_module_level_kernel_skip_of_an_l2_file_fails_unless_deselected(tmp_path):
+    module = "tests/test_wp2_4_earth_orientation.py"  # pytest.skip(allow_module_level=True) without kernels
+    code, out = _run(tmp_path, module)
+    assert code != 0 and "REQ-SW-003" in out, out[-3000:]
+    code, out = _run(tmp_path, module, "-m", "not spice")
+    assert code in (0, 5) and "REQ-SW-003" not in out, out[-3000:]
+
+
 def test_lower_level_spice_test_fails_only_when_kernels_are_required(tmp_path):
     node = "tests/test_srif_acceptance_wp4_1.py"
     code, out = _run(tmp_path, node, "--require-kernels")

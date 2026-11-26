@@ -35,7 +35,8 @@ The [2026-10-31 independent assessment](../validation/independent-assessment-202
 risk; its findings marked T are reproduced by
 [evidence tests](../../tests/test_assessment_evidence.py). Intended use,
 requirements, the verification matrix, the risk register and the phased V&V
-programme are under [assurance](../assurance/README.md).
+programme are under [assurance](../assurance/README.md); test levels and the CI
+cadence are described in [test levels and CI](../assurance/test-levels.md).
 
 ## Documentation and release
 

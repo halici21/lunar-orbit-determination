@@ -233,6 +233,51 @@ def _levels_problem_text(unclassified, conflicting):
     return "\n".join(lines)
 
 
+def _selected_by_markexpr(config, names):
+    """Whether the run's -m expression would select a test carrying ``names``."""
+    expression = config.getoption("markexpr", "") or ""
+    if not expression:
+        return True
+    try:
+        from _pytest.mark.expression import Expression
+
+        return Expression.compile(expression).evaluate(lambda name, **_: name in names)
+    except Exception:  # private API moved: err on the side of failing closed
+        return True
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_make_collect_report(collector):
+    """REQ-SW-003 for module-level skips: a whole kernel file skipped at import is a failure too.
+
+    ``pytest.skip(..., allow_module_level=True)`` happens before any item exists, so the
+    setup check below never sees it. A skipped module whose table row is a ``spice`` file
+    at L2+ (or any ``spice`` file under --require-kernels) becomes a collection failure
+    when the kernels are missing and the run's -m expression would have selected it.
+    """
+    outcome = yield
+    report = outcome.get_result()
+    if report.outcome != "skipped" or not isinstance(collector, pytest.Module):
+        return
+    row = _levels.classify(collector.nodeid)
+    if row is None or "spice" not in row[1]:
+        return
+    level, resources = row
+    names = {level, *resources}
+    fail_closed = level in _levels.KERNEL_FAIL_CLOSED_LEVELS
+    if fail_closed:
+        names.add(_levels.REQUIRES_KERNELS)
+    config = collector.config
+    if not (fail_closed or config.getoption("--require-kernels")):
+        return
+    problem = _kernel_problem()
+    if problem is None or not _selected_by_markexpr(config, names):
+        return
+    report.outcome = "failed"
+    report.longrepr = ("REQ-SW-003: this SPICE test module must not skip; the kernels are missing "
+                       "(set LUNAR_OD_KERNEL_DIR, or run tools/fetch_kernels.py). " + problem.replace("\n", " "))
+
+
 def pytest_collection_finish(session):
     counts = {}
     for item in session.items:
