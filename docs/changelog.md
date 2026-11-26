@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- CCSDS Orbit Data Messages (502.0-B-3, KVN): `lunar_od.ccsds_odm` writes OEM
+  (ephemeris plus covariance blocks) and OPM (state plus covariance) for estimated
+  trajectories, as Moon-centred EME2000 in TDB, with a minimal round-trip reader and
+  `examples/export_ccsds_odm.py` (WP6.2, REQ-IO-002). Desktop export and the OCM are
+  not included yet.
+
 ## 0.1.0-alpha.5 — 2026-10-25
 
 ### Scientific model changes (roadmap phases C1–F2, PR #46, #48, #55)
