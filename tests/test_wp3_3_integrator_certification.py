@@ -20,8 +20,16 @@ from lunar_od.propagation_contract import resolve_profile
 RUN_SLOW = os.environ.get("LUNAR_OD_RUN_SLOW_TESTS", "").strip().lower() in {"1", "true", "yes", "on"}
 FAST_PROFILES = ("P_ADAMS", "P_DOP853", "P_D2")
 
-#: K_G1 cases that failed when first run (report section 2): strict xfail, no tolerance change.
-K_G1_RECORDED_FAILURES: dict[tuple[str, str], str] = {}
+#: K_G1 cases that failed when first run (report section 2, results/wp3_3_integrator_certification.json k_g1):
+#: strict xfail, no tolerance change. An independent scipy DOP853 Kepler integration at the same tolerances
+#: gives the same closure (0.18 mm circular, 6.3 cm eccentric), so these are tolerance limits, not code defects.
+_K_G1_REASON = ("WP3.3 K_G1 FAIL as computed (wp3_3_integrator_certification.md section 2): rtol 1e-11 does not "
+                "deliver 1 mm / 1e-11 energy over 10 revolutions with this method")
+K_G1_RECORDED_FAILURES: dict[tuple[str, str], str] = {
+    (p, c): _K_G1_REASON
+    for p in ("P_ADAMS", "P_DOP853", "P_D2", "P_RK45", "P_RK23", "P_BDF", "P_LSODA")
+    for c in ("K_CIRC", "K_ECC")
+}
 
 
 def _k_g1_params():
@@ -89,3 +97,22 @@ def test_validity_rule_none_budget_and_inconclusive():
                                        {1: "ERROR", 3: "NOT_ATTEMPTED", 7: "NOT_ATTEMPTED",
                                         28: "NOT_ATTEMPTED"})}, ref)
     assert set(out.values()) == {"none"}
+
+
+def test_validity_rule_orbit_level_reject_if():
+    """An orbit whose reference failed R_G1 at 1 d or R_G2 makes every OK cell inconclusive; a run error fails."""
+    ref = {o: {str(d): 1e-6 for d in C.ARCS_DAYS} for o in ("A", "B")}
+    good = _cell({1: 1e-5, 3: 1e-5, 7: 1e-5, 28: 1e-5})
+    assert set(C.validity_range({"A": good, "B": good}, ref, ("B",)).values()) == {"inconclusive"}
+    bad_a = _cell({1: 1e-2, 3: 1e-2, 7: 1e-2, 28: 1e-2})
+    assert C.validity_range({"A": bad_a, "B": good}, ref, ("B",)) == {
+        "MM": "none", "CM": "inconclusive", "DM": "inconclusive", "M": "inconclusive"}
+    err_b = _cell({1: None, 3: None, 7: None, 28: None},
+                  {1: "ERROR", 3: "NOT_ATTEMPTED", 7: "NOT_ATTEMPTED", 28: "NOT_ATTEMPTED"})
+    assert set(C.validity_range({"A": good, "B": err_b}, ref, ("B",)).values()) == {"none"}
+    status = C.orbit_gate_status({
+        "A": {"arcs": {"1": {"r_g1": True, "dR_m": 1e-5}}, "r_g2": {"pass": True, "probe_failures": 0}},
+        "B": {"arcs": {"1": {"r_g1": False, "dR_m": 2e-3}}, "r_g2": {"pass": True, "probe_failures": 0}},
+        "C": {"arcs": {"1": {"r_g1": True, "dR_m": 1e-5}}, "r_g2": {"pass": False, "probe_failures": 3}}})
+    assert {o: s["status"] for o, s in status.items()} == {
+        "A": "CONCLUSIVE", "B": "INCONCLUSIVE", "C": "INCONCLUSIVE"}

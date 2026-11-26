@@ -342,10 +342,12 @@ def run_cell(orbit: str, profile: str, tol: str, ref_states: np.ndarray, days_li
     return dict(orbit=orbit, profile=profile, tol=tol, arcs=out)
 
 
-def validity_range(cells_by_orbit: dict, ref_self_by_orbit: dict) -> dict:
+def validity_range(cells_by_orbit: dict, ref_self_by_orbit: dict, inconclusive_orbits=()) -> dict:
     """C_G1: per tier the longest arc for which every orbit is OK, within the tier and conclusive.
 
     ``cells_by_orbit[orbit][arc] = {status, e_r_m}``; ``ref_self_by_orbit[orbit][arc] = dR`` (m).
+    ``inconclusive_orbits``: orbits whose reference failed R_G1 at 1 day or R_G2 (predeclared reject_if);
+    their OK cells are inconclusive at every arc, a run that raised or exceeded the budget still fails.
     Returns {tier: longest arc in days, 'none' or 'inconclusive'}.
     """
     out = {}
@@ -357,7 +359,7 @@ def validity_range(cells_by_orbit: dict, ref_self_by_orbit: dict) -> dict:
                 c = cell[str(d)]
                 if c["status"] != "OK" or c["e_r_m"] is None:
                     failed = True
-                elif ref_self_by_orbit[orbit][str(d)] > CONCLUSIVE_FRACTION * thr:
+                elif orbit in inconclusive_orbits or ref_self_by_orbit[orbit][str(d)] > CONCLUSIVE_FRACTION * thr:
                     inconclusive = True
                 elif c["e_r_m"] > thr:
                     failed = True
@@ -370,6 +372,39 @@ def validity_range(cells_by_orbit: dict, ref_self_by_orbit: dict) -> dict:
             best = d
         out[tier] = best
     return out
+
+
+def orbit_gate_status(reference: dict) -> dict:
+    """Predeclared reject_if: an orbit is INCONCLUSIVE if R_G1 fails at 1 day or R_G2 fails."""
+    out = {}
+    for orbit, ref in reference.items():
+        reasons = []
+        if not ref["arcs"]["1"]["r_g1"]:
+            reasons.append(f"R_G1 fails at 1 d (dR {ref['arcs']['1']['dR_m']:.3g} m > {R_G1_MAX_M:g} m)")
+        if not ref["r_g2"]["pass"]:
+            reasons.append(f"R_G2 fails ({ref['r_g2']['probe_failures']} probe failures)")
+        out[orbit] = dict(status="INCONCLUSIVE" if reasons else "CONCLUSIVE", reasons=reasons)
+    return out
+
+
+def apply_gates(result: dict) -> dict:
+    """C_G1 from the recorded cells: the predeclared rule (with the orbit-level reject_if) and, exploratory
+    (amendment log 2026-11-26), the same tier rule per orbit without the orbit-level reject_if."""
+    refs, cells = result["reference"], result["cells"]
+    ref_self = {o: {str(d): refs[o]["arcs"][str(d)]["dR_m"] for d in ARCS_DAYS} for o in refs}
+    status = orbit_gate_status(refs)
+    bad = tuple(o for o, s in status.items() if s["status"] == "INCONCLUSIVE")
+    validity, cell_rule_only, per_orbit = {}, {}, {}
+    for p in PROFILES:
+        for tol in TOLERANCES:
+            by_orbit = {c["orbit"]: c["arcs"] for c in cells if c["profile"] == p and c["tol"] == tol}
+            key = f"{p}/{tol}"
+            validity[key] = validity_range(by_orbit, ref_self, bad)
+            cell_rule_only[key] = validity_range(by_orbit, ref_self)
+            per_orbit[key] = {o: validity_range({o: a}, {o: ref_self[o]}) for o, a in by_orbit.items()}
+    result.update(orbit_status=status, validity=validity, validity_without_orbit_reject_if=cell_rule_only,
+                  validity_per_orbit_exploratory=per_orbit)
+    return result
 
 
 def production_contacts_diagnostic(orbit: str, ref_cuts) -> dict:
@@ -452,28 +487,25 @@ def run(workers: int, smoke: bool = False) -> dict:
             cells.append(res)
             print(f"cell {res['orbit']} {res['profile']} {res['tol']}: "
                   + ", ".join(f"{d}:{a['status']}" for d, a in res["arcs"].items()), flush=True)
-    arc_keys = [str(d) for d in days_list]
-    ref_self = {o: {d: refs[o]["arcs"].get(d, {}).get("dR_m", math.inf) for d in arc_keys} for o in ORBITS}
-    validity = {}
-    if not smoke:
-        for p in PROFILES:
-            for tol in TOLERANCES:
-                by_orbit = {c["orbit"]: c["arcs"] for c in cells if c["profile"] == p and c["tol"] == tol}
-                validity[f"{p}/{tol}"] = validity_range(by_orbit, ref_self)
     for r in refs.values():
         r.pop("ref13", None)
     result.update(reference=refs, k_g1=sorted(k_g1, key=lambda r: (r["profile"], r["case"])),
-                  cells=sorted(cells, key=lambda c: (c["profile"], c["tol"], c["orbit"])), validity=validity,
+                  cells=sorted(cells, key=lambda c: (c["profile"], c["tol"], c["orbit"])),
                   runtime_s=time.perf_counter() - t_start)
-    return result
+    return result if smoke else apply_gates(result)
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=("run", "smoke", "kg1"))
+    ap.add_argument("mode", choices=("run", "smoke", "kg1", "gates"))
     ap.add_argument("--workers", type=int, default=12)
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
+    if a.mode == "gates":    # re-derive C_G1 from the recorded cells (no propagation)
+        res = apply_gates(json.loads(a.out.read_text(encoding="utf-8")))
+        a.out.write_text(json.dumps(res, indent=1, default=float) + "\n", encoding="utf-8")
+        print(json.dumps(res["validity"], indent=1))
+        return 0
     if a.mode == "kg1":
         for p in PROFILES:
             for c in KEPLER_CASES:
