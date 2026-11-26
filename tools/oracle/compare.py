@@ -101,6 +101,11 @@ def dynamics_case(case: str, *, link: bool = True, info: bool = False) -> dict:
         _, x_sp, _ = L.propagate_aligned(case, sc, time_arg="TT", setting=s)
         out["I_TIMEMAP_spice_tt_minus_orekit_tt_max_dr_m"] = float(np.max(np.linalg.norm(x_sp[:, :3] - x_tt[:, :3], axis=1)))
         out["I_TIMEMAP_O_D_with_spice_tt_max_dr_m"] = float(np.max(np.linalg.norm(x_sp[:, :3] - ref[:, 1:4], axis=1)))
+        if not case.startswith("D2"):  # the reference kernel's Python harmonics are too slow for D2
+            _, x_ref, _ = L.propagate_aligned(case, sc, time_arg="TT_OREKIT", setting=s, time_map=orekit_time_map(),
+                                              kernel="reference")
+            out["I_KERNEL_f3body_moon_minus_production_max_dr_m"] = float(
+                np.max(np.linalg.norm(x_ref[:, :3] - x_tt[:, :3], axis=1)))
     return out
 
 

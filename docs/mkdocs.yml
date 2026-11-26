@@ -18,6 +18,7 @@ nav:
   - Support matrix: support.md
   - Theory: theory.md
   - Validation: validation.md
+  - External cross-validation: external.md
   - Python API: api.md
   - Research studies: studies.md
   - Roadmap: roadmap.md

@@ -23,7 +23,7 @@ Durum: `open` açık, `mitigating` azaltma sürüyor, `closed` kapandı (kanıt 
 | R-15 | İstasyon zinciri predict BPC, EOP yok; zamanla bozulan doğruluk | MEAS-06 | 3 | 4 | 12 | WP2.4 | open |
 | R-16 | Gereksinim/izlenebilirlik yok → "NASA/ESA seviyesi" iddiası denetlenemez | TST-08 | 5 | 2 | 10 | WP0.3 | open |
 | R-17 | Yerel main'in geride olması ve 20+ eski worktree → yanlış tabanda çalışma | — | 3 | 3 | 9 | WP0.1 | open |
-| R-18 | Dış kehanet repoda kalıcı değil | TST-02/08 | 3 | 3 | 9 | WP5.1 | open |
+| R-18 | Dış kehanet repoda kalıcı değil | TST-02/08 | 1 | 3 | 3 | WP5.1 | closed (WP5.1: `tools/oracle/` üreteçleri, provenanslı sabitlenmiş Orekit fixture'ları `tests/fixtures/external_oracle/`, Orekit gerektirmeyen `tests/test_external_oracle.py`; kapıların sonuçları `studies/phase17/reports/wp5_1_orekit_oracle.md`) |
 | R-19 | Gizli (kullanılmayan) modüllerde yanlış fizik ileride kullanılır | MEAS-13 | 2 | 4 | 8 | WP2.6 | open |
 | R-20 | CCSDS arayüzü yok → bağımsız araçlarla çapraz kontrol zor | — | 4 | 2 | 8 | F6 | open |
 | R-21 | Depo şişmesi ve sıra bağımlı testler | CFG-12, TST-05 | 3 | 2 | 6 | F7 | open |
