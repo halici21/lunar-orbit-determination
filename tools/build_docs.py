@@ -27,6 +27,7 @@ PAGES = {
     "api.md": "docs/site/api.md",
     "studies.md": "docs/site/studies.md",
     "roadmap.md": "docs/roadmap.md",
+    "ccsds-odm.md": "docs/tutorials/ccsds-odm.md",
     "contributing.md": ".github/CONTRIBUTING.md",
 }
 
