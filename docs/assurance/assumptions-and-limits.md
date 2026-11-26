@@ -125,7 +125,7 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     |---|---|---|
     | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
     | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar; WP3.2 S2'den beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
-    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar |
+    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar; WP3.2 S3'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
     | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
     | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
 
@@ -158,6 +158,23 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
       L_G6-A tanısı). Birleştirme kararı sahibindir.
     - **Kapsam dışı.** Tutulmalarda Dünya gölgesinin Ay yüzeyine düşmesi ve ısıl gecikme modellenmez; terim
       umbral evrelerde fazla tahmin edilir.
+
+    **Dünya gölgesi seçimli olarak üretimde** (WP3.2 S3, 2026-11-26;
+    [rapor](../../studies/phase17/reports/wp3_2_s3_earth_shadow.md)).
+    - **Kullanım.** `EarthShadowOptions()` ile açılır; WP3.1'in ölçtüğü model değişmeden kullanılır (konik,
+      6378.137 km'lik küresel Dünya, Ay ve Dünya örtme oranları çarpılır). SRP ivmesini ν_E ile ölçekler;
+      etkin bir `SRPOptions` ister, yoksa ValueError. `NO_SHADOW` SRP ile de çalışır.
+    - **Taşıyan yollar:** gelgitle aynı. Gölge olayları açıkken Dünya kontakları da kesim listesine girer.
+      Kapalı yollar bayt bayt aynıdır (E_G1(b), 79/79).
+    - **Taşımayanlar:** UKF, EKF, senaryo yapılandırması, CLI ve masaüstü.
+    - **Doğruluk.** Bağımsız küresel başlık kehanetine karşı ν_E farkı ≤ 3.0e-6 (gereksinim 2.5e-4); SPICE gfoclt
+      tutulma pencerelerine karşı kontak zamanları ≤ 0.01 s.
+    - **Sayısal taban (E_G6 FAIL).** Gölge olayları kapalıyken Dünya yarıgölgesinin sınırlarındaki kırıklar
+      6, 42 ve 48 durumlu yolları rtol 1e-13'te 6 saatte 1.2e-5 m'ye kadar ayırır (kapalıyken ≤ 8.8e-7 m).
+      Olaylar açıkken fark taban düzeyindedir. Dünya gölgesi açıkken gölgeli yaylarda `PropagationProfile()`
+      (olay bölütlemesi) kullanılmalıdır. Birleştirme kararı sahibindir.
+    - **Kapsam dışı.** Atmosferin umbrayı büyütmesi (~%2) ve kırılma, Dünya'nın basıklığı, kenar kararması,
+      Dünya gölgesinin ışık zamanı kayması (Ay'da ~38 km) ve iki örtücünün örtüşmesi modellenmez.
 
 16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
     ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.

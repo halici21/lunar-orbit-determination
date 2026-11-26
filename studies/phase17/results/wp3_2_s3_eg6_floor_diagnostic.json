@@ -1,0 +1,47 @@
+{
+ "A1_pass": false,
+ "A2_pass": true,
+ "commit": "4d12c59c4dae6fc07d7e6c671f7b881e05a3e2f6",
+ "i_j2": {
+  "A1_pass": false,
+  "effect_m": 0.5569975527409952,
+  "phi_on": 1.4939645295478758e-12,
+  "position_off_m": 8.173519745469093e-07,
+  "position_on_m": 1.1541902495082468e-05,
+  "ratio": 14.121092080900157
+ },
+ "ii_j2_tide": {
+  "A1_pass": false,
+  "effect_m": 0.5570074724587357,
+  "phi_on": 1.978325216260446e-11,
+  "position_off_m": 6.645859684795141e-07,
+  "position_on_m": 2.475222572684288e-06,
+  "ratio": 3.7244580687541053
+ },
+ "iii_harmonics": {
+  "A1_pass": false,
+  "effect_m": 0.5565299231548124,
+  "phi_on": 8.036281915107582e-13,
+  "position_off_m": 8.807401172816753e-07,
+  "position_on_m": 2.987771949847229e-06,
+  "ratio": 3.39234229396603
+ },
+ "iv_conical_events": {
+  "A1_pass": true,
+  "effect_m": 9.093575118196895,
+  "phi_on": 1.877472407243199e-12,
+  "position_off_m": 2.1427404135465622e-05,
+  "position_on_m": 1.0032381396740675e-05,
+  "ratio": 0.4682033032706726
+ },
+ "status": "M src/lunar_od/dynamics.py\n M src/lunar_od/estimators.py\n M src/lunar_od/propagation_contract.py\n?? src/lunar_od/earth_shadow.py\n?? tests/test_wp3_2_earth_shadow.py\n?? tests/test_wp3_2_earth_shadow_transport.py",
+ "study": "F3 WP3.2 S3 E_G6-A (exploratory)",
+ "v_e2_grail_events": {
+  "A1_pass": true,
+  "effect_m": 8.917033791469294,
+  "phi_on": 5.2809507786908926e-11,
+  "position_off_m": 2.2098858607932925e-05,
+  "position_on_m": 1.2796139344573021e-05,
+  "ratio": 0.5790407356142608
+ }
+}
