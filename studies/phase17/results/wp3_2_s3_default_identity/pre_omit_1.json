@@ -1,0 +1,801 @@
+{
+ "commit": "15468af6e81273cabc71e760566e0d91fde23926",
+ "configs": {
+  "contacts": {
+   "digest": "ed13b8926eff660a71422edeb9544a8969e1e280166006a8177e94e32f5c0d33",
+   "leaves": {
+    "out": "<f8[12]:9a4786acafbc43644650b3713e254d0559b08ee2c313a6521597d8939b3b6cc4"
+   }
+  },
+  "e2_contacts_grail": {
+   "digest": "f61ea4ff8eee67c1458107d6d1e599bbca6ef38b43be3913a9b14f465af6a145",
+   "leaves": {
+    "out": "<f8[14]:f556c7e45c58212d4e50bdd5d9015ddb595c41d1425fd7725485c0a3f19b3d08"
+   }
+  },
+  "e2_k48_grail_events": {
+   "digest": "1caf635ef4ad924f4eb0d925c387ec0b2ad698fbe9d1816dca20c734dcd7690d",
+   "leaves": {
+    "out": "<f8[73, 48]:719b20bc1ca0b66ce255ddb7fae8e06d5dacd5f2f94c9697e48999550c0a60aa"
+   }
+  },
+  "e2_pa_grail_events": {
+   "digest": "f9a1b910e4dd5598e9c118091baa0fd85c18fdf536686e00e94893543a448ba8",
+   "leaves": {
+    "out": "<f8[73, 42]:5ebb0e54270d17436c61046a1b57d040f8f93b2678c5eee8220ca644e35bf92f"
+   }
+  },
+  "e2_ps_grail_events": {
+   "digest": "f7a0d6b3008c4a98bdebd14135d7c6b5e81e69ca1c3a78268d61634b0a64f49f",
+   "leaves": {
+    "out": "<f8[73, 6]:732cd526a6ff5a3397526179bb8ba53c5f9f4c82ad2fc826f8c70ceb071c913a"
+   }
+  },
+  "est_position_bls_lm_legacy": {
+   "digest": "7fc8a12982c1db85919c0cde61933c8c5fb67fe6ddda3d5257e9e34cb3ed75fb",
+   "leaves": {
+    "out[0]": "<f8[6]:4b93e3fcf2e68294e4c7275f4f740bb59db6dd07eb5028fb84f0b54764f60e1c",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d09b118dc0p+11",
+    "out[2].final_cost": "0x1.abff2a2b3a22ep-1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c50985e45ce7fp+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:fcb5cd72adf7963d0b178714aa8f56e2116b6b6dce811823fd5f176a5e5e4c99",
+    "out[2].posterior_information": "<f8[6, 6]:7c5d3e555c8c24cf76da62cb733c932a3cae529066c2bcfe05d58038b6d2a40f",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0d4a62977a74bp-8"
+   }
+  },
+  "est_position_bls_lm_profile": {
+   "digest": "80f7e1ec260cf162a4339312a3de88a6540e808a13827fb603fea75a0ebccee8",
+   "leaves": {
+    "out[0]": "<f8[6]:d8dfc4d1cce6203d3e9fd761f41015ac633d3ba6abc80bd97ed697859537f1ce",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d0c649844dp+11",
+    "out[2].final_cost": "0x1.abdf89f9d9c53p-1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c5022221a2be2p+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:0fc43d48365e457e8c02b610370cd0983623bc01e1bcbb2d3937274714dc10e9",
+    "out[2].posterior_information": "<f8[6, 6]:15f0e585ee198b3b5a9b8a5b78bd8a2e7ec5f4b9402aabae91adbb68e319abca",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0d493da58de5fp-8"
+   }
+  },
+  "est_position_srif_legacy": {
+   "digest": "5f4a8d3b7e5d5aac5bd9b4b67008d518967c015e56e9962ee5b571d44fda0d13",
+   "leaves": {
+    "out[0]": "<f8[6]:b774f4935d51b059139ebc9231adb464606fb3bb4e58b8372a2ee7f02f37c61f",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d9a1f2c84cp+11",
+    "out[2].final_cost": "0x1.a6a105668d69cp-14",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.db28eddcb653fp-8",
+    "out[2].posterior_covariance": "<f8[6, 6]:d6b923705efd80d4bdc97d3f4e4d00ab1abeb360f39c9b324e114c9760ce0874",
+    "out[2].posterior_information": "<f8[6, 6]:7b4dde441b075a674fca01a2f60db793548802c15fda8ba6a06dfd2422c740b7",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:b3b7410dd6c542715f46ed25e788c34f18ee80cadfd72e4e95069c8dbf44c802",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.54ef62a740e00p-17"
+   }
+  },
+  "est_position_srif_profile": {
+   "digest": "ec8dd59552ec1d6854356753de34584f117a1da6b075ea94e6dfab9ecf60368d",
+   "leaves": {
+    "out[0]": "<f8[6]:dce98c5cb1d6ebc743ca26794fafeff5592faf139cb227ad51b871c647e04db3",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d9caddca28p+11",
+    "out[2].final_cost": "0x1.901da13b542a4p-28",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.cd3d8877402b9p-30",
+    "out[2].posterior_covariance": "<f8[6, 6]:6056411c213bc084f989e526ec8a986a05164cd5291308073f7284f5ab20a58c",
+    "out[2].posterior_information": "<f8[6, 6]:e9137a32694ea65b4f993338c5c86ff6672ce9b46735fbdc167a930359d3f152",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:56b78831e32e6edb15b0debcf12ddd8f8b58565253a264e1a34048a7f33893e0",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.75c574ec4c173p-40"
+   }
+  },
+  "est_range_rate_bls_lm_legacy": {
+   "digest": "39ded144a3cdf245e8ff7fd0952b57546add8c265de05d5b4a7833c200d24c3c",
+   "leaves": {
+    "out[0]": "<f8[6]:11642be95c20503f732dbe842861e45dbdd5fc843b3361b22aa87979c4f1856d",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbdadcfd1d9p+5",
+    "out[2].final_cost": "0x1.02487a5753369p-19",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.4a50c2874a3e3p-5",
+    "out[2].posterior_covariance": "<f8[6, 6]:0f7ca2e7a09abb3f9b5fcf7bfb43366429f78a614ea356321b5717ec34450b4b",
+    "out[2].posterior_information": "<f8[6, 6]:b48758d01f7cca17dec87c31c018a350dcd3b893af28388edc8ce9948aaeccf3",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.8d336c7b0e441p-16"
+   }
+  },
+  "est_range_rate_bls_lm_profile": {
+   "digest": "d64a791749e434ecf54b94863593f5b7df33550f92fbbe55a86f9b90e563b8f1",
+   "leaves": {
+    "out[0]": "<f8[6]:9b052fd85a9a6fd24031126854773920b1e5e99b4274332c3ac0e3078e625326",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbdd3006f88p+5",
+    "out[2].final_cost": "0x1.7bd64bce3429bp-7",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.49e925252e267p-5",
+    "out[2].posterior_covariance": "<f8[6, 6]:dc4186e974c7434702316d0e0b464b100e8bde2242908cb6a37539c42997d85f",
+    "out[2].posterior_information": "<f8[6, 6]:90c52860db2e22d8f45d42cbaf6b9890b5c63bd8b2aed0345abdcfa2c7e8d69f",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.8cb0e985b6676p-16"
+   }
+  },
+  "est_range_rate_srif_legacy": {
+   "digest": "d6f1459e1f4ddfe0bcab5c460a4574f677c66f7cacb706a16ed8cd87d7cf8ec9",
+   "leaves": {
+    "out[0]": "<f8[6]:92ba7419b82d43fb65c92048bc2703af6950572b430c1f6d966d4a6a9217a66d",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbd9599d5e7p+5",
+    "out[2].final_cost": "0x1.704f9788e6e9ap-32",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.0b7948cf78565p-26",
+    "out[2].posterior_covariance": "<f8[6, 6]:f787896fbe411d77712c31d165fff22d3a1aaeff2d6eec49569fec31a023b474",
+    "out[2].posterior_information": "<f8[6, 6]:bfeac24dc50b254535e99afc1a71d32a7aaef0d0ea84637852e40baa7f62e5fa",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:5a4aa2fa2500d26587b8f86dad175a57f7a7da8ece8c5a875f2ee3d913f1b27c",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.5ba56f951a647p-37"
+   }
+  },
+  "est_range_rate_srif_profile": {
+   "digest": "06824bfb197f85708def433a4dfcc321a92192990486099f550418ddb83130aa",
+   "leaves": {
+    "out[0]": "<f8[6]:7d10d8690b55dcf6cddb09a77adc2d6cf11529868250cda1ec3fb5815d862ffe",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbdbad4c175p+5",
+    "out[2].final_cost": "0x1.7bc5d0e0ffd34p-7",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.8872b5cea5cfap-37",
+    "out[2].posterior_covariance": "<f8[6, 6]:451b92a7d2ed1aa69a0abdc5701613dd507d3af822244d1c3c4a806c59c15201",
+    "out[2].posterior_information": "<f8[6, 6]:a7ef414c4b14d660805d7ddd8b82ba3e8fc6f0110bcbd72f6cabf18b20662091",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:f2834eccd4603b248f4d095b428e377c0e3658c6edd1a9732a3161eaa7062992",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.a021bd41c49d5p-49"
+   }
+  },
+  "k48_adams": {
+   "digest": "5234a2455a87e2ed00730d3ce03c1c346d0fd4b76006d910e4cf9b3b15fb8e68",
+   "leaves": {
+    "out": "<f8[73, 48]:63cdc2b20a3d41463398055e26c75846e20362b122993d3180fc9ba2b96fc5e7"
+   }
+  },
+  "k48_dop853_events": {
+   "digest": "59de20dee068260b95da032d00c5d2a539cf6f5eff44b979ada51efeac229d0c",
+   "leaves": {
+    "out": "<f8[73, 48]:eb4d173f5dfeaf429d63d0beedc1033dff2297bc81bfcbc76e9364d9e237816e"
+   }
+  },
+  "k48_harmonic_events": {
+   "digest": "efc2711a1291b84a21c755d596c9413f89ded1cb84c1a73e05bd2150e5f92f0c",
+   "leaves": {
+    "out": "<f8[73, 48]:67fdabe54c4df4a601b957f6c8310e370d033b0cdff2dd8adf267a46f339afa1"
+   }
+  },
+  "lrp_contacts": {
+   "digest": "044c87a2b0927b633372a823a281008f66d6b0a3674bb7ab9f0443938c7f4265",
+   "leaves": {
+    "out": "<f8[12]:7e6b39cd79c3e1acda81002c3849b787206924fdddbc15f1c9a674b141153c0e"
+   }
+  },
+  "lrp_est_position_bls_lm_legacy": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_est_position_bls_lm_profile": {
+   "digest": "c60a35deb3bcfe42ed269caf29ea4128914d044928c7ecf375b18e0afba580cd",
+   "leaves": {
+    "out[0]": "<f8[6]:66a5070b02684b98a0abb1ac0c1be099c33a961ba65baaaec40c0fbf986dd5dc",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d0c7ac8b47p+11",
+    "out[2].final_cost": "0x1.abcf6ef20f0d7p-1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c4f9f15fce090p+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:72b2d22e566937ab8a172f5bded7cee0caff108abb5ce7e5ed9818dd57aeb682",
+    "out[2].posterior_information": "<f8[6, 6]:cc02fd05ea3e29b19cc163606a033d43b1b17adb6ae0aefefce2e3977028bcd4",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0d44cba366f66p-8"
+   }
+  },
+  "lrp_est_position_srif_legacy": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_est_position_srif_profile": {
+   "digest": "52cbe5afc22e9705c83a5044ef1c05b09fa59809f7a251ddb021bae152d788d6",
+   "leaves": {
+    "out[0]": "<f8[6]:f9b20960a06ee54eebb8002ae171bae5ffd656a0354b4d2a4620109c8362236f",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d9cc1624fbp+11",
+    "out[2].final_cost": "0x1.2436fe80b5a69p-23",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.548a134f1d2aep-31",
+    "out[2].posterior_covariance": "<f8[6, 6]:cde1e9185d7cd863ec7380084a7d68d5c6364c4990f434a3e225566fe9fc8f9b",
+    "out[2].posterior_information": "<f8[6, 6]:b14e1ddf1a95a6c2d4290a97157d27e17d091eef59addcb7c2b89d6bff24989f",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:0328c15c699aa8d45883784e668736a329afc784640a82bff9fe05093cb7f8da",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.29c6ff1369bafp-39"
+   }
+  },
+  "lrp_est_range_rate_bls_lm_legacy": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_est_range_rate_bls_lm_profile": {
+   "digest": "bbfa651396525fa0048d1ea922ba55d675a5e41c2664dfcf8ab7859b8c9aa635",
+   "leaves": {
+    "out[0]": "<f8[6]:a7f31ddae3a2aa1e36798196a097fe3ba9ecb1ec3ac2b3ba27d7d9a5fcc539d1",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbdc0b7d400p+5",
+    "out[2].final_cost": "0x1.0df83d5d92472p-8",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.4a1ba426ac414p-5",
+    "out[2].posterior_covariance": "<f8[6, 6]:003371c7ed2985f72dd1e1e56275aea158f96548af82b9781a835a9ec8eb3a18",
+    "out[2].posterior_information": "<f8[6, 6]:0b7a8ec230d74a5fe0b7fa645b18be0357c48d99af0b07e902a8e60cbe7e494d",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.8ceffa0040b89p-16"
+   }
+  },
+  "lrp_est_range_rate_srif_legacy": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_est_range_rate_srif_profile": {
+   "digest": "c8101f183158d27a3fa65a2f362406d3bd8759356b8a4d11bac140d89268a854",
+   "leaves": {
+    "out[0]": "<f8[6]:4a49bc999cb86be48825a66034b04097c316989ed3012cdda633148c6a1df10d",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.3cbbda8876c95p+5",
+    "out[2].final_cost": "0x1.0dd7c3b6a94b7p-8",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.3b8666e30b0bep-31",
+    "out[2].posterior_covariance": "<f8[6, 6]:c613b66aca21404487a83612746b9a65d1eed2b1c7149cf6abb612d916e402e5",
+    "out[2].posterior_information": "<f8[6, 6]:b7244b009ef16cfc15968ed3f0e6d3f3bbd0755e4f1bbcf615caea666ce73ab1",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:2fe8314cb817b7f55e9ea1b13ffc04e63cde9e8b555bfe5f17721e7dd321e558",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.c0461f8c347ecp-42"
+   }
+  },
+  "lrp_k48_adams": {
+   "digest": "90274a54ebccff6f06e21d1d84c535541b0fd56ab14794d450308e745eb5494e",
+   "leaves": {
+    "out": "<f8[73, 48]:cd8986382d1902b117c833df85756c8de3fa79a2e10b59109cda551bc45307c2"
+   }
+  },
+  "lrp_k48_dop853_events": {
+   "digest": "5f73e8e00d2735a8ccc506bef7328ebd03c329a335005fd26545573e98fba609",
+   "leaves": {
+    "out": "<f8[73, 48]:e0c793d3ac801414c259ec93ac3226442b12776af29b94f4caa66d226c155199"
+   }
+  },
+  "lrp_k48_harmonic_events": {
+   "digest": "8a627e88cd4e65c0d350095a989a7b894a1702ca63cd6b87abf2d07804da782b",
+   "leaves": {
+    "out": "<f8[73, 48]:43fe58c47e81526a53b2a818c213cb0a23040354b6d9cfcd2d24694ec3bac1c5"
+   }
+  },
+  "lrp_pa_adams_j2": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_pa_adams_srp": {
+   "digest": "be1df0d5c194e6be7584daa95a2b0b0aaeb9c2446955538a17644718f33a8349",
+   "leaves": {
+    "out": "<f8[73, 42]:ff5f0ac78222bf088ff345a9bf4c67d9588e1520d448e7e03179e0bac714c26c"
+   }
+  },
+  "lrp_pa_dop853_events": {
+   "digest": "84b716e352359dbb3b50628abd7dbbe5a92da51e216600b14a6a78d356ec462d",
+   "leaves": {
+    "out": "<f8[73, 42]:0f0452a5f49a94b3cd9e6109073bc19116a8fb7eb34e725402b3f44b5c0e16dd"
+   }
+  },
+  "lrp_pa_harmonic_events": {
+   "digest": "ae83d3e919cbe3b4f6d66a63a0abc4032e0c39d45cb4b526b4ac98f76eeef676",
+   "leaves": {
+    "out": "<f8[73, 42]:f5098b80797ed8139d5a95736a96ac6d06c679a4be31502871629694cd252aee"
+   }
+  },
+  "lrp_pa_reference_srp": {
+   "digest": "4e09c515b389292f61a8afc13edd2af7bdabc5725c14f0b68b8f9c0f4d647ca9",
+   "leaves": {
+    "out": "<f8[73, 42]:5684bf0df12e7ac5962e8d5cc1180e758f3b10f2dc5e7ce276833db4cc64bb63"
+   }
+  },
+  "lrp_ps_adams_j2": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_ps_adams_srp_earthj2": {
+   "digest": "4d9a4bf0a1cf3c1c9cb19168c6fe8d678e7023a16430f9075795b8993f2c327d",
+   "leaves": {
+    "out": "<f8[73, 6]:9bf8ed9135bf2c5b1b8700a204be859874cb5ff0751ce181973f33ec2534dd0b"
+   }
+  },
+  "lrp_ps_dop853_noshadow": {
+   "digest": "c22b257f62fe465980a832fe5a48bea661e3619334084a014d708b3317d5e7cc",
+   "leaves": {
+    "out": "<f8[73, 6]:17c83de41e3ca4904f2fb207a7ed760a4c9a271079990c13d0649500b7e8bf28"
+   }
+  },
+  "lrp_ps_dop853_srp_events": {
+   "digest": "f761ab323f438534505b76aea0312407711ed33a6a4eabc49ed44b6c590e7e58",
+   "leaves": {
+    "out": "<f8[73, 6]:78885c50fd7cfc73523fc847a22e804d792d63407ec69f17e22d399a967e75ae"
+   }
+  },
+  "lrp_ps_harmonic": {
+   "digest": "ab59f0693d43766732c9061e84b67325b0c15e09caf38f6dc1ef280352d08f30",
+   "leaves": {
+    "out": "<f8[73, 6]:6669b887e6d924abaa46d050f299dcda396148fb84a3ba2523bf6287c7c420eb"
+   }
+  },
+  "lrp_ps_reference_srp": {
+   "digest": "df44d7f88ca1f8cf80aa9888e4200fd68d3c1a638568bb6bfd1c2d1a1695e391",
+   "leaves": {
+    "out": "<f8[73, 6]:510eff4744bc932f1bee19cc127bdebbbfe6eabac5e39f3989c9c9c6a764d593"
+   }
+  },
+  "lrp_truth_legacy": {
+   "digest": "ca9f1224184a42d78c7f0102bc78ac449f4ea0f5d47df8c2745a92960f9d168e",
+   "expected_error": "ValueError: lunar_radiation needs an active SRPOptions: its acceleration is K_SRP times the lunar radiation kernel (one cannonball), and there is no K without SRP."
+  },
+  "lrp_truth_profile": {
+   "digest": "f761ab323f438534505b76aea0312407711ed33a6a4eabc49ed44b6c590e7e58",
+   "leaves": {
+    "out": "<f8[73, 6]:78885c50fd7cfc73523fc847a22e804d792d63407ec69f17e22d399a967e75ae"
+   }
+  },
+  "pa_adams_j2": {
+   "digest": "a28f3ee774668a76e52c15f7b977ec226f07a98a23f00ad3ebb16e6d618eaafc",
+   "leaves": {
+    "out": "<f8[73, 42]:a8217ff197b3af541f37ec7eefbaa0ab954dc681374005c271a5f8a28741cc4b"
+   }
+  },
+  "pa_adams_srp": {
+   "digest": "770bf9aa58e286176fa49afd3dad24dd1c78efe751c38c1a08acbd71ec4dbcbc",
+   "leaves": {
+    "out": "<f8[73, 42]:0f6b19f9f1c0d63cc08852d5f5961ff1e52b159afd03e734fac850e8aa456546"
+   }
+  },
+  "pa_dop853_events": {
+   "digest": "db16aa51b2dfb6643a90c7c54edbcee1fdf7541f419268488f5734f56332b7c2",
+   "leaves": {
+    "out": "<f8[73, 42]:51a641be00a7981451e452002a7a63ae09acacf7d7ddc9af4a0bd5b828a88e67"
+   }
+  },
+  "pa_harmonic_events": {
+   "digest": "a590ca4a41252ed7f095738533cd994944ab4261f44cd1e8d44e4bf091d2cde7",
+   "leaves": {
+    "out": "<f8[73, 42]:52d15e35ef067f8ad5b62ece059aa70ea8f3e56fa3426b2e117573df44521d6c"
+   }
+  },
+  "pa_reference_srp": {
+   "digest": "c66954e851475e62f2812a11587e2656e6fc65acb465b85c185ce9b3966ff003",
+   "leaves": {
+    "out": "<f8[73, 42]:23266512ba8031b9ee1011e62333b1477b96056dc879d899c23b47a0ad86e14a"
+   }
+  },
+  "ps_adams_j2": {
+   "digest": "b82b07873fb653d7cceb7799cbd3497e4d3b1e3de6a27e25875272fba018fbcc",
+   "leaves": {
+    "out": "<f8[73, 6]:271030e610480082cb62ddb66581382d0e452abb9adf4a6f63c0723646e9772b"
+   }
+  },
+  "ps_adams_srp_earthj2": {
+   "digest": "3f36dc9ab38d2a253ef837fe0cea2dcde223ef24459fe61357aa5651649dc322",
+   "leaves": {
+    "out": "<f8[73, 6]:9a482179fbe64e5b70112aac5383e02f7215a8b7fce24e1f02e3437b73de6ed4"
+   }
+  },
+  "ps_dop853_noshadow": {
+   "digest": "0d2e1c638886e70e9ac19742ec1ea7d6ba27d86506a848cdbc59d2656f7a1047",
+   "leaves": {
+    "out": "<f8[73, 6]:d6066533462c9e355bec3089d547dd8e8883ff83e3118c44da1b78dfb14bd0ce"
+   }
+  },
+  "ps_dop853_srp_events": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  },
+  "ps_harmonic": {
+   "digest": "ddbbb549e00b5b16d27a3d345fcb2060e9c2adc6e36602995a56085d589d99ae",
+   "leaves": {
+    "out": "<f8[73, 6]:f9cd945942352940aaf13ae3aedbc7492b656fa0bd29c49e9ec81627d01ac6be"
+   }
+  },
+  "ps_reference_srp": {
+   "digest": "d668185222dae86743ff13ec3cbadb1ceafec440128da1144f6d55c2870b0114",
+   "leaves": {
+    "out": "<f8[73, 6]:95cccf562db6ff3a1c16beb58aada331c573207545b05a7487d1f7f5753e2007"
+   }
+  },
+  "tide_contacts": {
+   "digest": "7d61a524c8dfb98dc47e7f6953028966d90da194a7074ae417240ec2d1438acf",
+   "leaves": {
+    "out": "<f8[12]:9a82f882a26b79b3c658d4cf7aa4b770f4d2ccbd4d49169df19624dfa57ffb26"
+   }
+  },
+  "tide_est_position_bls_lm_legacy": {
+   "digest": "688c223b394e1d85829f64c687dd22655149015c0e2e0e196206ea41f6a2374c",
+   "leaves": {
+    "out[0]": "<f8[6]:e51cf80b7a697cd57a1c55f73605bf72817318f416f7164a56308c18c8c64db1",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099cfc5869648p+11",
+    "out[2].final_cost": "0x1.03dc0e190f26ep+1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c65a8f53cf22cp+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:1a90b7e8abaef9b5ea186783870345edd5590dda76a46d411c637b3e1eac0872",
+    "out[2].posterior_information": "<f8[6, 6]:eaac0d7f5d856fa35ba56ff62116dd04dcb98b9d86bf70b56a0d6773cb3efc43",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0de2fd1d5d4c8p-8"
+   }
+  },
+  "tide_est_position_bls_lm_profile": {
+   "digest": "73420fd251598623ee1153fb55f47de354501bde8c995a9c50e84dc3dad45a1f",
+   "leaves": {
+    "out[0]": "<f8[6]:030f2100027082ff521d49cab23791f8782d43cb7105c1be3dbd4d265fb199d9",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099cff0bf263bp+11",
+    "out[2].final_cost": "0x1.04a6d233e0519p+1",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.c6532a0bc7400p+1",
+    "out[2].posterior_covariance": "<f8[6, 6]:ee66d25c84e558f76b3a32cac734c966e6723b56fc93764cd9dd0622572d6af0",
+    "out[2].posterior_information": "<f8[6, 6]:170a10ea1a271b66986f8cb24a20c2bb6edde4c7a39f8fe42b792336fbc59f6e",
+    "out[2].posterior_sqrt_information": "None",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.0de1d53b19915p-8"
+   }
+  },
+  "tide_est_position_srif_legacy": {
+   "digest": "d6310a2b9777ebd71b6407e42dd2dcc8425d1ba08b2a71f82e0875c3b55deb83",
+   "leaves": {
+    "out[0]": "<f8[6]:1c4747de0d4946086dcfb953526ccb5e34ee8ab78d3025ffe76e718e6339679c",
+    "out[1]": "'MaxIter'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d8d071d4d1p+11",
+    "out[2].final_cost": "0x1.308a204d8ce13p+0",
+    "out[2].gauss_newton_decrement": "nan",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.d9071933cdbdcp-18",
+    "out[2].posterior_covariance": "<f8[6, 6]:8eccb2275b7fde0321d890aec61f2a02f8c9930c69b0597e83e06b7acf182143",
+    "out[2].posterior_information": "<f8[6, 6]:5443d3f48ea7bbbd2f34b643d71add122f847c98b1d570b388c1f3fc87a549ab",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:e32b2efdb78f8e9fc00ad73e3fb69a8c0ed579b5d7ae0bf11e13ec0fda4aae4f",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "''",
+    "out[2].velocity_step_norm_mps": "0x1.1d77d3d4e5d9cp-27"
+   }
+  },
+  "tide_est_position_srif_profile": {
+   "digest": "5e016a6653855b8344d98c1e427a46ee74ae2c52457ac78def7ea9ec7f23d32b",
+   "leaves": {
+    "out[0]": "<f8[6]:b77a2554b13b2df2213b13cad1e04e40a1291ad997f00489a7253a4b61ac5e47",
+    "out[1]": "'Converged'",
+    "out[2].acceptance_rescore_accepts": "0",
+    "out[2].active_weight_fraction": "0x1.0000000000000p+0",
+    "out[2].condition_number": "0x1.099d8fb8c0337p+11",
+    "out[2].final_cost": "0x1.31fb5a35d6462p+0",
+    "out[2].gauss_newton_decrement": "0x1.5712f2f0046b9p-26",
+    "out[2].iterations": "3",
+    "out[2].k_srp_bound_active_steps": "0",
+    "out[2].k_srp_estimate": "None",
+    "out[2].k_srp_negative_step_rejections": "0",
+    "out[2].k_srp_prior_status": "None",
+    "out[2].position_step_norm_m": "0x1.9f098df5b831bp-29",
+    "out[2].posterior_covariance": "<f8[6, 6]:2e9ad11a8ea37eaeaadd23b0e1f47bfd95bd2d4316c2c8629817bdd8c7961f9b",
+    "out[2].posterior_information": "<f8[6, 6]:4e8d63591814f0f9bfe0cf5a7c9720df085edced87962e9a1ca0af1b7b0448c4",
+    "out[2].posterior_sqrt_information": "<f8[6, 6]:3f830e41df515cd04e4bda928f0c02074a03dc7f6aec6ef238fb05169a052058",
+    "out[2].rank": "6",
+    "out[2].rejected_components": "0",
+    "out[2].station_range_biases_m": "None",
+    "out[2].station_time_tag_biases_s": "None",
+    "out[2].termination_detail": "'STATIONARY_AT_LINE_SEARCH_LIMIT'",
+    "out[2].velocity_step_norm_mps": "0x1.fcd4fa2d7b384p-39"
+   }
+  },
+  "tide_est_range_rate_bls_lm_legacy": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_est_range_rate_bls_lm_profile": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_est_range_rate_srif_legacy": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_est_range_rate_srif_profile": {
+   "digest": "354be254dae42e1f444f8cb8720963da42edab16fb1b75e45c3fdadf2ee5bb53",
+   "expected_error": "ValueError: the lunar tide raised by EARTH needs its GM > 0; got 0.0 (third-body GM switched off?). Remove 'EARTH' from raising_bodies instead."
+  },
+  "tide_k48_adams": {
+   "digest": "47c7c3030d1726c4c0f9e83da85ecf4f3b5712b99981df8741a379e7525a9432",
+   "leaves": {
+    "out": "<f8[73, 48]:c9471c02337e4d687895ad27219dc9feb557b3d8736ae74af625e79a57800072"
+   }
+  },
+  "tide_k48_dop853_events": {
+   "digest": "d9564d048aa9e10e325bfb2da6446c819ca809e76c7d9c767b6c0f24d574ae4e",
+   "leaves": {
+    "out": "<f8[73, 48]:89f6d5eca98dff51bee38801d7aaceb8ba23b44538d8c9b2846a948edb8368fe"
+   }
+  },
+  "tide_k48_harmonic_events": {
+   "digest": "4e880ee73df3df7d78d455e699ec753dac74c00c188bb37d906ee61181f9b428",
+   "leaves": {
+    "out": "<f8[73, 48]:d629aeaf4fb4a220989708f7eb455879d651158bb618b84a613efdd5d17aed1a"
+   }
+  },
+  "tide_pa_adams_j2": {
+   "digest": "78f61629a1b6e67debdc15f5cb380c694abf2813d98c53389337483b37ccea2d",
+   "leaves": {
+    "out": "<f8[73, 42]:250194d42eee65bf9a32ddefdf921b094750187111b4cad8917e49c77695fbd3"
+   }
+  },
+  "tide_pa_adams_srp": {
+   "digest": "5d428c8dfc7fbd9e49dff9329f8ce20256c88327ea24f38339bf99bfa56c9756",
+   "leaves": {
+    "out": "<f8[73, 42]:a7b1197e4def1c9d748a0d73741535c8e489aabdda5fc16bd335ce9353467fd7"
+   }
+  },
+  "tide_pa_dop853_events": {
+   "digest": "b38a1f2c436900383319eff3a44cd2ca35d8762784955fc8534f463968803da3",
+   "leaves": {
+    "out": "<f8[73, 42]:6a03d050e300cf0ea6dc07a77db713b033e74d0b8cafd837c7f4bc4d1bc8d0af"
+   }
+  },
+  "tide_pa_harmonic_events": {
+   "digest": "71e14a712590f135869d1198564244b09d737ebc49317f62cf85e46cf1031c93",
+   "leaves": {
+    "out": "<f8[73, 42]:ec395f4f7645f5c9520e1f091ae62695b6698f13fdf3a4eadae869e21c3f2a98"
+   }
+  },
+  "tide_pa_reference_srp": {
+   "digest": "5e851a6feb42a9debd65810fc4948df502ffe753cfdc951bfd76ad4c349d517a",
+   "leaves": {
+    "out": "<f8[73, 42]:0ad9c49a4f4bd5872f13b7473ea92e18f52e094d41a4663f1b4291d13697c03e"
+   }
+  },
+  "tide_ps_adams_j2": {
+   "digest": "573e25e3885c206f47dc12557af2f091ebcabaae7980f7e8daae103d458cfd01",
+   "leaves": {
+    "out": "<f8[73, 6]:d06edd299737e921f9a37e29d16ec11d4482c861016c06e3c5b62814b43c0baa"
+   }
+  },
+  "tide_ps_adams_srp_earthj2": {
+   "digest": "8e5f81dabbf88b3fe037912847871e335264ea3c28c2b54521c32582373a9dec",
+   "leaves": {
+    "out": "<f8[73, 6]:618c275725bba1179fd9e0c53811e4aea635d75b1bab836b676afd9cc1e68a3f"
+   }
+  },
+  "tide_ps_dop853_noshadow": {
+   "digest": "fbb2eacf3eca3b7ec0e433382f131aec46a3f363bee32aa0d343684b89d2ecef",
+   "leaves": {
+    "out": "<f8[73, 6]:13371a7de998801294d9a255152c75d30542c6ad1ef197fdf57c50b8ebb5196b"
+   }
+  },
+  "tide_ps_dop853_srp_events": {
+   "digest": "0cfcbf8ddac75ef22847ed62c99b6e7629bbad90a474c6a63ac309b6711d65ab",
+   "leaves": {
+    "out": "<f8[73, 6]:cee262542dfeab7ab13635290b584cce5397079c3d25d285de48496f2b193192"
+   }
+  },
+  "tide_ps_harmonic": {
+   "digest": "6b7be8f23b83e9004773f05dd51f8e1dca150ff33bed8d5a2a14300c0027f8de",
+   "leaves": {
+    "out": "<f8[73, 6]:02abadf0a1f39ea3ad79a8e9d26c3c88967c1c4794ca8aeadd072e936c7070a7"
+   }
+  },
+  "tide_ps_reference_srp": {
+   "digest": "2f0885fbc5ace0dee59e5db9b97cf0522a5ecb411480eaffa5065e2dd21ee202",
+   "leaves": {
+    "out": "<f8[73, 6]:4c7b742dfb07e38e7fcc6fca83894993d366c9ba612daa78a9a4d54d38bc9f10"
+   }
+  },
+  "tide_truth_legacy": {
+   "digest": "07e247e54b639011eb5a5480785b65a29154bff8d5bcc526fce6f0620112f954",
+   "leaves": {
+    "out": "<f8[73, 6]:758d62fec942f0b47389cd1f0a1a28722ae50877fbe3d4e00c226a600556d520"
+   }
+  },
+  "tide_truth_profile": {
+   "digest": "0cfcbf8ddac75ef22847ed62c99b6e7629bbad90a474c6a63ac309b6711d65ab",
+   "leaves": {
+    "out": "<f8[73, 6]:cee262542dfeab7ab13635290b584cce5397079c3d25d285de48496f2b193192"
+   }
+  },
+  "truth_legacy": {
+   "digest": "eca0840cd11e6e4630c1e0bd94c7161c71250aae7a0750cc90d2850b81a69405",
+   "leaves": {
+    "out": "<f8[73, 6]:ca20bf36bcef69d3d894c2e4da51bf852b46bab0e01c11e2f94100d7ab896498"
+   }
+  },
+  "truth_profile": {
+   "digest": "8b3afacbb873db4678b2a8dfa534d75b124617b511f77108c206b3fba2b26738",
+   "leaves": {
+    "out": "<f8[73, 6]:d9b8f7ff81c82f946a1c4bea22c84a29a4489ce45ef14d3a8e82217b11f2271a"
+   }
+  }
+ },
+ "fast_dynamics": true,
+ "gate": "E_G1(b)",
+ "mode": "omit",
+ "numba": "0.65.1",
+ "numpy": "2.4.3",
+ "python": "3.13.2",
+ "scipy": "1.17.1",
+ "src_status": ""
+}
