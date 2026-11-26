@@ -3,3 +3,4 @@ graphify-out/graph.json merge=graphify
 docs/figures/quickstart/* -text
 docs/figures/benchmark/* -text
 docs/media/desktop/** -text
+tests/fixtures/external_oracle/* -text
