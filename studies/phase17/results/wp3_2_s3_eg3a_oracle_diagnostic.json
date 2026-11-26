@@ -1,0 +1,17 @@
+{
+ "A1_pass": true,
+ "A1_precondition_relative_tol": 2.907674101493285e-12,
+ "A1_threshold": 1e-09,
+ "A2_pass": true,
+ "A2_threshold": 0.00025,
+ "A2_worst": 2.96992268788987e-06,
+ "A3_oracles_agree": 3.7636560534792807e-14,
+ "A3_pass": true,
+ "A3_threshold": 1e-09,
+ "commit": "222f1603bb711360e1f973dadcfd2b93c18ed7f9",
+ "n_penumbra": 729,
+ "n_precondition": 50,
+ "predeclared_oracle_precondition": 1.407052463431313e-08,
+ "status": "M src/lunar_od/dynamics.py\n M src/lunar_od/estimators.py\n M src/lunar_od/propagation_contract.py\n?? src/lunar_od/earth_shadow.py\n?? tests/test_wp3_2_earth_shadow.py\n?? tests/test_wp3_2_earth_shadow_transport.py",
+ "study": "F3 WP3.2 S3 E_G3(a)-A (exploratory)"
+}
