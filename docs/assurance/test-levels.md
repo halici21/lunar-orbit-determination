@@ -101,7 +101,7 @@ regression.
 
 | Tier | When | Selection (`-m`) | Kernels | Tests | Workflow |
 |---|---|---|---|---|---|
-| commit | every push and PR | `(analytic or derivative or contract_negative) and not spice and not campaign and not qt and not slow and not reference_platform` | none | 1325 | [Scientific tiers](../../.github/workflows/scientific-tiers.yml) |
+| commit | every push and PR | `(analytic or derivative or contract_negative) and not spice and not campaign and not qt and not slow and not reference_platform` | none | 1351 | [Scientific tiers](../../.github/workflows/scientific-tiers.yml) |
 | pr | every PR | `(external_oracle or ((analytic or derivative or contract_negative) and spice)) and not campaign and not qt and not slow` | required | 719 | Scientific tiers |
 | reference | manual, on the reference platform (recording machine) | `reference_platform` | none | 6 | none (hosted runners are not guaranteed to be the reference platform) |
 | nightly | 01:17 UTC daily, manual | all tests, slow tests on (L3 + L4 + full regression) | required | 2835 | [Scientific nightly](../../.github/workflows/scientific-nightly.yml) |
