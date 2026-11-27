@@ -19,7 +19,7 @@
   "scripts": "No study script is changed. The new functions are offered for WP5.4's frozen pipeline; adopting them in an existing study would be a re-freeze, which this WP does not do"
  },
  "data": {
-  "partition": "studies/phase17/configs/lro_data_partition.json: only development days 2009260, 2009261, 2009262, 2009263 and 2009285 are read, each through lro_data_partition.require_readable_day. Hold-out 2009264-2009267 and excluded 2009268 are never opened",
+  "partition": "studies/phase17/configs/lro_data_partition.json: only development days 2009260, 2009261, 2009262, 2009263 and 2009285 are read, each through lro_data_partition.require_readable_day. The partition file's hold-out and excluded days are never opened (named there only; erratum 2026-11-27, wording)",
   "fixtures": "two real archived files copied byte for byte into tests/fixtures/utdf/ with a provenance JSON (archive path, size, SHA-256): lsutdf_005901_103_2009_263_1105.trk (PAD 103, contains F2n's slip interval 2009-09-20 11:03:15-11:03:20 UTC; SHA-256 7b296307017e3d4c6187eadc494e85cda47d9c0adc355db1799fc4ba8524913f) and lsutdf_005901_103_2009_263_0722.trk (inside F2n's control pass 263 07:04-07:54, max |r| 9.9 mm/s; SHA-256 5cc59f7ddd7e3438b12e78a85c24bc3b07668ba13ab9a8270b09d9806589dbcf). Day 263 is a development day"
  },
  "gates": {

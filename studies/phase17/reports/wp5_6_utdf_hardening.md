@@ -5,7 +5,7 @@
   `8598457` before any WP5.6 code, test or gate value. One look at the data came first: a byte-field survey of
   bytes 45–54 and 73–75 on the development days. The predeclaration records it.
 - **Failing tests first:** `9ed5df5` (tests and fixtures); implementation as predeclared `7695605`; exploratory
-  amendment A1 in the next commit.
+  amendment A1 `f517001`.
 - **Amendments:** two, both after a result (`docs/assurance/amendment-log.md`, 2026-11-27): the U_G1 time-window
   clause and A1, the discontinuity predictor.
 - **Code:** `src/lunar_od/utdf.py`, additive. Tests in `tests/test_utdf.py`. Real fixtures in
@@ -170,6 +170,12 @@ No study script calls the new checks, so nothing was re-frozen.
 
 ## 5. Regression
 
-Full `pytest` (offscreen Qt): see the PR description for the junit totals of the final commit.
-`tools/check_repository.py`: see the PR. `utdf.py` is not a protected file
-(`examples/r2_measurement_fidelity_validation.py` does not list it), so no re-freeze table was added.
+- Full `pytest` on `f517001` (offscreen Qt, junit `<testsuite>` line): tests 3272, failures 1, errors 0,
+  skipped 68 (49 skipped + 19 xfailed); 3055 passed, 148 subtests passed, 3876 s.
+- The one failure was `test_lro_data_partition.py::test_no_study_script_or_config_names_a_holdout_day`. The
+  predeclaration's text named the hold-out day numbers. The text now refers to the partition file; no gate, threshold
+  or data changed (amendment log, "WP5.6 (ön kayıt metni)"). After the fix, `tests/test_lro_data_partition.py` and
+  `tests/test_utdf.py` pass; no other file changed after the full run.
+- GitHub CI on PR #125 (`3791022`): 13 pass, 0 fail, 2 skipped.
+- `tools/check_repository.py` passes. `utdf.py` is not a protected file
+  (`examples/r2_measurement_fidelity_validation.py` does not list it), so no re-freeze table was added.
