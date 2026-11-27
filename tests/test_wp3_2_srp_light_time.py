@@ -205,6 +205,8 @@ def lorentz_values(sm, n_extra=200, seed=20261127):
     return dict(n=len(cases), worst=worst, control_max=control, control_min=min_control, precondition=precondition)
 
 
+@pytest.mark.xfail(strict=True, raises=AssertionError,
+                   reason="LT_G3(a) FAIL as predeclared: negative-control minimum 4.75e-7 < 100x worst 2.30e-8 (amendment log)")
 def test_force_law_matches_the_lorentz_transformed_radiation_force(samples):
     v = lorentz_values(samples)
     assert v["n"] >= 600, v
@@ -372,6 +374,8 @@ def gradient_values(sm):
     return out
 
 
+@pytest.mark.xfail(strict=True, raises=AssertionError,
+                   reason="LT_G4(a) FAIL as predeclared: h = 10 m FD oracle round-off/truncation limited (amendment log)")
 def test_gradients_match_finite_differences_of_the_wp3_1_term(samples):
     v = gradient_values(samples)
     assert v["n_pen"] >= 50 and v["n_full"] >= 50 and v["n_v"] >= 600, v
@@ -419,6 +423,8 @@ def composed_gradient_values(n=2000, seed=20261125):
     return dict(n=count, pos=worst_r, vel=worst_v)
 
 
+@pytest.mark.xfail(strict=True, raises=AssertionError,
+                   reason="LT_G4(d) FAIL as predeclared: h = 100 m FD oracle round-off limited (amendment log)")
 def test_gradients_composed_with_the_earth_shadow_match_finite_differences():
     v = composed_gradient_values()
     assert v["n"] >= 50, v
