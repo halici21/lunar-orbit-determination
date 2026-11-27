@@ -225,7 +225,7 @@ def spice_direction_values(n=200, seed=20261127):
     from lunar_od.spice_loader import load_spice_kernels
     load_spice_kernels()
     rng = np.random.default_rng(seed + 2)
-    et_a, et_b = spice.str2et("2026-01-01T00:00:00 TDB"), spice.str2et("2027-01-01T00:00:00 TDB")
+    et_a, et_b = spice.str2et("2026-01-01 00:00:00 TDB"), spice.str2et("2027-01-01 00:00:00 TDB")
     worst = worst_corrected = precondition = 0.0
     control = math.inf
     for _ in range(n):
