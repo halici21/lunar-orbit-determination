@@ -1,0 +1,91 @@
+{
+ "facts": {
+  "python": "3.13.2",
+  "platform": "Windows-2022Server-10.0.20348-SP0",
+  "machine": "AMD64",
+  "processor": "AMD64 Family 25 Model 1 Stepping 1, AuthenticAMD",
+  "numpy": "2.4.3",
+  "numpy_cpu_features_on": [
+   "AVX",
+   "AVX2",
+   "BMI",
+   "BMI2",
+   "CX16",
+   "F16C",
+   "FMA3",
+   "LAHF",
+   "LZCNT",
+   "MMX",
+   "MOVBE",
+   "POPCNT",
+   "SSE",
+   "SSE2",
+   "SSE3",
+   "SSE41",
+   "SSE42",
+   "SSSE3",
+   "VAES",
+   "VPCLMULQDQ",
+   "X86_V2",
+   "X86_V3"
+  ],
+  "numpy_cpu_baseline": [
+   "X86_V2"
+  ],
+  "numpy_cpu_dispatch": [
+   "X86_V3"
+  ],
+  "scipy": "1.17.1",
+  "numba": "0.65.1",
+  "numba_disable_jit": false,
+  "llvm_host_cpu": "znver3",
+  "numba_cpu_name_env": null
+ },
+ "tide": {
+  "T_G5a_gated": 1.4333007895095197e-07,
+  "T_G5a_limit": 1e-07,
+  "T_G5a_control": 2.281407435000029e-05,
+  "T_G5a_control_ratio": 159.17157457094083
+ },
+ "lrp": {
+  "L_G6[False-False]": {
+   "pos_max_m": 7.297145202755928e-06,
+   "pos_limit_m": 1e-05,
+   "phi_max": 8.293655073041454e-10,
+   "effect_m": 1.32801272872166
+  },
+  "L_G6[False-True]": {
+   "pos_max_m": 4.345391062088311e-06,
+   "pos_limit_m": 1e-05,
+   "phi_max": 1.434425870208471e-09,
+   "effect_m": 1.3280091939814156
+  },
+  "L_G6[True-False]": {
+   "pos_max_m": 4.979432560503483e-06,
+   "pos_limit_m": 1e-05,
+   "phi_max": 6.53131245399489e-10,
+   "effect_m": 1.32905558400671
+  },
+  "L_G6[True-True]": {
+   "pos_max_m": 5.322202923707664e-06,
+   "pos_limit_m": 1e-05,
+   "phi_max": 9.297671279276099e-10,
+   "effect_m": 1.329054926900426
+  }
+ },
+ "dmc": {
+  "dmc_fd_rel_err_per_column": [
+   3.6971354967457442e-09,
+   1.1048014252508307e-08,
+   7.549346043864643e-08,
+   9.093371572081702e-09,
+   3.1818468125943922e-09,
+   1.183267070629324e-06,
+   4.2284394325968106e-08,
+   2.237260240853077e-09,
+   5.852993879247829e-08
+  ],
+  "dmc_limit": 1e-06,
+  "dmc_worst_column": 5
+ }
+}
