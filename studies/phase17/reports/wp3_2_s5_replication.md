@@ -208,4 +208,12 @@ term CONTRADICTED. All three hold, so the requirement is **passed** as predeclar
 
 ## 8. Regression
 
-See section 8 of the PR description until this section is filled from the full-suite JUnit file.
+- Full suite at `2fc5fd8` (later commits change only this section), run with
+  `QT_QPA_PLATFORM=offscreen python -m pytest -p no:cacheprovider tests --junitxml=...`: JUnit header
+  `tests="3447" failures="0" errors="0" skipped="71"`, pytest exit 0, 3013 s. The 3299 `testcase` elements split into
+  3228 passed, 49 skipped and 22 strict xfails. As at S4, the header counts 148 more tests than the elements; the
+  reason is BİLİNMİYOR (not investigated).
+- The 22 xfails are the ones on main before S5: S3 seven, WP3.3 K_G1 six, S2 L_G6 three, S4 three, EST-01 two, the
+  external-oracle `cd_ssb` case one. No strict xfail passed.
+- `tools/check_repository.py` passes (597 migrated paths, 409 preserved byte identities, 563 local links).
+- `test_no_study_script_or_config_names_a_holdout_day` passes.
