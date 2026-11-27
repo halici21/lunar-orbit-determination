@@ -1,0 +1,66 @@
+# WP7.1 diagnostic (manual only): measure, on the hosted runners, the five commit-tier values that differ
+# from the committed records (S1 T_G5(a), S2 L_G6 x3, DMC finite-difference STM). Analysis only; no gate.
+# Owner decision 2026-11-27: kept, workflow_dispatch only. Use it to check a runner against the reference
+# platform of tests/reference_platform.py (docs/assurance/test-levels.md).
+name: WP7.1 platform diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: gate values / ${{ matrix.os }} / ${{ matrix.variant }} / ${{ matrix.rep }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022]
+        variant: [baseline, numba_generic]
+        rep: [1, 2, 3]
+        include:
+          - os: ubuntu-24.04
+            variant: baseline
+            rep: 1
+    steps:
+      - run: git config --global core.autocrlf true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.13.2'
+          cache: pip
+          cache-dependency-path: requirements/windows.txt
+      - run: python -m pip install -r requirements/windows.txt
+        if: runner.os == 'Windows'
+      - run: python -m pip install -r requirements.txt pytest
+        if: runner.os != 'Windows'
+      - run: python -m pip install -e .
+      - name: CPU
+        shell: python
+        run: |
+          import platform, subprocess
+          print(platform.platform(), platform.processor())
+          if platform.system() == "Windows":
+              print(subprocess.run(["powershell", "-NoProfile", "-c",
+                                    "(Get-CimInstance Win32_Processor).Name"], capture_output=True, text=True).stdout)
+          else:
+              print(open("/proc/cpuinfo").read().split("\n\n")[0])
+      - name: Gate values
+        shell: bash
+        env:
+          LUNAR_OD_KERNEL_DIR: ${{ github.workspace }}/outputs/no-kernels
+          LUNAR_OD_RECORD_TESTS: '0'
+        run: |
+          mkdir -p outputs
+          if [ "${{ matrix.variant }}" = "numba_generic" ]; then export NUMBA_CPU_NAME=generic; fi
+          python studies/phase17/scripts/wp7_1_platform_gate_values.py --out outputs/gate-values.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: wp7-1-gate-values-${{ matrix.os }}-${{ matrix.variant }}-${{ matrix.rep }}
+          path: outputs/gate-values.json

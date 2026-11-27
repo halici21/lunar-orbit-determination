@@ -20,6 +20,7 @@ nav:
   - Validation: validation.md
   - CCSDS TDM: ccsds-tdm.md
   - External cross-validation: external.md
+  - Test levels and CI: test-levels.md
   - Python API: api.md
   - CCSDS orbit data export: ccsds-odm.md
   - Research studies: studies.md

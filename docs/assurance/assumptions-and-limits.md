@@ -236,3 +236,19 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     mutlak doğruluk 0.1 m'ye kadardır (1σ). Levha hareketi 2027'de Goldstone 0.47 m, Canberra 1.25 m, Madrid 0.74 m birikir.
 20. Kutup gelgiti modellenmez: etkisi 1.2 mm, OD'de ≤ 0.004σ (Phase C3). Okyanus yüklemesi modellenmez ve ölçülmemiştir
     (BLQ katsayıları gerekir). DSN dışı istasyonlar (LRO'nun USN sahaları, RD-09) bu kaynakta yoktur.
+
+## Doğrulama platformu
+
+22. **Bazı kapı kararları referans platforma bağlıdır** (sahip kararı 2026-11-27, WP7.1). S1 T_G5(a), D5 G1
+    (DMC sonlu fark STM) ve S2 L_G6 değerleri eşiklerine kayan nokta tabanı kadar yakındır. Bu değerler numpy'nin
+    SIMD yoluna (AVX-512 ya da AVX2) ve Numba'nın derleme hedefine göre değişir: numpy AVX2'de T_G5(a) 1.43e-7
+    (eşik 1e-7) ve D5 G1 1.18e-6 (eşik 1e-6) ölçülür, L_G6 dört durumda geçer. Ölçüm:
+    `studies/phase17/results/wp7_1_platform_gate_values/`.
+    - **Referans platform:** numpy `AVX512F` ve `AVX512_SKX` dağıtır; Numba `avx512f` olan bir host CPU için derler;
+      `NUMBA_CPU_NAME`, `NUMBA_CPU_FEATURES` ve `NUMBA_DISABLE_JIT` ayarlı değildir. Kayıtlı S1, S2 ve D5 kararları bu
+      platformda üretildi (Ryzen 7 7840HS, Zen 4; aynı değerler AVX-512'li GitHub koşucularında bit bit tekrarlandı).
+    - **Kanıt:** `tests/reference_platform.py::reference_platform_problem()` numpy'nin `__cpu_features__` değerini ve
+      llvmlite'ın host CPU özelliklerini okur. `python tools/run_tier.py reference` bu kontrolü her testten önce yapar;
+      platform dışında test KALIR. Diğer koşularda bu testler gerekçesiyle atlanır; platform dışı GEÇER kanıt değildir.
+    - Eşik, oracle ve xfail katılığı değişmedi. Referans platformdaki KALIR, KALIR olarak durur. Ayrıntı:
+      [test seviyeleri](test-levels.md#reference-platform-for-simd-sensitive-gates).
