@@ -269,6 +269,8 @@ FILE_LEVELS: dict[str, tuple[str, str]] = {
     "test_wp3_2_lunar_radiation_transport.py": (_C, "spice"),
     "test_wp3_2_lunar_tide.py": (_A, ""),
     "test_wp3_2_lunar_tide_transport.py": (_C, "spice"),
+    "test_wp3_2_srp_light_time.py": (_A, "spice"),
+    "test_wp3_2_srp_light_time_transport.py": (_C, "spice"),
     "test_wp3_3_integrator_certification.py": (_A, ""),
     "test_wp4_2r_bls_loosened_exhaustion.py": (_C, "spice"),
 }
