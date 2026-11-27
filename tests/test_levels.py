@@ -103,6 +103,12 @@ def test_tier_expressions_use_registered_markers_and_commit_tier_is_kernel_free(
     assert "--require-kernels" in run_tier.command_for("pr")
     assert "--require-kernels" not in run_tier.command_for("commit")
     assert "--strict-levels" in run_tier.command_for("commit")
+    # WP7.1 reference platform: SIMD-sensitive gate replays leave the hosted commit tier
+    # and run, fail-closed, only in the reference tier.
+    assert "not reference_platform" in commit
+    assert run_tier.TIERS["reference"][0] == "reference_platform"
+    assert "--reference-platform" in run_tier.command_for("reference")
+    assert "--reference-platform" not in run_tier.command_for("commit")
 
 
 _DUMP_PLUGIN = '''

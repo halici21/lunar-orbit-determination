@@ -19,7 +19,9 @@ L7    ``contract_negative`` interface, schema, provenance, UI-workflow and fail-
 
 Resource markers: ``spice`` (needs SPICE kernels), ``campaign`` (reads the external
 campaign data), ``qt`` (PyQt5 desktop), ``numba`` (exercises the Numba twins) and
-``slow`` (set automatically from ``tests/slow.py``; may also be listed here).
+``slow`` (set automatically from ``tests/slow.py``; may also be listed here) and
+``reference_platform`` (a SIMD-sensitive gate replay whose recorded verdict holds only
+on the reference platform of ``tests/reference_platform.py``).
 
 How a test is classified, first match wins:
 
@@ -43,7 +45,7 @@ LEVELS: dict[str, str] = {
     "golden": "L6",
     "contract_negative": "L7",
 }
-RESOURCES: tuple[str, ...] = ("spice", "campaign", "qt", "numba", "slow")
+RESOURCES: tuple[str, ...] = ("spice", "campaign", "qt", "numba", "slow", "reference_platform")
 
 #: REQ-SW-003: a ``spice`` test at one of these levels FAILS when the kernels are missing.
 KERNEL_FAIL_CLOSED_LEVELS: frozenset[str] = frozenset(
@@ -282,6 +284,11 @@ NODE_LEVELS: dict[str, tuple[str, str]] = {
     "tests/test_estimators.py::EstimatorTests::test_range_rate_srif_reduces_cost_on_spice_fixture_arc": (_X, "spice"),
     "tests/test_measurements.py::MeasurementTests::test_position_measurement_generation_and_clean_residual_closure": (_X, "spice"),
     "tests/test_measurements.py::MeasurementTests::test_range_rate_measurement_generation_and_clean_residual_closure": (_X, "spice"),
+    # SIMD-sensitive gate replays: their recorded verdicts hold on the reference platform only
+    # (tests/reference_platform.py; measured in studies/phase17/results/wp7_1_platform_gate_values/).
+    "tests/test_wp3_2_lunar_tide.py::test_tide_stm_matches_repropagation_and_omitting_its_gradient_does_not": (_A, "reference_platform"),
+    "tests/test_wp3_2_lunar_radiation.py::test_six_42_and_48_state_paths_carry_the_same_lrp": (_A, "reference_platform"),
+    "tests/test_dmc.py::test_dmc_stm_matches_central_finite_differences": (_A, "reference_platform"),
     # The bounded qualification slice propagates on SPICE; one test is also gated by its
     # own LUNAR_OD_RUN_SLOW_TESTS check rather than tests/slow.py.
     "tests/test_r1_r4_long_arc_qualification.py::BoundedQualificationSlice": (_C, "spice"),

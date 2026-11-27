@@ -2,6 +2,7 @@
 
     python tools/run_tier.py commit            # every push: L0 + L1 + L7, kernel-free
     python tools/run_tier.py pr                # every PR: L2 + kernel-backed L0/L1/L7
+    python tools/run_tier.py reference         # reference platform: SIMD-sensitive gate replays
     python tools/run_tier.py nightly           # L3 + L4 + full regression incl. slow
     python tools/run_tier.py release           # L5 real data
     python tools/run_tier.py --list            # print every tier's selection
@@ -25,7 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 #: tier -> (pytest -m expression, kernels required, slow tests enabled, purpose)
 TIERS: dict[str, tuple[str, bool, bool, str]] = {
     "commit": (
-        "(analytic or derivative or contract_negative) and not spice and not campaign and not qt and not slow",
+        "(analytic or derivative or contract_negative) and not spice and not campaign and not qt and not slow"
+        " and not reference_platform",
         False, False,
         "every push: L0 + L1 + L7 that need no kernels, campaign data or desktop"),
     "pr": (
@@ -33,6 +35,10 @@ TIERS: dict[str, tuple[str, bool, bool, str]] = {
         "and not campaign and not qt and not slow",
         True, False,
         "every pull request: L2 plus the kernel-dependent L0/L1/L7, on verified kernels"),
+    "reference": (
+        "reference_platform",
+        False, False,
+        "on the reference platform only: SIMD-sensitive gate replays (fail off-platform)"),
     "nightly": (
         "",
         True, True,
@@ -51,6 +57,8 @@ def command_for(tier: str, extra: list[str] | None = None, junitxml: str | None 
         command += ["-m", expression]
     if kernels:
         command.append("--require-kernels")
+    if tier == "reference":
+        command.append("--reference-platform")
     if junitxml:
         command.append("--junitxml=" + junitxml)
     return command + list(extra or [])

@@ -63,5 +63,6 @@ markers = [
     "qt: needs PyQt5 (desktop application)",
     "numba: exercises the Numba-accelerated twins",
     "slow: expensive; runs only with LUNAR_OD_RUN_SLOW_TESTS=1",
+    "reference_platform: SIMD-sensitive gate replay; meaningful only on the reference platform (tests/reference_platform.py)",
     "requires_kernels: derived; spice test at L2+ that fails, not skips, without kernels (REQ-SW-003)",
 ]

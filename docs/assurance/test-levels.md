@@ -60,6 +60,36 @@ the difference matters for selection.
 - A run without kernels must leave these tests out explicitly with `-m`; the
   deselection then shows in the pytest summary. The commit tier uses `not spice`.
 
+## Reference platform for SIMD-sensitive gates
+
+Some predeclared gates sit within floating-point or integration-floor distance of
+their thresholds. Their measured value depends on the CPU instruction set: whether
+numpy dispatches AVX-512 or only AVX2, and which CPU Numba compiles for. GitHub
+assigns hosted runners at random, so these gates gave a different verdict from
+run to run. The measurements are in
+[`studies/phase17/results/wp7_1_platform_gate_values/`](../../studies/phase17/results/wp7_1_platform_gate_values/):
+
+| Gate (test) | Threshold | numpy AVX-512 (recorded) | numpy AVX2 |
+|---|---|---|---|
+| S1 T_G5(a) (`test_tide_stm_matches_repropagation_and_omitting_its_gradient_does_not`) | ≤ 1e-7 | 7.37e-8 PASS | 1.43e-7 FAIL |
+| D5 G1 (`test_dmc_stm_matches_central_finite_differences`) | ≤ 1e-6 per column | 7.90e-7 PASS | 1.18e-6 FAIL |
+| S2 L_G6 (`test_six_42_and_48_state_paths_carry_the_same_lrp`, 4 cases) | ≤ 1e-5 m | 3 FAIL, 1 PASS | 4 PASS |
+
+**Rule.** The verdict of such a gate is the verdict on the **reference platform**:
+numpy dispatches `AVX512F` and `AVX512_SKX`, and Numba compiles for a host CPU with
+`avx512f` and no `NUMBA_CPU_NAME`, `NUMBA_CPU_FEATURES` or `NUMBA_DISABLE_JIT`
+override ([`tests/reference_platform.py`](../../tests/reference_platform.py)). All
+recorded S1, S2 and D5 verdicts were produced there. No threshold changed. A FAIL
+on the reference platform stays a FAIL, and an off-platform PASS is not evidence.
+
+- The tests carry the `reference_platform` resource marker (rows in `tests/levels.py`).
+- The commit tier excludes them (`not reference_platform`).
+- Off the reference platform they **skip** with the reason, so a nightly run on an
+  AVX2 runner shows them as skipped, not as passed or failed.
+- `python tools/run_tier.py reference` runs them with `--reference-platform`: off
+  the reference platform every one of them **fails** at setup, so the tier cannot
+  report a verdict from the wrong machine.
+
 `campaign` and gravity-field data are a separate case: hosted runners never have
 them, so those tests still skip there. They run in the local kernel-backed full
 regression.
@@ -71,8 +101,9 @@ regression.
 
 | Tier | When | Selection (`-m`) | Kernels | Tests | Workflow |
 |---|---|---|---|---|---|
-| commit | every push and PR | `(analytic or derivative or contract_negative) and not spice and not campaign and not qt and not slow` | none | 1247 | [Scientific tiers](../../.github/workflows/scientific-tiers.yml) |
+| commit | every push and PR | `(analytic or derivative or contract_negative) and not spice and not campaign and not qt and not slow and not reference_platform` | none | 1325 | [Scientific tiers](../../.github/workflows/scientific-tiers.yml) |
 | pr | every PR | `(external_oracle or ((analytic or derivative or contract_negative) and spice)) and not campaign and not qt and not slow` | required | 719 | Scientific tiers |
+| reference | manual, on the reference platform (recording machine) | `reference_platform` | none | 6 | none (hosted runners are not guaranteed to be the reference platform) |
 | nightly | 01:17 UTC daily, manual | all tests, slow tests on (L3 + L4 + full regression) | required | 2835 | [Scientific nightly](../../.github/workflows/scientific-nightly.yml) |
 | release | `v*` tags, manual | `real_data` | required | 7 | Scientific nightly |
 
@@ -84,6 +115,7 @@ alongside them and are not required checks.
 ```powershell
 python tools/run_tier.py commit
 python tools/run_tier.py pr
+python tools/run_tier.py reference
 python tools/run_tier.py nightly
 ```
 

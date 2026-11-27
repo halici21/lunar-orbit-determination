@@ -151,6 +151,7 @@ def pytest_sessionfinish(session, exitstatus):
 # L2+ FAILS when the kernels are missing (REQ-SW-003); --require-kernels extends
 # that to every `spice` test (the kernel-backed CI tiers pass it).
 from tests import levels as _levels  # noqa: E402
+from tests import reference_platform as _reference_platform  # noqa: E402
 from tests.slow import SLOW_ATTRIBUTE as _SLOW_ATTRIBUTE  # noqa: E402
 
 _STRICT_LEVELS_ENV = "LUNAR_OD_STRICT_LEVELS"
@@ -164,6 +165,9 @@ def pytest_addoption(parser):
     group.addoption("--strict-levels", action="store_true", default=False,
                     help="refuse to run when a collected test has no level or more than one "
                          f"(also {_STRICT_LEVELS_ENV}=1)")
+    group.addoption("--reference-platform", action="store_true", default=False,
+                    help="fail (not skip) every `reference_platform` test when this machine is not "
+                         "the reference platform of tests/reference_platform.py")
 
 
 def _kernel_problem():
@@ -289,6 +293,14 @@ def pytest_collection_finish(session):
 
 
 def pytest_runtest_setup(item):
+    if item.get_closest_marker(_reference_platform.MARKER) is not None:
+        problem = _reference_platform.reference_platform_problem()
+        if problem is not None:
+            message = ("WP7.1: this gate replay's recorded verdict holds only on the reference platform "
+                       "(tests/reference_platform.py); here " + problem)
+            if item.config.getoption("--reference-platform"):
+                pytest.fail(message, pytrace=False)
+            pytest.skip(message)
     needs = item.get_closest_marker(_levels.REQUIRES_KERNELS) is not None or (
         item.config.getoption("--require-kernels") and item.get_closest_marker("spice") is not None)
     if needs:
