@@ -164,6 +164,20 @@ def test_classification_rules():
     assert R.replication("SRP_LIGHT_TIME", "DOCUMENT_ONLY", 0.0099) == "CONTRADICTED"
 
 
+def test_floor_gate_includes_every_term_floor():
+    """S5_G3 as predeclared: baseline floor, 48-state agreement AND every term run's own floor <= 1e-3 m."""
+    good = _cell("H1xS1", "H1", 0.05, 1.0)
+    good["nom48_vs_baseline_m"] = 1e-5
+    assert R.cell_floor_gate(good)
+    bad = _cell("H1xS1", "H1", 0.05, 1.0, tfloor=2e-3)
+    bad["nom48_vs_baseline_m"] = 1e-5
+    assert not R.cell_floor_gate(bad)
+    # with the gate failed in the cell, a term whose signature is < 100 x the floors is inconclusive there
+    weak = _cell("H1xS1", "H1", 0.05, 0.1, tfloor=2e-3)
+    weak["nom48_vs_baseline_m"] = 1e-5
+    assert R.classify("T", [weak])["hold_out_class"] == "S5_INCONCLUSIVE"
+
+
 def test_req_dyn_007_rule():
     ok = {t: "REPLICATED" for t in ("TIDE", "LRP", "EARTH_SHADOW", "PN", "PLANETS", "EARTH_J2", "SRP_LIGHT_TIME")}
     assert R.req_dyn_007(ok, gates_pass=True) == "passed"
