@@ -65,3 +65,12 @@ Files are named `wp3_<n>_*`. Exploratory amendments are listed in the
 | WP3.2 S3 | Earth shadow on the spacecraft, opt-in | NOT QUALIFIED as computed (E_G3(a) oracle precondition, E_G5(a) control ratio and E_G6 path consistency FAIL); exploratory E_G3(a)-A PASS, E_G6-A A1 FAIL (unsegmented Earth-penumbra kinks); merge is the owner's decision | [S3](phase17/reports/wp3_2_s3_earth_shadow.md) |
 | WP3.2 S4 | SRP light-time package (Poynting-Robertson, Sun at emission, lunar shadow at the ray crossing), opt-in | NOT QUALIFIED as computed (LT_G3(a) negative-control ratio 21x < 100x, LT_G4(a)/(d) finite-difference gradients at the predeclared steps FAIL); every other gate PASS, defaults byte-identical (83/83); exploratory FD-step diagnostic: the untouched production gradient fails the same oracle; merge is the owner's decision | [S4](phase17/reports/wp3_2_s4_srp_light_time.md) |
 | WP3.3 | Long-arc integrator certification: 8 propagation profiles, 1/3/7/28 d, 2 tolerances, 3 orbits (REQ-DYN-006) | Validity range documented as computed; mostly INCONCLUSIVE (the reference fails R_G1 on O3 and R_G2 on O2); K_G1 10-rev closure FAIL for 7 of 8 profiles (only Radau passes); `PropagationProfile()` refuses arcs of 7–28 d via its contact guard; Orekit deferred to WP5.1 | [WP3.3](phase17/reports/wp3_3_integrator_certification.md) |
+
+## V&V programme F5 (validation, real data)
+
+Files are named `wp5_<n>_*`. Exploratory amendments are listed in the
+[amendment log](../docs/assurance/amendment-log.md).
+
+| Work package | Topic | Outcome | Report |
+|---|---|---|---|
+| WP5.6 | UTDF reader hardening: count/rollover/discontinuity reason codes, pad_xmit == pad_rcv, TAI interval time across leap seconds, record-derived f_T/K/M, real archived fixtures (RD-11, REQ-DATA-005) | U_G1 (file-name time clause) and U_G7(b) (2 real 48-bit rollovers) FAIL as computed, all other gates PASS; 963 frozen-counter intervals with the Doppler-valid flag set on days 261/263; no study result moves (the F2e 3000 m/s filter drops exactly the count-coded intervals); exploratory A1 interval-mean discontinuity predictor removes 23 false alarms | [WP5.6](phase17/reports/wp5_6_utdf_hardening.md) |

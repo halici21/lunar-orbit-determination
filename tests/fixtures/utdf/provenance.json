@@ -1,0 +1,19 @@
+{
+ "source": "PDS LRO-L-RSS-1-TRACKING-V1.0, data/trk/lro_no_01 (LRO USN low-speed UTDF), copied byte for byte",
+ "work_package": "F5 WP5.6 (studies/phase17/configs/wp5_6_utdf_hardening_predeclaration.json)",
+ "partition": "development day 2009263 (studies/phase17/configs/lro_data_partition.json); no hold-out data",
+ "files": {
+  "lsutdf_005901_103_2009_263_1105.trk": {
+   "archive_path": "lro_data/trk/lro_no_01/2009263/lsutdf_005901_103_2009_263_1105.trk",
+   "bytes": 3600,
+   "sha256": "7b296307017e3d4c6187eadc494e85cda47d9c0adc355db1799fc4ba8524913f",
+   "why": "holds the F2n count discontinuity, interval 2009-09-20 11:03:15-11:03:20 UTC (studies/phase17/reports/phase_f2_lro_od.md section 17.5)"
+  },
+  "lsutdf_005901_103_2009_263_0722.trk": {
+   "archive_path": "lro_data/trk/lro_no_01/2009263/lsutdf_005901_103_2009_263_0722.trk",
+   "bytes": 3600,
+   "sha256": "5cc59f7ddd7e3438b12e78a85c24bc3b07668ba13ab9a8270b09d9806589dbcf",
+   "why": "inside F2n's clean control pass PAD 103 2009-263 07:04-07:54 (max |r| 9.9 mm/s)"
+  }
+ }
+}

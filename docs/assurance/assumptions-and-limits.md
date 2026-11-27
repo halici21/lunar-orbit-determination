@@ -88,6 +88,14 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     ızgarada boşluklar zamanla köprülenir; düzgün ızgarada örnek sayısıyla (davranış değişmedi). Üretilen
     gürültülü azimutlar [0, 2π) içine sarılmaz; artıklar `wrap_to_pi` ile sarılır.
 
+21. **UTDF okuyucu (WP5.6).** Saniye-yıl alanı UTC takvim sayımı olarak okunur; yıl sonu artık saniyesi
+    (23:59:60) ayırt edilir, yıl ortası (30 Haziran) artık saniyesi 1 Temmuz 00:00:00'dan ayırt edilemez
+    (el kitabı belirtmiyor; gerçek veride doğrulanmadı, LRO 2009 hiçbirini geçmiyor). Aralık süresi TAI farkıdır.
+    Yerleşik artık saniye tablosu 2026-07-01'e kadar geçerlidir; sonrası `tai_minus_utc` ister. Sayaç
+    denetimleri (`check_doppler_counts`) mevcut çalışmalara uygulanmadı: F2 hattı aynı aralıkları
+    |ṙ| > 3000 m/s eşiğiyle gerekçesiz düşürüyor (gün 261/263'te 963 donmuş sayaç, 2 rollover). Süreksizlik
+    eşiği 20 mm/s'dir; daha küçük aykırılıklar F2o ayıklamasına kalır. Bayt 53–54 örnek hızı denetlenmez.
+
 ## Masaüstü ve CLI
 
 11. Masaüstü uygulaması formda görünmeyen rtol 1e-8 / atol 1e-10 ve 3600 s efemeris adımı kullanır;

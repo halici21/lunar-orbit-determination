@@ -1,0 +1,121 @@
+{
+ "predeclaration": "studies/phase17/configs/wp5_6_utdf_hardening_predeclaration.json",
+ "main_reader": "953f567",
+ "days_read": [
+  "2009260",
+  "2009261",
+  "2009262",
+  "2009263",
+  "2009285"
+ ],
+ "U_G8a_decode_identity": {
+  "records": 22743,
+  "files": 410,
+  "mismatches": [],
+  "PASS": true
+ },
+ "U_G7b_f1c_range_rate": {
+  "intervals": 10828,
+  "exact": 10826,
+  "max_rel": 1.0000003748483677,
+  "max_ulp": 4503601315537465.0,
+  "missing": 0,
+  "max_rel_excluding_rollover": 0.0,
+  "note": "intervals that differ are listed by code in U_G8c (COUNT_ROLLOVER intervals are unwrapped by the new reader; F1c's expression uses the wrapped count)",
+  "PASS": false
+ },
+ "U_G8c_impact": {
+  "2009260": {
+   "f1c_intervals": 2416,
+   "flagged": 0,
+   "codes": {},
+   "rate_discontinuities": [],
+   "untested_for_discontinuity": 228,
+   "study_filter_vs_codes": {
+    "study_keeps|not_count_coded": 2416
+   },
+   "f2o_edited_on_day": 2,
+   "f2o_edited_also_flagged": 0
+  },
+  "2009261": {
+   "f1c_intervals": 2225,
+   "flagged": 483,
+   "codes": {
+    "COUNT_ROLLOVER": 1,
+    "COUNT_FROZEN": 482
+   },
+   "rate_discontinuities": [],
+   "untested_for_discontinuity": 146,
+   "study_filter_vs_codes": {
+    "study_keeps|not_count_coded": 1742,
+    "study_drops|count_or_record_coded": 483
+   },
+   "f2o_edited_on_day": 5,
+   "f2o_edited_also_flagged": 0
+  },
+  "2009262": {
+   "f1c_intervals": 2693,
+   "flagged": 2,
+   "codes": {
+    "RATE_DISCONTINUITY": 2
+   },
+   "rate_discontinuities": [
+    {
+     "pad": 105,
+     "utc": "2009-09-19T03:31:40+00:00",
+     "deviation_mmps": 22.54005361965028,
+     "in_f2o_edited": true
+    },
+    {
+     "pad": 105,
+     "utc": "2009-09-19T03:31:45+00:00",
+     "deviation_mmps": 22.01200574086215,
+     "in_f2o_edited": true
+    }
+   ],
+   "untested_for_discontinuity": 175,
+   "study_filter_vs_codes": {
+    "study_keeps|not_count_coded": 2693
+   },
+   "f2o_edited_on_day": 12,
+   "f2o_edited_also_flagged": 2
+  },
+  "2009263": {
+   "f1c_intervals": 2442,
+   "flagged": 485,
+   "codes": {
+    "COUNT_ROLLOVER": 1,
+    "COUNT_FROZEN": 481,
+    "RATE_OUT_OF_RANGE": 2,
+    "RATE_DISCONTINUITY": 1
+   },
+   "rate_discontinuities": [
+    {
+     "pad": 103,
+     "utc": "2009-09-20T11:03:15+00:00",
+     "deviation_mmps": 1029.7528080430993,
+     "in_f2o_edited": true
+    }
+   ],
+   "untested_for_discontinuity": 185,
+   "study_filter_vs_codes": {
+    "study_keeps|not_count_coded": 1958,
+    "study_drops|count_or_record_coded": 484
+   },
+   "f2o_edited_on_day": 4,
+   "f2o_edited_also_flagged": 1
+  },
+  "2009285": {
+   "f1c_intervals": 1052,
+   "flagged": 0,
+   "codes": {},
+   "rate_discontinuities": [],
+   "untested_for_discontinuity": 97,
+   "study_filter_vs_codes": {
+    "study_keeps|not_count_coded": 1052
+   },
+   "f2o_edited_on_day": 0,
+   "f2o_edited_also_flagged": 0
+  }
+ }
+}
