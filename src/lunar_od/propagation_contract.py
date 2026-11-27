@@ -26,13 +26,14 @@ def resolve_profile(srp=None, propagation_profile=None):
     return profile
 
 
-def model_options(srp=None, propagation_profile=None, lunar_tide=None, lunar_radiation=None, earth_shadow=None):
+def model_options(srp=None, propagation_profile=None, lunar_tide=None, lunar_radiation=None, earth_shadow=None,
+                  srp_light_time=None):
     """Options passed between consumers, keeping legacy calls unchanged.
 
     ``lunar_tide`` (F3 WP3.2 S1, opt-in) is added under its own key only when
     given, so every tide-free options dict is the historical one.  ``lunar_radiation``
-    (F3 WP3.2 S2, opt-in) and ``earth_shadow`` (F3 WP3.2 S3, opt-in) are added the
-    same way.
+    (F3 WP3.2 S2, opt-in), ``earth_shadow`` (F3 WP3.2 S3, opt-in) and ``srp_light_time``
+    (F3 WP3.2 S4, opt-in) are added the same way.
     """
     profile = resolve_profile(srp, propagation_profile)
     out = {} if srp is None else {'srp': srp}
@@ -47,11 +48,15 @@ def model_options(srp=None, propagation_profile=None, lunar_tide=None, lunar_rad
     if earth_shadow is not None:
         from .earth_shadow import require_earth_shadow_options
         out['earth_shadow'] = require_earth_shadow_options(earth_shadow)
+    if srp_light_time is not None:
+        from .srp_light_time import require_srp_light_time_options
+        out['srp_light_time'] = require_srp_light_time_options(srp_light_time)
     return out
 
 
-def propagator_options(srp=None, propagation_profile=None, lunar_tide=None, lunar_radiation=None, earth_shadow=None):
-    options = model_options(srp, propagation_profile, lunar_tide, lunar_radiation, earth_shadow)
+def propagator_options(srp=None, propagation_profile=None, lunar_tide=None, lunar_radiation=None, earth_shadow=None,
+                       srp_light_time=None):
+    options = model_options(srp, propagation_profile, lunar_tide, lunar_radiation, earth_shadow, srp_light_time)
     profile = options.pop('propagation_profile', None)
     if profile is not None:
         options.update(profile.propagator_kwargs())
