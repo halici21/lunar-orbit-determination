@@ -67,7 +67,7 @@ their thresholds. Their measured value depends on the CPU instruction set: wheth
 numpy dispatches AVX-512 or only AVX2, and which CPU Numba compiles for. GitHub
 assigns hosted runners at random, so these gates gave a different verdict from
 run to run. The measurements are in
-[`studies/phase17/results/wp7_1_platform_gate_values/`](../../studies/phase17/results/wp7_1_platform_gate_values/):
+`studies/phase17/results/wp7_1_platform_gate_values/` (script: [`wp7_1_platform_gate_values.py`](../../studies/phase17/scripts/wp7_1_platform_gate_values.py)):
 
 | Gate (test) | Threshold | numpy AVX-512 (recorded) | numpy AVX2 |
 |---|---|---|---|
