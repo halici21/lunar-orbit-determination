@@ -86,6 +86,16 @@
   "expectations": "stated before the run, not gates: TIDE, LRP and EARTH_SHADOW (eclipse epochs) >> 0.1; PN 0.01-0.05; PLANETS < 0.01 and largely below the floor; EARTH_J2 and SRP_LIGHT_TIME of order 0.1, either side of the threshold (A2's maxima were single cells at extreme beta, and the strata here sample intermediate betas too); SRP_LIGHT_TIME in production cuts its own light-time contacts, which WP3.1 A2 did not (~10 % in O3)",
   "out_of_scope": "any production change; S2-S4 qualification fixes; box-wing SRP (WP3.4); the LRO arc and any LRO day; eccentric orbits, arcs longer than 1 day, other station networks or solve-for sets (empirical accelerations); combined-term runs (each term alone, as WP3.1); the UKF/EKF/scenario-config transport of the terms",
   "reject_if": "S5_G1 fails for a term's file -> that term S5_INCONCLUSIVE; S5_G1 fails for the S5 file, or S5_G2(b), S5_G4 or S5_G6 fails -> every term S5_INCONCLUSIVE; S5_G2(a) fails for a production term -> that term S5_INCONCLUSIVE; S5_G3 fails in a cell -> the terms whose max |delta_r| < 100 x that cell's (baseline + term) floor are S5_INCONCLUSIVE in that cell, and a term with an inconclusive cell cannot be DOCUMENT_ONLY or REPLICATED as DOCUMENT_ONLY; S5_G5 fails -> EARTH_SHADOW S5_INCONCLUSIVE. Any change after a result goes to docs/assurance/amendment-log.md and the result is exploratory; the as-predeclared outcome stays the one reported first",
+  "errata_before_any_result": [
+    {
+      "date": "2026-11-27",
+      "before_any_result": "yes: found while writing the population script, before any draw, catalogue or number",
+      "item": "population.epochs H1_NOMINAL, H2_NOMINAL",
+      "was": "redrawn ... if t0 lies within 3 days of an epoch already chosen",
+      "now": "redrawn ... if t0 lies within 3 days of an epoch already chosen or of the t_ge of any catalogue eclipse (TOTAL or NON_TOTAL)",
+      "why": "the nominal epochs are drawn before the eclipse epochs, so the written rule could not keep them > 3 days from the eclipse epochs that S5_G6 requires; the added condition makes the rule consistent with S5_G6. The number of draws consumed may change; the seed and the order are unchanged"
+    }
+  ],
   "agent_decisions": "the owner delegated the S5 design to the agent (WP3.1 section 9; task brief 2026-11-27): (1) the hold-out is a fresh synthetic population drawn by this rule, not LRO; (2) the replication rule for the marginal terms (REPLICATED / MARGINAL_NOT_REPLICATED / CONTRADICTED with the 0.01 bound) and the REQ-DYN-007 closure rule above; (3) the S5_G4 threshold 1e-3; (4) altitude range 50-200 km and the beta strata. The owner may overrule any of them before a result; after a result a change is exploratory",
   "outputs": {
     "population_script": "studies/phase17/scripts/wp3_2_s5_population.py",

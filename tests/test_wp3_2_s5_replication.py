@@ -120,7 +120,7 @@ def test_driver_terms_match_the_predeclaration():
 
 def test_production_options_select_exactly_one_term():
     from lunar_od.earth_shadow import EarthShadowOptions
-    from lunar_od.force_models import J2_EARTH_UNNORMALIZED
+    from lunar_od.constants import J2_EARTH_UNNORMALIZED
     from lunar_od.lunar_radiation import LunarRadiationOptions
     from lunar_od.lunar_tide import LunarTideOptions
     from lunar_od.srp_light_time import SRPLightTimeOptions, SSBVelocityTable
