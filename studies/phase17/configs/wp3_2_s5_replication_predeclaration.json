@@ -1,0 +1,108 @@
+{
+  "study": "F3 WP3.2 S5: predeclared hold-out replication of the WP3.1 A2 materiality classification with the production opt-in force terms (REQ-DYN-007, analysis only, no production change)",
+  "date": "2026-11-27",
+  "written": "2026-11-27, before any S5 code, test, population draw or number. The only work before this file was reading WP3.1, its predeclaration and amendments, the S1-S4 reports and the production APIs, and confirming which SPICE kernels cover 2027-2029 (DE440, MOON_PA_DE440 to 2650, the Earth predict PCK 2025-2125)",
+  "base": "origin/main 6873b6b (after PR #126, WP3.2 S4)",
+  "requirement": "REQ-DYN-007 (force-model completeness); WP3.1 report section 9 decision 1: the requirement closes only after a predeclared hold-out replication confirms the exploratory A2 classification",
+  "question": "On a fresh, independent population of production synthetic arcs, under the D2 profile (production event segmentation) and with the production opt-in terms where they exist, does each term's WP3.1 A2 materiality class reproduce?",
+  "a2_classification_under_test": {
+    "source": "studies/phase17/results/wp3_1_materiality_survey_a2.json (WP3.1 amendment A2, exploratory)",
+    "TIDE": "IMPLEMENT (230)",
+    "LRP": "IMPLEMENT (165)",
+    "EARTH_SHADOW": "IMPLEMENT on eclipse arcs (200)",
+    "SRP_LIGHT_TIME": "IMPLEMENT, marginal (0.109 in O2xE1; 0.101 in O3xE3 with the ray-crossing occulter that production implements, WP3.1 section 6.2)",
+    "EARTH_J2": "IMPLEMENT, marginal (0.108)",
+    "PN": "DOCUMENT_ONLY (<= 0.029)",
+    "PLANETS": "DOCUMENT_ONLY (<= 0.0062, below the floor)"
+  },
+  "independence": {
+    "rule": "every hold-out cell is new: no epoch, eclipse event, orbit geometry or altitude of WP3.1 (2026-03-02, 2026-08-27, 2027-03-02; 100 km; beta 0, beta 90, equatorial) or of the S1-S4 gate cases is reused. Epochs are drawn from 2027-04-01T00:00:00 to 2029-12-31T00:00:00 UTC (>= 30 days after the last WP3.1 epoch); orbit orientation, argument of latitude and altitude are drawn by the seeded rule below",
+    "noise": "the survey has no measurement noise realisation: the response is the linear least-squares fit of the noise-free signature, weighted by the two noise levels. The only random elements are the population draws, all from the one seed below",
+    "lro": "no LRO data of any day is read. The sealed hold-out days of studies/phase17/configs/lro_data_partition.json stay sealed and are named nowhere in S5 (test_no_study_script_or_config_names_a_holdout_day must keep passing). S5 uses synthetic arcs only, so it is independent of WP5.4",
+    "order": "this file is committed first; then the population script and its tests; then the population file (geometry only, no OD number) is generated and committed; only then does the survey run"
+  },
+  "population": {
+    "seed": "numpy.random.default_rng(20261127); draws are taken in the order written here: the two nominal epochs, then the total-eclipse choice, then the non-total-eclipse choice, then the eclipse arc offsets (H3, H4, H5, H6), then for each epoch H1..H6 and each stratum S1, S2, S3: |beta|, sign(beta), node angle Omega, argument of latitude u, altitude",
+    "eclipse_catalogue": "for every full moon from 2027-04-01 to 2029-12-31 (local minimum of the anti-Sun angle of the geocentric Moon on a 1 h grid), t_ge is found with the WP3.1 rule (60 s grid over +/- 1 day around the 1 h minimum, then bounded minimisation +/- 60 s to 1 s). nu_E(Moon centre, t_ge) is evaluated with the WP3.1 Earth-shadow geometry (R_E 6378137 m, geometric DE440 positions): TOTAL if nu_E = 0; NON_TOTAL if 0 < nu_E < 1; no eclipse otherwise",
+    "epochs": {
+      "H1_NOMINAL, H2_NOMINAL": "t0 = 2027-04-01T00:00:00 UTC + U(0, span) rounded down to the second, span to 2029-12-30T00:00:00 UTC; redrawn if the Moon centre has nu_E < 1 at any grid epoch of the arc, or if t0 lies within 3 days of an epoch already chosen",
+      "H3_TOTAL, H4_TOTAL": "two distinct TOTAL eclipses chosen without replacement (rng.choice) from the catalogue, in date order",
+      "H5_NON_TOTAL, H6_NON_TOTAL": "two distinct NON_TOTAL eclipses chosen without replacement from the catalogue, in date order",
+      "eclipse_arc_start": "t0 = t_ge - offset, offset ~ U(6 h, 18 h) rounded to the second, so the greatest eclipse lies inside the 1-day arc but not at its centre (WP3.1 used 12 h)"
+    },
+    "orbits": {
+      "per_epoch": "three cells per epoch, one per beta stratum: S1 |beta| in [0, 30) deg, S2 [30, 60), S3 [60, 90) (beta = asin(n.s), s the unit Sun direction from the Moon at t0)",
+      "normal": "n = sin(beta) s + cos(beta) (cos(Omega) e1 + sin(Omega) e2), e1 = unit(p - (p.s) s), e2 = s x e1, p the MOON_PA_DE440 z-axis in J2000 at t0; sign(beta) = +/-1 with probability 1/2; Omega ~ U(0, 2 pi)",
+      "initial_state": "circular, altitude h ~ U(50 km, 200 km) above R_MOON_M; r_hat0 = unit(n x p) if |n x p| > 0.1 else unit(n x x_J2000); r_hat = cos(u) r_hat0 + sin(u) (n x r_hat0), u ~ U(0, 2 pi); v0 = sqrt(GM_moon / r0) (n x r_hat)",
+      "cells": "6 epochs x 3 strata = 18 cells, named HkxSj"
+    },
+    "arc": "1 day: t = 0 to 86400 s every 60 s (1441 epochs), as WP3.1",
+    "stations": "Goldstone DSN, Madrid DSN, Canberra DSN (config.range_rate_stations()), as WP3.1",
+    "visibility": "WP3.1's rule unchanged: the raw production mask on the baseline trajectory (elevation >= 10 deg, line of sight clear of the Moon)"
+  },
+  "baseline_dynamics": {
+    "profile": "D2, production event segmentation: dynamics.propagate_state(t, x0, *GM(DE440), earth, sun, method='DOP853', rtol 1e-12, atol 1e-13, srp=SRPOptions(K_SRP = 0.010 m^2/kg, CONICAL_PENUMBRA), shadow_events=True), the production providers (ephemeris.sample_moon_centered_ephemeris, 60 s grid, 600 s margin)",
+    "off": "lunar J2 and harmonics, Earth J2, every WP3.2 term (the ScenarioConfig defaults), as WP3.1"
+  },
+  "terms": {
+    "rule": "each term is added alone to the baseline, as WP3.1. Production terms are switched on through propagate_state's own options, so their D2 contacts (lunar, Earth, light-time) are cut by production; study terms are added with wp3_1_force_terms.with_term to the production closure and integrated with production's segmentation (dynamics._shadow_contact_times on the term RHS, dynamics._integrate_segmented with _shadow_contact_check), as WP3.1 A2",
+    "TIDE": "production: lunar_tide=LunarTideOptions(static_field_convention='TIDE_FREE') (S1 defaults: k2 0.024223, k3 0.0163, R 1738 km, Earth and Sun)",
+    "LRP": "production: lunar_radiation=LunarRadiationOptions() (S2, C6 defaults, K_LRP = K_SRP)",
+    "EARTH_SHADOW": "production: earth_shadow=EarthShadowOptions() (S3, R_E 6378137 m)",
+    "SRP_LIGHT_TIME": "production: srp_light_time=SRPLightTimeOptions(ssb_velocities=sample_ssb_velocities(et0, t_eph)) on the ephemeris grid t_eph (S4, ray-crossing occulter)",
+    "EARTH_J2": "production: j2_earth=J2_EARTH_UNNORMALIZED, earth_j2_mode='indirect' (identity Earth-body frame, DYN-19; WP3.1 measured the pole part at <= 2.2e-4)",
+    "PN": "study (no production term): wp3_1_force_terms 'PN'",
+    "PLANETS": "study (no production term): wp3_1_force_terms 'PLANETS'",
+    "reported_only": "EARTH_J2_ITRF93: the WP3.1 study term (ITRF93 pole), to compare with production's identity-frame EARTH_J2; no decision"
+  },
+  "qualification_dependency": "S2, S3 and S4 are NOT QUALIFIED as predeclared. Their failed gates are L_G6 (6- vs 42/48-state path agreement, 1.56e-5 m), E_G3(a) (oracle precondition), E_G5(a) (control ratio), E_G6 (path agreement), LT_G3(a) (control ratio) and LT_G4(a)/(d) (finite-difference step of the gradients). S5 uses only the 6-state VALUE path of these terms (the signature), whose parity with the WP3.1 terms passed (L_G2 1.4e-15, E_G2 and LT_G2 bit for bit); the design uses the 48-state path WITHOUT any WP3.2 term. No failed S2-S4 gate enters an S5 number. The 1e-3 m floor limit below is 64x the worst S2 path disagreement",
+  "measurements_and_od_impact": "WP3.1 unchanged: production instantaneous range and range-rate values on the baseline's visible rows; design H = H_tilde [Phi | dx/dK] from propagate_state_with_k_sensitivity (DOP853, rtol 1e-12, atol 1e-13, shadow_events=True) along the baseline; theta = (x0, K_SRP); prior diag(100 m, 0.1 m/s)^2 on x0, none on K; QR of the stacked whitened design; designs RANGE_ONLY and RANGE_RANGE_RATE; noise PROJECT (5 m, 1e-4 m/s) and DSN_REALISTIC (1 m, 3e-5 m/s); response = max_i |delta_theta_i / sigma_i|",
+  "materiality_rule": {
+    "od_material": "WP3.1's rule unchanged: a term is OD_MATERIAL on the hold-out if, in some usable cell, design and noise level, the response is >= 0.1",
+    "usable_cell": "a cell counts for OD_MATERIAL only if the term's max |delta_r| >= 10 x (baseline floor + term floor) in that cell (otherwise BELOW_FLOOR: reported, and it can support DOCUMENT_ONLY but not OD_MATERIAL)",
+    "earth_shadow": "EARTH_SHADOW is classified on the four eclipse epochs H3-H6 only; on H1/H2 it must be exactly zero (gate S5_G5)",
+    "hold_out_class": "IMPLEMENT if OD_MATERIAL, DOCUMENT_ONLY otherwise"
+  },
+  "replication_rule": {
+    "TIDE, LRP, EARTH_SHADOW": "REPLICATED if the hold-out class is IMPLEMENT; NOT_REPLICATED otherwise",
+    "PN, PLANETS": "REPLICATED if the hold-out class is DOCUMENT_ONLY (every usable response < 0.1); NOT_REPLICATED otherwise",
+    "EARTH_J2, SRP_LIGHT_TIME (marginal in A2)": "REPLICATED if the hold-out max response is >= 0.1; MARGINAL_NOT_REPLICATED if it lies in [0.01, 0.1); CONTRADICTED if it is < 0.01 (more than 10x below the threshold, which A2's 'marginal' cannot explain)",
+    "gate_veto": "a failed gate makes the affected terms S5_INCONCLUSIVE (see reject_if)"
+  },
+  "req_dyn_007_rule": {
+    "passed": "every gate S5_G1-S5_G6 PASS, TIDE, LRP, EARTH_SHADOW, PN and PLANETS REPLICATED, and neither EARTH_J2 nor SRP_LIGHT_TIME CONTRADICTED or S5_INCONCLUSIVE",
+    "why_marginal_terms_do_not_need_strict_replication": "both marginal terms are already available opt-in in production (EARTH_J2 since before WP3.1, SRP_LIGHT_TIME since S4), so the force model is complete for them whether they are just above or just below 0.1. Their classification is reported as computed (REPLICATED or MARGINAL_NOT_REPLICATED) and their bound goes to assumptions-and-limits. A response < 0.01 would show A2's class was wrong, not marginal, and blocks closure",
+    "partial": "otherwise REQ-DYN-007 stays partial, with the failing term or gate as the reason. A NOT_REPLICATED PN or PLANETS means a missing material term (an implementation item); a NOT_REPLICATED TIDE, LRP or EARTH_SHADOW means the A2 class is not confirmed (owner decision)",
+    "s2_s4_status": "this rule decides force-model completeness (materiality). It does not qualify S2-S4: their NOT QUALIFIED status and strict xfails stay, and the verification-matrix row says so"
+  },
+  "gates": {
+    "S5_G1_UNIT": "before the survey, these pass (strict xfails count as expected, as committed on main): tests/test_wp3_1_force_terms.py, tests/test_wp3_2_lunar_tide.py, tests/test_wp3_2_lunar_radiation.py, tests/test_wp3_2_earth_shadow.py, tests/test_wp3_2_srp_light_time.py, and the new tests/test_wp3_2_s5_replication.py (population rule, independence, term wiring). A failure in a term's file makes that term S5_INCONCLUSIVE; a failure in the S5 file makes every term S5_INCONCLUSIVE",
+    "S5_G2_NULL": "in every cell: (a) each production term with its option None reproduces the baseline bit for bit; (b) each study term with scale 0 (with_term + production segmentation) reproduces the production baseline bit for bit",
+    "S5_G3_FLOOR": "in every cell the baseline floor (max position difference between (1e-12, 1e-13) and (1e-13, 1e-14), same profile) is <= 1e-3 m, and for every term the term run's own floor computed the same way is <= 1e-3 m; the 48-state baseline used for the design agrees with the 6-state baseline to <= 1e-3 m",
+    "S5_G4_DESIGN": "in cell H3xS1 (the first total eclipse, lowest-beta stratum: shadowed, worst case for kinks) every design column (6 state + K, range and range-rate rows) agrees with central finite differences of production propagation (D2) + measurement (steps 1 m, 1e-3 m/s, 1e-4 m^2/kg, as WP3.1) to <= 1e-3 relative (column 2-norm). Threshold set from WP3.1 A2 (K column 9.5e-5 against 1e-4, too thin a margin for a gate whose purpose is the decision): a relative design error eps changes a response by O(eps x response), so 1e-3 moves a response of 0.1 by ~1e-4. The 1e-4 pass/fail is also reported, as information",
+    "S5_G5_ECLIPSE": "Moon centre nu_E = 0 at some grid epoch of H3 and H4; 0 < min nu_E < 1 over the grid of H5 and H6 (min over the arc), and EARTH_SHADOW non-zero somewhere in some cell of each eclipse epoch; nu_E = 1 at every grid epoch of H1 and H2 for the Moon centre and every spacecraft, and EARTH_SHADOW's max |delta_r| exactly 0 there",
+    "S5_G6_INDEPENDENCE": "the population file shows: every epoch t0 >= 2027-04-01T00:00:00 UTC; the eclipse events differ from the WP3.1 events (2026-03-03, 2026-08-28); every altitude differs from 100 km by > 1 m; the six epochs are pairwise > 3 days apart; the population was committed before any survey result (commit order checked in the report)"
+  },
+  "expectations": "stated before the run, not gates: TIDE, LRP and EARTH_SHADOW (eclipse epochs) >> 0.1; PN 0.01-0.05; PLANETS < 0.01 and largely below the floor; EARTH_J2 and SRP_LIGHT_TIME of order 0.1, either side of the threshold (A2's maxima were single cells at extreme beta, and the strata here sample intermediate betas too); SRP_LIGHT_TIME in production cuts its own light-time contacts, which WP3.1 A2 did not (~10 % in O3)",
+  "out_of_scope": "any production change; S2-S4 qualification fixes; box-wing SRP (WP3.4); the LRO arc and any LRO day; eccentric orbits, arcs longer than 1 day, other station networks or solve-for sets (empirical accelerations); combined-term runs (each term alone, as WP3.1); the UKF/EKF/scenario-config transport of the terms",
+  "reject_if": "S5_G1 fails for a term's file -> that term S5_INCONCLUSIVE; S5_G1 fails for the S5 file, or S5_G2(b), S5_G4 or S5_G6 fails -> every term S5_INCONCLUSIVE; S5_G2(a) fails for a production term -> that term S5_INCONCLUSIVE; S5_G3 fails in a cell -> the terms whose max |delta_r| < 100 x that cell's (baseline + term) floor are S5_INCONCLUSIVE in that cell, and a term with an inconclusive cell cannot be DOCUMENT_ONLY or REPLICATED as DOCUMENT_ONLY; S5_G5 fails -> EARTH_SHADOW S5_INCONCLUSIVE. Any change after a result goes to docs/assurance/amendment-log.md and the result is exploratory; the as-predeclared outcome stays the one reported first",
+  "errata_before_any_result": [
+    {
+      "date": "2026-11-27",
+      "before_any_result": "yes: found while writing the population script, before any draw, catalogue or number",
+      "item": "population.epochs H1_NOMINAL, H2_NOMINAL",
+      "was": "redrawn ... if t0 lies within 3 days of an epoch already chosen",
+      "now": "redrawn ... if t0 lies within 3 days of an epoch already chosen or of the t_ge of any catalogue eclipse (TOTAL or NON_TOTAL)",
+      "why": "the nominal epochs are drawn before the eclipse epochs, so the written rule could not keep them > 3 days from the eclipse epochs that S5_G6 requires; the added condition makes the rule consistent with S5_G6. The number of draws consumed may change; the seed and the order are unchanged"
+    }
+  ],
+  "agent_decisions": "the owner delegated the S5 design to the agent (WP3.1 section 9; task brief 2026-11-27): (1) the hold-out is a fresh synthetic population drawn by this rule, not LRO; (2) the replication rule for the marginal terms (REPLICATED / MARGINAL_NOT_REPLICATED / CONTRADICTED with the 0.01 bound) and the REQ-DYN-007 closure rule above; (3) the S5_G4 threshold 1e-3; (4) altitude range 50-200 km and the beta strata. The owner may overrule any of them before a result; after a result a change is exploratory",
+  "outputs": {
+    "population_script": "studies/phase17/scripts/wp3_2_s5_population.py",
+    "population": "studies/phase17/results/wp3_2_s5_population.json",
+    "driver": "studies/phase17/scripts/wp3_2_s5_replication.py",
+    "tests": "tests/test_wp3_2_s5_replication.py",
+    "results": "studies/phase17/results/wp3_2_s5_replication.json",
+    "report": "studies/phase17/reports/wp3_2_s5_replication.md"
+  }
+}

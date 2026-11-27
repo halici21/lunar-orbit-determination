@@ -121,6 +121,9 @@ Madde 15–17'nin kaynağı [WP3.1-R önemlilik taraması](../../studies/phase17
 olay-bölütlemeli A2 koşusundandır. A2 sonuç görüldükten sonra eklendiği için keşifseldir
 ([değişiklik günlüğü](amendment-log.md) 2026-11-07). Karar (2026-11-08, sahip ajana devretti): A2'nin
 sınıflandırması WP3.2 kapsamının temelidir; REQ-DYN-007, WP3.2'nin ön kayıtlı hold-out tekrarından sonra kapanır.
+[WP3.2 S5](../../studies/phase17/reports/wp3_2_s5_replication.md) (2026-11-27) bu tekrarı yaptı: 18 yeni sentetik
+hücre (2027–2029, 50–200 km, β katmanları), üretimdeki seçimli terimler, D2 profili. Bütün kapılar geçti;
+ön kayıtlı kurala göre REQ-DYN-007 kapandı (`passed`). Dünya J2'si sınırda kaldı ve tekrarlanmadı (0.079).
 WP3.2 terimleri seçimli (opt-in) ekler; varsayılanlar ve dondurulmuş sonuçlar değişmez.
 Sınırlar 100 km'lik dairesel yörüngeler, 1 günlük yay, üç DSN istasyonu, menzil ve menzil hızı
 ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözülen parametre kümesi yeni bir tarama ister.
@@ -129,13 +132,13 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     sonuçlarında bunlar model hatasıdır; aynı modeli paylaşan sentetik gidiş-dönüş testleri onları göstermez (madde 1).
     Yanıtlar 1 günlük yayda, 0.1σ eşiğine karşı en kötü hücre, tasarım ve gürültü düzeyindendir:
 
-    | Terim | En büyük yanıt | Not |
-    |---|---|---|
-    | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
-    | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar; WP3.2 S2'den beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
-    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar; WP3.2 S3'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
-    | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı. WP3.2 S4'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
-    | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
+    | Terim | En büyük yanıt (A2) | S5 hold-out | Not |
+    |---|---|---|---|
+    | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | 762σ, tekrarlandı | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
+    | Ay albedo/IR basıncı | 165σ | 181σ, tekrarlandı | yokluğunda kestirilen K_SRP ~%21 düşük çıkar; WP3.2 S2'den beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
+    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | 290σ, tekrarlandı | yokluğunda K_SRP %19–25 düşük çıkar; WP3.2 S3'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
+    | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | 0.167σ, tekrarlandı | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı. WP3.2 S4'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
+    | Dünya J2'si | 0.11σ, sınırda | 0.079σ, sınırda, tekrarlanmadı | seçimli, varsayılan kapalı. ITRF93 kutbuyla da 0.078σ |
 
     **Ay gelgiti seçimli olarak üretimde** (WP3.2 S1, 2026-11-10;
     [rapor](../../studies/phase17/reports/wp3_2_s1_lunar_tide.md)).
@@ -204,6 +207,8 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
 
 16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
     ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
+    S5 hold-out'ta 1PN ≤ 0.013σ, Venüs ve Jüpiter ≤ 0.040σ'dır (H4xS3, günde 1.2 mm). İkisi de 0.1 eşiğinin altında
+    kaldı; ikisi de yalnız belgelenir.
     Üretimin Dünya J2'sindeki birim çerçeve (DYN-19'un o kısmı) ITRF93 kutbuna göre ≤ 2.2e-4σ fark yaratır.
 17. **Gölgeli alçak yörüngelerde olaysız entegrasyonun sayısal tabanı.** Ay gölgesi ivmesi her
     yarıgölge kontağında kırılır. Olay bölütlemesi yoksa entegratör bu kırıkların üzerinden adım atar;
