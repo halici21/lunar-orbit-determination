@@ -208,6 +208,13 @@ def run(epoch: str, out_path: str, names=None, smoke: bool = False) -> None:
 # ======================================================================
 # decisions (pure)
 # ======================================================================
+def cell_floor_gate(c: dict) -> bool:
+    """S5_G3 in one cell, as predeclared: the baseline floor, the 48-state agreement and every term run's own floor
+    are <= 1e-3 m. (The per-cell flag "G3" written by run_cell covers the first two only.)"""
+    return bool(c["floor_m"] <= FLOOR_MAX_M and c.get("nom48_vs_baseline_m", 0.0) <= FLOOR_MAX_M
+                and all(t["floor_m"] <= FLOOR_MAX_M for t in c["terms"].values()))
+
+
 def classify(term: str, cells: list) -> dict:
     rows = []
     for c in cells:
@@ -217,7 +224,7 @@ def classify(term: str, cells: list) -> dict:
         floors = c["floor_m"] + t["floor_m"]
         rows.append(dict(cell=c["cell"], response=t["response"], at=t["response_at"], max_dr_m=t["max_dr_m"],
                          usable=bool(t["max_dr_m"] >= 10.0 * floors),
-                         inconclusive_in_cell=bool((not c["G3"]) and t["max_dr_m"] < 100.0 * floors)))
+                         inconclusive_in_cell=bool((not cell_floor_gate(c)) and t["max_dr_m"] < 100.0 * floors)))
     usable = [r for r in rows if r["usable"] and not r["inconclusive_in_cell"]]
     top = max(usable, key=lambda r: r["response"]) if usable else None
     max_usable = top["response"] if top else 0.0
@@ -263,12 +270,18 @@ def _sha256(path: Path) -> str:
 
 
 def g1_unit() -> dict:
+    import tempfile
+    import xml.etree.ElementTree as ET
     per_file = {}
     for f in G1_FILES:
-        proc = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-rfE", f],
-                              cwd=ROOT, capture_output=True, text=True)
-        lines = [ln for ln in proc.stdout.splitlines() if " passed" in ln or " failed" in ln or " error" in ln]
-        per_file[f] = dict(PASS=proc.returncode == 0, summary=lines[-1] if lines else proc.stdout[-300:])
+        with tempfile.TemporaryDirectory() as tmp:
+            junit = Path(tmp) / "g1.xml"
+            proc = subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-rfE",
+                                   f"--junitxml={junit}", f], cwd=ROOT, capture_output=True, text=True)
+            suite = ET.parse(junit).getroot()
+            suite = suite if suite.tag == "testsuite" else suite.find("testsuite")
+            counts = {k: int(suite.get(k, 0)) for k in ("tests", "failures", "errors", "skipped")}
+        per_file[f] = dict(PASS=proc.returncode == 0, returncode=proc.returncode, junit=counts)
     per_term = {t: all(per_file[f]["PASS"] for f, ts in G1_FILES.items() if t in ts) for t in TERMS}
     return dict(PASS=all(v["PASS"] for v in per_file.values()), per_file=per_file, per_term=per_term,
                 s5_file_pass=per_file["tests/test_wp3_2_s5_replication.py"]["PASS"])
@@ -277,7 +290,7 @@ def g1_unit() -> dict:
 def decide(cells: list, g1: dict, pop: dict) -> dict:
     g2a = {t: all(c["terms"][t]["G2"] for c in cells) for t in PRODUCTION_TERMS}
     g2b = all(c["terms"][t]["G2"] for c in cells for t in STUDY_TERMS + REPORTED)
-    g3 = {c["cell"]: c["G3"] for c in cells}
+    g3 = {c["cell"]: cell_floor_gate(c) for c in cells}
     g4_cell = [c for c in cells if c["cell"] == G4_CELL]
     g4 = bool(g4_cell and g4_cell[0]["G4"]["PASS"])
     by_epoch = {e: [c for c in cells if c["epoch"] == e] for e in EPOCHS}
