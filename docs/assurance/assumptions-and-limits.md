@@ -88,6 +88,14 @@ Bir madde ilgili iş paketiyle kapanınca buradan kaldırılır ve değerlendirm
     ızgarada boşluklar zamanla köprülenir; düzgün ızgarada örnek sayısıyla (davranış değişmedi). Üretilen
     gürültülü azimutlar [0, 2π) içine sarılmaz; artıklar `wrap_to_pi` ile sarılır.
 
+21. **UTDF okuyucu (WP5.6).** Saniye-yıl alanı UTC takvim sayımı olarak okunur; yıl sonu artık saniyesi
+    (23:59:60) ayırt edilir, yıl ortası (30 Haziran) artık saniyesi 1 Temmuz 00:00:00'dan ayırt edilemez
+    (el kitabı belirtmiyor; gerçek veride doğrulanmadı, LRO 2009 hiçbirini geçmiyor). Aralık süresi TAI farkıdır.
+    Yerleşik artık saniye tablosu 2026-07-01'e kadar geçerlidir; sonrası `tai_minus_utc` ister. Sayaç
+    denetimleri (`check_doppler_counts`) mevcut çalışmalara uygulanmadı: F2 hattı aynı aralıkları
+    |ṙ| > 3000 m/s eşiğiyle gerekçesiz düşürüyor (gün 261/263'te 963 donmuş sayaç, 2 rollover). Süreksizlik
+    eşiği 20 mm/s'dir; daha küçük aykırılıklar F2o ayıklamasına kalır. Bayt 53–54 örnek hızı denetlenmez.
+
 ## Masaüstü ve CLI
 
 11. Masaüstü uygulaması formda görünmeyen rtol 1e-8 / atol 1e-10 ve 3600 s efemeris adımı kullanır;
@@ -126,7 +134,7 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
     | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar; WP3.2 S2'den beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
     | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar; WP3.2 S3'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
-    | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
+    | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı. WP3.2 S4'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
     | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
 
     **Ay gelgiti seçimli olarak üretimde** (WP3.2 S1, 2026-11-10;
@@ -175,6 +183,24 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
       (olay bölütlemesi) kullanılmalıdır. Birleştirme kararı sahibindir.
     - **Kapsam dışı.** Atmosferin umbrayı büyütmesi (~%2) ve kırılma, Dünya'nın basıklığı, kenar kararması,
       Dünya gölgesinin ışık zamanı kayması (Ay'da ~38 km) ve iki örtücünün örtüşmesi modellenmez.
+
+    **SRP ışık zamanı paketi seçimli olarak üretimde** (WP3.2 S4, 2026-11-27;
+    [rapor](../../studies/phase17/reports/wp3_2_s4_srp_light_time.md)).
+    - **Kullanım.** `SRPLightTimeOptions(ssb_velocities=...)` ile açılır. Güneş ve Ay'ın SSB hızları bir
+      `SSBVelocityTable` içinde gelir (`sample_ssb_velocities` SPICE'tan doldurur); tablo dışında
+      EphemerisCoverageError. Etkin bir `SRPOptions` ister, yoksa ValueError.
+    - **Model.** WP3.1'in ışın-geçiş terimi değişmeden kullanılır: Poynting–Robertson kuvveti, Güneş yayılım
+      anında, Ay ışının geçtiği anda. Kuvvet hıza bağlıdır; STM ve K duyarlılığı hız gradyanını taşır.
+      Dünya gölgesi açıkken artım ν_E ile çarpılır.
+    - **Taşıyan yollar:** gelgitle aynı. Gölge olayları açıkken ışık zamanlı Ay kontakları geometrik kontakların
+      yerine geçer (kesimler ~45 ms kayar). Kapalı yollar bayt bayt aynıdır (LT_G1(b), 83/83).
+    - **Taşımayanlar:** UKF, EKF, senaryo yapılandırması, CLI ve masaüstü.
+    - **Bilinen model sınırı.** Hız Güneş'e göre alınır; Güneş'in SSB hızı sapınım yönünde iki kez sayılır
+      (≤ 5.2e-8 rad). WP3.1 kararı gereği düzeltilmedi.
+    - **Ön kayıtlı FAIL'ler.** LT_G3(a) negatif kontrol oranı 21 (gereksinim 100). LT_G4(a) ve (d) FD gradyan
+      kapıları ön kayıtlı adımlarda geçmedi. Keşifsel tanıda S4'ün dokunmadığı üretim gradyanı aynı adımda aynı
+      hatayı veriyor. Birleştirme kararı sahibindir.
+    - **Etki.** 6 saatte konumda 4.7–9.1 mm; OD'de paket olmadan epoch konumu 7.8e-5 m sapar.
 
 16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
     ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
