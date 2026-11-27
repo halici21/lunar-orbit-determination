@@ -136,12 +136,14 @@ def test_utdf_decode_real_archived_record():
         recs = read_utdf(FIXTURES / name)
         pad = file_pad_id(FIXTURES / name)
         assert pad == 103
-        # file name: ..._2009_263_HHMM -> close time 2009-09-20 HH:MM UTC (day 263 of 2009)
+        # file name: ..._2009_263_HHMM, day 263 of 2009 = 2009-09-20. HH:MM is the last record's minute,
+        # truncated (amendment log, WP5.6 U_G1: the predeclared 'close time' upper bound failed on 0722,
+        # whose last record is 07:22:20); each file spans 4 minutes
         hhmm = Path(name).stem.split("_")[-1]
-        close = datetime(2009, 9, 20, int(hhmm[:2]), int(hhmm[2:]), tzinfo=UTC)
+        minute = datetime(2009, 9, 20, int(hhmm[:2]), int(hhmm[2:]), tzinfo=UTC)
         tags = [r.utc for r in recs]
         assert all(b > a for a, b in zip(tags, tags[1:]))
-        assert close - timedelta(minutes=5) <= tags[0] and tags[-1] <= close
+        assert minute - timedelta(minutes=5) <= tags[0] and tags[-1] < minute + timedelta(minutes=1)
         for r in recs:
             assert (r.year, r.sic, r.vid) == (2009, 59, 1)
             assert r.pad_xmit == r.pad_rcv == pad
