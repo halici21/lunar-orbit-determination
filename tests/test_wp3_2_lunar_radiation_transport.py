@@ -178,6 +178,7 @@ def test_wp3_2_s2_refreeze_of_estimators_is_additive_and_history_is_preserved():
     assert r2.F3_WP3_2_S1_REFROZEN_CURRENT_TREE_SHA256[path].startswith("0ed77589")
     assert r2.F3_WP3_2_S2_REFROZEN_CURRENT_TREE_SHA256[path].startswith("d0e69634")
     assert r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path].startswith("e5884773")
-    new = r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path]          # WP3.2 S3 (opt-in Earth shadow)
+    assert r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path].startswith("104592bb")   # WP3.2 S3 (Earth shadow)
+    new = r2.F3_WP3_2_S4_REFROZEN_CURRENT_TREE_SHA256[path]          # WP3.2 S4 (SRP light-time package)
     assert r2.expected_current_tree_sha256(path) == new
     assert hashlib.sha256((root / r2.current_source_path(path)).read_bytes()).hexdigest() == new

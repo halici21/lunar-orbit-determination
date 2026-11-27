@@ -202,7 +202,10 @@ def test_wp3_2_s3_refreeze_is_additive_and_history_is_preserved():
         previous = r2.F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[path]
         assert previous.startswith(old)
         new = r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path]
-        assert r2.expected_current_tree_sha256(path) == new != previous
-        assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
-        assert entries[path]["original_sha256"] == new
-        assert entries[path]["refrozen_history_sha256"][-1] == previous
+        assert new != previous
+        # WP3.2 S4 (opt-in SRP light-time package) re-froze both files after S3; S3's identity stays in history.
+        current = r2.F3_WP3_2_S4_REFROZEN_CURRENT_TREE_SHA256[path]
+        assert r2.expected_current_tree_sha256(path) == current != new
+        assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == current
+        assert entries[path]["original_sha256"] == current
+        assert entries[path]["refrozen_history_sha256"][-2:] == [previous, new]

@@ -1048,6 +1048,25 @@ F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F3 WP3.2 S4 (2026-11-27): opt-in SRP light-time package (SRP_LIGHT_TIME,
+# REQ-DYN-007): Poynting-Robertson force, Sun at emission, lunar shadow with the Moon
+# at the ray crossing.  dynamics.py gains the srp_light_time keyword, the light-time
+# wrapper on the 6/42/48-state right-hand sides (applied after the Earth-shadow
+# wrapper) and the light-time lunar contacts in the D2 pre-pass and contact check;
+# estimators.py forwards the keyword to every propagation.  The default path
+# (srp_light_time omitted or None) is byte-identical (LT_G1(b)).
+#
+#   lunar_od/dynamics.py     9f405301... -> 0938b5ac...
+#   lunar_od/estimators.py   104592bb... -> 96d7cab7...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_S4_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "0938b5acc668bdb1cf1730dc832ff90d10482e37b4893e7b91fae371db6bfddd",
+    "lunar_od/estimators.py":
+        "96d7cab7a0406230f928575a52ef357ccc99cccb334aa543e0800f00d6351966",
+}
+
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -1071,6 +1090,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F3_WP3_2_S4_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_S4_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256:
         return F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256:
