@@ -331,8 +331,9 @@ def check_doppler_counts(records, *, max_gap_s: float = 60.0, max_range_rate_mps
     One interval per consecutive pair of the Doppler-valid records, in the given order. Flagged intervals are
     returned, not dropped; ``interval.usable`` is True only when no code applies. RATE_DISCONTINUITY: within a
     run of otherwise clean intervals, an interval whose range rate deviates by more than
-    ``discontinuity_mps`` from a least-squares cubic through up to ``window`` clean neighbours on each side
-    (at least ``min_neighbours``), flagged largest first and removed before the deviations are recomputed.
+    ``discontinuity_mps`` from a least-squares cubic range rate fitted, as interval means, to up to
+    ``window`` clean neighbours on each side (at least ``min_neighbours``) and averaged over its own span;
+    flagged largest first and removed before the deviations are recomputed.
     """
     idx = [i for i, r in enumerate(records) if r.doppler_valid]
     tai = {i: records[i].tai_microseconds_past_j2000(tai_minus_utc) for i in idx}
@@ -369,6 +370,12 @@ def check_doppler_counts(records, *, max_gap_s: float = 60.0, max_range_rate_mps
     return _flag_discontinuities(out, tai, discontinuity_mps, window, min_neighbours)
 
 
+def _mean_design(ta, tb, mid, scale_s=60.0, degree=3):
+    """Rows: the mean of t^p (t = (time - mid) / scale_s) over each span [ta, tb], p = 0..degree."""
+    a, b = (ta - mid) / scale_s, (tb - mid) / scale_s
+    return np.column_stack([(b ** (p + 1) - a ** (p + 1)) / ((p + 1) * (b - a)) for p in range(degree + 1)])
+
+
 def _flag_discontinuities(out, tai, threshold, window, min_neighbours):
     runs, cur = [], []
     for j, iv in enumerate(out):
@@ -384,7 +391,8 @@ def _flag_discontinuities(out, tai, threshold, window, min_neighbours):
     dev = {}
     flagged = {}
     for run in runs:
-        t = np.array([0.5 * ((tai[out[j].index_a] - t0) + (tai[out[j].index_b] - t0)) / 1e6 for j in run])
+        ta = np.array([(tai[out[j].index_a] - t0) / 1e6 for j in run])
+        tb = np.array([(tai[out[j].index_b] - t0) / 1e6 for j in run])
         y = np.array([out[j].range_rate_mps for j in run])
         active = list(range(len(run)))
         while True:
@@ -394,9 +402,12 @@ def _flag_discontinuities(out, tai, threshold, window, min_neighbours):
                 if len(nb) < min_neighbours:
                     dev.pop(run[q], None)
                     continue
-                tt = (t[nb] - t[q]) / 60.0
-                coef = np.polyfit(tt, y[nb], 3)
-                d = float(y[q] - np.polyval(coef, 0.0))
+                # each interval's range rate is the average of the instantaneous one over its span, so the
+                # cubic r(t) is fitted to and evaluated as interval means (amendment A1: a point fit at the
+                # mid-times mistakes the third-derivative term T^2/24 of a 50 s interval for a jump)
+                mid = 0.5 * (ta[q] + tb[q])
+                coef = np.linalg.lstsq(_mean_design(ta[nb], tb[nb], mid), y[nb], rcond=None)[0]
+                d = float(y[q] - (_mean_design(ta[[q]], tb[[q]], mid) @ coef)[0])
                 dev[run[q]] = d
                 if abs(d) > threshold and abs(d) > abs(best_d):
                     best, best_d = q, d

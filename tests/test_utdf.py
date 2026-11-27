@@ -353,3 +353,40 @@ def test_unsupported_band_and_frequency_change_are_flagged():
     d = decode_record(_record(sec=105, usec=0, dop=136859486617 + 1291000000, ftx=209141412))
     (iv,) = check_doppler_counts([c, d])
     assert "FREQUENCY_CHANGED" in iv.codes
+
+
+# ---------------------------------------------------------------- amendment A1 (exploratory, after U_G8(c))
+def _jerk_stream(tags_s, *, jerk=1.5e-3, slip_at=None, slip_counts=0):
+    """Counts of a smooth two-way S-band link with range jerk ``jerk`` [m/s^3], 1-count quantised."""
+    ft = 2091414110.0
+    kc = 2.0 * ft * (240.0 / 221.0) * 1000.0 / C_LIGHT     # counts per second per (m/s)
+    v0, acc = 1200.0, -0.8
+
+    def n(t):
+        return BIAS_HZ * t - kc * (v0 * t + acc * t * t / 2.0 + jerk * t ** 3 / 6.0)
+
+    recs = []
+    for i, t in enumerate(tags_s):
+        c = 10 ** 11 + int(round(n(t))) + (slip_counts if slip_at is not None and i > slip_at else 0)
+        recs.append(decode_record(_record(sec=22377425 + t, usec=0, dop=c, ftx=209141411)))
+    return recs
+
+
+def test_mixed_interval_lengths_are_not_discontinuities():
+    # PAD 126 style: 5 s samples with a 50 s interval every ~4.5 min; the 50 s interval's mean differs from a
+    # point value at its mid-time by jerk T^2 / 24 = 0.156 m/s, which is physics, not a counter fault
+    tags = []
+    t = 0
+    for block in range(6):
+        tags += [t + 5 * k for k in range(45)]
+        t = tags[-1] + 50
+    ivs = check_doppler_counts(_jerk_stream(tags))
+    assert {iv.dt_s for iv in ivs} == {5.0, 50.0}
+    assert [iv.codes for iv in ivs if iv.codes] == []
+    tested = [iv for iv in ivs if iv.dt_s == 50.0 and not math.isnan(iv.deviation_mps)]
+    assert tested and max(abs(iv.deviation_mps) for iv in tested) < 1e-3
+    # a 100 mm/s single-interval count slip in the same stream is still caught, alone
+    kc5 = 5.0 * 2.0 * 2091414110.0 * (240.0 / 221.0) * 1000.0 / C_LIGHT
+    ivs = check_doppler_counts(_jerk_stream(tags, slip_at=100, slip_counts=-int(round(0.1 * kc5))))
+    flagged = [i for i, iv in enumerate(ivs) if iv.codes]
+    assert flagged == [100] and ivs[100].codes == ("RATE_DISCONTINUITY",)
