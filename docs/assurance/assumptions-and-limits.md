@@ -183,9 +183,18 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     yarıgölge kontağında kırılır. Olay bölütlemesi yoksa entegratör bu kırıkların üzerinden adım atar;
     `propagate_state` varsayılanı da `shadow_events=False`'tur. Gölgeli 100 km'lik yörüngelerde tek DOP853
     koşusunun tabanı (rtol 1e-12'ye karşı 1e-13) günde 0.2–1.4 m'dir. Olay-bölütlemeli `PropagationProfile()`
-    ile taban ≤ 7.5e-5 m'dir. Varsayılan Adams yolunun tabanı burada ölçülmedi. Santimetre ve altındaki
-    karşılaştırmalar gölgeli yörüngelerde `PropagationProfile()` ile yapılmalıdır. Profil başına
-    sertifika WP3.3'tedir (REQ-DYN-006).
+    ile taban ≤ 7.5e-5 m'dir. Santimetre ve altındaki karşılaştırmalar gölgeli yörüngelerde
+    `PropagationProfile()` ile yapılmalıdır. **WP3.3 (REQ-DYN-006) profil başına ölçümü:** T_LIB (rtol
+    1e-11), gölgeli 100 km yörünge, bağımsız olay-bölütlemeli DOP853 1e-13 referansına göre.
+    - Varsayılan ADAMS 1 günde 1.07 m, 28 günde 968 m sapar; olaysız DOP853 1 günde 1.47 m sapar. İkisi de
+      1 günde 1 m sınıfının dışındadır.
+    - `PropagationProfile()` 1, 3 ve 7 günde 2.0e-4, 1.1e-3 ve 1.05e-2 m sapar. 28 günlük yayı temas-tutarlılık
+      korumasıyla reddeder (RuntimeError: ön geçiş 1 ms'den fazla kayar). T_THESIS'te bu ret 7 günde gelir.
+      Pratik sınır gölgeli yörüngede T_LIB'de ≤ 7 gün, T_THESIS'te ≤ 3 gündür.
+    - Olaysız Radau 1, 7 ve 28 günde 1.3e-3, 8.5e-3 ve 6.4e-2 m sapar; 28 günlük yay ~450–700 s sürer.
+    - Ön kayıtlı sertifika sonucu çoğunlukla INCONCLUSIVE'dir: referans 100×3000 km yörüngede R_G1'i 1 günde,
+      güneşli yörüngede R_G2'yi geçemedi. Orekit noktası WP5.1'e bırakıldı. Ayrıntı:
+      [WP3.3 raporu](../../studies/phase17/reports/wp3_3_integrator_certification.md).
 
 ## İstasyon konumları
 
