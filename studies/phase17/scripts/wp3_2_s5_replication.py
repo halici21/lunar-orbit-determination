@@ -83,9 +83,21 @@ def prod_run(cell, opts: dict, rtol: float = S.RTOL, atol: float = S.ATOL) -> np
                            rtol=rtol, atol=atol, method="DOP853", srp=cell.srp, shadow_events=True, **opts)
 
 
+def closure(cell):
+    """The production 6-state closure and its Sun lookup, built as propagate_state builds it on this base.
+
+    (wp3_1_materiality_survey.closure predates the j2_rotation_at / j2_radius_m arguments of _build_state_rhs.)
+    """
+    from lunar_od import dynamics as D
+    j2rot, j2r = D.lunar_j2_orientation(0.0, model=None,
+                                        epoch_et0=D.lunar_j2_epoch(None, None, cell.eph.earth_position))
+    return D._build_state_rhs(S.T_GRID, *cell.mus, cell.eph.earth_position, cell.eph.sun_position,
+                              0.0, 0.0, "indirect", None, None, None, cell.srp, j2rot, j2r)
+
+
 def study_run(cell, term: str, scale: float, rtol: float = S.RTOL, atol: float = S.ATOL) -> np.ndarray:
     name = "EARTH_J2" if term == "EARTH_J2_ITRF93" else term
-    rhs, sun = S.closure(cell)
+    rhs, sun = closure(cell)
     states, _ = S.integrate(W.with_term(rhs, name, S.context(cell, sun), scale), sun, cell.srp, cell.x0, rtol, atol)
     return states
 
