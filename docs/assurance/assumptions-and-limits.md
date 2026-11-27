@@ -125,7 +125,7 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     |---|---|---|
     | Ay gelgiti (Dünya ve Güneş, derece 2–3) | 230σ | WP3.2 S1'den beri üretimde seçimli; tablonun altındaki nota bakın |
     | Ay albedo/IR basıncı | 165σ | yokluğunda kestirilen K_SRP ~%21 düşük çıkar; WP3.2 S2'den beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
-    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar |
+    | Dünya gölgesi | 200σ, yalnız tutulma yaylarında | yokluğunda K_SRP %19–25 düşük çıkar; WP3.2 S3'ten beri üretimde seçimli, ön kayıtlı haliyle NOT QUALIFIED (alttaki nota bakın) |
     | SRP'de ışık zamanı ve sapınım | 0.11σ, sınırda | Ön kayıtlı terimle 1.4σ çıktı, ama o terim gölgeyi 100 km'deki kontaklarda 3.07 kat uzağa koyuyor. Işın-geçiş geometrisiyle (keşifsel tanı) 0.109. Sapınım ve gölge ışık zamanı ters işaretli; ikisi birlikte uygulanmalı |
     | Dünya J2'si | 0.11σ, sınırda | seçimli, varsayılan kapalı |
 
@@ -159,6 +159,23 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     - **Kapsam dışı.** Tutulmalarda Dünya gölgesinin Ay yüzeyine düşmesi ve ısıl gecikme modellenmez; terim
       umbral evrelerde fazla tahmin edilir.
 
+    **Dünya gölgesi seçimli olarak üretimde** (WP3.2 S3, 2026-11-26;
+    [rapor](../../studies/phase17/reports/wp3_2_s3_earth_shadow.md)).
+    - **Kullanım.** `EarthShadowOptions()` ile açılır; WP3.1'in ölçtüğü model değişmeden kullanılır (konik,
+      6378.137 km'lik küresel Dünya, Ay ve Dünya örtme oranları çarpılır). SRP ivmesini ν_E ile ölçekler;
+      etkin bir `SRPOptions` ister, yoksa ValueError. `NO_SHADOW` SRP ile de çalışır.
+    - **Taşıyan yollar:** gelgitle aynı. Gölge olayları açıkken Dünya kontakları da kesim listesine girer.
+      Kapalı yollar bayt bayt aynıdır (E_G1(b), 79/79).
+    - **Taşımayanlar:** UKF, EKF, senaryo yapılandırması, CLI ve masaüstü.
+    - **Doğruluk.** Bağımsız küresel başlık kehanetine karşı ν_E farkı ≤ 3.0e-6 (gereksinim 2.5e-4); SPICE gfoclt
+      tutulma pencerelerine karşı kontak zamanları ≤ 0.01 s.
+    - **Sayısal taban (E_G6 FAIL).** Gölge olayları kapalıyken Dünya yarıgölgesinin sınırlarındaki kırıklar
+      6, 42 ve 48 durumlu yolları rtol 1e-13'te 6 saatte 1.2e-5 m'ye kadar ayırır (kapalıyken ≤ 8.8e-7 m).
+      Olaylar açıkken fark taban düzeyindedir. Dünya gölgesi açıkken gölgeli yaylarda `PropagationProfile()`
+      (olay bölütlemesi) kullanılmalıdır. Birleştirme kararı sahibindir.
+    - **Kapsam dışı.** Atmosferin umbrayı büyütmesi (~%2) ve kırılma, Dünya'nın basıklığı, kenar kararması,
+      Dünya gölgesinin ışık zamanı kayması (Ay'da ~38 km) ve iki örtücünün örtüşmesi modellenmez.
+
 16. **Modellenmeden sınırlandırılan kuvvetler.** Ay 1PN Schwarzschild terimi ≤ 0.029σ'dır: günde 2.5 cm,
     ivme 1.3e-10 m/s². Venüs ve Jüpiter ≤ 0.006σ'dır: günde ≤ 0.25 mm, entegrasyon tabanının 10 katının altında.
     Üretimin Dünya J2'sindeki birim çerçeve (DYN-19'un o kısmı) ITRF93 kutbuna göre ≤ 2.2e-4σ fark yaratır.
@@ -166,9 +183,18 @@ ve çözülen (x0, K_SRP) için geçerlidir. Daha uzun yay ya da farklı çözü
     yarıgölge kontağında kırılır. Olay bölütlemesi yoksa entegratör bu kırıkların üzerinden adım atar;
     `propagate_state` varsayılanı da `shadow_events=False`'tur. Gölgeli 100 km'lik yörüngelerde tek DOP853
     koşusunun tabanı (rtol 1e-12'ye karşı 1e-13) günde 0.2–1.4 m'dir. Olay-bölütlemeli `PropagationProfile()`
-    ile taban ≤ 7.5e-5 m'dir. Varsayılan Adams yolunun tabanı burada ölçülmedi. Santimetre ve altındaki
-    karşılaştırmalar gölgeli yörüngelerde `PropagationProfile()` ile yapılmalıdır. Profil başına
-    sertifika WP3.3'tedir (REQ-DYN-006).
+    ile taban ≤ 7.5e-5 m'dir. Santimetre ve altındaki karşılaştırmalar gölgeli yörüngelerde
+    `PropagationProfile()` ile yapılmalıdır. **WP3.3 (REQ-DYN-006) profil başına ölçümü:** T_LIB (rtol
+    1e-11), gölgeli 100 km yörünge, bağımsız olay-bölütlemeli DOP853 1e-13 referansına göre.
+    - Varsayılan ADAMS 1 günde 1.07 m, 28 günde 968 m sapar; olaysız DOP853 1 günde 1.47 m sapar. İkisi de
+      1 günde 1 m sınıfının dışındadır.
+    - `PropagationProfile()` 1, 3 ve 7 günde 2.0e-4, 1.1e-3 ve 1.05e-2 m sapar. 28 günlük yayı temas-tutarlılık
+      korumasıyla reddeder (RuntimeError: ön geçiş 1 ms'den fazla kayar). T_THESIS'te bu ret 7 günde gelir.
+      Pratik sınır gölgeli yörüngede T_LIB'de ≤ 7 gün, T_THESIS'te ≤ 3 gündür.
+    - Olaysız Radau 1, 7 ve 28 günde 1.3e-3, 8.5e-3 ve 6.4e-2 m sapar; 28 günlük yay ~450–700 s sürer.
+    - Ön kayıtlı sertifika sonucu çoğunlukla INCONCLUSIVE'dir: referans 100×3000 km yörüngede R_G1'i 1 günde,
+      güneşli yörüngede R_G2'yi geçemedi. Orekit noktası WP5.1'e bırakıldı. Ayrıntı:
+      [WP3.3 raporu](../../studies/phase17/reports/wp3_3_integrator_certification.md).
 
 ## İstasyon konumları
 

@@ -38,6 +38,10 @@ requirements, the verification matrix, the risk register and the phased V&V
 programme are under [assurance](../assurance/README.md); test levels and the CI
 cadence are described in [test levels and CI](../assurance/test-levels.md).
 
+The [external cross-validation](../validation/external_cross_validation.md) compares
+lunar_od with pinned Orekit 13.1.9 references (dynamics, two-way range, counted Doppler)
+without needing Orekit at test time.
+
 ## Documentation and release
 
 ```powershell

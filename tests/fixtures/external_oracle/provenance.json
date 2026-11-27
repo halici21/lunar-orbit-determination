@@ -1,0 +1,222 @@
+{
+ "work_package": "F5 WP5.1",
+ "predeclaration": "studies/phase17/configs/wp5_1_orekit_oracle_predeclaration.json",
+ "generated": "2026-11-26T08:10:02+00:00",
+ "generator": "tools/oracle/generate.py (lunar-od step, then orekit step)",
+ "repository": {
+  "commit": "8324e50ac8ef2dd5a47924cf25388fd71222325d",
+  "tree_clean_outside_fixtures": false
+ },
+ "versions": {
+  "python": "3.13.12",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "orekit-jpype": "13.1.9.0",
+  "JPype1": "1.7.1",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "jplephem": "2.24",
+  "spiceypy": "8.3.0",
+  "numba": "0.68.0",
+  "java": "25",
+  "java_vendor": "Oracle Corporation",
+  "orekit_jars": [
+   "hipparchus-core-4.0.3.jar",
+   "hipparchus-filtering-4.0.3.jar",
+   "hipparchus-fitting-4.0.3.jar",
+   "hipparchus-geometry-4.0.3.jar",
+   "hipparchus-ode-4.0.3.jar",
+   "hipparchus-optim-4.0.3.jar",
+   "hipparchus-stat-4.0.3.jar",
+   "orekit-13.1.9.jar",
+   "rugged-4.0.1.jar"
+  ]
+ },
+ "inputs": {
+  "orekit_data_dir_files": {
+   "files": 351,
+   "sha256_of_listing": "af8d06ac3f03c6da88ce077f6cce6c5055ee2d067e824708c5984722342c882f"
+  },
+  "jpl_DE440_binary": {
+   "name": "linux_p1550p2650.440",
+   "sha256": "29915576d0a6555766b99485ac3056ee415e86df4fce282611c31afb329ad062"
+  },
+  "jpl_DE421_binary": {
+   "name": "lnxp1900p2053.421",
+   "sha256": "5b3f81dd0c505925055a389431fd2bc5e0ae2fd02d85db37fa4d4fe54dfb4096"
+  },
+  "oracle_helpers_jar_sources": {
+   "BodyCenteredIcrfProvider.java": "f9a7f2f5579a222ecc0bc4b5b8bc300a8c09896dce964504e4cd47dd50dcc073",
+   "GmOverrideBody.java": "9ae3b7e98de59657c247aeefa7c58a4a00535d32cf0eeba013b89d1249db5708",
+   "PckEulerProvider.java": "c69bb07b632aed7fdce1f5ab7ed09f51bdc648f9e47c845736cb8f13d26fab55"
+  },
+  "gl1800f_tab": {
+   "name": "jggrx_1800f_sha.tab",
+   "sha256": "d2a552067a78bf1d2755807ae14ee1d6843a8f6a4228e01ce59a665516738fec"
+  },
+  "de440.bsp": "a4ce9bf9b3282becc9f4b2ac3cebe03a2ae7599981aabd7265fd8482fff7c4b5",
+  "de421.bsp": "08b20db2ae22488650641c5a9033e5bfda4b1c4b440cfeaf20f621cfa18ecdb3",
+  "moon_pa_de440_200625.bpc": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f",
+  "moon_de440_220930.txt": "73eb6b216c06a27c3419c4cfeaded7ffce46a714e3d4f9f5142dda51c0710f76",
+  "naif0012.tls.txt": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b"
+ },
+ "alignment": {
+  "A_TIME": "Orekit integrates with TAI/TT seconds as the independent variable, lunar_od with TDB seconds (the trial's 25.6 mm/day along-track term). The aligned lunar_od run integrates lunar_od's OWN force function (dynamics.f3body_moon, with lunar_frames.moon_pa_de440_rotation_at_et for D2 and srp.SRPOptions for D3) with TT seconds since the epoch's TT instant as the independent variable; ephemerides and frames are evaluated at et = TDB(TT) through SPICE unitim. This adapter lives in tools/oracle/lunar_od_side.py and contains no force physics. The TDB-vs-TT difference itself is reported, not gated",
+  "A_FRAME": "propagation in Moon-centred axes of ICRF/J2000 (Orekit BodyCenteredIcrfProvider on GCRF; lunar_od MCI J2000). EME2000 vs GCRF frame bias is not involved: lunar_od's J2000 in SPICE is ICRF-aligned and Orekit's frame is GCRF-aligned",
+  "A_BODY_FRAME": "MOON_PA_DE440 explicitly on both sides; neither tool's IAU Moon frame or the generic MOON_PA alias is used",
+  "A_GM": "scenario.gm on both sides",
+  "A_EPHEMERIS": "DE440 (DE421 for D1b) on both sides, each tool with its own reader",
+  "A_MEASUREMENT": "Newtonian light time with zero transponder delay, no media, no Shapiro, no aberration correction beyond the light-time solution, range = c x round trip / 2, counted Doppler in range-rate form (m/s, positive when the round-trip range grows) = (R2(t + Tc/2) - R2(t - Tc/2)) / Tc with Tc = 60 s, interval in TDB (lunar_od LightTimeModel interval_time_scale='TDB'). The light-time frame is the case's frame: Moon-centred (MOON) or solar-system barycentric (SSB), on both sides",
+  "A_STATION": "both measurement solvers use THE SAME station track: Orekit's Canberra DSN (TopocentricFrame on WGS84 in ITRF of IERS 2010 conventions with full EOP from orekit-data), sampled every 10 s in Moon-centred ICRF as position and velocity and pinned. The lunar_od solvers get it through a TwoWayStationStateProvider / callable that interpolates the pinned track (cubic Hermite on position and velocity). The Earth-orientation difference between SPICE's ITRF93 PCK and Orekit's ITRF (the trial: 23-26 cm in station position) is therefore not part of the gate; it is reported as information (I_STATION)"
+ },
+ "orekit_dynamics": {
+  "D1a": {
+   "setting": {
+    "abs_pos_m": 1e-08,
+    "abs_vel_mps": 1e-11,
+    "rel": 1e-14,
+    "max_step_s": 300.0
+   },
+   "ladder": {
+    "floors_m": {
+     "0->1": 3.657021558185463e-07
+    },
+    "runtime_s": {
+     "0": 1.88,
+     "1": 1.12
+    },
+    "accepted": 0,
+    "integrator_limited": false
+   }
+  },
+  "D1b": {
+   "setting": {
+    "abs_pos_m": 1e-08,
+    "abs_vel_mps": 1e-11,
+    "rel": 1e-14,
+    "max_step_s": 300.0
+   },
+   "ladder": {
+    "floors_m": {
+     "0->1": 1.0872108522984484e-06
+    },
+    "runtime_s": {
+     "0": 0.79,
+     "1": 1.2
+    },
+    "accepted": 0,
+    "integrator_limited": false
+   }
+  },
+  "D2-50": {
+   "setting": {
+    "abs_pos_m": 1e-08,
+    "abs_vel_mps": 1e-11,
+    "rel": 1e-14,
+    "max_step_s": 300.0
+   },
+   "ladder": {
+    "floors_m": {
+     "0->1": 9.585806127094492e-07
+    },
+    "runtime_s": {
+     "0": 25.77,
+     "1": 25.55
+    },
+    "accepted": 0,
+    "integrator_limited": false
+   }
+  },
+  "D2-100": {
+   "setting": {
+    "abs_pos_m": 1e-08,
+    "abs_vel_mps": 1e-11,
+    "rel": 1e-14,
+    "max_step_s": 300.0
+   },
+   "ladder": {
+    "floors_m": {
+     "0->1": 0.0
+    },
+    "runtime_s": {
+     "0": 39.0,
+     "1": 41.1
+    },
+    "accepted": 0,
+    "integrator_limited": false
+   }
+  },
+  "D3": {
+   "setting": {
+    "abs_pos_m": 1e-08,
+    "abs_vel_mps": 1e-11,
+    "rel": 1e-14,
+    "max_step_s": 10.0
+   },
+   "ladder": {
+    "floors_m": {
+     "0->1": 0.005375187959833393,
+     "1->2": 0.007727470785285548,
+     "2->3": 0.00028864726630772343,
+     "3->4": 7.519555034144493e-05
+    },
+    "runtime_s": {
+     "0": 9.83,
+     "1": 4.64,
+     "2": 7.9,
+     "3": 19.12,
+     "4": 16.77
+    },
+    "accepted": 3,
+    "integrator_limited": false
+   }
+  }
+ },
+ "orekit_dynamics_force_models": {
+  "central": "NewtonianAttraction(mu = scenario GM Moon) from the CartesianOrbit",
+  "third_body": "ThirdBodyAttraction(GmOverrideBody(Earth|Sun, scenario GM)), positions from Orekit's JPL reader",
+  "harmonics": "HolmesFeatherstoneAttractionModel(MOON_PA_DE440 via PckEulerProvider, GL1800F n x n, file GM and radius)",
+  "srp": "RadiationPressureModel(ConicallyShadowedLightFluxModel(P1AU*AU^2, R_sun, Sun, R_occ), IsotropicRadiationSingleCoefficient(A=10 m^2, C_R=K*m/A), m=1000 kg)",
+  "integrator": "DormandPrince853, minStep 1e-3 s, per-case maxStep/tolerances in orekit_dynamics",
+  "frame": "Moon-centred, ICRF axes (BodyCenteredIcrfProvider on GCRF)"
+ },
+ "orekit_measurements": {
+  "transit_epoch_iteration": {
+   "max_iterations": 2,
+   "max_last_update_s": 1.431966e-12
+  }
+ },
+ "preconditions": {
+  "a_reader_vs_cspice_DE440_m": {
+   "EARTH": 1.8129001896369415e-07,
+   "SUN": 9.289394883640992e-05
+  },
+  "a_reader_vs_cspice_DE421_m": {
+   "EARTH": 1.8143349382111313e-07,
+   "SUN": 9.187007582696759e-05
+  },
+  "b_pck_euler_vs_pxform_max_element": 2.3939183968479938e-12,
+  "c_moon_icrf_rotation_rate_rad_s": 0.0,
+  "d_tdb_minus_tt_orekit_minus_spice_s": {
+   "mean": 1.1858828347632471e-06,
+   "change_over_arc": 1.2614543720701477e-07
+  },
+  "e_holmes_featherstone_c00_only_accel_mps2": 0.0,
+  "f_ssb_minus_moon_two_way_m": {
+   "min": 1.8316821455955505,
+   "max": 1.9347769021987915
+  }
+ },
+ "files_sha256": {
+  "lunar_od_settings.json": "8807d3171ee78d5ece8a46fee61cec0cff35ae41c28c94a15c0d4b55522798a9",
+  "orekit_dynamics_D1a.csv": "a143edc2c91fd8389fd4a72534c6b86ee06e7c29d6c24d9e9c025a073cf5b606",
+  "orekit_dynamics_D1b.csv": "6246e9e89e05ecfef947e16b264946905589392285044b99cb6c47819a4863a5",
+  "orekit_dynamics_D2-100.csv": "3c97dd6d1c64a1dde958b84645cadefae5da2d702aa3855ed3266d5ec153a534",
+  "orekit_dynamics_D2-50.csv": "9ddcdff82d9c62d0654e72b906c763aded44cb85ee8944fd0a7fc144771b6828",
+  "orekit_dynamics_D3.csv": "a0a2b63518edf4244355c2f12389f4e8c7603b3eb94b3a3e9abccc974b7a26e7",
+  "orekit_measurements.csv": "2f6cde81a6373053ddf85e98dc0d38498a4b5af73e10738730049d202ec09226",
+  "orekit_station_track.csv": "69a10b5cb56f47296f3d82c544a27e42304f5acf004ed6c797a1a70d7686fd84",
+  "orekit_time_map.csv": "80f98eca305ded1a1c86a9a3f0dbe2940f18f8d5c4147231d402b4dd8b3951f4",
+  "scenario.json": "c9c76ec0591682dc1417e976a706c1f0c997637f65085256276fafb569ff44f3",
+  "shared_trajectory_d1a.csv": "5374f478b128a7aac2c7eef3f1be59476577d47f107a50cf8b2764b6c1901626"
+ }
+}

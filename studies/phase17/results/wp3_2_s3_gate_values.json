@@ -1,0 +1,320 @@
+{
+ "EB_G3": {
+  "bls_lm": {
+   "dr0_m": 1.0262507760462421e-07,
+   "dr0_without_es_m": 0.26773507541664837,
+   "dv0_mps": 3.6759453572970933e-10,
+   "dv0_without_es_mps": 0.00012312170448039312,
+   "ratio": 2608865.9971408825
+  },
+  "srif": {
+   "dr0_m": 1.0716850286800534e-07,
+   "dr0_without_es_m": 0.2677350159143394,
+   "dv0_mps": 3.711534174232374e-10,
+   "dv0_without_es_mps": 0.00012312169414509027,
+   "ratio": 2498262.164248918
+  }
+ },
+ "E_G2": {
+  "counts": {
+   "full_light": 463,
+   "penumbra": 729,
+   "umbra": 808
+  },
+  "mismatches": 0
+ },
+ "E_G3": {
+  "a": {
+   "n_penumbra": 729,
+   "n_precondition": 50,
+   "precondition": 1.407052463431313e-08,
+   "worst": 2.9699226877788476e-06,
+   "worst_penumbra": 2.9699226877788476e-06
+  },
+  "b": {
+   "E2": {
+    "counts_equal": true,
+    "n_any": 2,
+    "n_full": 2,
+    "roots": {
+     "ANY": [
+      825801531.8884134,
+      825817932.9438866
+     ],
+     "FULL": [
+      825805621.6176281,
+      825813836.4522359
+     ]
+    },
+    "spice": {
+     "ANY": [
+      825801531.888413,
+      825817932.943887
+     ],
+     "FULL": [
+      825805621.6176281,
+      825813836.4522355
+     ]
+    },
+    "worst_s": 4.76837158203125e-07
+   },
+   "E3": {
+    "counts_equal": true,
+    "n_any": 2,
+    "n_full": 2,
+    "roots": {
+     "ANY": [
+      841154407.187295,
+      841170558.011757
+     ],
+     "FULL": [
+      841158925.9849129,
+      841166045.6423105
+     ]
+    },
+    "spice": {
+     "ANY": [
+      841154407.1872947,
+      841170558.0117569
+     ],
+     "FULL": [
+      841158925.9849129,
+      841166045.6423109
+     ]
+    },
+    "worst_s": 3.5762786865234375e-07
+   }
+  }
+ },
+ "E_G4": {
+  "grad_da_conical": 1.1103779882267761e-07,
+  "grad_da_no_shadow": 1.1103779882267761e-07,
+  "grad_nu": 1.1102030005336244e-07,
+  "n": 714,
+  "n_conical": 710
+ },
+ "E_G5": {
+  "a_ratio": 5.874526883500545,
+  "a_stm_control_no_es_gradient": 3.7023285965115096e-07,
+  "a_stm_gated": 6.302343439622402e-08,
+  "b_k_control_no_es_dfdk": 0.8972318805142064,
+  "b_k_sensitivity": 1.797668745950952e-07,
+  "b_ratio": 4991085.718851824
+ },
+ "E_G6": {
+  "i_j2": {
+   "earth_shadow_effect_m": 0.5569975527409952,
+   "phi_rel": {
+    "42": 1.4939645295478758e-12,
+    "42_reference": 1.2395826911034946e-12,
+    "48": 0.0
+   },
+   "position_m": {
+    "42": 1.1541902495082468e-05,
+    "42_reference": 1.1535761586856097e-05,
+    "48": 1.1525946320034564e-05
+   },
+   "verdict": "FAIL"
+  },
+  "ii_j2_tide": {
+   "earth_shadow_effect_m": 0.5570074724587357,
+   "phi_rel": {
+    "42": 1.978325216260446e-11,
+    "42_reference": 1.938693407711455e-11,
+    "48": 0.0
+   },
+   "position_m": {
+    "42": 2.475222572684288e-06,
+    "42_reference": 2.515000232961029e-06,
+    "48": 2.1999512682668865e-06
+   },
+   "verdict": "FAIL"
+  },
+  "iii_harmonics": {
+   "earth_shadow_effect_m": 0.5565299231548124,
+   "phi_rel": {
+    "42": 8.036281915107582e-13,
+    "48": 0.0
+   },
+   "position_m": {
+    "42": 2.987771949847229e-06,
+    "48": 2.895012585213408e-06
+   },
+   "verdict": "FAIL"
+  },
+  "iv_conical_events": {
+   "earth_shadow_effect_m": 9.093575118196895,
+   "phi_rel": {
+    "42": 1.877472407243199e-12,
+    "42_reference": 2.0503770741130644e-12,
+    "48": 0.0
+   },
+   "position_m": {
+    "42": 1.0032381396740675e-05,
+    "42_reference": 1.0039890184998512e-05,
+    "48": 9.815878001973033e-06
+   },
+   "verdict": "FAIL"
+  },
+  "v_e2_grail_events": {
+   "earth_shadow_effect_m": 8.917033791469294,
+   "phi_rel": {
+    "42": 5.2809507786908926e-11,
+    "42_reference": 5.2965218311302035e-11,
+    "48": 0.0
+   },
+   "position_m": {
+    "42": 1.2425676686689258e-05,
+    "42_reference": 1.2664415407925844e-05,
+    "48": 1.2796139344573021e-05
+   },
+   "verdict": "FAIL"
+  }
+ },
+ "E_G7": {
+  "control_message": "Shadow contact inconsistent with final trajectory at 7451.31828594 s: angular residual 3.306e-06 rad, 3.720e-03 s from the contact (> 1e-03 s); tighten propagation tolerances.",
+  "earth_in_free_list": 0,
+  "earth_only": {
+   "cuts": [
+    2812.892405740224,
+    4298.520525738715,
+    7184.976282011428,
+    7545.83457952896,
+    16523.74581098649,
+    18033.30744554437
+   ],
+   "labels": [
+    [
+     "earth_outer",
+     0.0
+    ],
+    [
+     "earth_inner",
+     0.0
+    ],
+    [
+     "earth_inner",
+     0.0
+    ],
+    [
+     "earth_inner",
+     0.0
+    ],
+    [
+     "earth_inner",
+     0.0
+    ],
+    [
+     "earth_outer",
+     0.0
+    ]
+   ]
+  },
+  "information": {
+   "earth_and_lunar_cuts": 9.490316733717918e-05,
+   "lunar_cuts_only_wp3_1": 7.975462358444929e-05
+  },
+  "labels_with_es": [
+   [
+    "lunar_outer",
+    0.0
+   ],
+   [
+    "lunar_inner",
+    0.0
+   ],
+   [
+    "earth_outer",
+    0.0
+   ],
+   [
+    "lunar_inner",
+    0.0
+   ],
+   [
+    "lunar_outer",
+    0.0
+   ],
+   [
+    "earth_inner",
+    0.0
+   ],
+   [
+    "lunar_outer",
+    0.0
+   ],
+   [
+    "lunar_inner",
+    0.0
+   ],
+   [
+    "lunar_inner",
+    0.0
+   ],
+   [
+    "lunar_outer",
+    0.0
+   ],
+   [
+    "lunar_outer",
+    1.3040459651067443e-06
+   ],
+   [
+    "lunar_inner",
+    1.305041172316159e-06
+   ],
+   [
+    "earth_inner",
+    0.0
+   ],
+   [
+    "lunar_inner",
+    1.15914234925387e-06
+   ],
+   [
+    "lunar_outer",
+    1.1592087336434578e-06
+   ],
+   [
+    "earth_outer",
+    0.0
+   ],
+   [
+    "lunar_outer",
+    1.886050899716179e-06
+   ]
+  ],
+  "max_lunar_cut_shift_s": 0.008351868516911054,
+  "max_offset_s": 1.886050899716179e-06,
+  "n_cuts_with_es": 17,
+  "n_cuts_without_es": 13,
+  "n_earth_cuts": 4
+ },
+ "commit": "bcab6c987381d2d638c494a401077259364be342",
+ "cost": {
+  "value_6_us": 93.25440000975505,
+  "value_and_gradient_48_us": 270.1237500004936
+ },
+ "label": "post-bcab6c9",
+ "numpy": "2.4.3",
+ "python": "3.13.2",
+ "src_status": "",
+ "study": "F3 WP3.2 S3 gate values",
+ "thresholds": {
+  "e_g3a": 0.00025,
+  "e_g3a_precondition": 1e-09,
+  "e_g3b_s": 0.01,
+  "e_g4": 1e-06,
+  "e_g5_ratio": 10.0,
+  "e_g5a": 1e-07,
+  "e_g5b": 1e-06,
+  "e_g6_effect": 1.0,
+  "e_g6_phi": 1e-08,
+  "e_g6_pos": 1e-05,
+  "e_g7_earth_cuts": 4,
+  "e_g7_time_tol_s": 0.001,
+  "eb_g3_dr": 0.001,
+  "eb_g3_dv": 1e-06,
+  "eb_g3_ratio": 100.0
+ }
+}

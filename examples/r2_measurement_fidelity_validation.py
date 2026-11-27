@@ -1031,6 +1031,23 @@ F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256 = {
 }
 
 
+# F3 WP3.2 S3 (2026-11-26): opt-in Earth shadow on the spacecraft (EARTH_SHADOW,
+# REQ-DYN-007).  dynamics.py gains the earth_shadow keyword, the Earth-shadow wrapper on
+# the 6/42/48-state right-hand sides and the Earth contacts in the D2 pre-pass and
+# contact check; estimators.py forwards the keyword to every propagation.  The
+# default path (earth_shadow omitted or None) is byte-identical (E_G1(b)).
+#
+#   lunar_od/dynamics.py     bcdd8fa1... -> 9f405301...
+#   lunar_od/estimators.py   e5884773... -> 104592bb...
+#     filtered-checkout (core.autocrlf=true) representation, as every table above
+F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256 = {
+    "lunar_od/dynamics.py":
+        "9f405301d3847500c12b64ac02ba9f6a00b4dc075bd852a2e5ccf9c4249f63e4",
+    "lunar_od/estimators.py":
+        "104592bbaf31197ba395266603c82c55ec8983d30148ddd93eda2642fba989b1",
+}
+
+
 def current_source_path(relative_path: str) -> str:
     """Resolve historical source identities in the current src layout."""
     return "src/" + relative_path if relative_path.startswith("lunar_od/") else relative_path
@@ -1054,6 +1071,8 @@ def expected_current_tree_sha256(relative_path: str) -> str:
     later campaign (newest authorization first).  Single resolution point so
     the gate and its test can never disagree.
     """
+    if relative_path in F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256:
+        return F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256:
         return F3_WP3_2_MAIN_MERGE_2026_11_21_REFROZEN_CURRENT_TREE_SHA256[relative_path]
     if relative_path in BRANCH_CONSOLIDATION_2026_11_08_REFROZEN_CURRENT_TREE_SHA256:
