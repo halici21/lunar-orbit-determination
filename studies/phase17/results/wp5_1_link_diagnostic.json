@@ -1,0 +1,36 @@
+{
+ "D2-50": {
+  "accepted_setting": {
+   "rtol": 1e-13,
+   "atol": 1e-09,
+   "max_step_s": 20.0
+  },
+  "production_grid_minus_adapter_uncapped_m": 0.00026628795678517575,
+  "production_grid_minus_adapter_accepted_m (O_L)": 0.0006378688174920825,
+  "adapter_uncapped_minus_adapter_accepted_m": 0.0003948337405436149,
+  "production_direct_minus_adapter_uncapped_m": 0.00036484198808844627,
+  "production_direct_minus_production_grid_m": 0.00011590744334193552
+ },
+ "D2-100": {
+  "accepted_setting": {
+   "rtol": 1e-13,
+   "atol": 1e-09,
+   "max_step_s": 20.0
+  },
+  "production_grid_minus_adapter_uncapped_m": 0.004911288146510443,
+  "production_grid_minus_adapter_accepted_m (O_L)": 0.0017104455651258716,
+  "adapter_uncapped_minus_adapter_accepted_m": 0.006533742556954591,
+  "production_direct_minus_adapter_uncapped_m": 0.005465084963448096,
+  "production_direct_minus_production_grid_m": 0.0005593790227224978
+ },
+ "D3": {
+  "accepted_setting": {
+   "rtol": 1e-13,
+   "atol": 1e-09,
+   "max_step_s": 2.0
+  },
+  "production_grid_minus_adapter_uncapped_m": 0.1816298605292047,
+  "production_grid_minus_adapter_accepted_m (O_L)": 9.590887693019218e-06,
+  "adapter_uncapped_minus_adapter_accepted_m": 0.18162027246014262
+ }
+}

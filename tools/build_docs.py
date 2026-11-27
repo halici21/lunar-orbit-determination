@@ -21,6 +21,7 @@ PAGES = {
     "results.md": "docs/research/results-gallery.md",
     "benchmark.md": "docs/research/paired-benchmark.md",
     "support.md": "docs/validation/support-matrix.md",
+    "external.md": "docs/validation/external_cross_validation.md",
     "theory.md": "docs/site/theory.md",
     "validation.md": "docs/site/validation.md",
     "ccsds-tdm.md": "docs/interfaces/ccsds-tdm.md",
