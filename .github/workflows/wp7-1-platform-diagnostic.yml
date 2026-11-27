@@ -1,14 +1,10 @@
-# WP7.1 diagnostic (temporary): measure, on the hosted runners, the five commit-tier values that differ
+# WP7.1 diagnostic (manual only): measure, on the hosted runners, the five commit-tier values that differ
 # from the committed records (S1 T_G5(a), S2 L_G6 x3, DMC finite-difference STM). Analysis only; no gate.
-# Remove before #121 merges, or keep as workflow_dispatch only (owner decision).
+# Owner decision 2026-11-27: kept, workflow_dispatch only. Use it to check a runner against the reference
+# platform of tests/reference_platform.py (docs/assurance/test-levels.md).
 name: WP7.1 platform diagnostic
 
 on:
-  push:
-    branches: [f7/wp7-1-test-levels]
-    paths:
-      - .github/workflows/wp7-1-platform-diagnostic.yml
-      - studies/phase17/scripts/wp7_1_platform_gate_values.py
   workflow_dispatch:
 
 permissions:
