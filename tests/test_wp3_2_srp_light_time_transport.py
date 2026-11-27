@@ -191,3 +191,35 @@ def test_noiseless_light_time_truth_is_biased_without_it(light_time_truth_case):
     dr, _ = light_time_recovery("bls_lm", light_time_truth_case, LT)
     dr_free, _ = light_time_recovery("bls_lm", light_time_truth_case, None)
     assert dr_free >= 100 * dr, (dr_free, dr)
+
+
+# ----------------------------------------------------------------------
+# The protected-file re-freeze is additive
+# ----------------------------------------------------------------------
+def test_wp3_2_s4_refreeze_is_additive_and_history_is_preserved():
+    """dynamics.py and estimators.py moved through a new F3_WP3_2_S4 table resolved first; the S3 table and the
+    path-migration history keep every earlier identity."""
+    import hashlib
+    import json
+    if str(ROOT / "examples") not in sys.path:
+        sys.path.insert(0, str(ROOT / "examples"))
+    import r2_measurement_fidelity_validation as r2
+    migration = json.loads((ROOT / "docs" / "development" / "path-migration.json").read_text(encoding="utf-8"))
+    entries = {}
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key in ("lunar_od/dynamics.py", "lunar_od/estimators.py") and isinstance(value, dict)                         and "original_sha256" in value:
+                    entries[key] = value
+                walk(value)
+    walk(migration)
+    for path, old in (("lunar_od/dynamics.py", "9f405301"), ("lunar_od/estimators.py", "104592bb")):
+        previous = r2.F3_WP3_2_S3_REFROZEN_CURRENT_TREE_SHA256[path]
+        assert previous.startswith(old)
+        new = r2.F3_WP3_2_S4_REFROZEN_CURRENT_TREE_SHA256[path]
+        assert r2.expected_current_tree_sha256(path) == new != previous
+        assert hashlib.sha256((ROOT / r2.current_source_path(path)).read_bytes()).hexdigest() == new
+        assert entries[path]["original_sha256"] == new
+        assert entries[path]["refrozen_from_sha256"] == previous
+        assert entries[path]["refrozen_history_sha256"][-1] == previous
